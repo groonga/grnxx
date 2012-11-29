@@ -4,10 +4,12 @@
 *.dat
 *.dll
 *.exe
+*.grn
 *.la
 *.lai
 *.lo
 *.log
+*.m4
 *.o
 *.so
 Makefile
@@ -20,10 +22,8 @@ depcomp
 install-sh
 libtool
 ltmain.sh
-m4/
 missing
 stamp-h1
-test/*.grn
 test/test_backtrace
 test/test_db_array
 test/test_db_blob_vector
