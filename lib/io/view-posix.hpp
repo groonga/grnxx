@@ -72,7 +72,8 @@ class ViewImpl {
   ViewImpl &operator=(const ViewImpl &);
 };
 
-inline StringBuilder &operator<<(StringBuilder &builder, const ViewImpl &view) {
+inline StringBuilder &operator<<(StringBuilder &builder,
+                                 const ViewImpl &view) {
   return view.write_to(builder);
 }
 

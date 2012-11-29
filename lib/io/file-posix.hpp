@@ -96,7 +96,8 @@ class FileImpl {
   FileImpl &operator=(const FileImpl &);
 };
 
-inline StringBuilder &operator<<(StringBuilder &builder, const FileImpl &file) {
+inline StringBuilder &operator<<(StringBuilder &builder,
+                                 const FileImpl &file) {
   return file.write_to(builder);
 }
 

@@ -51,8 +51,7 @@ class FileImpl {
   uint64_t read(void *buf, uint64_t size);
   uint64_t read(void *buf, uint64_t size, uint64_t offset);
   uint64_t write(const void *buf, uint64_t size);
-  uint64_t write(const void *buf, uint64_t size,
-                      uint64_t offset);
+  uint64_t write(const void *buf, uint64_t size, uint64_t offset);
 
   void sync();
 
@@ -103,7 +102,8 @@ class FileImpl {
   FileImpl &operator=(const FileImpl &);
 };
 
-inline StringBuilder &operator<<(StringBuilder &builder, const FileImpl &file) {
+inline StringBuilder &operator<<(StringBuilder &builder,
+                                 const FileImpl &file) {
   return file.write_to(builder);
 }
 

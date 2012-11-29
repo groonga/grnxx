@@ -86,8 +86,7 @@ uint64_t File::write(const void *buf, uint64_t size) {
   return impl_->write(buf, size);
 }
 
-uint64_t File::write(const void *buf, uint64_t size,
-                          uint64_t offset) {
+uint64_t File::write(const void *buf, uint64_t size, uint64_t offset) {
   throw_if_impl_is_invalid();
   return impl_->write(buf, size, offset);
 }

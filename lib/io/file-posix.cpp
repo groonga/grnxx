@@ -145,8 +145,7 @@ uint64_t FileImpl::read(void *buf, uint64_t size) {
   return result;
 }
 
-uint64_t FileImpl::read(void *buf, uint64_t size,
-                             uint64_t offset) {
+uint64_t FileImpl::read(void *buf, uint64_t size, uint64_t offset) {
   if (flags_ & GRNXX_IO_WRITE_ONLY) {
     GRNXX_ERROR() << "file is write-only";
     GRNXX_THROW();
@@ -200,8 +199,7 @@ uint64_t FileImpl::write(const void *buf, uint64_t size) {
   return result;
 }
 
-uint64_t FileImpl::write(const void *buf, uint64_t size,
-                              uint64_t offset) {
+uint64_t FileImpl::write(const void *buf, uint64_t size, uint64_t offset) {
   if (flags_ & GRNXX_IO_READ_ONLY) {
     GRNXX_ERROR() << "file is read-only";
     GRNXX_THROW();
