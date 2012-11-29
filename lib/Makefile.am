@@ -3,8 +3,8 @@ SUBDIRS = db io
 lib_LTLIBRARIES = libgrnxx.la
 
 libgrnxx_la_LIBADD =		\
-	db/libgrnxxdb.la	\
-	io/libgrnxxio.la
+	db/libgrnxx_db.la	\
+	io/libgrnxx_io.la
 
 libgrnxx_la_SOURCES =		\
 	backtrace.cpp		\

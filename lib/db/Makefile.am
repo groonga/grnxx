@@ -1,12 +1,12 @@
-noinst_LTLIBRARIES = libgrnxxdb.la
+noinst_LTLIBRARIES = libgrnxx_db.la
 
-libgrnxxdb_la_SOURCES =		\
+libgrnxx_db_la_SOURCES =	\
 	array.cpp		\
 	blob_vector.cpp		\
 	vector_base.cpp
 
-libgrnxxdb_includedir = ${includedir}/grnxx/db
-libgrnxxdb_include_HEADERS =	\
+libgrnxx_db_includedir = ${includedir}/grnxx/db
+libgrnxx_db_include_HEADERS =	\
 	array.hpp		\
 	blob_vector.hpp		\
 	vector.hpp		\

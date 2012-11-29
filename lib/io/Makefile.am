@@ -1,6 +1,6 @@
-noinst_LTLIBRARIES = libgrnxxio.la
+noinst_LTLIBRARIES = libgrnxx_io.la
 
-libgrnxxio_la_SOURCES =		\
+libgrnxx_io_la_SOURCES =	\
 	block.cpp		\
 	chunk.cpp		\
 	file-posix.cpp		\
@@ -16,8 +16,8 @@ libgrnxxio_la_SOURCES =		\
 	view-windows.cpp	\
 	view.cpp
 
-libgrnxxio_includedir = ${includedir}/grnxx/io
-libgrnxxio_include_HEADERS =	\
+libgrnxx_io_includedir = ${includedir}/grnxx/io
+libgrnxx_io_include_HEADERS =	\
 	block.hpp		\
 	chunk.hpp		\
 	file-posix.hpp		\
