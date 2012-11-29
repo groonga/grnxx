@@ -22,6 +22,9 @@
 
 #ifdef GRNXX_WINDOWS
 
+#ifndef NOMINMAX
+# define NOMINMAX
+#endif  // NOMINMAX
 #include <windows.h>
 
 namespace grnxx {

@@ -18,6 +18,9 @@
 #include "thread.hpp"
 
 #ifdef GRNXX_WINDOWS
+# ifndef NOMINMAX
+#  define NOMINMAX
+# endif  // NOMINMAX
 # include <windows.h>
 #endif  // GRNXX_WINDOWS
 
