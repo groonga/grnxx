@@ -32,4 +32,3 @@ libgrnxx_io_include_HEADERS =	\
 	view-posix.hpp		\
 	view-windows.hpp	\
 	view.hpp
-
