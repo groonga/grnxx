@@ -1,8 +1,9 @@
-SUBDIRS = db io
+SUBDIRS = alpha db io
 
 lib_LTLIBRARIES = libgrnxx.la
 
 libgrnxx_la_LIBADD =		\
+	alpha/libgrnxx_alpha.la	\
 	db/libgrnxx_db.la	\
 	io/libgrnxx_io.la
 
