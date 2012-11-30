@@ -35,7 +35,7 @@ void test_basics() {
   grnxx::io::Pool pool("temp.grn", grnxx::io::GRNXX_IO_CREATE);
 
   grnxx::alpha::Vector<std::uint32_t> vector(
-      pool, grnxx::alpha::VECTOR_CREATE);
+      grnxx::alpha::VECTOR_CREATE, pool);
 
   assert(vector.block_id() == 0);
   assert(vector.value_size() == sizeof(std::uint32_t));
@@ -75,7 +75,7 @@ void test_basics() {
   pool = grnxx::io::Pool("temp.grn", grnxx::io::GRNXX_IO_OPEN);
 
   vector = grnxx::alpha::Vector<std::uint32_t>(
-      pool, grnxx::alpha::VECTOR_OPEN, block_id);
+      grnxx::alpha::VECTOR_OPEN, pool, block_id);
 
   assert(vector[0] == 1);
   assert(vector[1000] == 10);
@@ -91,7 +91,7 @@ void test_basics() {
   assert(vector[0] == 12);
 
   vector = grnxx::alpha::Vector<std::uint32_t>(
-      pool, grnxx::alpha::VECTOR_CREATE, 56789);
+      grnxx::alpha::VECTOR_CREATE, pool, 56789);
 
   assert(vector[0] == 56789);
   assert(vector[1000] == 56789);
@@ -112,7 +112,7 @@ void test_basics() {
 
   grnxx::alpha::Vector<std::uint32_t>::unlink(pool, 0);
 
-  grnxx::alpha::Vector<float> float_vector(pool, grnxx::alpha::VECTOR_CREATE);
+  grnxx::alpha::Vector<float> float_vector(grnxx::alpha::VECTOR_CREATE, pool);
 
   float_vector[0] = 1.0F;
   assert(float_vector[0] == 1.0F);
@@ -122,7 +122,7 @@ void test_basics() {
   float_vector = grnxx::alpha::Vector<float>();
 
   grnxx::alpha::Vector<double> double_vector(
-      pool, grnxx::alpha::VECTOR_CREATE);
+      grnxx::alpha::VECTOR_CREATE, pool);
 
   double_vector[0] = 1.0;
   assert(double_vector[0] == 1.0);
@@ -131,7 +131,7 @@ void test_basics() {
 
   double_vector = grnxx::alpha::Vector<double>();
 
-  grnxx::alpha::Vector<Point> point_vector(pool, grnxx::alpha::VECTOR_CREATE);
+  grnxx::alpha::Vector<Point> point_vector(grnxx::alpha::VECTOR_CREATE, pool);
 
   point_vector[0].x = 123;
   point_vector[0].y = 456;
@@ -155,7 +155,7 @@ void test_times() {
 
   grnxx::io::Pool pool("temp.grn", grnxx::io::GRNXX_IO_TEMPORARY);
 
-  grnxx::alpha::Vector<T> vector(pool, grnxx::alpha::VECTOR_CREATE);
+  grnxx::alpha::Vector<T> vector(grnxx::alpha::VECTOR_CREATE, pool);
 
   grnxx::Time start, end;
 
@@ -252,7 +252,7 @@ void test_times() {
   end = grnxx::Time::now();
   grnxx::Duration unlink_elapsed = end - start;
 
-  vector = grnxx::alpha::Vector<T>(pool, grnxx::alpha::VECTOR_CREATE, 0);
+  vector = grnxx::alpha::Vector<T>(grnxx::alpha::VECTOR_CREATE, pool, 0);
 
   start = grnxx::Time::now();
   for (std::uint64_t id = 0; id < VECTOR_SIZE; ++id) {

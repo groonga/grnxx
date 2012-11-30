@@ -231,13 +231,13 @@ class Vector {
   typedef T Value;
 
   Vector() : impl_() {}
-  Vector(io::Pool pool, const VectorCreate &)
+  Vector(const VectorCreate &, io::Pool pool)
     : impl_(VectorImpl::create(pool, nullptr, sizeof(Value), PAGE_SIZE,
                                TABLE_SIZE, SECONDARY_TABLE_SIZE, fill_page)) {}
-  Vector(io::Pool pool, const VectorCreate &, const Value &default_value)
+  Vector(const VectorCreate &, io::Pool pool, const Value &default_value)
     : impl_(VectorImpl::create(pool, &default_value, sizeof(Value), PAGE_SIZE,
                                TABLE_SIZE, SECONDARY_TABLE_SIZE, fill_page)) {}
-  Vector(io::Pool pool, const VectorOpen &, uint32_t block_id)
+  Vector(const VectorOpen &, io::Pool pool, uint32_t block_id)
     : impl_(VectorImpl::open(pool, block_id, sizeof(Value), PAGE_SIZE,
                              TABLE_SIZE, SECONDARY_TABLE_SIZE, fill_page)) {}
   ~Vector() {}
