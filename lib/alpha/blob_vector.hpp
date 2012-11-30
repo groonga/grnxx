@@ -25,34 +25,34 @@ namespace alpha {
 
 const uint64_t BLOB_VECTOR_MAX_ID = uint64_t(1) << 40;
 
-const uint64_t BLOB_VECTOR_MAX_SMALL_VALUE_LENGTH  = 7;
+const uint64_t BLOB_VECTOR_SMALL_VALUE_MAX_LENGTH  = 7;
 
-const uint64_t BLOB_VECTOR_MIN_MEDIUM_VALUE_LENGTH =
-    BLOB_VECTOR_MAX_SMALL_VALUE_LENGTH + 1;
-const uint64_t BLOB_VECTOR_MAX_MEDIUM_VALUE_LENGTH = 65535;
+const uint64_t BLOB_VECTOR_MEDIUM_VALUE_MIN_LENGTH =
+    BLOB_VECTOR_SMALL_VALUE_MAX_LENGTH + 1;
+const uint64_t BLOB_VECTOR_MEDIUM_VALUE_MAX_LENGTH = 65535;
 
-const uint64_t BLOB_VECTOR_MIN_LARGE_VALUE_LENGTH  =
-    BLOB_VECTOR_MAX_MEDIUM_VALUE_LENGTH + 1;
+const uint64_t BLOB_VECTOR_LARGE_VALUE_MIN_LENGTH  =
+    BLOB_VECTOR_MEDIUM_VALUE_MAX_LENGTH + 1;
 
 const uint8_t  BLOB_VECTOR_MEDIUM_VALUE_UNIT_SIZE_BITS  = 3;
 const uint64_t BLOB_VECTOR_MEDIUM_VALUE_UNIT_SIZE       =
     uint64_t(1) << BLOB_VECTOR_MEDIUM_VALUE_UNIT_SIZE_BITS;
 
-const uint8_t  BLOB_VECTOR_MEDIUM_VALUE_STORE_PAGE_SIZE_BITS            = 19;
-const uint8_t  BLOB_VECTOR_MEDIUM_VALUE_STORE_TABLE_SIZE_BITS           = 12;
-const uint8_t  BLOB_VECTOR_MEDIUM_VALUE_STORE_SECONDARY_TABLE_SIZE_BITS = 16;
+//const uint8_t  BLOB_VECTOR_MEDIUM_VALUE_STORE_PAGE_SIZE_BITS            = 19;
+//const uint8_t  BLOB_VECTOR_MEDIUM_VALUE_STORE_TABLE_SIZE_BITS           = 12;
+//const uint8_t  BLOB_VECTOR_MEDIUM_VALUE_STORE_SECONDARY_TABLE_SIZE_BITS = 16;
 
-const uint64_t BLOB_VECTOR_MEDIUM_VALUE_STORE_PAGE_SIZE            =
-    uint64_t(1) << BLOB_VECTOR_MEDIUM_VALUE_STORE_PAGE_SIZE_BITS;
-const uint64_t BLOB_VECTOR_MEDIUM_VALUE_STORE_TABLE_SIZE           =
-    uint64_t(1) << BLOB_VECTOR_MEDIUM_VALUE_STORE_TABLE_SIZE_BITS;
-const uint64_t BLOB_VECTOR_MEDIUM_VALUE_STORE_SECONDARY_TABLE_SIZE =
-    uint64_t(1) << BLOB_VECTOR_MEDIUM_VALUE_STORE_SECONDARY_TABLE_SIZE_BITS;
+//const uint64_t BLOB_VECTOR_MEDIUM_VALUE_STORE_PAGE_SIZE            =
+//    uint64_t(1) << BLOB_VECTOR_MEDIUM_VALUE_STORE_PAGE_SIZE_BITS;
+//const uint64_t BLOB_VECTOR_MEDIUM_VALUE_STORE_TABLE_SIZE           =
+//    uint64_t(1) << BLOB_VECTOR_MEDIUM_VALUE_STORE_TABLE_SIZE_BITS;
+//const uint64_t BLOB_VECTOR_MEDIUM_VALUE_STORE_SECONDARY_TABLE_SIZE =
+//    uint64_t(1) << BLOB_VECTOR_MEDIUM_VALUE_STORE_SECONDARY_TABLE_SIZE_BITS;
 
-typedef Vector<char, BLOB_VECTOR_MEDIUM_VALUE_STORE_PAGE_SIZE,
-                     BLOB_VECTOR_MEDIUM_VALUE_STORE_TABLE_SIZE,
-                     BLOB_VECTOR_MEDIUM_VALUE_STORE_SECONDARY_TABLE_SIZE>
-BlobVectorMediumValueStore;
+//typedef Vector<char, BLOB_VECTOR_MEDIUM_VALUE_STORE_PAGE_SIZE,
+//                     BLOB_VECTOR_MEDIUM_VALUE_STORE_TABLE_SIZE,
+//                     BLOB_VECTOR_MEDIUM_VALUE_STORE_SECONDARY_TABLE_SIZE>
+//BlobVectorMediumValueStore;
 
 extern class BlobVectorCreate {} BLOB_VECTOR_CREATE;
 extern class BlobVectorOpen {} BLOB_VECTOR_OPEN;
@@ -74,36 +74,35 @@ class BlobVectorHeader {
   Mutex inter_process_mutex_;
 };
 
-enum BlobVectorValueType : uint8_t {
-  BLOB_VECTOR_VALUE_NULL   = 0x00,
-  BLOB_VECTOR_VALUE_SMALL  = 0x10,
-  BLOB_VECTOR_VALUE_MEDIUM = 0x20,  // TODO: Not implemented yet.
-  BLOB_VECTOR_VALUE_LARGE  = 0x30
+enum BlobVectorType : uint8_t {
+  BLOB_VECTOR_NULL   = 0x00,
+  BLOB_VECTOR_SMALL  = 0x10,
+  BLOB_VECTOR_MEDIUM = 0x20,  // TODO: Not implemented yet.
+  BLOB_VECTOR_LARGE  = 0x30
 };
 
-const uint8_t BLOB_VECTOR_VALUE_TYPE_MASK = 0x30;
+const uint8_t BLOB_VECTOR_TYPE_MASK = 0x30;
 
-StringBuilder &operator<<(StringBuilder &builder,
-                          BlobVectorValueType value_type);
+StringBuilder &operator<<(StringBuilder &builder, BlobVectorType type);
 
 // TODO: Not implemented yet.
-enum BlobVectorValueAttribute : uint8_t {
-  BLOB_VECTOR_VALUE_APPENDABLE  = 0x00,
-  BLOB_VECTOR_VALUE_PREPENDABLE = 0x40
+enum BlobVectorAttribute : uint8_t {
+  BLOB_VECTOR_APPENDABLE  = 0x00,
+  BLOB_VECTOR_PREPENDABLE = 0x40
 };
 
-const uint8_t BLOB_VECTOR_VALUE_ATTRIBUTE_MASK = 0x40;
+const uint8_t BLOB_VECTOR_ATTRIBUTE_MASK = 0x40;
 
 StringBuilder &operator<<(StringBuilder &builder,
-                          BlobVectorValueAttribute value_attribute);
+                          BlobVectorAttribute attribute);
 
 const uint8_t BLOB_VECTOR_CELL_FLAGS_MASK = 0xF0;
 
-class BlobVectorNullValueCell {
+class BlobVectorNullValue {
  public:
-  explicit BlobVectorNullValueCell(BlobVectorValueAttribute attribute)
+  explicit BlobVectorNullValue(BlobVectorAttribute attribute)
     : qword_(0) {
-    bytes_[0] = BLOB_VECTOR_VALUE_NULL | attribute;
+    bytes_[0] = BLOB_VECTOR_NULL | attribute;
   }
 
  private:
@@ -113,11 +112,11 @@ class BlobVectorNullValueCell {
   };
 };
 
-class BlobVectorSmallValueCell {
+class BlobVectorSmallValue {
  public:
-  BlobVectorSmallValueCell(const void *ptr, uint64_t length,
-                           BlobVectorValueAttribute attribute) : qword_(0) {
-    bytes_[0] = BLOB_VECTOR_VALUE_SMALL | attribute |
+  BlobVectorSmallValue(const void *ptr, uint64_t length,
+                       BlobVectorAttribute attribute) : qword_(0) {
+    bytes_[0] = BLOB_VECTOR_SMALL | attribute |
                 static_cast<uint8_t>(length);
     std::memcpy(&bytes_[1], ptr, length);
   }
@@ -136,11 +135,11 @@ class BlobVectorSmallValueCell {
   };
 };
 
-class BlobVectorMediumValueCell {
+class BlobVectorMediumValue {
  public:
-  BlobVectorMediumValueCell(uint64_t offset, uint64_t length,
-                            BlobVectorValueAttribute attribute) : qword_(0) {
-    bytes_[0] = BLOB_VECTOR_VALUE_MEDIUM | attribute |
+  BlobVectorMediumValue(uint64_t offset, uint64_t length,
+                        BlobVectorAttribute attribute) : qword_(0) {
+    bytes_[0] = BLOB_VECTOR_MEDIUM | attribute |
                 static_cast<uint8_t>(offset >> 40);
     bytes_[1] = static_cast<uint8_t>(offset >> 32);
     words_[1] = static_cast<uint16_t>(length);
@@ -165,11 +164,11 @@ class BlobVectorMediumValueCell {
   };
 };
 
-class BlobVectorLargeValueCell {
+class BlobVectorLargeValue {
  public:
-  BlobVectorLargeValueCell(uint32_t block_id,
-                           BlobVectorValueAttribute attribute) : qword_(0) {
-    bytes_[0] = BLOB_VECTOR_VALUE_LARGE | attribute;
+  BlobVectorLargeValue(uint32_t block_id,
+                       BlobVectorAttribute attribute) : qword_(0) {
+    bytes_[0] = BLOB_VECTOR_LARGE | attribute;
     dwords_[1] = block_id;
   }
 
@@ -189,45 +188,45 @@ class BlobVectorCell {
  public:
   BlobVectorCell() : qword_(0) {}
 
-  BlobVectorCell &operator=(const BlobVectorNullValueCell &rhs) {
-    null_value_cell_ = rhs;
+  BlobVectorCell &operator=(const BlobVectorNullValue &rhs) {
+    null_value_ = rhs;
     return *this;
   }
-  BlobVectorCell &operator=(const BlobVectorSmallValueCell &rhs) {
-    small_value_cell_ = rhs;
+  BlobVectorCell &operator=(const BlobVectorSmallValue &rhs) {
+    small_value_ = rhs;
     return *this;
   }
-  BlobVectorCell &operator=(const BlobVectorMediumValueCell &rhs) {
-    medium_value_cell_ = rhs;
+  BlobVectorCell &operator=(const BlobVectorMediumValue &rhs) {
+    medium_value_ = rhs;
     return *this;
   }
-  BlobVectorCell &operator=(const BlobVectorLargeValueCell &rhs) {
-    large_value_cell_ = rhs;
+  BlobVectorCell &operator=(const BlobVectorLargeValue &rhs) {
+    large_value_ = rhs;
     return *this;
   }
 
-  BlobVectorValueType value_type() const {
+  BlobVectorType type() const {
     Flags flags;
-    flags.byte = flags_.byte & BLOB_VECTOR_VALUE_TYPE_MASK;
-    return flags.value_type;
+    flags.byte = flags_.byte & BLOB_VECTOR_TYPE_MASK;
+    return flags.type;
   }
-  BlobVectorValueAttribute value_attribute() const {
+  BlobVectorAttribute attribute() const {
     Flags flags;
-    flags.byte = flags_.byte & BLOB_VECTOR_VALUE_ATTRIBUTE_MASK;
-    return flags.value_attribute;
+    flags.byte = flags_.byte & BLOB_VECTOR_ATTRIBUTE_MASK;
+    return flags.attribute;
   };
 
-  const BlobVectorNullValueCell &null() const {
-    return null_value_cell_;
+  const BlobVectorNullValue &null() const {
+    return null_value_;
   }
-  const BlobVectorSmallValueCell &small() const {
-    return small_value_cell_;
+  const BlobVectorSmallValue &small() const {
+    return small_value_;
   }
-  const BlobVectorMediumValueCell &medium() const {
-    return medium_value_cell_;
+  const BlobVectorMediumValue &medium() const {
+    return medium_value_;
   }
-  const BlobVectorLargeValueCell &large() const {
-    return large_value_cell_;
+  const BlobVectorLargeValue &large() const {
+    return large_value_;
   }
 
   StringBuilder &write_to(StringBuilder &builder) const;
@@ -235,17 +234,17 @@ class BlobVectorCell {
  private:
   union Flags {
     uint8_t byte;
-    BlobVectorValueType value_type;
-    BlobVectorValueAttribute value_attribute;
+    BlobVectorType type;
+    BlobVectorAttribute attribute;
   };
 
   union {
     Flags flags_;
     uint64_t qword_;
-    BlobVectorNullValueCell null_value_cell_;
-    BlobVectorSmallValueCell small_value_cell_;
-    BlobVectorMediumValueCell medium_value_cell_;
-    BlobVectorLargeValueCell large_value_cell_;
+    BlobVectorNullValue null_value_;
+    BlobVectorSmallValue small_value_;
+    BlobVectorMediumValue medium_value_;
+    BlobVectorLargeValue large_value_;
   };
 };
 
@@ -261,7 +260,8 @@ class BlobVectorImpl {
   const void *get_value(uint64_t id, uint64_t *length);
 
   void set_value(uint64_t id, const void *ptr, uint64_t length,
-                 uint64_t capacity, BlobVectorValueAttribute value_attribute);
+                 uint64_t capacity = 0,
+                 BlobVectorAttribute attribute = BLOB_VECTOR_APPENDABLE);
 
   // TODO
 
@@ -285,6 +285,15 @@ class BlobVectorImpl {
 
   void create_vector(io::Pool pool);
   void open_vector(io::Pool pool, uint32_t block_id);
+
+  BlobVectorMediumValue create_medium_value(
+      const void *ptr, uint64_t length, uint64_t capacity,
+      BlobVectorAttribute attribute);
+  BlobVectorLargeValue create_large_value(
+      const void *ptr, uint64_t length, uint64_t capacity,
+      BlobVectorAttribute attribute);
+
+  void free_value(BlobVectorCell cell);
 };
 
 inline StringBuilder &operator<<(StringBuilder &builder,
