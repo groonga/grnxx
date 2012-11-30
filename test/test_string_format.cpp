@@ -18,6 +18,7 @@
 #include <cassert>
 #include <iomanip>
 #include <iostream>
+#include <sstream>
 
 #include "logger.hpp"
 #include "string_format.hpp"
@@ -106,29 +107,6 @@ void test_align_center() {
   assert(builder.str() == "xx901xx");
 }
 
-class StreamBuffer : public std::streambuf {
- public:
-  StreamBuffer(void *buf_ptr, std::size_t buf_size) : std::streambuf() {
-    setp(static_cast<char *>(buf_ptr),
-         static_cast<char *>(buf_ptr) + buf_size);
-  }
-
-  virtual int overflow(int) {
-    return EOF;
-  }
-};
-
-class Stream : public std::ostream {
- public:
-  Stream(void *buf_ptr, std::size_t buf_size)
-    : std::ostream(), stream_buffer_(buf_ptr, buf_size) {
-    rdbuf(&stream_buffer_);
-  }
-
- private:
-  StreamBuffer stream_buffer_;
-};
-
 void benchmark() {
   static const std::uint32_t LOOP_COUNT = 1 << 16;
 
@@ -164,7 +142,8 @@ void benchmark() {
 
   start = grnxx::Time::now();
   for (std::uint32_t i = 0; i < LOOP_COUNT; ++i) {
-    Stream stream(buf, sizeof(buf));
+    std::stringstream stream;
+    stream.rdbuf()->pubsetbuf(buf, sizeof(buf));
     stream << __LINE__;
   }
   end = grnxx::Time::now();
@@ -173,7 +152,8 @@ void benchmark() {
 
   start = grnxx::Time::now();
   for (std::uint32_t i = 0; i < LOOP_COUNT; ++i) {
-    Stream stream(buf, sizeof(buf));
+    std::stringstream stream;
+    stream.rdbuf()->pubsetbuf(buf, sizeof(buf));
     stream << std::setw(4) << std::setfill('0') << __LINE__;
   }
   end = grnxx::Time::now();
@@ -182,7 +162,8 @@ void benchmark() {
 
   start = grnxx::Time::now();
   for (std::uint32_t i = 0; i < LOOP_COUNT; ++i) {
-    Stream stream(buf, sizeof(buf));
+    std::stringstream stream;
+    stream.rdbuf()->pubsetbuf(buf, sizeof(buf));
     stream << __FILE__ << ':' << __LINE__ << ": " << "error" << ": In "
            << __func__ << "(): " << "failed";
   }
