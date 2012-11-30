@@ -99,7 +99,11 @@ void ViewImpl::sync(uint64_t offset, uint64_t size) {
 ViewImpl::ViewImpl()
   : file_(), flags_(), address_(MAP_FAILED), offset_(0), size_(0) {}
 
+#ifdef MAP_HUGETLB
 void ViewImpl::map_on_memory(Flags flags, uint64_t size) {
+#else  // MAP_HUGETLB
+void ViewImpl::map_on_memory(Flags, uint64_t size) {
+#endif  // MAP_HUGETLB
   if ((size == 0) || (size > std::numeric_limits<size_t>::max())) {
     GRNXX_ERROR() << "invalid argument: size = " << size << ": (0, "
                   << std::numeric_limits<size_t>::max() << ']';
