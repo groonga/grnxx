@@ -164,21 +164,21 @@ void test_times() {
     vector[id] = T(0);
   }
   end = grnxx::Time::now();
-  grnxx::Duration set_1st_elapsed = (end - start) / VECTOR_SIZE;
+  double set_1st_elapsed = 1.0 * (end - start).nanoseconds() / VECTOR_SIZE;
 
   start = grnxx::Time::now();
   for (std::uint64_t id = 0; id < VECTOR_SIZE; ++id) {
     vector[id] = T(1);
   }
   end = grnxx::Time::now();
-  grnxx::Duration set_2nd_elapsed = (end - start) / VECTOR_SIZE;
+  double set_2nd_elapsed = 1.0 * (end - start).nanoseconds() / VECTOR_SIZE;
 
   start = grnxx::Time::now();
   for (std::uint64_t id = 0; id < VECTOR_SIZE; ++id) {
     total += vector[id];
   }
   end = grnxx::Time::now();
-  grnxx::Duration get_elapsed = (end - start) / VECTOR_SIZE;
+  double get_elapsed = 1.0 * (end - start).nanoseconds() / VECTOR_SIZE;
 
 
   start = grnxx::Time::now();
@@ -187,7 +187,7 @@ void test_times() {
     vector[id] = T(0);
   }
   end = grnxx::Time::now();
-  grnxx::Duration ex_set_1st_elapsed = (end - start) / VECTOR_SIZE;
+  double ex_set_1st_elapsed = 1.0 * (end - start).nanoseconds() / VECTOR_SIZE;
 
   start = grnxx::Time::now();
   for (std::uint64_t id = vector.id_max() - VECTOR_SIZE + 1;
@@ -195,7 +195,7 @@ void test_times() {
     vector[id] = T(1);
   }
   end = grnxx::Time::now();
-  grnxx::Duration ex_set_2nd_elapsed = (end - start) / VECTOR_SIZE;
+  double ex_set_2nd_elapsed = 1.0 * (end - start).nanoseconds() / VECTOR_SIZE;
 
   start = grnxx::Time::now();
   for (std::uint64_t id = vector.id_max() - VECTOR_SIZE + 1;
@@ -203,7 +203,7 @@ void test_times() {
     total += vector[id];
   }
   end = grnxx::Time::now();
-  grnxx::Duration ex_get_elapsed = (end - start) / VECTOR_SIZE;
+  double ex_get_elapsed = 1.0 * (end - start).nanoseconds() / VECTOR_SIZE;
 
 
   const std::uint64_t boundary = vector.page_size() * vector.table_size();
@@ -226,21 +226,24 @@ void test_times() {
     vector[ids[i]] = T(0);
   }
   end = grnxx::Time::now();
-  grnxx::Duration boundary_set_1st_elapsed = (end - start) / VECTOR_SIZE;
+  double boundary_set_1st_elapsed =
+      1.0 * (end - start).nanoseconds() / VECTOR_SIZE;
 
   start = grnxx::Time::now();
   for (int i = 0; i < VECTOR_SIZE; ++i) {
     vector[ids[i]] = T(1);
   }
   end = grnxx::Time::now();
-  grnxx::Duration boundary_set_2nd_elapsed = (end - start) / VECTOR_SIZE;
+  double boundary_set_2nd_elapsed =
+      1.0 * (end - start).nanoseconds() / VECTOR_SIZE;
 
   start = grnxx::Time::now();
   for (int i = 0; i < VECTOR_SIZE; ++i) {
     total += vector[ids[i]];
   }
   end = grnxx::Time::now();
-  grnxx::Duration boundary_get_elapsed = (end - start) / VECTOR_SIZE;
+  double boundary_get_elapsed =
+      1.0 * (end - start).nanoseconds() / VECTOR_SIZE;
 
   const std::uint32_t block_id = vector.block_id();
   vector.close();
@@ -249,7 +252,7 @@ void test_times() {
   start = grnxx::Time::now();
   grnxx::db::Vector<T>::unlink(&pool, block_id);
   end = grnxx::Time::now();
-  grnxx::Duration unlink_elapsed = end - start;
+  double unlink_elapsed = (end - start).nanoseconds();
 
 
   vector.create(&pool, 0);
@@ -259,29 +262,21 @@ void test_times() {
     vector[id] = T(0);
   }
   end = grnxx::Time::now();
-  grnxx::Duration default_elapsed = (end - start) / VECTOR_SIZE;
+  double default_elapsed = 1.0 * (end - start).nanoseconds() / VECTOR_SIZE;
 
 
-  GRNXX_NOTICE() << "elapsed [ns]: set = "
-                 << set_2nd_elapsed.nanoseconds() << " ("
-                 << set_1st_elapsed.nanoseconds() << ", "
-                 << default_elapsed.nanoseconds() << ')'
-                 << ", get = "
-                 << get_elapsed.nanoseconds()
-                 << ", ex. set = "
-                 << ex_set_2nd_elapsed.nanoseconds() << " ("
-                 << ex_set_1st_elapsed.nanoseconds() << ')'
-                 << ", ex. get = "
-                 << ex_get_elapsed.nanoseconds()
-                 << ", boundary set = "
-                 << boundary_set_2nd_elapsed.nanoseconds() << " ("
-                 << boundary_set_1st_elapsed.nanoseconds() << ')'
-                 << ", boundary get = "
-                 << boundary_get_elapsed.nanoseconds()
-                 << ", unlink = "
-                 << unlink_elapsed.nanoseconds()
-                 << ", total = "
-                 << total;
+  GRNXX_NOTICE() << "elapsed [ns]: set = " << set_2nd_elapsed << " ("
+                                           << set_1st_elapsed << ", "
+                                           << default_elapsed << ')'
+                 << ", get = " << get_elapsed
+                 << ", ex. set = " << ex_set_2nd_elapsed << " ("
+                                   << ex_set_1st_elapsed << ')'
+                 << ", ex. get = " << ex_get_elapsed
+                 << ", boundary set = " << boundary_set_2nd_elapsed << " ("
+                                        << boundary_set_1st_elapsed << ')'
+                 << ", boundary get = " << boundary_get_elapsed
+                 << ", unlink = " << unlink_elapsed
+                 << ", total = " << total;
 }
 
 int main() {
