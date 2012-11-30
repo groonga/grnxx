@@ -23,9 +23,11 @@
 
 namespace grnxx {
 
+const int64_t TIME_INVALID_NANOSECONDS = std::numeric_limits<int64_t>::min();
+
 class Time {
  public:
-  Time() : nanoseconds_(INVALID_NANOSECONDS) {}
+  Time() : nanoseconds_(TIME_INVALID_NANOSECONDS) {}
   explicit Time(int64_t nanoseconds) : nanoseconds_(nanoseconds) {}
 
   static Time now();
@@ -36,7 +38,7 @@ class Time {
   }
 
   GRNXX_EXPLICIT_CONVERSION operator bool() const {
-    return nanoseconds_ != INVALID_NANOSECONDS;
+    return nanoseconds_ != TIME_INVALID_NANOSECONDS;
   }
 
   int64_t nanoseconds() const {
@@ -50,9 +52,6 @@ class Time {
 
  private:
   int64_t nanoseconds_;
-
-  static const int64_t INVALID_NANOSECONDS =
-      std::numeric_limits<int64_t>::min();
 
   // Copyable.
 };
