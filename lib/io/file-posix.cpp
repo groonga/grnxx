@@ -25,6 +25,8 @@
 #include <errno.h>
 #include <fcntl.h>
 
+#include <algorithm>
+
 #include "../error.hpp"
 #include "../exception.hpp"
 #include "../logger.hpp"
