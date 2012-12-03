@@ -64,6 +64,13 @@ class BlobVectorHeader {
   uint32_t cells_block_id() const {
     return cells_block_id_;
   }
+  uint32_t latest_large_value_block_id() const {
+    return latest_large_value_block_id_;
+  }
+
+  void set_latest_large_value_block_id(uint32_t value) {
+    latest_large_value_block_id_ = value;
+  }
 
   Mutex *mutable_inter_process_mutex() {
     return &inter_process_mutex_;
@@ -71,6 +78,7 @@ class BlobVectorHeader {
 
  private:
   uint32_t cells_block_id_;
+  uint32_t latest_large_value_block_id_;
   Mutex inter_process_mutex_;
 };
 
@@ -84,6 +92,34 @@ enum BlobVectorType : uint8_t {
 const uint8_t BLOB_VECTOR_TYPE_MASK = 0x30;
 
 StringBuilder &operator<<(StringBuilder &builder, BlobVectorType type);
+
+class BlobVectorLargeValueHeader {
+ public:
+  uint64_t length() const {
+    return length_;
+  }
+  uint32_t next_value_block_id() const {
+    return next_value_block_id_;
+  }
+  uint32_t prev_value_block_id() const {
+    return prev_value_block_id_;
+  }
+
+  void set_length(uint64_t value) {
+    length_ = value;
+  }
+  void set_next_value_block_id(uint32_t value) {
+    next_value_block_id_ = value;
+  }
+  void set_prev_value_block_id(uint32_t value) {
+    prev_value_block_id_ = value;
+  }
+
+ private:
+  uint64_t length_;
+  uint32_t next_value_block_id_;
+  uint32_t prev_value_block_id_;
+};
 
 // TODO: Not implemented yet.
 enum BlobVectorAttribute : uint8_t {
@@ -294,6 +330,18 @@ class BlobVectorImpl {
       BlobVectorAttribute attribute);
 
   void free_value(BlobVectorCell cell);
+
+  void register_large_value(uint32_t block_id,
+                            BlobVectorLargeValueHeader *value_header);
+  void unregister_large_value(uint32_t block_id,
+                              BlobVectorLargeValueHeader *value_header);
+
+  Mutex *mutable_inter_thread_mutex() {
+    return &inter_thread_mutex_;
+  }
+  Mutex *mutable_inter_process_mutex() {
+    return header_->mutable_inter_process_mutex();
+  }
 };
 
 inline StringBuilder &operator<<(StringBuilder &builder,

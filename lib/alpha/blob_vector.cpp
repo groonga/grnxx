@@ -26,6 +26,7 @@ namespace alpha {
 
 BlobVectorHeader::BlobVectorHeader(uint32_t cells_block_id)
   : cells_block_id_(cells_block_id),
+    latest_large_value_block_id_(io::BLOCK_INVALID_ID),
     inter_process_mutex_() {}
 
 StringBuilder &operator<<(StringBuilder &builder, BlobVectorType type) {
@@ -112,12 +113,13 @@ const void *BlobVectorImpl::get_value(uint64_t id, uint64_t *length) {
       return nullptr;
     }
     case BLOB_VECTOR_LARGE: {
-      void * const block_address =
-          pool_.get_block_address(cell.large().block_id());
+      const BlobVectorLargeValueHeader *value_header =
+          static_cast<const BlobVectorLargeValueHeader *>(
+              pool_.get_block_address(cell.large().block_id()));
       if (length) {
-        *length = *static_cast<uint64_t *>(block_address);
+        *length = value_header->length();
       }
-      return static_cast<uint64_t *>(block_address) + 1;
+      return value_header + 1;
     }
     default: {
       GRNXX_ERROR() << "invalid value type";
@@ -177,10 +179,13 @@ BlobVectorLargeValue BlobVectorImpl::create_large_value(
     const void *ptr, uint64_t length, uint64_t capacity,
     BlobVectorAttribute attribute) {
   const io::BlockInfo *block_info =
-      pool_.create_block(sizeof(uint64_t) + capacity);
-  void * const block_address = pool_.get_block_address(*block_info);
-  *static_cast<uint64_t *>(block_address) = length;
-  std::memcpy(static_cast<uint64_t *>(block_address) + 1, ptr, length);
+      pool_.create_block(sizeof(BlobVectorLargeValueHeader) + capacity);
+  BlobVectorLargeValueHeader *value_header =
+      static_cast<BlobVectorLargeValueHeader *>(
+          pool_.get_block_address(*block_info));
+  value_header->set_length(length);
+  std::memcpy(value_header + 1, ptr, length);
+  register_large_value(block_info->id(), value_header);
   return BlobVectorLargeValue(block_info->id(), attribute);
 }
 
@@ -194,9 +199,51 @@ void BlobVectorImpl::free_value(BlobVectorCell cell) {
       break;
     }
     case BLOB_VECTOR_LARGE: {
-      pool_.free_block(cell.large().block_id());
+      const io::BlockInfo * const block_info =
+          pool_.get_block_info(cell.large().block_id());
+      unregister_large_value(block_info->id(),
+          static_cast<BlobVectorLargeValueHeader *>(
+              pool_.get_block_address(*block_info)));
+      pool_.free_block(*block_info);
       break;
     }
+  }
+}
+
+void BlobVectorImpl::register_large_value(uint32_t block_id,
+    BlobVectorLargeValueHeader *value_header) {
+  Lock lock(mutable_inter_process_mutex());
+  if (header_->latest_large_value_block_id() == io::BLOCK_INVALID_ID) {
+    value_header->set_next_value_block_id(block_id);
+    value_header->set_prev_value_block_id(block_id);
+  } else {
+    const uint32_t prev_id = header_->latest_large_value_block_id();
+    auto prev_header = static_cast<BlobVectorLargeValueHeader *>(
+        pool_.get_block_address(prev_id));
+    const uint32_t next_id = prev_header->next_value_block_id();
+    auto next_header = static_cast<BlobVectorLargeValueHeader *>(
+        pool_.get_block_address(next_id));
+    value_header->set_next_value_block_id(next_id);
+    value_header->set_prev_value_block_id(prev_id);
+    prev_header->set_next_value_block_id(block_id);
+    next_header->set_prev_value_block_id(block_id);
+  }
+  header_->set_latest_large_value_block_id(block_id);
+}
+
+void BlobVectorImpl::unregister_large_value(uint32_t block_id,
+    BlobVectorLargeValueHeader *value_header) {
+  Lock lock(mutable_inter_process_mutex());
+  const uint32_t next_id = value_header->next_value_block_id();
+  const uint32_t prev_id = value_header->prev_value_block_id();
+  auto next_header = static_cast<BlobVectorLargeValueHeader *>(
+      pool_.get_block_address(next_id));
+  auto prev_header = static_cast<BlobVectorLargeValueHeader *>(
+      pool_.get_block_address(prev_id));
+  next_header->set_prev_value_block_id(prev_id);
+  prev_header->set_next_value_block_id(next_id);
+  if (block_id == header_->latest_large_value_block_id()) {
+    header_->set_latest_large_value_block_id(prev_id);
   }
 }
 
@@ -210,7 +257,21 @@ StringBuilder &BlobVectorImpl::write_to(StringBuilder &builder) const {
 }
 
 void BlobVectorImpl::unlink(io::Pool pool, uint32_t block_id) {
-  // TODO
+  std::unique_ptr<BlobVectorImpl> vector =
+      BlobVectorImpl::open(pool, block_id);
+
+  if (vector->header_->latest_large_value_block_id() != io::BLOCK_INVALID_ID) {
+    uint32_t block_id = vector->header_->latest_large_value_block_id();
+    do {
+      auto value_header = static_cast<const BlobVectorLargeValueHeader *>(
+          pool.get_block_address(block_id));
+      const uint32_t prev_block_id = value_header->prev_value_block_id();
+      pool.free_block(block_id);
+      block_id = prev_block_id;
+    } while (block_id != vector->header_->latest_large_value_block_id());
+  }
+  Vector<BlobVectorCell>::unlink(pool, vector->header_->cells_block_id());
+  pool.free_block(vector->block_info_->id());
 }
 
 BlobVectorImpl::BlobVectorImpl()
