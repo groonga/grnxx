@@ -24,6 +24,7 @@ libtool
 ltmain.sh
 missing
 stamp-h1
+test/test_alpha_blob_vector
 test/test_alpha_vector
 test/test_backtrace
 test/test_db_array
