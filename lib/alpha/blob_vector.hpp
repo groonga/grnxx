@@ -93,6 +93,33 @@ const uint8_t BLOB_VECTOR_TYPE_MASK = 0x30;
 
 StringBuilder &operator<<(StringBuilder &builder, BlobVectorType type);
 
+class BlobVectorMediumValueHeader {
+ public:
+  uint64_t value_id() const {
+    return dwords_[0] | (static_cast<uint64_t>(bytes_[4]) << 32);
+  }
+  uint64_t capacity() const {
+    return static_cast<uint64_t>(words_[3])
+        << BLOB_VECTOR_MEDIUM_VALUE_UNIT_SIZE_BITS;
+  }
+
+  void set_value_id(uint64_t value) {
+    dwords_[0] = static_cast<uint32_t>(value);
+    bytes_[4] = static_cast<uint8_t>(value >> 32);
+  }
+  void set_capacity(uint64_t value) {
+    words_[3] = static_cast<uint16_t>(
+        value >> BLOB_VECTOR_MEDIUM_VALUE_UNIT_SIZE_BITS);
+  }
+
+ private:
+  union {
+    uint8_t bytes_[8];
+    uint16_t words_[4];
+    uint32_t dwords_[2];
+  };
+};
+
 class BlobVectorLargeValueHeader {
  public:
   uint64_t length() const {
