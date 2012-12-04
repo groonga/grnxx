@@ -34,25 +34,25 @@ const uint64_t BLOB_VECTOR_MEDIUM_VALUE_MAX_LENGTH = 65535;
 const uint64_t BLOB_VECTOR_LARGE_VALUE_MIN_LENGTH  =
     BLOB_VECTOR_MEDIUM_VALUE_MAX_LENGTH + 1;
 
-const uint8_t  BLOB_VECTOR_MEDIUM_VALUE_UNIT_SIZE_BITS  = 3;
-const uint64_t BLOB_VECTOR_MEDIUM_VALUE_UNIT_SIZE       =
-    uint64_t(1) << BLOB_VECTOR_MEDIUM_VALUE_UNIT_SIZE_BITS;
+const uint8_t  BLOB_VECTOR_UNIT_SIZE_BITS  = 3;
+const uint64_t BLOB_VECTOR_UNIT_SIZE       =
+    uint64_t(1) << BLOB_VECTOR_UNIT_SIZE_BITS;
 
-//const uint8_t  BLOB_VECTOR_MEDIUM_VALUE_STORE_PAGE_SIZE_BITS            = 19;
-//const uint8_t  BLOB_VECTOR_MEDIUM_VALUE_STORE_TABLE_SIZE_BITS           = 12;
-//const uint8_t  BLOB_VECTOR_MEDIUM_VALUE_STORE_SECONDARY_TABLE_SIZE_BITS = 16;
+const uint8_t  BLOB_VECTOR_VALUE_STORE_PAGE_SIZE_BITS            = 19;
+const uint8_t  BLOB_VECTOR_VALUE_STORE_TABLE_SIZE_BITS           = 12;
+const uint8_t  BLOB_VECTOR_VALUE_STORE_SECONDARY_TABLE_SIZE_BITS = 16;
 
-//const uint64_t BLOB_VECTOR_MEDIUM_VALUE_STORE_PAGE_SIZE            =
-//    uint64_t(1) << BLOB_VECTOR_MEDIUM_VALUE_STORE_PAGE_SIZE_BITS;
-//const uint64_t BLOB_VECTOR_MEDIUM_VALUE_STORE_TABLE_SIZE           =
-//    uint64_t(1) << BLOB_VECTOR_MEDIUM_VALUE_STORE_TABLE_SIZE_BITS;
-//const uint64_t BLOB_VECTOR_MEDIUM_VALUE_STORE_SECONDARY_TABLE_SIZE =
-//    uint64_t(1) << BLOB_VECTOR_MEDIUM_VALUE_STORE_SECONDARY_TABLE_SIZE_BITS;
+const uint64_t BLOB_VECTOR_VALUE_STORE_PAGE_SIZE            =
+    uint64_t(1) << BLOB_VECTOR_VALUE_STORE_PAGE_SIZE_BITS;
+const uint64_t BLOB_VECTOR_VALUE_STORE_TABLE_SIZE           =
+    uint64_t(1) << BLOB_VECTOR_VALUE_STORE_TABLE_SIZE_BITS;
+const uint64_t BLOB_VECTOR_VALUE_STORE_SECONDARY_TABLE_SIZE =
+    uint64_t(1) << BLOB_VECTOR_VALUE_STORE_SECONDARY_TABLE_SIZE_BITS;
 
-//typedef Vector<char, BLOB_VECTOR_MEDIUM_VALUE_STORE_PAGE_SIZE,
-//                     BLOB_VECTOR_MEDIUM_VALUE_STORE_TABLE_SIZE,
-//                     BLOB_VECTOR_MEDIUM_VALUE_STORE_SECONDARY_TABLE_SIZE>
-//BlobVectorMediumValueStore;
+typedef Vector<char, BLOB_VECTOR_VALUE_STORE_PAGE_SIZE,
+                     BLOB_VECTOR_VALUE_STORE_TABLE_SIZE,
+                     BLOB_VECTOR_VALUE_STORE_SECONDARY_TABLE_SIZE>
+BlobVectorValueStore;
 
 extern class BlobVectorCreate {} BLOB_VECTOR_CREATE;
 extern class BlobVectorOpen {} BLOB_VECTOR_OPEN;
@@ -64,10 +64,22 @@ class BlobVectorHeader {
   uint32_t cells_block_id() const {
     return cells_block_id_;
   }
+  uint32_t value_store_block_id() const {
+    return value_store_block_id_;
+  }
+  uint64_t next_medium_value_offset() const {
+    return next_medium_value_offset_;
+  }
   uint32_t latest_large_value_block_id() const {
     return latest_large_value_block_id_;
   }
 
+  void set_value_store_block_id(uint32_t value) {
+    value_store_block_id_ = value;
+  }
+  void set_next_medium_value_offset(uint64_t value) {
+    next_medium_value_offset_ = value;
+  }
   void set_latest_large_value_block_id(uint32_t value) {
     latest_large_value_block_id_ = value;
   }
@@ -78,6 +90,8 @@ class BlobVectorHeader {
 
  private:
   uint32_t cells_block_id_;
+  uint32_t value_store_block_id_;
+  uint64_t next_medium_value_offset_;
   uint32_t latest_large_value_block_id_;
   Mutex inter_process_mutex_;
 };
@@ -85,7 +99,7 @@ class BlobVectorHeader {
 enum BlobVectorType : uint8_t {
   BLOB_VECTOR_NULL   = 0x00,
   BLOB_VECTOR_SMALL  = 0x10,
-  BLOB_VECTOR_MEDIUM = 0x20,  // TODO: Not implemented yet.
+  BLOB_VECTOR_MEDIUM = 0x20,
   BLOB_VECTOR_LARGE  = 0x30
 };
 
@@ -99,8 +113,7 @@ class BlobVectorMediumValueHeader {
     return dwords_[0] | (static_cast<uint64_t>(bytes_[4]) << 32);
   }
   uint64_t capacity() const {
-    return static_cast<uint64_t>(words_[3])
-        << BLOB_VECTOR_MEDIUM_VALUE_UNIT_SIZE_BITS;
+    return static_cast<uint64_t>(words_[3]) << BLOB_VECTOR_UNIT_SIZE_BITS;
   }
 
   void set_value_id(uint64_t value) {
@@ -108,8 +121,7 @@ class BlobVectorMediumValueHeader {
     bytes_[4] = static_cast<uint8_t>(value >> 32);
   }
   void set_capacity(uint64_t value) {
-    words_[3] = static_cast<uint16_t>(
-        value >> BLOB_VECTOR_MEDIUM_VALUE_UNIT_SIZE_BITS);
+    words_[3] = static_cast<uint16_t>(value >> BLOB_VECTOR_UNIT_SIZE_BITS);
   }
 
  private:
@@ -342,6 +354,7 @@ class BlobVectorImpl {
   BlobVectorHeader *header_;
   Recycler *recycler_;
   Vector<BlobVectorCell> cells_;
+  BlobVectorValueStore value_store_;
   Mutex inter_thread_mutex_;
 
   BlobVectorImpl();
@@ -350,10 +363,10 @@ class BlobVectorImpl {
   void open_vector(io::Pool pool, uint32_t block_id);
 
   BlobVectorMediumValue create_medium_value(
-      const void *ptr, uint64_t length, uint64_t capacity,
+      uint32_t id, const void *ptr, uint64_t length, uint64_t capacity,
       BlobVectorAttribute attribute);
   BlobVectorLargeValue create_large_value(
-      const void *ptr, uint64_t length, uint64_t capacity,
+      uint32_t id, const void *ptr, uint64_t length, uint64_t capacity,
       BlobVectorAttribute attribute);
 
   void free_value(BlobVectorCell cell);

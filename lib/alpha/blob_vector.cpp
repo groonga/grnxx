@@ -26,6 +26,8 @@ namespace alpha {
 
 BlobVectorHeader::BlobVectorHeader(uint32_t cells_block_id)
   : cells_block_id_(cells_block_id),
+    value_store_block_id_(io::BLOCK_INVALID_ID),
+    next_medium_value_offset_(0),
     latest_large_value_block_id_(io::BLOCK_INVALID_ID),
     inter_process_mutex_() {}
 
@@ -109,8 +111,17 @@ const void *BlobVectorImpl::get_value(uint64_t id, uint64_t *length) {
       return cells_[id].small().value();
     }
     case BLOB_VECTOR_MEDIUM: {
-      // TODO: Not implemented yet.
-      return nullptr;
+      if (!value_store_) {
+        Lock lock(mutable_inter_thread_mutex());
+        if (!value_store_) {
+          value_store_ = BlobVectorValueStore(
+              VECTOR_OPEN, pool_, header_->value_store_block_id());
+        }
+      }
+      if (length) {
+        *length = cell.medium().length();
+      }
+      return &value_store_[cell.medium().offset()];
     }
     case BLOB_VECTOR_LARGE: {
       const BlobVectorLargeValueHeader *value_header =
@@ -147,9 +158,9 @@ void BlobVectorImpl::set_value(uint64_t id, const void *ptr, uint64_t length,
     if (capacity < BLOB_VECTOR_MEDIUM_VALUE_MIN_LENGTH) {
       new_cell = BlobVectorSmallValue(ptr, length, attribute);
     } else if (capacity < BLOB_VECTOR_LARGE_VALUE_MIN_LENGTH) {
-      new_cell = create_medium_value(ptr, length, capacity, attribute);
+      new_cell = create_medium_value(id, ptr, length, capacity, attribute);
     } else {
-      new_cell = create_large_value(ptr, length, capacity, attribute);
+      new_cell = create_large_value(id, ptr, length, capacity, attribute);
     }
   }
 
@@ -166,17 +177,121 @@ void BlobVectorImpl::set_value(uint64_t id, const void *ptr, uint64_t length,
   free_value(old_cell);
 }
 
+StringBuilder &BlobVectorImpl::write_to(StringBuilder &builder) const {
+  if (!builder) {
+    return builder;
+  }
+
+  // TODO
+  return builder;
+}
+
+void BlobVectorImpl::unlink(io::Pool pool, uint32_t block_id) {
+  std::unique_ptr<BlobVectorImpl> vector =
+      BlobVectorImpl::open(pool, block_id);
+
+  if (vector->header_->latest_large_value_block_id() != io::BLOCK_INVALID_ID) {
+    uint32_t block_id = vector->header_->latest_large_value_block_id();
+    do {
+      auto value_header = static_cast<const BlobVectorLargeValueHeader *>(
+          pool.get_block_address(block_id));
+      const uint32_t prev_block_id = value_header->prev_value_block_id();
+      pool.free_block(block_id);
+      block_id = prev_block_id;
+    } while (block_id != vector->header_->latest_large_value_block_id());
+  }
+  Vector<BlobVectorCell>::unlink(pool, vector->header_->cells_block_id());
+  pool.free_block(vector->block_info_->id());
+}
+
+BlobVectorImpl::BlobVectorImpl()
+  : pool_(),
+    block_info_(nullptr),
+    header_(nullptr),
+    recycler_(nullptr),
+    cells_(),
+    value_store_(),
+    inter_thread_mutex_() {}
+
+void BlobVectorImpl::create_vector(io::Pool pool) {
+  pool_ = pool;
+  block_info_ = pool.create_block(sizeof(BlobVectorHeader));
+
+  try {
+    cells_ = Vector<BlobVectorCell>(VECTOR_CREATE, pool_, BlobVectorCell());
+  } catch (...) {
+    pool_.free_block(*block_info_);
+    throw;
+  }
+
+  void * const block_address = pool_.get_block_address(*block_info_);
+  header_ = static_cast<BlobVectorHeader *>(block_address);
+  *header_ = BlobVectorHeader(cells_.block_id());
+
+  recycler_ = pool.mutable_recycler();
+}
+
+void BlobVectorImpl::open_vector(io::Pool pool, uint32_t block_id) {
+  pool_ = pool;
+  block_info_ = pool.get_block_info(block_id);
+  if (block_info_->size() < sizeof(BlobVectorHeader)) {
+    GRNXX_ERROR() << "invalid argument: block_info = " << *block_info_
+                  << ", header_size = " << sizeof(BlobVectorHeader);
+    GRNXX_THROW();
+  }
+
+  void * const block_address = pool_.get_block_address(*block_info_);
+  header_ = static_cast<BlobVectorHeader *>(block_address);
+
+  // TODO: Check the format!
+
+  recycler_ = pool.mutable_recycler();
+
+  // Open the core table.
+  cells_ = Vector<BlobVectorCell>(VECTOR_OPEN, pool,
+                                  header_->cells_block_id());
+}
+
 BlobVectorMediumValue BlobVectorImpl::create_medium_value(
-    const void *ptr, uint64_t length, uint64_t capacity,
+    uint32_t id, const void *ptr, uint64_t length, uint64_t capacity,
     BlobVectorAttribute attribute) {
-  // TODO: Not implemented yet.
-  capacity = (capacity + (BLOB_VECTOR_MEDIUM_VALUE_UNIT_SIZE - 1)) &
-      ~(BLOB_VECTOR_MEDIUM_VALUE_UNIT_SIZE - 1);
-  return BlobVectorMediumValue(0, length, attribute);
+  if (!value_store_) {
+    Lock lock(mutable_inter_thread_mutex());
+    if (!value_store_) {
+      value_store_ = BlobVectorValueStore(
+          VECTOR_OPEN, pool_, header_->value_store_block_id());
+    }
+  }
+
+  // TODO: Lock.
+
+  capacity = (capacity + (BLOB_VECTOR_UNIT_SIZE - 1)) &
+      ~(BLOB_VECTOR_UNIT_SIZE - 1);
+
+  uint64_t offset = header_->next_medium_value_offset();
+  const uint64_t offset_in_page =
+      offset & (BLOB_VECTOR_VALUE_STORE_PAGE_SIZE - 1);
+  const uint64_t size_left_in_page =
+      BLOB_VECTOR_VALUE_STORE_PAGE_SIZE - offset_in_page;
+
+  const uint64_t required_size =
+      capacity + sizeof(BlobVectorMediumValueHeader);
+  if (required_size > size_left_in_page) {
+    offset += size_left_in_page;
+  }
+  header_->set_next_medium_value_offset(offset + required_size);
+
+  auto value_header = reinterpret_cast<BlobVectorMediumValueHeader *>(
+      &value_store_[offset]);
+  value_header->set_value_id(id);
+  value_header->set_capacity(capacity);
+  std::memcpy(value_header + 1, ptr, length);
+
+  return BlobVectorMediumValue(offset, length, attribute);
 }
 
 BlobVectorLargeValue BlobVectorImpl::create_large_value(
-    const void *ptr, uint64_t length, uint64_t capacity,
+    uint32_t, const void *ptr, uint64_t length, uint64_t capacity,
     BlobVectorAttribute attribute) {
   const io::BlockInfo *block_info =
       pool_.create_block(sizeof(BlobVectorLargeValueHeader) + capacity);
@@ -245,80 +360,6 @@ void BlobVectorImpl::unregister_large_value(uint32_t block_id,
   if (block_id == header_->latest_large_value_block_id()) {
     header_->set_latest_large_value_block_id(prev_id);
   }
-}
-
-StringBuilder &BlobVectorImpl::write_to(StringBuilder &builder) const {
-  if (!builder) {
-    return builder;
-  }
-
-  // TODO
-  return builder;
-}
-
-void BlobVectorImpl::unlink(io::Pool pool, uint32_t block_id) {
-  std::unique_ptr<BlobVectorImpl> vector =
-      BlobVectorImpl::open(pool, block_id);
-
-  if (vector->header_->latest_large_value_block_id() != io::BLOCK_INVALID_ID) {
-    uint32_t block_id = vector->header_->latest_large_value_block_id();
-    do {
-      auto value_header = static_cast<const BlobVectorLargeValueHeader *>(
-          pool.get_block_address(block_id));
-      const uint32_t prev_block_id = value_header->prev_value_block_id();
-      pool.free_block(block_id);
-      block_id = prev_block_id;
-    } while (block_id != vector->header_->latest_large_value_block_id());
-  }
-  Vector<BlobVectorCell>::unlink(pool, vector->header_->cells_block_id());
-  pool.free_block(vector->block_info_->id());
-}
-
-BlobVectorImpl::BlobVectorImpl()
-  : pool_(),
-    block_info_(nullptr),
-    header_(nullptr),
-    recycler_(nullptr),
-    cells_(),
-    inter_thread_mutex_() {}
-
-void BlobVectorImpl::create_vector(io::Pool pool) {
-  pool_ = pool;
-  block_info_ = pool.create_block(sizeof(BlobVectorHeader));
-
-  try {
-    cells_ = Vector<BlobVectorCell>(VECTOR_CREATE, pool_, BlobVectorCell());
-  } catch (...) {
-    pool_.free_block(*block_info_);
-    throw;
-  }
-
-  void * const block_address = pool_.get_block_address(*block_info_);
-  header_ = static_cast<BlobVectorHeader *>(block_address);
-  *header_ = BlobVectorHeader(cells_.block_id());
-
-  recycler_ = pool.mutable_recycler();
-}
-
-void BlobVectorImpl::open_vector(io::Pool pool, uint32_t block_id) {
-  pool_ = pool;
-  block_info_ = pool.get_block_info(block_id);
-  if (block_info_->size() < sizeof(BlobVectorHeader)) {
-    GRNXX_ERROR() << "invalid argument: block_info = " << *block_info_
-                  << ", header_size = " << sizeof(BlobVectorHeader);
-    GRNXX_THROW();
-  }
-
-  void * const block_address = pool_.get_block_address(*block_info_);
-  header_ = static_cast<BlobVectorHeader *>(block_address);
-
-  // TODO: Check the format!
-
-  recycler_ = pool.mutable_recycler();
-
-  // Open the core table.
-  cells_ = Vector<BlobVectorCell>(VECTOR_OPEN, pool,
-                                  header_->cells_block_id());
 }
 
 }  // namespace alpha
