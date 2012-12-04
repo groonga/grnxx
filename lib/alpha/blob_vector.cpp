@@ -30,7 +30,9 @@ BlobVectorOpen BLOB_VECTOR_OPEN;
 BlobVectorHeader::BlobVectorHeader(uint32_t cells_block_id)
   : cells_block_id_(cells_block_id),
     value_store_block_id_(io::BLOCK_INVALID_ID),
-    next_medium_value_offset_(0),
+    page_infos_block_id_(io::BLOCK_INVALID_ID),
+    next_page_id_(0),
+    next_value_offset_(0),
     latest_large_value_block_id_(io::BLOCK_INVALID_ID),
     inter_process_mutex_() {}
 
@@ -41,7 +43,9 @@ StringBuilder &BlobVectorHeader::write_to(StringBuilder &builder) const {
 
   builder << "{ cells_block_id = " << cells_block_id_
           << ", value_store_block_id = " << value_store_block_id_
-          << ", next_medium_value_offset = " << next_medium_value_offset_
+          << ", page_infos_block_id = " << page_infos_block_id_
+          << ", next_page_id = " << next_page_id_
+          << ", next_value_offset = " << next_value_offset_
           << ", latest_large_value_block_id = " << latest_large_value_block_id_
           << ", inter_process_mutex = " << inter_process_mutex_;
   return builder << " }";
@@ -231,6 +235,7 @@ BlobVectorImpl::BlobVectorImpl()
     recycler_(nullptr),
     cells_(),
     value_store_(),
+    page_infos_(),
     inter_thread_mutex_() {}
 
 void BlobVectorImpl::create_vector(io::Pool pool) {
@@ -292,29 +297,59 @@ BlobVectorMediumValue BlobVectorImpl::create_medium_value(
     }
   }
 
+  if (!page_infos_) {
+    Lock lock(mutable_inter_thread_mutex());
+    if (!page_infos_) {
+      if (header_->page_infos_block_id() == io::BLOCK_INVALID_ID) {
+        Lock lock(mutable_inter_process_mutex());
+        if (header_->page_infos_block_id() == io::BLOCK_INVALID_ID) {
+          page_infos_ = Vector<BlobVectorPageInfo>(
+              VECTOR_CREATE, pool_, BlobVectorPageInfo());
+          header_->set_page_infos_block_id(page_infos_.block_id());
+        }
+      }
+      if (!page_infos_) {
+        page_infos_ = Vector<BlobVectorPageInfo>(
+            VECTOR_OPEN, pool_, header_->page_infos_block_id());
+      }
+    }
+  }
+
   // TODO: Lock.
 
   capacity = (capacity + (BLOB_VECTOR_UNIT_SIZE - 1)) &
       ~(BLOB_VECTOR_UNIT_SIZE - 1);
 
-  uint64_t offset = header_->next_medium_value_offset();
+  uint64_t offset = header_->next_value_offset();
   const uint64_t offset_in_page =
-      offset & (BLOB_VECTOR_VALUE_STORE_PAGE_SIZE - 1);
+      ((offset - 1) & (BLOB_VECTOR_VALUE_STORE_PAGE_SIZE - 1)) + 1;
   const uint64_t size_left_in_page =
       BLOB_VECTOR_VALUE_STORE_PAGE_SIZE - offset_in_page;
 
   const uint64_t required_size =
       capacity + sizeof(BlobVectorMediumValueHeader);
   if (required_size > size_left_in_page) {
-    offset += size_left_in_page;
+    const uint32_t page_id = header_->next_page_id();
+    offset = static_cast<uint64_t>(
+        page_id << BLOB_VECTOR_VALUE_STORE_PAGE_SIZE_BITS);
+    if (page_infos_[page_id].next_page_id() != BLOB_VECTOR_INVALID_PAGE_ID) {
+      header_->set_next_page_id(page_infos_[page_id].next_page_id());
+    } else {
+      header_->set_next_page_id(page_id + 1);
+    }
+    page_infos_[page_id].set_num_values(0);
   }
-  header_->set_next_medium_value_offset(offset + required_size);
+  header_->set_next_value_offset(offset + required_size);
 
   auto value_header = reinterpret_cast<BlobVectorMediumValueHeader *>(
       &value_store_[offset]);
   value_header->set_value_id(id);
   value_header->set_capacity(capacity);
   std::memcpy(value_header + 1, ptr, length);
+
+  const uint32_t page_id = static_cast<uint32_t>(
+      offset >> BLOB_VECTOR_VALUE_STORE_PAGE_SIZE_BITS);
+  page_infos_[page_id].set_num_values(page_infos_[page_id].num_values() + 1);
 
   return BlobVectorMediumValue(offset, length, attribute);
 }
@@ -340,6 +375,15 @@ void BlobVectorImpl::free_value(BlobVectorCell cell) {
       break;
     }
     case BLOB_VECTOR_MEDIUM: {
+      // TODO: Lock.
+
+      const uint32_t page_id = static_cast<uint32_t>(
+          cell.medium().offset() >> BLOB_VECTOR_VALUE_STORE_PAGE_SIZE_BITS);
+      page_infos_[page_id].set_num_values(
+          page_infos_[page_id].num_values() - 1);
+      if (page_infos_[page_id].num_values() == 0) {
+        // TODO: Freeze.
+      }
       break;
     }
     case BLOB_VECTOR_LARGE: {

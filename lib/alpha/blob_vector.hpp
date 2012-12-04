@@ -25,6 +25,9 @@ namespace alpha {
 
 const uint64_t BLOB_VECTOR_MAX_ID = uint64_t(1) << 40;
 
+const uint32_t BLOB_VECTOR_INVALID_PAGE_ID =
+    std::numeric_limits<uint32_t>::max();
+
 const uint64_t BLOB_VECTOR_SMALL_VALUE_MAX_LENGTH  = 7;
 
 const uint64_t BLOB_VECTOR_MEDIUM_VALUE_MIN_LENGTH =
@@ -67,8 +70,14 @@ class BlobVectorHeader {
   uint32_t value_store_block_id() const {
     return value_store_block_id_;
   }
-  uint64_t next_medium_value_offset() const {
-    return next_medium_value_offset_;
+  uint32_t page_infos_block_id() const {
+    return page_infos_block_id_;
+  }
+  uint32_t next_page_id() const {
+    return next_page_id_;
+  }
+  uint64_t next_value_offset() const {
+    return next_value_offset_;
   }
   uint32_t latest_large_value_block_id() const {
     return latest_large_value_block_id_;
@@ -77,8 +86,14 @@ class BlobVectorHeader {
   void set_value_store_block_id(uint32_t value) {
     value_store_block_id_ = value;
   }
-  void set_next_medium_value_offset(uint64_t value) {
-    next_medium_value_offset_ = value;
+  void set_page_infos_block_id(uint32_t value) {
+    page_infos_block_id_ = value;
+  }
+  void set_next_page_id(uint32_t value) {
+    next_page_id_ = value;
+  }
+  void set_next_value_offset(uint64_t value) {
+    next_value_offset_ = value;
   }
   void set_latest_large_value_block_id(uint32_t value) {
     latest_large_value_block_id_ = value;
@@ -93,7 +108,9 @@ class BlobVectorHeader {
  private:
   uint32_t cells_block_id_;
   uint32_t value_store_block_id_;
-  uint64_t next_medium_value_offset_;
+  uint32_t page_infos_block_id_;
+  uint32_t next_page_id_;
+  uint64_t next_value_offset_;
   uint32_t latest_large_value_block_id_;
   Mutex inter_process_mutex_;
 };
@@ -113,6 +130,40 @@ enum BlobVectorType : uint8_t {
 const uint8_t BLOB_VECTOR_TYPE_MASK = 0x30;
 
 StringBuilder &operator<<(StringBuilder &builder, BlobVectorType type);
+
+class BlobVectorPageInfo {
+ public:
+  BlobVectorPageInfo()
+    : next_page_id_(BLOB_VECTOR_INVALID_PAGE_ID), stamp_(0), reserved_(0) {}
+
+  uint32_t next_page_id() const {
+    return next_page_id_;
+  }
+  uint32_t num_values() const {
+    return num_values_;
+  }
+  uint16_t stamp() const {
+    return reserved_;
+  }
+
+  void set_next_page_id(uint32_t value) {
+    next_page_id_ = value;
+  }
+  void set_num_values(uint32_t value) {
+    num_values_ = value;
+  }
+  void set_stamp(uint16_t value) {
+    stamp_ = value;
+  }
+
+ private:
+  union {
+    uint32_t next_page_id_;
+    uint32_t num_values_;
+  };
+  uint16_t stamp_;
+  uint16_t reserved_;
+};
 
 class BlobVectorMediumValueHeader {
  public:
@@ -362,6 +413,7 @@ class BlobVectorImpl {
   Recycler *recycler_;
   Vector<BlobVectorCell> cells_;
   BlobVectorValueStore value_store_;
+  Vector<BlobVectorPageInfo> page_infos_;
   Mutex inter_thread_mutex_;
 
   BlobVectorImpl();
