@@ -24,6 +24,9 @@
 namespace grnxx {
 namespace alpha {
 
+BlobVectorCreate BLOB_VECTOR_CREATE;
+BlobVectorOpen BLOB_VECTOR_OPEN;
+
 BlobVectorHeader::BlobVectorHeader(uint32_t cells_block_id)
   : cells_block_id_(cells_block_id),
     value_store_block_id_(io::BLOCK_INVALID_ID),
@@ -121,7 +124,8 @@ const void *BlobVectorImpl::get_value(uint64_t id, uint64_t *length) {
       if (length) {
         *length = cell.medium().length();
       }
-      return &value_store_[cell.medium().offset()];
+      return &value_store_[cell.medium().offset()]
+          + sizeof(BlobVectorMediumValueHeader);
     }
     case BLOB_VECTOR_LARGE: {
       const BlobVectorLargeValueHeader *value_header =
@@ -258,8 +262,17 @@ BlobVectorMediumValue BlobVectorImpl::create_medium_value(
   if (!value_store_) {
     Lock lock(mutable_inter_thread_mutex());
     if (!value_store_) {
-      value_store_ = BlobVectorValueStore(
-          VECTOR_OPEN, pool_, header_->value_store_block_id());
+      if (header_->value_store_block_id() == io::BLOCK_INVALID_ID) {
+        Lock lock(mutable_inter_process_mutex());
+        if (header_->value_store_block_id() == io::BLOCK_INVALID_ID) {
+          value_store_ = BlobVectorValueStore(VECTOR_CREATE, pool_);
+          header_->set_value_store_block_id(value_store_.block_id());
+        }
+      }
+      if (!value_store_) {
+        value_store_ = BlobVectorValueStore(
+            VECTOR_OPEN, pool_, header_->value_store_block_id());
+      }
     }
   }
 
@@ -361,6 +374,13 @@ void BlobVectorImpl::unregister_large_value(uint32_t block_id,
     header_->set_latest_large_value_block_id(prev_id);
   }
 }
+
+BlobVector::BlobVector(const BlobVectorCreate &, io::Pool pool)
+  : impl_(BlobVectorImpl::create(pool)) {}
+
+BlobVector::BlobVector(const BlobVectorOpen &, io::Pool pool,
+                       uint32_t block_id)
+  : impl_(BlobVectorImpl::open(pool, block_id)) {}
 
 }  // namespace alpha
 }  // namespace grnxx
