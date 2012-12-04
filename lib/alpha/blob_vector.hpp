@@ -88,6 +88,8 @@ class BlobVectorHeader {
     return &inter_process_mutex_;
   }
 
+  StringBuilder &write_to(StringBuilder &builder) const;
+
  private:
   uint32_t cells_block_id_;
   uint32_t value_store_block_id_;
@@ -95,6 +97,11 @@ class BlobVectorHeader {
   uint32_t latest_large_value_block_id_;
   Mutex inter_process_mutex_;
 };
+
+inline StringBuilder &operator<<(StringBuilder &builder,
+                                 const BlobVectorHeader &header) {
+  return header.write_to(builder);
+}
 
 enum BlobVectorType : uint8_t {
   BLOB_VECTOR_NULL   = 0x00,

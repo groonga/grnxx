@@ -34,6 +34,19 @@ BlobVectorHeader::BlobVectorHeader(uint32_t cells_block_id)
     latest_large_value_block_id_(io::BLOCK_INVALID_ID),
     inter_process_mutex_() {}
 
+StringBuilder &BlobVectorHeader::write_to(StringBuilder &builder) const {
+  if (!builder) {
+    return builder;
+  }
+
+  builder << "{ cells_block_id = " << cells_block_id_
+          << ", value_store_block_id = " << value_store_block_id_
+          << ", next_medium_value_offset = " << next_medium_value_offset_
+          << ", latest_large_value_block_id = " << latest_large_value_block_id_
+          << ", inter_process_mutex = " << inter_process_mutex_;
+  return builder << " }";
+}
+
 StringBuilder &operator<<(StringBuilder &builder, BlobVectorType type) {
   switch (type) {
     case BLOB_VECTOR_NULL: {
@@ -186,8 +199,11 @@ StringBuilder &BlobVectorImpl::write_to(StringBuilder &builder) const {
     return builder;
   }
 
-  // TODO
-  return builder;
+  builder << "{ pool = " << pool_.path()
+          << ", block_info = " << *block_info_
+          << ", header = " << *header_
+          << ", inter_thread_mutex = " << inter_thread_mutex_;
+  return builder << " }";
 }
 
 void BlobVectorImpl::unlink(io::Pool pool, uint32_t block_id) {
