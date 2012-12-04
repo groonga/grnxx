@@ -415,6 +415,13 @@ class BlobVector {
   // TODO
 //  BlobVectorValueRef operator[](uint64_t id);
 
+  const void *get_value(uint64_t id, uint64_t *length = nullptr) {
+    return impl_->get_value(id, length);
+  }
+  void set_value(uint64_t id, const void *ptr, uint64_t length) {
+    impl_->set_value(id, ptr, length);
+  }
+
   uint32_t block_id() const {
     return impl_->block_id();
   }
