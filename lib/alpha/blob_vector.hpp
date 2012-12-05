@@ -79,6 +79,9 @@ class BlobVectorHeader {
   uint64_t next_value_offset() const {
     return next_value_offset_;
   }
+  uint32_t latest_frozen_page_id() const {
+    return latest_frozen_page_id_;
+  }
   uint32_t latest_large_value_block_id() const {
     return latest_large_value_block_id_;
   }
@@ -94,6 +97,9 @@ class BlobVectorHeader {
   }
   void set_next_value_offset(uint64_t value) {
     next_value_offset_ = value;
+  }
+  void set_latest_frozen_page_id(uint32_t value) {
+    latest_frozen_page_id_ = value;
   }
   void set_latest_large_value_block_id(uint32_t value) {
     latest_large_value_block_id_ = value;
@@ -111,6 +117,7 @@ class BlobVectorHeader {
   uint32_t page_infos_block_id_;
   uint32_t next_page_id_;
   uint64_t next_value_offset_;
+  uint32_t latest_frozen_page_id_;
   uint32_t latest_large_value_block_id_;
   Mutex inter_process_mutex_;
 };
@@ -434,6 +441,9 @@ class BlobVectorImpl {
                             BlobVectorLargeValueHeader *value_header);
   void unregister_large_value(uint32_t block_id,
                               BlobVectorLargeValueHeader *value_header);
+
+  void freeze_page(uint32_t page_id);
+  void unfreeze_oldest_frozen_page();
 
   Mutex *mutable_inter_thread_mutex() {
     return &inter_thread_mutex_;

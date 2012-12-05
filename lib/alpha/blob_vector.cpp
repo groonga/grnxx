@@ -33,6 +33,7 @@ BlobVectorHeader::BlobVectorHeader(uint32_t cells_block_id)
     page_infos_block_id_(io::BLOCK_INVALID_ID),
     next_page_id_(0),
     next_value_offset_(0),
+    latest_frozen_page_id_(BLOB_VECTOR_INVALID_PAGE_ID),
     latest_large_value_block_id_(io::BLOCK_INVALID_ID),
     inter_process_mutex_() {}
 
@@ -326,9 +327,22 @@ BlobVectorMediumValue BlobVectorImpl::create_medium_value(
   const uint64_t size_left_in_page =
       BLOB_VECTOR_VALUE_STORE_PAGE_SIZE - offset_in_page;
 
+  // Reserve a new page if there is not enough space in the current page.
   const uint64_t required_size =
       capacity + sizeof(BlobVectorMediumValueHeader);
   if (required_size > size_left_in_page) {
+    if (offset != 0) {
+      // Freeze the current page if it is empty.
+      const uint32_t page_id = static_cast<uint32_t>(
+          (offset - 1) >> BLOB_VECTOR_VALUE_STORE_PAGE_SIZE_BITS);
+      if (page_infos_[page_id].num_values() == 0) {
+        freeze_page(page_id);
+      }
+    }
+
+    // Unfreeze the oldest frozen page for reuse.
+    unfreeze_oldest_frozen_page();
+
     const uint32_t page_id = header_->next_page_id();
     offset = static_cast<uint64_t>(
         page_id << BLOB_VECTOR_VALUE_STORE_PAGE_SIZE_BITS);
@@ -382,7 +396,12 @@ void BlobVectorImpl::free_value(BlobVectorCell cell) {
       page_infos_[page_id].set_num_values(
           page_infos_[page_id].num_values() - 1);
       if (page_infos_[page_id].num_values() == 0) {
-        // TODO: Freeze.
+        const uint32_t current_page_id =
+            static_cast<uint32_t>(header_->next_value_offset()
+                                  >> BLOB_VECTOR_VALUE_STORE_PAGE_SIZE_BITS);
+        if (page_id != current_page_id) {
+          freeze_page(page_id);
+        }
       }
       break;
     }
@@ -432,6 +451,40 @@ void BlobVectorImpl::unregister_large_value(uint32_t block_id,
   prev_header->set_next_value_block_id(next_id);
   if (block_id == header_->latest_large_value_block_id()) {
     header_->set_latest_large_value_block_id(prev_id);
+  }
+}
+
+void BlobVectorImpl::freeze_page(uint32_t page_id) {
+  BlobVectorPageInfo &page_info = page_infos_[page_id];
+  if (header_->latest_frozen_page_id() != BLOB_VECTOR_INVALID_PAGE_ID) {
+    BlobVectorPageInfo &latest_frozen_page_info =
+        page_infos_[header_->latest_frozen_page_id()];
+    page_info.set_next_page_id(latest_frozen_page_info.next_page_id());
+    latest_frozen_page_info.set_next_page_id(page_id);
+  } else {
+    page_info.set_next_page_id(page_id);
+  }
+  page_info.set_stamp(recycler_->stamp());
+  header_->set_latest_frozen_page_id(page_id);
+}
+
+void BlobVectorImpl::unfreeze_oldest_frozen_page() {
+  if (header_->latest_frozen_page_id() != BLOB_VECTOR_INVALID_PAGE_ID) {
+    BlobVectorPageInfo &latest_frozen_page_info =
+        page_infos_[header_->latest_frozen_page_id()];
+    const uint32_t oldest_frozen_page_id =
+        latest_frozen_page_info.next_page_id();
+    BlobVectorPageInfo &oldest_frozen_page_info =
+        page_infos_[oldest_frozen_page_id];
+    if (recycler_->check(oldest_frozen_page_info.stamp())) {
+      latest_frozen_page_info.set_next_page_id(
+          oldest_frozen_page_info.next_page_id());
+      oldest_frozen_page_info.set_next_page_id(header_->next_page_id());
+      header_->set_next_page_id(oldest_frozen_page_id);
+      if (oldest_frozen_page_id == header_->latest_frozen_page_id()) {
+        header_->set_latest_frozen_page_id(BLOB_VECTOR_INVALID_PAGE_ID);
+      }
+    }
   }
 }
 
