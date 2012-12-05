@@ -318,6 +318,9 @@ BlobVectorMediumValue BlobVectorImpl::create_medium_value(
 
   // TODO: Lock.
 
+  // Unfreeze the oldest frozen page for reuse.
+  unfreeze_oldest_frozen_page();
+
   capacity = (capacity + (BLOB_VECTOR_UNIT_SIZE - 1)) &
       ~(BLOB_VECTOR_UNIT_SIZE - 1);
 
@@ -339,9 +342,6 @@ BlobVectorMediumValue BlobVectorImpl::create_medium_value(
         freeze_page(page_id);
       }
     }
-
-    // Unfreeze the oldest frozen page for reuse.
-    unfreeze_oldest_frozen_page();
 
     const uint32_t page_id = header_->next_page_id();
     offset = static_cast<uint64_t>(
