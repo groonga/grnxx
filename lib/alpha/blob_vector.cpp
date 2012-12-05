@@ -281,42 +281,36 @@ void BlobVectorImpl::open_vector(io::Pool pool, uint32_t block_id) {
 BlobVectorMediumValue BlobVectorImpl::create_medium_value(
     uint32_t id, const void *ptr, uint64_t length, uint64_t capacity,
     BlobVectorAttribute attribute) {
+  Lock lock(mutable_inter_thread_mutex());
+
   if (!value_store_) {
-    Lock lock(mutable_inter_thread_mutex());
-    if (!value_store_) {
+    if (header_->value_store_block_id() == io::BLOCK_INVALID_ID) {
+      Lock lock(mutable_inter_process_mutex());
       if (header_->value_store_block_id() == io::BLOCK_INVALID_ID) {
-        Lock lock(mutable_inter_process_mutex());
-        if (header_->value_store_block_id() == io::BLOCK_INVALID_ID) {
-          value_store_ = BlobVectorValueStore(VECTOR_CREATE, pool_);
-          header_->set_value_store_block_id(value_store_.block_id());
-        }
+        value_store_ = BlobVectorValueStore(VECTOR_CREATE, pool_);
+        header_->set_value_store_block_id(value_store_.block_id());
       }
-      if (!value_store_) {
-        value_store_ = BlobVectorValueStore(
-            VECTOR_OPEN, pool_, header_->value_store_block_id());
-      }
+    }
+    if (!value_store_) {
+      value_store_ = BlobVectorValueStore(
+          VECTOR_OPEN, pool_, header_->value_store_block_id());
     }
   }
 
   if (!page_infos_) {
-    Lock lock(mutable_inter_thread_mutex());
-    if (!page_infos_) {
+    if (header_->page_infos_block_id() == io::BLOCK_INVALID_ID) {
+      Lock lock(mutable_inter_process_mutex());
       if (header_->page_infos_block_id() == io::BLOCK_INVALID_ID) {
-        Lock lock(mutable_inter_process_mutex());
-        if (header_->page_infos_block_id() == io::BLOCK_INVALID_ID) {
-          page_infos_ = Vector<BlobVectorPageInfo>(
-              VECTOR_CREATE, pool_, BlobVectorPageInfo());
-          header_->set_page_infos_block_id(page_infos_.block_id());
-        }
-      }
-      if (!page_infos_) {
         page_infos_ = Vector<BlobVectorPageInfo>(
-            VECTOR_OPEN, pool_, header_->page_infos_block_id());
+            VECTOR_CREATE, pool_, BlobVectorPageInfo());
+        header_->set_page_infos_block_id(page_infos_.block_id());
       }
     }
+    if (!page_infos_) {
+      page_infos_ = Vector<BlobVectorPageInfo>(
+          VECTOR_OPEN, pool_, header_->page_infos_block_id());
+    }
   }
-
-  // TODO: Lock.
 
   // Unfreeze the oldest frozen page for reuse.
   unfreeze_oldest_frozen_page();
@@ -389,7 +383,7 @@ void BlobVectorImpl::free_value(BlobVectorCell cell) {
       break;
     }
     case BLOB_VECTOR_MEDIUM: {
-      // TODO: Lock.
+      Lock lock(mutable_inter_thread_mutex());
 
       const uint32_t page_id = static_cast<uint32_t>(
           cell.medium().offset() >> BLOB_VECTOR_VALUE_STORE_PAGE_SIZE_BITS);
