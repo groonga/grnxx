@@ -47,7 +47,7 @@ class Chunk {
   }
 
   // Return true iff its view is available.
-  GRNXX_EXPLICIT_CONVERSION operator bool() const {
+  explicit operator bool() const {
     return static_cast<bool>(view_);
   }
 
@@ -80,7 +80,7 @@ class ChunkInfo {
  public:
   ChunkInfo() : id_(0), file_id_(0), offset_(0), size_(0), reserved_(0) {}
 
-  GRNXX_EXPLICIT_CONVERSION operator bool() const {
+  explicit operator bool() const {
     return size_ != 0;
   }
 

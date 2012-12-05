@@ -38,7 +38,7 @@ class FileInfo {
   FileInfo(FileInfo &&file_info);
   FileInfo &operator=(FileInfo &&file_info);
 
-  GRNXX_EXPLICIT_CONVERSION operator bool() const {
+  explicit operator bool() const {
     return static_cast<bool>(impl_);
   }
 

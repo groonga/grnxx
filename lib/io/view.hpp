@@ -45,7 +45,7 @@ class View {
   View(View &&view);
   View &operator=(View &&view);
 
-  GRNXX_EXPLICIT_CONVERSION operator bool() const {
+  explicit operator bool() const {
     return static_cast<bool>(impl_);
   }
 

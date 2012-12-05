@@ -37,7 +37,7 @@ class Time {
     return Time();
   }
 
-  GRNXX_EXPLICIT_CONVERSION operator bool() const {
+  explicit operator bool() const {
     return nanoseconds_ != TIME_INVALID_NANOSECONDS;
   }
 

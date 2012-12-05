@@ -254,7 +254,7 @@ class Pool {
   Pool(Pool &&pool);
   Pool &operator=(Pool &&pool);
 
-  GRNXX_EXPLICIT_CONVERSION operator bool() const {
+  explicit operator bool() const {
     return static_cast<bool>(impl_);
   }
 

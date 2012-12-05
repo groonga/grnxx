@@ -477,7 +477,7 @@ class BlobVector {
     return *this;
   }
 
-  GRNXX_EXPLICIT_CONVERSION operator bool() const {
+  explicit operator bool() const {
     return static_cast<bool>(impl_);
   }
 

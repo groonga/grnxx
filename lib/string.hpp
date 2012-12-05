@@ -105,7 +105,7 @@ class String {
 
   String &operator=(const char *str);
 
-  GRNXX_EXPLICIT_CONVERSION operator bool() const {
+  explicit operator bool() const {
     return impl_->length() != 0;
   }
 

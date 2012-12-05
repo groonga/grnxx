@@ -88,7 +88,7 @@ class StringBuilder {
     return *this;
   }
 
-  GRNXX_EXPLICIT_CONVERSION operator bool() const {
+  explicit operator bool() const {
     return !failed_;
   }
 

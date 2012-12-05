@@ -31,7 +31,7 @@ class FlagsImpl {
   GRNXX_CONSTEXPR FlagsImpl() : flags_(0) {}
   GRNXX_CONSTEXPR FlagsImpl(const FlagsImpl &flags) : flags_(flags.flags_) {}
 
-  GRNXX_CONSTEXPR GRNXX_EXPLICIT_CONVERSION operator bool() const {
+  GRNXX_CONSTEXPR explicit operator bool() const {
     return flags_ != 0;
   }
 
