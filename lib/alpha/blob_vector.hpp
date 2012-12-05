@@ -503,7 +503,7 @@ class BlobVector {
     return impl_ ? impl_->write_to(builder) : (builder << "n/a");
   }
 
-  static GRNXX_CONSTEXPR uint64_t max_id() {
+  static constexpr uint64_t max_id() {
     return BLOB_VECTOR_MAX_ID;
   }
 

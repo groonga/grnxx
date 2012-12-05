@@ -25,36 +25,36 @@ namespace grnxx {
 
 class Duration {
  public:
-  GRNXX_CONSTEXPR Duration() : nanoseconds_(0) {}
-  explicit GRNXX_CONSTEXPR Duration(int64_t nanoseconds)
+  constexpr Duration() : nanoseconds_(0) {}
+  explicit constexpr Duration(int64_t nanoseconds)
     : nanoseconds_(nanoseconds) {}
 
-  static GRNXX_CONSTEXPR Duration nanoseconds(int64_t nanoseconds) {
+  static constexpr Duration nanoseconds(int64_t nanoseconds) {
     return Duration(nanoseconds);
   }
-  static GRNXX_CONSTEXPR Duration microseconds(int64_t microseconds) {
+  static constexpr Duration microseconds(int64_t microseconds) {
     return Duration(microseconds * 1000);
   }
-  static GRNXX_CONSTEXPR Duration milliseconds(int64_t milliseconds) {
+  static constexpr Duration milliseconds(int64_t milliseconds) {
     return Duration(milliseconds * 1000000);
   }
-  static GRNXX_CONSTEXPR Duration seconds(int64_t seconds) {
+  static constexpr Duration seconds(int64_t seconds) {
     return Duration(seconds * 1000000000);
   }
-  static GRNXX_CONSTEXPR Duration minutes(int64_t minutes) {
+  static constexpr Duration minutes(int64_t minutes) {
     return Duration(minutes * 1000000000 * 60);
   }
-  static GRNXX_CONSTEXPR Duration hours(int64_t hours) {
+  static constexpr Duration hours(int64_t hours) {
     return Duration(hours * 1000000000 * 60 * 60);
   }
-  static GRNXX_CONSTEXPR Duration days(int64_t days) {
+  static constexpr Duration days(int64_t days) {
     return Duration(days * 1000000000 * 60 * 60 * 24);
   }
-  static GRNXX_CONSTEXPR Duration weeks(int64_t weeks) {
+  static constexpr Duration weeks(int64_t weeks) {
     return Duration(weeks * 1000000000 * 60 * 60 * 24 * 7);
   }
 
-  GRNXX_CONSTEXPR int64_t nanoseconds() const {
+  constexpr int64_t nanoseconds() const {
     return nanoseconds_;
   }
   void set_nanoseconds(int64_t nanoseconds) {
@@ -69,10 +69,10 @@ class Duration {
   // Copyable.
 };
 
-inline GRNXX_CONSTEXPR Duration operator+(Duration duration) {
+inline constexpr Duration operator+(Duration duration) {
   return duration;
 }
-inline GRNXX_CONSTEXPR Duration operator-(Duration duration) {
+inline constexpr Duration operator-(Duration duration) {
   return Duration(-duration.nanoseconds());
 }
 
@@ -105,42 +105,42 @@ inline Duration &operator%=(Duration &lhs, Duration rhs) {
   return lhs;
 }
 
-inline GRNXX_CONSTEXPR Duration operator+(Duration lhs, Duration rhs) {
+inline constexpr Duration operator+(Duration lhs, Duration rhs) {
   return Duration(lhs.nanoseconds() + rhs.nanoseconds());
 }
-inline GRNXX_CONSTEXPR Duration operator-(Duration lhs, Duration rhs) {
+inline constexpr Duration operator-(Duration lhs, Duration rhs) {
   return Duration(lhs.nanoseconds() - rhs.nanoseconds());
 }
-inline GRNXX_CONSTEXPR Duration operator*(Duration lhs, int64_t rhs) {
+inline constexpr Duration operator*(Duration lhs, int64_t rhs) {
   return Duration(lhs.nanoseconds() * rhs);
 }
-inline GRNXX_CONSTEXPR Duration operator*(int64_t lhs, Duration rhs) {
+inline constexpr Duration operator*(int64_t lhs, Duration rhs) {
   return Duration(lhs * rhs.nanoseconds());
 }
-inline GRNXX_CONSTEXPR Duration operator/(Duration lhs, int64_t rhs) {
+inline constexpr Duration operator/(Duration lhs, int64_t rhs) {
   return (rhs != 0) ? Duration(lhs.nanoseconds() / rhs) : Duration(0);
 }
-inline GRNXX_CONSTEXPR Duration operator%(Duration lhs, Duration rhs) {
+inline constexpr Duration operator%(Duration lhs, Duration rhs) {
   return (rhs.nanoseconds() != 0) ?
       Duration(lhs.nanoseconds() % rhs.nanoseconds()) : Duration(0);
 }
 
-inline GRNXX_CONSTEXPR bool operator==(Duration lhs, Duration rhs) {
+inline constexpr bool operator==(Duration lhs, Duration rhs) {
   return lhs.nanoseconds() == rhs.nanoseconds();
 }
-inline GRNXX_CONSTEXPR bool operator!=(Duration lhs, Duration rhs) {
+inline constexpr bool operator!=(Duration lhs, Duration rhs) {
   return lhs.nanoseconds() != rhs.nanoseconds();
 }
-inline GRNXX_CONSTEXPR bool operator<(Duration lhs, Duration rhs) {
+inline constexpr bool operator<(Duration lhs, Duration rhs) {
   return lhs.nanoseconds() < rhs.nanoseconds();
 }
-inline GRNXX_CONSTEXPR bool operator<=(Duration lhs, Duration rhs) {
+inline constexpr bool operator<=(Duration lhs, Duration rhs) {
   return lhs.nanoseconds() <= rhs.nanoseconds();
 }
-inline GRNXX_CONSTEXPR bool operator>(Duration lhs, Duration rhs) {
+inline constexpr bool operator>(Duration lhs, Duration rhs) {
   return lhs.nanoseconds() > rhs.nanoseconds();
 }
-inline GRNXX_CONSTEXPR bool operator>=(Duration lhs, Duration rhs) {
+inline constexpr bool operator>=(Duration lhs, Duration rhs) {
   return lhs.nanoseconds() >= rhs.nanoseconds();
 }
 

@@ -277,19 +277,19 @@ class Vector {
     return impl_ ? impl_->write_to(builder) : (builder << "n/a");
   }
 
-  static GRNXX_CONSTEXPR uint64_t value_size() {
+  static constexpr uint64_t value_size() {
     return sizeof(Value);
   }
-  static GRNXX_CONSTEXPR uint64_t page_size() {
+  static constexpr uint64_t page_size() {
     return PAGE_SIZE;
   }
-  static GRNXX_CONSTEXPR uint64_t table_size() {
+  static constexpr uint64_t table_size() {
     return TABLE_SIZE;
   }
-  static GRNXX_CONSTEXPR uint64_t secondary_table_size() {
+  static constexpr uint64_t secondary_table_size() {
     return SECONDARY_TABLE_SIZE;
   }
-  static GRNXX_CONSTEXPR uint64_t max_id() {
+  static constexpr uint64_t max_id() {
     return (PAGE_SIZE * TABLE_SIZE * SECONDARY_TABLE_SIZE) - 1;
   }
 

@@ -28,30 +28,30 @@ class FlagsImpl {
   typedef T Identifier;
   typedef U Type;
 
-  GRNXX_CONSTEXPR FlagsImpl() : flags_(0) {}
-  GRNXX_CONSTEXPR FlagsImpl(const FlagsImpl &flags) : flags_(flags.flags_) {}
+  constexpr FlagsImpl() : flags_(0) {}
+  constexpr FlagsImpl(const FlagsImpl &flags) : flags_(flags.flags_) {}
 
-  GRNXX_CONSTEXPR explicit operator bool() const {
+  constexpr explicit operator bool() const {
     return flags_ != 0;
   }
 
-  GRNXX_CONSTEXPR FlagsImpl operator&(FlagsImpl rhs) const {
+  constexpr FlagsImpl operator&(FlagsImpl rhs) const {
     return FlagsImpl(flags_ & rhs.flags_);
   }
-  GRNXX_CONSTEXPR FlagsImpl operator|(FlagsImpl rhs) const {
+  constexpr FlagsImpl operator|(FlagsImpl rhs) const {
     return FlagsImpl(flags_ | rhs.flags_);
   }
-  GRNXX_CONSTEXPR FlagsImpl operator^(FlagsImpl rhs) const {
+  constexpr FlagsImpl operator^(FlagsImpl rhs) const {
     return FlagsImpl(flags_ ^ rhs.flags_);
   }
-  GRNXX_CONSTEXPR FlagsImpl operator~() const {
+  constexpr FlagsImpl operator~() const {
     return FlagsImpl(~flags_);
   }
 
-  GRNXX_CONSTEXPR bool operator==(FlagsImpl rhs) const {
+  constexpr bool operator==(FlagsImpl rhs) const {
     return flags_ == rhs.flags_;
   }
-  GRNXX_CONSTEXPR bool operator!=(FlagsImpl rhs) const {
+  constexpr bool operator!=(FlagsImpl rhs) const {
     return flags_ == rhs.flags_;
   }
 
@@ -68,14 +68,14 @@ class FlagsImpl {
     return *this;
   }
 
-  static GRNXX_CONSTEXPR FlagsImpl define(Type flags) {
+  static constexpr FlagsImpl define(Type flags) {
     return FlagsImpl(flags);
   }
 
  private:
   Type flags_;
 
-  explicit GRNXX_CONSTEXPR FlagsImpl(Type flags) : flags_(flags) {}
+  explicit constexpr FlagsImpl(Type flags) : flags_(flags) {}
 };
 
 }  // namespace grnxx
