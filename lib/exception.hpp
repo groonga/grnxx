@@ -26,15 +26,15 @@ namespace grnxx {
 
 class Exception : std::exception {
  public:
-  Exception() GRNXX_NOEXCEPT {}
-  virtual ~Exception() GRNXX_NOEXCEPT {}
+  Exception() noexcept {}
+  virtual ~Exception() noexcept {}
 
-  Exception(const Exception &) GRNXX_NOEXCEPT {}
-  Exception &operator=(const Exception &) GRNXX_NOEXCEPT {
+  Exception(const Exception &) noexcept {}
+  Exception &operator=(const Exception &) noexcept {
     return *this;
   }
 
-  virtual const char *what() const GRNXX_NOEXCEPT {
+  virtual const char *what() const noexcept {
     return "";
   }
 
