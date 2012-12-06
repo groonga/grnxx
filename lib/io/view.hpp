@@ -28,8 +28,7 @@ typedef FlagsImpl<ViewFlagsIdentifier> ViewFlags;
 
 // VIEW_WRITE_ONLY is ignored if VIEW_READ_ONLY is enabled.
 // VIEW_READ_ONLY is disabled if VIEW_CREATE is specified.
-// If both flags are not set, and object is created/opened/mapped in
-// read-write mode.
+// If both flags are not set, a memory mapping is created in read-write mode.
 
 // Read-only mode.
 const ViewFlags VIEW_READ_ONLY  = ViewFlags::define(0x0001);
@@ -39,10 +38,6 @@ const ViewFlags VIEW_WRITE_ONLY = ViewFlags::define(0x0002);
 // VIEW_ANONYMOUS disables all the flags other than GRNXX_HUGE_TLB and
 // enables VIEW_PRIVATE.
 // VIEW_CREATE disables VIEW_READ_ONLY.
-// VIEW_OPEN is enabled if VIEW_CREATE is not specified.
-// If both VIEW_CREATE and VIEW_OPEN are set, it first tries to create
-// an object and, if already exists, then tries to open the existing object.
-// VIEW_TEMPORARY disables other flags.
 
 // Anonymous mode.
 const ViewFlags VIEW_ANONYMOUS  = ViewFlags::define(0x0010);
