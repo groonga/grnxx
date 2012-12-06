@@ -32,8 +32,7 @@ typedef FlagsImpl<FileFlagsIdentifier> FileFlags;
 
 // FILE_WRITE_ONLY is ignored if FILE_READ_ONLY is enabled.
 // FILE_READ_ONLY is disabled if FILE_CREATE is specified.
-// If both flags are not set, and object is created/opened/mapped in
-// read-write mode.
+// If both flags are not set, a file is created/opened in read-write mode.
 
 // Read-only mode.
 constexpr FileFlags FILE_READ_ONLY      = FileFlags::define(0x0001);
@@ -43,8 +42,6 @@ constexpr FileFlags FILE_WRITE_ONLY     = FileFlags::define(0x0002);
 // FILE_APPEND is ignored if FILE_READ_ONLY is enabled.
 // FILE_CREATE disables FILE_READ_ONLY.
 // FILE_OPEN is enabled if FILE_CREATE is not specified.
-// If both FILE_CREATE and FILE_OPEN are set, it first tries to create
-// an object and, if already exists, then tries to open the existing object.
 // FILE_TEMPORARY disables other flags.
 
 // Append mode.
