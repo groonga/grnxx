@@ -230,7 +230,7 @@ class Vector {
  public:
   typedef T Value;
 
-  Vector() : impl_() {}
+  Vector() = default;
   Vector(const VectorCreate &, io::Pool pool)
     : impl_(VectorImpl::create(pool, nullptr, sizeof(Value), PAGE_SIZE,
                                TABLE_SIZE, SECONDARY_TABLE_SIZE, fill_page)) {}
@@ -240,19 +240,6 @@ class Vector {
   Vector(const VectorOpen &, io::Pool pool, uint32_t block_id)
     : impl_(VectorImpl::open(pool, block_id, sizeof(Value), PAGE_SIZE,
                              TABLE_SIZE, SECONDARY_TABLE_SIZE, fill_page)) {}
-  ~Vector() {}
-
-  Vector(const Vector &vector) : impl_(vector.impl_) {}
-  Vector &operator=(const Vector &vector) {
-    impl_ = vector.impl_;
-    return *this;
-  }
-
-  Vector(Vector &&vector) : impl_(std::move(vector.impl_)) {}
-  Vector &operator=(Vector &&vector) {
-    impl_ = std::move(vector.impl_);
-    return *this;
-  }
 
   explicit operator bool() const {
     return static_cast<bool>(impl_);
