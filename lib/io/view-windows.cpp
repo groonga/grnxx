@@ -163,13 +163,12 @@ void ViewImpl::map_on_file(const File &file, Flags flags, uint64_t offset,
 
   int protection_mode = PAGE_READWRITE;
   DWORD desired_access = FILE_MAP_WRITE;
-  if ((file.flags() & GRNXX_IO_READ_ONLY) ||
-      ((~file.flags() & GRNXX_IO_WRITE_ONLY) &&
-       (flags & GRNXX_IO_READ_ONLY))) {
+  if ((file.flags() & FILE_READ_ONLY) ||
+      ((~file.flags() & FILE_WRITE_ONLY) && (flags & GRNXX_IO_READ_ONLY))) {
     flags_ |= GRNXX_IO_READ_ONLY;
     protection_mode = PAGE_READONLY;
     desired_access = FILE_MAP_READ;
-  } else if (file.flags() & GRNXX_IO_WRITE_ONLY) {
+  } else if (file.flags() & FILE_WRITE_ONLY) {
     // Write-only memory mapping is not supported on Windows.
     GRNXX_ERROR() << "mapping file is write-only: file = " << file;
     GRNXX_THROW();

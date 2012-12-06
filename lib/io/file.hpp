@@ -15,27 +15,65 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#ifndef GRNXX_IO_FILE_HPP
-#define GRNXX_IO_FILE_HPP
+#ifndef FILE_FILE_HPP
+#define FILE_FILE_HPP
 
-#include "flags.hpp"
 #include "../duration.hpp"
 
 namespace grnxx {
 namespace io {
 
-const int FILE_UNIQUE_PATH_GENERATION_MAX_NUM_TRIALS = 10;
+constexpr int FILE_UNIQUE_PATH_GENERATION_MAX_NUM_TRIALS = 10;
+
+constexpr Duration FILE_LOCK_SLEEP_DURATION = Duration::milliseconds(10);
+
+class FileFlagsIdentifier {};
+typedef FlagsImpl<FileFlagsIdentifier> FileFlags;
+
+// FILE_WRITE_ONLY is ignored if FILE_READ_ONLY is enabled.
+// FILE_READ_ONLY is disabled if FILE_CREATE is specified.
+// If both flags are not set, and object is created/opened/mapped in
+// read-write mode.
+
+// Read-only mode.
+constexpr FileFlags FILE_READ_ONLY      = FileFlags::define(0x0001);
+// Write-only mode.
+constexpr FileFlags FILE_WRITE_ONLY     = FileFlags::define(0x0002);
+
+// FILE_APPEND is ignored if FILE_READ_ONLY is enabled.
+// FILE_CREATE disables FILE_READ_ONLY.
+// FILE_OPEN is enabled if FILE_CREATE is not specified.
+// If both FILE_CREATE and FILE_OPEN are set, it first tries to create
+// an object and, if already exists, then tries to open the existing object.
+// FILE_TEMPORARY disables other flags.
+
+// Append mode.
+constexpr FileFlags FILE_APPEND         = FileFlags::define(0x0020);
+// Create a file if it does not exist.
+constexpr FileFlags FILE_CREATE         = FileFlags::define(0x0040);
+// Open an existing file.
+constexpr FileFlags FILE_OPEN           = FileFlags::define(0x0100);
+// Create a file, if it does not exist, or open an existing file.
+constexpr FileFlags FILE_CREATE_OR_OPEN = FILE_CREATE | FILE_OPEN;
+// Create a temporary file.
+constexpr FileFlags FILE_TEMPORARY      = FileFlags::define(0x0200);
+// Truncate an existing file.
+constexpr FileFlags FILE_TRUNCATE       = FileFlags::define(0x0400);
+
+StringBuilder &operator<<(StringBuilder &builder, FileFlags flags);
+
+enum FileLockMode {
+  FILE_LOCK_EXCLUSIVE = 0x1000,  // Create an exclusive lock.
+  FILE_LOCK_SHARED    = 0x2000   // Create a shared lock.
+};
 
 class FileImpl;
 
+// Note: Windows ignores permission.
 class File {
  public:
   File();
-  // Available flags are as follows:
-  //  GRNXX_IO_READ_ONLY, GRNXX_IO_WRITE_ONLY, GRNXX_IO_APPEND,
-  //  GRNXX_IO_CREATE, GRNXX_IO_OPEN, GRNXX_IO_TEMPORARY, GRNXX_IO_TRUNCATE.
-  // Windows ignores permission.
-  explicit File(const char *path, Flags flags = Flags::none(),
+  explicit File(FileFlags flags, const char *path = nullptr,
                 int permission = 0644);
   ~File();
 
@@ -49,20 +87,24 @@ class File {
     return static_cast<bool>(impl_);
   }
 
+  void open(FileFlags flags, const char *path) {
+    *this = File(flags | FILE_OPEN, path);
+  }
+  void close() {
+    *this = File();
+  }
+
   // The following functions operate advisory locks for files, not for
   // FileImpl instances. The word "advisory" indicates that the file is
   // accessible even if it is locked.
 
-  // lock() returns false on time-out or deadlock.
-  bool lock(LockMode mode, int sleep_count = 1000,
-            Duration sleep_duration = Duration::milliseconds(1));
+  void lock(FileLockMode mode);
+  // lock() returns true on success, false on failure.
+  bool lock(FileLockMode mode, Duration timeout);
   // try_lock() returns false if the file is already locked.
-  bool try_lock(LockMode mode);
+  bool try_lock(FileLockMode mode);
   // unlock() returns false if the file is not locked.
   bool unlock();
-
-  bool locked() const;
-  bool unlocked() const;
 
   // The following functions are not thread-safe.
 
@@ -94,7 +136,7 @@ class File {
   void set_unlink_at_close(bool value);
 
   String path() const;
-  Flags flags() const;
+  FileFlags flags() const;
 
   const void *handle() const;
 
@@ -123,4 +165,4 @@ inline StringBuilder &operator<<(StringBuilder &builder, const File &file) {
 }  // namespace io
 }  // namespace grnxx
 
-#endif  // GRNXX_IO_FILE_HPP
+#endif  // FILE_FILE_HPP

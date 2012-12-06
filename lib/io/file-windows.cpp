@@ -27,6 +27,7 @@
 #include "../exception.hpp"
 #include "../logger.hpp"
 #include "../thread.hpp"
+#include "../time.hpp"
 #include "path.hpp"
 
 namespace grnxx {
@@ -40,52 +41,65 @@ FileImpl::~FileImpl() {
                     << ": '::CloseHandle' " << Error(::GetLastError());
     }
   }
-  if (unlink_at_close_ && (~flags_ & GRNXX_IO_TEMPORARY)) {
+  if (unlink_at_close_ && (~flags_ & FILE_TEMPORARY)) {
     unlink_if_exists(path_.c_str());
   }
 }
 
-std::unique_ptr<FileImpl> FileImpl::open(const char *path, Flags flags,
+std::unique_ptr<FileImpl> FileImpl::open(FileFlags flags, const char *path,
                                          int permission) {
   std::unique_ptr<FileImpl> file(new (std::nothrow) FileImpl);
   if (!file) {
     GRNXX_ERROR() << "new grnxx::io::FileImpl failed";
     GRNXX_THROW();
   }
-  if (flags & GRNXX_IO_TEMPORARY) {
-    file->open_temporary_file(path, flags, permission);
+  if (flags & FILE_TEMPORARY) {
+    file->open_temporary_file(flags, path, permission);
   } else {
-    file->open_regular_file(path, flags, permission);
+    file->open_regular_file(flags, path, permission);
   }
   return file;
 }
 
-bool FileImpl::lock(LockMode mode, int sleep_count,
-                    Duration sleep_duration) {
+void FileImpl::lock(FileLockMode mode) {
   if (locked_) {
-    return false;
+    GRNXX_ERROR() << "deadlock: file = " << *this;
+    GRNXX_THROW();
   }
+  while (!try_lock(mode)) {
+    Thread::sleep(FILE_LOCK_SLEEP_DURATION);
+  }
+}
 
-  for (int i = 0; i < sleep_count; ++i) {
+bool FileImpl::lock(FileLockMode mode, Duration timeout) {
+  if (locked_) {
+    GRNXX_ERROR() << "deadlock: file = " << *this;
+    GRNXX_THROW();
+  }
+  if (try_lock(mode)) {
+    return true;
+  }
+  const Time deadline = Time::now() + timeout;
+  while (Time::now() < deadline) {
     if (try_lock(mode)) {
       return true;
     }
-    Thread::sleep(sleep_duration);
+    Thread::sleep(FILE_LOCK_SLEEP_DURATION);
   }
   return false;
 }
 
-bool FileImpl::try_lock(LockMode mode) {
+bool FileImpl::try_lock(FileLockMode mode) {
   if (locked_) {
     return false;
   }
 
   DWORD flags = LOCKFILE_FAIL_IMMEDIATELY;
   switch (mode) {
-    case GRNXX_IO_SHARED_LOCK: {
+    case FILE_LOCK_SHARED: {
       break;
     }
-    case GRNXX_IO_EXCLUSIVE_LOCK: {
+    case FILE_LOCK_EXCLUSIVE: {
       flags |= LOCKFILE_EXCLUSIVE_LOCK;
       break;
     }
@@ -130,7 +144,7 @@ bool FileImpl::unlock() {
 }
 
 uint64_t FileImpl::read(void *buf, uint64_t size) {
-  if (flags_ & GRNXX_IO_WRITE_ONLY) {
+  if (flags_ & FILE_WRITE_ONLY) {
     GRNXX_ERROR() << "file is write-only";
     GRNXX_THROW();
   }
@@ -154,7 +168,7 @@ uint64_t FileImpl::read(void *buf, uint64_t size) {
 }
 
 uint64_t FileImpl::read(void *buf, uint64_t size, uint64_t offset) {
-  if (flags_ & GRNXX_IO_WRITE_ONLY) {
+  if (flags_ & FILE_WRITE_ONLY) {
     GRNXX_ERROR() << "file is write-only";
     GRNXX_THROW();
   }
@@ -174,7 +188,7 @@ uint64_t FileImpl::read(void *buf, uint64_t size, uint64_t offset) {
 }
 
 uint64_t FileImpl::write(const void *buf, uint64_t size) {
-  if (flags_ & GRNXX_IO_READ_ONLY) {
+  if (flags_ & FILE_READ_ONLY) {
     GRNXX_ERROR() << "file is read-only";
     GRNXX_THROW();
   }
@@ -201,7 +215,7 @@ uint64_t FileImpl::write(const void *buf, uint64_t size) {
 }
 
 uint64_t FileImpl::write(const void *buf, uint64_t size, uint64_t offset) {
-  if (flags_ & GRNXX_IO_READ_ONLY) {
+  if (flags_ & FILE_READ_ONLY) {
     GRNXX_ERROR() << "file is read-only";
     GRNXX_THROW();
   }
@@ -274,7 +288,7 @@ uint64_t FileImpl::tell() const {
 }
 
 void FileImpl::resize(uint64_t size) {
-  if (flags_ & GRNXX_IO_READ_ONLY) {
+  if (flags_ & FILE_READ_ONLY) {
     GRNXX_ERROR() << "file is read-only";
     GRNXX_THROW();
   }
@@ -334,10 +348,10 @@ bool FileImpl::unlink_if_exists(const char *path) {
 }
 
 FileImpl::FileImpl()
-  : path_(), flags_(Flags::none()), handle_(INVALID_HANDLE_VALUE),
+  : path_(), flags_(FileFlags::none()), handle_(INVALID_HANDLE_VALUE),
     append_mode_(false), locked_(false), unlink_at_close_(false) {}
 
-void FileImpl::open_regular_file(const char *path, Flags flags,
+void FileImpl::open_regular_file(FileFlags flags, const char *path,
                                  int permission) {
   if (!path) {
     GRNXX_ERROR() << "invalid argument: path = " << path;
@@ -346,16 +360,16 @@ void FileImpl::open_regular_file(const char *path, Flags flags,
   path_ = path;
 
   DWORD desired_access = GENERIC_READ | GENERIC_WRITE;
-  if ((~flags & GRNXX_IO_CREATE) && (flags & GRNXX_IO_READ_ONLY)) {
-    flags_ |= GRNXX_IO_READ_ONLY;
+  if ((~flags & FILE_CREATE) && (flags & FILE_READ_ONLY)) {
+    flags_ |= FILE_READ_ONLY;
     desired_access = GENERIC_READ;
-  } else if (flags & GRNXX_IO_WRITE_ONLY) {
-    flags_ |= GRNXX_IO_WRITE_ONLY;
+  } else if (flags & FILE_WRITE_ONLY) {
+    flags_ |= FILE_WRITE_ONLY;
     desired_access = GENERIC_WRITE;
   }
 
-  if ((~flags_ & GRNXX_IO_READ_ONLY) && (flags & GRNXX_IO_APPEND)) {
-    flags_ |= GRNXX_IO_APPEND;
+  if ((~flags_ & FILE_READ_ONLY) && (flags & FILE_APPEND)) {
+    flags_ |= FILE_APPEND;
     append_mode_ = true;
   }
 
@@ -363,22 +377,22 @@ void FileImpl::open_regular_file(const char *path, Flags flags,
       FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE;
 
   DWORD creation_disposition;
-  if (flags & GRNXX_IO_CREATE) {
-    flags_ |= GRNXX_IO_CREATE;
+  if (flags & FILE_CREATE) {
+    flags_ |= FILE_CREATE;
     creation_disposition = CREATE_NEW;
-    if (flags & GRNXX_IO_OPEN) {
-      flags_ |= GRNXX_IO_OPEN;
+    if (flags & FILE_OPEN) {
+      flags_ |= FILE_OPEN;
       creation_disposition = OPEN_ALWAYS;
-      if (flags & GRNXX_IO_TRUNCATE) {
-        flags_ |= GRNXX_IO_TRUNCATE;
+      if (flags & FILE_TRUNCATE) {
+        flags_ |= FILE_TRUNCATE;
         creation_disposition = CREATE_ALWAYS;
       }
     }
   } else {
-    flags_ |= GRNXX_IO_OPEN;
+    flags_ |= FILE_OPEN;
     creation_disposition = OPEN_EXISTING;
-    if (flags & GRNXX_IO_TRUNCATE) {
-      flags_ |= GRNXX_IO_TRUNCATE;
+    if (flags & FILE_TRUNCATE) {
+      flags_ |= FILE_TRUNCATE;
       creation_disposition = TRUNCATE_EXISTING;
     }
   }
@@ -396,9 +410,9 @@ void FileImpl::open_regular_file(const char *path, Flags flags,
   }
 }
 
-void FileImpl::open_temporary_file(const char *path, Flags flags,
+void FileImpl::open_temporary_file(FileFlags flags, const char *path,
                                    int permission) try {
-  flags_ = GRNXX_IO_TEMPORARY;
+  flags_ = FILE_TEMPORARY;
 
   const DWORD desired_access = GENERIC_READ | GENERIC_WRITE;
   const DWORD share_mode = FILE_SHARE_DELETE;

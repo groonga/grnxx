@@ -40,7 +40,7 @@ void test_existent_file() {
   const std::uint64_t FILE_SIZE = 12345;
 
   grnxx::io::File::unlink_if_exists(FILE_PATH);
-  grnxx::io::File file(FILE_PATH, grnxx::io::GRNXX_IO_CREATE);
+  grnxx::io::File file(grnxx::io::FILE_CREATE, FILE_PATH);
   file.resize(FILE_SIZE);
 
   grnxx::io::FileInfo file_info(FILE_PATH);
@@ -54,7 +54,7 @@ void test_existent_file() {
 
   assert(grnxx::io::FileInfo(file));
 
-  file = grnxx::io::File();
+  file.close();
   grnxx::io::File::unlink(FILE_PATH);
 }
 
@@ -100,8 +100,7 @@ int main() {
 
   assert(!file_info);
 
-  grnxx::io::File file("temp.dat", grnxx::io::GRNXX_IO_CREATE |
-                                   grnxx::io::GRNXX_IO_TEMPORARY);
+  grnxx::io::File file(grnxx::io::FILE_TEMPORARY, FILE_PATH);
   file.resize(12345);
 
   file_info = grnxx::io::FileInfo(file);
@@ -115,7 +114,7 @@ int main() {
   assert(!file_info.is_directory());
   assert(file_info.size() == 12345);
 
-  file = grnxx::io::File();
+  file.close();
 
   assert(!grnxx::io::File::exists("temp.dat"));
 

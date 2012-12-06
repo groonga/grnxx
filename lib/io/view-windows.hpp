@@ -27,6 +27,10 @@
 #endif  // NOMINMAX
 #include <windows.h>
 
+#ifdef FILE_READ_ONLY
+# undef FILE_READ_ONLY
+#endif  // FILE_READ_ONLY
+
 namespace grnxx {
 namespace io {
 

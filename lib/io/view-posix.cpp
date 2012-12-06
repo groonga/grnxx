@@ -153,12 +153,11 @@ void ViewImpl::map_on_file(const File &file, Flags flags, uint64_t offset,
   size_ = size;
 
   int protection_flags = PROT_READ | PROT_WRITE;
-  if ((file.flags() & GRNXX_IO_READ_ONLY) ||
-      ((~file.flags() & GRNXX_IO_WRITE_ONLY) &&
-       (flags & GRNXX_IO_READ_ONLY))) {
+  if ((file.flags() & FILE_READ_ONLY) ||
+      ((~file.flags() & FILE_WRITE_ONLY) && (flags & GRNXX_IO_READ_ONLY))) {
     flags_ |= GRNXX_IO_READ_ONLY;
     protection_flags = PROT_READ;
-  } else if ((file.flags() & GRNXX_IO_WRITE_ONLY) ||
+  } else if ((file.flags() & FILE_WRITE_ONLY) ||
              (flags & GRNXX_IO_WRITE_ONLY)) {
     flags_ |= GRNXX_IO_WRITE_ONLY;
     protection_flags = PROT_WRITE;

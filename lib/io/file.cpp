@@ -25,10 +25,36 @@
 namespace grnxx {
 namespace io {
 
+#define GRNXX_FLAGS_WRITE(flag) do { \
+  if (flags & flag) { \
+    if (!is_first) { \
+      builder << " | "; \
+    } \
+    builder << #flag; \
+    is_first = false; \
+  } \
+} while (false)
+
+StringBuilder &operator<<(StringBuilder &builder, FileFlags flags) {
+  if (flags) {
+    bool is_first = true;
+    GRNXX_FLAGS_WRITE(FILE_READ_ONLY);
+    GRNXX_FLAGS_WRITE(FILE_WRITE_ONLY);
+    GRNXX_FLAGS_WRITE(FILE_APPEND);
+    GRNXX_FLAGS_WRITE(FILE_CREATE);
+    GRNXX_FLAGS_WRITE(FILE_OPEN);
+    GRNXX_FLAGS_WRITE(FILE_TEMPORARY);
+    GRNXX_FLAGS_WRITE(FILE_TRUNCATE);
+    return builder;
+  } else {
+    return builder << "0";
+  }
+}
+
 File::File() : impl_() {}
 
-File::File(const char *path, Flags flags, int permission)
-  : impl_(FileImpl::open(path, flags, permission)) {}
+File::File(FileFlags flags, const char *path, int permission)
+  : impl_(FileImpl::open(flags, path, permission)) {}
 
 File::~File() {}
 
@@ -46,12 +72,17 @@ File &File::operator=(File &&file) {
   return *this;
 }
 
-bool File::lock(LockMode mode, int sleep_count, Duration sleep_duration) {
+void File::lock(FileLockMode mode) {
   throw_if_impl_is_invalid();
-  return impl_->lock(mode, sleep_count, sleep_duration);
+  impl_->lock(mode);
 }
 
-bool File::try_lock(LockMode mode) {
+bool File::lock(FileLockMode mode, Duration timeout) {
+  throw_if_impl_is_invalid();
+  return impl_->lock(mode, timeout);
+}
+
+bool File::try_lock(FileLockMode mode) {
   throw_if_impl_is_invalid();
   return impl_->try_lock(mode);
 }
@@ -59,16 +90,6 @@ bool File::try_lock(LockMode mode) {
 bool File::unlock() {
   throw_if_impl_is_invalid();
   return impl_->unlock();
-}
-
-bool File::locked() const {
-  throw_if_impl_is_invalid();
-  return impl_->locked();
-}
-
-bool File::unlocked() const {
-  throw_if_impl_is_invalid();
-  return impl_->unlocked();
 }
 
 uint64_t File::read(void *buf, uint64_t size) {
@@ -129,8 +150,8 @@ String File::path() const {
   return impl_ ? impl_->path() : String();
 }
 
-Flags File::flags() const {
-  return impl_ ? impl_->flags() : Flags::none();
+FileFlags File::flags() const {
+  return impl_ ? impl_->flags() : FileFlags::none();
 }
 
 const void *File::handle() const {

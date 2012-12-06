@@ -29,19 +29,13 @@ class FileImpl {
  public:
   ~FileImpl();
 
-  static std::unique_ptr<FileImpl> open(const char *path, Flags flags,
+  static std::unique_ptr<FileImpl> open(FileFlags flags, const char *path,
                                         int permission);
 
-  bool lock(LockMode mode, int sleep_count, Duration sleep_duration);
-  bool try_lock(LockMode mode);
+  void lock(FileLockMode mode);
+  bool lock(FileLockMode mode, Duration timeout);
+  bool try_lock(FileLockMode mode);
   bool unlock();
-
-  bool locked() const {
-    return locked_;
-  }
-  bool unlocked() const {
-    return !locked_;
-  }
 
   uint64_t read(void *buf, uint64_t size);
   uint64_t read(void *buf, uint64_t size, uint64_t offset);
@@ -66,7 +60,7 @@ class FileImpl {
   String path() const {
     return path_;
   }
-  Flags flags() const {
+  FileFlags flags() const {
     return flags_;
   }
 
@@ -82,15 +76,15 @@ class FileImpl {
 
  private:
   String path_;
-  Flags flags_;
+  FileFlags flags_;
   int fd_;
   bool locked_;
   bool unlink_at_close_;
 
   FileImpl();
 
-  void open_regular_file(const char *path, Flags flags, int permission);
-  void open_temporary_file(const char *path, Flags flags, int permission);
+  void open_regular_file(FileFlags flags, const char *path, int permission);
+  void open_temporary_file(FileFlags flags, const char *path, int permission);
 
   FileImpl(const FileImpl &);
   FileImpl &operator=(const FileImpl &);

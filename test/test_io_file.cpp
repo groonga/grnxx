@@ -28,13 +28,13 @@ void test_create() {
   assert(!grnxx::io::File::exists(FILE_PATH));
   assert(!grnxx::io::File::unlink_if_exists(FILE_PATH));
 
-  grnxx::io::File file(FILE_PATH, grnxx::io::GRNXX_IO_CREATE);
+  grnxx::io::File file(grnxx::io::FILE_CREATE, FILE_PATH);
 
   assert(file.path() == FILE_PATH);
   assert(file.tell() == 0);
   assert(file.size() == 0);
 
-  file = grnxx::io::File();
+  file.close();
 
   assert(grnxx::io::File::exists(FILE_PATH));
   grnxx::io::File::unlink(FILE_PATH);
@@ -47,11 +47,11 @@ void test_open() {
   const char FILE_PATH[] = "temp.grn";
 
   grnxx::io::File::unlink_if_exists(FILE_PATH);
-  grnxx::io::File(FILE_PATH, grnxx::io::GRNXX_IO_CREATE);
+  grnxx::io::File(grnxx::io::FILE_CREATE, FILE_PATH);
 
-  grnxx::io::File file(FILE_PATH);
+  grnxx::io::File file(grnxx::io::FILE_OPEN, FILE_PATH);
 
-  file = grnxx::io::File();
+  file.close();
   grnxx::io::File::unlink(FILE_PATH);
 }
 
@@ -60,14 +60,12 @@ void test_create_or_open() {
 
   grnxx::io::File::unlink_if_exists(FILE_PATH);
 
-  grnxx::io::File file(FILE_PATH, grnxx::io::GRNXX_IO_CREATE |
-                                  grnxx::io::GRNXX_IO_OPEN);
+  grnxx::io::File file(grnxx::io::FILE_CREATE_OR_OPEN, FILE_PATH);
 
-  file = grnxx::io::File();
-  file = grnxx::io::File(FILE_PATH, grnxx::io::GRNXX_IO_CREATE |
-                         grnxx::io::GRNXX_IO_OPEN);
+  file.close();
+  file.open(grnxx::io::FILE_CREATE_OR_OPEN, FILE_PATH);
 
-  file = grnxx::io::File();
+  file.close();
   grnxx::io::File::unlink(FILE_PATH);
 }
 
@@ -75,13 +73,13 @@ void test_write() {
   const char FILE_PATH[] = "temp.grn";
 
   grnxx::io::File::unlink_if_exists(FILE_PATH);
-  grnxx::io::File file(FILE_PATH, grnxx::io::GRNXX_IO_CREATE);
+  grnxx::io::File file(grnxx::io::FILE_CREATE, FILE_PATH);
 
   assert(file.write("0123456789", 10) == 10);
   assert(file.tell() == 10);
   assert(file.size() == 10);
 
-  file = grnxx::io::File();
+  file.close();
   grnxx::io::File::unlink(FILE_PATH);
 }
 
@@ -90,7 +88,7 @@ void test_resize() {
   const std::uint64_t FILE_SIZE = 1 << 20;
 
   grnxx::io::File::unlink_if_exists(FILE_PATH);
-  grnxx::io::File file(FILE_PATH, grnxx::io::GRNXX_IO_CREATE);
+  grnxx::io::File file(grnxx::io::FILE_CREATE, FILE_PATH);
 
   file.resize(FILE_SIZE);
   assert(file.tell() == FILE_SIZE);
@@ -100,7 +98,7 @@ void test_resize() {
   assert(file.tell() == 0);
   assert(file.size() == 0);
 
-  file = grnxx::io::File();
+  file.close();
   grnxx::io::File::unlink(FILE_PATH);
 }
 
@@ -109,7 +107,7 @@ void test_seek() {
   const std::uint64_t FILE_SIZE = 1 << 20;
 
   grnxx::io::File::unlink_if_exists(FILE_PATH);
-  grnxx::io::File file(FILE_PATH, grnxx::io::GRNXX_IO_CREATE);
+  grnxx::io::File file(grnxx::io::FILE_CREATE, FILE_PATH);
 
   file.resize(FILE_SIZE);
 
@@ -126,7 +124,7 @@ void test_seek() {
   assert(file.seek(-(FILE_SIZE / 2), SEEK_END) == (FILE_SIZE / 2));
   assert(file.tell() == (FILE_SIZE / 2));
 
-  file = grnxx::io::File();
+  file.close();
   grnxx::io::File::unlink(FILE_PATH);
 }
 
@@ -134,7 +132,7 @@ void test_read() {
   const char FILE_PATH[] = "temp.grn";
 
   grnxx::io::File::unlink_if_exists(FILE_PATH);
-  grnxx::io::File file(FILE_PATH, grnxx::io::GRNXX_IO_CREATE);
+  grnxx::io::File file(grnxx::io::FILE_CREATE, FILE_PATH);
 
   file.write("0123456789", 10);
   file.seek(0);
@@ -150,14 +148,14 @@ void test_read() {
   assert(file.tell() == 8);
   assert(std::memcmp(buf, "34567", 5) == 0);
 
-  file = grnxx::io::File();
+  file.close();
   grnxx::io::File::unlink(FILE_PATH);
 }
 
 void test_temporary() {
   const char FILE_PATH[] = "temp.grn";
 
-  grnxx::io::File file(FILE_PATH, grnxx::io::GRNXX_IO_TEMPORARY);
+  grnxx::io::File file(grnxx::io::FILE_TEMPORARY, FILE_PATH);
 
   assert(file.write("0123456789", 10) == 10);
   assert(file.seek(0) == 0);
@@ -168,7 +166,7 @@ void test_temporary() {
 
   grnxx::String path = file.path();
 
-  file = grnxx::io::File();
+  file.close();
 
   assert(!grnxx::io::File::exists(path.c_str()));
 }
@@ -176,13 +174,13 @@ void test_temporary() {
 void test_unlink_at_close() {
   const char FILE_PATH[] = "temp.grn";
 
-  grnxx::io::File file(FILE_PATH, grnxx::io::GRNXX_IO_CREATE);
+  grnxx::io::File file(grnxx::io::FILE_CREATE, FILE_PATH);
 
   file.set_unlink_at_close(true);
 
   assert(file.unlink_at_close());
 
-  file = grnxx::io::File();
+  file.close();
 
   assert(!grnxx::io::File::exists(FILE_PATH));
 }
@@ -191,30 +189,30 @@ void test_lock() {
   const char FILE_PATH[] = "temp.grn";
 
   grnxx::io::File::unlink_if_exists(FILE_PATH);
-  grnxx::io::File file_1(FILE_PATH, grnxx::io::GRNXX_IO_CREATE);
+  grnxx::io::File file_1(grnxx::io::FILE_CREATE, FILE_PATH);
 
   assert(!file_1.unlock());
-  assert(file_1.try_lock(grnxx::io::GRNXX_IO_EXCLUSIVE_LOCK));
-  assert(!file_1.try_lock(grnxx::io::GRNXX_IO_SHARED_LOCK));
+  assert(file_1.try_lock(grnxx::io::FILE_LOCK_EXCLUSIVE));
+  assert(!file_1.try_lock(grnxx::io::FILE_LOCK_SHARED));
   assert(file_1.unlock());
 
-  assert(file_1.try_lock(grnxx::io::GRNXX_IO_SHARED_LOCK));
+  assert(file_1.try_lock(grnxx::io::FILE_LOCK_SHARED));
   assert(file_1.unlock());
   assert(!file_1.unlock());
 
-  grnxx::io::File file_2(FILE_PATH, grnxx::io::GRNXX_IO_OPEN);
+  grnxx::io::File file_2(grnxx::io::FILE_OPEN, FILE_PATH);
 
-  assert(file_1.try_lock(grnxx::io::GRNXX_IO_EXCLUSIVE_LOCK));
-  assert(!file_2.try_lock(grnxx::io::GRNXX_IO_SHARED_LOCK));
-  assert(!file_2.try_lock(grnxx::io::GRNXX_IO_EXCLUSIVE_LOCK));
+  assert(file_1.try_lock(grnxx::io::FILE_LOCK_EXCLUSIVE));
+  assert(!file_2.try_lock(grnxx::io::FILE_LOCK_SHARED));
+  assert(!file_2.try_lock(grnxx::io::FILE_LOCK_EXCLUSIVE));
   assert(!file_2.unlock());
   assert(file_1.unlock());
 
-  assert(file_1.try_lock(grnxx::io::GRNXX_IO_SHARED_LOCK));
-  assert(!file_2.try_lock(grnxx::io::GRNXX_IO_EXCLUSIVE_LOCK));
-  assert(file_2.try_lock(grnxx::io::GRNXX_IO_SHARED_LOCK));
+  assert(file_1.try_lock(grnxx::io::FILE_LOCK_SHARED));
+  assert(!file_2.try_lock(grnxx::io::FILE_LOCK_EXCLUSIVE));
+  assert(file_2.try_lock(grnxx::io::FILE_LOCK_SHARED));
   assert(file_1.unlock());
-  assert(!file_1.try_lock(grnxx::io::GRNXX_IO_EXCLUSIVE_LOCK));
+  assert(!file_1.try_lock(grnxx::io::FILE_LOCK_EXCLUSIVE));
   assert(file_2.unlock());
 
   file_1 = grnxx::io::File();

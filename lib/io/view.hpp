@@ -19,6 +19,7 @@
 #define GRNXX_IO_VIEW_HPP
 
 #include "file.hpp"
+#include "flags.hpp"
 
 namespace grnxx {
 namespace io {

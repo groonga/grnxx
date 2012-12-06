@@ -45,7 +45,7 @@ void test_file_backed_mmap() {
   const std::uint64_t FILE_SIZE = 1 << 24;
   const std::uint64_t MMAP_SIZE = 1 << 20;
 
-  grnxx::io::File file(FILE_PATH, grnxx::io::GRNXX_IO_TEMPORARY);
+  grnxx::io::File file(grnxx::io::FILE_TEMPORARY, FILE_PATH);
 
   file.resize(FILE_SIZE);
   assert(file.size() == FILE_SIZE);

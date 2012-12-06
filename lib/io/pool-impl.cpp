@@ -225,8 +225,8 @@ void PoolImpl::unlink(const char *path) {
     GRNXX_THROW();
   } else {
     // FIXME
-    File file(path);
-    if (!file.try_lock(GRNXX_IO_EXCLUSIVE_LOCK)) {
+    File file(FILE_OPEN, path);
+    if (!file.try_lock(FILE_LOCK_EXCLUSIVE)) {
       GRNXX_ERROR() << "failed to lock file: path = " << path;
       GRNXX_THROW();
     }
@@ -288,7 +288,7 @@ void PoolImpl::open_temporary_pool(const char *path, Flags,
                                    const PoolOptions &options) {
   path_ = Path::full_path(path);
   flags_ = GRNXX_IO_TEMPORARY;
-  files_[0] = File(path_.c_str(), GRNXX_IO_TEMPORARY);
+  files_[0].open(FILE_TEMPORARY, path_.c_str());
   setup_header(options);
 }
 
@@ -300,29 +300,29 @@ void PoolImpl::open_regular_pool(const char *path, Flags flags,
   }
   path_ = Path::full_path(path);
 
-  Flags file_flags = Flags::none();
+  FileFlags file_flags = FileFlags::none();
   if ((~flags & GRNXX_IO_CREATE) && (flags & GRNXX_IO_READ_ONLY)) {
     flags_ |= GRNXX_IO_READ_ONLY;
-    file_flags |= GRNXX_IO_READ_ONLY;
+    file_flags |= FILE_READ_ONLY;
   }
   if (flags & GRNXX_IO_CREATE) {
     flags_ |= GRNXX_IO_CREATE;
-    file_flags |= GRNXX_IO_CREATE;
+    file_flags |= FILE_CREATE;
   }
   if ((~flags & GRNXX_IO_CREATE) || flags & GRNXX_IO_OPEN) {
     flags_ |= GRNXX_IO_OPEN;
-    file_flags |= GRNXX_IO_OPEN;
+    file_flags |= FILE_OPEN;
   }
-  files_[0] = File(path_.c_str(), file_flags);
+  files_[0].open(file_flags, path_.c_str());
   files_[0].set_unlink_at_close(true);
 
   if (flags & GRNXX_IO_CREATE) {
     if (files_[0].size() == 0) {
-      if (files_[0].lock(GRNXX_IO_EXCLUSIVE_LOCK)) {
+      if (files_[0].lock(FILE_LOCK_EXCLUSIVE, Duration::seconds(10))) {
         if (files_[0].size() == 0) {
           setup_header(options);
           files_[0].unlock();
-          if (!files_[0].lock(GRNXX_IO_SHARED_LOCK)) {
+          if (!files_[0].lock(FILE_LOCK_SHARED, Duration::seconds(10))) {
             GRNXX_ERROR() << "failed to lock file: path = " << path
                           << ", full_path = " << path_
                           << ", flags = " << flags;
@@ -345,7 +345,7 @@ void PoolImpl::open_regular_pool(const char *path, Flags flags,
         Thread::sleep(Duration::milliseconds(10));
       }
     }
-    if (files_[0].lock(GRNXX_IO_SHARED_LOCK)) {
+    if (files_[0].lock(FILE_LOCK_SHARED, Duration::seconds(10))) {
       check_header();
     }
   }
@@ -425,14 +425,14 @@ View PoolImpl::mmap_chunk(const ChunkInfo &chunk_info) {
   } else {
     File &file = files_[chunk_info.file_id()];
     if (!file) {
-      Flags file_flags = GRNXX_IO_CREATE | GRNXX_IO_OPEN;
+      FileFlags file_flags = FILE_CREATE_OR_OPEN;
       if (flags_ & GRNXX_IO_TEMPORARY) {
-        file_flags = GRNXX_IO_TEMPORARY;
+        file_flags = FILE_TEMPORARY;
       } else if (flags_ & GRNXX_IO_READ_ONLY) {
-        file_flags = GRNXX_IO_READ_ONLY;
+        file_flags = FILE_READ_ONLY;
       }
       const String &path = generate_path(chunk_info.file_id());
-      file = File(path.c_str(), file_flags);
+      file.open(file_flags, path.c_str());
     }
 
     const uint64_t min_file_size = chunk_info.offset() + chunk_info.size();
