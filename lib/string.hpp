@@ -63,9 +63,7 @@ class StringImpl {
   volatile uint32_t reference_count_;
   char buf_[1];
 
-  StringImpl() : length_(0), reference_count_(1), buf_() {
-    buf_[0] = '\0';
-  }
+  StringImpl() : length_(0), reference_count_(1), buf_{'\0'} {}
 
   static size_t buf_offset() {
     return static_cast<StringImpl *>(nullptr)->buf_
