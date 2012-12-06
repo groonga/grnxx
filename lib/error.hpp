@@ -38,28 +38,28 @@ enum ErrorCode {
 class Error {
  public:
   // For errno.
-  explicit Error(int error_code)
+  explicit constexpr Error(int error_code)
     : type_(POSIX_ERROR), posix_error_(error_code) {}
 #ifdef GRNXX_WINDOWS
   // For DWORD returned by ::GetLastError().
-  explicit Error(unsigned long error_code)
+  explicit constexpr Error(unsigned long error_code)
     : type_(WINDOWS_ERROR), windows_error_(error_code) {}
 #endif  // GRNXX_WINDOWS
-  explicit Error(ErrorCode error_code)
+  explicit constexpr Error(ErrorCode error_code)
     : type_(GRNXX_ERROR), grnxx_error_(error_code) {}
 
-  ErrorType type() const {
+  constexpr ErrorType type() const {
     return type_;
   }
-  int posix_error() const {
+  constexpr int posix_error() const {
     return posix_error_;
   }
 #ifdef GRNXX_WINDOWS
-  unsigned long windows_error() const {
+  constexpr unsigned long windows_error() const {
     return windows_error_;
   }
 #endif  // GRNXX_WINDOWS
-  ErrorCode grnxx_error() const {
+  constexpr ErrorCode grnxx_error() const {
     return grnxx_error_;
   }
 
