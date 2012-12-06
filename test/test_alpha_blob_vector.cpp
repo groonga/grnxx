@@ -76,12 +76,11 @@ void test_basics() {
 
   std::uint32_t block_id = vector.block_id();
 
-  vector = grnxx::alpha::BlobVector();
+  vector.close();
   pool = grnxx::io::Pool();
 
   pool = grnxx::io::Pool("temp.grn", grnxx::io::GRNXX_IO_OPEN);
-  vector = grnxx::alpha::BlobVector(grnxx::alpha::BLOB_VECTOR_OPEN,
-                                    pool, block_id);
+  vector.open(pool, block_id);
 
   GRNXX_NOTICE() << "blob_vector = " << vector;
 
@@ -104,7 +103,7 @@ void test_basics() {
   vector.set_value(0, nullptr, 0);
   assert(!vector.get_value(0));
 
-  vector = grnxx::alpha::BlobVector();
+  vector.close();
   pool = grnxx::io::Pool();
 
   grnxx::io::Pool::unlink_if_exists("temp.grn");

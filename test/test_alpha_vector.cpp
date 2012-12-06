@@ -69,13 +69,12 @@ void test_basics() {
 
   const std::uint32_t block_id = vector.block_id();
 
-  vector = grnxx::alpha::Vector<std::uint32_t>();
+  vector.close();
   pool = grnxx::io::Pool();
 
   pool = grnxx::io::Pool("temp.grn", grnxx::io::GRNXX_IO_OPEN);
 
-  vector = grnxx::alpha::Vector<std::uint32_t>(
-      grnxx::alpha::VECTOR_OPEN, pool, block_id);
+  vector.open(pool, block_id);
 
   assert(vector[0] == 1);
   assert(vector[1000] == 10);
@@ -90,8 +89,7 @@ void test_basics() {
   assert(grnxx::atomic_fetch_and_add(10, &vector[0]) == 2);
   assert(vector[0] == 12);
 
-  vector = grnxx::alpha::Vector<std::uint32_t>(
-      grnxx::alpha::VECTOR_CREATE, pool, 56789);
+  vector.create(pool, 56789);
 
   assert(vector[0] == 56789);
   assert(vector[1000] == 56789);
@@ -108,7 +106,7 @@ void test_basics() {
       std::uint32_t(98765), std::uint32_t(56789), &vector[0]));
   assert(vector[0] == 56789);
 
-  vector = grnxx::alpha::Vector<std::uint32_t>();
+  vector.close();
 
   grnxx::alpha::Vector<std::uint32_t>::unlink(pool, 0);
 
@@ -119,7 +117,7 @@ void test_basics() {
   float_vector[1 << 30] = 2.0F;
   assert(float_vector[1 << 30] == 2.0F);
 
-  float_vector = grnxx::alpha::Vector<float>();
+  float_vector.close();
 
   grnxx::alpha::Vector<double> double_vector(
       grnxx::alpha::VECTOR_CREATE, pool);
@@ -129,7 +127,7 @@ void test_basics() {
   double_vector[1 << 30] = 2.0;
   assert(double_vector[1 << 30] == 2.0);
 
-  double_vector = grnxx::alpha::Vector<double>();
+  double_vector.close();
 
   grnxx::alpha::Vector<Point> point_vector(grnxx::alpha::VECTOR_CREATE, pool);
 
@@ -143,7 +141,7 @@ void test_basics() {
   assert(point_vector[1 << 30].x == 987);
   assert(point_vector[1 << 30].y == 654);
 
-  point_vector = grnxx::alpha::Vector<Point>();
+  point_vector.close();
 
   pool = grnxx::io::Pool();
   grnxx::io::Pool::unlink_if_exists("temp.grn");
@@ -248,14 +246,14 @@ void test_times() {
       1.0 * (end - start).nanoseconds() / VECTOR_SIZE;
 
   const std::uint32_t block_id = vector.block_id();
-  vector = grnxx::alpha::Vector<T>();
+  vector.close();
 
   start = grnxx::Time::now();
   grnxx::alpha::Vector<T>::unlink(pool, block_id);
   end = grnxx::Time::now();
   double unlink_elapsed = (end - start).nanoseconds();
 
-  vector = grnxx::alpha::Vector<T>(grnxx::alpha::VECTOR_CREATE, pool, 0);
+  vector.create(pool, 0);
 
   start = grnxx::Time::now();
   for (std::uint64_t id = 0; id < VECTOR_SIZE; ++id) {
