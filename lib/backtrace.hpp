@@ -25,11 +25,11 @@
 
 namespace grnxx {
 
-const int BACKTRACE_MIN_SKIP_COUNT = 0;
-const int BACKTRACE_MAX_SKIP_COUNT = 16;
+constexpr int BACKTRACE_MIN_SKIP_COUNT = 0;
+constexpr int BACKTRACE_MAX_SKIP_COUNT = 16;
 
-const size_t BACKTRACE_MIN_BUF_SIZE = 16;
-const size_t BACKTRACE_MAX_BUF_SIZE = 1024;
+constexpr size_t BACKTRACE_MIN_BUF_SIZE = 16;
+constexpr size_t BACKTRACE_MAX_BUF_SIZE = 1024;
 
 class Backtrace {
  public:
