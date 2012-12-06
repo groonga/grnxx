@@ -26,12 +26,12 @@ namespace grnxx {
 class Time {
  public:
   Time() = default;
-  explicit Time(int64_t nanoseconds) : nanoseconds_(nanoseconds) {}
+  explicit constexpr Time(int64_t nanoseconds) : nanoseconds_(nanoseconds) {}
 
   static Time now();
   static Time now_in_seconds();
 
-  int64_t nanoseconds() const {
+  constexpr int64_t nanoseconds() const {
     return nanoseconds_;
   }
   void set_nanoseconds(int64_t nanoseconds) {
@@ -55,35 +55,35 @@ inline Time &operator-=(Time &lhs, Duration rhs) {
   return lhs;
 }
 
-inline Time operator+(Time lhs, Duration rhs) {
+inline constexpr Time operator+(Time lhs, Duration rhs) {
   return Time(lhs.nanoseconds() + rhs.nanoseconds());
 }
-inline Time operator+(Duration lhs, Time rhs) {
+inline constexpr Time operator+(Duration lhs, Time rhs) {
   return Time(lhs.nanoseconds() + rhs.nanoseconds());
 }
-inline Time operator-(Time lhs, Duration rhs) {
+inline constexpr Time operator-(Time lhs, Duration rhs) {
   return Time(lhs.nanoseconds() - rhs.nanoseconds());
 }
-inline Duration operator-(Time lhs, Time rhs) {
+inline constexpr Duration operator-(Time lhs, Time rhs) {
   return Duration(lhs.nanoseconds() - rhs.nanoseconds());
 }
 
-inline bool operator==(Time lhs, Time rhs) {
+inline constexpr bool operator==(Time lhs, Time rhs) {
   return lhs.nanoseconds() == rhs.nanoseconds();
 }
-inline bool operator!=(Time lhs, Time rhs) {
+inline constexpr bool operator!=(Time lhs, Time rhs) {
   return lhs.nanoseconds() != rhs.nanoseconds();
 }
-inline bool operator<(Time lhs, Time rhs) {
+inline constexpr bool operator<(Time lhs, Time rhs) {
   return lhs.nanoseconds() < rhs.nanoseconds();
 }
-inline bool operator<=(Time lhs, Time rhs) {
+inline constexpr bool operator<=(Time lhs, Time rhs) {
   return lhs.nanoseconds() <= rhs.nanoseconds();
 }
-inline bool operator>(Time lhs, Time rhs) {
+inline constexpr bool operator>(Time lhs, Time rhs) {
   return lhs.nanoseconds() > rhs.nanoseconds();
 }
-inline bool operator>=(Time lhs, Time rhs) {
+inline constexpr bool operator>=(Time lhs, Time rhs) {
   return lhs.nanoseconds() >= rhs.nanoseconds();
 }
 
