@@ -70,7 +70,7 @@ File View::file() const {
 }
 
 Flags View::flags() const {
-  return impl_ ? impl_->flags() : Flags();
+  return impl_ ? impl_->flags() : Flags::none();
 }
 
 void *View::address() const {

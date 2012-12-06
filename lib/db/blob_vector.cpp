@@ -322,7 +322,7 @@ BlobVectorLargeValueCell BlobVector::create_large_value_cell(
         header->set_type(BLOB_VECTOR_ACTIVE_VALUE);
       }
     } else {
-      BlobVectorLargeValueFlags flags;
+      BlobVectorLargeValueFlags flags = BlobVectorLargeValueFlags::none();
       uint64_t prev_capacity = 0;
 
       const uint64_t prev_offset = header_->rearmost_large_value_offset();

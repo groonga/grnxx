@@ -268,7 +268,7 @@ bool PoolImpl::unlink_if_exists(const char *path) {
 
 PoolImpl::PoolImpl()
   : path_(),
-    flags_(),
+    flags_(Flags::none()),
     header_(nullptr),
     files_(),
     header_chunk_(),
@@ -300,7 +300,7 @@ void PoolImpl::open_regular_pool(const char *path, Flags flags,
   }
   path_ = Path::full_path(path);
 
-  Flags file_flags;
+  Flags file_flags = Flags::none();
   if ((~flags & GRNXX_IO_CREATE) && (flags & GRNXX_IO_READ_ONLY)) {
     flags_ |= GRNXX_IO_READ_ONLY;
     file_flags |= GRNXX_IO_READ_ONLY;
@@ -454,7 +454,7 @@ View PoolImpl::mmap_chunk(const ChunkInfo &chunk_info) {
 
 Flags PoolImpl::get_view_flags() const {
   if (flags_ & GRNXX_IO_ANONYMOUS) {
-    return (flags_ & GRNXX_IO_HUGE_TLB) ? GRNXX_IO_HUGE_TLB : Flags();
+    return (flags_ & GRNXX_IO_HUGE_TLB) ? GRNXX_IO_HUGE_TLB : Flags::none();
   } else {
     Flags view_flags = GRNXX_IO_SHARED;
     if (flags_ & GRNXX_IO_READ_ONLY) {

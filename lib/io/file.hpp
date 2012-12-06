@@ -35,7 +35,7 @@ class File {
   //  GRNXX_IO_READ_ONLY, GRNXX_IO_WRITE_ONLY, GRNXX_IO_APPEND,
   //  GRNXX_IO_CREATE, GRNXX_IO_OPEN, GRNXX_IO_TEMPORARY, GRNXX_IO_TRUNCATE.
   // Windows ignores permission.
-  explicit File(const char *path, Flags flags = Flags(),
+  explicit File(const char *path, Flags flags = Flags::none(),
                 int permission = 0644);
   ~File();
 

@@ -97,7 +97,8 @@ void ViewImpl::sync(uint64_t offset, uint64_t size) {
 }
 
 ViewImpl::ViewImpl()
-  : file_(), flags_(), address_(MAP_FAILED), offset_(0), size_(0) {}
+  : file_(), flags_(Flags::none()),
+    address_(MAP_FAILED), offset_(0), size_(0) {}
 
 #ifdef MAP_HUGETLB
 void ViewImpl::map_on_memory(Flags flags, uint64_t size) {

@@ -28,8 +28,7 @@ class FlagsImpl {
   typedef T Identifier;
   typedef U Type;
 
-  constexpr FlagsImpl() : flags_(0) {}
-  constexpr FlagsImpl(const FlagsImpl &flags) : flags_(flags.flags_) {}
+  FlagsImpl() = default;
 
   constexpr explicit operator bool() {
     return flags_ != 0;
@@ -68,6 +67,9 @@ class FlagsImpl {
     return *this;
   }
 
+  static constexpr FlagsImpl none() {
+    return FlagsImpl(0);
+  }
   static constexpr FlagsImpl define(Type flags) {
     return FlagsImpl(flags);
   }
@@ -77,6 +79,11 @@ class FlagsImpl {
 
   explicit constexpr FlagsImpl(Type flags) : flags_(flags) {}
 };
+
+class FlagsImplExampleIdentifier {};
+typedef FlagsImpl<FlagsImplExampleIdentifier> FlagsImplExample;
+
+GRNXX_ASSERT_POD(FlagsImplExample);
 
 }  // namespace grnxx
 

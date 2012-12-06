@@ -244,7 +244,7 @@ class Pool {
   // Available flags are as follows:
   //  GRNXX_IO_READ_ONLY, GRNXX_IO_ANONYMOUS, GRNXX_IO_CREATE,
   //  GRNXX_IO_OPEN, GRNXX_IO_TEMPORARY.
-  Pool(const char *path, Flags flags = Flags(),
+  Pool(const char *path, Flags flags = Flags::none(),
        const PoolOptions &options = PoolOptions());
   ~Pool();
 

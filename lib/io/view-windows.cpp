@@ -109,7 +109,7 @@ void ViewImpl::sync(uint64_t offset, uint64_t size) {
 }
 
 ViewImpl::ViewImpl()
-  : file_(), flags_(), handle_(nullptr),
+  : file_(), flags_(Flags::none()), handle_(nullptr),
     address_(nullptr), offset_(0), size_(0) {}
 
 void ViewImpl::map_on_memory(Flags, uint64_t size) {

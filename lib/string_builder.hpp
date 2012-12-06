@@ -34,7 +34,7 @@ const StringBuilderFlags STRING_BUILDER_AUTO_RESIZE =
 
 class StringBuilder {
  public:
-  explicit StringBuilder(StringBuilderFlags flags = StringBuilderFlags())
+  explicit StringBuilder(StringBuilderFlags flags = StringBuilderFlags::none())
     : buf_(),
       begin_(nullptr),
       end_(nullptr),
@@ -43,11 +43,11 @@ class StringBuilder {
       failed_(false) {}
 
   explicit StringBuilder(size_t size,
-                         StringBuilderFlags flags = StringBuilderFlags());
+                         StringBuilderFlags flags = StringBuilderFlags::none());
 
   template <size_t T>
   explicit StringBuilder(char (&buf)[T],
-                         StringBuilderFlags flags = StringBuilderFlags())
+                         StringBuilderFlags flags = StringBuilderFlags::none())
     : buf_(),
       begin_(buf),
       end_(buf + T - 1),
@@ -58,7 +58,7 @@ class StringBuilder {
   }
 
   StringBuilder(char *buf, size_t size,
-                StringBuilderFlags flags = StringBuilderFlags())
+                StringBuilderFlags flags = StringBuilderFlags::none())
     : buf_(),
       begin_(buf),
       end_(buf + size - 1),

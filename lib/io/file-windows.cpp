@@ -334,7 +334,7 @@ bool FileImpl::unlink_if_exists(const char *path) {
 }
 
 FileImpl::FileImpl()
-  : path_(), flags_(), handle_(INVALID_HANDLE_VALUE),
+  : path_(), flags_(Flags::none()), handle_(INVALID_HANDLE_VALUE),
     append_mode_(false), locked_(false), unlink_at_close_(false) {}
 
 void FileImpl::open_regular_file(const char *path, Flags flags,

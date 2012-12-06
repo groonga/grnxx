@@ -130,7 +130,7 @@ String File::path() const {
 }
 
 Flags File::flags() const {
-  return impl_ ? impl_->flags() : Flags();
+  return impl_ ? impl_->flags() : Flags::none();
 }
 
 const void *File::handle() const {

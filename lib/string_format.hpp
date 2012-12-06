@@ -95,7 +95,7 @@ StringBuilder &operator<<(StringBuilder &builder,
   char local_buf[STRING_BUILDER_BUF_SIZE_MIN];
   const StringBuilderFlags local_flags =
       (alignment.width() >= sizeof(local_buf)) ?
-          STRING_BUILDER_AUTO_RESIZE : StringBuilderFlags();
+          STRING_BUILDER_AUTO_RESIZE : StringBuilderFlags::none();
 
   StringBuilder local_builder(local_buf, local_flags);
   local_builder << alignment.value();
