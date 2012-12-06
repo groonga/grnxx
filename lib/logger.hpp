@@ -33,7 +33,7 @@
 
 namespace grnxx {
 
-const size_t LOGGER_BUF_SIZE = 4096;
+constexpr size_t LOGGER_BUF_SIZE = 4096;
 
 enum LoggerLevel {
   ERROR_LOGGER   = 0x0000,
@@ -44,16 +44,16 @@ enum LoggerLevel {
 class LoggerFlagsIdentifier {};
 typedef FlagsImpl<LoggerFlagsIdentifier> LoggerFlags;
 
-const LoggerFlags LOGGER_WITH_DATE_TIME = LoggerFlags::define(0x0001);
-const LoggerFlags LOGGER_WITH_LOCATION  = LoggerFlags::define(0x0002);
-const LoggerFlags LOGGER_WITH_LEVEL     = LoggerFlags::define(0x0004);
-const LoggerFlags LOGGER_WITH_ALL       = LoggerFlags::define(0x0007);
+constexpr LoggerFlags LOGGER_WITH_DATE_TIME = LoggerFlags::define(0x0001);
+constexpr LoggerFlags LOGGER_WITH_LOCATION  = LoggerFlags::define(0x0002);
+constexpr LoggerFlags LOGGER_WITH_LEVEL     = LoggerFlags::define(0x0004);
+constexpr LoggerFlags LOGGER_WITH_ALL       = LoggerFlags::define(0x0007);
 
-const LoggerFlags LOGGER_ENABLE_COUT = LoggerFlags::define(0x0100);
-const LoggerFlags LOGGER_ENABLE_CERR = LoggerFlags::define(0x0200);
-const LoggerFlags LOGGER_ENABLE_CLOG = LoggerFlags::define(0x0400);
+constexpr LoggerFlags LOGGER_ENABLE_COUT = LoggerFlags::define(0x0100);
+constexpr LoggerFlags LOGGER_ENABLE_CERR = LoggerFlags::define(0x0200);
+constexpr LoggerFlags LOGGER_ENABLE_CLOG = LoggerFlags::define(0x0400);
 
-const LoggerFlags LOGGER_ENABLE_AUTO_RESIZE = LoggerFlags::define(0x1000);
+constexpr LoggerFlags LOGGER_ENABLE_AUTO_RESIZE = LoggerFlags::define(0x1000);
 
 class Logger {
  public:

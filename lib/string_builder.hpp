@@ -24,12 +24,12 @@
 
 namespace grnxx {
 
-const size_t STRING_BUILDER_BUF_SIZE_MIN = 64;
+constexpr size_t STRING_BUILDER_BUF_SIZE_MIN = 64;
 
 class StringBuilderFlagsIdentifier {};
 typedef FlagsImpl<StringBuilderFlagsIdentifier> StringBuilderFlags;
 
-const StringBuilderFlags STRING_BUILDER_AUTO_RESIZE =
+constexpr StringBuilderFlags STRING_BUILDER_AUTO_RESIZE =
     StringBuilderFlags::define(0x01);
 
 class StringBuilder {

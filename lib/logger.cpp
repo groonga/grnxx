@@ -35,7 +35,7 @@ class LoggerSingleton {
     if (!instance_) {
       return false;
     }
-    static const LoggerFlags OUTPUT_FLAGS =
+    static constexpr LoggerFlags OUTPUT_FLAGS =
         LOGGER_ENABLE_COUT | LOGGER_ENABLE_CERR | LOGGER_ENABLE_CLOG;
     const LoggerFlags flags = Logger::flags();
     if (!(flags & OUTPUT_FLAGS)) {

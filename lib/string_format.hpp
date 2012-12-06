@@ -32,61 +32,60 @@ enum StringFormatAlignmentAttribute {
 template <typename T>
 class StringFormatAlignment {
  public:
-  StringFormatAlignment(const T &value, size_t width, int pad,
-                        StringFormatAlignmentAttribute attribute)
+  constexpr StringFormatAlignment(const T &value, size_t width, int pad,
+                                  StringFormatAlignmentAttribute attribute)
     : value_(value), width_(width), pad_(pad), attribute_(attribute) {}
 
-  const T &value() const {
+  constexpr const T &value() {
     return value_;
   }
-  size_t width() const {
+  constexpr size_t width() {
     return width_;
   }
-  int pad() const {
+  constexpr int pad() {
     return pad_;
   }
-  StringFormatAlignmentAttribute attribute() const {
+  constexpr StringFormatAlignmentAttribute attribute() {
     return attribute_;
   }
 
  private:
   const T &value_;
-  const size_t width_;
-  const int pad_;
-  const StringFormatAlignmentAttribute attribute_;
+  size_t width_;
+  int pad_;
+  StringFormatAlignmentAttribute attribute_;
 };
 
 class StringFormat {
  public:
+  StringFormat() = delete;
+  ~StringFormat() = delete;
+
+  StringFormat(const StringFormat &) = delete;
+  StringFormat &operator=(const StringFormat &) = delete;
+
   template <typename T>
-  static StringFormatAlignment<T> align_left(
+  static constexpr StringFormatAlignment<T> align_left(
       const T &value, size_t width, int pad = ' ') {
     return align<T>(value, width, pad, STRING_FORMAT_ALIGNMENT_LEFT);
   }
   template <typename T>
-  static StringFormatAlignment<T> align_right(
+  static constexpr StringFormatAlignment<T> align_right(
       const T &value, size_t width, int pad = ' ') {
     return align<T>(value, width, pad, STRING_FORMAT_ALIGNMENT_RIGHT);
   }
   template <typename T>
-  static StringFormatAlignment<T> align_center(
+  static constexpr StringFormatAlignment<T> align_center(
       const T &value, size_t width, int pad = ' ') {
     return align<T>(value, width, pad, STRING_FORMAT_ALIGNMENT_CENTER);
   }
 
   template <typename T>
-  static StringFormatAlignment<T> align(
+  static constexpr StringFormatAlignment<T> align(
       const T &value, size_t width, int pad = ' ',
       StringFormatAlignmentAttribute attribute = STRING_FORMAT_ALIGNMENT_LEFT) {
     return StringFormatAlignment<T>(value, width, pad, attribute);
   }
-
- private:
-  StringFormat();
-  ~StringFormat();
-
-  StringFormat(const StringFormat &);
-  StringFormat &operator=(const StringFormat &);
 };
 
 template <typename T>

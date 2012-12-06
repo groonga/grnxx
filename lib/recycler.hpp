@@ -22,23 +22,21 @@
 
 namespace grnxx {
 
-const uint8_t  RECYCLER_STAMP_BUF_SIZE_BITS = 6;
-const uint16_t RECYCLER_STAMP_BUF_SIZE      =
+constexpr uint8_t  RECYCLER_STAMP_BUF_SIZE_BITS = 6;
+constexpr uint16_t RECYCLER_STAMP_BUF_SIZE      =
     uint16_t(1 << RECYCLER_STAMP_BUF_SIZE_BITS);
-const uint16_t RECYCLER_STAMP_MASK          = RECYCLER_STAMP_BUF_SIZE - 1;
+constexpr uint16_t RECYCLER_STAMP_MASK          = RECYCLER_STAMP_BUF_SIZE - 1;
 
-const uint32_t RECYCLER_STAMP_COUNT_PER_UPDATE = 512;
+constexpr uint32_t RECYCLER_STAMP_COUNT_PER_UPDATE = 512;
 
-const Time RECYCLER_FUTURE_TIME = Time(std::numeric_limits<int64_t>::max());
+constexpr Time RECYCLER_FUTURE_TIME = Time::max();
 
 class Recycler {
  public:
   Recycler() : count_(), stamp_pair_(), frozen_duration_(), times_() {}
   explicit Recycler(Duration frozen_duration)
-    : count_(0), stamp_pair_(), frozen_duration_(frozen_duration), times_() {
-    stamp_pair_.current = 0;
-    stamp_pair_.threshold = 0;
-
+    : count_(0), stamp_pair_{ 0, 0 },
+      frozen_duration_(frozen_duration), times_() {
     times_[0] = Time(0);
     for (uint16_t i = 1; i < RECYCLER_STAMP_BUF_SIZE; ++i) {
       times_[i] = Time(RECYCLER_FUTURE_TIME);
