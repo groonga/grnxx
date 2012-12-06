@@ -25,6 +25,11 @@ int main() {
                            grnxx::LOGGER_ENABLE_COUT);
   grnxx::Logger::set_max_level(grnxx::NOTICE_LOGGER);
 
+  assert(grnxx::Time::max().nanoseconds() ==
+         std::numeric_limits<std::int64_t>::max());
+  assert(grnxx::Time::min().nanoseconds() ==
+         std::numeric_limits<std::int64_t>::min());
+
   grnxx::Time time = grnxx::Time::now();
   GRNXX_NOTICE() << "grnxx::Time::now: " << time;
 

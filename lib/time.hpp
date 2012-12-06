@@ -40,6 +40,15 @@ class Time {
 
   StringBuilder &write_to(StringBuilder &builder) const;
 
+  static constexpr Time max() {
+    // TODO: This should use std::numeric_limits<T>::max().
+    return Time(static_cast<int64_t>((uint64_t(1) << 63) - 1));
+  }
+  static constexpr Time min() {
+    // TODO: This should use std::numeric_limits<T>::min().
+    return Time(static_cast<int64_t>(uint64_t(1) << 63));
+  }
+
  private:
   int64_t nanoseconds_;
 
