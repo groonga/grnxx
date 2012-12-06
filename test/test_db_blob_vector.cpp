@@ -28,7 +28,7 @@
 void test_basics() {
   grnxx::io::Pool::unlink_if_exists("temp.grn");
 
-  grnxx::io::Pool pool("temp.grn", grnxx::io::GRNXX_IO_CREATE);
+  grnxx::io::Pool pool(grnxx::io::POOL_CREATE, "temp.grn");
 
   grnxx::db::BlobVector vector;
   vector.create(pool);
@@ -78,9 +78,9 @@ void test_basics() {
   std::uint32_t block_id = vector.block_id();
 
   vector.close();
-  pool = grnxx::io::Pool();
+  pool.close();
 
-  pool = grnxx::io::Pool("temp.grn", grnxx::io::GRNXX_IO_OPEN);
+  pool.open(grnxx::io::POOL_OPEN, "temp.grn");
   vector.open(pool, block_id);
 
   GRNXX_NOTICE() << "blob_vector = " << vector;
@@ -102,7 +102,7 @@ void test_basics() {
   assert(length == values[4].length());
 
   vector.close();
-  pool = grnxx::io::Pool();
+  pool.close();
 
   grnxx::io::Pool::unlink_if_exists("temp.grn");
 }
@@ -122,7 +122,7 @@ void test_random_values(std::size_t num_values,
     }
   }
 
-  grnxx::io::Pool pool("temp.grn", grnxx::io::GRNXX_IO_TEMPORARY);
+  grnxx::io::Pool pool(grnxx::io::POOL_TEMPORARY, "temp.grn");
 
   grnxx::db::BlobVector vector;
   vector.create(pool);
@@ -183,7 +183,7 @@ void test_random_updates(grnxx::Duration frozen_duration) {
   grnxx::io::PoolOptions options;
   options.set_frozen_duration(frozen_duration);
 
-  grnxx::io::Pool pool("temp.grn", grnxx::io::GRNXX_IO_TEMPORARY, options);
+  grnxx::io::Pool pool(grnxx::io::POOL_TEMPORARY, "temp.grn", options);
 
   grnxx::db::BlobVector vector;
   vector.create(pool);
@@ -258,7 +258,7 @@ void test_random() {
     }
   }
 
-  grnxx::io::Pool pool("temp.grn", grnxx::io::GRNXX_IO_TEMPORARY);
+  grnxx::io::Pool pool(grnxx::io::POOL_TEMPORARY, "temp.grn");
 
   grnxx::db::BlobVector vector;
   vector.create(pool);

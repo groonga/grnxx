@@ -32,7 +32,7 @@ struct Point {
 void test_basics() {
   grnxx::io::Pool::unlink_if_exists("temp.grn");
 
-  grnxx::io::Pool pool("temp.grn", grnxx::io::GRNXX_IO_CREATE);
+  grnxx::io::Pool pool(grnxx::io::POOL_CREATE, "temp.grn");
 
   grnxx::alpha::Vector<std::uint32_t> vector(
       grnxx::alpha::VECTOR_CREATE, pool);
@@ -70,9 +70,9 @@ void test_basics() {
   const std::uint32_t block_id = vector.block_id();
 
   vector.close();
-  pool = grnxx::io::Pool();
+  pool.close();
 
-  pool = grnxx::io::Pool("temp.grn", grnxx::io::GRNXX_IO_OPEN);
+  pool.open(grnxx::io::POOL_OPEN, "temp.grn");
 
   vector.open(pool, block_id);
 
@@ -143,7 +143,7 @@ void test_basics() {
 
   point_vector.close();
 
-  pool = grnxx::io::Pool();
+  pool.close();
   grnxx::io::Pool::unlink_if_exists("temp.grn");
 }
 
@@ -151,7 +151,7 @@ template <typename T>
 void test_times() {
   enum { VECTOR_SIZE = 1 << 20 };
 
-  grnxx::io::Pool pool("temp.grn", grnxx::io::GRNXX_IO_TEMPORARY);
+  grnxx::io::Pool pool(grnxx::io::POOL_TEMPORARY, "temp.grn");
 
   grnxx::alpha::Vector<T> vector(grnxx::alpha::VECTOR_CREATE, pool);
 

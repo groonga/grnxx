@@ -15,8 +15,8 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#ifndef VIEW_VIEW_HPP
-#define VIEW_VIEW_HPP
+#ifndef GRNXX_IO_VIEW_HPP
+#define GRNXX_IO_VIEW_HPP
 
 #include "file.hpp"
 
@@ -120,4 +120,4 @@ inline StringBuilder &operator<<(StringBuilder &builder, const View &view) {
 }  // namespace io
 }  // namespace grnxx
 
-#endif  // VIEW_VIEW_HPP
+#endif  // GRNXX_IO_VIEW_HPP

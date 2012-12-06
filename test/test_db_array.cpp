@@ -38,7 +38,7 @@ void test_array_1() {
     vector[i] = random();
   }
 
-  grnxx::io::Pool pool("temp.grn", grnxx::io::GRNXX_IO_CREATE);
+  grnxx::io::Pool pool(grnxx::io::POOL_CREATE, "temp.grn");
 
   grnxx::db::Array<std::uint32_t> array;
   array.create(&pool, VECTOR_SIZE);
@@ -74,7 +74,7 @@ void test_array_1() {
 void test_array_2() {
   enum { VECTOR_SIZE = 1 << 24 };
 
-  grnxx::io::Pool pool("temp.grn", grnxx::io::GRNXX_IO_TEMPORARY);
+  grnxx::io::Pool pool(grnxx::io::POOL_TEMPORARY, "temp.grn");
 
   grnxx::db::Array<std::uint8_t[3]> array;
   array.create(&pool, VECTOR_SIZE);

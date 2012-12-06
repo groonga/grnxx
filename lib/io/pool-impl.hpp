@@ -28,7 +28,7 @@ class PoolImpl {
   ~PoolImpl();
 
   static std::unique_ptr<PoolImpl> open(
-      const char *path, Flags flags,
+      PoolFlags flags, const char *path,
       const PoolOptions &options = PoolOptions());
 
   BlockInfo *create_block(uint64_t size);
@@ -57,7 +57,7 @@ class PoolImpl {
   String path() const {
     return path_;
   }
-  Flags flags() const {
+  PoolFlags flags() const {
     return flags_;
   }
   const PoolOptions &options() const {
@@ -78,7 +78,7 @@ class PoolImpl {
 
  private:
   String path_;
-  Flags flags_;
+  PoolFlags flags_;
   PoolHeader *header_;
   File files_[POOL_MAX_NUM_FILES];
   Chunk header_chunk_;
@@ -88,10 +88,10 @@ class PoolImpl {
 
   PoolImpl();
 
-  void open_anonymous_pool(Flags flags, const PoolOptions &options);
-  void open_temporary_pool(const char *path, Flags flags,
+  void open_anonymous_pool(PoolFlags flags, const PoolOptions &options);
+  void open_temporary_pool(PoolFlags flags, const char *path,
                            const PoolOptions &options);
-  void open_regular_pool(const char *path, Flags flags,
+  void open_regular_pool(PoolFlags flags, const char *path,
                          const PoolOptions &options);
 
   void setup_header(const PoolOptions &options);

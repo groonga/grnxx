@@ -8,7 +8,6 @@ libgrnxx_io_la_SOURCES =	\
 	file.cpp		\
 	file_info.cpp		\
 	file_info-impl.cpp	\
-	flags.cpp		\
 	path.cpp		\
 	pool.cpp		\
 	pool-impl.cpp		\
@@ -25,7 +24,6 @@ libgrnxx_io_include_HEADERS =	\
 	file.hpp		\
 	file_info.hpp		\
 	file_info-impl.hpp	\
-	flags.hpp		\
 	path.hpp		\
 	pool.hpp		\
 	pool-impl.hpp		\

@@ -23,6 +23,31 @@
 namespace grnxx {
 namespace io {
 
+#define GRNXX_FLAGS_WRITE(flag) do { \
+  if (flags & flag) { \
+    if (!is_first) { \
+      builder << " | "; \
+    } \
+    builder << #flag; \
+    is_first = false; \
+  } \
+} while (false)
+
+StringBuilder &operator<<(StringBuilder &builder, PoolFlags flags) {
+  if (flags) {
+    bool is_first = true;
+    GRNXX_FLAGS_WRITE(POOL_READ_ONLY);
+    GRNXX_FLAGS_WRITE(POOL_ANONYMOUS);
+    GRNXX_FLAGS_WRITE(POOL_CREATE);
+    GRNXX_FLAGS_WRITE(POOL_HUGE_TLB);
+    GRNXX_FLAGS_WRITE(POOL_OPEN);
+    GRNXX_FLAGS_WRITE(POOL_TEMPORARY);
+    return builder;
+  } else {
+    return builder << "0";
+  }
+}
+
 PoolOptions::PoolOptions()
   : max_block_size_(0),
     min_block_chunk_size_(0),
@@ -227,8 +252,8 @@ StringBuilder &PoolHeader::write_to(StringBuilder &builder) const {
 
 Pool::Pool() : impl_() {}
 
-Pool::Pool(const char *path, Flags flags, const PoolOptions &options)
-  : impl_(PoolImpl::open(path, flags, options)) {}
+Pool::Pool(PoolFlags flags, const char *path, const PoolOptions &options)
+  : impl_(PoolImpl::open(flags, path, options)) {}
 
 Pool::~Pool() {}
 
@@ -246,7 +271,7 @@ Pool &Pool::operator=(Pool &&pool) {
   return *this;
 }
 
-#define GRNXX_IO_POOL_THROW_IF_IMPL_IS_INVALID() do {\
+#define POOL_POOL_THROW_IF_IMPL_IS_INVALID() do {\
   if (!impl_) {\
     GRNXX_ERROR() << "invalid instance: pool = " << *this;\
     GRNXX_THROW();\
@@ -254,61 +279,61 @@ Pool &Pool::operator=(Pool &&pool) {
 } while (false)
 
 const BlockInfo *Pool::create_block(uint64_t size) {
-  GRNXX_IO_POOL_THROW_IF_IMPL_IS_INVALID();
+  POOL_POOL_THROW_IF_IMPL_IS_INVALID();
   return impl_->create_block(size);
 }
 
 const BlockInfo *Pool::get_block_info(uint32_t block_id) {
-  GRNXX_IO_POOL_THROW_IF_IMPL_IS_INVALID();
+  POOL_POOL_THROW_IF_IMPL_IS_INVALID();
   return impl_->get_block_info(block_id);
 }
 
 void *Pool::get_block_address(uint32_t block_id) {
-  GRNXX_IO_POOL_THROW_IF_IMPL_IS_INVALID();
+  POOL_POOL_THROW_IF_IMPL_IS_INVALID();
   return impl_->get_block_address(block_id);
 }
 
 void *Pool::get_block_address(const BlockInfo &block_info) {
-  GRNXX_IO_POOL_THROW_IF_IMPL_IS_INVALID();
+  POOL_POOL_THROW_IF_IMPL_IS_INVALID();
   return impl_->get_block_address(block_info);
 }
 
 void Pool::free_block(uint32_t block_id) {
-  GRNXX_IO_POOL_THROW_IF_IMPL_IS_INVALID();
+  POOL_POOL_THROW_IF_IMPL_IS_INVALID();
   return impl_->free_block(block_id);
 }
 
 void Pool::free_block(const BlockInfo &block_info) {
-  GRNXX_IO_POOL_THROW_IF_IMPL_IS_INVALID();
+  POOL_POOL_THROW_IF_IMPL_IS_INVALID();
   return impl_->free_block(block_info);
 }
 
 String Pool::path() const {
-  GRNXX_IO_POOL_THROW_IF_IMPL_IS_INVALID();
+  POOL_POOL_THROW_IF_IMPL_IS_INVALID();
   return impl_->path();
 }
 
-Flags Pool::flags() const {
-  GRNXX_IO_POOL_THROW_IF_IMPL_IS_INVALID();
+PoolFlags Pool::flags() const {
+  POOL_POOL_THROW_IF_IMPL_IS_INVALID();
   return impl_->flags();
 }
 
 const PoolOptions &Pool::options() const {
-  GRNXX_IO_POOL_THROW_IF_IMPL_IS_INVALID();
+  POOL_POOL_THROW_IF_IMPL_IS_INVALID();
   return impl_->options();
 }
 
 const PoolHeader &Pool::header() const {
-  GRNXX_IO_POOL_THROW_IF_IMPL_IS_INVALID();
+  POOL_POOL_THROW_IF_IMPL_IS_INVALID();
   return impl_->header();
 }
 
 Recycler *Pool::mutable_recycler() {
-  GRNXX_IO_POOL_THROW_IF_IMPL_IS_INVALID();
+  POOL_POOL_THROW_IF_IMPL_IS_INVALID();
   return impl_->mutable_recycler();
 }
 
-#undef GRNXX_IO_POOL_THROW_IF_IMPL_IS_INVALID
+#undef POOL_POOL_THROW_IF_IMPL_IS_INVALID
 
 void Pool::swap(Pool &rhs) {
   impl_.swap(rhs.impl_);

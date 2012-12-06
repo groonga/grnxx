@@ -30,21 +30,21 @@ void test_constructor() {
   grnxx::io::Pool pool;
   assert(!pool);
 
-  pool = grnxx::io::Pool("temp.grn", grnxx::io::GRNXX_IO_CREATE);
+  pool.open(grnxx::io::POOL_CREATE, "temp.grn");
   assert(pool);
-  assert(pool.flags() & grnxx::io::GRNXX_IO_CREATE);
+  assert(pool.flags() & grnxx::io::POOL_CREATE);
 
-  pool = grnxx::io::Pool("temp.grn");
+  pool.open(grnxx::io::PoolFlags::none(), "temp.grn");
   assert(pool);
-  assert(pool.flags() & grnxx::io::GRNXX_IO_OPEN);
+  assert(pool.flags() & grnxx::io::POOL_OPEN);
 
-  pool = grnxx::io::Pool("temp.grn", grnxx::io::GRNXX_IO_ANONYMOUS);
+  pool.open(grnxx::io::POOL_ANONYMOUS, "temp.grn");
   assert(pool);
-  assert(pool.flags() & grnxx::io::GRNXX_IO_ANONYMOUS);
+  assert(pool.flags() & grnxx::io::POOL_ANONYMOUS);
 
-  pool = grnxx::io::Pool("temp.grn", grnxx::io::GRNXX_IO_TEMPORARY);
+  pool.open(grnxx::io::POOL_TEMPORARY, "temp.grn");
   assert(pool);
-  assert(pool.flags() & grnxx::io::GRNXX_IO_TEMPORARY);
+  assert(pool.flags() & grnxx::io::POOL_TEMPORARY);
 
   grnxx::io::Pool::unlink_if_exists("temp.grn");
 }
@@ -53,18 +53,18 @@ void test_compare() {
   grnxx::io::Pool pool;
   assert(pool == pool);
 
-  grnxx::io::Pool pool2("temp.grn", grnxx::io::GRNXX_IO_TEMPORARY);
+  grnxx::io::Pool pool2(grnxx::io::POOL_TEMPORARY, "temp.grn");
   assert(pool != pool2);
   assert(pool2 == pool2);
 
-  grnxx::io::Pool pool3("temp.grn", grnxx::io::GRNXX_IO_TEMPORARY);
+  grnxx::io::Pool pool3(grnxx::io::POOL_TEMPORARY, "temp.grn");
   assert(pool != pool3);
   assert(pool2 != pool3);
   assert(pool3 == pool3);
 }
 
 void test_copy() {
-  grnxx::io::Pool pool("temp.grn", grnxx::io::GRNXX_IO_TEMPORARY);
+  grnxx::io::Pool pool(grnxx::io::POOL_TEMPORARY, "temp.grn");
 
   grnxx::io::Pool pool2(pool);
   assert(pool == pool2);
@@ -75,7 +75,7 @@ void test_copy() {
 }
 
 void test_move() {
-  grnxx::io::Pool pool("temp.grn", grnxx::io::GRNXX_IO_TEMPORARY);
+  grnxx::io::Pool pool(grnxx::io::POOL_TEMPORARY, "temp.grn");
   grnxx::io::Pool pool_copy(pool);
 
   grnxx::io::Pool pool2(std::move(pool));
@@ -87,8 +87,8 @@ void test_move() {
 }
 
 void test_swap() {
-  grnxx::io::Pool pool("temp.grn", grnxx::io::GRNXX_IO_TEMPORARY);
-  grnxx::io::Pool pool2("temp.grn", grnxx::io::GRNXX_IO_TEMPORARY);
+  grnxx::io::Pool pool(grnxx::io::POOL_TEMPORARY, "temp.grn");
+  grnxx::io::Pool pool2(grnxx::io::POOL_TEMPORARY, "temp.grn");
 
   grnxx::io::Pool pool_copy(pool);
   grnxx::io::Pool pool2_copy(pool2);
@@ -107,7 +107,7 @@ void test_exists() {
 
   assert(!grnxx::io::Pool::exists("temp.grn"));
 
-  grnxx::io::Pool("temp.grn", grnxx::io::GRNXX_IO_CREATE);
+  grnxx::io::Pool(grnxx::io::POOL_CREATE, "temp.grn");
 
   assert(grnxx::io::Pool::exists("temp.grn"));
 
@@ -117,7 +117,7 @@ void test_exists() {
 void test_unlink() {
   grnxx::io::Pool::unlink_if_exists("temp.grn");
 
-  grnxx::io::Pool("temp.grn", grnxx::io::GRNXX_IO_CREATE);
+  grnxx::io::Pool(grnxx::io::POOL_CREATE, "temp.grn");
 
   grnxx::io::Pool::unlink("temp.grn");
 }
@@ -125,19 +125,19 @@ void test_unlink() {
 void test_unlink_if_exists() {
   grnxx::io::Pool::unlink_if_exists("temp.grn");
 
-  grnxx::io::Pool("temp.grn", grnxx::io::GRNXX_IO_CREATE);
+  grnxx::io::Pool(grnxx::io::POOL_CREATE, "temp.grn");
 
   assert(grnxx::io::Pool::unlink_if_exists("temp.grn"));
 }
 
 void test_write_to() {
-  grnxx::io::Pool pool("temp.grn", grnxx::io::GRNXX_IO_TEMPORARY);
+  grnxx::io::Pool pool(grnxx::io::POOL_TEMPORARY, "temp.grn");
 
   GRNXX_NOTICE() << "pool = " << pool;
 }
 
 void test_create_block() {
-  grnxx::io::Pool pool("temp.grn", grnxx::io::GRNXX_IO_ANONYMOUS);
+  grnxx::io::Pool pool(grnxx::io::POOL_ANONYMOUS, "temp.grn");
 
   // Create a minimum-size block.
   const grnxx::io::BlockInfo *block_info = pool.create_block(0);
@@ -148,7 +148,7 @@ void test_create_block() {
   assert(block_info->offset() == 0);
   assert(block_info->size() == grnxx::io::BLOCK_UNIT_SIZE);
 
-  pool = grnxx::io::Pool("temp.grn", grnxx::io::GRNXX_IO_TEMPORARY);
+  pool.open(grnxx::io::POOL_TEMPORARY, "temp.grn");
 
   // Create a maximum-size block.
   block_info = pool.create_block(pool.options().max_block_chunk_size());
@@ -163,7 +163,7 @@ void test_create_block() {
 
   std::mt19937 random;
 
-  pool = grnxx::io::Pool("temp.grn", grnxx::io::GRNXX_IO_TEMPORARY);
+  pool.open(grnxx::io::POOL_TEMPORARY, "temp.grn");
 
   // Create small blocks.
   const std::uint64_t SMALL_MAX_SIZE = std::uint64_t(1) << 16;
@@ -185,7 +185,7 @@ void test_create_block() {
 }
 
 void test_get_block_info() {
-  grnxx::io::Pool pool("temp.grn", grnxx::io::GRNXX_IO_ANONYMOUS);
+  grnxx::io::Pool pool(grnxx::io::POOL_ANONYMOUS, "temp.grn");
 
   const grnxx::io::BlockInfo *block_info;
 
@@ -203,7 +203,7 @@ void test_get_block_info() {
 }
 
 void test_get_block_address() {
-  grnxx::io::Pool pool("temp.grn", grnxx::io::GRNXX_IO_ANONYMOUS);
+  grnxx::io::Pool pool(grnxx::io::POOL_ANONYMOUS, "temp.grn");
 
   const int NUM_BLOCKS = 1 << 10;
   const std::uint32_t MAX_SIZE = 1 << 16;
@@ -233,7 +233,7 @@ void test_get_block_address() {
 }
 
 void test_free_block() {
-  grnxx::io::Pool pool("temp.grn", grnxx::io::GRNXX_IO_ANONYMOUS);
+  grnxx::io::Pool pool(grnxx::io::POOL_ANONYMOUS, "temp.grn");
 
   const grnxx::io::BlockInfo *block_info = pool.create_block(0);
   pool.free_block(block_info->id());
@@ -248,7 +248,7 @@ void test_free_block() {
   std::mt19937 random;
   std::vector<const grnxx::io::BlockInfo *> block_infos;
 
-  pool = grnxx::io::Pool("temp.grn", grnxx::io::GRNXX_IO_TEMPORARY);
+  pool.open(grnxx::io::POOL_TEMPORARY, "temp.grn");
 
   // Create small blocks.
   const std::uint64_t SMALL_MAX_SIZE = std::uint64_t(1) << 16;
@@ -280,7 +280,7 @@ void test_unfreeze_block() {
   grnxx::io::PoolOptions options;
   options.set_frozen_duration(grnxx::Duration(0));
 
-  grnxx::io::Pool pool("temp.grn", grnxx::io::GRNXX_IO_TEMPORARY, options);
+  grnxx::io::Pool pool(grnxx::io::POOL_TEMPORARY, "temp.grn", options);
   assert(pool.options().frozen_duration() == grnxx::Duration(0));
 
   const grnxx::io::BlockInfo *block_info = pool.create_block(0);
@@ -315,7 +315,7 @@ void test_random_queries() {
   grnxx::io::PoolOptions options;
   options.set_frozen_duration(grnxx::Duration(0));
 
-  grnxx::io::Pool pool("temp.grn", grnxx::io::GRNXX_IO_ANONYMOUS, options);
+  grnxx::io::Pool pool(grnxx::io::POOL_ANONYMOUS, "temp.grn", options);
 
   const int OPERATION_COUNT = 1 << 18;
 
@@ -358,7 +358,7 @@ void benchmark() {
   std::vector<const grnxx::io::BlockInfo *> block_infos;
   block_infos.resize(OPERATION_COUNT);
 
-  grnxx::io::Pool pool("temp.grn", grnxx::io::GRNXX_IO_TEMPORARY);
+  grnxx::io::Pool pool(grnxx::io::POOL_TEMPORARY, "temp.grn");
 
   // Measure the speed of create_block().
   grnxx::Time start_time = grnxx::Time::now();

@@ -15,8 +15,8 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#ifndef FILE_FILE_HPP
-#define FILE_FILE_HPP
+#ifndef GRNXX_IO_FILE_HPP
+#define GRNXX_IO_FILE_HPP
 
 #include "../duration.hpp"
 
@@ -162,4 +162,4 @@ inline StringBuilder &operator<<(StringBuilder &builder, const File &file) {
 }  // namespace io
 }  // namespace grnxx
 
-#endif  // FILE_FILE_HPP
+#endif  // GRNXX_IO_FILE_HPP

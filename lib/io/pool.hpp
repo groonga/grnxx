@@ -21,7 +21,6 @@
 #include "../mutex.hpp"
 #include "../recycler.hpp"
 #include "chunk.hpp"
-#include "flags.hpp"
 
 namespace grnxx {
 namespace io {
@@ -60,6 +59,36 @@ const uint64_t POOL_HEADER_CHUNK_SIZE      = CHUNK_UNIT_SIZE;
 
 const char POOL_HEADER_FORMAT_STRING[64]  = "grnxx::io::Pool";
 const char POOL_HEADER_VERSION_STRING[64] = "0.0.0";
+
+class PoolFlagsIdentifier {};
+typedef FlagsImpl<PoolFlagsIdentifier> PoolFlags;
+
+// If POOL_READ_ONLY is not specified, a pool is created/opened in
+// read-write mode.
+
+// Read-only mode.
+const PoolFlags POOL_READ_ONLY      = PoolFlags::define(0x0001);
+
+// POOL_ANONYMOUS disables all the flags other than GRNXX_HUGE_TLB and
+// enables POOL_PRIVATE.
+// POOL_CREATE disables POOL_READ_ONLY.
+// POOL_OPEN is enabled if POOL_CREATE is not specified.
+// POOL_TEMPORARY disables other flags.
+
+// Anonymous (non-file-backed) mode.
+const PoolFlags POOL_ANONYMOUS      = PoolFlags::define(0x0010);
+// Create a pool if it does not exist.
+const PoolFlags POOL_CREATE         = PoolFlags::define(0x0040);
+// Try to use huge pages.
+const PoolFlags POOL_HUGE_TLB       = PoolFlags::define(0x0080);
+// Open an existing pool.
+const PoolFlags POOL_OPEN           = PoolFlags::define(0x0100);
+// Create a pool, if it does not exist, or open an existing pool.
+const PoolFlags POOL_CREATE_OR_OPEN = PoolFlags::define(0x0040);
+// Create a temporary pool.
+const PoolFlags POOL_TEMPORARY      = PoolFlags::define(0x0200);
+
+StringBuilder &operator<<(StringBuilder &builder, PoolFlags flags);
 
 class PoolOptions {
  public:
@@ -242,10 +271,7 @@ class PoolImpl;
 class Pool {
  public:
   Pool();
-  // Available flags are as follows:
-  //  GRNXX_IO_READ_ONLY, GRNXX_IO_ANONYMOUS, GRNXX_IO_CREATE,
-  //  GRNXX_IO_OPEN, GRNXX_IO_TEMPORARY.
-  Pool(const char *path, Flags flags = Flags::none(),
+  Pool(PoolFlags flags, const char *path = nullptr,
        const PoolOptions &options = PoolOptions());
   ~Pool();
 
@@ -266,6 +292,14 @@ class Pool {
     return impl_ != rhs.impl_;
   }
 
+  void open(PoolFlags flags, const char *path = nullptr,
+            const PoolOptions &options = PoolOptions()) {
+    *this = Pool(flags, path, options);
+  }
+  void close() {
+    *this = Pool();
+  }
+
   const BlockInfo *create_block(uint64_t size);
 
   const BlockInfo *get_block_info(uint32_t block_id);
@@ -277,7 +311,7 @@ class Pool {
   void free_block(const BlockInfo &block_info);
 
   String path() const;
-  Flags flags() const;
+  PoolFlags flags() const;
   const PoolOptions &options() const;
   const PoolHeader &header() const;
   Recycler *mutable_recycler();

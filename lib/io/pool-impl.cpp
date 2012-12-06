@@ -32,7 +32,7 @@ namespace io {
 
 PoolImpl::~PoolImpl() {}
 
-std::unique_ptr<PoolImpl> PoolImpl::open(const char *path, Flags flags,
+std::unique_ptr<PoolImpl> PoolImpl::open(PoolFlags flags, const char *path,
                                          const PoolOptions &options) {
   std::unique_ptr<PoolImpl> pool(new (std::nothrow) PoolImpl);
   if (!pool) {
@@ -40,19 +40,19 @@ std::unique_ptr<PoolImpl> PoolImpl::open(const char *path, Flags flags,
     GRNXX_THROW();
   }
 
-  if (flags & GRNXX_IO_ANONYMOUS) {
+  if (flags & POOL_ANONYMOUS) {
     pool->open_anonymous_pool(flags, options);
-  } else if (flags & GRNXX_IO_TEMPORARY) {
-    pool->open_temporary_pool(path, flags, options);
+  } else if (flags & POOL_TEMPORARY) {
+    pool->open_temporary_pool(flags, path, options);
   } else {
-    pool->open_regular_pool(path, flags, options);
+    pool->open_regular_pool(flags, path, options);
   }
 
   return pool;
 }
 
 BlockInfo *PoolImpl::create_block(uint64_t size) {
-  if (flags_ & GRNXX_IO_READ_ONLY) {
+  if (flags_ & POOL_READ_ONLY) {
     GRNXX_ERROR() << "invalid operation: flags = " << flags_;
     GRNXX_THROW();
   }
@@ -112,7 +112,7 @@ BlockInfo *PoolImpl::get_block_info(uint32_t block_id) {
 }
 
 void PoolImpl::free_block(BlockInfo *block_info) {
-  if (flags_ & GRNXX_IO_READ_ONLY) {
+  if (flags_ & POOL_READ_ONLY) {
     GRNXX_ERROR() << "invalid operation: flags = " << flags_;
     GRNXX_THROW();
   }
@@ -234,7 +234,7 @@ void PoolImpl::unlink(const char *path) {
 
   std::vector<String> paths;
   try {
-    std::unique_ptr<PoolImpl> pool = PoolImpl::open(path, GRNXX_IO_READ_ONLY);
+    std::unique_ptr<PoolImpl> pool = PoolImpl::open(POOL_READ_ONLY, path);
     const PoolOptions &options = pool->options();
     const PoolHeader &header = pool->header();
     const uint16_t max_file_id = static_cast<uint16_t>(
@@ -268,7 +268,7 @@ bool PoolImpl::unlink_if_exists(const char *path) {
 
 PoolImpl::PoolImpl()
   : path_(),
-    flags_(Flags::none()),
+    flags_(PoolFlags::none()),
     header_(nullptr),
     files_(),
     header_chunk_(),
@@ -276,23 +276,24 @@ PoolImpl::PoolImpl()
     block_info_chunks_(),
     inter_thread_chunk_mutex_(MUTEX_UNLOCKED) {}
 
-void PoolImpl::open_anonymous_pool(Flags flags, const PoolOptions &options) {
-  flags_ = GRNXX_IO_ANONYMOUS;
-  if (flags & GRNXX_IO_HUGE_TLB) {
-    flags_ |= GRNXX_IO_HUGE_TLB;
+void PoolImpl::open_anonymous_pool(PoolFlags flags,
+                                   const PoolOptions &options) {
+  flags_ = POOL_ANONYMOUS;
+  if (flags & POOL_HUGE_TLB) {
+    flags_ |= POOL_HUGE_TLB;
   }
   setup_header(options);
 }
 
-void PoolImpl::open_temporary_pool(const char *path, Flags,
+void PoolImpl::open_temporary_pool(PoolFlags, const char *path,
                                    const PoolOptions &options) {
   path_ = Path::full_path(path);
-  flags_ = GRNXX_IO_TEMPORARY;
+  flags_ = POOL_TEMPORARY;
   files_[0].open(FILE_TEMPORARY, path_.c_str());
   setup_header(options);
 }
 
-void PoolImpl::open_regular_pool(const char *path, Flags flags,
+void PoolImpl::open_regular_pool(PoolFlags flags, const char *path,
                                  const PoolOptions &options) {
   if (!path) {
     GRNXX_ERROR() << "invalid argument: path = " << path;
@@ -301,22 +302,22 @@ void PoolImpl::open_regular_pool(const char *path, Flags flags,
   path_ = Path::full_path(path);
 
   FileFlags file_flags = FileFlags::none();
-  if ((~flags & GRNXX_IO_CREATE) && (flags & GRNXX_IO_READ_ONLY)) {
-    flags_ |= GRNXX_IO_READ_ONLY;
+  if ((~flags & POOL_CREATE) && (flags & POOL_READ_ONLY)) {
+    flags_ |= POOL_READ_ONLY;
     file_flags |= FILE_READ_ONLY;
   }
-  if (flags & GRNXX_IO_CREATE) {
-    flags_ |= GRNXX_IO_CREATE;
+  if (flags & POOL_CREATE) {
+    flags_ |= POOL_CREATE;
     file_flags |= FILE_CREATE;
   }
-  if ((~flags & GRNXX_IO_CREATE) || flags & GRNXX_IO_OPEN) {
-    flags_ |= GRNXX_IO_OPEN;
+  if ((~flags & POOL_CREATE) || flags & POOL_OPEN) {
+    flags_ |= POOL_OPEN;
     file_flags |= FILE_OPEN;
   }
   files_[0].open(file_flags, path_.c_str());
   files_[0].set_unlink_at_close(true);
 
-  if (flags & GRNXX_IO_CREATE) {
+  if (flags & POOL_CREATE) {
     if (files_[0].size() == 0) {
       if (files_[0].lock(FILE_LOCK_EXCLUSIVE, Duration::seconds(10))) {
         if (files_[0].size() == 0) {
@@ -336,7 +337,7 @@ void PoolImpl::open_regular_pool(const char *path, Flags flags,
   }
 
   if (!header_) {
-    if ((flags & GRNXX_IO_OPEN) || (~flags & GRNXX_IO_CREATE)) {
+    if ((flags & POOL_OPEN) || (~flags & POOL_CREATE)) {
       const Time start_time = Time::now();
       while ((Time::now() - start_time) < Duration::seconds(10)) {
         if (files_[0].size() != 0) {
@@ -420,15 +421,15 @@ void PoolImpl::mmap_block_info_chunk(uint16_t chunk_id) {
 }
 
 View PoolImpl::mmap_chunk(const ChunkInfo &chunk_info) {
-  if (flags_ & GRNXX_IO_ANONYMOUS) {
+  if (flags_ & POOL_ANONYMOUS) {
     return View(get_view_flags(), chunk_info.size());
   } else {
     File &file = files_[chunk_info.file_id()];
     if (!file) {
       FileFlags file_flags = FILE_CREATE_OR_OPEN;
-      if (flags_ & GRNXX_IO_TEMPORARY) {
+      if (flags_ & POOL_TEMPORARY) {
         file_flags = FILE_TEMPORARY;
-      } else if (flags_ & GRNXX_IO_READ_ONLY) {
+      } else if (flags_ & POOL_READ_ONLY) {
         file_flags = FILE_READ_ONLY;
       }
       const String &path = generate_path(chunk_info.file_id());
@@ -453,11 +454,11 @@ View PoolImpl::mmap_chunk(const ChunkInfo &chunk_info) {
 }
 
 ViewFlags PoolImpl::get_view_flags() const {
-  if (flags_ & GRNXX_IO_ANONYMOUS) {
-    return (flags_ & GRNXX_IO_HUGE_TLB) ? VIEW_HUGE_TLB : ViewFlags::none();
+  if (flags_ & POOL_ANONYMOUS) {
+    return (flags_ & POOL_HUGE_TLB) ? VIEW_HUGE_TLB : ViewFlags::none();
   } else {
     ViewFlags view_flags = VIEW_SHARED;
-    if (flags_ & GRNXX_IO_READ_ONLY) {
+    if (flags_ & POOL_READ_ONLY) {
       view_flags |= VIEW_READ_ONLY;
     }
     return view_flags;

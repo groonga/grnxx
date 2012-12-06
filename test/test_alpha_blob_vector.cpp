@@ -27,7 +27,7 @@
 void test_basics() {
   grnxx::io::Pool::unlink_if_exists("temp.grn");
 
-  grnxx::io::Pool pool("temp.grn", grnxx::io::GRNXX_IO_CREATE);
+  grnxx::io::Pool pool(grnxx::io::POOL_CREATE, "temp.grn");
 
   grnxx::alpha::BlobVector vector(grnxx::alpha::BLOB_VECTOR_CREATE, pool);
 
@@ -77,9 +77,9 @@ void test_basics() {
   std::uint32_t block_id = vector.block_id();
 
   vector.close();
-  pool = grnxx::io::Pool();
+  pool.close();
 
-  pool = grnxx::io::Pool("temp.grn", grnxx::io::GRNXX_IO_OPEN);
+  pool.open(grnxx::io::POOL_OPEN, "temp.grn");
   vector.open(pool, block_id);
 
   GRNXX_NOTICE() << "blob_vector = " << vector;
@@ -104,7 +104,7 @@ void test_basics() {
   assert(!vector.get_value(0));
 
   vector.close();
-  pool = grnxx::io::Pool();
+  pool.close();
 
   grnxx::io::Pool::unlink_if_exists("temp.grn");
 }
@@ -117,7 +117,7 @@ void test_sequential_access(int num_loops,
 
   grnxx::io::PoolOptions options;
   options.set_frozen_duration(grnxx::Duration(0));
-  grnxx::io::Pool pool("temp.grn", grnxx::io::GRNXX_IO_TEMPORARY, options);
+  grnxx::io::Pool pool(grnxx::io::POOL_TEMPORARY, "temp.grn", options);
   grnxx::alpha::BlobVector vector(grnxx::alpha::BLOB_VECTOR_CREATE, pool);
 
   for (int loop_id = 0; loop_id < num_loops; ++loop_id) {
@@ -163,7 +163,7 @@ void test_random_access(int num_loops,
 
   grnxx::io::PoolOptions options;
   options.set_frozen_duration(grnxx::Duration(0));
-  grnxx::io::Pool pool("temp.grn", grnxx::io::GRNXX_IO_TEMPORARY, options);
+  grnxx::io::Pool pool(grnxx::io::POOL_TEMPORARY, "temp.grn", options);
   grnxx::alpha::BlobVector vector(grnxx::alpha::BLOB_VECTOR_CREATE, pool);
 
   std::vector<std::uint32_t> ids(num_values);
@@ -255,7 +255,7 @@ void test_reuse(bool enable_reuse) {
   grnxx::io::PoolOptions options;
   options.set_frozen_duration(
       enable_reuse ? grnxx::Duration(0) : grnxx::Duration::days(1));
-  grnxx::io::Pool pool("temp.grn", grnxx::io::GRNXX_IO_TEMPORARY, options);
+  grnxx::io::Pool pool(grnxx::io::POOL_TEMPORARY, "temp.grn", options);
   grnxx::alpha::BlobVector vector(grnxx::alpha::BLOB_VECTOR_CREATE, pool);
 
   std::string value(MAX_LENGTH, 'X');
@@ -275,7 +275,7 @@ void test_mixed() {
 
   std::mt19937 random;
 
-  grnxx::io::Pool pool("temp.grn", grnxx::io::GRNXX_IO_TEMPORARY);
+  grnxx::io::Pool pool(grnxx::io::POOL_TEMPORARY, "temp.grn");
   grnxx::alpha::BlobVector vector(grnxx::alpha::BLOB_VECTOR_CREATE, pool);
 
   std::string value(grnxx::alpha::BLOB_VECTOR_LARGE_VALUE_MIN_LENGTH, 'X');
