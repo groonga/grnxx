@@ -26,7 +26,6 @@ int main() {
                            grnxx::LOGGER_ENABLE_COUT);
   grnxx::Logger::set_max_level(grnxx::NOTICE_LOGGER);
 
-  assert(grnxx::Duration().nanoseconds() == 0);
   assert(grnxx::Duration(123).nanoseconds() == 123);
 
   assert(grnxx::Duration::nanoseconds(123).nanoseconds() == 123);

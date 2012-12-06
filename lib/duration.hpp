@@ -25,7 +25,7 @@ namespace grnxx {
 
 class Duration {
  public:
-  constexpr Duration() : nanoseconds_(0) {}
+  Duration() = default;
   explicit constexpr Duration(int64_t nanoseconds)
     : nanoseconds_(nanoseconds) {}
 
