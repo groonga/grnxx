@@ -42,7 +42,7 @@ ViewImpl::~ViewImpl() {
   }
 }
 
-std::unique_ptr<ViewImpl> ViewImpl::map(Flags flags, uint64_t size) {
+std::unique_ptr<ViewImpl> ViewImpl::map(ViewFlags flags, uint64_t size) {
   if (size == 0) {
     GRNXX_ERROR() << "invalid argument: size = " << size;
     GRNXX_THROW();
@@ -57,17 +57,17 @@ std::unique_ptr<ViewImpl> ViewImpl::map(Flags flags, uint64_t size) {
   return view;
 }
 
-std::unique_ptr<ViewImpl> ViewImpl::map(const File &file, Flags flags) {
+std::unique_ptr<ViewImpl> ViewImpl::map(ViewFlags flags, const File &file) {
   std::unique_ptr<ViewImpl> view(new (std::nothrow) ViewImpl);
   if (!view) {
     GRNXX_ERROR() << "new grnxx::io::ViewImpl failed";
     GRNXX_THROW();
   }
-  view->map_on_file(file, flags, 0, 0);
+  view->map_on_file(flags, file, 0, 0);
   return view;
 }
 
-std::unique_ptr<ViewImpl> ViewImpl::map(const File &file, Flags flags,
+std::unique_ptr<ViewImpl> ViewImpl::map(ViewFlags flags, const File &file,
                                         uint64_t offset, uint64_t size) {
   if (size == 0) {
     GRNXX_ERROR() << "invalid argument: size = " << size;
@@ -79,7 +79,7 @@ std::unique_ptr<ViewImpl> ViewImpl::map(const File &file, Flags flags,
     GRNXX_ERROR() << "new grnxx::io::ViewImpl failed";
     GRNXX_THROW();
   }
-  view->map_on_file(file, flags, offset, size);
+  view->map_on_file(flags, file, offset, size);
   return view;
 }
 
@@ -109,11 +109,11 @@ void ViewImpl::sync(uint64_t offset, uint64_t size) {
 }
 
 ViewImpl::ViewImpl()
-  : file_(), flags_(Flags::none()), handle_(nullptr),
+  : file_(), flags_(ViewFlags::none()), handle_(nullptr),
     address_(nullptr), offset_(0), size_(0) {}
 
-void ViewImpl::map_on_memory(Flags, uint64_t size) {
-  flags_ = GRNXX_IO_PRIVATE | GRNXX_IO_ANONYMOUS;
+void ViewImpl::map_on_memory(ViewFlags, uint64_t size) {
+  flags_ = VIEW_PRIVATE | VIEW_ANONYMOUS;
   size_ = size;
 
   const DWORD size_high = static_cast<DWORD>(size >> 32);
@@ -135,14 +135,14 @@ void ViewImpl::map_on_memory(Flags, uint64_t size) {
   }
 }
 
-void ViewImpl::map_on_file(const File &file, Flags flags, uint64_t offset,
-                           uint64_t size) {
+void ViewImpl::map_on_file(ViewFlags flags, const File &file,
+                           uint64_t offset, uint64_t size) {
   const uint64_t file_size = file.size();
   if (file_size == 0) {
     GRNXX_ERROR() << "invalid argument: file = " << file;
     GRNXX_THROW();
   }
-  if (flags & (GRNXX_IO_ANONYMOUS | GRNXX_IO_HUGE_TLB)) {
+  if (flags & (VIEW_ANONYMOUS | VIEW_HUGE_TLB)) {
     GRNXX_ERROR() << "invalid argument: flags = " << flags;
     GRNXX_THROW();
   }
@@ -164,8 +164,8 @@ void ViewImpl::map_on_file(const File &file, Flags flags, uint64_t offset,
   int protection_mode = PAGE_READWRITE;
   DWORD desired_access = FILE_MAP_WRITE;
   if ((file.flags() & FILE_READ_ONLY) ||
-      ((~file.flags() & FILE_WRITE_ONLY) && (flags & GRNXX_IO_READ_ONLY))) {
-    flags_ |= GRNXX_IO_READ_ONLY;
+      ((~file.flags() & FILE_WRITE_ONLY) && (flags & VIEW_READ_ONLY))) {
+    flags_ |= VIEW_READ_ONLY;
     protection_mode = PAGE_READONLY;
     desired_access = FILE_MAP_READ;
   } else if (file.flags() & FILE_WRITE_ONLY) {
@@ -173,19 +173,19 @@ void ViewImpl::map_on_file(const File &file, Flags flags, uint64_t offset,
     GRNXX_ERROR() << "mapping file is write-only: file = " << file;
     GRNXX_THROW();
   } else {
-    // GRNXX_IO_WRITE_ONLY is ignored because write-only memory mapping is not
+    // VIEW_WRITE_ONLY is ignored because write-only memory mapping is not
     // supported on Windows.
     protection_mode = PAGE_READWRITE;
-    if (flags & GRNXX_IO_PRIVATE) {
+    if (flags & VIEW_PRIVATE) {
       protection_mode = PAGE_WRITECOPY;
       desired_access = FILE_MAP_COPY;
     }
   }
 
-  if ((flags & GRNXX_IO_SHARED) || (~flags & GRNXX_IO_PRIVATE)) {
-    flags_ |= GRNXX_IO_SHARED;
+  if ((flags & VIEW_SHARED) || (~flags & VIEW_PRIVATE)) {
+    flags_ |= VIEW_SHARED;
   } else {
-    flags_ |= GRNXX_IO_PRIVATE;
+    flags_ |= VIEW_PRIVATE;
   }
 
   const DWORD size_high = static_cast<DWORD>((offset + size) >> 32);

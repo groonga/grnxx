@@ -15,29 +15,62 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#ifndef GRNXX_IO_VIEW_HPP
-#define GRNXX_IO_VIEW_HPP
+#ifndef VIEW_VIEW_HPP
+#define VIEW_VIEW_HPP
 
 #include "file.hpp"
-#include "flags.hpp"
 
 namespace grnxx {
 namespace io {
+
+class ViewFlagsIdentifier {};
+typedef FlagsImpl<ViewFlagsIdentifier> ViewFlags;
+
+// VIEW_WRITE_ONLY is ignored if VIEW_READ_ONLY is enabled.
+// VIEW_READ_ONLY is disabled if VIEW_CREATE is specified.
+// If both flags are not set, and object is created/opened/mapped in
+// read-write mode.
+
+// Read-only mode.
+const ViewFlags VIEW_READ_ONLY  = ViewFlags::define(0x0001);
+// Write-only mode.
+const ViewFlags VIEW_WRITE_ONLY = ViewFlags::define(0x0002);
+
+// VIEW_ANONYMOUS disables all the flags other than GRNXX_HUGE_TLB and
+// enables VIEW_PRIVATE.
+// VIEW_CREATE disables VIEW_READ_ONLY.
+// VIEW_OPEN is enabled if VIEW_CREATE is not specified.
+// If both VIEW_CREATE and VIEW_OPEN are set, it first tries to create
+// an object and, if already exists, then tries to open the existing object.
+// VIEW_TEMPORARY disables other flags.
+
+// Anonymous mode.
+const ViewFlags VIEW_ANONYMOUS  = ViewFlags::define(0x0010);
+// Try to use huge pages.
+const ViewFlags VIEW_HUGE_TLB   = ViewFlags::define(0x0080);
+
+// VIEW_PRIVATE is ignored if VIEW_SHARED is enabled.
+
+// Private mode.
+const ViewFlags VIEW_PRIVATE    = ViewFlags::define(0x1000);
+// Shared mode.
+const ViewFlags VIEW_SHARED     = ViewFlags::define(0x2000);
+
+StringBuilder &operator<<(StringBuilder &builder, ViewFlags flags);
 
 class ViewImpl;
 
 class View {
  public:
   View();
-  // Create an anonymou memory mapping.
-  // Available flags are GRNXX_IO_HUGE_TLB only.
-  explicit View(Flags flags, uint64_t size);
+  // Create an anonymous memory mapping.
+  // Available flags are VIEW_HUGE_TLB only.
+  explicit View(ViewFlags flags, uint64_t size);
   // Create a file-backed memory mapping.
   // Available flags are as follows:
-  //  GRNXX_IO_READ_ONLY, GRNXX_IO_WRITE_ONLY, GRNXX_IO_SHARED,
-  //  GRNXX_IO_PRIVATE.
-  View(const File &file, Flags flags);
-  View(const File &file, Flags flags, uint64_t offset, uint64_t size);
+  //  VIEW_READ_ONLY, VIEW_WRITE_ONLY, VIEW_SHARED, VIEW_PRIVATE.
+  View(ViewFlags flags, const File &file);
+  View(ViewFlags flags, const File &file, uint64_t offset, uint64_t size);
   ~View();
 
   View(const View &view);
@@ -50,11 +83,25 @@ class View {
     return static_cast<bool>(impl_);
   }
 
+  void open(ViewFlags flags, uint64_t size) {
+    *this = View(flags, size);
+  }
+  void open(ViewFlags flags, const File &file) {
+    *this = View(flags, file);
+  }
+  void open(ViewFlags flags, const File &file,
+            uint64_t offset, uint64_t size) {
+    *this = View(flags, file, offset, size);
+  }
+  void close() {
+    *this = View();
+  }
+
   void sync();
   void sync(uint64_t offset, uint64_t size);
 
   File file() const;
-  Flags flags() const;
+  ViewFlags flags() const;
   void *address() const;
   uint64_t offset() const;
   uint64_t size() const;
@@ -78,4 +125,4 @@ inline StringBuilder &operator<<(StringBuilder &builder, const View &view) {
 }  // namespace io
 }  // namespace grnxx
 
-#endif  // GRNXX_IO_VIEW_HPP
+#endif  // VIEW_VIEW_HPP

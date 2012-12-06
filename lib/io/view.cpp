@@ -25,16 +25,41 @@
 namespace grnxx {
 namespace io {
 
+#define GRNXX_FLAGS_WRITE(flag) do { \
+  if (flags & flag) { \
+    if (!is_first) { \
+      builder << " | "; \
+    } \
+    builder << #flag; \
+    is_first = false; \
+  } \
+} while (false)
+
+StringBuilder &operator<<(StringBuilder &builder, ViewFlags flags) {
+  if (flags) {
+    bool is_first = true;
+    GRNXX_FLAGS_WRITE(VIEW_READ_ONLY);
+    GRNXX_FLAGS_WRITE(VIEW_WRITE_ONLY);
+    GRNXX_FLAGS_WRITE(VIEW_ANONYMOUS);
+    GRNXX_FLAGS_WRITE(VIEW_HUGE_TLB);
+    GRNXX_FLAGS_WRITE(VIEW_PRIVATE);
+    GRNXX_FLAGS_WRITE(VIEW_SHARED);
+    return builder;
+  } else {
+    return builder << "0";
+  }
+}
+
 View::View() : impl_() {}
 
-View::View(Flags flags, uint64_t size)
+View::View(ViewFlags flags, uint64_t size)
   : impl_(ViewImpl::map(flags, size)) {}
 
-View::View(const File &file, Flags flags)
-  : impl_(ViewImpl::map(file, flags)) {}
+View::View(ViewFlags flags, const File &file)
+  : impl_(ViewImpl::map(flags, file)) {}
 
-View::View(const File &file, Flags flags, uint64_t offset, uint64_t size)
-  : impl_(ViewImpl::map(file, flags, offset, size)) {}
+View::View(ViewFlags flags, const File &file, uint64_t offset, uint64_t size)
+  : impl_(ViewImpl::map(flags, file, offset, size)) {}
 
 View::~View() {}
 
@@ -69,8 +94,8 @@ File View::file() const {
   return impl_ ? impl_->file() : File();
 }
 
-Flags View::flags() const {
-  return impl_ ? impl_->flags() : Flags::none();
+ViewFlags View::flags() const {
+  return impl_ ? impl_->flags() : ViewFlags::none();
 }
 
 void *View::address() const {

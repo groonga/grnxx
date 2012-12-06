@@ -26,13 +26,13 @@ void test_anonymous_mmap() {
   grnxx::io::View view;
   assert(!view);
 
-  view = grnxx::io::View(grnxx::io::Flags(), MMAP_SIZE);
+  view.open(grnxx::io::ViewFlags::none(), MMAP_SIZE);
 
   GRNXX_NOTICE() << "view = " << view;
 
   assert(view);
-  assert(view.flags() == (grnxx::io::GRNXX_IO_ANONYMOUS |
-                          grnxx::io::GRNXX_IO_PRIVATE));
+  assert(view.flags() == (grnxx::io::VIEW_ANONYMOUS |
+                          grnxx::io::VIEW_PRIVATE));
   assert(view.address() != nullptr);
   assert(view.offset() == 0);
   assert(view.size() == MMAP_SIZE);
@@ -51,12 +51,12 @@ void test_file_backed_mmap() {
   assert(file.size() == FILE_SIZE);
 
   // Create a memory mapping.
-  grnxx::io::View view(file, grnxx::io::GRNXX_IO_SHARED);
+  grnxx::io::View view(grnxx::io::VIEW_SHARED, file);
 
   GRNXX_NOTICE() << "view = " << view;
 
   assert(view);
-  assert(view.flags() == grnxx::io::GRNXX_IO_SHARED);
+  assert(view.flags() == grnxx::io::VIEW_SHARED);
   assert(view.address() != nullptr);
   assert(view.offset() == 0);
   assert(view.size() == FILE_SIZE);
@@ -64,12 +64,12 @@ void test_file_backed_mmap() {
   std::memset(view.address(), 'x', view.size());
 
   // Create a memory mapping.
-  view = grnxx::io::View(file, grnxx::io::GRNXX_IO_PRIVATE);
+  view.open(grnxx::io::VIEW_PRIVATE, file);
 
   GRNXX_NOTICE() << "view = " << view;
 
   assert(view);
-  assert(view.flags() == grnxx::io::GRNXX_IO_PRIVATE);
+  assert(view.flags() == grnxx::io::VIEW_PRIVATE);
   assert(view.address() != nullptr);
   assert(view.offset() == 0);
   assert(view.size() == FILE_SIZE);
@@ -80,14 +80,13 @@ void test_file_backed_mmap() {
   std::memset(view.address(), 'z', view.size());
 
   // Create a memory mapping.
-  view = grnxx::io::View(file, grnxx::io::GRNXX_IO_SHARED |
-                               grnxx::io::GRNXX_IO_PRIVATE,
-                         FILE_SIZE / 2, MMAP_SIZE);
+  view.open(grnxx::io::VIEW_SHARED | grnxx::io::VIEW_PRIVATE,
+            file, FILE_SIZE / 2, MMAP_SIZE);
 
   GRNXX_NOTICE() << "view = " << view;
 
   assert(view);
-  assert(view.flags() == grnxx::io::GRNXX_IO_SHARED);
+  assert(view.flags() == grnxx::io::VIEW_SHARED);
   assert(view.address() != nullptr);
   assert(view.offset() == (FILE_SIZE / 2));
   assert(view.size() == MMAP_SIZE);

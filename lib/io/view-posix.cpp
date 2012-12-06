@@ -44,7 +44,7 @@ ViewImpl::~ViewImpl() {
   }
 }
 
-std::unique_ptr<ViewImpl> ViewImpl::map(Flags flags, uint64_t size) {
+std::unique_ptr<ViewImpl> ViewImpl::map(ViewFlags flags, uint64_t size) {
   std::unique_ptr<ViewImpl> view(new (std::nothrow) ViewImpl);
   if (!view) {
     GRNXX_ERROR() << "new grnxx::io::ViewImpl failed";
@@ -54,24 +54,24 @@ std::unique_ptr<ViewImpl> ViewImpl::map(Flags flags, uint64_t size) {
   return view;
 }
 
-std::unique_ptr<ViewImpl> ViewImpl::map(const File &file, Flags flags) {
+std::unique_ptr<ViewImpl> ViewImpl::map(ViewFlags flags, const File &file) {
   std::unique_ptr<ViewImpl> view(new (std::nothrow) ViewImpl);
   if (!view) {
     GRNXX_ERROR() << "new grnxx::io::ViewImpl failed";
     GRNXX_THROW();
   }
-  view->map_on_file(file, flags, 0, file.size());
+  view->map_on_file(flags, file, 0, file.size());
   return view;
 }
 
-std::unique_ptr<ViewImpl> ViewImpl::map(const File &file, Flags flags,
+std::unique_ptr<ViewImpl> ViewImpl::map(ViewFlags flags, const File &file,
                                         uint64_t offset, uint64_t size) {
   std::unique_ptr<ViewImpl> view(new (std::nothrow) ViewImpl);
   if (!view) {
     GRNXX_ERROR() << "new grnxx::io::ViewImpl failed";
     GRNXX_THROW();
   }
-  view->map_on_file(file, flags, offset, size);
+  view->map_on_file(flags, file, offset, size);
   return view;
 }
 
@@ -97,13 +97,13 @@ void ViewImpl::sync(uint64_t offset, uint64_t size) {
 }
 
 ViewImpl::ViewImpl()
-  : file_(), flags_(Flags::none()),
+  : file_(), flags_(ViewFlags::none()),
     address_(MAP_FAILED), offset_(0), size_(0) {}
 
 #ifdef MAP_HUGETLB
-void ViewImpl::map_on_memory(Flags flags, uint64_t size) {
+void ViewImpl::map_on_memory(ViewFlags flags, uint64_t size) {
 #else  // MAP_HUGETLB
-void ViewImpl::map_on_memory(Flags, uint64_t size) {
+void ViewImpl::map_on_memory(ViewFlags, uint64_t size) {
 #endif  // MAP_HUGETLB
   if ((size == 0) || (size > std::numeric_limits<size_t>::max())) {
     GRNXX_ERROR() << "invalid argument: size = " << size << ": (0, "
@@ -111,16 +111,16 @@ void ViewImpl::map_on_memory(Flags, uint64_t size) {
     GRNXX_THROW();
   }
 
-  flags_ = GRNXX_IO_PRIVATE | GRNXX_IO_ANONYMOUS;
+  flags_ = VIEW_PRIVATE | VIEW_ANONYMOUS;
   size_ = size;
 
   int map_flags = MAP_PRIVATE | MAP_ANONYMOUS;
 #ifdef MAP_HUGETLB
-  if (flags & GRNXX_IO_HUGE_TLB) {
+  if (flags & VIEW_HUGE_TLB) {
     address_ = ::mmap(nullptr, size, PROT_READ | PROT_WRITE,
                       map_flags | MAP_HUGETLB, -1, 0);
     if (address_ != MAP_FAILED) {
-      flags_ |= GRNXX_IO_HUGE_TLB;
+      flags_ |= VIEW_HUGE_TLB;
     }
   }
 #endif  // MAP_HUGETLB
@@ -135,8 +135,8 @@ void ViewImpl::map_on_memory(Flags, uint64_t size) {
   }
 }
 
-void ViewImpl::map_on_file(const File &file, Flags flags, uint64_t offset,
-                           uint64_t size) {
+void ViewImpl::map_on_file(ViewFlags flags, const File &file,
+                           uint64_t offset, uint64_t size) {
   if ((size == 0) || (size > std::numeric_limits<size_t>::max())) {
     GRNXX_ERROR() << "invalid argument: size = " << size << ": (0, "
                   << std::numeric_limits<size_t>::max() << ']';
@@ -154,21 +154,21 @@ void ViewImpl::map_on_file(const File &file, Flags flags, uint64_t offset,
 
   int protection_flags = PROT_READ | PROT_WRITE;
   if ((file.flags() & FILE_READ_ONLY) ||
-      ((~file.flags() & FILE_WRITE_ONLY) && (flags & GRNXX_IO_READ_ONLY))) {
-    flags_ |= GRNXX_IO_READ_ONLY;
+      ((~file.flags() & FILE_WRITE_ONLY) && (flags & VIEW_READ_ONLY))) {
+    flags_ |= VIEW_READ_ONLY;
     protection_flags = PROT_READ;
   } else if ((file.flags() & FILE_WRITE_ONLY) ||
-             (flags & GRNXX_IO_WRITE_ONLY)) {
-    flags_ |= GRNXX_IO_WRITE_ONLY;
+             (flags & VIEW_WRITE_ONLY)) {
+    flags_ |= VIEW_WRITE_ONLY;
     protection_flags = PROT_WRITE;
   }
 
   int map_flags;
-  if ((flags & GRNXX_IO_SHARED) || (~flags & GRNXX_IO_PRIVATE)) {
-    flags_ |= GRNXX_IO_SHARED;
+  if ((flags & VIEW_SHARED) || (~flags & VIEW_PRIVATE)) {
+    flags_ |= VIEW_SHARED;
     map_flags = MAP_SHARED;
   } else {
-    flags_ |= GRNXX_IO_PRIVATE;
+    flags_ |= VIEW_PRIVATE;
     map_flags = MAP_PRIVATE;
   }
 

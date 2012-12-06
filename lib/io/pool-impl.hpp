@@ -101,7 +101,7 @@ class PoolImpl {
   void mmap_block_info_chunk(uint16_t chunk_id);
   View mmap_chunk(const ChunkInfo &chunk_info);
 
-  Flags get_view_flags() const;
+  ViewFlags get_view_flags() const;
 
   String generate_path(uint16_t file_id) const;
 

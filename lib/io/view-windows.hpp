@@ -38,9 +38,9 @@ class ViewImpl {
  public:
   ~ViewImpl();
 
-  static std::unique_ptr<ViewImpl> map(Flags flags, uint64_t size);
-  static std::unique_ptr<ViewImpl> map(const File &file, Flags flags);
-  static std::unique_ptr<ViewImpl> map(const File &file, Flags flags,
+  static std::unique_ptr<ViewImpl> map(ViewFlags flags, uint64_t size);
+  static std::unique_ptr<ViewImpl> map(ViewFlags flags, const File &file);
+  static std::unique_ptr<ViewImpl> map(ViewFlags flags, const File &file,
                                        uint64_t offset, uint64_t size);
 
   void sync();
@@ -49,7 +49,7 @@ class ViewImpl {
   File file() const {
     return file_;
   }
-  Flags flags() const {
+  ViewFlags flags() const {
     return flags_;
   }
   void *address() const {
@@ -66,7 +66,7 @@ class ViewImpl {
 
  private:
   File file_;
-  Flags flags_;
+  ViewFlags flags_;
   HANDLE handle_;
   void *address_;
   uint64_t offset_;
@@ -74,9 +74,9 @@ class ViewImpl {
 
   ViewImpl();
 
-  void map_on_memory(Flags flags, uint64_t size);
-  void map_on_file(const File &file, Flags flags, uint64_t offset,
-                   uint64_t size);
+  void map_on_memory(ViewFlags flags, uint64_t size);
+  void map_on_file(ViewFlags flags, const File &file,
+                   uint64_t offset, uint64_t size);
 
   ViewImpl(const ViewImpl &);
   ViewImpl &operator=(const ViewImpl &);

@@ -21,6 +21,7 @@
 #include "../mutex.hpp"
 #include "../recycler.hpp"
 #include "chunk.hpp"
+#include "flags.hpp"
 
 namespace grnxx {
 namespace io {

@@ -362,7 +362,7 @@ void PoolImpl::open_regular_pool(const char *path, Flags flags,
 void PoolImpl::setup_header(const PoolOptions &options) {
   if (files_[0]) {
     files_[0].resize(POOL_HEADER_CHUNK_SIZE);
-    header_chunk_ = View(files_[0], get_view_flags(),
+    header_chunk_ = View(get_view_flags(), files_[0],
                          0, POOL_HEADER_CHUNK_SIZE);
   } else {
     header_chunk_ = View(get_view_flags(), POOL_HEADER_CHUNK_SIZE);
@@ -373,7 +373,7 @@ void PoolImpl::setup_header(const PoolOptions &options) {
 }
 
 void PoolImpl::check_header() {
-  header_chunk_ = View(files_[0], get_view_flags(), 0, POOL_HEADER_CHUNK_SIZE);
+  header_chunk_ = View(get_view_flags(), files_[0], 0, POOL_HEADER_CHUNK_SIZE);
   header_ = static_cast<PoolHeader *>(header_chunk_.address());
 
   // TODO: Check the header.
@@ -447,18 +447,18 @@ View PoolImpl::mmap_chunk(const ChunkInfo &chunk_info) {
       }
     }
 
-    return View(file, get_view_flags(),
+    return View(get_view_flags(), file,
                 chunk_info.offset(), chunk_info.size());
   }
 }
 
-Flags PoolImpl::get_view_flags() const {
+ViewFlags PoolImpl::get_view_flags() const {
   if (flags_ & GRNXX_IO_ANONYMOUS) {
-    return (flags_ & GRNXX_IO_HUGE_TLB) ? GRNXX_IO_HUGE_TLB : Flags::none();
+    return (flags_ & GRNXX_IO_HUGE_TLB) ? VIEW_HUGE_TLB : ViewFlags::none();
   } else {
-    Flags view_flags = GRNXX_IO_SHARED;
+    ViewFlags view_flags = VIEW_SHARED;
     if (flags_ & GRNXX_IO_READ_ONLY) {
-      view_flags |= GRNXX_IO_READ_ONLY;
+      view_flags |= VIEW_READ_ONLY;
     }
     return view_flags;
   }
