@@ -458,7 +458,7 @@ class BlobVector {
     return is_open() ? block_info_->id() : io::BLOCK_INVALID_ID;
   }
   uint64_t id_max() const {
-    return cells_.id_max();
+    return cells_.max_id();
   }
 
   void swap(BlobVector &rhs);

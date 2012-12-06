@@ -18,130 +18,288 @@
 #ifndef GRNXX_DB_VECTOR_HPP
 #define GRNXX_DB_VECTOR_HPP
 
-#include "vector_base.hpp"
+#include "../io/pool.hpp"
 
 namespace grnxx {
 namespace db {
 
-const uint64_t VECTOR_PAGE_SIZE_MIN     = uint64_t(1) << 0;
-const uint64_t VECTOR_PAGE_SIZE_MAX     = uint64_t(1) << 20;
-const uint64_t VECTOR_PAGE_SIZE_DEFAULT = uint64_t(1) << 16;
+const uint64_t VECTOR_MIN_PAGE_SIZE     = uint64_t(1) << 0;
+const uint64_t VECTOR_MAX_PAGE_SIZE     = uint64_t(1) << 20;
+const uint64_t VECTOR_DEFAULT_PAGE_SIZE = uint64_t(1) << 16;
 
-const uint64_t VECTOR_TABLE_SIZE_MIN     = uint64_t(1) << 10;
-const uint64_t VECTOR_TABLE_SIZE_MAX     = uint64_t(1) << 20;
-const uint64_t VECTOR_TABLE_SIZE_DEFAULT = uint64_t(1) << 12;
+const uint64_t VECTOR_MIN_TABLE_SIZE     = uint64_t(1) << 10;
+const uint64_t VECTOR_MAX_TABLE_SIZE     = uint64_t(1) << 20;
+const uint64_t VECTOR_DEFAULT_TABLE_SIZE = uint64_t(1) << 12;
 
-const uint64_t VECTOR_SECONDARY_TABLE_SIZE_MIN     = uint64_t(1) << 10;
-const uint64_t VECTOR_SECONDARY_TABLE_SIZE_MAX     = uint64_t(1) << 20;
-const uint64_t VECTOR_SECONDARY_TABLE_SIZE_DEFAULT = uint64_t(1) << 12;
+const uint64_t VECTOR_MIN_SECONDARY_TABLE_SIZE     = uint64_t(1) << 10;
+const uint64_t VECTOR_MAX_SECONDARY_TABLE_SIZE     = uint64_t(1) << 20;
+const uint64_t VECTOR_DEFAULT_SECONDARY_TABLE_SIZE = uint64_t(1) << 12;
 
-template <typename T,
-          uint64_t PAGE_SIZE = VECTOR_PAGE_SIZE_DEFAULT,
-          uint64_t TABLE_SIZE = VECTOR_TABLE_SIZE_DEFAULT,
-          uint64_t SECONDARY_TABLE_SIZE = VECTOR_SECONDARY_TABLE_SIZE_DEFAULT>
-class Vector {
+extern class VectorCreate {} VECTOR_CREATE;
+extern class VectorOpen {} VECTOR_OPEN;
+
+class VectorHeader {
  public:
-  typedef T Value;
+  VectorHeader(const void *default_value,
+               uint64_t value_size,
+               uint64_t page_size,
+               uint64_t table_size,
+               uint64_t secondary_table_size);
 
-  static_assert(PAGE_SIZE >= VECTOR_PAGE_SIZE_MIN, "too small PAGE_SIZE");
-  static_assert(PAGE_SIZE <= VECTOR_PAGE_SIZE_MAX, "too large PAGE_SIZE");
-
-  static_assert(TABLE_SIZE >= VECTOR_TABLE_SIZE_MIN, "too small TABLE_SIZE");
-  static_assert(TABLE_SIZE <= VECTOR_TABLE_SIZE_MAX, "too large TABLE_SIZE");
-
-  static_assert(SECONDARY_TABLE_SIZE >= VECTOR_SECONDARY_TABLE_SIZE_MIN,
-                "too small SECONDARY_TABLE_SIZE");
-  static_assert(SECONDARY_TABLE_SIZE <= VECTOR_SECONDARY_TABLE_SIZE_MAX,
-                "too large SECONDARY_TABLE_SIZE");
-
-  static_assert((PAGE_SIZE & (PAGE_SIZE - 1)) == 0,
-                "PAGE_SIZE must be a power of two");
-  static_assert((TABLE_SIZE & (TABLE_SIZE - 1)) == 0,
-                "TABLE_SIZE must be a power of two");
-  static_assert((SECONDARY_TABLE_SIZE & (SECONDARY_TABLE_SIZE - 1)) == 0,
-                "SECONDARY_TABLE_SIZE must be a power of two");
-
-  Vector() : base_() {}
-  ~Vector() {}
-
-  Vector(Vector &&vector) : base_(std::move(vector.base_)) {}
-  Vector &operator=(Vector &&vector) {
-    base_ = std::move(vector.base_);
-    return *this;
+  uint64_t value_size() const {
+    return value_size_;
+  }
+  uint64_t page_size() const {
+    return page_size_;
+  }
+  uint64_t table_size() const {
+    return table_size_;
+  }
+  uint64_t secondary_table_size() const {
+    return secondary_table_size_;
+  }
+  bool has_default_value() const {
+    return has_default_value_ != 0;
+  }
+  uint32_t first_table_block_id() const {
+    return first_table_block_id_;
+  }
+  uint32_t secondary_table_block_id() const {
+    return secondary_table_block_id_;
   }
 
-  bool is_open() const {
-    return base_.is_open();
+  void set_first_table_block_id(uint32_t value) {
+    first_table_block_id_ = value;
+  }
+  void set_secondary_table_block_id(uint32_t value) {
+    secondary_table_block_id_ = value;
   }
 
-  void create(io::Pool *pool) {
-    base_.create(pool, sizeof(Value),
-                 PAGE_SIZE, TABLE_SIZE, SECONDARY_TABLE_SIZE,
-                 nullptr, fill_page);
+  Mutex *mutable_inter_process_mutex() {
+    return &inter_process_mutex_;
   }
-  void create(io::Pool *pool, const Value &default_value) {
-    base_.create(pool, sizeof(Value),
-                 PAGE_SIZE, TABLE_SIZE, SECONDARY_TABLE_SIZE,
-                 &default_value, fill_page);
-  }
-  void open(io::Pool *pool, uint32_t block_id) {
-    base_.open(pool, block_id, sizeof(Value),
-               PAGE_SIZE, TABLE_SIZE, SECONDARY_TABLE_SIZE, fill_page);
-  }
-  void close() {
-    if (!is_open()) {
-      GRNXX_ERROR() << "failed to close vector";
-      GRNXX_THROW();
+
+  StringBuilder &write_to(StringBuilder &builder) const;
+
+ private:
+  uint64_t value_size_;
+  uint64_t page_size_;
+  uint64_t table_size_;
+  uint64_t secondary_table_size_;
+  uint32_t has_default_value_;
+  uint32_t first_table_block_id_;
+  uint32_t secondary_table_block_id_;
+  Mutex inter_process_mutex_;
+};
+
+inline StringBuilder &operator<<(StringBuilder &builder,
+                                 const VectorHeader &header) {
+  return header.write_to(builder);
+}
+
+class VectorImpl {
+  typedef void (*FillPage)(void *page_address, const void *value);
+
+ public:
+  static std::unique_ptr<VectorImpl> create(io::Pool pool,
+                                            const void *default_value,
+                                            uint64_t value_size,
+                                            uint64_t page_size,
+                                            uint64_t table_size,
+                                            uint64_t secondary_table_size,
+                                            FillPage fill_page);
+  static std::unique_ptr<VectorImpl> open(io::Pool pool,
+                                          uint32_t block_id,
+                                          uint64_t value_size,
+                                          uint64_t page_size,
+                                          uint64_t table_size,
+                                          uint64_t secondary_table_size,
+                                          FillPage fill_page);
+
+  template <uint64_t PAGE_SIZE,
+            uint64_t TABLE_SIZE,
+            uint64_t SECONDARY_TABLE_SIZE>
+  void *get_page_address(uint64_t page_id) {
+    if ((page_id < TABLE_SIZE) && first_table_cache_[page_id]) {
+      return first_table_cache_[page_id];
     }
-    base_ = VectorBase();
-  }
-
-  Value *get_value_address(uint64_t id) {
-    return base_.get_value_address<Value, PAGE_SIZE, TABLE_SIZE,
-                                   SECONDARY_TABLE_SIZE>(id);
-  }
-  Value &get_value(uint64_t id) {
-    return *get_value_address(id);
-  }
-  Value &operator[](uint64_t id) {
-    return get_value(id);
+    if ((page_id < (TABLE_SIZE * SECONDARY_TABLE_SIZE)) && tables_cache_) {
+      const uint64_t table_id = page_id / TABLE_SIZE;
+      const std::unique_ptr<void *[]> &table_cache = tables_cache_[table_id];
+      if (table_cache) {
+        const uint64_t local_page_id = page_id % TABLE_SIZE;
+        if (table_cache[local_page_id]) {
+          return table_cache[local_page_id];
+        }
+      }
+    }
+    return get_page_address_on_failure(page_id);
   }
 
   uint32_t block_id() const {
-    return base_.block_id();
+    return block_info_->id();
   }
 
-  void swap(Vector &vector) {
-    base_.swap(vector.base_);
+  StringBuilder &write_to(StringBuilder &builder) const;
+
+  static void unlink(io::Pool pool,
+                     uint32_t block_id,
+                     uint64_t value_size,
+                     uint64_t page_size,
+                     uint64_t table_size,
+                     uint64_t secondary_table_size);
+
+ private:
+  io::Pool pool_;
+  FillPage fill_page_;
+  const io::BlockInfo *block_info_;
+  VectorHeader *header_;
+  void *default_value_;
+  uint8_t table_size_bits_;
+  uint64_t table_size_mask_;
+  uint64_t max_page_id_;
+  uint32_t *first_table_;
+  uint32_t *secondary_table_;
+  std::unique_ptr<uint32_t *[]> secondary_table_cache_;
+  std::unique_ptr<void *[]> first_table_cache_;
+  std::unique_ptr<std::unique_ptr<void *[]>[]> tables_cache_;
+  Mutex inter_thread_mutex_;
+
+  VectorImpl();
+
+  void create_vector(io::Pool pool,
+                     const void *default_value,
+                     uint64_t value_size,
+                     uint64_t page_size,
+                     uint64_t table_size,
+                     uint64_t secondary_table_size,
+                     FillPage fill_page);
+  void open_vector(io::Pool pool,
+                   uint32_t block_id,
+                   uint64_t value_size,
+                   uint64_t page_size,
+                   uint64_t table_size,
+                   uint64_t secondary_table_size,
+                   FillPage fill_page);
+  void restore_from_header();
+
+  void *get_page_address_on_failure(uint64_t page_id);
+
+  void initialize_secondary_table();
+  void initialize_table(uint32_t *table_block_id);
+  void initialize_page(uint32_t *page_block_id);
+  void initialize_secondary_table_cache();
+  void initialize_table_cache(std::unique_ptr<void *[]> *table_cache);
+  void initialize_tables_cache();
+
+  Mutex *mutable_inter_process_mutex() {
+    return header_->mutable_inter_process_mutex();
+  }
+  Mutex *mutable_inter_thread_mutex() {
+    return &inter_thread_mutex_;
+  }
+};
+
+inline StringBuilder &operator<<(StringBuilder &builder,
+                                 const VectorImpl &vector) {
+  return vector.write_to(builder);
+}
+
+template <typename T,
+          uint64_t PAGE_SIZE = VECTOR_DEFAULT_PAGE_SIZE,
+          uint64_t TABLE_SIZE = VECTOR_DEFAULT_TABLE_SIZE,
+          uint64_t SECONDARY_TABLE_SIZE = VECTOR_DEFAULT_SECONDARY_TABLE_SIZE>
+class Vector {
+  static_assert(PAGE_SIZE >= VECTOR_MIN_PAGE_SIZE, "too small PAGE_SIZE");
+  static_assert(PAGE_SIZE <= VECTOR_MAX_PAGE_SIZE, "too large PAGE_SIZE");
+  static_assert((PAGE_SIZE & (PAGE_SIZE - 1)) == 0,
+                "PAGE_SIZE must be a power of two");
+
+  static_assert(TABLE_SIZE >= VECTOR_MIN_TABLE_SIZE, "too small TABLE_SIZE");
+  static_assert(TABLE_SIZE <= VECTOR_MAX_TABLE_SIZE, "too large TABLE_SIZE");
+  static_assert((TABLE_SIZE & (TABLE_SIZE - 1)) == 0,
+                "TABLE_SIZE must be a power of two");
+
+  static_assert(SECONDARY_TABLE_SIZE >= VECTOR_MIN_SECONDARY_TABLE_SIZE,
+                "too small SECONDARY_TABLE_SIZE");
+  static_assert(SECONDARY_TABLE_SIZE <= VECTOR_MAX_SECONDARY_TABLE_SIZE,
+                "too large SECONDARY_TABLE_SIZE");
+  static_assert((SECONDARY_TABLE_SIZE & (SECONDARY_TABLE_SIZE - 1)) == 0,
+                "SECONDARY_TABLE_SIZE must be a power of two");
+
+ public:
+  typedef T Value;
+
+  Vector() = default;
+  Vector(const VectorCreate &, io::Pool pool)
+    : impl_(VectorImpl::create(pool, nullptr, sizeof(Value), PAGE_SIZE,
+                               TABLE_SIZE, SECONDARY_TABLE_SIZE, fill_page)) {}
+  Vector(const VectorCreate &, io::Pool pool, const Value &default_value)
+    : impl_(VectorImpl::create(pool, &default_value, sizeof(Value), PAGE_SIZE,
+                               TABLE_SIZE, SECONDARY_TABLE_SIZE, fill_page)) {}
+  Vector(const VectorOpen &, io::Pool pool, uint32_t block_id)
+    : impl_(VectorImpl::open(pool, block_id, sizeof(Value), PAGE_SIZE,
+                             TABLE_SIZE, SECONDARY_TABLE_SIZE, fill_page)) {}
+
+  void create(io::Pool pool) {
+    *this = Vector(VECTOR_CREATE, pool);
+  }
+  void create(io::Pool pool, const Value &default_value) {
+    *this = Vector(VECTOR_CREATE, pool, default_value);
+  }
+  void open(io::Pool pool, uint32_t block_id) {
+    *this = Vector(VECTOR_OPEN, pool, block_id);
+  }
+  void close() {
+    *this = Vector();
+  }
+
+  explicit operator bool() const {
+    return static_cast<bool>(impl_);
+  }
+
+  Value &operator[](uint64_t id) {
+    void * const page_address =
+       impl_->get_page_address<PAGE_SIZE, TABLE_SIZE,
+                               SECONDARY_TABLE_SIZE>(id / PAGE_SIZE);
+    return static_cast<T *>(page_address)[id % PAGE_SIZE];
+  }
+
+  uint32_t block_id() const {
+    return impl_->block_id();
+  }
+
+  void swap(Vector &rhs) {
+    impl_.swap(rhs.impl_);
   }
 
   StringBuilder &write_to(StringBuilder &builder) const {
-    return base_.write_to(builder);
+    return impl_ ? impl_->write_to(builder) : (builder << "n/a");
   }
 
-  static uint64_t value_size() {
+  static constexpr uint64_t value_size() {
     return sizeof(Value);
   }
-  static uint64_t page_size() {
+  static constexpr uint64_t page_size() {
     return PAGE_SIZE;
   }
-  static uint64_t table_size() {
+  static constexpr uint64_t table_size() {
     return TABLE_SIZE;
   }
-  static uint64_t secondary_table_size() {
+  static constexpr uint64_t secondary_table_size() {
     return SECONDARY_TABLE_SIZE;
   }
-  static uint64_t id_max() {
+  static constexpr uint64_t max_id() {
     return (PAGE_SIZE * TABLE_SIZE * SECONDARY_TABLE_SIZE) - 1;
   }
 
-  static void unlink(io::Pool *pool, uint32_t block_id) {
-    VectorBase::unlink(pool, block_id, sizeof(Value),
+  static void unlink(io::Pool pool, uint32_t block_id) {
+    VectorImpl::unlink(pool, block_id, sizeof(Value),
                        PAGE_SIZE, TABLE_SIZE, SECONDARY_TABLE_SIZE);
   }
 
  private:
-  VectorBase base_;
+  std::shared_ptr<VectorImpl> impl_;
 
   static void fill_page(void *page_address, const void *value) {
     Value *values = static_cast<Value *>(page_address);
@@ -151,14 +309,17 @@ class Vector {
   }
 };
 
-template <typename T>
-inline void swap(Vector<T> &lhs, Vector<T> &rhs) {
+template <typename T, uint64_t PAGE_SIZE, uint64_t TABLE_SIZE,
+                      uint64_t SECONDARY_TABLE_SIZE>
+inline void swap(Vector<T, PAGE_SIZE, TABLE_SIZE, SECONDARY_TABLE_SIZE> &lhs,
+                 Vector<T, PAGE_SIZE, TABLE_SIZE, SECONDARY_TABLE_SIZE> &rhs) {
   lhs.swap(rhs);
 }
 
-template <typename T>
+template <typename T, uint64_t PAGE_SIZE, uint64_t TABLE_SIZE,
+                      uint64_t SECONDARY_TABLE_SIZE>
 inline StringBuilder &operator<<(StringBuilder &builder,
-                                 const Vector<T> &vector) {
+    const Vector<T, PAGE_SIZE, TABLE_SIZE, SECONDARY_TABLE_SIZE> &vector) {
   return vector.write_to(builder);
 }
 

@@ -34,14 +34,14 @@ void test_basics() {
 
   grnxx::io::Pool pool(grnxx::io::POOL_CREATE, "temp.grn");
 
-  grnxx::db::Vector<std::uint32_t> vector;
-  vector.create(&pool);
+  grnxx::db::Vector<std::uint32_t> vector(grnxx::db::VECTOR_CREATE, pool);
 
+  assert(vector.block_id() == 0);
   assert(vector.value_size() == sizeof(std::uint32_t));
-  assert(vector.page_size() == grnxx::db::VECTOR_PAGE_SIZE_DEFAULT);
-  assert(vector.table_size() == grnxx::db::VECTOR_TABLE_SIZE_DEFAULT);
+  assert(vector.page_size() == grnxx::db::VECTOR_DEFAULT_PAGE_SIZE);
+  assert(vector.table_size() == grnxx::db::VECTOR_DEFAULT_TABLE_SIZE);
   assert(vector.secondary_table_size() ==
-         grnxx::db::VECTOR_SECONDARY_TABLE_SIZE_DEFAULT);
+         grnxx::db::VECTOR_DEFAULT_SECONDARY_TABLE_SIZE);
 
   GRNXX_NOTICE() << "vector = " << vector;
 
@@ -57,14 +57,14 @@ void test_basics() {
   vector[1000000] = 100;
   vector[1000000000] = 1000;
   vector[1000000000000ULL] = 10000;
-  vector[vector.id_max()] = 100000;
+  vector[vector.max_id()] = 100000;
 
   assert(vector[0] == 1);
   assert(vector[1000] == 10);
   assert(vector[1000000] == 100);
   assert(vector[1000000000] == 1000);
   assert(vector[1000000000000ULL] == 10000);
-  assert(vector[vector.id_max()] == 100000);
+  assert(vector[vector.max_id()] == 100000);
 
   const std::uint32_t block_id = vector.block_id();
 
@@ -73,14 +73,14 @@ void test_basics() {
 
   pool.open(grnxx::io::POOL_OPEN, "temp.grn");
 
-  vector.open(&pool, block_id);
+  vector.open(pool, block_id);
 
   assert(vector[0] == 1);
   assert(vector[1000] == 10);
   assert(vector[1000000] == 100);
   assert(vector[1000000000] == 1000);
   assert(vector[1000000000000ULL] == 10000);
-  assert(vector[vector.id_max()] == 100000);
+  assert(vector[vector.max_id()] == 100000);
 
   assert(grnxx::atomic_fetch_and_add(1, &vector[0]) == 1);
   assert(vector[0] == 2);
@@ -88,14 +88,14 @@ void test_basics() {
   assert(grnxx::atomic_fetch_and_add(10, &vector[0]) == 2);
   assert(vector[0] == 12);
 
-  vector.create(&pool, 56789);
+  vector.create(pool, 56789);
 
   assert(vector[0] == 56789);
   assert(vector[1000] == 56789);
   assert(vector[1000000] == 56789);
   assert(vector[1000000000] == 56789);
   assert(vector[1000000000000ULL] == 56789);
-  assert(vector[vector.id_max()] == 56789);
+  assert(vector[vector.max_id()] == 56789);
 
   assert(grnxx::atomic_compare_and_swap(
       std::uint32_t(56789), std::uint32_t(98765), &vector[0]));
@@ -107,8 +107,9 @@ void test_basics() {
 
   vector.close();
 
-  grnxx::db::Vector<float> float_vector;
-  float_vector.create(&pool);
+  grnxx::db::Vector<std::uint32_t>::unlink(pool, 0);
+
+  grnxx::db::Vector<float> float_vector(grnxx::db::VECTOR_CREATE, pool);
 
   float_vector[0] = 1.0F;
   assert(float_vector[0] == 1.0F);
@@ -117,8 +118,7 @@ void test_basics() {
 
   float_vector.close();
 
-  grnxx::db::Vector<double> double_vector;
-  double_vector.create(&pool);
+  grnxx::db::Vector<double> double_vector(grnxx::db::VECTOR_CREATE, pool);
 
   double_vector[0] = 1.0;
   assert(double_vector[0] == 1.0);
@@ -127,8 +127,7 @@ void test_basics() {
 
   double_vector.close();
 
-  grnxx::db::Vector<Point> point_vector;
-  point_vector.create(&pool);
+  grnxx::db::Vector<Point> point_vector(grnxx::db::VECTOR_CREATE, pool);
 
   point_vector[0].x = 123;
   point_vector[0].y = 456;
@@ -141,8 +140,8 @@ void test_basics() {
   assert(point_vector[1 << 30].y == 654);
 
   point_vector.close();
-  pool.close();
 
+  pool.close();
   grnxx::io::Pool::unlink_if_exists("temp.grn");
 }
 
@@ -152,8 +151,7 @@ void test_times() {
 
   grnxx::io::Pool pool(grnxx::io::POOL_TEMPORARY, "temp.grn");
 
-  grnxx::db::Vector<T> vector;
-  vector.create(&pool);
+  grnxx::db::Vector<T> vector(grnxx::db::VECTOR_CREATE, pool);
 
   grnxx::Time start, end;
 
@@ -182,24 +180,24 @@ void test_times() {
 
 
   start = grnxx::Time::now();
-  for (std::uint64_t id = vector.id_max() - VECTOR_SIZE + 1;
-       id <= vector.id_max(); ++id) {
+  for (std::uint64_t id = vector.max_id() - VECTOR_SIZE + 1;
+       id <= vector.max_id(); ++id) {
     vector[id] = T(0);
   }
   end = grnxx::Time::now();
   double ex_set_1st_elapsed = 1.0 * (end - start).nanoseconds() / VECTOR_SIZE;
 
   start = grnxx::Time::now();
-  for (std::uint64_t id = vector.id_max() - VECTOR_SIZE + 1;
-       id <= vector.id_max(); ++id) {
+  for (std::uint64_t id = vector.max_id() - VECTOR_SIZE + 1;
+       id <= vector.max_id(); ++id) {
     vector[id] = T(1);
   }
   end = grnxx::Time::now();
   double ex_set_2nd_elapsed = 1.0 * (end - start).nanoseconds() / VECTOR_SIZE;
 
   start = grnxx::Time::now();
-  for (std::uint64_t id = vector.id_max() - VECTOR_SIZE + 1;
-       id <= vector.id_max(); ++id) {
+  for (std::uint64_t id = vector.max_id() - VECTOR_SIZE + 1;
+       id <= vector.max_id(); ++id) {
     total += vector[id];
   }
   end = grnxx::Time::now();
@@ -248,14 +246,12 @@ void test_times() {
   const std::uint32_t block_id = vector.block_id();
   vector.close();
 
-
   start = grnxx::Time::now();
-  grnxx::db::Vector<T>::unlink(&pool, block_id);
+  grnxx::db::Vector<T>::unlink(pool, block_id);
   end = grnxx::Time::now();
   double unlink_elapsed = (end - start).nanoseconds();
 
-
-  vector.create(&pool, 0);
+  vector.create(pool, 0);
 
   start = grnxx::Time::now();
   for (std::uint64_t id = 0; id < VECTOR_SIZE; ++id) {

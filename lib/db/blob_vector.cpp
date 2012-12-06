@@ -19,6 +19,8 @@
 
 #include <ostream>
 
+#include "../exception.hpp"
+#include "../logger.hpp"
 #include "../lock.hpp"
 
 namespace grnxx {
@@ -129,7 +131,7 @@ const void *BlobVector::get_value_address(uint64_t id, uint64_t *length) {
       const uint8_t store_id = cell.medium_value_cell().store_id();
       const uint64_t offset = cell.medium_value_cell().offset();
       BlobVectorMediumValueStore &store = medium_value_stores_[store_id];
-      if (!store.is_open()) {
+      if (!store) {
         open_medium_value_store(store_id);
       }
       return &store[offset];
@@ -139,7 +141,7 @@ const void *BlobVector::get_value_address(uint64_t id, uint64_t *length) {
         *length = cell.large_value_cell().length();
       }
       const uint64_t offset = cell.large_value_cell().offset();
-      if (!large_value_store_.is_open()) {
+      if (!large_value_store_) {
         open_large_value_store();
       }
       return get_large_value_header(offset)->value();
@@ -220,7 +222,7 @@ void BlobVector::create_vector(io::Pool pool) {
   block_info_ = pool.create_block(sizeof(BlobVectorHeader));
 
   try {
-    cells_.create(&pool_, BlobVectorCell());
+    cells_.create(pool_, BlobVectorCell());
   } catch (...) {
     pool_.free_block(*block_info_);
     throw;
@@ -250,7 +252,7 @@ void BlobVector::open_vector(io::Pool pool, uint32_t block_id) {
   recycler_ = pool.mutable_recycler();
 
   // Open the core table.
-  cells_.open(&pool, header_->cells_block_id());
+  cells_.open(pool, header_->cells_block_id());
 }
 
 BlobVectorSmallValueCell BlobVector::create_small_value_cell(
@@ -262,7 +264,7 @@ BlobVectorMediumValueCell BlobVector::create_medium_value_cell(
     const void *ptr, uint64_t length) {
   const uint8_t store_id = get_store_id(length);
   BlobVectorMediumValueStore &store = medium_value_stores_[store_id];
-  if (!store.is_open()) {
+  if (!store) {
     open_medium_value_store(store_id);
   }
 
@@ -273,9 +275,9 @@ BlobVectorMediumValueCell BlobVector::create_medium_value_cell(
     // TODO: Reuse.
 
     offset = header_->medium_value_store_next_offsets(store_id);
-    if (offset > store.id_max()) {
+    if (offset > store.max_id()) {
       GRNXX_ERROR() << "store is full: offset = " << offset
-                    << ", id_max = " << store.id_max();
+                    << ", max_id = " << store.max_id();
       GRNXX_THROW();
     }
     header_->set_medium_value_store_next_offsets(store_id,
@@ -290,7 +292,7 @@ BlobVectorLargeValueCell BlobVector::create_large_value_cell(
     const void *ptr, uint64_t length) {
   typedef BlobVectorLargeValueHeader ValueHeader;
 
-  if (!large_value_store_.is_open()) {
+  if (!large_value_store_) {
     open_large_value_store();
   }
 
@@ -390,7 +392,7 @@ void BlobVector::free_value(BlobVectorCell cell) {
     case BLOB_VECTOR_LARGE_VALUE: {
       typedef BlobVectorLargeValueHeader ValueHeader;
       Lock lock(header_->mutable_large_value_store_mutex());
-      if (!large_value_store_.is_open()) {
+      if (!large_value_store_) {
         open_large_value_store();
       }
       const uint64_t offset = cell.large_value_cell().offset();
@@ -420,34 +422,34 @@ void BlobVector::free_value(BlobVectorCell cell) {
 void BlobVector::open_medium_value_store(uint8_t store_id) {
   Lock inter_thread_lock(&inter_thread_mutex_);
   BlobVectorMediumValueStore &store = medium_value_stores_[store_id];
-  if (!store.is_open()) {
+  if (!store) {
     if (header_->medium_value_store_block_ids(store_id) ==
         io::BLOCK_INVALID_ID) {
       Lock inter_process_lock(header_->mutable_inter_process_mutex());
       if (header_->medium_value_store_block_ids(store_id) ==
           io::BLOCK_INVALID_ID) {
-        store.create(&pool_);
+        store.create(pool_);
         header_->set_medium_value_store_block_ids(store_id, store.block_id());
       }
     }
-    if (!store.is_open()) {
-      store.open(&pool_, header_->medium_value_store_block_ids(store_id));
+    if (!store) {
+      store.open(pool_, header_->medium_value_store_block_ids(store_id));
     }
   }
 }
 
 void BlobVector::open_large_value_store() {
   Lock inter_thread_lock(&inter_thread_mutex_);
-  if (!large_value_store_.is_open()) {
+  if (!large_value_store_) {
     if (header_->large_value_store_block_id() == io::BLOCK_INVALID_ID) {
       Lock inter_process_lock(header_->mutable_inter_process_mutex());
       if (header_->large_value_store_block_id() == io::BLOCK_INVALID_ID) {
-        large_value_store_.create(&pool_);
+        large_value_store_.create(pool_);
         header_->set_large_value_store_block_id(large_value_store_.block_id());
       }
     }
-    if (!large_value_store_.is_open()) {
-      large_value_store_.open(&pool_, header_->large_value_store_block_id());
+    if (!large_value_store_) {
+      large_value_store_.open(pool_, header_->large_value_store_block_id());
     }
   }
 }
