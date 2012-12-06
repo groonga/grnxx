@@ -241,6 +241,19 @@ class Vector {
     : impl_(VectorImpl::open(pool, block_id, sizeof(Value), PAGE_SIZE,
                              TABLE_SIZE, SECONDARY_TABLE_SIZE, fill_page)) {}
 
+  void create(io::Pool pool) {
+    *this = Vector(VECTOR_CREATE, pool);
+  }
+  void create(io::Pool pool, const Value &default_value) {
+    *this = Vector(VECTOR_CREATE, pool, default_value);
+  }
+  void open(io::Pool pool, uint32_t block_id) {
+    *this = Vector(VECTOR_OPEN, pool, block_id);
+  }
+  void close() {
+    *this = Vector();
+  }
+
   explicit operator bool() const {
     return static_cast<bool>(impl_);
   }
