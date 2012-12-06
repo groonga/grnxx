@@ -54,7 +54,7 @@ class Duration {
     return Duration(weeks * 1000000000 * 60 * 60 * 24 * 7);
   }
 
-  constexpr int64_t nanoseconds() const {
+  constexpr int64_t nanoseconds() {
     return nanoseconds_;
   }
   void set_nanoseconds(int64_t nanoseconds) {

@@ -31,7 +31,7 @@ class Time {
   static Time now();
   static Time now_in_seconds();
 
-  constexpr int64_t nanoseconds() const {
+  constexpr int64_t nanoseconds() {
     return nanoseconds_;
   }
   void set_nanoseconds(int64_t nanoseconds) {
