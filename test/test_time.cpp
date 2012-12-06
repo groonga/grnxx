@@ -25,14 +25,11 @@ int main() {
                            grnxx::LOGGER_ENABLE_COUT);
   grnxx::Logger::set_max_level(grnxx::NOTICE_LOGGER);
 
-  grnxx::Time time;
+  grnxx::Time time = grnxx::Time::now();
+  GRNXX_NOTICE() << "grnxx::Time::now: " << time;
 
-  assert(time == time.invalid_time());
-  assert(!time);
-
-  GRNXX_NOTICE() << "grnxx::Time::now: " << grnxx::Time::now();
-  GRNXX_NOTICE() << "grnxx::Time::now_in_seconds: "
-                 << grnxx::Time::now_in_seconds();
+  time = grnxx::Time::now_in_seconds();
+  GRNXX_NOTICE() << "grnxx::Time::now_in_seconds: " << time;
 
   enum { LOOP_COUNT = 1 << 16 };
 
