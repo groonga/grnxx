@@ -481,6 +481,16 @@ class BlobVector {
     return static_cast<bool>(impl_);
   }
 
+  void create(io::Pool pool) {
+    *this = BlobVector(BLOB_VECTOR_CREATE, pool);
+  }
+  void open(io::Pool pool, uint32_t block_id) {
+    *this = BlobVector(BLOB_VECTOR_OPEN, pool, block_id);
+  }
+  void close() {
+    *this = BlobVector();
+  }
+
   // TODO
 //  BlobVectorValueRef operator[](uint64_t id);
 
