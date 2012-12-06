@@ -122,8 +122,7 @@ bool find_match(Match *match) {
   return false;
 }
 # else  // GRNXX_APPLE
-int find_match_callback(struct dl_phdr_info *info, size_t,
-                        void *user_data) {
+int find_match_callback(struct dl_phdr_info *info, size_t, void *user_data) {
   Match * const match = static_cast<Match *>(user_data);
   for (ElfW(Half) i = 0; i < info->dlpi_phnum; ++i) {
     if (info->dlpi_phdr[i].p_type == PT_LOAD) {
