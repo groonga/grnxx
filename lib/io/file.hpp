@@ -50,7 +50,7 @@ class File {
   }
 
   // The following functions operate advisory locks for files, not for
-  // FileImple instances. The word "advisory" indicates that the file is
+  // FileImpl instances. The word "advisory" indicates that the file is
   // accessible even if it is locked.
 
   // lock() returns false on time-out or deadlock.
