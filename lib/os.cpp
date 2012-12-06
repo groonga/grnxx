@@ -42,7 +42,7 @@ String OS::get_environment_variable(const char *name) {
     GRNXX_THROW();
   }
 
-  static Mutex mutex;
+  static Mutex mutex(MUTEX_UNLOCKED);
   Lock lock(&mutex);
 
 #ifdef GRNXX_MSC

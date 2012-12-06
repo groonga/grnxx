@@ -28,42 +28,38 @@ int main() {
   grnxx::Logger::set_max_level(grnxx::NOTICE_LOGGER);
 
 
-  grnxx::Mutex mutex;
-  assert(mutex.value() == grnxx::Mutex::UNLOCKED);
+  assert(!grnxx::Mutex(grnxx::MUTEX_UNLOCKED).locked());
+  assert(grnxx::Mutex(grnxx::MUTEX_LOCKED).locked());
+
+  grnxx::Mutex mutex(grnxx::MUTEX_UNLOCKED);
 
   GRNXX_NOTICE() << "mutex = " << mutex;
 
   assert(mutex.try_lock());
-  assert(mutex.value() == grnxx::Mutex::LOCKED);
+  assert(mutex.locked());
 
   GRNXX_NOTICE() << "mutex = " << mutex;
 
   assert(!mutex.try_lock());
-  assert(mutex.value() == grnxx::Mutex::LOCKED);
+  assert(mutex.locked());
 
   assert(mutex.unlock());
-  assert(mutex.value() == grnxx::Mutex::UNLOCKED);
+  assert(!mutex.locked());
 
-  assert(mutex.lock());
-  assert(mutex.value() == grnxx::Mutex::LOCKED);
+  mutex.lock();
+  assert(mutex.locked());
 
-  mutex.clear();
-  assert(mutex.value() == grnxx::Mutex::UNLOCKED);
+  assert(mutex.unlock());
+  assert(!mutex.locked());
 
+  assert(mutex.lock(grnxx::Duration(0)));
+  assert(mutex.locked());
 
-  grnxx::Mutex::Object mutex_object = grnxx::Mutex::UNLOCKED;
+  assert(!mutex.lock(grnxx::Duration(0)));
+  assert(mutex.locked());
 
-  assert(grnxx::Mutex::try_lock(&mutex_object));
-  assert(mutex_object == grnxx::Mutex::LOCKED);
-
-  assert(!grnxx::Mutex::try_lock(&mutex_object));
-  assert(mutex_object == grnxx::Mutex::LOCKED);
-
-  assert(grnxx::Mutex::unlock(&mutex_object));
-  assert(mutex_object == grnxx::Mutex::UNLOCKED);
-
-  assert(grnxx::Mutex::lock(&mutex_object));
-  assert(mutex_object == grnxx::Mutex::LOCKED);
+  assert(mutex.unlock());
+  assert(!mutex.locked());
 
 
   enum { LOOP_COUNT = 1 << 20 };

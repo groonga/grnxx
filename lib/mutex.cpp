@@ -17,18 +17,77 @@
 */
 #include "mutex.hpp"
 
+#include "thread.hpp"
+#include "time.hpp"
+
 namespace grnxx {
 
+void Mutex::lock_without_timeout() {
+  for (int i = 0; i < MUTEX_SPIN_COUNT; ++i) {
+    if (try_lock()) {
+      return;
+    }
+  }
+
+  for (int i = 0; i < MUTEX_CONTEXT_SWITCH_COUNT; ++i) {
+    if (try_lock()) {
+      return;
+    }
+    Thread::switch_to_others();
+  }
+
+  while (!try_lock()) {
+    Thread::sleep(MUTEX_SLEEP_DURATION);
+  }
+}
+
+bool Mutex::lock_with_timeout(Duration timeout) {
+  if (timeout == Duration(0)) {
+    return false;
+  }
+
+  for (int i = 0; i < MUTEX_SPIN_COUNT; ++i) {
+    if (try_lock()) {
+      return true;
+    }
+  }
+
+  const bool has_deadline = timeout >= Duration(0);
+  Time deadline;
+  if (has_deadline) {
+    deadline = Time::now() + timeout;
+  }
+
+  for (int i = 0; i < MUTEX_CONTEXT_SWITCH_COUNT; ++i) {
+    if (has_deadline && (Time::now() >= deadline)) {
+      return false;
+    }
+    if (try_lock()) {
+      return true;
+    }
+    Thread::switch_to_others();
+  }
+
+  while (!has_deadline || (Time::now() < deadline)) {
+    if (try_lock()) {
+      return true;
+    }
+    Thread::sleep(MUTEX_SLEEP_DURATION);
+  }
+
+  return false;
+}
+
 StringBuilder &Mutex::write_to(StringBuilder &builder) const {
-  switch (object_) {
-    case Mutex::UNLOCKED: {
+  switch (status_) {
+    case MUTEX_UNLOCKED: {
       return builder << "unlocked";
     }
-    case Mutex::LOCKED: {
+    case MUTEX_LOCKED: {
       return builder << "locked";
     }
     default: {
-      return builder << "{ value = " << object_ << " (undefined) }";
+      return builder << "n/a";
     }
   }
 }

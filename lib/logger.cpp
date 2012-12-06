@@ -99,7 +99,7 @@ class LoggerSingleton {
   // These variables may be used even after the instance termination.
   static volatile bool initialized_;
   static LoggerSingleton * volatile instance_;
-  static Mutex::Object mutex_;
+  static Mutex mutex_;
 
   LoggerSingleton() : path_(), file_() {}
   ~LoggerSingleton() {
@@ -111,7 +111,7 @@ class LoggerSingleton {
     if (!initialized_) {
       // C++11 guarantees that a static local variable is initialized once.
       // However, some compilers don't provide the guarantee.
-      static Mutex::Object mutex = Mutex::UNLOCKED;
+      static Mutex mutex(MUTEX_UNLOCKED);
       Lock lock(&mutex);
       if (!initialized_) {
         initialize();
@@ -130,7 +130,7 @@ class LoggerSingleton {
 
 volatile bool LoggerSingleton::initialized_ = false;
 LoggerSingleton * volatile LoggerSingleton::instance_ = nullptr;
-Mutex::Object LoggerSingleton::mutex_ = Mutex::UNLOCKED;
+Mutex LoggerSingleton::mutex_(MUTEX_UNLOCKED);
 
 LoggerFlags Logger::flags_ = LoggerFlags();
 int Logger::max_level_ = NOTICE_LOGGER;

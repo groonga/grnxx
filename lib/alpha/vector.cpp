@@ -41,7 +41,7 @@ VectorHeader::VectorHeader(const void *default_value,
     has_default_value_(default_value ? 1 : 0),
     first_table_block_id_(io::BLOCK_INVALID_ID),
     secondary_table_block_id_(io::BLOCK_INVALID_ID),
-    inter_process_mutex_() {}
+    inter_process_mutex_(MUTEX_UNLOCKED) {}
 
 StringBuilder &VectorHeader::write_to(StringBuilder &builder) const {
   if (!builder) {
@@ -170,7 +170,7 @@ VectorImpl::VectorImpl()
     secondary_table_cache_(),
     first_table_cache_(),
     tables_cache_(),
-    inter_thread_mutex_() {}
+    inter_thread_mutex_(MUTEX_UNLOCKED) {}
 
 void VectorImpl::create_vector(io::Pool pool,
                                const void *default_value,

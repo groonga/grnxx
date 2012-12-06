@@ -135,8 +135,8 @@ PoolHeader::PoolHeader(const PoolOptions &options)
     block_chunk_infos_(),
     block_info_chunk_infos_(),
     recycler_(),
-    inter_process_data_mutex_(),
-    inter_process_file_mutex_() {
+    inter_process_data_mutex_(MUTEX_UNLOCKED),
+    inter_process_file_mutex_(MUTEX_UNLOCKED) {
   std::memcpy(format_string_, POOL_HEADER_FORMAT_STRING,
               sizeof(format_string_));
   std::memcpy(version_string_, POOL_HEADER_VERSION_STRING,

@@ -35,7 +35,7 @@ BlobVectorHeader::BlobVectorHeader(uint32_t cells_block_id)
     next_value_offset_(0),
     latest_frozen_page_id_(BLOB_VECTOR_INVALID_PAGE_ID),
     latest_large_value_block_id_(io::BLOCK_INVALID_ID),
-    inter_process_mutex_() {}
+    inter_process_mutex_(MUTEX_UNLOCKED) {}
 
 StringBuilder &BlobVectorHeader::write_to(StringBuilder &builder) const {
   if (!builder) {
@@ -237,7 +237,7 @@ BlobVectorImpl::BlobVectorImpl()
     cells_(),
     value_store_(),
     page_infos_(),
-    inter_thread_mutex_() {}
+    inter_thread_mutex_(MUTEX_UNLOCKED) {}
 
 void BlobVectorImpl::create_vector(io::Pool pool) {
   pool_ = pool;

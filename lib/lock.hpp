@@ -25,26 +25,25 @@ namespace grnxx {
 
 class Lock {
  public:
-  explicit Lock(Mutex *mutex)
-    : mutex_object_(mutex->lock() ?
-                    reinterpret_cast<Mutex::Object *>(mutex) : nullptr) {}
-  explicit Lock(Mutex::Object *mutex_object)
-    : mutex_object_(Mutex::lock(mutex_object) ? mutex_object : nullptr) {}
+  Lock() = delete;
+  explicit Lock(Mutex *mutex) : mutex_((mutex->lock(), mutex)) {}
+  Lock(Mutex *mutex, Duration timeout)
+    : mutex_(mutex->lock(timeout) ? mutex : nullptr) {}
   ~Lock() {
-    if (mutex_object_) {
-      Mutex::unlock(mutex_object_);
+    if (mutex_) {
+      mutex_->unlock();
     }
   }
 
+  Lock(const Lock &) = delete;
+  Lock &operator=(const Lock &) = delete;
+
   explicit operator bool() const {
-    return mutex_object_ != nullptr;
+    return mutex_ != nullptr;
   }
 
  private:
-  Mutex::Object *mutex_object_;
-
-  Lock(const Lock &);
-  Lock &operator=(const Lock &);
+  Mutex *mutex_;
 };
 
 }  // namespace grnxx

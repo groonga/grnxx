@@ -23,6 +23,7 @@
 #include "../lock.hpp"
 #include "../logger.hpp"
 #include "../string_format.hpp"
+#include "../thread.hpp"
 #include "../time.hpp"
 #include "path.hpp"
 
@@ -273,7 +274,7 @@ PoolImpl::PoolImpl()
     header_chunk_(),
     block_chunks_(),
     block_info_chunks_(),
-    inter_thread_chunk_mutex_() {}
+    inter_thread_chunk_mutex_(MUTEX_UNLOCKED) {}
 
 void PoolImpl::open_anonymous_pool(Flags flags, const PoolOptions &options) {
   flags_ = GRNXX_IO_ANONYMOUS;

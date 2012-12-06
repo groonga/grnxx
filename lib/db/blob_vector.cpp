@@ -43,9 +43,9 @@ void BlobVectorHeader::initialize(uint32_t cells_block_id,
         BLOB_VECTOR_LARGE_VALUE_INVALID_OFFSET;
   }
 
-  inter_process_mutex_.clear();
-  medium_value_store_mutex_.clear();
-  large_value_store_mutex_.clear();
+  inter_process_mutex_.unlock();
+  medium_value_store_mutex_.unlock();
+  large_value_store_mutex_.unlock();
 }
 
 BlobVector::BlobVector()
@@ -56,7 +56,7 @@ BlobVector::BlobVector()
     cells_(),
     medium_value_stores_(),
     large_value_store_(),
-    inter_thread_mutex_() {}
+    inter_thread_mutex_(MUTEX_UNLOCKED) {}
 
 BlobVector::~BlobVector() {}
 

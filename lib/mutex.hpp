@@ -19,93 +19,69 @@
 #define GRNXX_MUTEX_HPP
 
 #include "basic.hpp"
+#include "duration.hpp"
 #include "intrinsic.hpp"
-#include "string_builder.hpp"
-#include "thread.hpp"
 
 namespace grnxx {
 
-const int      MUTEX_THREAD_SWITCH_COUNT_DEFAULT = 1000;
-const int      MUTEX_SLEEP_COUNT_DEFAULT         = 6000;
-const Duration MUTEX_SLEEP_DURATION_DEFAULT      = Duration::milliseconds(10);
+enum MutexStatus : uint32_t {
+  MUTEX_UNLOCKED = 0,
+  MUTEX_LOCKED   = 1
+};
+
+constexpr int MUTEX_SPIN_COUNT           = 100;
+constexpr int MUTEX_CONTEXT_SWITCH_COUNT = 100;
+constexpr Duration MUTEX_SLEEP_DURATION  = Duration::milliseconds(10);
 
 class Mutex {
  public:
-  typedef uint32_t Value;
-  typedef volatile Value Object;
+  Mutex() = default;
+  explicit constexpr Mutex(MutexStatus status) : status_(status) {}
 
-  static const Value UNLOCKED = 0;
-  static const Value LOCKED = 1;
-
-  Mutex() : object_(UNLOCKED) {}
-
-  Mutex(Mutex &&mutex) : object_(std::move(mutex.object_)) {}
-  Mutex &operator=(Mutex &&mutex) {
-    object_ = std::move(mutex.object_);
-    return *this;
+  void lock() {
+    if (!try_lock()) {
+      lock_without_timeout();
+    }
   }
-
-  bool lock(int thread_switch_count = MUTEX_THREAD_SWITCH_COUNT_DEFAULT,
-            int sleep_count = MUTEX_SLEEP_COUNT_DEFAULT,
-            Duration sleep_duration = MUTEX_SLEEP_DURATION_DEFAULT) {
-    return lock(&object_, thread_switch_count, sleep_count, sleep_duration);
+  bool lock(Duration timeout) {
+    if (try_lock()) {
+      return true;
+    }
+    return lock_with_timeout(timeout);
   }
   bool try_lock() {
-    return try_lock(&object_);
-  }
-  bool unlock() {
-    return unlock(&object_);
-  }
-
-  Value value() const {
-    return object_;
-  }
-
-  static bool lock(Object *object,
-                   int thread_switch_count = MUTEX_THREAD_SWITCH_COUNT_DEFAULT,
-                   int sleep_count = MUTEX_SLEEP_COUNT_DEFAULT,
-                   Duration sleep_duration = MUTEX_SLEEP_DURATION_DEFAULT) {
-    for (int i = 0; i < thread_switch_count; ++i) {
-      if (try_lock(object)) {
-        return true;
-      }
-      Thread::switch_to_others();
-    }
-    for (int i = 0; i < sleep_count; ++i) {
-      if (try_lock(object)) {
-        return true;
-      }
-      Thread::sleep(sleep_duration);
-    }
-    return false;
-  }
-  static bool try_lock(Object *object) {
-    return atomic_compare_and_swap(UNLOCKED, LOCKED, object);
-  }
-  static bool unlock(Object *object) {
-    if (*object == UNLOCKED) {
+    if (locked()) {
       return false;
     }
-    *object = UNLOCKED;
+    return atomic_compare_and_swap(MUTEX_UNLOCKED, MUTEX_LOCKED, &status_);
+  }
+  bool unlock() {
+    if (!locked()) {
+      return false;
+    }
+    status_ = MUTEX_UNLOCKED;
     return true;
   }
 
-  void clear() {
-    object_ = UNLOCKED;
+  constexpr bool locked() {
+    return status_ != MUTEX_UNLOCKED;
   }
+
   void swap(Mutex &mutex) {
     using std::swap;
-    swap(object_, mutex.object_);
+    std::swap(status_, mutex.status_);
   }
 
   StringBuilder &write_to(StringBuilder &builder) const;
 
  private:
-  Object object_;
+  MutexStatus status_;
 
-  Mutex(const Mutex &);
-  Mutex &operator=(const Mutex &);
+  void lock_without_timeout();
+  bool lock_with_timeout(Duration timeout);
 };
+
+GRNXX_ASSERT_POD(Mutex);
 
 inline void swap(Mutex &lhs, Mutex &rhs) {
   lhs.swap(rhs);

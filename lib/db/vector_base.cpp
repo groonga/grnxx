@@ -41,7 +41,7 @@ void VectorHeader::initialize(uint64_t value_size,
   first_table_block_id_ = io::BLOCK_INVALID_ID;
   secondary_table_block_id_ = io::BLOCK_INVALID_ID;
 
-  mutex_.clear();
+  mutex_.unlock();
 }
 
 VectorBase::VectorBase()
@@ -58,7 +58,7 @@ VectorBase::VectorBase()
     secondary_table_cache_(),
     first_table_cache_(),
     tables_cache_(),
-    mutex_() {}
+    mutex_(MUTEX_UNLOCKED) {}
 
 VectorBase::~VectorBase() {}
 
