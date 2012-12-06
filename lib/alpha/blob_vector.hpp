@@ -460,22 +460,9 @@ inline StringBuilder &operator<<(StringBuilder &builder,
 
 class BlobVector {
  public:
-  BlobVector() : impl_() {}
+  BlobVector() = default;
   BlobVector(const BlobVectorCreate &, io::Pool pool);
   BlobVector(const BlobVectorOpen &, io::Pool pool, uint32_t block_id);
-  ~BlobVector() {}
-
-  BlobVector(const BlobVector &vector) : impl_(vector.impl_) {}
-  BlobVector &operator=(const BlobVector &vector) {
-    impl_ = vector.impl_;
-    return *this;
-  }
-
-  BlobVector(BlobVector &&vector) : impl_(std::move(vector.impl_)) {}
-  BlobVector &operator=(BlobVector &&vector) {
-    impl_ = std::move(vector.impl_);
-    return *this;
-  }
 
   explicit operator bool() const {
     return static_cast<bool>(impl_);
