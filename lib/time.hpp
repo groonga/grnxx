@@ -46,6 +46,8 @@ class Time {
   // Copyable.
 };
 
+GRNXX_ASSERT_POD(Time);
+
 inline Time &operator+=(Time &lhs, Duration rhs) {
   lhs.set_nanoseconds(lhs.nanoseconds() + rhs.nanoseconds());
   return lhs;

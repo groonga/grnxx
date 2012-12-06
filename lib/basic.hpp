@@ -48,6 +48,12 @@ using std::uint64_t;
 using std::intptr_t;
 using std::uintptr_t;
 
+// TODO: This should use std::is_pod. However, gcc-4.7 uses the C++03 concept.
+#define GRNXX_ASSERT_POD(type)\
+  static_assert(std::is_trivial<type>::value &&\
+                std::is_standard_layout<type>::value,\
+                #type " is not a POD type")
+
 }  // namespace grnxx
 
 #endif  // GRNXX_BASIC_HPP

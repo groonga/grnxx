@@ -69,6 +69,8 @@ class Duration {
   // Copyable.
 };
 
+GRNXX_ASSERT_POD(Duration);
+
 inline constexpr Duration operator+(Duration duration) {
   return duration;
 }
