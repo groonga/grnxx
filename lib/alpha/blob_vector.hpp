@@ -18,10 +18,12 @@
 #ifndef GRNXX_ALPHA_BLOB_VECTOR_HPP
 #define GRNXX_ALPHA_BLOB_VECTOR_HPP
 
-#include "vector.hpp"
+#include "../db/vector.hpp"
 
 namespace grnxx {
 namespace alpha {
+
+using namespace grnxx::db;
 
 const uint64_t BLOB_VECTOR_MAX_ID = uint64_t(1) << 40;
 
