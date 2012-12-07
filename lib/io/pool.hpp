@@ -89,6 +89,7 @@ const PoolFlags POOL_CREATE_OR_OPEN = PoolFlags::define(0x0040);
 const PoolFlags POOL_TEMPORARY      = PoolFlags::define(0x0200);
 
 StringBuilder &operator<<(StringBuilder &builder, PoolFlags flags);
+std::ostream &operator<<(std::ostream &builder, PoolFlags flags);
 
 class PoolOptions {
  public:

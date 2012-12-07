@@ -17,6 +17,8 @@
 */
 #include "pool-impl.hpp"
 
+#include <ostream>
+
 #include "../exception.hpp"
 #include "../logger.hpp"
 
@@ -46,6 +48,13 @@ StringBuilder &operator<<(StringBuilder &builder, PoolFlags flags) {
   } else {
     return builder << "0";
   }
+}
+
+std::ostream &operator<<(std::ostream &stream, PoolFlags flags) {
+  char buf[256];
+  StringBuilder builder(buf);
+  builder << flags;
+  return stream.write(builder.c_str(), builder.length());
 }
 
 PoolOptions::PoolOptions()

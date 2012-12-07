@@ -58,6 +58,7 @@ constexpr FileFlags FILE_TEMPORARY      = FileFlags::define(0x0200);
 constexpr FileFlags FILE_TRUNCATE       = FileFlags::define(0x0400);
 
 StringBuilder &operator<<(StringBuilder &builder, FileFlags flags);
+std::ostream &operator<<(std::ostream &builder, FileFlags flags);
 
 enum FileLockMode {
   FILE_LOCK_EXCLUSIVE = 0x1000,  // Create an exclusive lock.

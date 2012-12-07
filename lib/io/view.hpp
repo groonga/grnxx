@@ -52,6 +52,7 @@ const ViewFlags VIEW_PRIVATE    = ViewFlags::define(0x1000);
 const ViewFlags VIEW_SHARED     = ViewFlags::define(0x2000);
 
 StringBuilder &operator<<(StringBuilder &builder, ViewFlags flags);
+std::ostream &operator<<(std::ostream &builder, ViewFlags flags);
 
 class ViewImpl;
 
