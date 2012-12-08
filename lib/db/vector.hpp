@@ -23,17 +23,17 @@
 namespace grnxx {
 namespace db {
 
-const uint64_t VECTOR_MIN_PAGE_SIZE     = uint64_t(1) << 0;
-const uint64_t VECTOR_MAX_PAGE_SIZE     = uint64_t(1) << 20;
-const uint64_t VECTOR_DEFAULT_PAGE_SIZE = uint64_t(1) << 16;
+constexpr uint64_t VECTOR_MIN_PAGE_SIZE     = uint64_t(1) << 0;
+constexpr uint64_t VECTOR_MAX_PAGE_SIZE     = uint64_t(1) << 20;
+constexpr uint64_t VECTOR_DEFAULT_PAGE_SIZE = uint64_t(1) << 16;
 
-const uint64_t VECTOR_MIN_TABLE_SIZE     = uint64_t(1) << 10;
-const uint64_t VECTOR_MAX_TABLE_SIZE     = uint64_t(1) << 20;
-const uint64_t VECTOR_DEFAULT_TABLE_SIZE = uint64_t(1) << 12;
+constexpr uint64_t VECTOR_MIN_TABLE_SIZE     = uint64_t(1) << 10;
+constexpr uint64_t VECTOR_MAX_TABLE_SIZE     = uint64_t(1) << 20;
+constexpr uint64_t VECTOR_DEFAULT_TABLE_SIZE = uint64_t(1) << 12;
 
-const uint64_t VECTOR_MIN_SECONDARY_TABLE_SIZE     = uint64_t(1) << 10;
-const uint64_t VECTOR_MAX_SECONDARY_TABLE_SIZE     = uint64_t(1) << 20;
-const uint64_t VECTOR_DEFAULT_SECONDARY_TABLE_SIZE = uint64_t(1) << 12;
+constexpr uint64_t VECTOR_MIN_SECONDARY_TABLE_SIZE     = uint64_t(1) << 10;
+constexpr uint64_t VECTOR_MAX_SECONDARY_TABLE_SIZE     = uint64_t(1) << 20;
+constexpr uint64_t VECTOR_DEFAULT_SECONDARY_TABLE_SIZE = uint64_t(1) << 12;
 
 extern class VectorCreate {} VECTOR_CREATE;
 extern class VectorOpen {} VECTOR_OPEN;
