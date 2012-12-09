@@ -25,40 +25,40 @@
 namespace grnxx {
 namespace io {
 
-const uint64_t POOL_MAX_FILE_SIZE = CHUNK_MAX_OFFSET;
-const uint16_t POOL_MAX_NUM_FILES = 1000;
+constexpr uint64_t POOL_MAX_FILE_SIZE = CHUNK_MAX_OFFSET;
+constexpr uint16_t POOL_MAX_NUM_FILES = 1000;
 
-const uint32_t POOL_MAX_NUM_BLOCKS            = BLOCK_MAX_ID + 1;
-const uint16_t POOL_MAX_NUM_BLOCK_CHUNKS      = uint16_t(1) << 11;
-const uint16_t POOL_MAX_NUM_BLOCK_INFO_CHUNKS =
+constexpr uint32_t POOL_MAX_NUM_BLOCKS            = BLOCK_MAX_ID + 1;
+constexpr uint16_t POOL_MAX_NUM_BLOCK_CHUNKS      = uint16_t(1) << 11;
+constexpr uint16_t POOL_MAX_NUM_BLOCK_INFO_CHUNKS =
     32 - (CHUNK_UNIT_SIZE_BITS - BLOCK_INFO_SIZE_BITS) + 1;
 
-const uint8_t  POOL_MIN_BLOCK_INFO_CHUNK_SIZE_BITS =
+constexpr uint8_t  POOL_MIN_BLOCK_INFO_CHUNK_SIZE_BITS =
     CHUNK_UNIT_SIZE_BITS - BLOCK_INFO_SIZE_BITS;
-const uint64_t POOL_MIN_BLOCK_INFO_CHUNK_SIZE      =
+constexpr uint64_t POOL_MIN_BLOCK_INFO_CHUNK_SIZE      =
     uint64_t(1) << POOL_MIN_BLOCK_INFO_CHUNK_SIZE_BITS;
 
 // For PoolOptions.
 
-const uint64_t POOL_DEFAULT_MAX_FILE_SIZE        = uint64_t(1) << 40;
+constexpr uint64_t POOL_DEFAULT_MAX_FILE_SIZE        = uint64_t(1) << 40;
 
-const uint64_t POOL_DEFAULT_MIN_BLOCK_CHUNK_SIZE = uint64_t(1) << 22;
+constexpr uint64_t POOL_DEFAULT_MIN_BLOCK_CHUNK_SIZE = uint64_t(1) << 22;
 
-const double POOL_MAX_NEXT_BLOCK_CHUNK_SIZE_RATIO     = 1.0;
-const double POOL_DEFAULT_NEXT_BLOCK_CHUNK_SIZE_RATIO = 1.0 / 64;
+constexpr double POOL_MAX_NEXT_BLOCK_CHUNK_SIZE_RATIO     = 1.0;
+constexpr double POOL_DEFAULT_NEXT_BLOCK_CHUNK_SIZE_RATIO = 1.0 / 64;
 
-const Duration POOL_MAX_FROZEN_DURATION     = Duration::days(1);
-const Duration POOL_DEFAULT_FROZEN_DURATION = Duration::minutes(10);
+constexpr Duration POOL_MAX_FROZEN_DURATION     = Duration::days(1);
+constexpr Duration POOL_DEFAULT_FROZEN_DURATION = Duration::minutes(10);
 
-const uint32_t POOL_DEFAULT_UNFREEZE_COUNT_PER_OPERATION = 32;
+constexpr uint32_t POOL_DEFAULT_UNFREEZE_COUNT_PER_OPERATION = 32;
 
 // For PoolHeader.
 
-const uint8_t  POOL_HEADER_CHUNK_SIZE_BITS = CHUNK_UNIT_SIZE_BITS;
-const uint64_t POOL_HEADER_CHUNK_SIZE      = CHUNK_UNIT_SIZE;
+constexpr uint8_t  POOL_HEADER_CHUNK_SIZE_BITS = CHUNK_UNIT_SIZE_BITS;
+constexpr uint64_t POOL_HEADER_CHUNK_SIZE      = CHUNK_UNIT_SIZE;
 
-const char POOL_HEADER_FORMAT_STRING[64]  = "grnxx::io::Pool";
-const char POOL_HEADER_VERSION_STRING[64] = "0.0.0";
+constexpr char POOL_HEADER_FORMAT_STRING[64]  = "grnxx::io::Pool";
+constexpr char POOL_HEADER_VERSION_STRING[64] = "0.0.0";
 
 class PoolFlagsIdentifier {};
 typedef FlagsImpl<PoolFlagsIdentifier> PoolFlags;
@@ -67,7 +67,7 @@ typedef FlagsImpl<PoolFlagsIdentifier> PoolFlags;
 // read-write mode.
 
 // Read-only mode.
-const PoolFlags POOL_READ_ONLY      = PoolFlags::define(0x0001);
+constexpr PoolFlags POOL_READ_ONLY      = PoolFlags::define(0x0001);
 
 // POOL_ANONYMOUS disables all the flags other than GRNXX_HUGE_TLB and
 // enables POOL_PRIVATE.
@@ -76,17 +76,17 @@ const PoolFlags POOL_READ_ONLY      = PoolFlags::define(0x0001);
 // POOL_TEMPORARY disables other flags.
 
 // Anonymous (non-file-backed) mode.
-const PoolFlags POOL_ANONYMOUS      = PoolFlags::define(0x0010);
+constexpr PoolFlags POOL_ANONYMOUS      = PoolFlags::define(0x0010);
 // Create a pool if it does not exist.
-const PoolFlags POOL_CREATE         = PoolFlags::define(0x0040);
+constexpr PoolFlags POOL_CREATE         = PoolFlags::define(0x0040);
 // Try to use huge pages.
-const PoolFlags POOL_HUGE_TLB       = PoolFlags::define(0x0080);
+constexpr PoolFlags POOL_HUGE_TLB       = PoolFlags::define(0x0080);
 // Open an existing pool.
-const PoolFlags POOL_OPEN           = PoolFlags::define(0x0100);
+constexpr PoolFlags POOL_OPEN           = PoolFlags::define(0x0100);
 // Create a pool, if it does not exist, or open an existing pool.
-const PoolFlags POOL_CREATE_OR_OPEN = PoolFlags::define(0x0040);
+constexpr PoolFlags POOL_CREATE_OR_OPEN = PoolFlags::define(0x0040);
 // Create a temporary pool.
-const PoolFlags POOL_TEMPORARY      = PoolFlags::define(0x0200);
+constexpr PoolFlags POOL_TEMPORARY      = PoolFlags::define(0x0200);
 
 StringBuilder &operator<<(StringBuilder &builder, PoolFlags flags);
 std::ostream &operator<<(std::ostream &builder, PoolFlags flags);

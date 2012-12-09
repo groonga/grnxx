@@ -31,25 +31,25 @@ typedef FlagsImpl<ViewFlagsIdentifier> ViewFlags;
 // If both flags are not set, a memory mapping is created in read-write mode.
 
 // Read-only mode.
-const ViewFlags VIEW_READ_ONLY  = ViewFlags::define(0x0001);
+constexpr ViewFlags VIEW_READ_ONLY  = ViewFlags::define(0x0001);
 // Write-only mode.
-const ViewFlags VIEW_WRITE_ONLY = ViewFlags::define(0x0002);
+constexpr ViewFlags VIEW_WRITE_ONLY = ViewFlags::define(0x0002);
 
 // VIEW_ANONYMOUS disables all the flags other than GRNXX_HUGE_TLB and
 // enables VIEW_PRIVATE.
 // VIEW_CREATE disables VIEW_READ_ONLY.
 
 // Anonymous mode.
-const ViewFlags VIEW_ANONYMOUS  = ViewFlags::define(0x0010);
+constexpr ViewFlags VIEW_ANONYMOUS  = ViewFlags::define(0x0010);
 // Try to use huge pages.
-const ViewFlags VIEW_HUGE_TLB   = ViewFlags::define(0x0080);
+constexpr ViewFlags VIEW_HUGE_TLB   = ViewFlags::define(0x0080);
 
 // VIEW_PRIVATE is ignored if VIEW_SHARED is enabled.
 
 // Private mode.
-const ViewFlags VIEW_PRIVATE    = ViewFlags::define(0x1000);
+constexpr ViewFlags VIEW_PRIVATE    = ViewFlags::define(0x1000);
 // Shared mode.
-const ViewFlags VIEW_SHARED     = ViewFlags::define(0x2000);
+constexpr ViewFlags VIEW_SHARED     = ViewFlags::define(0x2000);
 
 StringBuilder &operator<<(StringBuilder &builder, ViewFlags flags);
 std::ostream &operator<<(std::ostream &builder, ViewFlags flags);

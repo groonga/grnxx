@@ -23,17 +23,19 @@
 namespace grnxx {
 namespace io {
 
-const uint8_t  BLOCK_UNIT_SIZE_BITS = 12;
-const uint64_t BLOCK_UNIT_SIZE      = uint64_t(1) << BLOCK_UNIT_SIZE_BITS;
+constexpr uint8_t  BLOCK_UNIT_SIZE_BITS = 12;
+constexpr uint64_t BLOCK_UNIT_SIZE      = uint64_t(1) << BLOCK_UNIT_SIZE_BITS;
 
-const uint8_t  BLOCK_INFO_SIZE_BITS = 5;
-const uint64_t BLOCK_INFO_SIZE      = uint64_t(1) << BLOCK_INFO_SIZE_BITS;
+constexpr uint8_t  BLOCK_INFO_SIZE_BITS = 5;
+constexpr uint64_t BLOCK_INFO_SIZE      = uint64_t(1) << BLOCK_INFO_SIZE_BITS;
 
-const uint32_t BLOCK_MAX_ID     = 0xFFFFFFFEU;
-const uint32_t BLOCK_INVALID_ID = 0xFFFFFFFFU;
+constexpr uint32_t BLOCK_MAX_ID     = 0xFFFFFFFEU;
+constexpr uint32_t BLOCK_INVALID_ID = 0xFFFFFFFFU;
 
-const uint64_t BLOCK_MAX_OFFSET = uint64_t(0xFFFFFFFFU) << BLOCK_UNIT_SIZE_BITS;
-const uint64_t BLOCK_MAX_SIZE   = uint64_t(0xFFFFFFFFU) << BLOCK_UNIT_SIZE_BITS;
+constexpr uint64_t BLOCK_MAX_OFFSET =
+    uint64_t(0xFFFFFFFFU) << BLOCK_UNIT_SIZE_BITS;
+constexpr uint64_t BLOCK_MAX_SIZE   =
+    uint64_t(0xFFFFFFFFU) << BLOCK_UNIT_SIZE_BITS;
 
 enum BlockStatus : uint8_t {
   BLOCK_PHANTOM = 0,

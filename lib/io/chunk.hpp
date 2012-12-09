@@ -24,17 +24,18 @@
 namespace grnxx {
 namespace io {
 
-const uint8_t  CHUNK_UNIT_SIZE_BITS = 16;
-const uint64_t CHUNK_UNIT_SIZE      = uint64_t(1) << CHUNK_UNIT_SIZE_BITS;
+constexpr uint8_t  CHUNK_UNIT_SIZE_BITS = 16;
+constexpr uint64_t CHUNK_UNIT_SIZE      = uint64_t(1) << CHUNK_UNIT_SIZE_BITS;
 
-const uint8_t  CHUNK_INFO_SIZE_BITS = 4;
-const uint64_t CHUNK_INFO_SIZE      = uint64_t(1) << CHUNK_INFO_SIZE_BITS;
+constexpr uint8_t  CHUNK_INFO_SIZE_BITS = 4;
+constexpr uint64_t CHUNK_INFO_SIZE      = uint64_t(1) << CHUNK_INFO_SIZE_BITS;
 
-const uint16_t CHUNK_MAX_ID     = 0xFFFE;
-const uint16_t CHUNK_INVALID_ID = 0xFFFF;
+constexpr uint16_t CHUNK_MAX_ID     = 0xFFFE;
+constexpr uint16_t CHUNK_INVALID_ID = 0xFFFF;
 
-const uint64_t CHUNK_MAX_OFFSET = uint64_t(0xFFFFFFFFU) << CHUNK_UNIT_SIZE_BITS;
-const uint64_t CHUNK_MAX_SIZE   = BLOCK_MAX_OFFSET;
+constexpr uint64_t CHUNK_MAX_OFFSET =
+    uint64_t(0xFFFFFFFFU) << CHUNK_UNIT_SIZE_BITS;
+constexpr uint64_t CHUNK_MAX_SIZE   = BLOCK_MAX_OFFSET;
 
 class Chunk {
  public:
