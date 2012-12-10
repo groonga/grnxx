@@ -199,9 +199,9 @@ const uint8_t BLOB_VECTOR_CELL_FLAGS_MASK = 0xF0;
 
 class BlobVectorCell {
  public:
-  constexpr BlobVectorCell() : qword_(0) {}
+  BlobVectorCell() : qword_(0) {}
 
-  static constexpr BlobVectorCell null_value_cell() {
+  static BlobVectorCell null_value_cell() {
     return BlobVectorCell();
   }
   static BlobVectorCell small_value_cell(const void *ptr, uint64_t length) {
