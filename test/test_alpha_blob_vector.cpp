@@ -56,23 +56,23 @@ void test_basics() {
   vector.set_value(1000000000, values[3].c_str(), values[3].length());
   vector.set_value(1000000000000ULL, values[4].c_str(), values[4].length());
 
-  std::uint64_t length = 0;
+  grnxx::alpha::Blob blob;
 
-  assert(std::memcmp(vector.get_value(0, &length),
-                     values[0].c_str(), values[0].length()) == 0);
-  assert(length == values[0].length());
-  assert(std::memcmp(vector.get_value(1000, &length),
-                     values[1].c_str(), values[1].length()) == 0);
-  assert(length == values[1].length());
-  assert(std::memcmp(vector.get_value(1000000, &length),
-                     values[2].c_str(), values[2].length()) == 0);
-  assert(length == values[2].length());
-  assert(std::memcmp(vector.get_value(1000000000, &length),
-                     values[3].c_str(), values[3].length()) == 0);
-  assert(length == values[3].length());
-  assert(std::memcmp(vector.get_value(1000000000000ULL, &length),
-                     values[4].c_str(), values[4].length()) == 0);
-  assert(length == values[4].length());
+  assert(blob = vector[0]);
+  assert(blob.length() == values[0].length());
+  assert(std::memcmp(blob.address(), values[0].c_str(), blob.length()) == 0);
+  assert(blob = vector[1000]);
+  assert(blob.length() == values[1].length());
+  assert(std::memcmp(blob.address(), values[1].c_str(), blob.length()) == 0);
+  assert(blob = vector[1000000]);
+  assert(blob.length() == values[2].length());
+  assert(std::memcmp(blob.address(), values[2].c_str(), blob.length()) == 0);
+  assert(blob = vector[1000000000]);
+  assert(blob.length() == values[3].length());
+  assert(std::memcmp(blob.address(), values[3].c_str(), blob.length()) == 0);
+  assert(blob = vector[1000000000000ULL]);
+  assert(blob.length() == values[4].length());
+  assert(std::memcmp(blob.address(), values[4].c_str(), blob.length()) == 0);
 
   std::uint32_t block_id = vector.block_id();
 
@@ -84,24 +84,37 @@ void test_basics() {
 
   GRNXX_NOTICE() << "blob_vector = " << vector;
 
-  assert(std::memcmp(vector.get_value(0, &length),
-                     values[0].c_str(), values[0].length()) == 0);
-  assert(length == values[0].length());
-  assert(std::memcmp(vector.get_value(1000, &length),
-                     values[1].c_str(), values[1].length()) == 0);
-  assert(length == values[1].length());
-  assert(std::memcmp(vector.get_value(1000000, &length),
-                     values[2].c_str(), values[2].length()) == 0);
-  assert(length == values[2].length());
-  assert(std::memcmp(vector.get_value(1000000000, &length),
-                     values[3].c_str(), values[3].length()) == 0);
-  assert(length == values[3].length());
-  assert(std::memcmp(vector.get_value(1000000000000ULL, &length),
-                     values[4].c_str(), values[4].length()) == 0);
-  assert(length == values[4].length());
+  assert(blob = vector[0]);
+  assert(blob.length() == values[0].length());
+  assert(std::memcmp(blob.address(), values[0].c_str(), blob.length()) == 0);
+  assert(blob = vector[1000]);
+  assert(blob.length() == values[1].length());
+  assert(std::memcmp(blob.address(), values[1].c_str(), blob.length()) == 0);
+  assert(blob = vector[1000000]);
+  assert(blob.length() == values[2].length());
+  assert(std::memcmp(blob.address(), values[2].c_str(), blob.length()) == 0);
+  assert(blob = vector[1000000000]);
+  assert(blob.length() == values[3].length());
+  assert(std::memcmp(blob.address(), values[3].c_str(), blob.length()) == 0);
+  assert(blob = vector[1000000000000ULL]);
+  assert(blob.length() == values[4].length());
+  assert(std::memcmp(blob.address(), values[4].c_str(), blob.length()) == 0);
 
-  vector.set_value(0, nullptr, 0);
-  assert(!vector.get_value(0));
+  vector[0] = grnxx::alpha::Blob("banana", 6);
+  blob = vector[0];
+  assert(blob);
+  assert(blob.length() == 6);
+  assert(std::memcmp(blob.address(), "banana", 6) == 0);
+
+  grnxx::alpha::Blob blob2 = blob;
+  blob = nullptr;
+  assert(blob2);
+  assert(blob2.length() == 6);
+  assert(std::memcmp(blob2.address(), "banana", 6) == 0);
+
+  vector[0] = nullptr;
+  blob = vector[0];
+  assert(!blob);
 
   vector.close();
   pool.close();
@@ -134,21 +147,19 @@ void test_sequential_access(int num_loops,
 
     for (std::size_t i = 0; i < values.size(); ++i) {
       vector.set_value(i, values[i].c_str(), values[i].length());
-      std::uint64_t length;
-      const char *address =
-          static_cast<const char *>(vector.get_value(i, &length));
-      assert(address);
-      assert(length == values[i].length());
-      assert(std::memcmp(address, values[i].c_str(), length) == 0);
+      grnxx::alpha::Blob blob = vector[i];
+      assert(blob);
+      assert(blob.length() == values[i].length());
+      assert(std::memcmp(blob.address(), values[i].c_str(),
+                         blob.length()) == 0);
     }
 
     for (std::size_t i = 0; i < values.size(); ++i) {
-      std::uint64_t length;
-      const char *address =
-          static_cast<const char *>(vector.get_value(i, &length));
-      assert(address);
-      assert(length == values[i].length());
-      assert(std::memcmp(address, values[i].c_str(), length) == 0);
+      grnxx::alpha::Blob blob = vector[i];
+      assert(blob);
+      assert(blob.length() == values[i].length());
+      assert(std::memcmp(blob.address(), values[i].c_str(),
+                         blob.length()) == 0);
     }
 
     GRNXX_NOTICE() << "total_size = " << pool.header().total_size();
@@ -186,21 +197,19 @@ void test_random_access(int num_loops,
 
     for (std::size_t i = 0; i < values.size(); ++i) {
       vector.set_value(ids[i], values[i].c_str(), values[i].length());
-      std::uint64_t length;
-      const char *address =
-          static_cast<const char *>(vector.get_value(ids[i], &length));
-      assert(address);
-      assert(length == values[i].length());
-      assert(std::memcmp(address, values[i].c_str(), length) == 0);
+      grnxx::alpha::Blob blob = vector[ids[i]];
+      assert(blob);
+      assert(blob.length() == values[i].length());
+      assert(std::memcmp(blob.address(), values[i].c_str(),
+                         blob.length()) == 0);
     }
 
     for (std::size_t i = 0; i < values.size(); ++i) {
-      std::uint64_t length;
-      const char *address =
-          static_cast<const char *>(vector.get_value(ids[i], &length));
-      assert(address);
-      assert(length == values[i].length());
-      assert(std::memcmp(address, values[i].c_str(), length) == 0);
+      grnxx::alpha::Blob blob = vector[ids[i]];
+      assert(blob);
+      assert(blob.length() == values[i].length());
+      assert(std::memcmp(blob.address(), values[i].c_str(),
+                         blob.length()) == 0);
     }
 
     GRNXX_NOTICE() << "total_size = " << pool.header().total_size();

@@ -73,22 +73,14 @@ std::unique_ptr<BlobVectorImpl> BlobVectorImpl::open(io::Pool pool,
   return vector;
 }
 
-const void *BlobVectorImpl::get_value(uint64_t id, uint64_t *length) {
+Blob BlobVectorImpl::get_value(uint64_t id) {
   const BlobVectorCell cell = table_[id];
   switch (cell.type()) {
     case BLOB_VECTOR_NULL: {
-      if (length) {
-        *length = 0;
-      }
-      return nullptr;
+      return Blob(nullptr);
     }
     case BLOB_VECTOR_SMALL: {
-      if (length) {
-        *length = cell.small_length();
-      }
-      // FIXME: The cell might be updated by other threads and processes.
-      //        This interface cannot solve this problem.
-      return table_[id].value();
+      return Blob(cell);
     }
     case BLOB_VECTOR_MEDIUM: {
       if (!value_store_) {
@@ -97,19 +89,12 @@ const void *BlobVectorImpl::get_value(uint64_t id, uint64_t *length) {
           value_store_.open(pool_, header_->value_store_block_id());
         }
       }
-      if (length) {
-        *length = cell.medium_length();
-      }
-      return &value_store_[cell.offset()];
+      return Blob(&value_store_[cell.offset()], cell.medium_length());
     }
     case BLOB_VECTOR_LARGE: {
-      const BlobVectorValueHeader *value_header =
-          static_cast<const BlobVectorValueHeader *>(
-              pool_.get_block_address(cell.block_id()));
-      if (length) {
-        *length = value_header->length();
-      }
-      return value_header + 1;
+      const auto value_header = static_cast<const BlobVectorValueHeader *>(
+          pool_.get_block_address(cell.block_id()));
+      return Blob(value_header + 1, value_header->length());
     }
     default: {
       GRNXX_ERROR() << "invalid value type";
@@ -118,17 +103,18 @@ const void *BlobVectorImpl::get_value(uint64_t id, uint64_t *length) {
   }
 }
 
-void BlobVectorImpl::set_value(uint64_t id, const void *ptr, uint64_t length) {
+void BlobVectorImpl::set_value(uint64_t id, const Blob &value) {
   BlobVectorCell new_cell;
-  if (!ptr) {
+  if (!value) {
     new_cell = BlobVectorCell::null_value_cell();
   } else {
-    if (length < BLOB_VECTOR_MEDIUM_VALUE_MIN_LENGTH) {
-      new_cell = BlobVectorCell::small_value_cell(ptr, length);
-    } else if (length < BLOB_VECTOR_LARGE_VALUE_MIN_LENGTH) {
-      new_cell = create_medium_value(ptr, length);
+    if (value.length() < BLOB_VECTOR_MEDIUM_VALUE_MIN_LENGTH) {
+      new_cell = BlobVectorCell::small_value_cell(value.address(),
+                                                  value.length());
+    } else if (value.length() < BLOB_VECTOR_LARGE_VALUE_MIN_LENGTH) {
+      new_cell = create_medium_value(value);
     } else {
-      new_cell = create_large_value(ptr, length);
+      new_cell = create_large_value(value);
     }
   }
 
@@ -223,8 +209,7 @@ void BlobVectorImpl::open_vector(io::Pool pool, uint32_t block_id) {
   table_.open(pool, header_->table_block_id());
 }
 
-BlobVectorCell BlobVectorImpl::create_medium_value(const void *ptr,
-                                                   uint64_t length) {
+BlobVectorCell BlobVectorImpl::create_medium_value(const Blob &value) {
   Lock lock(mutable_inter_thread_mutex());
 
   if (!value_store_) {
@@ -263,7 +248,7 @@ BlobVectorCell BlobVectorImpl::create_medium_value(const void *ptr,
       BLOB_VECTOR_VALUE_STORE_PAGE_SIZE - offset_in_page;
 
   // Reserve a new page if there is not enough space in the current page.
-  if (length > size_left_in_page) {
+  if (value.length() > size_left_in_page) {
     if (offset != 0) {
       // Freeze the current page if it is empty.
       const uint32_t page_id = static_cast<uint32_t>(
@@ -283,26 +268,25 @@ BlobVectorCell BlobVectorImpl::create_medium_value(const void *ptr,
     }
     index_store_[page_id].set_num_values(0);
   }
-  header_->set_next_value_offset(offset + length);
+  header_->set_next_value_offset(offset + value.length());
 
-  std::memcpy(&value_store_[offset], ptr, length);
+  std::memcpy(&value_store_[offset], value.address(), value.length());
 
   const uint32_t page_id = static_cast<uint32_t>(
       offset >> BLOB_VECTOR_VALUE_STORE_PAGE_SIZE_BITS);
   index_store_[page_id].set_num_values(index_store_[page_id].num_values() + 1);
 
-  return BlobVectorCell::medium_value_cell(offset, length);
+  return BlobVectorCell::medium_value_cell(offset, value.length());
 }
 
-BlobVectorCell BlobVectorImpl::create_large_value(const void *ptr,
-                                                  uint64_t length) {
+BlobVectorCell BlobVectorImpl::create_large_value(const Blob &value) {
   const io::BlockInfo *block_info =
-      pool_.create_block(sizeof(BlobVectorValueHeader) + length);
+      pool_.create_block(sizeof(BlobVectorValueHeader) + value.length());
   BlobVectorValueHeader *value_header =
       static_cast<BlobVectorValueHeader *>(
           pool_.get_block_address(*block_info));
-  value_header->set_length(length);
-  std::memcpy(value_header + 1, ptr, length);
+  value_header->set_length(value.length());
+  std::memcpy(value_header + 1, value.address(), value.length());
   register_large_value(block_info->id(), value_header);
   return BlobVectorCell::large_value_cell(block_info->id());
 }

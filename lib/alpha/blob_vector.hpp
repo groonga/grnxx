@@ -271,6 +271,87 @@ class BlobVectorCell {
 static_assert(sizeof(BlobVectorCell) == sizeof(uint64_t),
               "sizeof(BlobVectorCell) != sizeof(uint64_t)");
 
+class Blob {
+ public:
+  Blob()
+    : address_(nullptr), length_(0),
+      cell_(BlobVectorCell::null_value_cell()) {}
+  explicit Blob(std::nullptr_t)
+    : address_(nullptr), length_(0),
+      cell_(BlobVectorCell::null_value_cell()) {}
+  Blob(const void *address, uint64_t length)
+    : address_(address), length_(length), cell_() {}
+  explicit Blob(BlobVectorCell small_value_cell)
+    : address_(), length_(), cell_(small_value_cell) {
+    address_ = cell_.value();
+    length_ = cell_.small_length();
+  }
+
+  // Note: address_ refers to the own value if it is small.
+  Blob(const Blob &rhs) : address_(), length_(rhs.length_), cell_(rhs.cell_) {
+    if (cell_.type() == BLOB_VECTOR_SMALL) {
+      address_ = cell_.value();
+    } else {
+      address_ = rhs.address_;
+    }
+  }
+  Blob &operator=(const Blob &rhs) {
+    length_ = rhs.length_;
+    cell_ = rhs.cell_;
+    if (cell_.type() == BLOB_VECTOR_SMALL) {
+      address_ = cell_.value();
+    } else {
+      address_ = rhs.address_;
+    }
+    return *this;
+  }
+
+  Blob &operator=(std::nullptr_t) {
+    return *this = Blob(nullptr);
+  }
+
+  explicit operator bool() const {
+    return static_cast<bool>(address_);
+  }
+
+  const void *address() const {
+    return address_;
+  }
+  uint64_t length() const {
+    return length_;
+  }
+
+  void set_address(const void *value) {
+    address_ = value;
+  }
+  void set_length(uint64_t value) {
+    length_ = value;
+  }
+
+ private:
+  const void *address_;
+  uint64_t length_;
+  BlobVectorCell cell_;
+};
+
+class BlobVector;
+
+class BlobRef {
+ public:
+  BlobRef(BlobVector *vector, uint64_t id) : vector_(vector), id_(id) {}
+
+  // vector_->get_value(id_);
+  operator Blob() const;
+
+  // vector_->set_value(id_, value);
+  BlobRef &operator=(std::nullptr_t);
+  BlobRef &operator=(const Blob &value);
+
+ private:
+  BlobVector *vector_;
+  uint64_t id_;
+};
+
 typedef Vector<BlobVectorCell> BlobVectorTable;
 
 typedef Vector<char, BLOB_VECTOR_VALUE_STORE_PAGE_SIZE,
@@ -289,10 +370,8 @@ class BlobVectorImpl {
   static std::unique_ptr<BlobVectorImpl> open(io::Pool pool,
                                               uint32_t block_id);
 
-  const void *get_value(uint64_t id, uint64_t *length);
-  void set_value(uint64_t id, const void *ptr, uint64_t length);
-
-  // TODO
+  Blob get_value(uint64_t id);
+  void set_value(uint64_t id, const Blob &value);
 
   uint32_t block_id() const {
     return block_info_->id();
@@ -317,8 +396,8 @@ class BlobVectorImpl {
   void create_vector(io::Pool pool);
   void open_vector(io::Pool pool, uint32_t block_id);
 
-  BlobVectorCell create_medium_value(const void *ptr, uint64_t length);
-  BlobVectorCell create_large_value(const void *ptr, uint64_t length);
+  BlobVectorCell create_medium_value(const Blob &value);
+  BlobVectorCell create_large_value(const Blob &value);
 
   void free_value(BlobVectorCell cell);
 
@@ -363,14 +442,21 @@ class BlobVector {
     *this = BlobVector();
   }
 
-  // TODO
-//  BlobVectorValueRef operator[](uint64_t id);
+  BlobRef operator[](uint64_t id) {
+    return BlobRef(this, id);
+  }
 
-  const void *get_value(uint64_t id, uint64_t *length = nullptr) {
-    return impl_->get_value(id, length);
+  Blob get_value(uint64_t id) {
+    return impl_->get_value(id);
+  }
+  void set_value(uint64_t id, std::nullptr_t) {
+    impl_->set_value(id, Blob(nullptr));
+  }
+  void set_value(uint64_t id, const Blob &value) {
+    impl_->set_value(id, value);
   }
   void set_value(uint64_t id, const void *ptr, uint64_t length) {
-    impl_->set_value(id, ptr, length);
+    impl_->set_value(id, Blob(ptr, length));
   }
 
   uint32_t block_id() const {
@@ -404,6 +490,20 @@ inline void swap(BlobVector &lhs, BlobVector &rhs) {
 inline StringBuilder &operator<<(StringBuilder &builder,
                                  const BlobVector &vector) {
   return vector.write_to(builder);
+}
+
+inline BlobRef::operator Blob() const {
+  return vector_->get_value(id_);
+}
+
+inline BlobRef &BlobRef::operator=(std::nullptr_t) {
+  vector_->set_value(id_, nullptr);
+  return *this;
+}
+
+inline BlobRef &BlobRef::operator=(const Blob &value) {
+  vector_->set_value(id_, value);
+  return *this;
 }
 
 }  // namespace alpha
