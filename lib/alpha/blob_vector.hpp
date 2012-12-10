@@ -27,8 +27,7 @@ using namespace grnxx::db;
 
 constexpr uint64_t BLOB_VECTOR_MAX_ID = uint64_t(1) << 40;
 
-constexpr uint32_t BLOB_VECTOR_INVALID_PAGE_ID =
-    std::numeric_limits<uint32_t>::max();
+constexpr uint32_t BLOB_VECTOR_INVALID_PAGE_ID = 0xFFFFFFFFU;
 
 constexpr uint64_t BLOB_VECTOR_SMALL_VALUE_MAX_LENGTH  = 7;
 
