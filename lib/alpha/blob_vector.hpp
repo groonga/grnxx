@@ -25,33 +25,33 @@ namespace alpha {
 
 using namespace grnxx::db;
 
-const uint64_t BLOB_VECTOR_MAX_ID = uint64_t(1) << 40;
+constexpr uint64_t BLOB_VECTOR_MAX_ID = uint64_t(1) << 40;
 
-const uint32_t BLOB_VECTOR_INVALID_PAGE_ID =
+constexpr uint32_t BLOB_VECTOR_INVALID_PAGE_ID =
     std::numeric_limits<uint32_t>::max();
 
-const uint64_t BLOB_VECTOR_SMALL_VALUE_MAX_LENGTH  = 7;
+constexpr uint64_t BLOB_VECTOR_SMALL_VALUE_MAX_LENGTH  = 7;
 
-const uint64_t BLOB_VECTOR_MEDIUM_VALUE_MIN_LENGTH =
+constexpr uint64_t BLOB_VECTOR_MEDIUM_VALUE_MIN_LENGTH =
     BLOB_VECTOR_SMALL_VALUE_MAX_LENGTH + 1;
-const uint64_t BLOB_VECTOR_MEDIUM_VALUE_MAX_LENGTH = 65535;
+constexpr uint64_t BLOB_VECTOR_MEDIUM_VALUE_MAX_LENGTH = 65535;
 
-const uint64_t BLOB_VECTOR_LARGE_VALUE_MIN_LENGTH  =
+constexpr uint64_t BLOB_VECTOR_LARGE_VALUE_MIN_LENGTH  =
     BLOB_VECTOR_MEDIUM_VALUE_MAX_LENGTH + 1;
 
-const uint8_t  BLOB_VECTOR_UNIT_SIZE_BITS  = 3;
-const uint64_t BLOB_VECTOR_UNIT_SIZE       =
+constexpr uint8_t  BLOB_VECTOR_UNIT_SIZE_BITS  = 3;
+constexpr uint64_t BLOB_VECTOR_UNIT_SIZE       =
     uint64_t(1) << BLOB_VECTOR_UNIT_SIZE_BITS;
 
-const uint8_t  BLOB_VECTOR_VALUE_STORE_PAGE_SIZE_BITS            = 19;
-const uint8_t  BLOB_VECTOR_VALUE_STORE_TABLE_SIZE_BITS           = 12;
-const uint8_t  BLOB_VECTOR_VALUE_STORE_SECONDARY_TABLE_SIZE_BITS = 16;
+constexpr uint8_t  BLOB_VECTOR_VALUE_STORE_PAGE_SIZE_BITS            = 19;
+constexpr uint8_t  BLOB_VECTOR_VALUE_STORE_TABLE_SIZE_BITS           = 12;
+constexpr uint8_t  BLOB_VECTOR_VALUE_STORE_SECONDARY_TABLE_SIZE_BITS = 16;
 
-const uint64_t BLOB_VECTOR_VALUE_STORE_PAGE_SIZE            =
+constexpr uint64_t BLOB_VECTOR_VALUE_STORE_PAGE_SIZE            =
     uint64_t(1) << BLOB_VECTOR_VALUE_STORE_PAGE_SIZE_BITS;
-const uint64_t BLOB_VECTOR_VALUE_STORE_TABLE_SIZE           =
+constexpr uint64_t BLOB_VECTOR_VALUE_STORE_TABLE_SIZE           =
     uint64_t(1) << BLOB_VECTOR_VALUE_STORE_TABLE_SIZE_BITS;
-const uint64_t BLOB_VECTOR_VALUE_STORE_SECONDARY_TABLE_SIZE =
+constexpr uint64_t BLOB_VECTOR_VALUE_STORE_SECONDARY_TABLE_SIZE =
     uint64_t(1) << BLOB_VECTOR_VALUE_STORE_SECONDARY_TABLE_SIZE_BITS;
 
 extern class BlobVectorCreate {} BLOB_VECTOR_CREATE;
@@ -131,7 +131,7 @@ enum BlobVectorValueType : uint8_t {
   BLOB_VECTOR_LARGE  = 0x30
 };
 
-const uint8_t BLOB_VECTOR_TYPE_MASK = 0x30;
+constexpr uint8_t BLOB_VECTOR_TYPE_MASK = 0x30;
 
 class BlobVectorPageInfo {
  public:
