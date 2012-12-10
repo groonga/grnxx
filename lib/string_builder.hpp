@@ -128,6 +128,9 @@ class StringBuilder {
           !resize_buf(this->length() + length + 1)) {
         length = size_left;
         failed_ = true;
+        if (length == 0) {
+          return *this;
+        }
       }
     }
 
