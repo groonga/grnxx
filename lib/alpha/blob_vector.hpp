@@ -338,17 +338,32 @@ class BlobVector;
 
 class BlobRef {
  public:
-  BlobRef(BlobVector *vector, uint64_t id) : vector_(vector), id_(id) {}
+  BlobRef(BlobVector *vector, uint64_t id) : vector_(*vector), id_(id) {}
 
-  // vector_->get_value(id_);
-  operator Blob() const;
+  operator Blob() const {
+    return get();
+  }
 
-  // vector_->set_value(id_, value);
-  BlobRef &operator=(std::nullptr_t);
-  BlobRef &operator=(const Blob &value);
+  BlobRef &operator=(std::nullptr_t) {
+    set(nullptr);
+    return *this;
+  }
+  BlobRef &operator=(const Blob &value) {
+    set(value);
+    return *this;
+  }
+
+  Blob get() const;
+  void set(std::nullptr_t) {
+    set(Blob(nullptr));
+  }
+  void set(const Blob &value);
+  void set(const void *ptr, uint64_t length) {
+    set(Blob(ptr, length));
+  }
 
  private:
-  BlobVector *vector_;
+  BlobVector &vector_;
   uint64_t id_;
 };
 
@@ -449,14 +464,8 @@ class BlobVector {
   Blob get_value(uint64_t id) {
     return impl_->get_value(id);
   }
-  void set_value(uint64_t id, std::nullptr_t) {
-    impl_->set_value(id, Blob(nullptr));
-  }
   void set_value(uint64_t id, const Blob &value) {
     impl_->set_value(id, value);
-  }
-  void set_value(uint64_t id, const void *ptr, uint64_t length) {
-    impl_->set_value(id, Blob(ptr, length));
   }
 
   uint32_t block_id() const {
@@ -492,18 +501,12 @@ inline StringBuilder &operator<<(StringBuilder &builder,
   return vector.write_to(builder);
 }
 
-inline BlobRef::operator Blob() const {
-  return vector_->get_value(id_);
+inline Blob BlobRef::get() const {
+  return vector_.get_value(id_);
 }
 
-inline BlobRef &BlobRef::operator=(std::nullptr_t) {
-  vector_->set_value(id_, nullptr);
-  return *this;
-}
-
-inline BlobRef &BlobRef::operator=(const Blob &value) {
-  vector_->set_value(id_, value);
-  return *this;
+inline void BlobRef::set(const Blob &value) {
+  vector_.set_value(id_, value);
 }
 
 }  // namespace alpha

@@ -50,11 +50,11 @@ void test_basics() {
   values[3].resize(1 << 12, 'M');
   values[4].resize(1 << 20, 'L');
 
-  vector.set_value(0, values[0].c_str(), values[0].length());
-  vector.set_value(1000, values[1].c_str(), values[1].length());
-  vector.set_value(1000000, values[2].c_str(), values[2].length());
-  vector.set_value(1000000000, values[3].c_str(), values[3].length());
-  vector.set_value(1000000000000ULL, values[4].c_str(), values[4].length());
+  vector[0].set(values[0].c_str(), values[0].length());
+  vector[1000].set(values[1].c_str(), values[1].length());
+  vector[1000000].set(values[2].c_str(), values[2].length());
+  vector[1000000000].set(values[3].c_str(), values[3].length());
+  vector[1000000000000ULL].set(values[4].c_str(), values[4].length());
 
   grnxx::alpha::Blob blob;
 
@@ -106,6 +106,9 @@ void test_basics() {
   assert(blob.length() == 6);
   assert(std::memcmp(blob.address(), "banana", 6) == 0);
 
+  vector[0] = grnxx::alpha::Blob("xyz", 3);
+  assert(std::memcmp(blob.address(), "banana", 6) == 0);
+
   grnxx::alpha::Blob blob2 = blob;
   blob = nullptr;
   assert(blob2);
@@ -146,7 +149,7 @@ void test_sequential_access(int num_loops,
     }
 
     for (std::size_t i = 0; i < values.size(); ++i) {
-      vector.set_value(i, values[i].c_str(), values[i].length());
+      vector[i].set(values[i].c_str(), values[i].length());
       grnxx::alpha::Blob blob = vector[i];
       assert(blob);
       assert(blob.length() == values[i].length());
@@ -196,7 +199,7 @@ void test_random_access(int num_loops,
     }
 
     for (std::size_t i = 0; i < values.size(); ++i) {
-      vector.set_value(ids[i], values[i].c_str(), values[i].length());
+      vector[ids[i]].set(values[i].c_str(), values[i].length());
       grnxx::alpha::Blob blob = vector[ids[i]];
       assert(blob);
       assert(blob.length() == values[i].length());
@@ -271,7 +274,7 @@ void test_reuse(bool enable_reuse) {
 
   for (uint32_t loop_id = 0; loop_id < NUM_LOOPS; ++loop_id) {
     for (uint32_t i = 0; i < NUM_VALUES; ++i) {
-      vector.set_value(0, &value[0], random() % MAX_LENGTH);
+      vector[0] = grnxx::alpha::Blob(&value[0], random() % MAX_LENGTH);
     }
     GRNXX_NOTICE() << "total_size = " << pool.header().total_size();
   }
@@ -294,13 +297,13 @@ void test_mixed() {
       const uint32_t value_id = random() % VECTOR_SIZE;
       switch (random() & 3) {
         case 0: {
-          vector.set_value(value_id, nullptr, 0);
+          vector[value_id] = nullptr;
           break;
         }
         case 1: {
           const uint32_t value_length =
               random() % (grnxx::alpha::BLOB_VECTOR_SMALL_VALUE_MAX_LENGTH + 1);
-          vector.set_value(value_id, &value[0], value_length);
+          vector[value_id] = grnxx::alpha::Blob(&value[0], value_length);
           break;
         }
         case 2: {
@@ -309,11 +312,11 @@ void test_mixed() {
               - grnxx::alpha::BLOB_VECTOR_MEDIUM_VALUE_MIN_LENGTH + 1;
           const uint32_t value_length = (random() % value_length_range)
               + grnxx::alpha::BLOB_VECTOR_MEDIUM_VALUE_MIN_LENGTH;
-          vector.set_value(value_id, &value[0], value_length);
+          vector[value_id] = grnxx::alpha::Blob(&value[0], value_length);
           break;
         }
         case 3: {
-          vector.set_value(value_id, &value[0], value.length());
+          vector[value_id] = grnxx::alpha::Blob(&value[0], value.length());
           break;
         }
       }
