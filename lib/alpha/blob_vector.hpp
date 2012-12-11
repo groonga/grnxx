@@ -289,7 +289,7 @@ class Blob {
 
   // Note: address_ refers to the own value if it is small.
   Blob(const Blob &rhs) : address_(), length_(rhs.length_), cell_(rhs.cell_) {
-    if (cell_.type() == BLOB_VECTOR_SMALL) {
+    if (rhs.address() == rhs.cell_.value()) {
       address_ = cell_.value();
     } else {
       address_ = rhs.address_;
@@ -298,7 +298,7 @@ class Blob {
   Blob &operator=(const Blob &rhs) {
     length_ = rhs.length_;
     cell_ = rhs.cell_;
-    if (cell_.type() == BLOB_VECTOR_SMALL) {
+    if (rhs.address() == rhs.cell_.value()) {
       address_ = cell_.value();
     } else {
       address_ = rhs.address_;
