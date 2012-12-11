@@ -131,6 +131,14 @@ void BlobVectorImpl::set_value(uint64_t id, const Blob &value) {
   free_value(old_cell);
 }
 
+void BlobVectorImpl::append(uint64_t id, const Blob &value) {
+  // TODO
+}
+
+void BlobVectorImpl::prepend(uint64_t id, const Blob &value) {
+  // TODO
+}
+
 StringBuilder &BlobVectorImpl::write_to(StringBuilder &builder) const {
   if (!builder) {
     return builder;

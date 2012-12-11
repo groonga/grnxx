@@ -353,6 +353,11 @@ class BlobRef {
     return *this;
   }
 
+  BlobRef &operator+=(const Blob &value) {
+    append(value);
+    return *this;
+  }
+
   Blob get() const;
   void set(std::nullptr_t) {
     set(Blob(nullptr));
@@ -360,6 +365,15 @@ class BlobRef {
   void set(const Blob &value);
   void set(const void *ptr, uint64_t length) {
     set(Blob(ptr, length));
+  }
+
+  void append(const Blob &value);
+  void append(const void *ptr, uint64_t length) {
+    append(Blob(ptr, length));
+  }
+  void prepend(const Blob &value);
+  void prepend(const void *ptr, uint64_t length) {
+    prepend(Blob(ptr, length));
   }
 
  private:
@@ -387,6 +401,9 @@ class BlobVectorImpl {
 
   Blob get_value(uint64_t id);
   void set_value(uint64_t id, const Blob &value);
+
+  void append(uint64_t id, const Blob &value);
+  void prepend(uint64_t id, const Blob &value);
 
   uint32_t block_id() const {
     return block_info_->id();
@@ -468,6 +485,9 @@ class BlobVector {
     impl_->set_value(id, value);
   }
 
+  void append(uint64_t id, const Blob &value);
+  void prepend(uint64_t id, const Blob &value);
+
   uint32_t block_id() const {
     return impl_->block_id();
   }
@@ -507,6 +527,14 @@ inline Blob BlobRef::get() const {
 
 inline void BlobRef::set(const Blob &value) {
   vector_.set_value(id_, value);
+}
+
+inline void BlobRef::append(const Blob &value) {
+  vector_.append(id_, value);
+}
+
+inline void BlobRef::prepend(const Blob &value) {
+  vector_.prepend(id_, value);
 }
 
 }  // namespace alpha
