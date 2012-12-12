@@ -119,6 +119,21 @@ void test_basics() {
   blob = vector[0];
   assert(!blob);
 
+  vector[0].append("ABC", 3);
+  blob = vector[0];
+  assert(blob.length() == 3);
+  assert(std::memcmp(blob.address(), "ABC", 3) == 0);
+
+  vector[0].append("XYZ", 3);
+  blob = vector[0];
+  assert(blob.length() == 6);
+  assert(std::memcmp(blob.address(), "ABCXYZ", 6) == 0);
+
+  vector[0].prepend("123", 3);
+  blob = vector[0];
+  assert(blob.length() == 9);
+  assert(std::memcmp(blob.address(), "123ABCXYZ", 9) == 0);
+
   vector.close();
   pool.close();
 
