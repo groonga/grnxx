@@ -198,18 +198,18 @@ const uint8_t BLOB_VECTOR_CELL_FLAGS_MASK = 0xF0;
 
 class BlobVectorCell {
  public:
-  BlobVectorCell() : qword_(0) {}
+  BlobVectorCell() = default;
+  explicit BlobVectorCell(std::nullptr_t) : qword_(0) {}
 
-  static BlobVectorCell null_value_cell() {
-    return BlobVectorCell();
+  static BlobVectorCell null_value() {
+    return BlobVectorCell(nullptr);
   }
-  static BlobVectorCell small_value_cell(const void *ptr, uint64_t length) {
-    BlobVectorCell cell;
+  static BlobVectorCell small_value(uint64_t length) {
+    BlobVectorCell cell(nullptr);
     cell.bytes_[0] = BLOB_VECTOR_SMALL | static_cast<uint8_t>(length);
-    std::memcpy(&cell.bytes_[1], ptr, length);
     return cell;
   }
-  static BlobVectorCell medium_value_cell(uint64_t offset, uint64_t length) {
+  static BlobVectorCell medium_value(uint64_t offset, uint64_t length) {
     BlobVectorCell cell;
     cell.bytes_[0] = BLOB_VECTOR_MEDIUM | static_cast<uint8_t>(offset >> 40);
     cell.bytes_[1] = static_cast<uint8_t>(offset >> 32);
@@ -217,8 +217,8 @@ class BlobVectorCell {
     cell.dwords_[1] = static_cast<uint32_t>(offset);
     return cell;
   }
-  static BlobVectorCell large_value_cell(uint32_t block_id) {
-    BlobVectorCell cell;
+  static BlobVectorCell large_value(uint32_t block_id) {
+    BlobVectorCell cell(nullptr);
     cell.bytes_[0] = BLOB_VECTOR_LARGE;
     cell.dwords_[1] = block_id;
     return cell;
@@ -235,6 +235,9 @@ class BlobVectorCell {
     return bytes_[0] & ~BLOB_VECTOR_CELL_FLAGS_MASK;
   }
   const void *value() const {
+    return &bytes_[1];
+  }
+  void *value() {
     return &bytes_[1];
   }
 
@@ -273,12 +276,8 @@ static_assert(sizeof(BlobVectorCell) == sizeof(uint64_t),
 
 class Blob {
  public:
-  Blob()
-    : address_(nullptr), length_(0),
-      cell_(BlobVectorCell::null_value_cell()) {}
-  explicit Blob(std::nullptr_t)
-    : address_(nullptr), length_(0),
-      cell_(BlobVectorCell::null_value_cell()) {}
+  Blob() : address_(nullptr), length_(0), cell_() {}
+  explicit Blob(std::nullptr_t) : address_(nullptr), length_(0), cell_() {}
   Blob(const void *address, uint64_t length)
     : address_(address), length_(length), cell_() {}
   explicit Blob(BlobVectorCell small_value_cell)
@@ -353,11 +352,6 @@ class BlobRef {
     return *this;
   }
 
-  BlobRef &operator+=(const Blob &value) {
-    append(value);
-    return *this;
-  }
-
   Blob get() const;
   void set(std::nullptr_t) {
     set(Blob(nullptr));
@@ -399,7 +393,9 @@ class BlobVectorImpl {
   static std::unique_ptr<BlobVectorImpl> open(io::Pool pool,
                                               uint32_t block_id);
 
-  Blob get_value(uint64_t id);
+  Blob get_value(uint64_t id) {
+    return get_value(table_[id]);
+  }
   void set_value(uint64_t id, const Blob &value);
 
   void append(uint64_t id, const Blob &value);
@@ -428,8 +424,14 @@ class BlobVectorImpl {
   void create_vector(io::Pool pool);
   void open_vector(io::Pool pool, uint32_t block_id);
 
-  BlobVectorCell create_medium_value(const Blob &value);
-  BlobVectorCell create_large_value(const Blob &value);
+  Blob get_value(BlobVectorCell cell);
+
+  BlobVectorCell create_value(const Blob &value);
+  BlobVectorCell join_values(const Blob &lhs, const Blob &rhs);
+
+  void *create_small_value(uint64_t length, BlobVectorCell *cell);
+  void *create_medium_value(uint64_t length, BlobVectorCell *cell);
+  void *create_large_value(uint64_t length, BlobVectorCell *cell);
 
   void free_value(BlobVectorCell cell);
 
@@ -485,8 +487,12 @@ class BlobVector {
     impl_->set_value(id, value);
   }
 
-  void append(uint64_t id, const Blob &value);
-  void prepend(uint64_t id, const Blob &value);
+  void append(uint64_t id, const Blob &value) {
+    impl_->append(id, value);
+  }
+  void prepend(uint64_t id, const Blob &value) {
+    impl_->prepend(id, value);
+  }
 
   uint32_t block_id() const {
     return impl_->block_id();
