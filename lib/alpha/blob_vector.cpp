@@ -465,12 +465,5 @@ void BlobVectorImpl::unfreeze_oldest_frozen_page() {
   }
 }
 
-BlobVector::BlobVector(const BlobVectorCreate &, io::Pool pool)
-  : impl_(BlobVectorImpl::create(pool)) {}
-
-BlobVector::BlobVector(const BlobVectorOpen &, io::Pool pool,
-                       uint32_t block_id)
-  : impl_(BlobVectorImpl::open(pool, block_id)) {}
-
 }  // namespace alpha
 }  // namespace grnxx

@@ -426,12 +426,12 @@ class BlobVectorImpl {
 
   Blob get_value(BlobVectorCell cell);
 
-  BlobVectorCell create_value(const Blob &value);
-  BlobVectorCell join_values(const Blob &lhs, const Blob &rhs);
+  inline BlobVectorCell create_value(const Blob &value);
+  inline BlobVectorCell join_values(const Blob &lhs, const Blob &rhs);
 
-  void *create_small_value(uint64_t length, BlobVectorCell *cell);
-  void *create_medium_value(uint64_t length, BlobVectorCell *cell);
-  void *create_large_value(uint64_t length, BlobVectorCell *cell);
+  inline void *create_small_value(uint64_t length, BlobVectorCell *cell);
+  inline void *create_medium_value(uint64_t length, BlobVectorCell *cell);
+  inline void *create_large_value(uint64_t length, BlobVectorCell *cell);
 
   void free_value(BlobVectorCell cell);
 
@@ -459,8 +459,10 @@ inline StringBuilder &operator<<(StringBuilder &builder,
 class BlobVector {
  public:
   BlobVector() = default;
-  BlobVector(const BlobVectorCreate &, io::Pool pool);
-  BlobVector(const BlobVectorOpen &, io::Pool pool, uint32_t block_id);
+  BlobVector(const BlobVectorCreate &, io::Pool pool)
+    : impl_(BlobVectorImpl::create(pool)) {}
+  BlobVector(const BlobVectorOpen &, io::Pool pool, uint32_t block_id)
+    : impl_(BlobVectorImpl::open(pool, block_id)) {}
 
   explicit operator bool() const {
     return static_cast<bool>(impl_);
