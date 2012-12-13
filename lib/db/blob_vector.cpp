@@ -17,212 +17,164 @@
 */
 #include "blob_vector.hpp"
 
-#include <ostream>
-
 #include "../exception.hpp"
-#include "../logger.hpp"
 #include "../lock.hpp"
+#include "../logger.hpp"
 
 namespace grnxx {
 namespace db {
 
-void BlobVectorHeader::initialize(uint32_t cells_block_id,
-                                  Duration frozen_duration) {
-  std::memset(this, 0, sizeof(*this));
+BlobVectorCreate BLOB_VECTOR_CREATE;
+BlobVectorOpen BLOB_VECTOR_OPEN;
 
-  cells_block_id_ = cells_block_id;
-  frozen_duration_ = frozen_duration;
+BlobVectorHeader::BlobVectorHeader(uint32_t table_block_id)
+  : table_block_id_(table_block_id),
+    value_store_block_id_(io::BLOCK_INVALID_ID),
+    index_store_block_id_(io::BLOCK_INVALID_ID),
+    next_page_id_(0),
+    next_value_offset_(0),
+    latest_frozen_page_id_(BLOB_VECTOR_INVALID_PAGE_ID),
+    latest_large_value_block_id_(io::BLOCK_INVALID_ID),
+    inter_process_mutex_(MUTEX_UNLOCKED) {}
 
-  for (uint32_t i = 0; i < BLOB_VECTOR_MEDIUM_VALUE_STORES_NUM; ++i) {
-    medium_value_store_block_ids_[i] = io::BLOCK_INVALID_ID;
+StringBuilder &BlobVectorHeader::write_to(StringBuilder &builder) const {
+  if (!builder) {
+    return builder;
   }
 
-  large_value_store_block_id_ = io::BLOCK_INVALID_ID;
-  rearmost_large_value_offset_ = BLOB_VECTOR_LARGE_VALUE_INVALID_OFFSET;
-  latest_frozen_large_value_offset_ = BLOB_VECTOR_LARGE_VALUE_INVALID_OFFSET;
-  for (uint32_t i = 0; i < BLOB_VECTOR_LARGE_VALUE_LISTS_NUM; ++i) {
-    oldest_idle_large_value_offsets_[i] =
-        BLOB_VECTOR_LARGE_VALUE_INVALID_OFFSET;
-  }
-
-  inter_process_mutex_.unlock();
-  medium_value_store_mutex_.unlock();
-  large_value_store_mutex_.unlock();
+  builder << "{ table_block_id = " << table_block_id_
+          << ", value_store_block_id = " << value_store_block_id_
+          << ", index_store_block_id = " << index_store_block_id_
+          << ", next_page_id = " << next_page_id_
+          << ", next_value_offset = " << next_value_offset_
+          << ", latest_large_value_block_id = " << latest_large_value_block_id_
+          << ", inter_process_mutex = " << inter_process_mutex_;
+  return builder << " }";
 }
 
-BlobVector::BlobVector()
+std::unique_ptr<BlobVectorImpl> BlobVectorImpl::create(io::Pool pool) {
+  std::unique_ptr<BlobVectorImpl> vector(new (std::nothrow) BlobVectorImpl);
+  if (!vector) {
+    GRNXX_ERROR() << "new grnxx::io::VectorImpl failed";
+    GRNXX_THROW();
+  }
+  vector->create_vector(pool);
+  return vector;
+}
+
+std::unique_ptr<BlobVectorImpl> BlobVectorImpl::open(io::Pool pool,
+                                                     uint32_t block_id) {
+  std::unique_ptr<BlobVectorImpl> vector(new (std::nothrow) BlobVectorImpl);
+  if (!vector) {
+    GRNXX_ERROR() << "new grnxx::io::VectorImpl failed";
+    GRNXX_THROW();
+  }
+  vector->open_vector(pool, block_id);
+  return vector;
+}
+
+void BlobVectorImpl::set_value(uint64_t id, const Blob &value) {
+  const BlobVectorCell new_cell = create_value(value);
+  BlobVectorCell old_cell;
+  try {
+    do {
+      old_cell = table_[id];
+    } while (!atomic_compare_and_swap(old_cell, new_cell, &table_[id]));
+  } catch (...) {
+    // The new value is freed on failure.
+    free_value(new_cell);
+    throw;
+  }
+  // The old value is freed on success.
+  free_value(old_cell);
+}
+
+void BlobVectorImpl::append(uint64_t id, const Blob &value) {
+  if (!value || (value.length() == 0)) {
+    return;
+  }
+
+  for ( ; ; ) {
+    const BlobVectorCell old_cell = table_[id];
+    const Blob old_value = get_value(old_cell);
+    const BlobVectorCell new_cell = join_values(old_value, value);
+    if (atomic_compare_and_swap(old_cell, new_cell, &table_[id])) {
+      // The old value is freed on success.
+      free_value(old_cell);
+      break;
+    } else {
+      // The new value is freed on failure.
+      free_value(new_cell);
+    }
+  }
+}
+
+void BlobVectorImpl::prepend(uint64_t id, const Blob &value) {
+  if (!value || (value.length() == 0)) {
+    return;
+  }
+
+  for ( ; ; ) {
+    const BlobVectorCell old_cell = table_[id];
+    const Blob old_value = get_value(old_cell);
+    const BlobVectorCell new_cell = join_values(value, old_value);
+    if (atomic_compare_and_swap(old_cell, new_cell, &table_[id])) {
+      // The old value is freed on success.
+      free_value(old_cell);
+      break;
+    } else {
+      // The new value is freed on failure.
+      free_value(new_cell);
+    }
+  }
+}
+
+StringBuilder &BlobVectorImpl::write_to(StringBuilder &builder) const {
+  if (!builder) {
+    return builder;
+  }
+
+  builder << "{ pool = " << pool_.path()
+          << ", block_info = " << *block_info_
+          << ", header = " << *header_
+          << ", inter_thread_mutex = " << inter_thread_mutex_;
+  return builder << " }";
+}
+
+void BlobVectorImpl::unlink(io::Pool pool, uint32_t block_id) {
+  std::unique_ptr<BlobVectorImpl> vector =
+      BlobVectorImpl::open(pool, block_id);
+
+  if (vector->header_->latest_large_value_block_id() != io::BLOCK_INVALID_ID) {
+    uint32_t block_id = vector->header_->latest_large_value_block_id();
+    do {
+      auto value_header = static_cast<const BlobVectorValueHeader *>(
+          pool.get_block_address(block_id));
+      const uint32_t prev_block_id = value_header->prev_value_block_id();
+      pool.free_block(block_id);
+      block_id = prev_block_id;
+    } while (block_id != vector->header_->latest_large_value_block_id());
+  }
+  BlobVectorTable::unlink(pool, vector->header_->table_block_id());
+  pool.free_block(vector->block_info_->id());
+}
+
+BlobVectorImpl::BlobVectorImpl()
   : pool_(),
     block_info_(nullptr),
     header_(nullptr),
     recycler_(nullptr),
-    cells_(),
-    medium_value_stores_(),
-    large_value_store_(),
+    table_(),
+    value_store_(),
+    index_store_(),
     inter_thread_mutex_(MUTEX_UNLOCKED) {}
 
-BlobVector::~BlobVector() {}
-
-BlobVector::BlobVector(BlobVector &&rhs)
-  : pool_(std::move(rhs.pool_)),
-    block_info_(std::move(rhs.block_info_)),
-    header_(std::move(rhs.header_)),
-    recycler_(std::move(rhs.recycler_)),
-    cells_(std::move(rhs.cells_)),
-    medium_value_stores_(std::move(rhs.medium_value_stores_)),
-    large_value_store_(std::move(rhs.large_value_store_)),
-    inter_thread_mutex_(std::move(rhs.inter_thread_mutex_)) {}
-
-BlobVector &BlobVector::operator=(BlobVector &&rhs) {
-  pool_ = std::move(rhs.pool_);
-  block_info_ = std::move(rhs.block_info_);
-  header_ = std::move(rhs.header_);
-  recycler_ = std::move(rhs.recycler_);
-  cells_ = std::move(rhs.cells_);
-  medium_value_stores_ = std::move(rhs.medium_value_stores_);
-  large_value_store_ = std::move(rhs.large_value_store_);
-  inter_thread_mutex_ = std::move(rhs.inter_thread_mutex_);
-  return *this;
-}
-
-void BlobVector::create(io::Pool pool) {
-  if (!pool) {
-    GRNXX_ERROR() << "invalid argument: pool = " << pool;
-    GRNXX_THROW();
-  }
-
-  BlobVector new_vector;
-  new_vector.create_vector(pool);
-  *this = std::move(new_vector);
-}
-
-void BlobVector::open(io::Pool pool, uint32_t block_id) {
-  if (!pool) {
-    GRNXX_ERROR() << "invalid argument: pool = " << pool;
-    GRNXX_THROW();
-  }
-
-  BlobVector new_vector;
-  new_vector.open_vector(pool, block_id);
-  *this = std::move(new_vector);
-}
-
-void BlobVector::close() {
-  if (!is_open()) {
-    GRNXX_ERROR() << "failed to close vector";
-    GRNXX_THROW();
-  }
-  *this = BlobVector();
-}
-
-const void *BlobVector::get_value_address(uint64_t id, uint64_t *length) {
-  const BlobVectorCell cell = cells_[id];
-  switch (cell.value_type()) {
-    case BLOB_VECTOR_SMALL_VALUE: {
-      if (length) {
-        *length = cell.small_value_cell().length();
-      }
-      // FIXME: the cell might be updated by other threads and processes.
-      return cells_[id].small_value_cell().value();
-    }
-    case BLOB_VECTOR_MEDIUM_VALUE: {
-      if (length) {
-        *length = cell.medium_value_cell().length();
-      }
-      const uint8_t store_id = cell.medium_value_cell().store_id();
-      const uint64_t offset = cell.medium_value_cell().offset();
-      BlobVectorMediumValueStore &store = medium_value_stores_[store_id];
-      if (!store) {
-        open_medium_value_store(store_id);
-      }
-      return &store[offset];
-    }
-    case BLOB_VECTOR_LARGE_VALUE: {
-      if (length) {
-        *length = cell.large_value_cell().length();
-      }
-      const uint64_t offset = cell.large_value_cell().offset();
-      if (!large_value_store_) {
-        open_large_value_store();
-      }
-      return get_large_value_header(offset)->value();
-    }
-    case BLOB_VECTOR_HUGE_VALUE: {
-      void *block_address =
-          pool_.get_block_address(cell.huge_value_cell().block_id());
-      if (length) {
-        *length = *static_cast<uint64_t *>(block_address);
-      }
-      return static_cast<uint64_t *>(block_address) + 1;
-    }
-    default: {
-      GRNXX_ERROR() << "invalid value type";
-      GRNXX_THROW();
-    }
-  }
-}
-
-void BlobVector::set_value(uint64_t id, const void *ptr, uint64_t length) {
-  if (!ptr && (length != 0)) {
-    GRNXX_ERROR() << "invalid arguments: ptr = " << ptr
-                  << ", length = " << length;
-    GRNXX_THROW();
-  }
-
-  BlobVectorCell new_cell;
-  if (length <= BLOB_VECTOR_SMALL_VALUE_LENGTH_MAX) {
-    new_cell = create_small_value_cell(ptr, length);
-  } else if (length <= BLOB_VECTOR_MEDIUM_VALUE_LENGTH_MAX) {
-    new_cell = create_medium_value_cell(ptr, length);
-  } else if (length <= BLOB_VECTOR_LARGE_VALUE_LENGTH_MAX) {
-    new_cell = create_large_value_cell(ptr, length);
-  } else {
-    new_cell = create_huge_value_cell(ptr, length);
-  }
-
-  // The old cell is replaced with the new one.
-  // Then, the resources allocated to the old cell are freed.
-  BlobVectorCell old_cell;
-  try {
-    do {
-      old_cell = cells_[id];
-    } while (!atomic_compare_and_swap(old_cell, new_cell, &cells_[id]));
-  } catch (...) {
-    free_value(new_cell);
-    throw;
-  }
-  free_value(old_cell);
-}
-
-void BlobVector::swap(BlobVector &rhs) {
-  using std::swap;
-  swap(pool_, rhs.pool_);
-  swap(block_info_, rhs.block_info_);
-  swap(header_, rhs.header_);
-  swap(recycler_, rhs.recycler_);
-  swap(cells_, rhs.cells_);
-  swap(medium_value_stores_, rhs.medium_value_stores_);
-  swap(large_value_store_, rhs.large_value_store_);
-  swap(inter_thread_mutex_, rhs.inter_thread_mutex_);
-}
-
-void BlobVector::unlink(io::Pool pool, uint32_t block_id) {
-  if (!pool) {
-    GRNXX_ERROR() << "invalid argument: pool = " << pool;
-    GRNXX_THROW();
-  }
-
-  BlobVector vector;
-  vector.open(pool, block_id);
-
-  // TODO
-}
-
-void BlobVector::create_vector(io::Pool pool) {
+void BlobVectorImpl::create_vector(io::Pool pool) {
   pool_ = pool;
   block_info_ = pool.create_block(sizeof(BlobVectorHeader));
 
   try {
-    cells_.create(pool_, BlobVectorCell());
+    table_.create(pool_, BlobVectorCell::null_value());
   } catch (...) {
     pool_.free_block(*block_info_);
     throw;
@@ -230,12 +182,12 @@ void BlobVector::create_vector(io::Pool pool) {
 
   void * const block_address = pool_.get_block_address(*block_info_);
   header_ = static_cast<BlobVectorHeader *>(block_address);
-  header_->initialize(cells_.block_id(), pool.options().frozen_duration());
+  *header_ = BlobVectorHeader(table_.block_id());
 
   recycler_ = pool.mutable_recycler();
 }
 
-void BlobVector::open_vector(io::Pool pool, uint32_t block_id) {
+void BlobVectorImpl::open_vector(io::Pool pool, uint32_t block_id) {
   pool_ = pool;
   block_info_ = pool.get_block_info(block_id);
   if (block_info_->size() < sizeof(BlobVectorHeader)) {
@@ -247,571 +199,270 @@ void BlobVector::open_vector(io::Pool pool, uint32_t block_id) {
   void * const block_address = pool_.get_block_address(*block_info_);
   header_ = static_cast<BlobVectorHeader *>(block_address);
 
-  // TODO: check the header!
+  // TODO: Check the format!
 
   recycler_ = pool.mutable_recycler();
 
   // Open the core table.
-  cells_.open(pool, header_->cells_block_id());
+  table_.open(pool, header_->table_block_id());
 }
 
-BlobVectorSmallValueCell BlobVector::create_small_value_cell(
-    const void *ptr, uint64_t length) {
-  return BlobVectorSmallValueCell(ptr, length);
-}
-
-BlobVectorMediumValueCell BlobVector::create_medium_value_cell(
-    const void *ptr, uint64_t length) {
-  const uint8_t store_id = get_store_id(length);
-  BlobVectorMediumValueStore &store = medium_value_stores_[store_id];
-  if (!store) {
-    open_medium_value_store(store_id);
-  }
-
-  uint64_t offset;
-  {
-    Lock lock(header_->mutable_medium_value_store_mutex());
-
-    // TODO: Reuse.
-
-    offset = header_->medium_value_store_next_offsets(store_id);
-    if (offset > store.max_id()) {
-      GRNXX_ERROR() << "store is full: offset = " << offset
-                    << ", max_id = " << store.max_id();
-      GRNXX_THROW();
+Blob BlobVectorImpl::get_value(BlobVectorCell cell) {
+  switch (cell.type()) {
+    case BLOB_VECTOR_NULL: {
+      return Blob(nullptr);
     }
-    header_->set_medium_value_store_next_offsets(store_id,
-        offset + (1 << (store_id + BLOB_VECTOR_MEDIUM_VALUE_UNIT_SIZE_BITS)));
-  }
-
-  std::memcpy(&store[offset], ptr, length);
-  return BlobVectorMediumValueCell(store_id, offset, length);
-}
-
-BlobVectorLargeValueCell BlobVector::create_large_value_cell(
-    const void *ptr, uint64_t length) {
-  typedef BlobVectorLargeValueHeader ValueHeader;
-
-  if (!large_value_store_) {
-    open_large_value_store();
-  }
-
-  const uint64_t capacity = ~(BLOB_VECTOR_LARGE_VALUE_UNIT_SIZE - 1) &
-      (length + (BLOB_VECTOR_LARGE_VALUE_UNIT_SIZE - 1));
-  const uint64_t required_size = sizeof(ValueHeader) + capacity;
-
-  uint64_t offset;
-  {
-    Lock lock(header_->mutable_large_value_store_mutex());
-
-    unfreeze_frozen_large_values();
-
-    uint8_t list_id = get_list_id(capacity - 1);
-    for (++list_id ; list_id < BLOB_VECTOR_LARGE_VALUE_LISTS_NUM; ++list_id) {
-      if (header_->oldest_idle_large_value_offsets(list_id) !=
-          BLOB_VECTOR_LARGE_VALUE_INVALID_OFFSET) {
-        offset = header_->oldest_idle_large_value_offsets(list_id);
-        break;
-      }
+    case BLOB_VECTOR_SMALL: {
+      return Blob(cell);
     }
-
-    if (list_id < BLOB_VECTOR_LARGE_VALUE_LISTS_NUM) {
-      auto header = get_large_value_header(offset);
-      if (header->capacity() > capacity) {
-        divide_idle_large_value(offset, capacity);
-      } else {
-        unregister_idle_large_value(offset);
-        header->set_type(BLOB_VECTOR_ACTIVE_VALUE);
-      }
-    } else {
-      BlobVectorLargeValueFlags flags = BlobVectorLargeValueFlags::none();
-      uint64_t prev_capacity = 0;
-
-      const uint64_t prev_offset = header_->rearmost_large_value_offset();
-      ValueHeader *prev_header = nullptr;
-      if (prev_offset == BLOB_VECTOR_LARGE_VALUE_INVALID_OFFSET) {
-        offset = 0;
-      } else {
-        prev_header = get_large_value_header(prev_offset);
-        offset = prev_offset + prev_header->capacity() + sizeof(ValueHeader);
-
-        const uint64_t size_left = BLOB_VECTOR_LARGE_VALUE_STORE_PAGE_SIZE
-            - (offset & (BLOB_VECTOR_LARGE_VALUE_STORE_PAGE_SIZE - 1));
-        if (size_left < required_size) {
-          auto header = get_large_value_header(offset);
-          header->initialize(BLOB_VECTOR_IDLE_VALUE,
-                             BLOB_VECTOR_LARGE_VALUE_HAS_PREV,
-                             size_left - sizeof(ValueHeader),
-                             prev_header->capacity());
-          prev_header->set_flags(
-              prev_header->flags() | BLOB_VECTOR_LARGE_VALUE_HAS_NEXT);
-          header_->set_rearmost_large_value_offset(offset);
-          register_idle_large_value(offset);
-          offset += size_left;
-        } else if (size_left < BLOB_VECTOR_LARGE_VALUE_STORE_PAGE_SIZE) {
-          flags |= BLOB_VECTOR_LARGE_VALUE_HAS_PREV;
-          prev_capacity = prev_header->capacity();
+    case BLOB_VECTOR_MEDIUM: {
+      if (!value_store_) {
+        Lock lock(mutable_inter_thread_mutex());
+        if (!value_store_) {
+          value_store_.open(pool_, header_->value_store_block_id());
         }
       }
+      return Blob(&value_store_[cell.offset()], cell.medium_length());
+    }
+    case BLOB_VECTOR_LARGE: {
+      const auto value_header = static_cast<const BlobVectorValueHeader *>(
+          pool_.get_block_address(cell.block_id()));
+      return Blob(value_header + 1, value_header->length());
+    }
+    default: {
+      GRNXX_ERROR() << "invalid value type";
+      GRNXX_THROW();
+    }
+  }
+}
 
-      auto header = get_large_value_header(offset);
-      header->initialize(BLOB_VECTOR_ACTIVE_VALUE,
-                         flags, capacity, prev_capacity);
-      if (flags & BLOB_VECTOR_LARGE_VALUE_HAS_PREV) {
-        prev_header->set_flags(
-            prev_header->flags() | BLOB_VECTOR_LARGE_VALUE_HAS_NEXT);
+BlobVectorCell BlobVectorImpl::create_value(const Blob &value) {
+  if (!value) {
+    return BlobVectorCell::null_value();
+  }
+
+  BlobVectorCell cell;
+  void *address;
+  if (value.length() < BLOB_VECTOR_MEDIUM_VALUE_MIN_LENGTH) {
+    address = create_small_value(value.length(), &cell);
+  } else if (value.length() < BLOB_VECTOR_LARGE_VALUE_MIN_LENGTH) {
+    address = create_medium_value(value.length(), &cell);
+  } else {
+    address = create_large_value(value.length(), &cell);
+  }
+  std::memcpy(address, value.address(), value.length());
+  return cell;
+}
+
+BlobVectorCell BlobVectorImpl::join_values(const Blob &lhs, const Blob &rhs) {
+  const uint64_t length = lhs.length() + rhs.length();
+  BlobVectorCell cell;
+  void *address;
+  if (length < BLOB_VECTOR_MEDIUM_VALUE_MIN_LENGTH) {
+    address = create_small_value(length, &cell);
+  } else if (length < BLOB_VECTOR_LARGE_VALUE_MIN_LENGTH) {
+    address = create_medium_value(length, &cell);
+  } else {
+    address = create_large_value(length, &cell);
+  }
+  std::memcpy(address, lhs.address(), lhs.length());
+  std::memcpy(static_cast<char *>(address) + lhs.length(),
+              rhs.address(), rhs.length());
+  return cell;
+}
+
+void *BlobVectorImpl::create_small_value(uint64_t length,
+                                         BlobVectorCell *cell) {
+  *cell = BlobVectorCell::small_value(length);
+  return cell->value();
+}
+
+void *BlobVectorImpl::create_medium_value(uint64_t length,
+                                          BlobVectorCell *cell) {
+  Lock lock(mutable_inter_thread_mutex());
+
+  if (!value_store_) {
+    if (header_->value_store_block_id() == io::BLOCK_INVALID_ID) {
+      Lock lock(mutable_inter_process_mutex());
+      if (header_->value_store_block_id() == io::BLOCK_INVALID_ID) {
+        value_store_.create(pool_);
+        header_->set_value_store_block_id(value_store_.block_id());
       }
-      header_->set_rearmost_large_value_offset(offset);
+    }
+    if (!value_store_) {
+      value_store_.open(pool_, header_->value_store_block_id());
     }
   }
 
-  std::memcpy(get_large_value_header(offset)->value(), ptr, length);
-  return BlobVectorLargeValueCell(offset, length);
+  if (!index_store_) {
+    if (header_->index_store_block_id() == io::BLOCK_INVALID_ID) {
+      Lock lock(mutable_inter_process_mutex());
+      if (header_->index_store_block_id() == io::BLOCK_INVALID_ID) {
+        index_store_.create(pool_, BlobVectorPageInfo());
+        header_->set_index_store_block_id(index_store_.block_id());
+      }
+    }
+    if (!index_store_) {
+      index_store_.open(pool_, header_->index_store_block_id());
+    }
+  }
+
+  // Unfreeze the oldest frozen page for reuse.
+  unfreeze_oldest_frozen_page();
+
+  uint64_t offset = header_->next_value_offset();
+  const uint64_t offset_in_page =
+      ((offset - 1) & (BLOB_VECTOR_VALUE_STORE_PAGE_SIZE - 1)) + 1;
+  const uint64_t size_left_in_page =
+      BLOB_VECTOR_VALUE_STORE_PAGE_SIZE - offset_in_page;
+
+  // Reserve a new page if there is not enough space in the current page.
+  if (length > size_left_in_page) {
+    if (offset != 0) {
+      // Freeze the current page if it is empty.
+      const uint32_t page_id = static_cast<uint32_t>(
+          (offset - 1) >> BLOB_VECTOR_VALUE_STORE_PAGE_SIZE_BITS);
+      if (index_store_[page_id].num_values() == 0) {
+        freeze_page(page_id);
+      }
+    }
+
+    const uint32_t page_id = header_->next_page_id();
+    offset = static_cast<uint64_t>(
+        page_id << BLOB_VECTOR_VALUE_STORE_PAGE_SIZE_BITS);
+    if (index_store_[page_id].next_page_id() != BLOB_VECTOR_INVALID_PAGE_ID) {
+      header_->set_next_page_id(index_store_[page_id].next_page_id());
+    } else {
+      header_->set_next_page_id(page_id + 1);
+    }
+    index_store_[page_id].set_num_values(0);
+  }
+  header_->set_next_value_offset(offset + length);
+
+  const uint32_t page_id = static_cast<uint32_t>(
+      offset >> BLOB_VECTOR_VALUE_STORE_PAGE_SIZE_BITS);
+  index_store_[page_id].set_num_values(index_store_[page_id].num_values() + 1);
+
+  *cell = BlobVectorCell::medium_value(offset, length);
+  return &value_store_[offset];
 }
 
-BlobVectorHugeValueCell BlobVector::create_huge_value_cell(
-    const void *ptr, uint64_t length) {
+void *BlobVectorImpl::create_large_value(uint64_t length,
+                                         BlobVectorCell *cell) {
   const io::BlockInfo *block_info =
-      pool_.create_block(sizeof(uint64_t) + length);
-  void * const block_address = pool_.get_block_address(*block_info);
-  *static_cast<uint64_t *>(block_address) = length;
-  std::memcpy(static_cast<uint64_t *>(block_address) + 1, ptr, length);
-  return BlobVectorHugeValueCell(block_info->id());
+      pool_.create_block(sizeof(BlobVectorValueHeader) + length);
+  auto value_header = static_cast<BlobVectorValueHeader *>(
+      pool_.get_block_address(*block_info));
+  value_header->set_length(length);
+  register_large_value(block_info->id(), value_header);
+  *cell = BlobVectorCell::large_value(block_info->id());
+  return value_header + 1;
 }
 
-void BlobVector::free_value(BlobVectorCell cell) {
-  switch (cell.value_type()) {
-    case BLOB_VECTOR_SMALL_VALUE: {
-      // Nothing to do.
+void BlobVectorImpl::free_value(BlobVectorCell cell) {
+  switch (cell.type()) {
+    case BLOB_VECTOR_NULL:
+    case BLOB_VECTOR_SMALL: {
       break;
     }
-    case BLOB_VECTOR_MEDIUM_VALUE: {
-      // TODO
-      break;
-    }
-    case BLOB_VECTOR_LARGE_VALUE: {
-      typedef BlobVectorLargeValueHeader ValueHeader;
-      Lock lock(header_->mutable_large_value_store_mutex());
-      if (!large_value_store_) {
-        open_large_value_store();
+    case BLOB_VECTOR_MEDIUM: {
+      Lock lock(mutable_inter_thread_mutex());
+
+      const uint32_t page_id = static_cast<uint32_t>(
+          cell.offset() >> BLOB_VECTOR_VALUE_STORE_PAGE_SIZE_BITS);
+      index_store_[page_id].set_num_values(
+          index_store_[page_id].num_values() - 1);
+      if (index_store_[page_id].num_values() == 0) {
+        const uint32_t current_page_id =
+            static_cast<uint32_t>(header_->next_value_offset()
+                                  >> BLOB_VECTOR_VALUE_STORE_PAGE_SIZE_BITS);
+        if (page_id != current_page_id) {
+          freeze_page(page_id);
+        }
       }
-      const uint64_t offset = cell.large_value_cell().offset();
-      ValueHeader * const header = get_large_value_header(offset);
-      header->set_frozen_stamp(recycler_->stamp());
-      header->set_type(BLOB_VECTOR_FROZEN_VALUE);
-      const uint64_t latest_offset =
-          header_->latest_frozen_large_value_offset();
-      if (latest_offset == BLOB_VECTOR_LARGE_VALUE_INVALID_OFFSET) {
-        header->set_next_offset(offset);
-      } else {
-        ValueHeader * const latest_header =
-            get_large_value_header(header_->latest_frozen_large_value_offset());
-        header->set_next_offset(latest_header->next_offset());
-        latest_header->set_next_offset(offset);
-      }
-      header_->set_latest_frozen_large_value_offset(offset);
       break;
     }
-    case BLOB_VECTOR_HUGE_VALUE: {
-      pool_.free_block(cell.huge_value_cell().block_id());
+    case BLOB_VECTOR_LARGE: {
+      const io::BlockInfo * const block_info =
+          pool_.get_block_info(cell.block_id());
+      unregister_large_value(block_info->id(),
+          static_cast<BlobVectorValueHeader *>(
+              pool_.get_block_address(*block_info)));
+      pool_.free_block(*block_info);
       break;
     }
   }
 }
 
-void BlobVector::open_medium_value_store(uint8_t store_id) {
-  Lock inter_thread_lock(&inter_thread_mutex_);
-  BlobVectorMediumValueStore &store = medium_value_stores_[store_id];
-  if (!store) {
-    if (header_->medium_value_store_block_ids(store_id) ==
-        io::BLOCK_INVALID_ID) {
-      Lock inter_process_lock(header_->mutable_inter_process_mutex());
-      if (header_->medium_value_store_block_ids(store_id) ==
-          io::BLOCK_INVALID_ID) {
-        store.create(pool_);
-        header_->set_medium_value_store_block_ids(store_id, store.block_id());
-      }
-    }
-    if (!store) {
-      store.open(pool_, header_->medium_value_store_block_ids(store_id));
-    }
-  }
-}
-
-void BlobVector::open_large_value_store() {
-  Lock inter_thread_lock(&inter_thread_mutex_);
-  if (!large_value_store_) {
-    if (header_->large_value_store_block_id() == io::BLOCK_INVALID_ID) {
-      Lock inter_process_lock(header_->mutable_inter_process_mutex());
-      if (header_->large_value_store_block_id() == io::BLOCK_INVALID_ID) {
-        large_value_store_.create(pool_);
-        header_->set_large_value_store_block_id(large_value_store_.block_id());
-      }
-    }
-    if (!large_value_store_) {
-      large_value_store_.open(pool_, header_->large_value_store_block_id());
-    }
-  }
-}
-
-void BlobVector::unfreeze_frozen_large_values() {
-  if (header_->latest_frozen_large_value_offset() !=
-      BLOB_VECTOR_LARGE_VALUE_INVALID_OFFSET) {
-    auto latest_frozen_value_header =
-        get_large_value_header(header_->latest_frozen_large_value_offset());
-    for (int i = 0; i < 5; ++i) {
-      const uint64_t oldest_frozen_value_offset =
-          latest_frozen_value_header->next_offset();
-      auto oldest_frozen_value_header =
-          get_large_value_header(oldest_frozen_value_offset);
-      if (!recycler_->check(oldest_frozen_value_header->frozen_stamp())) {
-        break;
-      }
-      latest_frozen_value_header->set_next_offset(
-          oldest_frozen_value_header->next_offset());
-      oldest_frozen_value_header->set_type(BLOB_VECTOR_IDLE_VALUE);
-      register_idle_large_value(oldest_frozen_value_offset);
-      merge_idle_large_values(oldest_frozen_value_offset);
-      if (latest_frozen_value_header == oldest_frozen_value_header) {
-        header_->set_latest_frozen_large_value_offset(
-            BLOB_VECTOR_LARGE_VALUE_INVALID_OFFSET);
-        break;
-      }
-    }
-  }
-}
-
-void BlobVector::divide_idle_large_value(uint64_t offset, uint64_t capacity) {
-  typedef BlobVectorLargeValueHeader ValueHeader;
-
-  unregister_idle_large_value(offset);
-
-  const uint64_t next_offset = offset + capacity + sizeof(ValueHeader);
-  auto header = get_large_value_header(offset);
-  auto next_header = get_large_value_header(next_offset);
-  next_header->initialize(BLOB_VECTOR_IDLE_VALUE,
-                          BLOB_VECTOR_LARGE_VALUE_HAS_PREV |
-                          (header->flags() & BLOB_VECTOR_LARGE_VALUE_HAS_NEXT),
-                          header->capacity() - capacity - sizeof(ValueHeader),
-                          capacity);
-
-  if (header->flags() & BLOB_VECTOR_LARGE_VALUE_HAS_NEXT) {
-    const uint64_t next_next_offset =
-        offset + header->capacity() + sizeof(ValueHeader);
-    auto next_next_header = get_large_value_header(next_next_offset);
-    next_next_header->set_prev_capacity(next_header->capacity());
-  }
-
-  header->set_type(BLOB_VECTOR_ACTIVE_VALUE);
-  header->set_flags(header->flags() | BLOB_VECTOR_LARGE_VALUE_HAS_NEXT);
-  header->set_capacity(capacity);
-
-  register_idle_large_value(next_offset);
-
-  if (offset == header_->rearmost_large_value_offset()) {
-    header_->set_rearmost_large_value_offset(next_offset);
-  }
-}
-
-void BlobVector::merge_idle_large_values(uint64_t offset) {
-  typedef BlobVectorLargeValueHeader ValueHeader;
-
-  auto header = get_large_value_header(offset);
-  if (header->flags() & BLOB_VECTOR_LARGE_VALUE_HAS_NEXT) {
-    const uint64_t next_offset =
-        offset + header->capacity() + sizeof(ValueHeader);
-    auto next_header = get_large_value_header(next_offset);
-    if (next_header->type() == BLOB_VECTOR_IDLE_VALUE) {
-      merge_idle_large_values(offset, next_offset);
-    }
-  }
-  if (header->flags() & BLOB_VECTOR_LARGE_VALUE_HAS_PREV) {
-    const uint64_t prev_offset =
-        offset - header->prev_capacity() - sizeof(ValueHeader);
-    auto prev_header = get_large_value_header(prev_offset);
-    if (prev_header->type() == BLOB_VECTOR_IDLE_VALUE) {
-      merge_idle_large_values(prev_offset, offset);
-    }
-  }
-}
-
-void BlobVector::merge_idle_large_values(uint64_t offset, uint64_t next_offset) {
-  typedef BlobVectorLargeValueHeader ValueHeader;
-
-  unregister_idle_large_value(offset);
-  unregister_idle_large_value(next_offset);
-
-  auto header = get_large_value_header(offset);
-  auto next_header = get_large_value_header(next_offset);
-
-  header->set_flags((header->flags() & BLOB_VECTOR_LARGE_VALUE_HAS_PREV) |
-                    (next_header->flags() & BLOB_VECTOR_LARGE_VALUE_HAS_NEXT));
-  header->set_capacity(
-      header->capacity() + next_header->capacity() + sizeof(ValueHeader));
-
-  if (next_header->flags() & BLOB_VECTOR_LARGE_VALUE_HAS_NEXT) {
-    const uint64_t next_next_offset =
-        next_offset + next_header->capacity() + sizeof(ValueHeader);
-    auto next_next_header = get_large_value_header(next_next_offset);
-    next_next_header->set_prev_capacity(header->capacity());
-  }
-
-  register_idle_large_value(offset);
-
-  if (next_offset == header_->rearmost_large_value_offset()) {
-    header_->set_rearmost_large_value_offset(offset);
-  }
-}
-
-void BlobVector::register_idle_large_value(uint64_t offset) {
-  auto header = get_large_value_header(offset);
-  if (header->capacity() < BLOB_VECTOR_LARGE_VALUE_LENGTH_MIN) {
-    return;
-  }
-  const uint8_t list_id = get_list_id(header->capacity());
-  const uint64_t oldest_idle_value_offset =
-      header_->oldest_idle_large_value_offsets(list_id);
-  if (oldest_idle_value_offset == BLOB_VECTOR_LARGE_VALUE_INVALID_OFFSET) {
-    header->set_next_offset(offset);
-    header->set_prev_offset(offset);
-    header_->set_oldest_idle_large_value_offsets(list_id, offset);
+void BlobVectorImpl::register_large_value(uint32_t block_id,
+    BlobVectorValueHeader *value_header) {
+  Lock lock(mutable_inter_process_mutex());
+  if (header_->latest_large_value_block_id() == io::BLOCK_INVALID_ID) {
+    value_header->set_next_value_block_id(block_id);
+    value_header->set_prev_value_block_id(block_id);
   } else {
-    auto next_header = get_large_value_header(oldest_idle_value_offset);
-    auto prev_header = get_large_value_header(next_header->prev_offset());
-    header->set_next_offset(oldest_idle_value_offset);
-    header->set_prev_offset(next_header->prev_offset());
-    prev_header->set_next_offset(offset);
-    next_header->set_prev_offset(offset);
+    const uint32_t prev_id = header_->latest_large_value_block_id();
+    auto prev_header = static_cast<BlobVectorValueHeader *>(
+        pool_.get_block_address(prev_id));
+    const uint32_t next_id = prev_header->next_value_block_id();
+    auto next_header = static_cast<BlobVectorValueHeader *>(
+        pool_.get_block_address(next_id));
+    value_header->set_next_value_block_id(next_id);
+    value_header->set_prev_value_block_id(prev_id);
+    prev_header->set_next_value_block_id(block_id);
+    next_header->set_prev_value_block_id(block_id);
+  }
+  header_->set_latest_large_value_block_id(block_id);
+}
+
+void BlobVectorImpl::unregister_large_value(uint32_t block_id,
+    BlobVectorValueHeader *value_header) {
+  Lock lock(mutable_inter_process_mutex());
+  const uint32_t next_id = value_header->next_value_block_id();
+  const uint32_t prev_id = value_header->prev_value_block_id();
+  auto next_header = static_cast<BlobVectorValueHeader *>(
+      pool_.get_block_address(next_id));
+  auto prev_header = static_cast<BlobVectorValueHeader *>(
+      pool_.get_block_address(prev_id));
+  next_header->set_prev_value_block_id(prev_id);
+  prev_header->set_next_value_block_id(next_id);
+  if (block_id == header_->latest_large_value_block_id()) {
+    header_->set_latest_large_value_block_id(prev_id);
   }
 }
 
-void BlobVector::unregister_idle_large_value(uint64_t offset) {
-  auto header = get_large_value_header(offset);
-  if (header->capacity() < BLOB_VECTOR_LARGE_VALUE_LENGTH_MIN) {
-    return;
-  }
-  const uint8_t list_id = get_list_id(header->capacity());
-  if (offset == header->next_offset()) {
-    header_->set_oldest_idle_large_value_offsets(
-        list_id, BLOB_VECTOR_LARGE_VALUE_INVALID_OFFSET);
+void BlobVectorImpl::freeze_page(uint32_t page_id) {
+  BlobVectorPageInfo &page_info = index_store_[page_id];
+  if (header_->latest_frozen_page_id() != BLOB_VECTOR_INVALID_PAGE_ID) {
+    BlobVectorPageInfo &latest_frozen_page_info =
+        index_store_[header_->latest_frozen_page_id()];
+    page_info.set_next_page_id(latest_frozen_page_info.next_page_id());
+    latest_frozen_page_info.set_next_page_id(page_id);
   } else {
-    auto next_header = get_large_value_header(header->next_offset());
-    auto prev_header = get_large_value_header(header->prev_offset());
-    next_header->set_prev_offset(header->prev_offset());
-    prev_header->set_next_offset(header->next_offset());
-    if (offset == header_->oldest_idle_large_value_offsets(list_id)) {
-      header_->set_oldest_idle_large_value_offsets(
-          list_id, header->next_offset());
-    }
+    page_info.set_next_page_id(page_id);
   }
+  page_info.set_stamp(recycler_->stamp());
+  header_->set_latest_frozen_page_id(page_id);
 }
 
-StringBuilder &operator<<(StringBuilder &builder, BlobVectorLargeValueType type) {
-  switch (type) {
-    case BLOB_VECTOR_ACTIVE_VALUE: {
-      return builder << "BLOB_VECTOR_ACTIVE_VALUE";
-    }
-    case BLOB_VECTOR_FROZEN_VALUE: {
-      return builder << "BLOB_VECTOR_FROZEN_VALUE";
-    }
-    case BLOB_VECTOR_IDLE_VALUE: {
-      return builder << "BLOB_VECTOR_IDLE_VALUE";
-    }
-    default: {
-      return builder << "n/a";
-    }
- }
-}
-
-StringBuilder &operator<<(StringBuilder &builder, BlobVectorLargeValueFlags flags) {
-  if (!builder) {
-    return builder;
-  }
-
-  if (flags) {
-    bool is_first = true;
-    if (flags & BLOB_VECTOR_LARGE_VALUE_HAS_NEXT) {
-      builder << "BLOB_VECTOR_LARGE_VALUE_HAS_NEXT";
-      is_first = false;
-    }
-    if (flags & BLOB_VECTOR_LARGE_VALUE_HAS_PREV) {
-      if (!is_first) {
-        builder << " | ";
+void BlobVectorImpl::unfreeze_oldest_frozen_page() {
+  if (header_->latest_frozen_page_id() != BLOB_VECTOR_INVALID_PAGE_ID) {
+    BlobVectorPageInfo &latest_frozen_page_info =
+        index_store_[header_->latest_frozen_page_id()];
+    const uint32_t oldest_frozen_page_id =
+        latest_frozen_page_info.next_page_id();
+    BlobVectorPageInfo &oldest_frozen_page_info =
+        index_store_[oldest_frozen_page_id];
+    if (recycler_->check(oldest_frozen_page_info.stamp())) {
+      latest_frozen_page_info.set_next_page_id(
+          oldest_frozen_page_info.next_page_id());
+      oldest_frozen_page_info.set_next_page_id(header_->next_page_id());
+      header_->set_next_page_id(oldest_frozen_page_id);
+      if (oldest_frozen_page_id == header_->latest_frozen_page_id()) {
+        header_->set_latest_frozen_page_id(BLOB_VECTOR_INVALID_PAGE_ID);
       }
-      builder << "BLOB_VECTOR_LARGE_VALUE_HAS_PREV";
-    }
-    return builder;
-  } else {
-    return builder << "0";
-  }
-}
-
-StringBuilder &operator<<(StringBuilder &builder, BlobVectorValueType type) {
-  switch (type) {
-    case BLOB_VECTOR_SMALL_VALUE: {
-      return builder << "BLOB_VECTOR_SMALL_VALUE";
-    }
-    case BLOB_VECTOR_MEDIUM_VALUE: {
-      return builder << "BLOB_VECTOR_MEDIUM_VALUE";
-    }
-    case BLOB_VECTOR_LARGE_VALUE: {
-      return builder << "BLOB_VECTOR_LARGE_VALUE";
-    }
-    case BLOB_VECTOR_HUGE_VALUE: {
-      return builder << "BLOB_VECTOR_HUGE_VALUE";
-    }
-    default: {
-      return builder << "n/a";
     }
   }
-}
-
-StringBuilder &operator<<(StringBuilder &builder, BlobVectorCellFlags flags) {
-  BlobVectorCellFlags clone = flags;
-  clone.flags &= BLOB_VECTOR_VALUE_TYPE_MASK;
-  return builder << clone.value_type;
-}
-
-StringBuilder &BlobVectorHeader::write_to(StringBuilder &builder) const {
-  if (!builder) {
-    return builder;
-  }
-
-  builder << "{ cells_block_id = " << cells_block_id_;
-
-  builder << ", medium_value_store_block_ids = ";
-  bool is_empty = true;
-  for (uint32_t i = 0; i < BLOB_VECTOR_MEDIUM_VALUE_STORES_NUM; ++i) {
-    if (medium_value_store_block_ids_[i] != io::BLOCK_INVALID_ID) {
-      if (is_empty) {
-        builder << "{ ";
-        is_empty = false;
-      } else {
-        builder << ", ";
-      }
-      builder << '[' << i << "] = " << medium_value_store_block_ids_[i];
-    }
-  }
-  builder << (is_empty ? "{}" : " }");
-
-  builder << ", medium_value_store_next_offsets = ";
-  is_empty = true;
-  for (uint32_t i = 0; i < BLOB_VECTOR_MEDIUM_VALUE_STORES_NUM; ++i) {
-    if (medium_value_store_next_offsets_[i] != 0) {
-      if (is_empty) {
-        builder << "{ ";
-        is_empty = false;
-      } else {
-        builder << ", ";
-      }
-      builder << '[' << i << "] = " << medium_value_store_next_offsets_[i];
-    }
-  }
-  builder << (is_empty ? "{}" : " }");
-
-  builder << ", large_value_store_block_id = " << large_value_store_block_id_
-          << ", rearmost_large_value_offset = " << rearmost_large_value_offset_
-          << ", latest_frozen_large_value_offset = "
-          << latest_frozen_large_value_offset_;
-
-  builder << ", oldest_idle_large_value_offsets = ";
-  is_empty = true;
-  for (uint32_t i = 0; i < BLOB_VECTOR_LARGE_VALUE_LISTS_NUM; ++i) {
-    if (oldest_idle_large_value_offsets_[i] !=
-        BLOB_VECTOR_LARGE_VALUE_INVALID_OFFSET) {
-      if (is_empty) {
-        builder << "{ ";
-        is_empty = false;
-      } else {
-        builder << ", ";
-      }
-      builder << '[' << i << "] = " << oldest_idle_large_value_offsets_[i];
-    }
-  }
-  builder << (is_empty ? "{}" : " }");
-
-  builder << ", inter_process_mutex = " << inter_process_mutex_
-          << ", large_value_store_mutex = " << large_value_store_mutex_;
-  return builder << " }";
-}
-
-StringBuilder &BlobVectorLargeValueHeader::write_to(StringBuilder &builder) const {
-  if (!builder) {
-    return builder;
-  }
-
-  builder << "{ type = " << type()
-          << ", flags = " << flags()
-          << ", capacity = " << capacity()
-          << ", prev_capacity = " << prev_capacity();
-
-  switch (type()) {
-    case BLOB_VECTOR_ACTIVE_VALUE: {
-      break;
-    }
-    case BLOB_VECTOR_FROZEN_VALUE: {
-      builder << ", next_offset = " << next_offset()
-              << ", frozen_stamp = " << frozen_stamp();
-      break;
-    }
-    case BLOB_VECTOR_IDLE_VALUE: {
-      builder << ", next_offset = " << next_offset()
-              << ", prev_offset = " << prev_offset();
-      break;
-    }
-  }
-  return builder << " }";
-}
-
-StringBuilder &BlobVectorCell::write_to(StringBuilder &builder) const {
-  if (!builder) {
-    return builder;
-  }
-
-  builder << "{ value_type = " << value_type();
-  switch (value_type()) {
-    case BLOB_VECTOR_SMALL_VALUE: {
-      builder << ", length = " << small_value_cell().length();
-      break;
-    }
-    case BLOB_VECTOR_MEDIUM_VALUE: {
-      builder << ", store_id = " << medium_value_cell().store_id()
-              << ", capacity = " << medium_value_cell().capacity()
-              << ", length = " << medium_value_cell().length()
-              << ", offset = " << medium_value_cell().offset();
-      break;
-    }
-    case BLOB_VECTOR_LARGE_VALUE: {
-      builder << ", length = " << large_value_cell().length()
-              << ", offset = " << large_value_cell().offset();
-      break;
-    }
-    case BLOB_VECTOR_HUGE_VALUE: {
-      builder << ", block_id = " << huge_value_cell().block_id();
-      break;
-    }
-  }
-  return builder << " }";
-}
-
-StringBuilder &BlobVector::write_to(StringBuilder &builder) const {
-  if (!builder) {
-    return builder;
-  }
-
-  if (!is_open()) {
-    return builder << "n/a";
-  }
-
-  builder << "{ pool = " << pool_.path()
-          << ", block_info = " << *block_info_
-          << ", header = ";
-  if (header_) {
-    builder << *header_;
-  } else {
-    builder << "n/a";
-  }
-  return builder << ", inter_thread_mutex = " << inter_thread_mutex_ << " }";
 }
 
 }  // namespace db

@@ -15,11 +15,10 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
+#include <algorithm>
 #include <cassert>
-#include <cstdlib>
 #include <random>
 #include <vector>
-#include <unordered_map>
 
 #include "db/blob_vector.hpp"
 #include "logger.hpp"
@@ -30,12 +29,12 @@ void test_basics() {
 
   grnxx::io::Pool pool(grnxx::io::POOL_CREATE, "temp.grn");
 
-  grnxx::db::BlobVector vector;
-  vector.create(pool);
+  grnxx::db::BlobVector vector(grnxx::db::BLOB_VECTOR_CREATE, pool);
 
   GRNXX_NOTICE() << "blob_vector = " << vector;
 
   assert(vector.block_id() == 0);
+  assert(!vector.get_value(0));
 
   grnxx::db::BlobVector vector2;
 
@@ -48,32 +47,32 @@ void test_basics() {
   values[0].resize(0);
   values[1].resize(1 << 2, 'S');
   values[2].resize(1 << 4, 'M');
-  values[3].resize(1 << 12, 'L');
-  values[4].resize(1 << 20, 'H');
+  values[3].resize(1 << 12, 'M');
+  values[4].resize(1 << 20, 'L');
 
-  vector.set_value(0, values[0].c_str(), values[0].length());
-  vector.set_value(1000, values[1].c_str(), values[1].length());
-  vector.set_value(1000000, values[2].c_str(), values[2].length());
-  vector.set_value(1000000000, values[3].c_str(), values[3].length());
-  vector.set_value(1000000000000ULL, values[4].c_str(), values[4].length());
+  vector[0].set(values[0].c_str(), values[0].length());
+  vector[1000].set(values[1].c_str(), values[1].length());
+  vector[1000000].set(values[2].c_str(), values[2].length());
+  vector[1000000000].set(values[3].c_str(), values[3].length());
+  vector[1000000000000ULL].set(values[4].c_str(), values[4].length());
 
-  std::uint64_t length = 0;
+  grnxx::db::Blob blob;
 
-  assert(std::memcmp(vector.get_value_address(0, &length),
-                     values[0].c_str(), values[0].length()) == 0);
-  assert(length == values[0].length());
-  assert(std::memcmp(vector.get_value_address(1000, &length),
-                     values[1].c_str(), values[1].length()) == 0);
-  assert(length == values[1].length());
-  assert(std::memcmp(vector.get_value_address(1000000, &length),
-                     values[2].c_str(), values[2].length()) == 0);
-  assert(length == values[2].length());
-  assert(std::memcmp(vector.get_value_address(1000000000, &length),
-                     values[3].c_str(), values[3].length()) == 0);
-  assert(length == values[3].length());
-  assert(std::memcmp(vector.get_value_address(1000000000000ULL, &length),
-                     values[4].c_str(), values[4].length()) == 0);
-  assert(length == values[4].length());
+  assert(blob = vector[0]);
+  assert(blob.length() == values[0].length());
+  assert(std::memcmp(blob.address(), values[0].c_str(), blob.length()) == 0);
+  assert(blob = vector[1000]);
+  assert(blob.length() == values[1].length());
+  assert(std::memcmp(blob.address(), values[1].c_str(), blob.length()) == 0);
+  assert(blob = vector[1000000]);
+  assert(blob.length() == values[2].length());
+  assert(std::memcmp(blob.address(), values[2].c_str(), blob.length()) == 0);
+  assert(blob = vector[1000000000]);
+  assert(blob.length() == values[3].length());
+  assert(std::memcmp(blob.address(), values[3].c_str(), blob.length()) == 0);
+  assert(blob = vector[1000000000000ULL]);
+  assert(blob.length() == values[4].length());
+  assert(std::memcmp(blob.address(), values[4].c_str(), blob.length()) == 0);
 
   std::uint32_t block_id = vector.block_id();
 
@@ -85,21 +84,55 @@ void test_basics() {
 
   GRNXX_NOTICE() << "blob_vector = " << vector;
 
-  assert(std::memcmp(vector.get_value_address(0, &length),
-                     values[0].c_str(), values[0].length()) == 0);
-  assert(length == values[0].length());
-  assert(std::memcmp(vector.get_value_address(1000, &length),
-                     values[1].c_str(), values[1].length()) == 0);
-  assert(length == values[1].length());
-  assert(std::memcmp(vector.get_value_address(1000000, &length),
-                     values[2].c_str(), values[2].length()) == 0);
-  assert(length == values[2].length());
-  assert(std::memcmp(vector.get_value_address(1000000000, &length),
-                     values[3].c_str(), values[3].length()) == 0);
-  assert(length == values[3].length());
-  assert(std::memcmp(vector.get_value_address(1000000000000ULL, &length),
-                     values[4].c_str(), values[4].length()) == 0);
-  assert(length == values[4].length());
+  assert(blob = vector[0]);
+  assert(blob.length() == values[0].length());
+  assert(std::memcmp(blob.address(), values[0].c_str(), blob.length()) == 0);
+  assert(blob = vector[1000]);
+  assert(blob.length() == values[1].length());
+  assert(std::memcmp(blob.address(), values[1].c_str(), blob.length()) == 0);
+  assert(blob = vector[1000000]);
+  assert(blob.length() == values[2].length());
+  assert(std::memcmp(blob.address(), values[2].c_str(), blob.length()) == 0);
+  assert(blob = vector[1000000000]);
+  assert(blob.length() == values[3].length());
+  assert(std::memcmp(blob.address(), values[3].c_str(), blob.length()) == 0);
+  assert(blob = vector[1000000000000ULL]);
+  assert(blob.length() == values[4].length());
+  assert(std::memcmp(blob.address(), values[4].c_str(), blob.length()) == 0);
+
+  vector[0] = grnxx::db::Blob("banana", 6);
+  blob = vector[0];
+  assert(blob);
+  assert(blob.length() == 6);
+  assert(std::memcmp(blob.address(), "banana", 6) == 0);
+
+  vector[0] = grnxx::db::Blob("xyz", 3);
+  assert(std::memcmp(blob.address(), "banana", 6) == 0);
+
+  grnxx::db::Blob blob2 = blob;
+  blob = nullptr;
+  assert(blob2);
+  assert(blob2.length() == 6);
+  assert(std::memcmp(blob2.address(), "banana", 6) == 0);
+
+  vector[0] = nullptr;
+  blob = vector[0];
+  assert(!blob);
+
+  vector[0].append("ABC", 3);
+  blob = vector[0];
+  assert(blob.length() == 3);
+  assert(std::memcmp(blob.address(), "ABC", 3) == 0);
+
+  vector[0].append("XYZ", 3);
+  blob = vector[0];
+  assert(blob.length() == 6);
+  assert(std::memcmp(blob.address(), "ABCXYZ", 6) == 0);
+
+  vector[0].prepend("123", 3);
+  blob = vector[0];
+  assert(blob.length() == 9);
+  assert(std::memcmp(blob.address(), "123ABCXYZ", 9) == 0);
 
   vector.close();
   pool.close();
@@ -107,180 +140,203 @@ void test_basics() {
   grnxx::io::Pool::unlink_if_exists("temp.grn");
 }
 
-void test_random_values(std::size_t num_values,
+void test_sequential_access(int num_loops,
+                            std::size_t num_values,
+                            std::size_t min_value_length,
+                            std::size_t max_value_length) {
+  std::mt19937 random;
+
+  grnxx::io::PoolOptions options;
+  options.set_frozen_duration(grnxx::Duration(0));
+  grnxx::io::Pool pool(grnxx::io::POOL_TEMPORARY, "temp.grn", options);
+  grnxx::db::BlobVector vector(grnxx::db::BLOB_VECTOR_CREATE, pool);
+
+  for (int loop_id = 0; loop_id < num_loops; ++loop_id) {
+    std::vector<std::string> values(num_values);
+    for (std::size_t i = 0; i < values.size(); ++i) {
+      const size_t length = min_value_length
+          + (random() % (max_value_length - min_value_length + 1));
+      values[i].resize(length, '0' + (random() % 10));
+      if (length != 0) {
+        values[i][0] = 'a' + (random() % 26);
+        values[i][length - 1] = 'A' + (random() % 26);
+      }
+    }
+
+    for (std::size_t i = 0; i < values.size(); ++i) {
+      vector[i].set(values[i].c_str(), values[i].length());
+      grnxx::db::Blob blob = vector[i];
+      assert(blob);
+      assert(blob.length() == values[i].length());
+      assert(std::memcmp(blob.address(), values[i].c_str(),
+                         blob.length()) == 0);
+    }
+
+    for (std::size_t i = 0; i < values.size(); ++i) {
+      grnxx::db::Blob blob = vector[i];
+      assert(blob);
+      assert(blob.length() == values[i].length());
+      assert(std::memcmp(blob.address(), values[i].c_str(),
+                         blob.length()) == 0);
+    }
+
+    GRNXX_NOTICE() << "total_size = " << pool.header().total_size();
+  }
+}
+
+void test_random_access(int num_loops,
+                        std::size_t num_values,
                         std::size_t min_value_length,
                         std::size_t max_value_length) {
   std::mt19937 random;
 
-  std::vector<std::string> values(num_values);
-  for (std::size_t i = 0; i < values.size(); ++i) {
-    const size_t length = min_value_length
-        + (random() % (max_value_length - min_value_length + 1));
-    values[i].resize(length);
-    for (std::uint32_t j = 0; j < length; ++j) {
-      values[i][j] = 'A' + (random() % 26);
+  grnxx::io::PoolOptions options;
+  options.set_frozen_duration(grnxx::Duration(0));
+  grnxx::io::Pool pool(grnxx::io::POOL_TEMPORARY, "temp.grn", options);
+  grnxx::db::BlobVector vector(grnxx::db::BLOB_VECTOR_CREATE, pool);
+
+  std::vector<std::uint32_t> ids(num_values);
+  for (std::size_t i = 0; i < ids.size(); ++i) {
+    ids[i] = static_cast<std::uint32_t>(i);
+  }
+
+  for (int loop_id = 0; loop_id < num_loops; ++loop_id) {
+    std::random_shuffle(ids.begin(), ids.end());
+
+    std::vector<std::string> values(num_values);
+    for (std::size_t i = 0; i < values.size(); ++i) {
+      const size_t length = min_value_length
+          + (random() % (max_value_length - min_value_length + 1));
+      values[i].resize(length);
+      for (std::size_t j = 0; j < length; ++j) {
+        values[i][j] = 'A' + (random() % 26);
+      }
     }
+
+    for (std::size_t i = 0; i < values.size(); ++i) {
+      vector[ids[i]].set(values[i].c_str(), values[i].length());
+      grnxx::db::Blob blob = vector[ids[i]];
+      assert(blob);
+      assert(blob.length() == values[i].length());
+      assert(std::memcmp(blob.address(), values[i].c_str(),
+                         blob.length()) == 0);
+    }
+
+    for (std::size_t i = 0; i < values.size(); ++i) {
+      grnxx::db::Blob blob = vector[ids[i]];
+      assert(blob);
+      assert(blob.length() == values[i].length());
+      assert(std::memcmp(blob.address(), values[i].c_str(),
+                         blob.length()) == 0);
+    }
+
+    GRNXX_NOTICE() << "total_size = " << pool.header().total_size();
   }
+}
 
-  grnxx::io::Pool pool(grnxx::io::POOL_TEMPORARY, "temp.grn");
+void test_access_patterns(int num_loops,
+                          std::size_t num_values,
+                          std::size_t min_value_length,
+                          std::size_t max_value_length) {
+  GRNXX_NOTICE() << "num_loops = " << num_loops
+                 << ", num_values = " << num_values
+                 << ", min_value_length = " << min_value_length
+                 << ", max_value_length = " << max_value_length;
 
-  grnxx::db::BlobVector vector;
-  vector.create(pool);
-
-  for (std::size_t i = 0; i < values.size(); ++i) {
-    vector.set_value(i, values[i].c_str(), values[i].length());
-
-    std::uint64_t length;
-    const char *address =
-        static_cast<const char *>(vector.get_value_address(i, &length));
-
-    assert(length == values[i].length());
-    assert(std::memcmp(address, values[i].c_str(), length) == 0);
-  }
-
-  for (std::size_t i = 0; i < values.size(); ++i) {
-    std::uint64_t length;
-    const char *address =
-        static_cast<const char *>(vector.get_value_address(i, &length));
-
-    assert(length == values[i].length());
-    assert(std::memcmp(address, values[i].c_str(), length) == 0);
-  }
-
-  GRNXX_NOTICE() << "pool = " << pool;
-  GRNXX_NOTICE() << "blob_vector = " << vector;
+  test_sequential_access(num_loops, num_values,
+                         min_value_length, max_value_length);
+  test_random_access(num_loops, num_values,
+                     min_value_length, max_value_length);
 }
 
 void test_small_values() {
-  test_random_values(1 << 20,
-                     0,
-                     grnxx::db::BLOB_VECTOR_SMALL_VALUE_LENGTH_MAX);
+  test_access_patterns(3, 1 << 17,
+                       0,
+                       grnxx::db::BLOB_VECTOR_SMALL_VALUE_MAX_LENGTH);
 }
 
 void test_medium_values() {
-  test_random_values(1 << 16,
-                     grnxx::db::BLOB_VECTOR_MEDIUM_VALUE_LENGTH_MIN,
-                     grnxx::db::BLOB_VECTOR_MEDIUM_VALUE_LENGTH_MAX);
+  test_access_patterns(3, 1 << 14,
+                       grnxx::db::BLOB_VECTOR_MEDIUM_VALUE_MIN_LENGTH,
+                       1 << 10);
+  test_access_patterns(3, 1 << 8,
+                       1 << 10,
+                       grnxx::db::BLOB_VECTOR_MEDIUM_VALUE_MAX_LENGTH);
 }
 
 void test_large_values() {
-  test_random_values(1 << 8,
-                     grnxx::db::BLOB_VECTOR_LARGE_VALUE_LENGTH_MIN,
-                     grnxx::db::BLOB_VECTOR_LARGE_VALUE_LENGTH_MAX);
+  test_access_patterns(3, 1 << 6,
+                       grnxx::db::BLOB_VECTOR_LARGE_VALUE_MIN_LENGTH,
+                       grnxx::db::BLOB_VECTOR_LARGE_VALUE_MIN_LENGTH * 2);
 }
 
-void test_huge_values() {
-  test_random_values(1 << 6,
-                     grnxx::db::BLOB_VECTOR_HUGE_VALUE_LENGTH_MIN,
-                     grnxx::db::BLOB_VECTOR_HUGE_VALUE_LENGTH_MIN * 4);
-}
+void test_reuse(bool enable_reuse) {
+  const uint32_t NUM_LOOPS = 3;
+  const uint32_t NUM_VALUES = 1 << 14;
+  const uint32_t MAX_LENGTH = 1024;
 
-void test_random_updates(grnxx::Duration frozen_duration) {
+  GRNXX_NOTICE() << "enable_reuse = " << enable_reuse;
+
   std::mt19937 random;
-
-  std::unordered_map<std::uint64_t, std::string> map;
 
   grnxx::io::PoolOptions options;
-  options.set_frozen_duration(frozen_duration);
-
+  options.set_frozen_duration(
+      enable_reuse ? grnxx::Duration(0) : grnxx::Duration::days(1));
   grnxx::io::Pool pool(grnxx::io::POOL_TEMPORARY, "temp.grn", options);
+  grnxx::db::BlobVector vector(grnxx::db::BLOB_VECTOR_CREATE, pool);
 
-  grnxx::db::BlobVector vector;
-  vector.create(pool);
+  std::string value(MAX_LENGTH, 'X');
 
-  const std::uint8_t  LENGTH_BITS_MIN = 3;
-  const std::uint8_t  LENGTH_BITS_MAX = 10;
-  const std::uint32_t LOOP_COUNT = 1 << 16;
-  const std::uint32_t ID_MASK = (LOOP_COUNT >> 4) - 1;
-
-  std::string query;
-  for (std::uint32_t i = 0; i < LOOP_COUNT; ++i) {
-    const std::uint64_t id = random() & ID_MASK;
-
-    std::uint64_t length;
-    const char *address =
-        static_cast<const char *>(vector.get_value_address(id, &length));
-
-    auto it = map.find(id);
-    if (it == map.end()) {
-      assert(length == 0);
-    } else {
-      assert(length == it->second.length());
-      assert(std::memcmp(address, it->second.c_str(), length) == 0);
+  for (uint32_t loop_id = 0; loop_id < NUM_LOOPS; ++loop_id) {
+    for (uint32_t i = 0; i < NUM_VALUES; ++i) {
+      vector[0] = grnxx::db::Blob(&value[0], random() % MAX_LENGTH);
     }
-
-    const size_t query_length_bits = LENGTH_BITS_MIN
-        + (random() % (LENGTH_BITS_MAX - LENGTH_BITS_MIN + 1));
-    const size_t query_length = random() & ((1 << query_length_bits) - 1);
-    query.resize(query_length);
-    for (std::uint32_t j = 0; j < query_length; ++j) {
-      query[j] = 'A' + (random() % 26);
-    }
-
-    vector.set_value(id, query.c_str(), query.length());
-    map[id] = query;
+    GRNXX_NOTICE() << "total_size = " << pool.header().total_size();
   }
-
-  for (auto it = map.begin(); it != map.end(); ++it) {
-    const uint64_t key = it->first;
-    const std::string &value = it->second;
-
-    std::uint64_t length;
-    const char *address =
-        static_cast<const char *>(vector.get_value_address(key, &length));
-
-    assert(length == value.length());
-    assert(std::memcmp(address, value.c_str(), length) == 0);
-  }
-
-  GRNXX_NOTICE() << "pool = " << pool;
-  GRNXX_NOTICE() << "blob_vector = " << vector;
 }
 
-void test_rewrite() {
-  test_random_updates(grnxx::Duration::days(1));
-}
+void test_mixed() {
+  const uint32_t NUM_LOOPS = 3;
+  const uint32_t NUM_VALUES = 1 << 11;
+  const uint32_t VECTOR_SIZE = 1 << 10;
 
-void test_reuse() {
-  test_random_updates(grnxx::Duration(0));
-}
-
-void test_random() {
   std::mt19937 random;
 
-  std::vector<std::string> values(1 << 10);
-  for (std::size_t i = 0; i < values.size(); ++i) {
-    const std::uint32_t length_bits = 4 + (random() % 14);
-    const std::uint32_t length = random() & ((1 << length_bits) - 1);
-    values[i].resize(length);
-    for (std::uint32_t j = 0; j < length; ++j) {
-      values[i][j] = 'A' + (random() % 26);
-    }
-  }
-
   grnxx::io::Pool pool(grnxx::io::POOL_TEMPORARY, "temp.grn");
+  grnxx::db::BlobVector vector(grnxx::db::BLOB_VECTOR_CREATE, pool);
 
-  grnxx::db::BlobVector vector;
-  vector.create(pool);
+  std::string value(grnxx::db::BLOB_VECTOR_LARGE_VALUE_MIN_LENGTH, 'X');
 
-  for (std::size_t i = 0; i < values.size(); ++i) {
-    vector.set_value(i, values[i].c_str(), values[i].length());
-
-    std::uint64_t length;
-    const char *address =
-        static_cast<const char *>(vector.get_value_address(i, &length));
-
-    assert(length == values[i].length());
-    assert(std::memcmp(address, values[i].c_str(), length) == 0);
-  }
-
-  for (std::size_t i = 0; i < values.size(); ++i) {
-    std::uint64_t length;
-    const char *address =
-        static_cast<const char *>(vector.get_value_address(i, &length));
-
-    assert(length == values[i].length());
-    assert(std::memcmp(address, values[i].c_str(), length) == 0);
+  for (uint32_t loop_id = 0; loop_id < NUM_LOOPS; ++loop_id) {
+    for (uint32_t i = 0; i < NUM_VALUES; ++i) {
+      const uint32_t value_id = random() % VECTOR_SIZE;
+      switch (random() & 3) {
+        case 0: {
+          vector[value_id] = nullptr;
+          break;
+        }
+        case 1: {
+          const uint32_t value_length =
+              random() % (grnxx::db::BLOB_VECTOR_SMALL_VALUE_MAX_LENGTH + 1);
+          vector[value_id] = grnxx::db::Blob(&value[0], value_length);
+          break;
+        }
+        case 2: {
+          const uint32_t value_length_range =
+              grnxx::db::BLOB_VECTOR_MEDIUM_VALUE_MAX_LENGTH
+              - grnxx::db::BLOB_VECTOR_MEDIUM_VALUE_MIN_LENGTH + 1;
+          const uint32_t value_length = (random() % value_length_range)
+              + grnxx::db::BLOB_VECTOR_MEDIUM_VALUE_MIN_LENGTH;
+          vector[value_id] = grnxx::db::Blob(&value[0], value_length);
+          break;
+        }
+        case 3: {
+          vector[value_id] = grnxx::db::Blob(&value[0], value.length());
+          break;
+        }
+      }
+    }
+    GRNXX_NOTICE() << "total_size = " << pool.header().total_size();
   }
 }
 
@@ -294,12 +350,11 @@ int main() {
   test_small_values();
   test_medium_values();
   test_large_values();
-  test_huge_values();
 
-  test_rewrite();
-  test_reuse();
+  test_reuse(false);
+  test_reuse(true);
 
-  test_random();
+  test_mixed();
 
   return 0;
 }

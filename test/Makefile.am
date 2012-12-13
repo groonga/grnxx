@@ -1,7 +1,6 @@
 AM_CXXFLAGS = -I../lib
 
 TESTS =				\
-	test_alpha_blob_vector	\
 	test_backtrace		\
 	test_db_array		\
 	test_db_blob_vector	\
@@ -28,9 +27,6 @@ TESTS =				\
 	test_time
 
 check_PROGRAMS = $(TESTS)
-
-test_alpha_blob_vector_SOURCES = test_alpha_blob_vector.cpp
-test_alpha_blob_vector_LDADD = ../lib/libgrnxx.la
 
 test_backtrace_SOURCES = test_backtrace.cpp
 test_backtrace_LDADD = ../lib/libgrnxx.la
