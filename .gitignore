@@ -20,6 +20,7 @@ config.*
 configure
 depcomp
 install-sh
+lib/version.h
 libtool
 ltmain.sh
 missing

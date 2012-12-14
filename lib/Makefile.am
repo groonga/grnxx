@@ -41,4 +41,14 @@ libgrnxx_include_HEADERS =	\
 	string_builder.hpp	\
 	string_format.hpp	\
 	thread.hpp		\
-	time.hpp
+	time.hpp		\
+	version.h
+
+EXTRA_DIST = version.sh
+
+.PHONY: FORCE
+
+FORCE:
+
+version.h: FORCE
+	@$(SHELL_PATH) $(srcdir)/version.sh

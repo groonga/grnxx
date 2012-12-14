@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.67])
-AC_INIT([grnxx], [0.0.0], [groonga@razil.jp])
+AC_INIT([grnxx], [pre-alpha], [groonga@razil.jp])
 AC_CONFIG_SRCDIR([lib/grnxx.hpp])
 AC_CONFIG_HEADERS(config.h)
 AM_INIT_AUTOMAKE

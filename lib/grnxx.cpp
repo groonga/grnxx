@@ -18,6 +18,7 @@
 #include "grnxx.hpp"
 
 #include "../config.h"
+#include "version.h"
 
 namespace grnxx {
 
@@ -26,7 +27,11 @@ const char *Grnxx::bugreport() {
 }
 
 const char *Grnxx::version() {
+#ifdef GRNXX_VERSION
+  return GRNXX_VERSION;
+#else  // GRNXX_VERSION
   return PACKAGE_VERSION;
+#endif  // GRNXX_VERSION
 }
 
 }  // namespace grnxx
