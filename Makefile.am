@@ -1,6 +1,6 @@
 ACLOCAL_AMFLAGS = -I m4
 
-SUBDIRS = lib test
+SUBDIRS = lib src test
 
 EXTRA_DIST =			\
 	COPYING-GPL-3.0		\

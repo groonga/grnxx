@@ -24,6 +24,7 @@ lib/version.h
 libtool
 ltmain.sh
 missing
+src/grnxx
 stamp-h1
 temp/
 test/test_alpha_blob_vector
