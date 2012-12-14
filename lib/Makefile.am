@@ -50,5 +50,7 @@ EXTRA_DIST = version.sh
 
 FORCE:
 
+grnxx.cpp: version.h
+
 version.h: FORCE
-	@$(SHELL_PATH) $(srcdir)/version.sh
+	TOP_DIR="$(top_srcdir)" "$(srcdir)/version.sh"

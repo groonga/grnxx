@@ -1,11 +1,19 @@
 #!/bin/sh
 
-GRNXX_VERSION_HEADER=version.h
+TOP_DIR="${TOP_SRCDIR:-..}"
+LIB_DIR="${TOP_DIR}/lib"
+GIT_DIR="${TOP_DIR}/.git"
 
-if [ -d "../.git" -o -f "../.git" ]
+GRNXX_VERSION_HEADER="version.h"
+
+echo "GRNXX_VERSION_HEADER = ${GRNXX_VERSION_HEADER}"
+
+if [ -d ${GIT_DIR} ]
 then
-  GRNXX_CURRENT_VERSION=`git describe --abbrev=7 HEAD 2>/dev/null`
+  GRNXX_CURRENT_VERSION=`(cd ${TOP_DIR}; git describe --abbrev=7 HEAD 2>/dev/null)`
   GRNXX_CURRENT_VERSION=`expr "${GRNXX_CURRENT_VERSION}" : v*'\(.*\)'`
+
+  echo "GRNXX_CURRENT_VERSION = ${GRNXX_CURRENT_VERSION}"
 
   if [ -r ${GRNXX_VERSION_HEADER} ]
   then
@@ -14,6 +22,8 @@ then
   else
     GRNXX_OLD_VERSION=unset
   fi
+
+  echo "GRNXX_OLD_VERSION = ${GRNXX_OLD_VERSION}"
 
   if [ "${GRNXX_OLD_VERSION}" != "${GRNXX_CURRENT_VERSION}" ]
   then
