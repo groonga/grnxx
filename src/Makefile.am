@@ -1,4 +1,4 @@
-AM_CXXFLAGS = -I$(top_srcdir)/lib
+AM_CXXFLAGS = @AM_CXXFLAGS@ -I$(top_srcdir)/lib
 
 bin_PROGRAMS = grnxx
 

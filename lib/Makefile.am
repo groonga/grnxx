@@ -7,6 +7,8 @@ libgrnxx_la_LIBADD =		\
 	db/libgrnxx_db.la	\
 	io/libgrnxx_io.la
 
+libgrnxx_la_LDFLAGS = @AM_LTLDFLAGS@
+
 libgrnxx_la_SOURCES =		\
 	backtrace.cpp		\
 	duration.cpp		\

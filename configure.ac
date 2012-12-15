@@ -8,13 +8,17 @@ AC_CONFIG_HEADERS(config.h)
 AM_INIT_AUTOMAKE
 
 # Checks for programs.
-LT_INIT
+LT_INIT([win32-dll])
 AC_PROG_CXX
 AC_PROG_INSTALL
 
 AC_CONFIG_MACRO_DIR([m4])
 
-CXXFLAGS="${CXXFLAGS} -Wall -Wextra -std=c++0x -fno-strict-aliasing"
+AM_CXXFLAGS="-Wall -Wextra -std=c++0x -fno-strict-aliasing"
+AM_LTLDFLAGS="-no-undefined"
+
+AC_SUBST([AM_CXXFLAGS])
+AC_SUBST([AM_LTLDFLAGS])
 
 # Checks for libraries.
 

@@ -1,5 +1,7 @@
 noinst_LTLIBRARIES = libgrnxx_alpha.la
 
+libgrnxx_alpha_la_LDFLAGS = @AM_LTLDFLAGS@
+
 libgrnxx_alpha_la_SOURCES =		\
 	sample.cpp
 

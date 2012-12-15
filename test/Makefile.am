@@ -1,4 +1,4 @@
-AM_CXXFLAGS = -I../lib
+AM_CXXFLAGS = @AM_CXXFLAGS@ -I$(top_srcdir)/lib
 
 TESTS =				\
 	test_backtrace		\

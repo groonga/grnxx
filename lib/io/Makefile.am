@@ -1,5 +1,7 @@
 noinst_LTLIBRARIES = libgrnxx_io.la
 
+libgrnxx_io_la_LDFLAGS = @AM_LTLDFLAGS@
+
 libgrnxx_io_la_SOURCES =	\
 	block.cpp		\
 	chunk.cpp		\

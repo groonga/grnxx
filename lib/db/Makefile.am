@@ -1,5 +1,7 @@
 noinst_LTLIBRARIES = libgrnxx_db.la
 
+libgrnxx_db_la_LDFLAGS = @AM_LTLDFLAGS@
+
 libgrnxx_db_la_SOURCES =	\
 	array.cpp		\
 	blob_vector.cpp		\
