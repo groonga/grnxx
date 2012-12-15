@@ -195,4 +195,16 @@
 # endif  // _POSIX_PRIORITY_SCHEDULING
 #endif  // GRNXX_WINDOWS
 
+// DLL features.
+
+#ifdef GRNXX_WINDOWS
+# ifdef DLL_EXPORT
+#  define GRNXX_EXPORT __declspec(dllexport)
+# else  // DLL_EXPORT
+#  define GRNXX_EXPORT __declspec(dllimport)
+# endif  // DLL_EXPORT
+#else  // GRNXX_WINDOWS
+# define GRNXX_EXPORT
+#endif  // GRNXX_WINDOWS
+
 #endif  // GRNXX_FEATURES_HPP

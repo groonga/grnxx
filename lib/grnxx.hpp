@@ -18,9 +18,11 @@
 #ifndef GRNXX_GRNXX_HPP
 #define GRNXX_GRNXX_HPP
 
+#include "basic.hpp"
+
 namespace grnxx {
 
-class Grnxx {
+class GRNXX_EXPORT Grnxx {
  public:
   // The e-mail address for bug reports.
   static const char *bugreport();
