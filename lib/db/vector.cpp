@@ -93,6 +93,68 @@ std::unique_ptr<VectorImpl> VectorImpl::open(io::Pool pool,
   return vector;
 }
 
+bool VectorImpl::scan_pages(bool (*callback)(uint64_t page_id,
+                                             void *page_address,
+                                             void *argument),
+                            void *argument) {
+  for (uint64_t page_id = 0; page_id < header_->table_size(); ++page_id) {
+    if (!first_table_cache_[page_id]) {
+      if (first_table_[page_id] == io::BLOCK_INVALID_ID) {
+        continue;
+      }
+      first_table_cache_[page_id] =
+          pool_.get_block_address(first_table_[page_id]);
+    }
+    if (!callback(page_id, first_table_cache_[page_id], argument)) {
+      return false;
+    }
+  }
+
+  if (header_->secondary_table_block_id() == io::BLOCK_INVALID_ID) {
+    return true;
+  }
+
+  if (!tables_cache_) {
+    if (!secondary_table_cache_) {
+      if (!secondary_table_) {
+        secondary_table_ = static_cast<uint32_t *>(
+            pool_.get_block_address(header_->secondary_table_block_id()));
+      }
+      initialize_secondary_table_cache();
+    }
+    initialize_tables_cache();
+  }
+
+  for (uint64_t table_id = 0; table_id < header_->secondary_table_size();
+       ++table_id) {
+    std::unique_ptr<void *[]> &table_cache = tables_cache_[table_id];
+    if (!table_cache) {
+      if (secondary_table_[table_id] == io::BLOCK_INVALID_ID) {
+        continue;
+      }
+      secondary_table_cache_[table_id] = static_cast<uint32_t *>(
+          pool_.get_block_address(secondary_table_[table_id]));
+      initialize_table_cache(&table_cache);
+    }
+
+    const uint64_t offset = table_id << table_size_bits_;
+    for (uint64_t page_id = 0; page_id < header_->table_size(); ++page_id) {
+      if (!table_cache[page_id]) {
+        uint32_t * const table = secondary_table_cache_[table_id];
+        if (table[page_id] == io::BLOCK_INVALID_ID) {
+          continue;
+        }
+        table_cache[page_id] = pool_.get_block_address(table[page_id]);
+      }
+      if (!callback(offset + page_id, table_cache[page_id], argument)) {
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
 StringBuilder &VectorImpl::write_to(StringBuilder &builder) const {
   if (!builder) {
     return builder;

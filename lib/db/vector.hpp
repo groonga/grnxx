@@ -136,6 +136,10 @@ class VectorImpl {
     return get_page_address_on_failure(page_id);
   }
 
+  bool scan_pages(bool (*callback)(uint64_t page_id, void *page_address,
+                                   void *argument),
+                  void *argument);
+
   uint32_t block_id() const {
     return block_info_->id();
   }
@@ -263,6 +267,22 @@ class Vector {
        impl_->get_page_address<PAGE_SIZE, TABLE_SIZE,
                                SECONDARY_TABLE_SIZE>(id / PAGE_SIZE);
     return static_cast<T *>(page_address)[id % PAGE_SIZE];
+  }
+
+  // bool (*callback)(uint64_t id, Value *value);
+  template <typename Callback>
+  bool scan(Callback callback) {
+    return impl_->scan_pages(
+        [](uint64_t page_id, void *page_address, void *argument) -> bool {
+      const uint64_t offset = page_id * PAGE_SIZE;
+      for (uint64_t id = 0; id < PAGE_SIZE; ++id) {
+        if (!(*static_cast<Callback *>(argument))(
+            offset + id, &static_cast<Value *>(page_address)[id])) {
+          return false;
+        }
+      }
+      return true;
+    }, &callback);
   }
 
   uint32_t block_id() const {
