@@ -129,6 +129,17 @@ void BlobVectorImpl::prepend(uint64_t id, const Blob &value) {
   }
 }
 
+void BlobVectorImpl::defrag() {
+  // TODO: To be more efficient.
+  table_.scan([this](uint64_t id, BlobVectorCell *cell) -> bool {
+    if (cell->type() != BLOB_VECTOR_MEDIUM) {
+      return true;
+    }
+    set_value(id, get_value(*cell));
+    return true;
+  });
+}
+
 StringBuilder &BlobVectorImpl::write_to(StringBuilder &builder) const {
   if (!builder) {
     return builder;

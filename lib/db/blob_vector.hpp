@@ -399,6 +399,8 @@ class BlobVectorImpl {
   void append(uint64_t id, const Blob &value);
   void prepend(uint64_t id, const Blob &value);
 
+  void defrag();
+
   uint32_t block_id() const {
     return block_info_->id();
   }
@@ -492,6 +494,10 @@ class BlobVector {
   }
   void prepend(uint64_t id, const Blob &value) {
     impl_->prepend(id, value);
+  }
+
+  void defrag() {
+    impl_->defrag();
   }
 
   uint32_t block_id() const {
