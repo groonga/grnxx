@@ -201,7 +201,8 @@ void test_random_access(int num_loops,
   }
 
   for (int loop_id = 0; loop_id < num_loops; ++loop_id) {
-    std::random_shuffle(ids.begin(), ids.end());
+    std::random_shuffle(ids.begin(), ids.end(),
+        [&random](std::uint32_t limit) { return random() % limit; });
 
     std::vector<std::string> values(num_values);
     for (std::size_t i = 0; i < values.size(); ++i) {
@@ -271,9 +272,9 @@ void test_large_values() {
 }
 
 void test_reuse(bool enable_reuse) {
-  const uint32_t NUM_LOOPS = 3;
-  const uint32_t NUM_VALUES = 1 << 14;
-  const uint32_t MAX_LENGTH = 1024;
+  const std::uint32_t NUM_LOOPS = 3;
+  const std::uint32_t NUM_VALUES = 1 << 14;
+  const std::uint32_t MAX_LENGTH = 1024;
 
   GRNXX_NOTICE() << "enable_reuse = " << enable_reuse;
 
@@ -287,8 +288,8 @@ void test_reuse(bool enable_reuse) {
 
   std::string value(MAX_LENGTH, 'X');
 
-  for (uint32_t loop_id = 0; loop_id < NUM_LOOPS; ++loop_id) {
-    for (uint32_t i = 0; i < NUM_VALUES; ++i) {
+  for (std::uint32_t loop_id = 0; loop_id < NUM_LOOPS; ++loop_id) {
+    for (std::uint32_t i = 0; i < NUM_VALUES; ++i) {
       vector[0] = grnxx::db::Blob(&value[0], random() % MAX_LENGTH);
     }
     GRNXX_NOTICE() << "total_size = " << pool.header().total_size();
@@ -296,9 +297,9 @@ void test_reuse(bool enable_reuse) {
 }
 
 void test_mixed() {
-  const uint32_t NUM_LOOPS = 3;
-  const uint32_t NUM_VALUES = 1 << 11;
-  const uint32_t VECTOR_SIZE = 1 << 10;
+  const std::uint32_t NUM_LOOPS = 3;
+  const std::uint32_t NUM_VALUES = 1 << 11;
+  const std::uint32_t VECTOR_SIZE = 1 << 10;
 
   std::mt19937 random;
 
@@ -307,25 +308,25 @@ void test_mixed() {
 
   std::string value(grnxx::db::BLOB_VECTOR_LARGE_VALUE_MIN_LENGTH, 'X');
 
-  for (uint32_t loop_id = 0; loop_id < NUM_LOOPS; ++loop_id) {
-    for (uint32_t i = 0; i < NUM_VALUES; ++i) {
-      const uint32_t value_id = random() % VECTOR_SIZE;
+  for (std::uint32_t loop_id = 0; loop_id < NUM_LOOPS; ++loop_id) {
+    for (std::uint32_t i = 0; i < NUM_VALUES; ++i) {
+      const std::uint32_t value_id = random() % VECTOR_SIZE;
       switch (random() & 3) {
         case 0: {
           vector[value_id] = nullptr;
           break;
         }
         case 1: {
-          const uint32_t value_length =
+          const std::uint32_t value_length =
               random() % (grnxx::db::BLOB_VECTOR_SMALL_VALUE_MAX_LENGTH + 1);
           vector[value_id] = grnxx::db::Blob(&value[0], value_length);
           break;
         }
         case 2: {
-          const uint32_t value_length_range =
+          const std::uint32_t value_length_range =
               grnxx::db::BLOB_VECTOR_MEDIUM_VALUE_MAX_LENGTH
               - grnxx::db::BLOB_VECTOR_MEDIUM_VALUE_MIN_LENGTH + 1;
-          const uint32_t value_length = (random() % value_length_range)
+          const std::uint32_t value_length = (random() % value_length_range)
               + grnxx::db::BLOB_VECTOR_MEDIUM_VALUE_MIN_LENGTH;
           vector[value_id] = grnxx::db::Blob(&value[0], value_length);
           break;
@@ -338,6 +339,49 @@ void test_mixed() {
     }
     GRNXX_NOTICE() << "total_size = " << pool.header().total_size();
   }
+}
+
+void test_defrag() {
+  const std::uint32_t NUM_VALUES = 1 << 18;
+  const std::uint32_t MAX_LENGTH = 1 << 6;
+
+  std::mt19937 random;
+
+  grnxx::io::Pool pool(grnxx::io::POOL_TEMPORARY, "temp.grn");
+  grnxx::db::BlobVector vector(grnxx::db::BLOB_VECTOR_CREATE, pool);
+
+  std::vector<std::uint32_t> ids(NUM_VALUES);
+  std::random_shuffle(ids.begin(), ids.end(), [&random](std::uint32_t limit) {
+    return random() % limit;
+  });
+
+  std::string value(grnxx::db::BLOB_VECTOR_LARGE_VALUE_MIN_LENGTH, 'X');
+  for (std::uint32_t i = 0; i < NUM_VALUES; ++i) {
+    const std::uint32_t length = random() % MAX_LENGTH;
+    vector[ids[i]].set(&value[0], length);
+  }
+
+  grnxx::Time start = grnxx::Time::now();
+  for (std::uint32_t i = 0; i < NUM_VALUES; ++i) {
+    grnxx::db::Blob blob = vector[i];
+    if (blob.length() > 0) {
+      assert(*static_cast<const char *>(blob.address()) == 'X');
+    };
+  }
+  grnxx::Duration elapsed = (grnxx::Time::now() - start) / NUM_VALUES;
+  GRNXX_NOTICE() << "before defrag: elapsed [ns] = " << elapsed.nanoseconds();
+
+  vector.defrag();
+
+  start = grnxx::Time::now();
+  for (std::uint32_t i = 0; i < NUM_VALUES; ++i) {
+    grnxx::db::Blob blob = vector[i];
+    if (blob.length() > 0) {
+      assert(*static_cast<const char *>(blob.address()) == 'X');
+    };
+  }
+  elapsed = (grnxx::Time::now() - start) / NUM_VALUES;
+  GRNXX_NOTICE() << "after defrag: elapsed [ns] = " << elapsed.nanoseconds();
 }
 
 int main() {
@@ -355,6 +399,8 @@ int main() {
   test_reuse(true);
 
   test_mixed();
+
+  test_defrag();
 
   return 0;
 }
