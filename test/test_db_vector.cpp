@@ -109,24 +109,66 @@ void test_basics() {
 
   grnxx::db::Vector<std::uint32_t>::unlink(pool, 0);
 
+  pool.close();
+  grnxx::io::Pool::unlink_if_exists("temp.grn");
+}
+
+void test_scan() {
+  grnxx::io::Pool pool(grnxx::io::POOL_ANONYMOUS);
+  grnxx::db::Vector<std::uint64_t> vector(grnxx::db::VECTOR_CREATE, pool, 1);
+
+  assert(vector.scan([](std::uint64_t id, std::uint64_t *) -> bool {
+    GRNXX_ERROR() << "id = " << id;
+    return false;
+  }));
+
+  vector[0] = 1;
+  assert(!vector.scan([](std::uint64_t id, std::uint64_t *value) -> bool {
+    assert(id == 0);
+    assert(*value == 1);
+    return false;
+  }));
+
+  assert(vector.scan([](std::uint64_t id, std::uint64_t *value) -> bool {
+    *value += id;
+    return true;
+  }));
+
+  assert(vector.scan([](std::uint64_t id, std::uint64_t *value) -> bool {
+    assert(*value == (id + 1));
+    return true;
+  }));
+
+  for (std::uint64_t id = 0; id < vector.page_size(); ++id) {
+    assert(vector[id] == (id + 1));
+  }
+  assert(vector[vector.page_size()] == 1);
+}
+
+void test_float_vector() {
+  grnxx::io::Pool pool(grnxx::io::POOL_ANONYMOUS);
   grnxx::db::Vector<float> float_vector(grnxx::db::VECTOR_CREATE, pool);
 
-  float_vector[0] = 1.0F;
-  assert(float_vector[0] == 1.0F);
-  float_vector[1 << 30] = 2.0F;
-  assert(float_vector[1 << 30] == 2.0F);
+  float_vector[0] = 1.5F;
+  assert(float_vector[0] == 1.5F);
 
-  float_vector.close();
+  float_vector[1 << 30] = 2.5F;
+  assert(float_vector[1 << 30] == 2.5F);
+}
 
+void test_double_vector() {
+  grnxx::io::Pool pool(grnxx::io::POOL_ANONYMOUS);
   grnxx::db::Vector<double> double_vector(grnxx::db::VECTOR_CREATE, pool);
 
-  double_vector[0] = 1.0;
-  assert(double_vector[0] == 1.0);
-  double_vector[1 << 30] = 2.0;
-  assert(double_vector[1 << 30] == 2.0);
+  double_vector[0] = 1.25;
+  assert(double_vector[0] == 1.25);
 
-  double_vector.close();
+  double_vector[1 << 30] = 2.25;
+  assert(double_vector[1 << 30] == 2.25);
+}
 
+void test_point_vector() {
+  grnxx::io::Pool pool(grnxx::io::POOL_ANONYMOUS);
   grnxx::db::Vector<Point> point_vector(grnxx::db::VECTOR_CREATE, pool);
 
   point_vector[0].x = 123;
@@ -138,11 +180,6 @@ void test_basics() {
   point_vector[1 << 30].y = 654;
   assert(point_vector[1 << 30].x == 987);
   assert(point_vector[1 << 30].y == 654);
-
-  point_vector.close();
-
-  pool.close();
-  grnxx::io::Pool::unlink_if_exists("temp.grn");
 }
 
 template <typename T>
@@ -281,6 +318,12 @@ int main() {
   grnxx::Logger::set_max_level(grnxx::NOTICE_LOGGER);
 
   test_basics();
+  test_scan();
+
+  test_float_vector();
+  test_double_vector();
+  test_point_vector();
+
   test_times<std::uint8_t>();
   test_times<std::uint16_t>();
   test_times<std::uint32_t>();
