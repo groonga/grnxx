@@ -307,6 +307,7 @@ class Blob {
     return *this = Blob(nullptr);
   }
 
+  // Return true if address_ != nullptr.
   explicit operator bool() const {
     return static_cast<bool>(address_);
   }
@@ -337,32 +338,40 @@ class BlobRef {
  public:
   BlobRef(BlobVector *vector, uint64_t id) : vector_(*vector), id_(id) {}
 
+  // This conversion may throw an exception.
   operator Blob() const {
     return get();
   }
 
+  // Update the current value to NULL.
   BlobRef &operator=(std::nullptr_t) {
     set(nullptr);
     return *this;
   }
+  // Update the current value.
   BlobRef &operator=(const Blob &value) {
     set(value);
     return *this;
   }
 
+  // Get the address and the length of the current value.
   Blob get() const;
+  // Update the current value to NULL.
   void set(std::nullptr_t) {
     set(Blob(nullptr));
   }
+  // Update the current value.
   void set(const Blob &value);
   void set(const void *ptr, uint64_t length) {
     set(Blob(ptr, length));
   }
 
+  // Append a value to the current value.
   void append(const Blob &value);
   void append(const void *ptr, uint64_t length) {
     append(Blob(ptr, length));
   }
+  // Prepend a value to the current value.
   void prepend(const Blob &value);
   void prepend(const void *ptr, uint64_t length) {
     prepend(Blob(ptr, length));
@@ -481,7 +490,6 @@ class BlobVector {
   }
 
   // Access a value. Return a pseudo reference to a value.
-  // This operator may throw an exception on failure.
   // See also Blob and BlobRef.
   BlobRef operator[](uint64_t id) {
     return BlobRef(this, id);
