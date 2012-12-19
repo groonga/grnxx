@@ -458,6 +458,8 @@ inline StringBuilder &operator<<(StringBuilder &builder,
 
 class BlobVector {
  public:
+  // BLOB_VECTOR_CREATE is available as an instance of BlobVectorCreate.
+  // BLOB_VECTOR_OPEN is available as an instance of BlobVectorOpen.
   BlobVector() = default;
   BlobVector(const BlobVectorCreate &, io::Pool pool)
     : impl_(BlobVectorImpl::create(pool)) {}
@@ -478,10 +480,14 @@ class BlobVector {
     *this = BlobVector();
   }
 
+  // Access a value. Return a pseudo reference to a value.
+  // This operator may throw an exception on failure.
+  // See also Blob and BlobRef.
   BlobRef operator[](uint64_t id) {
     return BlobRef(this, id);
   }
 
+  // Get/set blob_vector[id].
   Blob get_value(uint64_t id) {
     return impl_->get_value(id);
   }
@@ -489,6 +495,7 @@ class BlobVector {
     impl_->set_value(id, value);
   }
 
+  // Append/prepend a value to blob_vector[id].
   void append(uint64_t id, const Blob &value) {
     impl_->append(id, value);
   }
@@ -496,10 +503,12 @@ class BlobVector {
     impl_->prepend(id, value);
   }
 
+  // Defrag a blob vector.
   void defrag() {
     impl_->defrag();
   }
 
+  // The ID of the lead block.
   uint32_t block_id() const {
     return impl_->block_id();
   }
@@ -516,6 +525,7 @@ class BlobVector {
     return BLOB_VECTOR_MAX_ID;
   }
 
+  // Free blocks associated with a blob vector.
   static void unlink(io::Pool pool, uint32_t block_id) {
     BlobVectorImpl::unlink(pool, block_id);
   }

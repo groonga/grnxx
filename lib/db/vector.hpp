@@ -214,6 +214,7 @@ template <typename T,
           uint64_t TABLE_SIZE = VECTOR_DEFAULT_TABLE_SIZE,
           uint64_t SECONDARY_TABLE_SIZE = VECTOR_DEFAULT_SECONDARY_TABLE_SIZE>
 class Vector {
+  // Static assertions to reject invalid template parameters.
   static_assert(PAGE_SIZE >= VECTOR_MIN_PAGE_SIZE, "too small PAGE_SIZE");
   static_assert(PAGE_SIZE <= VECTOR_MAX_PAGE_SIZE, "too large PAGE_SIZE");
   static_assert((PAGE_SIZE & (PAGE_SIZE - 1)) == 0,
@@ -234,6 +235,8 @@ class Vector {
  public:
   typedef T Value;
 
+  // VECTOR_CREATE is available as an instance of VectorCreate.
+  // VECTOR_OPEN is available as an instance of VectorOpen.
   Vector() = default;
   Vector(const VectorCreate &, io::Pool pool)
     : impl_(VectorImpl::create(pool, nullptr, sizeof(Value), PAGE_SIZE,
@@ -262,6 +265,8 @@ class Vector {
     return static_cast<bool>(impl_);
   }
 
+  // Access a value. Return a reference to a value.
+  // This operator may throw an exception on failure.
   Value &operator[](uint64_t id) {
     void * const page_address =
        impl_->get_page_address<PAGE_SIZE, TABLE_SIZE,
@@ -269,6 +274,8 @@ class Vector {
     return static_cast<T *>(page_address)[id % PAGE_SIZE];
   }
 
+  // Scan values in sequential order and call the given callback for each
+  // value. This function terminates if the callback returns false.
   // bool (*callback)(uint64_t id, Value *value);
   template <typename Callback>
   bool scan(Callback callback) {
@@ -285,6 +292,7 @@ class Vector {
     }, &callback);
   }
 
+  // The ID of the lead block.
   uint32_t block_id() const {
     return impl_->block_id();
   }
@@ -313,6 +321,7 @@ class Vector {
     return (PAGE_SIZE * TABLE_SIZE * SECONDARY_TABLE_SIZE) - 1;
   }
 
+  // Free blocks associated with a vector.
   static void unlink(io::Pool pool, uint32_t block_id) {
     VectorImpl::unlink(pool, block_id, sizeof(Value),
                        PAGE_SIZE, TABLE_SIZE, SECONDARY_TABLE_SIZE);
@@ -321,6 +330,7 @@ class Vector {
  private:
   std::shared_ptr<VectorImpl> impl_;
 
+  // This function is used to fill a new page with default values.
   static void fill_page(void *page_address, const void *value) {
     Value *values = static_cast<Value *>(page_address);
     for (uint64_t i = 0; i < PAGE_SIZE; ++i) {
