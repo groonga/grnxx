@@ -131,11 +131,18 @@ void BlobVectorImpl::prepend(uint64_t id, const Blob &value) {
 
 void BlobVectorImpl::defrag() {
   // TODO: To be more efficient.
-  table_.scan([this](uint64_t id, BlobVectorCell *cell) -> bool {
+  table_.scan([this](uint64_t, BlobVectorCell *cell) -> bool {
     if (cell->type() != BLOB_VECTOR_MEDIUM) {
       return true;
     }
-    set_value(id, get_value(*cell));
+
+    const BlobVectorCell old_cell = *cell;
+    const BlobVectorCell new_cell = create_value(get_value(old_cell));
+    if (atomic_compare_and_swap(old_cell, new_cell, cell)) {
+      free_value(old_cell);
+    } else {
+      free_value(new_cell);
+    }
     return true;
   });
 }
