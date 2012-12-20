@@ -23,7 +23,7 @@
 namespace grnxx {
 namespace db {
 
-constexpr uint64_t BLOB_VECTOR_MAX_ID = uint64_t(1) << 40;
+constexpr uint64_t BLOB_VECTOR_MAX_ID = (uint64_t(1) << 40) - 1;
 
 constexpr uint32_t BLOB_VECTOR_INVALID_PAGE_ID = 0xFFFFFFFFU;
 
