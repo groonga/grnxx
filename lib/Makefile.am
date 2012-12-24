@@ -55,4 +55,4 @@ FORCE:
 grnxx.cpp: version.h
 
 version.h: FORCE
-	TOP_DIR="$(top_srcdir)" "$(srcdir)/version.sh"
+	TOP_SRCDIR="$(top_srcdir)" "$(srcdir)/version.sh"
