@@ -236,6 +236,10 @@ class DoubleArrayKey {
     return buf_;
   }
 
+  static uint64_t estimate_size(uint64_t length) {
+    return 2 + (length / sizeof(uint32_t));
+  }
+
  private:
   uint32_t id_low_;
   uint8_t id_high_;
