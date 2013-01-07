@@ -28,38 +28,78 @@ using namespace grnxx::db;
 extern struct DoubleArrayCreate {} DOUBLE_ARRAY_CREATE;
 extern struct DoubleArrayOpen {} DOUBLE_ARRAY_OPEN;
 
-// TODO
 class DoubleArrayNode {
  public:
   // The ID of this node is used as an offset (true) or not (false).
-  bool is_origin() const;    // 1 bits.
+  bool is_origin() const {
+    // 1 bit.
+    return qword_ & IS_ORIGIN_FLAG;
+  }
   // This node is valid (false) or not (true).
-  bool is_phantom() const;   // 1 bits.
+  bool is_phantom() const {
+    // 1 bit.
+    return qword_ & IS_PHANTOM_FLAG;
+  }
   // This node is associated with a key (true) or not (false).
-  bool is_leaf() const;      // 1 bits.
+  bool is_leaf() const {
+    // 1 bit.
+    return qword_ & IS_LEAF_FLAG;
+  }
   // A child of this node is a leaf node (true) or not (false).
-  bool is_terminal() const;  // 1 bits.
+  bool is_terminal() const {
+    // 1 bit.
+    return qword_ & IS_TERMINAL_FLAG;
+  }
 
   // Phantom nodes are doubly linked in each block.
   // Each block consists of 512 nodes.
-  uint16_t next() const;  // 9 bits.
-  uint16_t prev() const;  // 9 bits.
+  uint16_t next() const {
+    // 9 bits.
+    return static_cast<uint16_t>(qword_ & ((uint64_t(1) << 9) - 1));
+  }
+  uint16_t prev() const {
+    // 9 bits.
+    return static_cast<uint16_t>((qword_ >> 9) & ((uint64_t(1) << 9) - 1));
+  }
 
   // A non-phantom node stores its label.
-  uint8_t label() const;  // 8 bits.
+  uint64_t label() const {
+    // 8 bits.
+    return qword_ & (IS_PHANTOM_FLAG | 0xFF);
+  }
 
   // A leaf node stores the offset and the length of its associated key.
-  uint64_t key_offset() const;  // 40 bits.
-  uint16_t key_length() const;  // 12 bits.
+  uint64_t key_offset() const {
+    // 40 bits.
+    return (qword_ >> 8) & ((uint64_t(1) << 40) - 1);
+  }
+  uint64_t key_length() const {
+    // 12 bits.
+    return (qword_ >> 48) & ((uint64_t(1) << 12) - 1);
+  }
 
   // A non-phantom and non-leaf node stores the offset to its children,
   // the label of its next sibling, and the label of its first child.
-  uint64_t offset() const;        // 36 bits.
-  uint8_t child_label() const;    // 8 bits.
-  uint8_t sibling_label() const;  // 8 bits.
+  uint64_t offset() const {
+    // 36 bits.
+    return (qword_ >> 8) & ((uint64_t(1) << 36) - 1);
+  }
+  uint8_t child_label() const {
+    // 8 bits.
+    return static_cast<uint8_t>(qword_ >> 44);
+  }
+  uint8_t sibling_label() const {
+    // 8 bits.
+    return static_cast<uint8_t>(qword_ >> 52);
+  }
 
  private:
   uint64_t qword_;
+
+  static constexpr uint64_t IS_ORIGIN_FLAG   = uint64_t(1) << 63;
+  static constexpr uint64_t IS_PHANTOM_FLAG  = uint64_t(1) << 62;
+  static constexpr uint64_t IS_LEAF_FLAG     = uint64_t(1) << 61;
+  static constexpr uint64_t IS_TERMINAL_FLAG = uint64_t(1) << 60;
 };
 
 class DoubleArrayEntry {
