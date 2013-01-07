@@ -51,31 +51,83 @@ class DoubleArrayNode {
     return qword_ & IS_TERMINAL_FLAG;
   }
 
+  void set_is_origin(bool value) {
+    if (value) {
+      qword_ &= ~IS_ORIGIN_FLAG;
+    } else {
+      qword_ |= IS_ORIGIN_FLAG;
+    }
+  }
+  void set_is_phantom(bool value) {
+    if (value) {
+      qword_ &= ~IS_PHANTOM_FLAG;
+    } else {
+      qword_ |= IS_PHANTOM_FLAG;
+    }
+  }
+  void set_is_leaf(bool value) {
+    if (value) {
+      qword_ &= ~IS_LEAF_FLAG;
+    } else {
+      qword_ |= IS_LEAF_FLAG;
+    }
+  }
+  void set_is_terminal(bool value) {
+    if (value) {
+      qword_ &= ~IS_TERMINAL_FLAG;
+    } else {
+      qword_ |= IS_TERMINAL_FLAG;
+    }
+  }
+
   // Phantom nodes are doubly linked in each block.
   // Each block consists of 512 nodes.
   uint16_t next() const {
     // 9 bits.
-    return static_cast<uint16_t>(qword_ & ((uint64_t(1) << 9) - 1));
+    return static_cast<uint16_t>((qword_ >> NEXT_SHIFT) & NEXT_MASK);
   }
   uint16_t prev() const {
     // 9 bits.
-    return static_cast<uint16_t>((qword_ >> 9) & ((uint64_t(1) << 9) - 1));
+    return static_cast<uint16_t>((qword_ >> PREV_SHIFT) & PREV_MASK);
+  }
+
+  void set_next(uint16_t value) {
+    qword_ = (qword_ & ~(NEXT_MASK << NEXT_SHIFT)) |
+             (static_cast<uint64_t>(value) << NEXT_SHIFT);
+  }
+  void set_prev(uint16_t value) {
+    qword_ = (qword_ & ~(PREV_MASK << PREV_SHIFT)) |
+             (static_cast<uint64_t>(value) << PREV_SHIFT);
   }
 
   // A non-phantom node stores its label.
+  // A phantom node returns an invalid label with IS_PHANTOM_FLAG.
   uint64_t label() const {
     // 8 bits.
-    return qword_ & (IS_PHANTOM_FLAG | 0xFF);
+    return qword_ & (IS_PHANTOM_FLAG | LABEL_MASK);
+  }
+
+  void set_label(uint8_t value) {
+    qword_ = (qword_ & ~LABEL_MASK) | value;
   }
 
   // A leaf node stores the offset and the length of its associated key.
   uint64_t key_offset() const {
     // 40 bits.
-    return (qword_ >> 8) & ((uint64_t(1) << 40) - 1);
+    return (qword_ >> KEY_OFFSET_SHIFT) & KEY_OFFSET_MASK;
   }
   uint64_t key_length() const {
     // 12 bits.
-    return (qword_ >> 48) & ((uint64_t(1) << 12) - 1);
+    return (qword_ >> KEY_LENGTH_SHIFT) & KEY_LENGTH_MASK;
+  }
+
+  void set_key_offset(uint64_t value) {
+    qword_ = (qword_ & ~(KEY_OFFSET_MASK << KEY_OFFSET_SHIFT)) |
+             (value << KEY_OFFSET_SHIFT);
+  }
+  void set_key_length(uint64_t value) {
+    qword_ = (qword_ & ~(KEY_LENGTH_MASK << KEY_LENGTH_SHIFT)) |
+             (value << KEY_LENGTH_SHIFT);
   }
 
   // A non-phantom and non-leaf node stores the offset to its children,
@@ -84,13 +136,26 @@ class DoubleArrayNode {
     // 36 bits.
     return (qword_ >> 8) & ((uint64_t(1) << 36) - 1);
   }
-  uint8_t child_label() const {
+  uint8_t child() const {
     // 8 bits.
     return static_cast<uint8_t>(qword_ >> 44);
   }
-  uint8_t sibling_label() const {
+  uint8_t sibling() const {
     // 8 bits.
     return static_cast<uint8_t>(qword_ >> 52);
+  }
+
+  void set_offset(uint64_t value) {
+    qword_ = (qword_ & ~(OFFSET_MASK << OFFSET_SHIFT)) |
+             (value << OFFSET_SHIFT);
+  }
+  void set_child(uint8_t value) {
+    qword_ = (qword_ & ~(CHILD_MASK << CHILD_SHIFT)) |
+             (static_cast<uint64_t>(value) << CHILD_SHIFT);
+  }
+  void set_sibling(uint8_t value) {
+    qword_ = (qword_ & ~(SIBLING_MASK << SIBLING_SHIFT)) |
+             (static_cast<uint64_t>(value) << SIBLING_SHIFT);
   }
 
  private:
@@ -100,6 +165,25 @@ class DoubleArrayNode {
   static constexpr uint64_t IS_PHANTOM_FLAG  = uint64_t(1) << 62;
   static constexpr uint64_t IS_LEAF_FLAG     = uint64_t(1) << 61;
   static constexpr uint64_t IS_TERMINAL_FLAG = uint64_t(1) << 60;
+
+  static constexpr uint64_t NEXT_MASK  = 0x1FF;
+  static constexpr uint8_t  NEXT_SHIFT = 0;
+  static constexpr uint64_t PREV_MASK  = 0x1FF;
+  static constexpr uint8_t  PREV_SHIFT = 9;
+
+  static constexpr uint64_t LABEL_MASK = 0xFF;
+
+  static constexpr uint64_t KEY_OFFSET_MASK  = (uint64_t(1) << 40) - 1;
+  static constexpr uint8_t  KEY_OFFSET_SHIFT = 8;
+  static constexpr uint64_t KEY_LENGTH_MASK  = (uint64_t(1) << 12) - 1;
+  static constexpr uint8_t  KEY_LENGTH_SHIFT = 48;
+
+  static constexpr uint64_t OFFSET_MASK   = (uint64_t(1) << 36) - 1;
+  static constexpr uint8_t  OFFSET_SHIFT  = 8;
+  static constexpr uint64_t CHILD_MASK    = (uint64_t(1) << 8) - 1;
+  static constexpr uint8_t  CHILD_SHIFT   = 44;
+  static constexpr uint64_t SIBLING_MASK  = (uint64_t(1) << 8) - 1;
+  static constexpr uint8_t  SIBLING_SHIFT = 52;
 };
 
 class DoubleArrayEntry {
