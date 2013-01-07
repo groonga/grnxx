@@ -212,7 +212,7 @@ class DoubleArrayEntry {
     return qword_;
   }
 
-  void set_link(uint64_t next) {
+  void set_next(uint64_t next) {
     qword_ = next;
   }
 
