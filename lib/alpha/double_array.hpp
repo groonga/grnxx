@@ -103,6 +103,8 @@ class DoubleArrayEntry {
 // TODO
 class DoubleArrayKey {
  public:
+  DoubleArrayKey(uint64_t id, const char *address, uint64_t length);
+
   uint64_t id() const {
     return id_low_ | (static_cast<uint64_t>(id_high_) << 32);
   }

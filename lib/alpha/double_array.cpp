@@ -23,6 +23,14 @@ namespace alpha {
 DoubleArrayCreate DOUBLE_ARRAY_CREATE;
 DoubleArrayOpen DOUBLE_ARRAY_OPEN;
 
+DoubleArrayKey::DoubleArrayKey(uint64_t id, const char *address,
+                               uint64_t length)
+  : id_low_(static_cast<uint32_t>(id)),
+    id_high_(static_cast<uint8_t>(id >> 32)),
+    buf_() {
+  std::memcpy(buf_, address, length);
+}
+
 std::unique_ptr<DoubleArrayImpl> DoubleArrayImpl::create(io::Pool pool) {
   // TODO
   return nullptr;
