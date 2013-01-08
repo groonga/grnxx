@@ -68,7 +68,7 @@ std::unique_ptr<VectorImpl> VectorImpl::create(io::Pool pool,
                                                FillPage fill_page) {
   std::unique_ptr<VectorImpl> vector(new (std::nothrow) VectorImpl);
   if (!vector) {
-    GRNXX_ERROR() << "new grnxx::io::VectorImpl failed";
+    GRNXX_ERROR() << "new grnxx::db::VectorImpl failed";
     GRNXX_THROW();
   }
   vector->create_vector(pool, default_value, value_size, page_size, table_size,
@@ -85,7 +85,7 @@ std::unique_ptr<VectorImpl> VectorImpl::open(io::Pool pool,
                                              FillPage fill_page) {
   std::unique_ptr<VectorImpl> vector(new (std::nothrow) VectorImpl);
   if (!vector) {
-    GRNXX_ERROR() << "new grnxx::io::VectorImpl failed";
+    GRNXX_ERROR() << "new grnxx::db::VectorImpl failed";
     GRNXX_THROW();
   }
   vector->open_vector(pool, block_id, value_size, page_size, table_size,

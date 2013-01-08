@@ -55,7 +55,7 @@ StringBuilder &BlobVectorHeader::write_to(StringBuilder &builder) const {
 std::unique_ptr<BlobVectorImpl> BlobVectorImpl::create(io::Pool pool) {
   std::unique_ptr<BlobVectorImpl> vector(new (std::nothrow) BlobVectorImpl);
   if (!vector) {
-    GRNXX_ERROR() << "new grnxx::io::VectorImpl failed";
+    GRNXX_ERROR() << "new grnxx::db::BlobVectorImpl failed";
     GRNXX_THROW();
   }
   vector->create_vector(pool);
@@ -66,7 +66,7 @@ std::unique_ptr<BlobVectorImpl> BlobVectorImpl::open(io::Pool pool,
                                                      uint32_t block_id) {
   std::unique_ptr<BlobVectorImpl> vector(new (std::nothrow) BlobVectorImpl);
   if (!vector) {
-    GRNXX_ERROR() << "new grnxx::io::VectorImpl failed";
+    GRNXX_ERROR() << "new grnxx::db::BlobVectorImpl failed";
     GRNXX_THROW();
   }
   vector->open_vector(pool, block_id);
