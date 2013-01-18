@@ -28,6 +28,145 @@ using namespace grnxx::db;
 extern struct DoubleArrayCreate {} DOUBLE_ARRAY_CREATE;
 extern struct DoubleArrayOpen {} DOUBLE_ARRAY_OPEN;
 
+class DoubleArrayString {
+ public:
+  DoubleArrayString() : ptr_(nullptr), length_(0) {}
+  DoubleArrayString(const void *ptr, uint64_t length)
+      : ptr_(static_cast<const uint8_t *>(ptr)), length_(length) {}
+
+  const uint8_t &operator[](uint64_t i) const {
+    return ptr_[i];
+  }
+
+  const void *ptr() const {
+    return ptr_;
+  }
+  uint64_t length() const {
+    return length_;
+  }
+
+  void assign(const void *ptr, uint64_t length) {
+    ptr_ = static_cast<const uint8_t *>(ptr);
+    length_ = length;
+  }
+
+  DoubleArrayString substr(uint64_t offset = 0) const {
+    return DoubleArrayString(ptr_ + offset, length_ - offset);
+  }
+  DoubleArrayString substr(uint64_t offset, uint64_t length) const {
+    return DoubleArrayString(ptr_ + offset, length);
+  }
+
+  // This function returns an integer as follows:
+  // - a negative value if *this < rhs,
+  // - zero if *this == rhs,
+  // - a positive value if *this > rhs.
+  // Note that the result is undefined if the offset is too large.
+  int compare(const DoubleArrayString &rhs, uint64_t offset = 0) const {
+    for (uint64_t i = offset; i < length(); ++i) {
+      if (i >= rhs.length()) {
+        return 1;
+      } else if ((*this)[i] != rhs[i]) {
+        return (*this)[i] - rhs[i];
+      }
+    }
+    return (length() == rhs.length()) ? 0 : -1;
+  }
+
+ private:
+  const uint8_t *ptr_;
+  uint64_t length_;
+};
+
+inline bool operator==(const DoubleArrayString &lhs,
+                       const DoubleArrayString &rhs) {
+  if (lhs.length() != rhs.length()) {
+    return false;
+  } else if (lhs.ptr() == rhs.ptr()) {
+    return true;
+  }
+  for (uint64_t i = 0; i < lhs.length(); ++i) {
+    if (lhs[i] != rhs[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+inline bool operator!=(const DoubleArrayString &lhs,
+                       const DoubleArrayString &rhs) {
+  return !(lhs == rhs);
+}
+
+inline bool operator<(const DoubleArrayString &lhs,
+                      const DoubleArrayString &rhs) {
+  return lhs.compare(rhs) < 0;
+}
+
+inline bool operator>(const DoubleArrayString &lhs,
+                      const DoubleArrayString &rhs) {
+  return rhs < lhs;
+}
+
+inline bool operator<=(const DoubleArrayString &lhs,
+                       const DoubleArrayString &rhs) {
+  return !(lhs > rhs);
+}
+
+inline bool operator>=(const DoubleArrayString &lhs,
+                       const DoubleArrayString &rhs) {
+  return !(lhs < rhs);
+}
+
+class DoubleArrayHeader {
+ public:
+  DoubleArrayHeader();
+
+  uint32_t nodes_block_id() const {
+    return nodes_block_id_;
+  }
+  uint32_t chunks_block_id() const {
+    return chunks_block_id_;
+  }
+  uint32_t entries_block_id() const {
+    return entries_block_id_;
+  }
+  uint32_t keys_block_id() const {
+    return keys_block_id_;
+  }
+  uint64_t root_node_id() const {
+    return root_node_id_;
+  }
+
+  void set_nodes_block_id(uint32_t value) {
+    nodes_block_id_ = value;
+  }
+  void set_chunks_block_id(uint32_t value) {
+    chunks_block_id_ = value;
+  }
+  void set_entries_block_id(uint32_t value) {
+    entries_block_id_ = value;
+  }
+  void set_keys_block_id(uint32_t value) {
+    keys_block_id_ = value;
+  }
+  void set_root_node_id(uint64_t value) {
+    root_node_id_ = value;
+  }
+
+  Mutex *mutable_inter_process_mutex() {
+    return &inter_process_mutex_;
+  }
+
+ private:
+  uint32_t nodes_block_id_;
+  uint32_t chunks_block_id_;
+  uint32_t entries_block_id_;
+  uint32_t keys_block_id_;
+  uint64_t root_node_id_;
+  Mutex inter_process_mutex_;
+};
+
 class DoubleArrayNode {
  public:
   // The ID of this node is used as an offset (true) or not (false).
@@ -80,8 +219,8 @@ class DoubleArrayNode {
     }
   }
 
-  // Phantom nodes are doubly linked in each block.
-  // Each block consists of 512 nodes.
+  // Phantom nodes are doubly linked in each chunk.
+  // Each chunk consists of 512 nodes.
   uint16_t next() const {
     // 9 bits.
     return static_cast<uint16_t>((qword_ >> NEXT_SHIFT) & NEXT_MASK);
@@ -186,6 +325,73 @@ class DoubleArrayNode {
   static constexpr uint8_t  SIBLING_SHIFT = 52;
 };
 
+class DoubleArrayChunk {
+ public:
+  // Chunks in the same level are doubly linked.
+  uint64_t next() const {
+    // 44 bits.
+    return (qwords_[0] & UPPER_MASK) >> UPPER_SHIFT;
+  }
+  uint64_t prev() const {
+    // 44 bits.
+    return (qwords_[1] & UPPER_MASK) >> UPPER_SHIFT;
+  }
+
+  void set_next(uint64_t value) {
+    qwords_[0] = (qwords_[0] & ~UPPER_MASK) | (value << UPPER_SHIFT);
+  }
+  void set_prev(uint64_t value) {
+    qwords_[1] = (qwords_[1] & ~UPPER_MASK) | (value << UPPER_SHIFT);
+  }
+
+  // The chunk level indicates how easily nodes can be put in this block.
+  uint64_t level() const {
+    // 10 bits.
+    return (qwords_[0] & MIDDLE_MASK) >> MIDDLE_SHIFT;
+  }
+  uint64_t failure_count() const {
+    // 10 bits.
+    return (qwords_[1] & MIDDLE_MASK) >> MIDDLE_SHIFT;
+  }
+
+  void set_level(uint64_t value) {
+    qwords_[0] = (qwords_[0] & ~MIDDLE_MASK) | (value << MIDDLE_SHIFT);
+  }
+  void set_failure_count(uint64_t value) {
+    qwords_[1] = (qwords_[1] & ~MIDDLE_MASK) | (value << MIDDLE_SHIFT);
+  }
+
+  // The first phantom node and the number of phantom nodes in this block.
+  uint64_t first_phantom() const {
+    // 10 bits.
+    return (qwords_[0] & LOWER_MASK) >> LOWER_SHIFT;
+  }
+  uint64_t num_phantoms() const {
+    // 10 bits.
+    return (qwords_[1] & LOWER_MASK) >> LOWER_SHIFT;
+  }
+
+  void set_first_phantom(uint64_t value) {
+    qwords_[0] = (qwords_[0] & ~LOWER_MASK) | (value << LOWER_SHIFT);
+  }
+  void set_num_phantoms(uint64_t value) {
+    qwords_[1] = (qwords_[1] & ~LOWER_MASK) | (value << LOWER_SHIFT);
+  }
+
+ private:
+  uint64_t qwords_[2];
+
+  static constexpr uint8_t  UPPER_SHIFT  = 20;
+  static constexpr uint64_t UPPER_MASK   =
+      ((uint64_t(1) << 44) - 1) << UPPER_SHIFT;
+  static constexpr uint8_t  MIDDLE_SHIFT = 10;
+  static constexpr uint64_t MIDDLE_MASK  =
+      ((uint64_t(1) << 10) - 1) << MIDDLE_SHIFT;
+  static constexpr uint8_t  LOWER_SHIFT  = 0;
+  static constexpr uint64_t LOWER_MASK   =
+      ((uint64_t(1) << 10) - 1) << LOWER_SHIFT;
+};
+
 class DoubleArrayEntry {
  public:
   DoubleArrayEntry() : qword_(0) {}
@@ -236,6 +442,15 @@ class DoubleArrayKey {
     return buf_;
   }
 
+  bool equals_to(const void *ptr, uint64_t length, uint64_t offset = 0) const {
+    for ( ; offset < length; ++offset) {
+      if (buf_[offset] != static_cast<const uint8_t *>(ptr)[offset]) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   static uint64_t estimate_size(uint64_t length) {
     return 2 + (length / sizeof(uint32_t));
   }
@@ -249,12 +464,23 @@ class DoubleArrayKey {
 // TODO
 class DoubleArrayImpl {
  public:
+  ~DoubleArrayImpl();
+
   static std::unique_ptr<DoubleArrayImpl> create(io::Pool pool);
   static std::unique_ptr<DoubleArrayImpl> open(io::Pool pool,
                                                uint32_t block_id);
 
+  bool search(const uint8_t *ptr, uint64_t length, uint64_t *key_offset);
+
+  const DoubleArrayKey &get_key(uint64_t key_offset) {
+    return *reinterpret_cast<const DoubleArrayKey *>(&keys_[key_offset]);
+  }
+
   uint32_t block_id() const {
     return block_info_->id();
+  }
+  uint64_t root_node_id() const {
+    return header_->root_node_id();
   }
 
   StringBuilder &write_to(StringBuilder &builder) const;
@@ -262,6 +488,21 @@ class DoubleArrayImpl {
  private:
   io::Pool pool_;
   const io::BlockInfo *block_info_;
+  DoubleArrayHeader *header_;
+  Recycler *recycler_;
+  Vector<DoubleArrayNode> nodes_;
+  Vector<DoubleArrayChunk> chunks_;
+  Vector<DoubleArrayEntry> entries_;
+  Vector<uint32_t> keys_;
+  bool initialized_;
+
+  DoubleArrayImpl();
+
+  void create_double_array(io::Pool pool);
+  void open_double_array(io::Pool pool, uint32_t block_id);
+
+  bool search_leaf(const uint8_t *ptr, uint64_t length,
+                   uint64_t &node_id, uint64_t &query_pos);
 };
 
 // TODO
