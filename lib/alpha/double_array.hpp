@@ -23,6 +23,7 @@
 namespace grnxx {
 namespace alpha {
 
+// FIXME: To be removed when moved to grnxx::db.
 using namespace grnxx::db;
 
 extern struct DoubleArrayCreate {} DOUBLE_ARRAY_CREATE;
@@ -50,6 +51,9 @@ constexpr uint64_t DOUBLE_ARRAY_MAX_CHUNK_LEVEL    = 5;
 // a linked list is called a leader. DOUBLE_ARRAY_INVALID_LEADER means that
 // the linked list is empty and there exists no leader.
 constexpr uint64_t DOUBLE_ARRAY_INVALID_LEADER     = 0x7FFFFFFF;
+
+constexpr uint64_t DOUBLE_ARRAY_KEYS_PAGE_SIZE     =
+    VECTOR_DEFAULT_PAGE_SIZE;
 
 class DoubleArrayString {
  public:
@@ -160,6 +164,21 @@ class DoubleArrayHeader {
   uint64_t root_node_id() const {
     return root_node_id_;
   }
+  uint64_t total_key_length() const {
+    return total_key_length_;
+  }
+  uint64_t next_key_id() const {
+    return next_key_id_;
+  }
+  uint64_t next_key_pos() const {
+    return next_key_pos_;
+  }
+  uint64_t max_key_id() const {
+    return max_key_id_;
+  }
+  uint64_t num_keys() const {
+    return num_keys_;
+  }
   uint64_t num_chunks() const {
     return num_chunks_;
   }
@@ -169,8 +188,10 @@ class DoubleArrayHeader {
   uint64_t num_phantoms() const {
     return num_phantoms_;
   }
+  uint64_t num_zombies() const {
+    return num_zombies_;
+  }
   uint64_t ith_leader(uint64_t i) const {
-//    GRN_DAT_DEBUG_THROW_IF(i > DOUBLE_ARRAY_MAX_CHUNK_LEVEL);
     return leaders_[i];
   }
 
@@ -189,15 +210,31 @@ class DoubleArrayHeader {
   void set_root_node_id(uint64_t value) {
     root_node_id_ = value;
   }
+  void set_total_key_length(uint64_t value) {
+    total_key_length_ = value;
+  }
+  void set_next_key_id(uint64_t value) {
+    next_key_id_ = value;
+  }
+  void set_next_key_pos(uint64_t value) {
+    next_key_pos_ = value;
+  }
+  void set_max_key_id(uint64_t value) {
+    max_key_id_ = value;
+  }
+  void set_num_keys(uint64_t value) {
+    num_keys_ = value;
+  }
   void set_num_chunks(uint64_t value) {
     num_chunks_ = value;
   }
   void set_num_phantoms(uint64_t value) {
     num_phantoms_ = value;
   }
+  void set_num_zombies(uint64_t value) {
+    num_zombies_ = value;
+  }
   void set_ith_leader(uint64_t i, uint64_t x) {
-//    GRN_DAT_DEBUG_THROW_IF(i > MAX_BLOCK_LEVEL);
-//    GRN_DAT_DEBUG_THROW_IF((x != INVALID_LEADER) && (x >= num_blocks()));
     leaders_[i] = x;
   }
 
@@ -211,8 +248,14 @@ class DoubleArrayHeader {
   uint32_t entries_block_id_;
   uint32_t keys_block_id_;
   uint64_t root_node_id_;
+  uint64_t total_key_length_;
+  uint64_t next_key_id_;
+  uint64_t next_key_pos_;
+  uint64_t max_key_id_;
+  uint64_t num_keys_;
   uint64_t num_chunks_;
   uint64_t num_phantoms_;
+  uint64_t num_zombies_;
   uint64_t leaders_[DOUBLE_ARRAY_MAX_CHUNK_LEVEL + 1];
   Mutex inter_process_mutex_;
 };
@@ -300,24 +343,31 @@ class DoubleArrayNode {
     qword_ = (qword_ & ~LABEL_MASK) | value;
   }
 
-  // A leaf node stores the offset and the length of its associated key.
-  uint64_t key_offset() const {
+  // A leaf node stores the start position and the length of the associated
+  // key.
+  uint64_t key_pos() const {
     // 40 bits.
-    return (qword_ >> KEY_OFFSET_SHIFT) & KEY_OFFSET_MASK;
+    return (qword_ >> KEY_POS_SHIFT) & KEY_POS_MASK;
   }
   uint64_t key_length() const {
     // 12 bits.
     return (qword_ >> KEY_LENGTH_SHIFT) & KEY_LENGTH_MASK;
   }
 
-  void set_key_offset(uint64_t value) {
-    qword_ = (qword_ & ~(KEY_OFFSET_MASK << KEY_OFFSET_SHIFT)) |
-             (value << KEY_OFFSET_SHIFT);
+  void set_key(uint64_t key_pos, uint64_t key_length) {
+    qword_ = (qword_ & ~((KEY_POS_MASK << KEY_POS_SHIFT) |
+                         (KEY_LENGTH_MASK << KEY_LENGTH_SHIFT))) |
+             (key_pos << KEY_POS_SHIFT) | (key_length << KEY_LENGTH_SHIFT);
   }
-  void set_key_length(uint64_t value) {
-    qword_ = (qword_ & ~(KEY_LENGTH_MASK << KEY_LENGTH_SHIFT)) |
-             (value << KEY_LENGTH_SHIFT);
-  }
+  // FIXME: may not be required.
+//  void set_key_pos(uint64_t value) {
+//    qword_ = (qword_ & ~(KEY_POS_MASK << KEY_POS_SHIFT)) |
+//             (value << KEY_POS_SHIFT);
+//  }
+//  void set_key_length(uint64_t value) {
+//    qword_ = (qword_ & ~(KEY_LENGTH_MASK << KEY_LENGTH_SHIFT)) |
+//             (value << KEY_LENGTH_SHIFT);
+//  }
 
   // A non-phantom and non-leaf node stores the offset to its children,
   // the label of its next sibling, and the label of its first child.
@@ -362,8 +412,8 @@ class DoubleArrayNode {
 
   static constexpr uint64_t LABEL_MASK = 0xFF;
 
-  static constexpr uint64_t KEY_OFFSET_MASK  = (uint64_t(1) << 40) - 1;
-  static constexpr uint8_t  KEY_OFFSET_SHIFT = 8;
+  static constexpr uint64_t KEY_POS_MASK     = (uint64_t(1) << 40) - 1;
+  static constexpr uint8_t  KEY_POS_SHIFT    = 8;
   static constexpr uint64_t KEY_LENGTH_MASK  = (uint64_t(1) << 12) - 1;
   static constexpr uint8_t  KEY_LENGTH_SHIFT = 48;
 
@@ -452,15 +502,15 @@ class DoubleArrayEntry {
   }
 
   // A valid entry stores the offset and the length of its associated key.
-  uint64_t key_offset() const {
-    return qword_ & OFFSET_MASK;
+  uint64_t key_pos() const {
+    return qword_ & POS_MASK;
   }
   uint64_t key_length() const {
     return qword_ >> 48;
   }
 
-  void set_key(uint64_t offset, uint64_t length) {
-    qword_ = IS_VALID_FLAG | offset | (length << 48);
+  void set_key(uint64_t pos, uint64_t length) {
+    qword_ = IS_VALID_FLAG | pos | (length << 48);
   }
 
   // An invalid entry stores the index of the next invalid entry.
@@ -476,14 +526,14 @@ class DoubleArrayEntry {
   uint64_t qword_;
 
   // 11 (= 64 - (1 + 40 + 12)) bits are not used．
-  static constexpr uint64_t OFFSET_MASK = uint64_t(1) << 40;
+  static constexpr uint64_t POS_MASK = uint64_t(1) << 40;
   static constexpr uint64_t IS_VALID_FLAG = uint64_t(1) << 47;
 };
 
 // TODO
 class DoubleArrayKey {
  public:
-  DoubleArrayKey(uint64_t id, const char *address, uint64_t length);
+  DoubleArrayKey(uint64_t id, const void *address, uint64_t length);
 
   explicit operator bool() const {
     // FIXME: Magic number.
@@ -532,18 +582,18 @@ class DoubleArrayImpl {
                                                uint32_t block_id);
 
   bool search(const uint8_t *ptr, uint64_t length,
-              uint64_t *key_offset = nullptr);
+              uint64_t *key_pos = nullptr);
 
   // TODO
   bool insert(const uint8_t *ptr, uint64_t length,
-              uint64_t *key_offset = nullptr);
+              uint64_t *key_pos = nullptr);
 
-  const DoubleArrayKey &get_key(uint64_t key_offset) {
-    return *reinterpret_cast<const DoubleArrayKey *>(&keys_[key_offset]);
+  const DoubleArrayKey &get_key(uint64_t key_pos) {
+    return *reinterpret_cast<const DoubleArrayKey *>(&keys_[key_pos]);
   }
   const DoubleArrayKey &ith_key(uint64_t key_id) {
     if (entries_[key_id]) {
-      return get_key(entries_[key_id].key_offset());
+      return get_key(entries_[key_id].key_pos());
     }
     return DoubleArrayKey::invalid_key();
   }
@@ -575,6 +625,8 @@ class DoubleArrayImpl {
 
   bool search_leaf(const uint8_t *ptr, uint64_t length,
                    uint64_t &node_id, uint64_t &query_pos);
+
+  uint64_t append_key(const uint8_t *ptr, uint64_t length, uint64_t key_id);
 
   void reserve_node(uint64_t node_id);
   void reserve_chunk(uint64_t chunk_id);

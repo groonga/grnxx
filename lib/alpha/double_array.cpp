@@ -33,8 +33,13 @@ DoubleArrayHeader::DoubleArrayHeader()
     entries_block_id_(io::BLOCK_INVALID_ID),
     keys_block_id_(io::BLOCK_INVALID_ID),
     root_node_id_(0),
+    total_key_length_(0),
+    next_key_id_(0),
+    max_key_id_(0),
+    num_keys_(0),
     num_chunks_(0),
     num_phantoms_(0),
+    num_zombies_(0),
     leaders_(),
     inter_process_mutex_() {
   for (uint32_t i = 0; i < DOUBLE_ARRAY_MAX_CHUNK_LEVEL; ++i) {
@@ -42,7 +47,7 @@ DoubleArrayHeader::DoubleArrayHeader()
   }
 }
 
-DoubleArrayKey::DoubleArrayKey(uint64_t id, const char *address,
+DoubleArrayKey::DoubleArrayKey(uint64_t id, const void *address,
                                uint64_t length)
   : id_low_(static_cast<uint32_t>(id)),
     id_high_(static_cast<uint8_t>(id >> 32)),
@@ -93,7 +98,7 @@ std::unique_ptr<DoubleArrayImpl> DoubleArrayImpl::open(io::Pool pool,
 }
 
 bool DoubleArrayImpl::search(const uint8_t *ptr, uint64_t length,
-                             uint64_t *key_offset) {
+                             uint64_t *key_pos) {
   uint64_t node_id = root_node_id();
   uint64_t query_pos = 0;
   if (!search_leaf(ptr, length, node_id, query_pos)) {
@@ -106,14 +111,54 @@ bool DoubleArrayImpl::search(const uint8_t *ptr, uint64_t length,
   }
 
   if (node.key_length() == length) {
-    if (get_key(node.key_offset()).equals_to(ptr, length, query_pos)) {
-      if (key_offset) {
-        *key_offset = node.key_offset();
+    if (get_key(node.key_pos()).equals_to(ptr, length, query_pos)) {
+      if (key_pos) {
+        *key_pos = node.key_pos();
       }
       return true;
     }
   }
   return false;
+}
+
+bool DoubleArrayImpl::insert(const uint8_t *ptr, uint64_t length,
+                             uint64_t *key_pos) {
+  // TODO
+//  GRN_DAT_THROW_IF(STATUS_ERROR, (status_flags() & CHANGING_MASK) != 0);
+//  StatusFlagManager status_flag_manager(header_, INSERTING_FLAG);
+
+//  GRN_DAT_DEBUG_THROW_IF(!ptr && (length != 0));
+
+  uint64_t node_id = root_node_id();
+  uint64_t query_pos = 0;
+
+  // TODO
+//  search_leaf(ptr, length, node_id, query_pos);
+//  if (!insert_leaf(ptr, length, node_id, query_pos)) {
+//    if (key_pos) {
+//      *key_pos = nodes_[node_id].key_pos();
+//    }
+//    return false;
+//  }
+
+  const uint64_t new_key_id = header_->next_key_id();
+  const uint64_t new_key_pos = append_key(ptr, length, new_key_id);
+
+  header_->set_total_key_length(header_->total_key_length() + length);
+  header_->set_num_keys(header_->num_keys() + 1);
+  if (new_key_id > header_->max_key_id()) {
+    header_->set_max_key_id(new_key_id);
+    header_->set_next_key_id(new_key_id + 1);
+  } else {
+    header_->set_next_key_id(entries_[new_key_id].next());
+  }
+
+  entries_[new_key_id].set_key(new_key_pos, length);
+  nodes_[node_id].set_key(new_key_pos, length);
+  if (key_pos) {
+    *key_pos = new_key_pos;
+  }
+  return true;
 }
 
 DoubleArrayImpl::DoubleArrayImpl()
@@ -201,9 +246,30 @@ bool DoubleArrayImpl::search_leaf(const uint8_t *ptr, uint64_t length,
   return nodes_[next].is_leaf();
 }
 
+uint64_t DoubleArrayImpl::append_key(const uint8_t *ptr, uint64_t length,
+                                     uint64_t key_id) {
+  // TODO
+//  GRN_DAT_THROW_IF(SIZE_ERROR, key_id > max_num_keys());
+
+  uint64_t key_pos = header_->next_key_pos();
+  const uint64_t key_size = DoubleArrayKey::estimate_size(length);
+
+  // TODO
+//  GRN_DAT_THROW_IF(SIZE_ERROR, key_size > (key_buf_size() - key_pos));
+  const uint64_t size_left_in_page =
+      (~key_pos + 1) % DOUBLE_ARRAY_KEYS_PAGE_SIZE;
+  if (size_left_in_page < key_size) {
+    key_pos += size_left_in_page;
+  }
+  new (&keys_[key_pos]) DoubleArrayKey(key_id, ptr, length);
+
+  header_->set_next_key_pos(key_pos + key_size);
+  return key_pos;
+}
+
 void DoubleArrayImpl::reserve_node(uint64_t node_id) {
   if (node_id >= header_->num_nodes()) {
-//    reserve_block(node_id / DOUBLE_ARRAY_BLOCK_SIZE);
+    reserve_chunk(node_id / DOUBLE_ARRAY_CHUNK_SIZE);
   }
 
   DoubleArrayNode &node = nodes_[node_id];
@@ -231,15 +297,15 @@ void DoubleArrayImpl::reserve_node(uint64_t node_id) {
     const uint64_t threshold =
         uint64_t(1) << ((DOUBLE_ARRAY_MAX_CHUNK_LEVEL - chunk.level() - 1) * 2);
     if (chunk.num_phantoms() == threshold) {
-//      update_chunk_level(chunk_id, chunk.level() + 1);
+      update_chunk_level(chunk_id, chunk.level() + 1);
     }
   }
   chunk.set_num_phantoms(chunk.num_phantoms() - 1);
 
   node.set_is_phantom(false);
 
-//  GRN_DAT_DEBUG_THROW_IF(node.offset() != INVALID_OFFSET);
-//  GRN_DAT_DEBUG_THROW_IF(node.label() != INVALID_LABEL);
+//  GRN_DAT_DEBUG_THROW_IF(node.offset() != DOUBLE_ARRAY_INVALID_OFFSET);
+//  GRN_DAT_DEBUG_THROW_IF(node.label() != DOUBLE_ARRAY_INVALID_LABEL);
 
   header_->set_num_phantoms(header_->num_phantoms() - 1);
 }
