@@ -28,6 +28,29 @@ using namespace grnxx::db;
 extern struct DoubleArrayCreate {} DOUBLE_ARRAY_CREATE;
 extern struct DoubleArrayOpen {} DOUBLE_ARRAY_OPEN;
 
+constexpr uint64_t DOUBLE_ARRAY_INVALID_ID     = 0xFFFFFFFFFFULL;
+constexpr uint64_t DOUBLE_ARRAY_INVALID_OFFSET = 0;
+
+constexpr uint64_t DOUBLE_ARRAY_CHUNK_SIZE      = 0x200;
+constexpr uint64_t DOUBLE_ARRAY_CHUNK_MASK      = 0x1FF;
+
+// Chunks are grouped by the level which indicates how easily update operations
+// can find a good offset in that chunk. The chunk level rises when
+// find_offset() fails in that chunk many times. DOUBLE_ARRAY_MAX_FAILURE_COUNT
+// is the threshold. Also, in order to limit the time cost, find_offset() scans
+// at most DOUBLE_ARRAY_MAX_CHUNk_COUNT chunks.
+// Larger parameters bring more chances of finding good offsets but it leads to
+// more node renumberings, which are costly operations, and thus results in
+// a degradation of space/time efficiencies.
+constexpr uint64_t DOUBLE_ARRAY_MAX_FAILURE_COUNT  = 4;
+constexpr uint64_t DOUBLE_ARRAY_MAX_CHUNK_COUNT    = 16;
+constexpr uint64_t DOUBLE_ARRAY_MAX_CHUNK_LEVEL    = 5;
+
+// Chunks in the same level compose a doubly linked list. The entry chunk of
+// a linked list is called a leader. DOUBLE_ARRAY_INVALID_LEADER means that
+// the linked list is empty and there exists no leader.
+constexpr uint64_t DOUBLE_ARRAY_INVALID_LEADER     = 0x7FFFFFFF;
+
 class DoubleArrayString {
  public:
   DoubleArrayString() : ptr_(nullptr), length_(0) {}
@@ -137,6 +160,19 @@ class DoubleArrayHeader {
   uint64_t root_node_id() const {
     return root_node_id_;
   }
+  uint64_t num_chunks() const {
+    return num_chunks_;
+  }
+  uint64_t num_nodes() const {
+    return num_chunks_ * DOUBLE_ARRAY_CHUNK_SIZE;
+  }
+  uint64_t num_phantoms() const {
+    return num_phantoms_;
+  }
+  uint64_t ith_leader(uint64_t i) const {
+//    GRN_DAT_DEBUG_THROW_IF(i > DOUBLE_ARRAY_MAX_CHUNK_LEVEL);
+    return leaders_[i];
+  }
 
   void set_nodes_block_id(uint32_t value) {
     nodes_block_id_ = value;
@@ -153,6 +189,17 @@ class DoubleArrayHeader {
   void set_root_node_id(uint64_t value) {
     root_node_id_ = value;
   }
+  void set_num_chunks(uint64_t value) {
+    num_chunks_ = value;
+  }
+  void set_num_phantoms(uint64_t value) {
+    num_phantoms_ = value;
+  }
+  void set_ith_leader(uint64_t i, uint64_t x) {
+//    GRN_DAT_DEBUG_THROW_IF(i > MAX_BLOCK_LEVEL);
+//    GRN_DAT_DEBUG_THROW_IF((x != INVALID_LEADER) && (x >= num_blocks()));
+    leaders_[i] = x;
+  }
 
   Mutex *mutable_inter_process_mutex() {
     return &inter_process_mutex_;
@@ -164,6 +211,9 @@ class DoubleArrayHeader {
   uint32_t entries_block_id_;
   uint32_t keys_block_id_;
   uint64_t root_node_id_;
+  uint64_t num_chunks_;
+  uint64_t num_phantoms_;
+  uint64_t leaders_[DOUBLE_ARRAY_MAX_CHUNK_LEVEL + 1];
   Mutex inter_process_mutex_;
 };
 
@@ -344,7 +394,7 @@ class DoubleArrayChunk {
     qwords_[1] = (qwords_[1] & ~UPPER_MASK) | (value << UPPER_SHIFT);
   }
 
-  // The chunk level indicates how easily nodes can be put in this block.
+  // The chunk level indicates how easily nodes can be put in this chunk.
   uint64_t level() const {
     // 10 bits.
     return (qwords_[0] & MIDDLE_MASK) >> MIDDLE_SHIFT;
@@ -361,7 +411,7 @@ class DoubleArrayChunk {
     qwords_[1] = (qwords_[1] & ~MIDDLE_MASK) | (value << MIDDLE_SHIFT);
   }
 
-  // The first phantom node and the number of phantom nodes in this block.
+  // The first phantom node and the number of phantom nodes in this chunk.
   uint64_t first_phantom() const {
     // 10 bits.
     return (qwords_[0] & LOWER_MASK) >> LOWER_SHIFT;
@@ -397,7 +447,7 @@ class DoubleArrayEntry {
   DoubleArrayEntry() : qword_(0) {}
 
   // This entry is associated with a key (true) or not (false).
-  bool is_valid() const {
+  explicit operator bool() const {
     return qword_ & IS_VALID_FLAG;
   }
 
@@ -435,6 +485,11 @@ class DoubleArrayKey {
  public:
   DoubleArrayKey(uint64_t id, const char *address, uint64_t length);
 
+  explicit operator bool() const {
+    // FIXME: Magic number.
+    return id() != DOUBLE_ARRAY_INVALID_ID;
+  }
+
   uint64_t id() const {
     return id_low_ | (static_cast<uint64_t>(id_high_) << 32);
   }
@@ -449,6 +504,12 @@ class DoubleArrayKey {
       }
     }
     return true;
+  }
+
+  static const DoubleArrayKey &invalid_key() {
+    static const DoubleArrayKey invalid_key(
+        DOUBLE_ARRAY_INVALID_ID, nullptr, 0);
+    return invalid_key;
   }
 
   static uint64_t estimate_size(uint64_t length) {
@@ -470,10 +531,21 @@ class DoubleArrayImpl {
   static std::unique_ptr<DoubleArrayImpl> open(io::Pool pool,
                                                uint32_t block_id);
 
-  bool search(const uint8_t *ptr, uint64_t length, uint64_t *key_offset);
+  bool search(const uint8_t *ptr, uint64_t length,
+              uint64_t *key_offset = nullptr);
+
+  // TODO
+  bool insert(const uint8_t *ptr, uint64_t length,
+              uint64_t *key_offset = nullptr);
 
   const DoubleArrayKey &get_key(uint64_t key_offset) {
     return *reinterpret_cast<const DoubleArrayKey *>(&keys_[key_offset]);
+  }
+  const DoubleArrayKey &ith_key(uint64_t key_id) {
+    if (entries_[key_id]) {
+      return get_key(entries_[key_id].key_offset());
+    }
+    return DoubleArrayKey::invalid_key();
   }
 
   uint32_t block_id() const {
@@ -503,6 +575,13 @@ class DoubleArrayImpl {
 
   bool search_leaf(const uint8_t *ptr, uint64_t length,
                    uint64_t &node_id, uint64_t &query_pos);
+
+  void reserve_node(uint64_t node_id);
+  void reserve_chunk(uint64_t chunk_id);
+
+  void update_chunk_level(uint64_t chunk_id, uint32_t level);
+  void set_chunk_level(uint64_t chunk_id, uint32_t level);
+  void unset_chunk_level(uint64_t chunk_id);
 };
 
 // TODO
