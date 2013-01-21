@@ -32,6 +32,10 @@ extern struct DoubleArrayOpen {} DOUBLE_ARRAY_OPEN;
 constexpr uint64_t DOUBLE_ARRAY_INVALID_ID     = 0xFFFFFFFFFFULL;
 constexpr uint64_t DOUBLE_ARRAY_INVALID_OFFSET = 0;
 
+constexpr uint16_t DOUBLE_ARRAY_TERMINAL_LABEL  = 0x100;
+constexpr uint16_t DOUBLE_ARRAY_MAX_LABEL       = 0x100;
+constexpr uint16_t DOUBLE_ARRAY_INVALID_LABEL   = 0x1FF;
+
 constexpr uint64_t DOUBLE_ARRAY_CHUNK_SIZE      = 0x200;
 constexpr uint64_t DOUBLE_ARRAY_CHUNK_MASK      = 0x1FF;
 
@@ -270,17 +274,18 @@ class DoubleArrayNode {
   // This node is valid (false) or not (true).
   bool is_phantom() const {
     // 1 bit.
-    return qword_ & IS_PHANTOM_FLAG;
+    return (qword_ & IS_PHANTOM_FLAG) && (~qword_ & IS_LEAF_FLAG);
   }
   // This node is associated with a key (true) or not (false).
   bool is_leaf() const {
     // 1 bit.
     return qword_ & IS_LEAF_FLAG;
   }
-  // A child of this node is a leaf node (true) or not (false).
+  // This node is a leaf node with a valid label (false) or not (true).
   bool is_terminal() const {
     // 1 bit.
-    return qword_ & IS_TERMINAL_FLAG;
+    return (qword_ & (IS_PHANTOM_FLAG | IS_LEAF_FLAG)) ==
+        (IS_PHANTOM_FLAG | IS_LEAF_FLAG);
   }
 
   void set_is_origin(bool value) {
@@ -292,23 +297,23 @@ class DoubleArrayNode {
   }
   void set_is_phantom(bool value) {
     if (value) {
-      qword_ &= ~IS_PHANTOM_FLAG;
+      qword_ &= ~(IS_PHANTOM_FLAG | IS_LEAF_FLAG);
     } else {
-      qword_ |= IS_PHANTOM_FLAG;
+      qword_ = (qword_ | IS_PHANTOM_FLAG) & ~IS_LEAF_FLAG;
     }
   }
   void set_is_leaf(bool value) {
     if (value) {
-      qword_ &= ~IS_LEAF_FLAG;
+      qword_ &= ~(IS_PHANTOM_FLAG | IS_LEAF_FLAG);
     } else {
-      qword_ |= IS_LEAF_FLAG;
+      qword_ = (qword_ | IS_LEAF_FLAG) & ~IS_PHANTOM_FLAG;
     }
   }
   void set_is_terminal(bool value) {
     if (value) {
-      qword_ &= ~IS_TERMINAL_FLAG;
+      qword_ &= ~(IS_PHANTOM_FLAG | IS_LEAF_FLAG);
     } else {
-      qword_ |= IS_TERMINAL_FLAG;
+      qword_ |= IS_PHANTOM_FLAG | IS_LEAF_FLAG;
     }
   }
 
@@ -359,15 +364,6 @@ class DoubleArrayNode {
                          (KEY_LENGTH_MASK << KEY_LENGTH_SHIFT))) |
              (key_pos << KEY_POS_SHIFT) | (key_length << KEY_LENGTH_SHIFT);
   }
-  // FIXME: may not be required.
-//  void set_key_pos(uint64_t value) {
-//    qword_ = (qword_ & ~(KEY_POS_MASK << KEY_POS_SHIFT)) |
-//             (value << KEY_POS_SHIFT);
-//  }
-//  void set_key_length(uint64_t value) {
-//    qword_ = (qword_ & ~(KEY_LENGTH_MASK << KEY_LENGTH_SHIFT)) |
-//             (value << KEY_LENGTH_SHIFT);
-//  }
 
   // A non-phantom and non-leaf node stores the offset to its children,
   // the label of its next sibling, and the label of its first child.
@@ -375,12 +371,12 @@ class DoubleArrayNode {
     // 36 bits.
     return (qword_ >> 8) & ((uint64_t(1) << 36) - 1);
   }
-  uint8_t child() const {
-    // 8 bits.
+  uint16_t child() const {
+    // 9 bits.
     return static_cast<uint8_t>(qword_ >> 44);
   }
-  uint8_t sibling() const {
-    // 8 bits.
+  uint16_t sibling() const {
+    // 9 bits.
     return static_cast<uint8_t>(qword_ >> 52);
   }
 
@@ -400,10 +396,9 @@ class DoubleArrayNode {
  private:
   uint64_t qword_;
 
-  static constexpr uint64_t IS_ORIGIN_FLAG   = uint64_t(1) << 63;
-  static constexpr uint64_t IS_PHANTOM_FLAG  = uint64_t(1) << 62;
-  static constexpr uint64_t IS_LEAF_FLAG     = uint64_t(1) << 61;
-  static constexpr uint64_t IS_TERMINAL_FLAG = uint64_t(1) << 60;
+  static constexpr uint64_t IS_ORIGIN_FLAG    = uint64_t(1) << 63;
+  static constexpr uint64_t IS_PHANTOM_FLAG   = uint64_t(1) << 62;
+  static constexpr uint64_t IS_LEAF_FLAG      = uint64_t(1) << 61;
 
   static constexpr uint64_t NEXT_MASK  = 0x1FF;
   static constexpr uint8_t  NEXT_SHIFT = 0;
@@ -412,16 +407,16 @@ class DoubleArrayNode {
 
   static constexpr uint64_t LABEL_MASK = 0xFF;
 
-  static constexpr uint64_t KEY_POS_MASK     = (uint64_t(1) << 40) - 1;
+  static constexpr uint64_t KEY_POS_MASK     = (uint64_t(1) << 41) - 1;
   static constexpr uint8_t  KEY_POS_SHIFT    = 8;
   static constexpr uint64_t KEY_LENGTH_MASK  = (uint64_t(1) << 12) - 1;
-  static constexpr uint8_t  KEY_LENGTH_SHIFT = 48;
+  static constexpr uint8_t  KEY_LENGTH_SHIFT = 49;
 
-  static constexpr uint64_t OFFSET_MASK   = (uint64_t(1) << 36) - 1;
+  static constexpr uint64_t OFFSET_MASK   = (uint64_t(1) << 35) - 1;
   static constexpr uint8_t  OFFSET_SHIFT  = 8;
-  static constexpr uint64_t CHILD_MASK    = (uint64_t(1) << 8) - 1;
-  static constexpr uint8_t  CHILD_SHIFT   = 44;
-  static constexpr uint64_t SIBLING_MASK  = (uint64_t(1) << 8) - 1;
+  static constexpr uint64_t CHILD_MASK    = (uint64_t(1) << 9) - 1;
+  static constexpr uint8_t  CHILD_SHIFT   = 43;
+  static constexpr uint64_t SIBLING_MASK  = (uint64_t(1) << 9) - 1;
   static constexpr uint8_t  SIBLING_SHIFT = 52;
 };
 
@@ -536,8 +531,11 @@ class DoubleArrayKey {
   DoubleArrayKey(uint64_t id, const void *address, uint64_t length);
 
   explicit operator bool() const {
-    // FIXME: Magic number.
     return id() != DOUBLE_ARRAY_INVALID_ID;
+  }
+
+  const uint8_t &operator[](uint64_t i) const {
+    return buf_[i];
   }
 
   uint64_t id() const {
@@ -626,7 +624,19 @@ class DoubleArrayImpl {
   bool search_leaf(const uint8_t *ptr, uint64_t length,
                    uint64_t &node_id, uint64_t &query_pos);
 
+  bool insert_leaf(const uint8_t *ptr, uint64_t length,
+                   uint64_t &node_id, uint64_t query_pos);
+
+  uint64_t insert_node(uint64_t node_id, uint16_t label);
   uint64_t append_key(const uint8_t *ptr, uint64_t length, uint64_t key_id);
+
+  uint64_t separate(const uint8_t *ptr, uint64_t length,
+                    uint64_t node_id, uint64_t i);
+  void resolve(uint64_t node_id, uint16_t label);
+  void migrate_nodes(uint64_t node_id, uint64_t dest_offset,
+                     const uint16_t *labels, uint16_t num_labels);
+
+  uint64_t find_offset(const uint16_t *labels, uint16_t num_labels);
 
   void reserve_node(uint64_t node_id);
   void reserve_chunk(uint64_t chunk_id);
