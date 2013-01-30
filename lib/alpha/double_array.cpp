@@ -29,13 +29,15 @@ DoubleArrayOpen DOUBLE_ARRAY_OPEN;
 
 DoubleArrayHeader::DoubleArrayHeader()
   : nodes_block_id_(io::BLOCK_INVALID_ID),
+    siblings_block_id_(io::BLOCK_INVALID_ID),
     chunks_block_id_(io::BLOCK_INVALID_ID),
     entries_block_id_(io::BLOCK_INVALID_ID),
     keys_block_id_(io::BLOCK_INVALID_ID),
     root_node_id_(0),
     total_key_length_(0),
     next_key_id_(0),
-    max_key_id_(0),
+    next_key_pos_(0),
+    max_key_id_(-1),
     num_keys_(0),
     num_chunks_(0),
     num_phantoms_(0),
@@ -57,8 +59,12 @@ DoubleArrayKey::DoubleArrayKey(uint64_t id, const void *address,
 
 DoubleArrayImpl::~DoubleArrayImpl() {
   if (!initialized_) try {
+    // Allocated blocks are unlinked if initialization failed.
     if (header_->nodes_block_id() != io::BLOCK_INVALID_ID) {
       nodes_.unlink(pool_, header_->nodes_block_id());
+    }
+    if (header_->siblings_block_id() != io::BLOCK_INVALID_ID) {
+      siblings_.unlink(pool_, header_->siblings_block_id());
     }
     if (header_->chunks_block_id() != io::BLOCK_INVALID_ID) {
       chunks_.unlink(pool_, header_->chunks_block_id());
@@ -105,6 +111,7 @@ bool DoubleArrayImpl::search(const uint8_t *ptr, uint64_t length,
     return false;
   }
 
+  // Note that nodes_[node_id] might be updated by other threads/processes.
   const DoubleArrayNode node = nodes_[node_id];
   if (!node.is_leaf()) {
     return false;
@@ -123,7 +130,8 @@ bool DoubleArrayImpl::search(const uint8_t *ptr, uint64_t length,
 
 bool DoubleArrayImpl::insert(const uint8_t *ptr, uint64_t length,
                              uint64_t *key_pos) {
-  // TODO
+  // TODO: Exclusive access control is required.
+
 //  GRN_DAT_THROW_IF(STATUS_ERROR, (status_flags() & CHANGING_MASK) != 0);
 //  StatusFlagManager status_flag_manager(header_, INSERTING_FLAG);
 
@@ -140,11 +148,14 @@ bool DoubleArrayImpl::insert(const uint8_t *ptr, uint64_t length,
     return false;
   }
 
-  const uint64_t new_key_id = header_->next_key_id();
+  const int64_t new_key_id = header_->next_key_id();
   const uint64_t new_key_pos = append_key(ptr, length, new_key_id);
 
   header_->set_total_key_length(header_->total_key_length() + length);
   header_->set_num_keys(header_->num_keys() + 1);
+
+  // TODO: The first key ID should be fixed to 0 or 1.
+  //       Currently, 0 is used.
   if (new_key_id > header_->max_key_id()) {
     header_->set_max_key_id(new_key_id);
     header_->set_next_key_id(new_key_id + 1);
@@ -166,6 +177,7 @@ DoubleArrayImpl::DoubleArrayImpl()
     header_(nullptr),
     recycler_(nullptr),
     nodes_(),
+    siblings_(),
     chunks_(),
     entries_(),
     keys_(),
@@ -184,6 +196,8 @@ void DoubleArrayImpl::create_double_array(io::Pool pool) {
 
   nodes_.create(pool);
   header_->set_nodes_block_id(nodes_.block_id());
+  siblings_.create(pool);
+  header_->set_siblings_block_id(siblings_.block_id());
   chunks_.create(pool);
   header_->set_chunks_block_id(chunks_.block_id());
   entries_.create(pool);
@@ -211,6 +225,7 @@ void DoubleArrayImpl::open_double_array(io::Pool pool, uint32_t block_id) {
   recycler_ = pool_.mutable_recycler();
 
   nodes_.open(pool_, header_->nodes_block_id());
+  siblings_.open(pool_, header_->siblings_block_id());
   chunks_.open(pool_, header_->chunks_block_id());
   entries_.open(pool_, header_->entries_block_id());
   keys_.open(pool_, header_->keys_block_id());
@@ -246,8 +261,8 @@ bool DoubleArrayImpl::search_leaf(const uint8_t *ptr, uint64_t length,
 bool DoubleArrayImpl::insert_leaf(const uint8_t *ptr, uint64_t length,
                                   uint64_t &node_id, uint64_t query_pos) {
   const DoubleArrayNode node = nodes_[node_id];
-  if (node.is_terminal()) {
-    return true;
+  if (node.label() == DOUBLE_ARRAY_TERMINAL_LABEL) {
+    return false;
   } else if (node.is_leaf()) {
     const DoubleArrayKey &key = get_key(node.key_pos());
     uint64_t i = query_pos;
@@ -275,9 +290,11 @@ bool DoubleArrayImpl::insert_leaf(const uint8_t *ptr, uint64_t length,
     const uint16_t label = (query_pos < length) ?
         static_cast<uint16_t>(ptr[query_pos]) : DOUBLE_ARRAY_TERMINAL_LABEL;
     if ((node.offset() == DOUBLE_ARRAY_INVALID_OFFSET) ||
-        nodes_[node.offset() ^ label].is_phantom()) {
+        !nodes_[node.offset() ^ label].is_phantom()) {
+      // The offset of this node must be updated.
       resolve(node_id, label);
     }
+    // The new node will be the leaf node associated with the query.
     node_id = insert_node(node_id, label);
     return true;
   }
@@ -300,11 +317,12 @@ uint64_t DoubleArrayImpl::insert_node(uint64_t node_id, uint16_t label) {
 
   nodes_[next].set_label(label);
   if (node.is_leaf()) {
-//    GRN_DAT_DEBUG_THROW_IF(nodes_[offset].is_offset());
+//    GRN_DAT_DEBUG_THROW_IF(nodes_[offset].is_origin());
     nodes_[offset].set_is_origin(true);
     nodes_[next].set_key(node.key_pos(), node.key_length());
+    // TODO: Must be update at once.
   } else if (node.offset() == DOUBLE_ARRAY_INVALID_OFFSET) {
-//    GRN_DAT_DEBUG_THROW_IF(nodes_[offset].is_offset());
+//    GRN_DAT_DEBUG_THROW_IF(nodes_[offset].is_origin());
     nodes_[offset].set_is_origin(true);
 //  } else {
 //    GRN_DAT_DEBUG_THROW_IF(!nodes_[offset].is_origin());
@@ -318,22 +336,32 @@ uint64_t DoubleArrayImpl::insert_node(uint64_t node_id, uint16_t label) {
   } else if ((label == DOUBLE_ARRAY_TERMINAL_LABEL) ||
              ((child_label != DOUBLE_ARRAY_TERMINAL_LABEL) &&
               (label < child_label))) {
+    // The next node becomes the first child.
 //    GRN_DAT_DEBUG_THROW_IF(nodes_[offset ^ child_label).is_phantom());
 //    GRN_DAT_DEBUG_THROW_IF(nodes_[offset ^ child_label).label() != child_label);
-    nodes_[next].set_sibling(child_label);
+    siblings_[next] = child_label;
+    nodes_[next].set_has_sibling(true);
+if (label == 0) {
+  GRNXX_ERROR();
+  GRNXX_THROW();
+}
     nodes_[node_id].set_child(label);
   } else {
     uint64_t prev = offset ^ child_label;
 //    GRN_DAT_DEBUG_THROW_IF(nodes_[prev).label() != child_label);
-    uint16_t sibling_label = nodes_[prev].sibling();
+    uint16_t sibling_label = nodes_[prev].has_sibling() ?
+        siblings_[prev] : DOUBLE_ARRAY_INVALID_LABEL;
     while (label > sibling_label) {
       prev = offset ^ sibling_label;
 //      GRN_DAT_DEBUG_THROW_IF(nodes_[prev].label() != sibling_label);
-      sibling_label = nodes_[prev].sibling();
+      sibling_label = nodes_[prev].has_sibling() ?
+          siblings_[prev] : DOUBLE_ARRAY_INVALID_LABEL;
     }
 //    GRN_DAT_DEBUG_THROW_IF(label == sibling_label);
-    nodes_[next].set_sibling(nodes_[prev].sibling());
-    nodes_[prev].set_sibling(label);
+    siblings_[next] = siblings_[prev];
+    siblings_[prev] = label;
+    nodes_[next].set_has_sibling(nodes_[prev].has_sibling());
+    nodes_[prev].set_has_sibling(true);
   }
   return next;
 }
@@ -366,8 +394,7 @@ uint64_t DoubleArrayImpl::separate(const uint8_t *ptr, uint64_t length,
 //  GRN_DAT_DEBUG_THROW_IF(i > length);
 
   const DoubleArrayNode node = nodes_[node_id];
-  const uint64_t key_pos = node.key_pos();
-  const DoubleArrayKey &key = get_key(key_pos);
+  const DoubleArrayKey &key = get_key(node.key_pos());
 
   uint16_t labels[2];
   labels[0] = (i < node.key_length()) ?
@@ -380,10 +407,10 @@ uint64_t DoubleArrayImpl::separate(const uint8_t *ptr, uint64_t length,
 
   uint64_t next = offset ^ labels[0];
   reserve_node(next);
-//  GRN_DAT_DEBUG_THROW_IF(nodes_[offset).is_offset());
+//  GRN_DAT_DEBUG_THROW_IF(nodes_[offset).is_origin());
 
   nodes_[next].set_label(labels[0]);
-  nodes_[next].set_key(key_pos, length);
+  nodes_[next].set_key(node.key_pos(), node.key_length());
 
   next = offset ^ labels[1];
   reserve_node(next);
@@ -396,11 +423,13 @@ uint64_t DoubleArrayImpl::separate(const uint8_t *ptr, uint64_t length,
   if ((labels[0] == DOUBLE_ARRAY_TERMINAL_LABEL) ||
       ((labels[1] != DOUBLE_ARRAY_TERMINAL_LABEL) &&
        (labels[0] < labels[1]))) {
+    siblings_[offset ^ labels[0]] = labels[1];
+    nodes_[offset ^ labels[0]].set_has_sibling(true);
     nodes_[node_id].set_child(labels[0]);
-    nodes_[offset ^ labels[0]].set_sibling(labels[1]);
   } else {
+    siblings_[offset ^ labels[1]] = labels[0];
+    nodes_[offset ^ labels[1]].set_has_sibling(true);
     nodes_[node_id].set_child(labels[1]);
-    nodes_[offset ^ labels[1]].set_sibling(labels[0]);
   }
   return next;
 }
@@ -421,7 +450,8 @@ void DoubleArrayImpl::resolve(uint64_t node_id, uint16_t label) {
     while (next_label != DOUBLE_ARRAY_INVALID_LABEL) {
 //      GRN_DAT_DEBUG_THROW_IF(next_label > MAX_LABEL);
       labels[num_labels++] = next_label;
-      next_label = nodes_[offset ^ next_label].sibling();
+      next_label = nodes_[offset ^ next_label].has_sibling() ?
+          siblings_[offset ^ next_label] : DOUBLE_ARRAY_INVALID_LABEL;
     }
 //    GRN_DAT_DEBUG_THROW_IF(num_labels == 0);
 
@@ -462,6 +492,7 @@ void DoubleArrayImpl::migrate_nodes(uint64_t node_id, uint64_t dest_offset,
     DoubleArrayNode dest_node = nodes_[src_node_id];
     dest_node.set_is_origin(nodes_[dest_node_id].is_origin());
     nodes_[dest_node_id] = dest_node;
+    siblings_[dest_node_id] = siblings_[src_node_id];
   }
   header_->set_num_zombies(header_->num_zombies() + num_labels);
 
@@ -607,6 +638,7 @@ void DoubleArrayImpl::reserve_chunk(uint64_t chunk_id) {
     node.set_prev((i - 1) & DOUBLE_ARRAY_CHUNK_MASK);
     node.set_next((i + 1) & DOUBLE_ARRAY_CHUNK_MASK);
     nodes_[i] = node;
+    siblings_[i] = '\0';
   }
 
   // The level of the new chunk is 0.

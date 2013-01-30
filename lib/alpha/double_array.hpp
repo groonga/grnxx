@@ -23,17 +23,18 @@
 namespace grnxx {
 namespace alpha {
 
-// FIXME: To be removed when moved to grnxx::db.
+// FIXME: To be removed in future.
 using namespace grnxx::db;
 
 extern struct DoubleArrayCreate {} DOUBLE_ARRAY_CREATE;
 extern struct DoubleArrayOpen {} DOUBLE_ARRAY_OPEN;
 
-constexpr uint64_t DOUBLE_ARRAY_INVALID_ID     = 0xFFFFFFFFFFULL;
+constexpr uint64_t DOUBLE_ARRAY_MAX_ID         = (uint64_t(1) << 40) - 2;
+constexpr uint64_t DOUBLE_ARRAY_INVALID_ID     = DOUBLE_ARRAY_MAX_ID + 1;
 constexpr uint64_t DOUBLE_ARRAY_INVALID_OFFSET = 0;
 
 constexpr uint16_t DOUBLE_ARRAY_TERMINAL_LABEL  = 0x100;
-constexpr uint16_t DOUBLE_ARRAY_MAX_LABEL       = 0x100;
+constexpr uint16_t DOUBLE_ARRAY_MAX_LABEL       = DOUBLE_ARRAY_TERMINAL_LABEL;
 constexpr uint16_t DOUBLE_ARRAY_INVALID_LABEL   = 0x1FF;
 
 constexpr uint64_t DOUBLE_ARRAY_CHUNK_SIZE      = 0x200;
@@ -43,10 +44,10 @@ constexpr uint64_t DOUBLE_ARRAY_CHUNK_MASK      = 0x1FF;
 // can find a good offset in that chunk. The chunk level rises when
 // find_offset() fails in that chunk many times. DOUBLE_ARRAY_MAX_FAILURE_COUNT
 // is the threshold. Also, in order to limit the time cost, find_offset() scans
-// at most DOUBLE_ARRAY_MAX_CHUNk_COUNT chunks.
+// at most DOUBLE_ARRAY_MAX_CHUNK_COUNT chunks.
 // Larger parameters bring more chances of finding good offsets but it leads to
 // more node renumberings, which are costly operations, and thus results in
-// a degradation of space/time efficiencies.
+// degradation of space/time efficiencies.
 constexpr uint64_t DOUBLE_ARRAY_MAX_FAILURE_COUNT  = 4;
 constexpr uint64_t DOUBLE_ARRAY_MAX_CHUNK_COUNT    = 16;
 constexpr uint64_t DOUBLE_ARRAY_MAX_CHUNK_LEVEL    = 5;
@@ -56,6 +57,7 @@ constexpr uint64_t DOUBLE_ARRAY_MAX_CHUNK_LEVEL    = 5;
 // the linked list is empty and there exists no leader.
 constexpr uint64_t DOUBLE_ARRAY_INVALID_LEADER     = 0x7FFFFFFF;
 
+// The memory allocation unit size for keys.
 constexpr uint64_t DOUBLE_ARRAY_KEYS_PAGE_SIZE     =
     VECTOR_DEFAULT_PAGE_SIZE;
 
@@ -156,6 +158,9 @@ class DoubleArrayHeader {
   uint32_t nodes_block_id() const {
     return nodes_block_id_;
   }
+  uint32_t siblings_block_id() const {
+    return siblings_block_id_;
+  }
   uint32_t chunks_block_id() const {
     return chunks_block_id_;
   }
@@ -177,7 +182,7 @@ class DoubleArrayHeader {
   uint64_t next_key_pos() const {
     return next_key_pos_;
   }
-  uint64_t max_key_id() const {
+  int64_t max_key_id() const {
     return max_key_id_;
   }
   uint64_t num_keys() const {
@@ -202,6 +207,9 @@ class DoubleArrayHeader {
   void set_nodes_block_id(uint32_t value) {
     nodes_block_id_ = value;
   }
+  void set_siblings_block_id(uint32_t value) {
+    siblings_block_id_ = value;
+  }
   void set_chunks_block_id(uint32_t value) {
     chunks_block_id_ = value;
   }
@@ -223,7 +231,7 @@ class DoubleArrayHeader {
   void set_next_key_pos(uint64_t value) {
     next_key_pos_ = value;
   }
-  void set_max_key_id(uint64_t value) {
+  void set_max_key_id(int64_t value) {
     max_key_id_ = value;
   }
   void set_num_keys(uint64_t value) {
@@ -248,6 +256,7 @@ class DoubleArrayHeader {
 
  private:
   uint32_t nodes_block_id_;
+  uint32_t siblings_block_id_;
   uint32_t chunks_block_id_;
   uint32_t entries_block_id_;
   uint32_t keys_block_id_;
@@ -255,7 +264,7 @@ class DoubleArrayHeader {
   uint64_t total_key_length_;
   uint64_t next_key_id_;
   uint64_t next_key_pos_;
-  uint64_t max_key_id_;
+  int64_t max_key_id_;
   uint64_t num_keys_;
   uint64_t num_chunks_;
   uint64_t num_phantoms_;
@@ -266,6 +275,8 @@ class DoubleArrayHeader {
 
 class DoubleArrayNode {
  public:
+  DoubleArrayNode() : qword_(0) {}
+
   // The ID of this node is used as an offset (true) or not (false).
   bool is_origin() const {
     // 1 bit.
@@ -274,46 +285,48 @@ class DoubleArrayNode {
   // This node is valid (false) or not (true).
   bool is_phantom() const {
     // 1 bit.
-    return (qword_ & IS_PHANTOM_FLAG) && (~qword_ & IS_LEAF_FLAG);
+    return qword_ & IS_PHANTOM_FLAG;
   }
   // This node is associated with a key (true) or not (false).
   bool is_leaf() const {
     // 1 bit.
     return qword_ & IS_LEAF_FLAG;
   }
-  // This node is a leaf node with a valid label (false) or not (true).
-  bool is_terminal() const {
+  // This node has an elder sibling (true) or not (false).
+  bool has_sibling() const {
     // 1 bit.
-    return (qword_ & (IS_PHANTOM_FLAG | IS_LEAF_FLAG)) ==
-        (IS_PHANTOM_FLAG | IS_LEAF_FLAG);
+    return qword_ & HAS_SIBLING_FLAG;
   }
 
   void set_is_origin(bool value) {
     if (value) {
-      qword_ &= ~IS_ORIGIN_FLAG;
-    } else {
       qword_ |= IS_ORIGIN_FLAG;
+    } else {
+      qword_ &= ~IS_ORIGIN_FLAG;
     }
   }
   void set_is_phantom(bool value) {
     if (value) {
-      qword_ &= ~(IS_PHANTOM_FLAG | IS_LEAF_FLAG);
+      qword_ |= IS_PHANTOM_FLAG;
     } else {
-      qword_ = (qword_ | IS_PHANTOM_FLAG) & ~IS_LEAF_FLAG;
+      qword_ = (qword_ & IS_ORIGIN_FLAG) |
+          (DOUBLE_ARRAY_INVALID_OFFSET << OFFSET_SHIFT) |
+          (uint64_t(DOUBLE_ARRAY_INVALID_LABEL) << CHILD_SHIFT) |
+          DOUBLE_ARRAY_INVALID_LABEL;
     }
   }
   void set_is_leaf(bool value) {
     if (value) {
-      qword_ &= ~(IS_PHANTOM_FLAG | IS_LEAF_FLAG);
+      qword_ |= IS_LEAF_FLAG;
     } else {
-      qword_ = (qword_ | IS_LEAF_FLAG) & ~IS_PHANTOM_FLAG;
+      qword_ &= ~IS_LEAF_FLAG;
     }
   }
-  void set_is_terminal(bool value) {
+  void set_has_sibling(bool value) {
     if (value) {
-      qword_ &= ~(IS_PHANTOM_FLAG | IS_LEAF_FLAG);
+      qword_ |= HAS_SIBLING_FLAG;
     } else {
-      qword_ |= IS_PHANTOM_FLAG | IS_LEAF_FLAG;
+      qword_ &= ~HAS_SIBLING_FLAG;
     }
   }
 
@@ -340,18 +353,18 @@ class DoubleArrayNode {
   // A non-phantom node stores its label.
   // A phantom node returns an invalid label with IS_PHANTOM_FLAG.
   uint64_t label() const {
-    // 8 bits.
+    // 9 bits.
     return qword_ & (IS_PHANTOM_FLAG | LABEL_MASK);
   }
 
-  void set_label(uint8_t value) {
+  void set_label(uint16_t value) {
     qword_ = (qword_ & ~LABEL_MASK) | value;
   }
 
   // A leaf node stores the start position and the length of the associated
   // key.
   uint64_t key_pos() const {
-    // 40 bits.
+    // 39 bits.
     return (qword_ >> KEY_POS_SHIFT) & KEY_POS_MASK;
   }
   uint64_t key_length() const {
@@ -362,62 +375,65 @@ class DoubleArrayNode {
   void set_key(uint64_t key_pos, uint64_t key_length) {
     qword_ = (qword_ & ~((KEY_POS_MASK << KEY_POS_SHIFT) |
                          (KEY_LENGTH_MASK << KEY_LENGTH_SHIFT))) |
-             (key_pos << KEY_POS_SHIFT) | (key_length << KEY_LENGTH_SHIFT);
+             (key_pos << KEY_POS_SHIFT) |
+             (key_length << KEY_LENGTH_SHIFT) |
+             IS_LEAF_FLAG;
   }
 
   // A non-phantom and non-leaf node stores the offset to its children,
   // the label of its next sibling, and the label of its first child.
   uint64_t offset() const {
-    // 36 bits.
-    return (qword_ >> 8) & ((uint64_t(1) << 36) - 1);
+    // 42 bits.
+    return (qword_ >> OFFSET_SHIFT) & OFFSET_MASK;
   }
   uint16_t child() const {
     // 9 bits.
-    return static_cast<uint8_t>(qword_ >> 44);
-  }
-  uint16_t sibling() const {
-    // 9 bits.
-    return static_cast<uint8_t>(qword_ >> 52);
+    return static_cast<uint16_t>((qword_ >> CHILD_SHIFT) & CHILD_MASK);
   }
 
   void set_offset(uint64_t value) {
-    qword_ = (qword_ & ~(OFFSET_MASK << OFFSET_SHIFT)) |
-             (value << OFFSET_SHIFT);
+    if (qword_ & IS_LEAF_FLAG) {
+      qword_ = ((qword_ & ~IS_LEAF_FLAG) & ~(OFFSET_MASK << OFFSET_SHIFT)) |
+               (value << OFFSET_SHIFT) |
+               (uint64_t(DOUBLE_ARRAY_INVALID_LABEL) << CHILD_SHIFT);
+    } else {
+      qword_ = (qword_ & ~(OFFSET_MASK << OFFSET_SHIFT)) |
+               (value << OFFSET_SHIFT);
+    }
   }
-  void set_child(uint8_t value) {
+  void set_child(uint16_t value) {
     qword_ = (qword_ & ~(CHILD_MASK << CHILD_SHIFT)) |
              (static_cast<uint64_t>(value) << CHILD_SHIFT);
-  }
-  void set_sibling(uint8_t value) {
-    qword_ = (qword_ & ~(SIBLING_MASK << SIBLING_SHIFT)) |
-             (static_cast<uint64_t>(value) << SIBLING_SHIFT);
   }
 
  private:
   uint64_t qword_;
 
-  static constexpr uint64_t IS_ORIGIN_FLAG    = uint64_t(1) << 63;
-  static constexpr uint64_t IS_PHANTOM_FLAG   = uint64_t(1) << 62;
-  static constexpr uint64_t IS_LEAF_FLAG      = uint64_t(1) << 61;
+  // 60 - 63.
+  static constexpr uint64_t IS_ORIGIN_FLAG   = uint64_t(1) << 63;
+  static constexpr uint64_t IS_PHANTOM_FLAG  = uint64_t(1) << 62;
+  static constexpr uint64_t IS_LEAF_FLAG     = uint64_t(1) << 61;
+  static constexpr uint64_t HAS_SIBLING_FLAG = uint64_t(1) << 60;
 
-  static constexpr uint64_t NEXT_MASK  = 0x1FF;
+  // 0 - 17.
+  static constexpr uint64_t NEXT_MASK  = (uint64_t(1) << 9) - 1;
   static constexpr uint8_t  NEXT_SHIFT = 0;
-  static constexpr uint64_t PREV_MASK  = 0x1FF;
+  static constexpr uint64_t PREV_MASK  = (uint64_t(1) << 9) - 1;
   static constexpr uint8_t  PREV_SHIFT = 9;
 
-  static constexpr uint64_t LABEL_MASK = 0xFF;
+  // 0 - 8.
+  static constexpr uint64_t LABEL_MASK = (uint64_t(1) << 9) - 1;
 
-  static constexpr uint64_t KEY_POS_MASK     = (uint64_t(1) << 41) - 1;
-  static constexpr uint8_t  KEY_POS_SHIFT    = 8;
+  // 9 - 59
+  static constexpr uint64_t KEY_POS_MASK     = (uint64_t(1) << 39) - 1;
+  static constexpr uint8_t  KEY_POS_SHIFT    = 9;
   static constexpr uint64_t KEY_LENGTH_MASK  = (uint64_t(1) << 12) - 1;
-  static constexpr uint8_t  KEY_LENGTH_SHIFT = 49;
+  static constexpr uint8_t  KEY_LENGTH_SHIFT = 48;
 
-  static constexpr uint64_t OFFSET_MASK   = (uint64_t(1) << 35) - 1;
-  static constexpr uint8_t  OFFSET_SHIFT  = 8;
+  static constexpr uint64_t OFFSET_MASK   = (uint64_t(1) << 42) - 1;
+  static constexpr uint8_t  OFFSET_SHIFT  = 9;
   static constexpr uint64_t CHILD_MASK    = (uint64_t(1) << 9) - 1;
-  static constexpr uint8_t  CHILD_SHIFT   = 43;
-  static constexpr uint64_t SIBLING_MASK  = (uint64_t(1) << 9) - 1;
-  static constexpr uint8_t  SIBLING_SHIFT = 52;
+  static constexpr uint8_t  CHILD_SHIFT   = 51;
 };
 
 class DoubleArrayChunk {
@@ -570,7 +586,7 @@ class DoubleArrayKey {
   uint8_t buf_[3];
 };
 
-// TODO
+// FIXME
 class DoubleArrayImpl {
  public:
   ~DoubleArrayImpl();
@@ -581,8 +597,6 @@ class DoubleArrayImpl {
 
   bool search(const uint8_t *ptr, uint64_t length,
               uint64_t *key_pos = nullptr);
-
-  // TODO
   bool insert(const uint8_t *ptr, uint64_t length,
               uint64_t *key_pos = nullptr);
 
@@ -611,6 +625,7 @@ class DoubleArrayImpl {
   DoubleArrayHeader *header_;
   Recycler *recycler_;
   Vector<DoubleArrayNode> nodes_;
+  Vector<uint8_t> siblings_;
   Vector<DoubleArrayChunk> chunks_;
   Vector<DoubleArrayEntry> entries_;
   Vector<uint32_t> keys_;
@@ -667,6 +682,33 @@ class DoubleArray {
   }
   void close() {
     *this = DoubleArray();
+  }
+
+  bool search(const void *ptr, uint64_t length,
+              uint64_t *key_id = nullptr) {
+    if (key_id) {
+      uint64_t key_pos;
+      if (!impl_->search(static_cast<const uint8_t *>(ptr), length, &key_pos)) {
+        return false;
+      }
+      *key_id = impl_->get_key(key_pos).id();
+      return true;
+    } else {
+      return impl_->search(static_cast<const uint8_t *>(ptr), length, nullptr);
+    }
+  }
+  bool insert(const void *ptr, uint64_t length,
+              uint64_t *key_id = nullptr) {
+    if (key_id) {
+      uint64_t key_pos;
+      if (!impl_->insert(static_cast<const uint8_t *>(ptr), length, &key_pos)) {
+        return false;
+      }
+      *key_id = impl_->get_key(key_pos).id();
+      return true;
+    } else {
+      return impl_->insert(static_cast<const uint8_t *>(ptr), length, nullptr);
+    }
   }
 
   uint32_t block_id() const {
