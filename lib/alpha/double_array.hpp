@@ -537,7 +537,7 @@ class DoubleArrayEntry {
   uint64_t qword_;
 
   // 11 (= 64 - (1 + 40 + 12)) bits are not used．
-  static constexpr uint64_t POS_MASK = uint64_t(1) << 40;
+  static constexpr uint64_t POS_MASK = (uint64_t(1) << 40) - 1;
   static constexpr uint64_t IS_VALID_FLAG = uint64_t(1) << 47;
 };
 
@@ -599,6 +599,9 @@ class DoubleArrayImpl {
               uint64_t *key_pos = nullptr);
   bool insert(const uint8_t *ptr, uint64_t length,
               uint64_t *key_pos = nullptr);
+
+  bool remove(int64_t key_id);
+  bool remove(const uint8_t *ptr, uint64_t length);
 
   const DoubleArrayKey &get_key(uint64_t key_pos) {
     return *reinterpret_cast<const DoubleArrayKey *>(&keys_[key_pos]);
@@ -709,6 +712,12 @@ class DoubleArray {
     } else {
       return impl_->insert(static_cast<const uint8_t *>(ptr), length, nullptr);
     }
+  }
+  bool remove(int64_t key_id) {
+    return impl_->remove(key_id);
+  }
+  bool remove(const void *ptr, uint64_t length) {
+    return impl_->remove(static_cast<const uint8_t *>(ptr), length);
   }
 
   uint32_t block_id() const {

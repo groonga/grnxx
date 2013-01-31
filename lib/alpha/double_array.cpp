@@ -171,6 +171,51 @@ bool DoubleArrayImpl::insert(const uint8_t *ptr, uint64_t length,
   return true;
 }
 
+bool DoubleArrayImpl::remove(int64_t key_id) {
+  if ((key_id < 0) || (key_id > header_->max_key_id())) {
+    return false;
+  }
+  const DoubleArrayEntry entry = entries_[key_id];
+  if (!entry) {
+    return false;
+  }
+  const DoubleArrayKey &key = get_key(entry.key_pos());
+  return remove(static_cast<const uint8_t *>(key.ptr()), entry.key_length());
+}
+
+bool DoubleArrayImpl::remove(const uint8_t *ptr, uint64_t length) {
+  // TODO: Exclusive access control is required.
+//  GRN_DAT_THROW_IF(STATUS_ERROR, (status_flags() & CHANGING_MASK) != 0);
+//  StatusFlagManager status_flag_manager(header_, REMOVING_FLAG);
+
+//  GRN_DAT_DEBUG_THROW_IF((ptr == NULL) && (length != 0));
+
+  uint64_t node_id = root_node_id();
+  uint64_t query_pos = 0;
+  if (!search_leaf(ptr, length, node_id, query_pos)) {
+    return false;
+  }
+
+  if (length != nodes_[node_id].key_length()) {
+    return false;
+  }
+
+  const uint64_t key_pos = nodes_[node_id].key_pos();
+  const DoubleArrayKey &key = get_key(key_pos);
+  if (!key.equals_to(ptr, length, query_pos)) {
+    return false;
+  }
+
+  const uint64_t key_id = key.id();
+  nodes_[node_id].set_offset(DOUBLE_ARRAY_INVALID_OFFSET);
+  entries_[key_id].set_next(header_->next_key_id());
+
+  header_->set_next_key_id(key_id);
+  header_->set_total_key_length(header_->total_key_length() - length);
+  header_->set_num_keys(header_->num_keys() - 1);
+  return true;
+}
+
 DoubleArrayImpl::DoubleArrayImpl()
   : pool_(),
     block_info_(nullptr),
@@ -255,15 +300,13 @@ bool DoubleArrayImpl::search_leaf(const uint8_t *ptr, uint64_t length,
     return false;
   }
   node_id = node.offset() ^ DOUBLE_ARRAY_TERMINAL_LABEL;
-  return true;
+  return nodes_[node_id].is_leaf();
 }
 
 bool DoubleArrayImpl::insert_leaf(const uint8_t *ptr, uint64_t length,
                                   uint64_t &node_id, uint64_t query_pos) {
   const DoubleArrayNode node = nodes_[node_id];
-  if (node.label() == DOUBLE_ARRAY_TERMINAL_LABEL) {
-    return false;
-  } else if (node.is_leaf()) {
+  if (node.is_leaf()) {
     const DoubleArrayKey &key = get_key(node.key_pos());
     uint64_t i = query_pos;
     while ((i < length) && (i < node.key_length())) {
@@ -283,6 +326,8 @@ bool DoubleArrayImpl::insert_leaf(const uint8_t *ptr, uint64_t length,
       node_id = insert_node(node_id, ptr[j]);
     }
     node_id = separate(ptr, length, node_id, i);
+    return true;
+  } else if (node.label() == DOUBLE_ARRAY_TERMINAL_LABEL) {
     return true;
   } else {
     // TODO
