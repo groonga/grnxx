@@ -603,6 +603,12 @@ class DoubleArrayImpl {
   bool remove(int64_t key_id);
   bool remove(const uint8_t *ptr, uint64_t length);
 
+  bool update(int64_t key_id, const uint8_t *ptr, uint64_t length,
+              uint64_t *key_pos = nullptr);
+  bool update(const uint8_t *src_ptr, uint64_t src_length,
+              const uint8_t *dest_ptr, uint64_t dest_length,
+              uint64_t *key_pos = nullptr);
+
   const DoubleArrayKey &get_key(uint64_t key_pos) {
     return *reinterpret_cast<const DoubleArrayKey *>(&keys_[key_pos]);
   }
@@ -638,6 +644,11 @@ class DoubleArrayImpl {
 
   void create_double_array(io::Pool pool);
   void open_double_array(io::Pool pool, uint32_t block_id);
+
+  bool remove_key(const uint8_t *ptr, uint64_t length);
+  bool update_key(const uint8_t *src_ptr, uint64_t src_length,
+                  uint64_t src_key_id, const uint8_t *dest_ptr,
+                  uint64_t dest_length, uint64_t *key_pos);
 
   bool search_leaf(const uint8_t *ptr, uint64_t length,
                    uint64_t &node_id, uint64_t &query_pos);
@@ -713,11 +724,33 @@ class DoubleArray {
       return impl_->insert(static_cast<const uint8_t *>(ptr), length, nullptr);
     }
   }
+
   bool remove(int64_t key_id) {
     return impl_->remove(key_id);
   }
   bool remove(const void *ptr, uint64_t length) {
     return impl_->remove(static_cast<const uint8_t *>(ptr), length);
+  }
+
+  bool update(int64_t key_id, const void *ptr, uint64_t length) {
+    return impl_->update(key_id, static_cast<const uint8_t *>(ptr), length);
+  }
+  bool update(const void *src_ptr, uint64_t src_length,
+              const void *dest_ptr, uint64_t dest_length,
+              uint64_t *key_id = nullptr) {
+    if (key_id) {
+      uint64_t key_pos;
+      if (!impl_->update(static_cast<const uint8_t *>(src_ptr), src_length,
+                         static_cast<const uint8_t *>(dest_ptr), dest_length,
+                         &key_pos)) {
+        return false;
+      }
+      *key_id = impl_->get_key(key_pos).id();
+      return true;
+    } else {
+      return impl_->update(static_cast<const uint8_t *>(src_ptr), src_length,
+                           static_cast<const uint8_t *>(dest_ptr), dest_length);
+    }
   }
 
   uint32_t block_id() const {

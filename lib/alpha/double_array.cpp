@@ -172,6 +172,7 @@ bool DoubleArrayImpl::insert(const uint8_t *ptr, uint64_t length,
 }
 
 bool DoubleArrayImpl::remove(int64_t key_id) {
+  // TODO: Exclusive access control is required.
   if ((key_id < 0) || (key_id > header_->max_key_id())) {
     return false;
   }
@@ -180,7 +181,8 @@ bool DoubleArrayImpl::remove(int64_t key_id) {
     return false;
   }
   const DoubleArrayKey &key = get_key(entry.key_pos());
-  return remove(static_cast<const uint8_t *>(key.ptr()), entry.key_length());
+  return remove_key(static_cast<const uint8_t *>(
+      key.ptr()), entry.key_length());
 }
 
 bool DoubleArrayImpl::remove(const uint8_t *ptr, uint64_t length) {
@@ -188,31 +190,71 @@ bool DoubleArrayImpl::remove(const uint8_t *ptr, uint64_t length) {
 //  GRN_DAT_THROW_IF(STATUS_ERROR, (status_flags() & CHANGING_MASK) != 0);
 //  StatusFlagManager status_flag_manager(header_, REMOVING_FLAG);
 
+//  GRN_DAT_DEBUG_THROW_IF((ptr == nullptr) && (length != 0));
+  return remove_key(ptr, length);
+}
+
+bool DoubleArrayImpl::update(int64_t key_id, const uint8_t *ptr,
+                             uint64_t length, uint64_t *key_pos) {
+  // TODO: Exclusive access control is required.
+  if ((key_id < 0) || (key_id > header_->max_key_id())) {
+    return false;
+  }
+  const DoubleArrayEntry entry = entries_[key_id];
+  if (!entry) {
+    return false;
+  }
+  const DoubleArrayKey &key = get_key(entry.key_pos());
+  return update_key(static_cast<const uint8_t *>(key.ptr()), entry.key_length(),
+                    key_id, ptr, length, key_pos);
+}
+
+bool DoubleArrayImpl::update(const uint8_t *src_ptr, uint64_t src_length,
+                             const uint8_t *dest_ptr, uint64_t dest_length,
+                             uint64_t *key_pos) {
+  // TODO: Exclusive access control is required.
+  uint64_t src_key_id;
+  if (!search(src_ptr, src_length, &src_key_id)) {
+    return false;
+  }
+  return update_key(src_ptr, src_length, src_key_id,
+                    dest_ptr, dest_length, key_pos);
+}
+
+bool DoubleArrayImpl::update_key(const uint8_t *src_ptr, uint64_t src_length,
+                                 uint64_t src_key_id, const uint8_t *dest_ptr,
+                                 uint64_t dest_length, uint64_t *key_pos) {
+//  GRN_DAT_THROW_IF(STATUS_ERROR, (status_flags() & CHANGING_MASK) != 0);
+//  StatusFlagManager status_flag_manager(header_, UPDATING_FLAG);
+
 //  GRN_DAT_DEBUG_THROW_IF((ptr == NULL) && (length != 0));
 
   uint64_t node_id = root_node_id();
   uint64_t query_pos = 0;
-  if (!search_leaf(ptr, length, node_id, query_pos)) {
+
+  search_leaf(dest_ptr, dest_length, node_id, query_pos);
+  if (!insert_leaf(dest_ptr, dest_length, node_id, query_pos)) {
+    if (key_pos) {
+      *key_pos = nodes_[node_id].key_pos();
+    }
     return false;
   }
 
-  if (length != nodes_[node_id].key_length()) {
-    return false;
+  const uint64_t new_key_pos = append_key(dest_ptr, dest_length, src_key_id);
+  header_->set_total_key_length(
+      header_->total_key_length() + dest_length - src_length);
+  entries_[src_key_id].set_key(new_key_pos, dest_length);
+  nodes_[node_id].set_key(new_key_pos, dest_length);
+  if (key_pos) {
+    *key_pos = new_key_pos;
   }
 
-  const uint64_t key_pos = nodes_[node_id].key_pos();
-  const DoubleArrayKey &key = get_key(key_pos);
-  if (!key.equals_to(ptr, length, query_pos)) {
-    return false;
+  node_id = root_node_id();
+  query_pos = 0;
+  if (!search_leaf(src_ptr, src_length, node_id, query_pos)) {
+    // TODO: Unexpected error!
   }
-
-  const uint64_t key_id = key.id();
   nodes_[node_id].set_offset(DOUBLE_ARRAY_INVALID_OFFSET);
-  entries_[key_id].set_next(header_->next_key_id());
-
-  header_->set_next_key_id(key_id);
-  header_->set_total_key_length(header_->total_key_length() - length);
-  header_->set_num_keys(header_->num_keys() - 1);
   return true;
 }
 
@@ -274,6 +316,33 @@ void DoubleArrayImpl::open_double_array(io::Pool pool, uint32_t block_id) {
   chunks_.open(pool_, header_->chunks_block_id());
   entries_.open(pool_, header_->entries_block_id());
   keys_.open(pool_, header_->keys_block_id());
+}
+
+bool DoubleArrayImpl::remove_key(const uint8_t *ptr, uint64_t length) {
+  uint64_t node_id = root_node_id();
+  uint64_t query_pos = 0;
+  if (!search_leaf(ptr, length, node_id, query_pos)) {
+    return false;
+  }
+
+  if (length != nodes_[node_id].key_length()) {
+    return false;
+  }
+
+  const uint64_t key_pos = nodes_[node_id].key_pos();
+  const DoubleArrayKey &key = get_key(key_pos);
+  if (!key.equals_to(ptr, length, query_pos)) {
+    return false;
+  }
+
+  const uint64_t key_id = key.id();
+  nodes_[node_id].set_offset(DOUBLE_ARRAY_INVALID_OFFSET);
+  entries_[key_id].set_next(header_->next_key_id());
+
+  header_->set_next_key_id(key_id);
+  header_->set_total_key_length(header_->total_key_length() - length);
+  header_->set_num_keys(header_->num_keys() - 1);
+  return true;
 }
 
 bool DoubleArrayImpl::search_leaf(const uint8_t *ptr, uint64_t length,
@@ -519,7 +588,7 @@ void DoubleArrayImpl::migrate_nodes(uint64_t node_id, uint64_t dest_offset,
                                     uint16_t num_labels) {
 //  GRN_DAT_DEBUG_THROW_IF(node_id >= num_nodes());
 //  GRN_DAT_DEBUG_THROW_IF(nodes_[node_id].is_leaf());
-//  GRN_DAT_DEBUG_THROW_IF(labels == NULL);
+//  GRN_DAT_DEBUG_THROW_IF(labels == nullptr);
 //  GRN_DAT_DEBUG_THROW_IF(num_labels == 0);
 //  GRN_DAT_DEBUG_THROW_IF(num_labels > (DOUBLE_ARRAY_MAX_LABEL + 1));
 
@@ -548,7 +617,7 @@ void DoubleArrayImpl::migrate_nodes(uint64_t node_id, uint64_t dest_offset,
 
 uint64_t DoubleArrayImpl::find_offset(const uint16_t *labels,
                                       uint16_t num_labels) {
-//  GRN_DAT_DEBUG_THROW_IF(labels == NULL);
+//  GRN_DAT_DEBUG_THROW_IF(labels == nullptr);
 //  GRN_DAT_DEBUG_THROW_IF(num_labels == 0);
 //  GRN_DAT_DEBUG_THROW_IF(num_labels > (MAX_LABEL + 1));
 
