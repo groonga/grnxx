@@ -19,6 +19,7 @@
 #include <random>
 #include <string>
 #include <unordered_set>
+#include <vector>
 
 #include "alpha/double_array.hpp"
 #include "logger.hpp"
@@ -31,41 +32,50 @@ void test_basics() {
   grnxx::alpha::DoubleArray da;
   da.create(pool);
 
-  std::uint64_t key_id;
-  assert(!da.search("apple", 5, &key_id));
+  std::vector<std::string> keys;
+  keys.push_back("apple");
+  keys.push_back("banana");
+  keys.push_back("strawberry");
 
-  assert(da.insert("apple", 5, &key_id));
-  GRNXX_NOTICE() << "key_id = " << key_id;
+  for (std::size_t i = 0; i < keys.size(); ++i) {
+    assert(!da.search(keys[i].c_str(), keys[i].length()));
+  }
 
-  assert(!da.insert("apple", 5, &key_id));
+  for (std::size_t i = 0; i < keys.size(); ++i) {
+    std::uint64_t key_id;
+    assert(da.insert(keys[i].c_str(), keys[i].length(), &key_id));
+    assert(key_id == i);
+  }
 
-  assert(da.search("apple", 5, &key_id));
-  GRNXX_NOTICE() << "key_id = " << key_id;
+  for (std::size_t i = 0; i < keys.size(); ++i) {
+    std::uint64_t key_id;
+    assert(da.search(keys[i].c_str(), keys[i].length(), &key_id));
+    assert(key_id == i);
+  }
 
-  assert(da.insert("banana", 6, &key_id));
-  GRNXX_NOTICE() << "key_id = " << key_id;
+  for (std::size_t i = 0; i < keys.size(); ++i) {
+    assert(!da.insert(keys[i].c_str(), keys[i].length()));
+  }
 
-  assert(!da.insert("banana", 6, &key_id));
+  for (std::size_t i = 0; i < keys.size(); ++i) {
+    assert(da.remove(keys[i].c_str(), keys[i].length()));
+  }
 
-  assert(da.insert("orange", 6, &key_id));
-  GRNXX_NOTICE() << "key_id = " << key_id;
+  for (std::size_t i = 0; i < keys.size(); ++i) {
+    assert(!da.search(keys[i].c_str(), keys[i].length()));
+  }
 
-  assert(!da.insert("orange", 6, &key_id));
+  for (std::size_t i = 0; i < keys.size(); ++i) {
+    assert(!da.remove(keys[i].c_str(), keys[i].length()));
+  }
 
-  assert(da.search("banana", 6, &key_id));
-  GRNXX_NOTICE() << "key_id = " << key_id;
-
-  assert(da.search("orange", 6, &key_id));
-  GRNXX_NOTICE() << "key_id = " << key_id;
-
-  assert(da.insert("oracle", 6, &key_id));
-  GRNXX_NOTICE() << "key_id = " << key_id;
-
-  assert(!da.insert("oracle", 6, &key_id));
+  for (std::size_t i = 0; i < keys.size(); ++i) {
+    assert(da.insert(keys[i].c_str(), keys[i].length()));
+  }
 }
 
 void test_insert() {
-  constexpr std::size_t NUM_KEYS = 1 << 16;
+  constexpr std::size_t NUM_KEYS = 1 << 12;
   constexpr std::size_t MIN_LENGTH = 1;
   constexpr std::size_t MAX_LENGTH = 10;
 
@@ -119,6 +129,76 @@ void test_insert() {
   }
 }
 
+void test_remove() {
+  constexpr std::size_t NUM_KEYS = 1 << 12;
+  constexpr std::size_t MIN_LENGTH = 1;
+  constexpr std::size_t MAX_LENGTH = 10;
+
+  std::mt19937 random;
+
+  grnxx::io::Pool pool;
+  pool.open(grnxx::io::POOL_TEMPORARY);
+
+  grnxx::alpha::DoubleArray da;
+  da.create(pool);
+
+  std::vector<std::string> true_keys(NUM_KEYS);
+  std::vector<std::string> false_keys(NUM_KEYS);
+  {
+    std::unordered_set<std::string> keys;
+    while (keys.size() < (NUM_KEYS * 2)) {
+      std::string key;
+      key.resize(MIN_LENGTH + (random() % (MAX_LENGTH - MIN_LENGTH + 1)));
+      for (std::size_t j = 0; j < key.length(); ++j) {
+        key[j] = '0' + (random() % 10);
+      }
+      keys.insert(key);
+    }
+    auto it = keys.begin();
+    for (std::size_t i = 0; i < NUM_KEYS; ++i) {
+      true_keys[i] = *it;
+      ++it;
+      false_keys[i] = *it;
+      ++it;
+    }
+  }
+
+  for (std::size_t i = 0; i < NUM_KEYS; ++i) {
+    std::uint64_t key_id;
+    assert(da.insert(true_keys[i].c_str(), true_keys[i].length(), &key_id));
+    assert(key_id == (i * 2));
+    assert(da.insert(false_keys[i].c_str(), false_keys[i].length(), &key_id));
+    assert(key_id == ((i * 2) + 1));
+  }
+
+  for (std::size_t i = 0; i < NUM_KEYS; ++i) {
+    assert(da.remove((i * 2) + 1));
+  }
+
+  for (std::size_t i = 0; i < NUM_KEYS; ++i) {
+    assert(da.search(true_keys[i].c_str(), true_keys[i].length()));
+    assert(!da.search(false_keys[i].c_str(), false_keys[i].length()));
+  }
+
+  for (std::size_t i = 0; i < NUM_KEYS; ++i) {
+    assert(da.insert(false_keys[i].c_str(), false_keys[i].length()));
+  }
+
+  for (std::size_t i = 0; i < NUM_KEYS; ++i) {
+    assert(da.search(true_keys[i].c_str(), true_keys[i].length()));
+    assert(da.search(false_keys[i].c_str(), false_keys[i].length()));
+  }
+
+  for (std::size_t i = 0; i < NUM_KEYS; ++i) {
+    assert(da.remove(false_keys[i].c_str(), false_keys[i].length()));
+  }
+
+  for (std::size_t i = 0; i < NUM_KEYS; ++i) {
+    assert(da.search(true_keys[i].c_str(), true_keys[i].length()));
+    assert(!da.search(false_keys[i].c_str(), false_keys[i].length()));
+  }
+}
+
 int main() {
   grnxx::Logger::set_flags(grnxx::LOGGER_WITH_ALL |
                            grnxx::LOGGER_ENABLE_COUT);
@@ -127,6 +207,7 @@ int main() {
   test_basics();
 
   test_insert();
+  test_remove();
 
   return 0;
 }
