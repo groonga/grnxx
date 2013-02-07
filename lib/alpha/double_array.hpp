@@ -619,6 +619,10 @@ class DoubleArrayImpl {
     return DoubleArrayKey::invalid_key();
   }
 
+  const DoubleArrayHeader &header() const {
+    return *header_;
+  }
+
   uint32_t block_id() const {
     return block_info_->id();
   }
@@ -751,6 +755,10 @@ class DoubleArray {
       return impl_->update(static_cast<const uint8_t *>(src_ptr), src_length,
                            static_cast<const uint8_t *>(dest_ptr), dest_length);
     }
+  }
+
+  const DoubleArrayHeader &header() const {
+    return impl_->header();
   }
 
   uint32_t block_id() const {
