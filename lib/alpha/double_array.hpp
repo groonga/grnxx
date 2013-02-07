@@ -217,7 +217,7 @@ class DoubleArrayNode {
   }
   void set_is_phantom(bool value) {
     if (value) {
-      qword_ |= IS_PHANTOM_FLAG;
+      qword_ = (qword_ & IS_ORIGIN_FLAG) | IS_PHANTOM_FLAG;
     } else {
       qword_ = (qword_ & IS_ORIGIN_FLAG) |
           (DOUBLE_ARRAY_INVALID_OFFSET << OFFSET_SHIFT) |

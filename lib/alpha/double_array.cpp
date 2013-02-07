@@ -455,10 +455,6 @@ uint64_t DoubleArrayImpl::insert_node(uint64_t node_id, uint16_t label) {
 //    GRN_DAT_DEBUG_THROW_IF(nodes_[offset ^ child_label).label() != child_label);
     siblings_[next] = child_label;
     nodes_[next].set_has_sibling(true);
-if (label == 0) {
-  GRNXX_ERROR();
-  GRNXX_THROW();
-}
     nodes_[node_id].set_child(label);
   } else {
     uint64_t prev = offset ^ child_label;
