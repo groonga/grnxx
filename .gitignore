@@ -28,6 +28,7 @@ src/grnxx
 stamp-h1
 temp/
 test/test_alpha_double_array
+test/test_alpha_double_array2
 test/test_backtrace
 test/test_db_array
 test/test_db_blob_vector
