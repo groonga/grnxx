@@ -745,7 +745,6 @@ void DoubleArrayImpl::reserve_chunk(uint64_t chunk_id) {
 //  GRN_DAT_DEBUG_THROW_IF(end != num_nodes());
 
   DoubleArrayNode node;
-  node.set_offset(DOUBLE_ARRAY_INVALID_OFFSET);
   node.set_is_phantom(true);
 
   for (uint64_t i = begin; i < end; ++i) {
