@@ -59,9 +59,6 @@ constexpr uint64_t MAX_CHUNK_LEVEL   = 5;
 // the linked list is empty and there exists no leader.
 constexpr uint64_t INVALID_LEADER    = 0x7FFFFFFFU;
 
-// The memory allocation unit size for keys.
-constexpr uint64_t KEYS_PAGE_SIZE    = VECTOR_DEFAULT_PAGE_SIZE;
-
 struct Header {
   uint32_t nodes_block_id;
   uint32_t chunks_block_id;
@@ -434,7 +431,7 @@ class Impl : public DoubleArray2 {
   Node *nodes_;
   Chunk *chunks_;
   Entry *entries_;
-  Vector<uint32_t> keys_;
+  uint32_t *keys_;
   bool initialized_;
 
   Impl();
@@ -489,7 +486,7 @@ Impl::~Impl() {
       pool_.free_block(header_->entries_block_id);
     }
     if (header_->keys_block_id != io::BLOCK_INVALID_ID) {
-      keys_.unlink(pool_, header_->keys_block_id);
+      pool_.free_block(header_->keys_block_id);
     }
     if (block_info_) {
       pool_.free_block(*block_info_);
@@ -694,10 +691,10 @@ Impl::Impl()
     block_info_(nullptr),
     header_(nullptr),
     recycler_(nullptr),
-    nodes_(),
-    chunks_(),
-    entries_(),
-    keys_(),
+    nodes_(nullptr),
+    chunks_(nullptr),
+    entries_(nullptr),
+    keys_(nullptr),
     initialized_(false) {}
 
 void Impl::create_double_array(io::Pool pool) {
@@ -726,8 +723,9 @@ void Impl::create_double_array(io::Pool pool) {
   header_->entries_block_id = block_info->id();
   entries_ = static_cast<Entry *>(pool_.get_block_address(*block_info));
 
-  keys_.create(pool);
-  header_->keys_block_id = keys_.block_id();
+  block_info = pool_.create_block(sizeof(uint32_t) * (1 << 27));
+  header_->keys_block_id = block_info->id();
+  keys_ = static_cast<uint32_t *>(pool_.get_block_address(*block_info));
 
   reserve_node(ROOT_NODE_ID);
   nodes_[INVALID_OFFSET].set_is_origin(true);
@@ -754,7 +752,8 @@ void Impl::open_double_array(io::Pool pool, uint32_t block_id) {
       pool_.get_block_address(header_->chunks_block_id));
   entries_ = static_cast<Entry *>(
       pool_.get_block_address(header_->entries_block_id));
-  keys_.open(pool_, header_->keys_block_id);
+  keys_ = static_cast<uint32_t *>(
+      pool_.get_block_address(header_->keys_block_id));
 }
 
 bool Impl::remove_key(const uint8_t *ptr, uint64_t length) {
@@ -916,10 +915,6 @@ uint64_t Impl::append_key(const uint8_t *ptr, uint64_t length,
 
   // TODO
 //  GRN_DAT_THROW_IF(SIZE_ERROR, key_size > (key_buf_size() - key_pos));
-  const uint64_t size_left_in_page = (~key_pos + 1) % KEYS_PAGE_SIZE;
-  if (size_left_in_page < key_size) {
-    key_pos += size_left_in_page;
-  }
   new (&keys_[key_pos]) Key(key_id, ptr, length);
 
   header_->next_key_pos = key_pos + key_size;
