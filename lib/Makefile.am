@@ -39,6 +39,7 @@ libgrnxx_include_HEADERS =	\
 	mutex.hpp		\
 	os.hpp			\
 	recycler.hpp		\
+	slice.hpp		\
 	string.hpp		\
 	string_builder.hpp	\
 	string_format.hpp	\
