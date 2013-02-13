@@ -1245,4 +1245,3 @@ DoubleArray2 *DoubleArray2::open(io::Pool pool, uint32_t block_id) {
 
 }  // namespace alpha
 }  // namespace grnxx
-
