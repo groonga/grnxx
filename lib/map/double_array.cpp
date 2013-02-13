@@ -24,9 +24,70 @@
 namespace grnxx {
 namespace map {
 
-DoubleArrayOptions::DoubleArrayOptions() : type(DOUBLE_ARRAY_UNKNOWN) {}
+DoubleArrayHeader::DoubleArrayHeader()
+  : map_header(),
+    type(DOUBLE_ARRAY_UNKNOWN) {
+  map_header.type = MAP_DOUBLE_ARRAY;
+}
 
-DoubleArrayHeader::DoubleArrayHeader() : type(DOUBLE_ARRAY_UNKNOWN) {}
+DoubleArray::~DoubleArray() {
+  // TODO
+}
+
+DoubleArray *DoubleArray::create(const MapOptions &, io::Pool pool) {
+  // TODO
+  return nullptr;
+}
+
+DoubleArray *DoubleArray::open(io::Pool pool, uint32_t block_id) {
+  // TODO
+  return nullptr;
+}
+
+uint32_t DoubleArray::block_id() const {
+  // TODO
+  return 0;
+}
+
+bool DoubleArray::search(int64_t key_id, Slice *key) {
+  // TODO
+  return false;
+}
+
+bool DoubleArray::search(const Slice &key, int64_t *key_id) {
+  // TODO
+  return false;
+}
+
+bool DoubleArray::insert(const Slice &key, int64_t *key_id) {
+  // TODO
+  return false;
+}
+
+bool DoubleArray::remove(int64_t key_id) {
+  // TODO
+  return false;
+}
+
+bool DoubleArray::remove(const Slice &key) {
+  // TODO
+  return false;
+}
+
+bool DoubleArray::update(int64_t key_id, const Slice &dest_key) {
+  // TODO
+  return false;
+}
+
+bool DoubleArray::update(const Slice &src_key, const Slice &dest_key,
+                         int64_t *key_id) {
+  // TODO
+  return false;
+}
+
+DoubleArray::DoubleArray() {
+  // TODO
+}
 
 }  // namespace map
 }  // namespace grnxx

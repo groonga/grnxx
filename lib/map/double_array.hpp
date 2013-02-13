@@ -29,13 +29,8 @@ enum DoubleArrayType : int32_t {
   DOUBLE_ARRAY_LARGE   = 2
 };
 
-struct DoubleArrayOptions {
-  DoubleArrayType type;
-
-  DoubleArrayOptions();
-};
-
 struct DoubleArrayHeader {
+  MapHeader map_header;
   DoubleArrayType type;
 
   DoubleArrayHeader();
@@ -45,21 +40,21 @@ class DoubleArray : public Map {
  public:
   ~DoubleArray();
 
-  static DoubleArray *create(const DoubleArrayOptions &options, io::Pool pool);
+  static DoubleArray *create(const MapOptions &options, io::Pool pool);
   static DoubleArray *open(io::Pool pool, uint32_t block_id);
 
   uint32_t block_id() const;
 
-  bool search(int64_t id, Slice *key);
-  bool search(const Slice &key, int64_t *id);
+  bool search(int64_t key_id, Slice *key);
+  bool search(const Slice &key, int64_t *key_id);
 
-  bool insert(const Slice &key, int64_t *id);
+  bool insert(const Slice &key, int64_t *key_id);
 
-  bool remove(int64_t id);
+  bool remove(int64_t key_id);
   bool remove(const Slice &key);
 
-  bool update(int64_t id, const Slice &dest);
-  bool update(const Slice &src, const Slice &dest, int64_t *id);
+  bool update(int64_t key_id, const Slice &dest_key);
+  bool update(const Slice &src_key, const Slice &dest_key, int64_t *key_id);
 
  private:
   DoubleArray();

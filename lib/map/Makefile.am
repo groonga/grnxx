@@ -1,4 +1,9 @@
+SUBDIRS = da
+
 noinst_LTLIBRARIES = libgrnxx_map.la
+
+libgrnxx_map_la_LIBADD =	\
+	da/libgrnxx_map_da.la
 
 libgrnxx_map_la_LDFLAGS = @AM_LTLDFLAGS@
 

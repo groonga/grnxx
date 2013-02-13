@@ -48,6 +48,7 @@ AC_CONFIG_FILES([Makefile
                  lib/db/Makefile
                  lib/io/Makefile
                  lib/map/Makefile
+                 lib/map/da/Makefile
                  src/Makefile
                  test/Makefile])
 AC_OUTPUT

@@ -15,58 +15,47 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#ifndef GRNXX_MAP_HPP
-#define GRNXX_MAP_HPP
+#ifndef GRNXX_MAP_DA_TRIE_HPP
+#define GRNXX_MAP_DA_TRIE_HPP
 
-// Tentative version.
-
-#include "io/pool.hpp"
-#include "slice.hpp"
+#include "../double_array.hpp"
 
 namespace grnxx {
+namespace map {
+namespace da {
 
-enum MapType : int32_t {
-  MAP_UNKNOWN      = 0,
-  MAP_DOUBLE_ARRAY = 1
+struct TrieOptions {
+  TrieOptions();
 };
 
-struct MapOptions {
-  MapType type;
-
-  MapOptions();
-};
-
-struct MapHeader {
-  MapType type;
-
-  MapHeader();
-};
-
-class Map {
+class Trie {
  public:
-  Map();
-  virtual ~Map();
+  Trie();
+  virtual ~Trie();
 
-  static Map *create(const MapOptions &options, io::Pool pool);
-  static Map *open(io::Pool pool, uint32_t block_id);
+  static Trie *create(const TrieOptions &options, io::Pool pool);
+  static Trie *open(io::Pool pool, uint32_t block_id);
+
+  // TODO
+//  virtual Trie *defrag() = 0;
 
   virtual uint32_t block_id() const = 0;
 
   virtual bool search(int64_t key_id, Slice *key) = 0;
-  virtual bool search(const Slice &key, int64_t *key_id = nullptr) = 0;
+  virtual bool search(const Slice &key, int64_t *key_id) = 0;
 
-  virtual bool insert(const Slice &key, int64_t *key_id = nullptr) = 0;
+  virtual bool insert(const Slice &key, int64_t *key_id) = 0;
 
   virtual bool remove(int64_t key_id) = 0;
   virtual bool remove(const Slice &key) = 0;
 
   virtual bool update(int64_t key_id, const Slice &dest_key) = 0;
   virtual bool update(const Slice &src_key, const Slice &dest_key,
-                      int64_t *key_id = nullptr) = 0;
-
-  // TODO
+                      int64_t *key_id) = 0;
 };
 
+}  // namespace da
+}  // namespace map
 }  // namespace grnxx
 
-#endif  // GRNXX_MAP_HPP
+#endif  // GRNXX_MAP_DA_TRIE_HPP

@@ -16,6 +16,7 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 #include "map.hpp"
+#include "map/double_array.hpp"
 
 namespace grnxx {
 
@@ -28,19 +29,19 @@ Map::~Map() {}
 
 Map *Map::create(const MapOptions &options, io::Pool pool) {
   switch (options.type) {
-    case MAP_DOUBLE_ARRAY: {
-//      return map::DoubleArray::create(options, pool);
+    case MAP_UNKNOWN: {
       break;
+    }
+    case MAP_DOUBLE_ARRAY: {
+      return map::DoubleArray::create(options, pool);
     }
     // TODO: Other map types will be supported in future.
 //    case ???: {
 //      return map::???::create(options, pool);
 //    }
-    default: {
-      // TODO: Invalid type!
-      break;
-    }
   }
+
+  // TODO: Unknown type error!
   return nullptr;
 }
 
@@ -55,19 +56,19 @@ Map *Map::open(io::Pool pool, uint32_t block_id) {
 
   // Call the appropriate function.
   switch (type) {
-    case MAP_DOUBLE_ARRAY: {
-//      return map::DoubleArray::open(pool, block_id);
+    case MAP_UNKNOWN: {
       break;
+    }
+    case MAP_DOUBLE_ARRAY: {
+      return map::DoubleArray::open(pool, block_id);
     }
     // TODO: Other map types will be supported in future.
-    default: {
-      // TODO: Invalid type!
-      break;
-    }
+//    case ???: {
+//      return map::???::open(pool, block_id);
+//    }
   }
 
-  // Return the result.
-
+  // TODO: Unknown type error!
   return nullptr;
 }
 
