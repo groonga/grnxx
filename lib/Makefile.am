@@ -15,6 +15,7 @@ libgrnxx_la_SOURCES =		\
 	error.cpp		\
 	grnxx.cpp		\
 	logger.cpp		\
+	map.cpp			\
 	mutex.cpp		\
 	os.cpp			\
 	recycler.cpp		\
@@ -36,6 +37,7 @@ libgrnxx_include_HEADERS =	\
 	intrinsic.hpp		\
 	lock.hpp		\
 	logger.hpp		\
+	map.hpp			\
 	mutex.hpp		\
 	os.hpp			\
 	recycler.hpp		\
