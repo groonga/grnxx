@@ -24,27 +24,26 @@ void test_constructors() {
   grnxx::Slice slice;
 
   assert(!slice);
-  assert(!slice.ptr());
   assert(slice.size() == 0);
 
   const char *empty_str = "";
   slice = grnxx::Slice(empty_str);
 
   assert(!slice);
-  assert(slice.ptr() == empty_str);
+  assert(slice.address() == empty_str);
   assert(slice.size() == 0);
 
   const char *digits = "0123456789";
   slice = grnxx::Slice(digits);
 
   assert(slice);
-  assert(slice.ptr() == digits);
+  assert(slice.address() == digits);
   assert(slice.size() == 10);
 
   slice = grnxx::Slice(digits + 3, 5);
 
   assert(slice);
-  assert(slice.ptr() == digits + 3);
+  assert(slice.address() == (digits + 3));
   assert(slice.size() == 5);
 }
 

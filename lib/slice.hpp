@@ -27,9 +27,13 @@ class Slice {
   // Create an empty (zero-size) slice.
   Slice() : ptr_(nullptr), size_(0) {}
   // Create a slice that refers to a zero-terminated string.
-  Slice(const char *str) : ptr_(str), size_(std::strlen(str)) {}
+  Slice(const char *str)
+    : ptr_(reinterpret_cast<const uint8_t *>(str)),
+      size_(std::strlen(str)) {}
   // Create a slice.
-  Slice(const char *ptr, size_t size) : ptr_(ptr), size_(size) {}
+  Slice(const void *ptr, size_t size)
+    : ptr_(static_cast<const uint8_t *>(ptr)),
+      size_(size) {}
 
   // Return true iff *this" is not empty.
   explicit operator bool() const {
@@ -87,12 +91,16 @@ class Slice {
   }
 
   // Return the "n"-th byte of "*this".
-  char operator[](size_t i) const {
+  uint8_t operator[](size_t i) const {
     return ptr_[i];
   }
 
   // Return the starting address of "*this".
-  const char *ptr() const {
+  const void *address() const {
+    return ptr_;
+  }
+  // Return a pointer that refers to the starting address of "*this".
+  const uint8_t *ptr() const {
     return ptr_;
   }
   // Returns the size of "*this".
@@ -101,7 +109,7 @@ class Slice {
   }
 
  private:
-  const char *ptr_;
+  const uint8_t *ptr_;
   size_t size_;
 };
 
