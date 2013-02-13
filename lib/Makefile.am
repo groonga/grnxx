@@ -1,11 +1,12 @@
-SUBDIRS = alpha db io
+SUBDIRS = alpha db io map
 
 lib_LTLIBRARIES = libgrnxx.la
 
 libgrnxx_la_LIBADD =		\
 	alpha/libgrnxx_alpha.la	\
 	db/libgrnxx_db.la	\
-	io/libgrnxx_io.la
+	io/libgrnxx_io.la	\
+	map/libgrnxx_map.la
 
 libgrnxx_la_LDFLAGS = @AM_LTLDFLAGS@
 
