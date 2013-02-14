@@ -1,32 +1,33 @@
 AM_CXXFLAGS = @AM_CXXFLAGS@ -I$(top_srcdir)/lib
 
-TESTS =				\
-	test_alpha_double_array	\
+TESTS =					\
+	test_alpha_double_array		\
 	test_alpha_double_array2	\
-	test_backtrace		\
-	test_db_array		\
-	test_db_blob_vector	\
-	test_db_vector		\
-	test_duration		\
-	test_error		\
-	test_exception		\
-	test_features		\
-	test_grnxx		\
-	test_intrinsic		\
-	test_io_file		\
-	test_io_file_info	\
-	test_io_path		\
-	test_io_pool		\
-	test_io_view		\
-	test_logger		\
-	test_mutex		\
-	test_os			\
-	test_recycler		\
-	test_slice		\
-	test_string		\
-	test_string_builder	\
-	test_string_format	\
-	test_thread		\
+	test_backtrace			\
+	test_db_array			\
+	test_db_blob_vector		\
+	test_db_vector			\
+	test_duration			\
+	test_error			\
+	test_exception			\
+	test_features			\
+	test_grnxx			\
+	test_intrinsic			\
+	test_io_file			\
+	test_io_file_info		\
+	test_io_path			\
+	test_io_pool			\
+	test_io_view			\
+	test_logger			\
+	test_map_da_basic_trie		\
+	test_mutex			\
+	test_os				\
+	test_recycler			\
+	test_slice			\
+	test_string			\
+	test_string_builder		\
+	test_string_format		\
+	test_thread			\
 	test_time
 
 check_PROGRAMS = $(TESTS)
@@ -84,6 +85,9 @@ test_io_view_LDADD = ../lib/libgrnxx.la
 
 test_logger_SOURCES = test_logger.cpp
 test_logger_LDADD = ../lib/libgrnxx.la
+
+test_map_da_basic_trie_SOURCES = test_map_da_basic_trie.cpp
+test_map_da_basic_trie_LDADD = ../lib/libgrnxx.la
 
 test_mutex_SOURCES = test_mutex.cpp
 test_mutex_LDADD = ../lib/libgrnxx.la

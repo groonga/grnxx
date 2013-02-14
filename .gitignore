@@ -46,6 +46,7 @@ test/test_io_path
 test/test_io_pool
 test/test_io_view
 test/test_logger
+test/test_map_da_basic_trie
 test/test_mutex
 test/test_os
 test/test_recycler
