@@ -138,8 +138,6 @@ bool Trie::insert(const Slice &key, int64_t *key_id) {
 //  GRN_DAT_THROW_IF(STATUS_ERROR, (status_flags() & CHANGING_MASK) != 0);
 //  StatusFlagManager status_flag_manager(header_, INSERTING_FLAG);
 
-//  GRN_DAT_DEBUG_THROW_IF(!ptr && (length != 0));
-
   uint32_t node_id = ROOT_NODE_ID;
   size_t query_pos = 0;
 
@@ -197,7 +195,6 @@ bool Trie::remove(const Slice &key) {
 //  GRN_DAT_THROW_IF(STATUS_ERROR, (status_flags() & CHANGING_MASK) != 0);
 //  StatusFlagManager status_flag_manager(header_, REMOVING_FLAG);
 
-//  GRN_DAT_DEBUG_THROW_IF((ptr == nullptr) && (length != 0));
   return remove_key(key);
 }
 
@@ -250,7 +247,6 @@ Trie::Trie()
   : pool_(),
     block_info_(nullptr),
     header_(nullptr),
-    recycler_(nullptr),
     nodes_(nullptr),
     chunks_(nullptr),
     entries_(nullptr),
@@ -266,9 +262,6 @@ void Trie::create_double_array(io::Pool pool) {
   header_ = static_cast<Header *>(block_address);
   *header_ = Header();
 
-  recycler_ = pool_.mutable_recycler();
-
-  // TODO: Tell me the size of buffers!
   const io::BlockInfo *block_info;
 
   block_info = pool_.create_block(sizeof(Node) * INITIAL_NODES_SIZE);
@@ -308,8 +301,6 @@ void Trie::open_double_array(io::Pool pool, uint32_t block_id) {
 
   // TODO: Check the format.
 
-  recycler_ = pool_.mutable_recycler();
-
   nodes_ = static_cast<Node *>(
       pool_.get_block_address(header_->nodes_block_id));
   chunks_ = static_cast<Chunk *>(
@@ -345,8 +336,6 @@ bool Trie::remove_key(const Slice &key) {
 
 bool Trie::update_key(int32_t key_id, const Slice &src_key,
                       const Slice &dest_key) {
-//  GRN_DAT_DEBUG_THROW_IF((ptr == NULL) && (length != 0));
-
   uint32_t node_id = ROOT_NODE_ID;
   size_t query_pos = 0;
 
@@ -412,9 +401,14 @@ bool Trie::insert_leaf(const Slice &key, uint32_t &node_id, size_t query_pos) {
     if ((i == key.size()) && (i == found_key.size())) {
       return false;
     }
-    // TODO
-//    GRN_DAT_THROW_IF(SIZE_ERROR, num_keys() >= max_num_keys());
-//    GRN_DAT_DEBUG_THROW_IF(next_key_id() > max_num_keys());
+
+    if (header_->num_keys >= header_->entries_size) {
+      GRNXX_ERROR() << "too many keys: num_keys = " << header_->num_keys
+                    << ", entries_size = " << header_->entries_size;
+      GRNXX_THROW();
+    }
+
+    GRNXX_DEBUG_THROW_IF(static_cast<uint32_t>(header_->next_key_id) >= header_->entries_size);
 
     for (size_t j = query_pos; j < i; ++j) {
       node_id = insert_node(node_id, key[j]);
@@ -424,8 +418,12 @@ bool Trie::insert_leaf(const Slice &key, uint32_t &node_id, size_t query_pos) {
   } else if (node.label() == TERMINAL_LABEL) {
     return true;
   } else {
-    // TODO
-//    GRN_DAT_THROW_IF(SIZE_ERROR, num_keys() >= max_num_keys());
+    if (header_->num_keys >= header_->entries_size) {
+      GRNXX_ERROR() << "too many keys: num_keys = " << header_->num_keys
+                    << ", entries_size = " << header_->entries_size;
+      GRNXX_THROW();
+    }
+
     const uint16_t label = (query_pos < key.size()) ?
         static_cast<uint16_t>(key[query_pos]) : TERMINAL_LABEL;
     if ((node.offset() == INVALID_OFFSET) ||
@@ -440,8 +438,8 @@ bool Trie::insert_leaf(const Slice &key, uint32_t &node_id, size_t query_pos) {
 }
 
 uint32_t Trie::insert_node(uint32_t node_id, uint16_t label) {
-//  GRN_DAT_DEBUG_THROW_IF(node_id >= num_nodes());
-//  GRN_DAT_DEBUG_THROW_IF(label > MAX_LABEL);
+  GRNXX_DEBUG_THROW_IF(node_id >= (header_->num_chunks * CHUNK_SIZE));
+  GRNXX_DEBUG_THROW_IF(label > MAX_LABEL);
 
   const Node node = nodes_[node_id];
   uint32_t offset;
@@ -456,40 +454,39 @@ uint32_t Trie::insert_node(uint32_t node_id, uint16_t label) {
 
   nodes_[next].set_label(label);
   if (node.is_leaf()) {
-//    GRN_DAT_DEBUG_THROW_IF(nodes_[offset].is_origin());
+    GRNXX_DEBUG_THROW_IF(nodes_[offset].is_origin());
     nodes_[offset].set_is_origin(true);
     nodes_[next].set_key_pos(node.key_pos());
-    // TODO: Must be update at once.
   } else if (node.offset() == INVALID_OFFSET) {
-//    GRN_DAT_DEBUG_THROW_IF(nodes_[offset].is_origin());
+    GRNXX_DEBUG_THROW_IF(nodes_[offset].is_origin());
     nodes_[offset].set_is_origin(true);
-//  } else {
-//    GRN_DAT_DEBUG_THROW_IF(!nodes_[offset].is_origin());
+  } else {
+    GRNXX_DEBUG_THROW_IF(!nodes_[offset].is_origin());
   }
   nodes_[node_id].set_offset(offset);
 
   const uint16_t child_label = nodes_[node_id].child();
-//  GRN_DAT_DEBUG_THROW_IF(child_label == label);
+  GRNXX_DEBUG_THROW_IF(child_label == label);
   if (child_label == INVALID_LABEL) {
     nodes_[node_id].set_child(label);
   } else if ((label == TERMINAL_LABEL) ||
              ((child_label != TERMINAL_LABEL) &&
               (label < child_label))) {
     // The next node becomes the first child.
-//    GRN_DAT_DEBUG_THROW_IF(nodes_[offset ^ child_label).is_phantom());
-//    GRN_DAT_DEBUG_THROW_IF(nodes_[offset ^ child_label).label() != child_label);
+    GRNXX_DEBUG_THROW_IF(nodes_[offset ^ child_label].is_phantom());
+    GRNXX_DEBUG_THROW_IF(nodes_[offset ^ child_label].label() != child_label);
     nodes_[next].set_sibling(child_label);
     nodes_[node_id].set_child(label);
   } else {
     uint32_t prev = offset ^ child_label;
-//    GRN_DAT_DEBUG_THROW_IF(nodes_[prev).label() != child_label);
+    GRNXX_DEBUG_THROW_IF(nodes_[prev].label() != child_label);
     uint16_t sibling_label = nodes_[prev].sibling();
     while (label > sibling_label) {
       prev = offset ^ sibling_label;
-//      GRN_DAT_DEBUG_THROW_IF(nodes_[prev].label() != sibling_label);
+      GRNXX_DEBUG_THROW_IF(nodes_[prev].label() != sibling_label);
       sibling_label = nodes_[prev].sibling();
     }
-//    GRN_DAT_DEBUG_THROW_IF(label == sibling_label);
+    GRNXX_DEBUG_THROW_IF(label == sibling_label);
     nodes_[next].set_sibling(nodes_[prev].sibling());
     nodes_[prev].set_sibling(label);
   }
@@ -497,14 +494,21 @@ uint32_t Trie::insert_node(uint32_t node_id, uint16_t label) {
 }
 
 uint32_t Trie::append_key(const Slice &key, int32_t key_id) {
-  // TODO
-//  GRN_DAT_THROW_IF(SIZE_ERROR, key_id > max_num_keys());
+  if (static_cast<uint32_t>(key_id) >= header_->entries_size) {
+    GRNXX_ERROR() << "too many keys: key_id = " << key_id
+                  << ", entries_size = " << header_->entries_size;
+    GRNXX_THROW();
+  }
 
   const uint32_t key_pos = header_->next_key_pos;
   const uint32_t key_size = Key::estimate_size(key);
 
-  // TODO
-//  GRN_DAT_THROW_IF(SIZE_ERROR, key_size > (key_buf_size() - key_pos));
+  if (key_size > (header_->keys_size - key_pos)) {
+    GRNXX_ERROR() << "too many keys: key_size = " << key_size
+                  << ", keys_size = " << header_->keys_size
+                  << ", key_pos = " << key_pos;
+    GRNXX_THROW();
+  }
   new (&keys_[key_pos]) Key(key_id, key);
 
   header_->next_key_pos = key_pos + key_size;
@@ -512,9 +516,9 @@ uint32_t Trie::append_key(const Slice &key, int32_t key_id) {
 }
 
 uint32_t Trie::separate(const Slice &key, uint32_t node_id, size_t i) {
-//  GRN_DAT_DEBUG_THROW_IF(node_id >= num_nodes());
-//  GRN_DAT_DEBUG_THROW_IF(!nodes_[node_id].is_leaf());
-//  GRN_DAT_DEBUG_THROW_IF(i > length);
+  GRNXX_DEBUG_THROW_IF(node_id >= (header_->num_chunks * CHUNK_SIZE));
+  GRNXX_DEBUG_THROW_IF(!nodes_[node_id].is_leaf());
+  GRNXX_DEBUG_THROW_IF(i > key.size());
 
   const Node node = nodes_[node_id];
   const Key &found_key = get_key(node.key_pos());
@@ -524,13 +528,13 @@ uint32_t Trie::separate(const Slice &key, uint32_t node_id, size_t i) {
       static_cast<uint16_t>(found_key[i]) : TERMINAL_LABEL;
   labels[1] = (i < key.size()) ?
       static_cast<uint16_t>(key[i]) : TERMINAL_LABEL;
-//  GRN_DAT_DEBUG_THROW_IF(labels[0] == labels[1]);
+  GRNXX_DEBUG_THROW_IF(labels[0] == labels[1]);
 
   const uint32_t offset = find_offset(labels, 2);
 
   uint32_t next = offset ^ labels[0];
   reserve_node(next);
-//  GRN_DAT_DEBUG_THROW_IF(nodes_[offset).is_origin());
+  GRNXX_DEBUG_THROW_IF(nodes_[offset].is_origin());
 
   nodes_[next].set_label(labels[0]);
   nodes_[next].set_key_pos(node.key_pos());
@@ -556,9 +560,9 @@ uint32_t Trie::separate(const Slice &key, uint32_t node_id, size_t i) {
 }
 
 void Trie::resolve(uint32_t node_id, uint16_t label) {
-//  GRN_DAT_DEBUG_THROW_IF(node_id >= num_nodes());
-//  GRN_DAT_DEBUG_THROW_IF(nodes_[node_id].is_leaf());
-//  GRN_DAT_DEBUG_THROW_IF(label > MAX_LABEL);
+  GRNXX_DEBUG_THROW_IF(node_id >= (header_->num_chunks * CHUNK_SIZE));
+  GRNXX_DEBUG_THROW_IF(nodes_[node_id].is_leaf());
+  GRNXX_DEBUG_THROW_IF(label > MAX_LABEL);
 
   uint32_t offset = nodes_[node_id].offset();
   if (offset != INVALID_OFFSET) {
@@ -566,14 +570,13 @@ void Trie::resolve(uint32_t node_id, uint16_t label) {
     uint16_t num_labels = 0;
 
     uint16_t next_label = nodes_[node_id].child();
-    // FIXME: How to check if the node has children or not.
-//    GRN_DAT_DEBUG_THROW_IF(next_label == INVALID_LABEL);
+    GRNXX_DEBUG_THROW_IF(next_label == INVALID_LABEL);
     while (next_label != INVALID_LABEL) {
-//      GRN_DAT_DEBUG_THROW_IF(next_label > MAX_LABEL);
+      GRNXX_DEBUG_THROW_IF(next_label > MAX_LABEL);
       labels[num_labels++] = next_label;
       next_label = nodes_[offset ^ next_label].sibling();
     }
-//    GRN_DAT_DEBUG_THROW_IF(num_labels == 0);
+    GRNXX_DEBUG_THROW_IF(num_labels == 0);
 
     labels[num_labels] = label;
     offset = find_offset(labels, num_labels + 1);
@@ -581,7 +584,7 @@ void Trie::resolve(uint32_t node_id, uint16_t label) {
   } else {
     offset = find_offset(&label, 1);
     if (offset >= (header_->num_chunks * CHUNK_SIZE)) {
-//      GRN_DAT_DEBUG_THROW_IF((offset / BLOCK_SIZE) != num_blocks());
+      GRNXX_DEBUG_THROW_IF((offset / CHUNK_SIZE) != header_->num_chunks);
       reserve_chunk(header_->num_chunks);
     }
     nodes_[offset].set_is_origin(true);
@@ -591,21 +594,21 @@ void Trie::resolve(uint32_t node_id, uint16_t label) {
 
 void Trie::migrate_nodes(uint32_t node_id, uint32_t dest_offset,
                          const uint16_t *labels, uint16_t num_labels) {
-//  GRN_DAT_DEBUG_THROW_IF(node_id >= num_nodes());
-//  GRN_DAT_DEBUG_THROW_IF(nodes_[node_id].is_leaf());
-//  GRN_DAT_DEBUG_THROW_IF(labels == nullptr);
-//  GRN_DAT_DEBUG_THROW_IF(num_labels == 0);
-//  GRN_DAT_DEBUG_THROW_IF(num_labels > (MAX_LABEL + 1));
+  GRNXX_DEBUG_THROW_IF(node_id >= (header_->num_chunks * CHUNK_SIZE));
+  GRNXX_DEBUG_THROW_IF(nodes_[node_id].is_leaf());
+  GRNXX_DEBUG_THROW_IF(labels == nullptr);
+  GRNXX_DEBUG_THROW_IF(num_labels == 0);
+  GRNXX_DEBUG_THROW_IF(num_labels > (MAX_LABEL + 1));
 
   const uint32_t src_offset = nodes_[node_id].offset();
-//  GRN_DAT_DEBUG_THROW_IF(src_offset == INVALID_OFFSET);
-//  GRN_DAT_DEBUG_THROW_IF(!nodes_[src_offset].is_origin());
+  GRNXX_DEBUG_THROW_IF(src_offset == INVALID_OFFSET);
+  GRNXX_DEBUG_THROW_IF(!nodes_[src_offset].is_origin());
 
   for (uint16_t i = 0; i < num_labels; ++i) {
     const uint32_t src_node_id = src_offset ^ labels[i];
     const uint32_t dest_node_id = dest_offset ^ labels[i];
-//    GRN_DAT_DEBUG_THROW_IF(ith_node(src_node_id).is_phantom());
-//    GRN_DAT_DEBUG_THROW_IF(ith_node(src_node_id).label() != labels[i]);
+    GRNXX_DEBUG_THROW_IF(nodes_[src_node_id].is_phantom());
+    GRNXX_DEBUG_THROW_IF(nodes_[src_node_id].label() != labels[i]);
 
     reserve_node(dest_node_id);
     Node dest_node = nodes_[src_node_id];
@@ -614,15 +617,15 @@ void Trie::migrate_nodes(uint32_t node_id, uint32_t dest_offset,
   }
   header_->num_zombies += num_labels;
 
-//  GRN_DAT_DEBUG_THROW_IF(nodes_[dest_offset].is_origin());
+  GRNXX_DEBUG_THROW_IF(nodes_[dest_offset].is_origin());
   nodes_[dest_offset].set_is_origin(true);
   nodes_[node_id].set_offset(dest_offset);
 }
 
 uint32_t Trie::find_offset(const uint16_t *labels, uint16_t num_labels) {
-//  GRN_DAT_DEBUG_THROW_IF(labels == nullptr);
-//  GRN_DAT_DEBUG_THROW_IF(num_labels == 0);
-//  GRN_DAT_DEBUG_THROW_IF(num_labels > (MAX_LABEL + 1));
+  GRNXX_DEBUG_THROW_IF(labels == nullptr);
+  GRNXX_DEBUG_THROW_IF(num_labels == 0);
+  GRNXX_DEBUG_THROW_IF(num_labels > (MAX_LABEL + 1));
 
   // Chunks are tested in descending order of level. Basically, lower level
   // chunks contain more phantom nodes.
@@ -643,12 +646,12 @@ uint32_t Trie::find_offset(const uint16_t *labels, uint16_t num_labels) {
     uint32_t chunk_id = leader;
     do {
       const Chunk &chunk = chunks_[chunk_id];
-//      GRN_DAT_DEBUG_THROW_IF(chunk.level() != level);
+      GRNXX_DEBUG_THROW_IF(chunk.level() != level);
 
       const uint32_t first = (chunk_id * CHUNK_SIZE) | chunk.first_phantom();
       uint32_t node_id = first;
       do {
-//        GRN_DAT_DEBUG_THROW_IF(!nodes_[node_id=]).is_phantom());
+        GRNXX_DEBUG_THROW_IF(!nodes_[node_id].is_phantom());
         const uint32_t offset = node_id ^ labels[0];
         if (!nodes_[offset].is_origin()) {
           uint16_t i = 1;
@@ -694,16 +697,16 @@ void Trie::reserve_node(uint32_t node_id) {
   }
 
   Node &node = nodes_[node_id];
-//  GRN_DAT_DEBUG_THROW_IF(!node.is_phantom());
+  GRNXX_DEBUG_THROW_IF(!node.is_phantom());
 
   const uint32_t chunk_id = node_id / CHUNK_SIZE;
   Chunk &chunk = chunks_[chunk_id];
-//  GRN_DAT_DEBUG_THROW_IF(chunk.num_phantoms() == 0);
+  GRNXX_DEBUG_THROW_IF(chunk.num_phantoms() == 0);
 
   const uint32_t next = (chunk_id * CHUNK_SIZE) | node.next();
   const uint32_t prev = (chunk_id * CHUNK_SIZE) | node.prev();
-//  GRN_DAT_DEBUG_THROW_IF(next >= header_->num_nodes());
-//  GRN_DAT_DEBUG_THROW_IF(prev >= header_->num_nodes());
+  GRNXX_DEBUG_THROW_IF(next >= (header_->num_chunks * CHUNK_SIZE));
+  GRNXX_DEBUG_THROW_IF(prev >= (header_->num_chunks * CHUNK_SIZE));
 
   if ((node_id & CHUNK_MASK) == chunk.first_phantom()) {
     // The first phantom node is removed from the chunk and the second phantom
@@ -725,29 +728,35 @@ void Trie::reserve_node(uint32_t node_id) {
 
   node.set_is_phantom(false);
 
-//  GRN_DAT_DEBUG_THROW_IF(node.offset() != INVALID_OFFSET);
-//  GRN_DAT_DEBUG_THROW_IF(node.label() != INVALID_LABEL);
+  GRNXX_DEBUG_THROW_IF(node.offset() != INVALID_OFFSET);
+  GRNXX_DEBUG_THROW_IF(node.label() != INVALID_LABEL);
 
   --header_->num_phantoms;
 }
 
 void Trie::reserve_chunk(uint32_t chunk_id) {
-//  GRN_DAT_DEBUG_THROW_IF(chunk_id != num_chunks());
-  // TODO
-//  GRN_DAT_THROW_IF(SIZE_ERROR, chunk_id >= max_num_chunks());
+  GRNXX_DEBUG_THROW_IF(chunk_id != header_->num_chunks);
+
+  if (chunk_id >= header_->chunks_size) {
+    GRNXX_ERROR() << "too many chunks: chunk_id = " << chunk_id
+                  << ", chunks_size = " << header_->chunks_size;
+    GRNXX_THROW();
+  }
 
   header_->num_chunks = chunk_id + 1;
-  chunks_[chunk_id].set_failure_count(0);
-  chunks_[chunk_id].set_first_phantom(0);
-  chunks_[chunk_id].set_num_phantoms(CHUNK_SIZE);
+
+  Chunk chunk;
+  chunk.set_failure_count(0);
+  chunk.set_first_phantom(0);
+  chunk.set_num_phantoms(CHUNK_SIZE);
+  chunks_[chunk_id] = chunk;
 
   const uint32_t begin = chunk_id * CHUNK_SIZE;
   const uint32_t end = begin + CHUNK_SIZE;
-//  GRN_DAT_DEBUG_THROW_IF(end != num_nodes());
+  GRNXX_DEBUG_THROW_IF(end != (header_->num_chunks * CHUNK_SIZE));
 
   Node node;
   node.set_is_phantom(true);
-
   for (uint32_t i = begin; i < end; ++i) {
     node.set_prev((i - 1) & CHUNK_MASK);
     node.set_next((i + 1) & CHUNK_MASK);
@@ -760,16 +769,16 @@ void Trie::reserve_chunk(uint32_t chunk_id) {
 }
 
 void Trie::update_chunk_level(uint32_t chunk_id, uint32_t level) {
-//  GRN_DAT_DEBUG_THROW_IF(chunk_id >= num_chunks());
-//  GRN_DAT_DEBUG_THROW_IF(level > MAX_CHUNK_LEVEL);
+  GRNXX_DEBUG_THROW_IF(chunk_id >= header_->num_chunks);
+  GRNXX_DEBUG_THROW_IF(level > MAX_CHUNK_LEVEL);
 
   unset_chunk_level(chunk_id);
   set_chunk_level(chunk_id, level);
 }
 
 void Trie::set_chunk_level(uint32_t chunk_id, uint32_t level) {
-//  GRN_DAT_DEBUG_THROW_IF(chunk_id >= num_chunks());
-//  GRN_DAT_DEBUG_THROW_IF(level > MAX_CHUNK_LEVEL);
+  GRNXX_DEBUG_THROW_IF(chunk_id >= header_->num_chunks);
+  GRNXX_DEBUG_THROW_IF(level > MAX_CHUNK_LEVEL);
 
   const uint32_t leader = header_->leaders[level];
   if (leader == INVALID_LEADER) {
@@ -781,8 +790,8 @@ void Trie::set_chunk_level(uint32_t chunk_id, uint32_t level) {
     // The chunk is appended to the level group.
     const uint32_t next = leader;
     const uint32_t prev = chunks_[leader].prev();
-//    GRN_DAT_DEBUG_THROW_IF(next >= num_chunks());
-//    GRN_DAT_DEBUG_THROW_IF(prev >= num_chunks());
+    GRNXX_DEBUG_THROW_IF(next >= header_->num_chunks);
+    GRNXX_DEBUG_THROW_IF(prev >= header_->num_chunks);
     chunks_[chunk_id].set_next(next);
     chunks_[chunk_id].set_prev(prev);
     chunks_[next].set_prev(chunk_id);
@@ -793,18 +802,18 @@ void Trie::set_chunk_level(uint32_t chunk_id, uint32_t level) {
 }
 
 void Trie::unset_chunk_level(uint32_t chunk_id) {
-//  GRN_DAT_DEBUG_THROW_IF(chunk_id >= num_chunk());
+  GRNXX_DEBUG_THROW_IF(chunk_id >= header_->num_chunks);
 
   const uint32_t level = chunks_[chunk_id].level();
-//  GRN_DAT_DEBUG_THROW_IF(level > MAX_CHUNK_LEVEL);
+  GRNXX_DEBUG_THROW_IF(level > MAX_CHUNK_LEVEL);
 
   const uint32_t leader = header_->leaders[level];
-//  GRN_DAT_DEBUG_THROW_IF(leader == INVALID_LEADER);
+  GRNXX_DEBUG_THROW_IF(leader == INVALID_LEADER);
 
   const uint32_t next = chunks_[chunk_id].next();
   const uint32_t prev = chunks_[chunk_id].prev();
-//  GRN_DAT_DEBUG_THROW_IF(next >= num_chunks());
-//  GRN_DAT_DEBUG_THROW_IF(prev >= num_chunks());
+  GRNXX_DEBUG_THROW_IF(next >= header_->num_chunks);
+  GRNXX_DEBUG_THROW_IF(prev >= header_->num_chunks);
 
   if (next == chunk_id) {
     // The level group becomes empty.

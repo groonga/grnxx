@@ -20,6 +20,16 @@
 
 #include "trie.hpp"
 
+#if 0
+# define GRNXX_DEBUG_THROW(msg)\
+   ({ GRNXX_ERROR() << msg; GRNXX_THROW(); })
+# define GRNXX_DEBUG_THROW_IF(cond)\
+   (void)((!(cond)) || (GRNXX_DEBUG_THROW(#cond), 0))
+#else
+# define GRNXX_DEBUG_THROW(msg)
+# define GRNXX_DEBUG_THROW_IF(cond)
+#endif
+
 namespace grnxx {
 namespace map {
 namespace da {
@@ -181,7 +191,7 @@ class Node {
 
   void set_key_pos(uint32_t value) {
     qword_ = (qword_ & ~(KEY_POS_MASK << KEY_POS_SHIFT)) |
-             (static_cast<uint32_t>(value) << KEY_POS_SHIFT) | IS_LEAF_FLAG;
+             (static_cast<uint64_t>(value) << KEY_POS_SHIFT) | IS_LEAF_FLAG;
   }
 
   // A non-phantom and non-leaf node stores the offset to its children and the
@@ -201,7 +211,7 @@ class Node {
                (uint64_t(INVALID_LABEL) << CHILD_SHIFT);
     } else {
       qword_ = (qword_ & ~(OFFSET_MASK << OFFSET_SHIFT)) |
-               (value << OFFSET_SHIFT);
+               (static_cast<uint64_t>(value) << OFFSET_SHIFT);
     }
   }
   void set_child(uint16_t value) {
@@ -423,7 +433,6 @@ class Trie : public da::Trie {
   io::Pool pool_;
   const io::BlockInfo *block_info_;
   Header *header_;
-  Recycler *recycler_;
   Node *nodes_;
   Chunk *chunks_;
   Entry *entries_;

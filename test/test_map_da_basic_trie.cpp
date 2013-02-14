@@ -117,7 +117,7 @@ void create_keys(std::size_t num_keys,
 }
 
 void test_insert() {
-  constexpr std::size_t NUM_KEYS = 1 << 10;
+  constexpr std::size_t NUM_KEYS = 1 << 12;
   constexpr std::size_t MIN_SIZE = 1;
   constexpr std::size_t MAX_SIZE = 10;
 
@@ -158,7 +158,7 @@ void test_insert() {
 }
 
 void test_remove() {
-  constexpr std::size_t NUM_KEYS = 1 << 10;
+  constexpr std::size_t NUM_KEYS = 1 << 12;
   constexpr std::size_t MIN_SIZE = 1;
   constexpr std::size_t MAX_SIZE = 10;
 
@@ -214,7 +214,7 @@ void test_remove() {
 }
 
 void test_update() {
-  constexpr std::size_t NUM_KEYS = 1 << 10;
+  constexpr std::size_t NUM_KEYS = 1 << 12;
   constexpr std::size_t MIN_SIZE = 1;
   constexpr std::size_t MAX_SIZE = 10;
 
