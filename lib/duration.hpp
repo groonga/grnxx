@@ -64,12 +64,10 @@ class Duration {
   StringBuilder &write_to(StringBuilder &builder) const;
 
   static constexpr Duration max() {
-    // TODO: This should use std::numeric_limits<T>::max().
-    return Duration(static_cast<int64_t>((uint64_t(1) << 63) - 1));
+    return Duration(std::numeric_limits<int64_t>::max());
   }
   static constexpr Duration min() {
-    // TODO: This should use std::numeric_limits<T>::min().
-    return Duration(static_cast<int64_t>(uint64_t(1) << 63));
+    return Duration(std::numeric_limits<int64_t>::min());
   }
 
  private:
