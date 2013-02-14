@@ -407,16 +407,17 @@ class Trie : public da::Trie {
 
   uint32_t block_id() const;
 
-  bool search(int64_t key_id, Slice *key);
-  bool search(const Slice &key, int64_t *key_id);
+  bool search(int64_t key_id, Slice *key = nullptr);
+  bool search(const Slice &key, int64_t *key_id = nullptr);
 
-  bool insert(const Slice &key, int64_t *key_id);
+  bool insert(const Slice &key, int64_t *key_id = nullptr);
 
   bool remove(int64_t key_id);
   bool remove(const Slice &key);
 
   bool update(int64_t key_id, const Slice &dest_key);
-  bool update(const Slice &src_key, const Slice &dest_key, int64_t *key_id);
+  bool update(const Slice &src_key, const Slice &dest_key,
+              int64_t *key_id = nullptr);
 
  private:
   io::Pool pool_;

@@ -41,17 +41,17 @@ class Trie {
 
   virtual uint32_t block_id() const = 0;
 
-  virtual bool search(int64_t key_id, Slice *key) = 0;
-  virtual bool search(const Slice &key, int64_t *key_id) = 0;
+  virtual bool search(int64_t key_id, Slice *key = nullptr) = 0;
+  virtual bool search(const Slice &key, int64_t *key_id = nullptr) = 0;
 
-  virtual bool insert(const Slice &key, int64_t *key_id) = 0;
+  virtual bool insert(const Slice &key, int64_t *key_id = nullptr) = 0;
 
   virtual bool remove(int64_t key_id) = 0;
   virtual bool remove(const Slice &key) = 0;
 
   virtual bool update(int64_t key_id, const Slice &dest_key) = 0;
   virtual bool update(const Slice &src_key, const Slice &dest_key,
-                      int64_t *key_id) = 0;
+                      int64_t *key_id = nullptr) = 0;
 };
 
 }  // namespace da
