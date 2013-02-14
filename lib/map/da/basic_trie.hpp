@@ -20,7 +20,7 @@
 
 #include "trie.hpp"
 
-#if 1
+#if 0
 # define GRNXX_DEBUG_THROW(msg)\
    ({ GRNXX_ERROR() << msg; GRNXX_THROW(); })
 # define GRNXX_DEBUG_THROW_IF(cond)\
