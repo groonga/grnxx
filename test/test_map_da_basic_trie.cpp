@@ -260,6 +260,53 @@ void test_update() {
   }
 }
 
+void test_defrag() {
+  constexpr std::size_t NUM_KEYS = 1 << 12;
+  constexpr std::size_t MIN_SIZE = 1;
+  constexpr std::size_t MAX_SIZE = 10;
+
+  std::mt19937 random;
+
+  grnxx::io::Pool pool;
+  pool.open(grnxx::io::POOL_TEMPORARY);
+
+  grnxx::map::da::TrieOptions options;
+  std::unique_ptr<grnxx::map::da::basic::Trie> trie(
+      grnxx::map::da::basic::Trie::create(options, pool));
+
+  std::unordered_set<std::string> both_keys;
+  std::vector<grnxx::Slice> true_keys;
+  std::vector<grnxx::Slice> false_keys;
+  create_keys(NUM_KEYS, MIN_SIZE, MAX_SIZE,
+              &both_keys, &true_keys, &false_keys);
+
+  for (std::size_t i = 0; i < NUM_KEYS; ++i) {
+    std::int64_t key_id;
+    assert(trie->insert(true_keys[i], &key_id));
+    assert(key_id == static_cast<std::int64_t>(i));
+  }
+
+  options.nodes_size = grnxx::map::da::basic::INITIAL_NODES_SIZE;
+  options.entries_size = grnxx::map::da::basic::INITIAL_ENTRIES_SIZE;
+  options.keys_size = grnxx::map::da::basic::INITIAL_KEYS_SIZE;
+  std::unique_ptr<grnxx::map::da::basic::Trie> new_trie(
+      trie->defrag(options));
+
+  for (std::size_t i = 0; i < NUM_KEYS; ++i) {
+    std::int64_t key_id;
+    assert(new_trie->search(true_keys[i], &key_id));
+    assert(key_id == static_cast<std::int64_t>(i));
+
+    assert(!new_trie->search(false_keys[i], &key_id));
+  }
+
+  for (std::size_t i = 0; i < NUM_KEYS; ++i) {
+    std::int64_t key_id;
+    assert(new_trie->insert(false_keys[i], &key_id));
+    assert(key_id == static_cast<std::int64_t>(NUM_KEYS + i));
+  }
+}
+
 int main() {
   grnxx::Logger::set_flags(grnxx::LOGGER_WITH_ALL |
                            grnxx::LOGGER_ENABLE_COUT);
@@ -270,6 +317,8 @@ int main() {
   test_insert();
   test_remove();
   test_update();
+
+  test_defrag();
 
   return 0;
 }
