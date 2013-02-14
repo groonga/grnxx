@@ -20,7 +20,7 @@
 
 #include "trie.hpp"
 
-#if 0
+#if 1
 # define GRNXX_DEBUG_THROW(msg)\
    ({ GRNXX_ERROR() << msg; GRNXX_THROW(); })
 # define GRNXX_DEBUG_THROW_IF(cond)\
@@ -36,7 +36,7 @@ namespace da {
 namespace basic {
 
 constexpr  int32_t MIN_KEY_ID     = 0;
-constexpr  int32_t MAX_KEY_ID     = 0x7FFFFFFF;
+constexpr  int32_t MAX_KEY_ID     = 0x7FFFFFFE;
 
 constexpr   size_t MIN_KEY_SIZE   = 1;
 constexpr   size_t MAX_KEY_SIZE   = 4095;
@@ -55,9 +55,13 @@ constexpr uint32_t CHUNK_MASK     = 0x1FF;
 // Assume that #nodes per key is 4 and #uint32_ts per key is 8.
 // Note that an entries is associated with a key.
 constexpr uint32_t INITIAL_NODES_SIZE   = 1 << 16;
-constexpr uint32_t INITIAL_CHUNKS_SIZE  = INITIAL_NODES_SIZE / CHUNK_SIZE;
 constexpr uint32_t INITIAL_ENTRIES_SIZE = 1 << 14;
 constexpr uint32_t INITIAL_KEYS_SIZE    = 1 << 17;
+
+constexpr uint32_t MAX_NODES_SIZE    =
+    std::numeric_limits<uint32_t>::max() & ~CHUNK_MASK;
+constexpr uint32_t MAX_ENTRIES_SIZE  = uint32_t(MAX_KEY_ID) + 1;
+constexpr uint32_t MAX_KEYS_SIZE     = uint32_t(1) << 31;
 
 // Chunks are grouped by the level which indicates how easily update operations
 // can find a good offset in that chunk. The chunk level rises when
@@ -395,8 +399,8 @@ class Key {
     return true;
   }
 
-  static uint32_t estimate_size(const Slice &key) {
-    return (9 + key.size()) / sizeof(uint32_t);
+  static uint32_t estimate_size(const size_t key_size) {
+    return (9 + key_size) / sizeof(uint32_t);
   }
 
  private:
@@ -412,8 +416,7 @@ class Trie : public da::Trie {
   static Trie *create(const TrieOptions &options, io::Pool pool);
   static Trie *open(io::Pool pool, uint32_t block_id);
 
-  // TODO
-//  da::Trie *defrag();
+  Trie *defrag(const TrieOptions &options);
 
   uint32_t block_id() const;
 
@@ -441,10 +444,16 @@ class Trie : public da::Trie {
 
   Trie();
 
-  void create_double_array(io::Pool pool);
-  void open_double_array(io::Pool pool, uint32_t block_id);
+  void create_trie(const TrieOptions &options, io::Pool pool);
+  void open_trie(io::Pool pool, uint32_t block_id);
 
-  const Key &get_key(uint32_t key_pos) {
+  void defrag_trie(const TrieOptions &options, const Trie &trie,
+                   io::Pool pool);
+  void defrag_trie(const Trie &trie, uint32_t src, uint32_t dest);
+
+  void create_arrays();
+
+  const Key &get_key(uint32_t key_pos) const {
     return *reinterpret_cast<const Key *>(&keys_[key_pos]);
   }
 

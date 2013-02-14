@@ -5,7 +5,10 @@ namespace grnxx {
 namespace map {
 namespace da {
 
-TrieOptions::TrieOptions() {}
+TrieOptions::TrieOptions()
+  : nodes_size(0),
+    entries_size(0),
+    keys_size(0) {}
 
 Trie::Trie() {}
 Trie::~Trie() {}

@@ -25,6 +25,10 @@ namespace map {
 namespace da {
 
 struct TrieOptions {
+  uint64_t nodes_size;
+  uint64_t entries_size;
+  uint64_t keys_size;
+
   TrieOptions();
 };
 
@@ -36,8 +40,7 @@ class Trie {
   static Trie *create(const TrieOptions &options, io::Pool pool);
   static Trie *open(io::Pool pool, uint32_t block_id);
 
-  // TODO
-//  virtual Trie *defrag() = 0;
+  virtual Trie *defrag(const TrieOptions &options) = 0;
 
   virtual uint32_t block_id() const = 0;
 
