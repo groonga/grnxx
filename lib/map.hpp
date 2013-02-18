@@ -52,7 +52,7 @@ class Map {
 
   virtual uint32_t block_id() const = 0;
 
-  virtual bool search(int64_t key_id, Slice *key) = 0;
+  virtual bool search(int64_t key_id, Slice *key = nullptr) = 0;
   virtual bool search(const Slice &key, int64_t *key_id = nullptr) = 0;
 
   virtual bool insert(const Slice &key, int64_t *key_id = nullptr) = 0;
