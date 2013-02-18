@@ -19,19 +19,15 @@
 #define GRNXX_MAP_DOUBLE_ARRAY_HPP
 
 #include "../map.hpp"
+#include "da/trie.hpp"
 
 namespace grnxx {
 namespace map {
 
-enum DoubleArrayType : int32_t {
-  DOUBLE_ARRAY_UNKNOWN = 0,
-  DOUBLE_ARRAY_BASIC   = 1,
-  DOUBLE_ARRAY_LARGE   = 2
-};
-
 struct DoubleArrayHeader {
   MapHeader map_header;
-  DoubleArrayType type;
+  uint32_t front_block_id;
+  uint32_t back_block_id;
 
   DoubleArrayHeader();
 };
@@ -58,7 +54,21 @@ class DoubleArray : public Map {
               int64_t *key_id = nullptr);
 
  private:
+  io::Pool pool_;
+  const io::BlockInfo *block_info_;
+  DoubleArrayHeader *header_;
+  std::unique_ptr<da::Trie> front_;
+  std::unique_ptr<da::Trie> back_;
+  uint32_t front_block_id_;
+  Mutex inter_thread_mutex_;
+
   DoubleArray();
+
+  void create_double_array(const MapOptions &options, io::Pool pool);
+  void open_double_array(io::Pool pool, uint32_t block_id);
+
+  bool open_trie_if_needed();
+  void defrag_trie();
 };
 
 }  // namespace map

@@ -1,6 +1,5 @@
 #include "basic_trie.hpp"
 
-#include "../../exception.hpp"
 #include "../../lock.hpp"
 #include "../../logger.hpp"
 
@@ -552,9 +551,9 @@ bool Trie::insert_leaf(const Slice &key, uint32_t &node_id, size_t query_pos) {
     }
 
     if (header_->num_keys >= header_->entries_size) {
-      GRNXX_ERROR() << "too many keys: num_keys = " << header_->num_keys
-                    << ", entries_size = " << header_->entries_size;
-      GRNXX_THROW();
+      GRNXX_NOTICE() << "too many keys: num_keys = " << header_->num_keys
+                     << ", entries_size = " << header_->entries_size;
+      throw TrieException();
     }
 
     GRNXX_DEBUG_THROW_IF(static_cast<uint32_t>(header_->next_key_id) >= header_->entries_size);
@@ -568,9 +567,9 @@ bool Trie::insert_leaf(const Slice &key, uint32_t &node_id, size_t query_pos) {
     return true;
   } else {
     if (header_->num_keys >= header_->entries_size) {
-      GRNXX_ERROR() << "too many keys: num_keys = " << header_->num_keys
-                    << ", entries_size = " << header_->entries_size;
-      GRNXX_THROW();
+      GRNXX_NOTICE() << "too many keys: num_keys = " << header_->num_keys
+                     << ", entries_size = " << header_->entries_size;
+      throw TrieException();
     }
 
     const uint16_t label = (query_pos < key.size()) ?
@@ -644,19 +643,19 @@ uint32_t Trie::insert_node(uint32_t node_id, uint16_t label) {
 
 uint32_t Trie::append_key(const Slice &key, int32_t key_id) {
   if (static_cast<uint32_t>(key_id) >= header_->entries_size) {
-    GRNXX_ERROR() << "too many keys: key_id = " << key_id
-                  << ", entries_size = " << header_->entries_size;
-    GRNXX_THROW();
+    GRNXX_NOTICE() << "too many keys: key_id = " << key_id
+                   << ", entries_size = " << header_->entries_size;
+    throw TrieException();
   }
 
   const uint32_t key_pos = header_->next_key_pos;
   const uint32_t key_size = Key::estimate_size(key.size());
 
   if (key_size > (header_->keys_size - key_pos)) {
-    GRNXX_ERROR() << "too many keys: key_size = " << key_size
-                  << ", keys_size = " << header_->keys_size
-                  << ", key_pos = " << key_pos;
-    GRNXX_THROW();
+    GRNXX_NOTICE() << "too many keys: key_size = " << key_size
+                   << ", keys_size = " << header_->keys_size
+                   << ", key_pos = " << key_pos;
+    throw TrieException();
   }
   new (&keys_[key_pos]) Key(key_id, key);
 
@@ -887,9 +886,9 @@ void Trie::reserve_chunk(uint32_t chunk_id) {
   GRNXX_DEBUG_THROW_IF(chunk_id != header_->num_chunks);
 
   if (chunk_id >= header_->chunks_size) {
-    GRNXX_ERROR() << "too many chunks: chunk_id = " << chunk_id
-                  << ", chunks_size = " << header_->chunks_size;
-    GRNXX_THROW();
+    GRNXX_NOTICE() << "too many chunks: chunk_id = " << chunk_id
+                   << ", chunks_size = " << header_->chunks_size;
+    throw TrieException();
   }
 
   header_->num_chunks = chunk_id + 1;

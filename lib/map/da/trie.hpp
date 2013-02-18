@@ -25,6 +25,21 @@ namespace grnxx {
 namespace map {
 namespace da {
 
+class TrieException : Exception {
+ public:
+  TrieException() noexcept {}
+  virtual ~TrieException() noexcept {}
+
+  TrieException(const TrieException &) noexcept {}
+  TrieException &operator=(const TrieException &) noexcept {
+    return *this;
+  }
+
+  virtual const char *what() const noexcept {
+    return "";
+  }
+};
+
 struct TrieOptions {
   uint64_t nodes_size;
   uint64_t entries_size;
