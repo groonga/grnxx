@@ -131,6 +131,80 @@ bool Trie::search(const Slice &key, int64_t *key_id) {
   return false;
 }
 
+bool Trie::lcp_search(const Slice &query, int64_t *key_id, Slice *key) {
+  bool found = false;
+  uint32_t node_id = ROOT_NODE_ID;
+  uint32_t query_pos = 0;
+
+  for ( ; query_pos < query.size(); ++query_pos) {
+    const Node node = nodes_[node_id];
+    if (node.is_leaf()) {
+      const Key &match = get_key(node.key_pos());
+      if ((match.size() <= query.size()) &&
+          match.equals_to(Slice(query.address(), match.size()), query_pos)) {
+        if (key_id) {
+          *key_id = match.id();
+        }
+        if (key) {
+          *key = match.slice();
+        }
+        found = true;
+      }
+      return found;
+    }
+
+    if (nodes_[node_id].child() == TERMINAL_LABEL) {
+      const Node leaf_node = nodes_[node.offset() ^ TERMINAL_LABEL];
+      if (leaf_node.is_leaf()) {
+        if (key_id || key) {
+          const Key &match = get_key(leaf_node.key_pos());
+          if (key_id) {
+            *key_id = match.id();
+          }
+          if (key) {
+            *key = match.slice();
+          }
+        }
+        found = true;
+      }
+    }
+
+    node_id = node.offset() ^ query[query_pos];
+    if (nodes_[node_id].label() != query[query_pos]) {
+      return found;
+    }
+  }
+
+  const Node node = nodes_[node_id];
+  if (node.is_leaf()) {
+    const Key &match = get_key(node.key_pos());
+    if (match.size() <= query.size()) {
+      if (key_id) {
+        *key_id = match.id();
+      }
+      if (key) {
+        *key = match.slice();
+      }
+      found = true;
+    }
+  } else if (nodes_[node_id].child() == TERMINAL_LABEL) {
+    const Node leaf_node = nodes_[node.offset() ^ TERMINAL_LABEL];
+    if (leaf_node.is_leaf()) {
+      if (key_id || key) {
+        const Key &match = get_key(leaf_node.key_pos());
+        if (key_id) {
+          *key_id = match.id();
+        }
+        if (key) {
+          *key = match.slice();
+        }
+      }
+      found = true;
+    }
+  }
+  return found;
+}
+
 bool Trie::insert(const Slice &key, int64_t *key_id) {
   if ((key.size() < MIN_KEY_SIZE) || (key.size() > MAX_KEY_SIZE)) {
     GRNXX_ERROR() << "invalid key: size = " << key.size();

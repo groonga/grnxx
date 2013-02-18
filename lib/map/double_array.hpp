@@ -44,6 +44,9 @@ class DoubleArray : public Map {
   bool search(int64_t key_id, Slice *key = nullptr);
   bool search(const Slice &key, int64_t *key_id = nullptr);
 
+  bool lcp_search(const Slice &query, int64_t *key_id = nullptr,
+                  Slice *key = nullptr);
+
   bool insert(const Slice &key, int64_t *key_id = nullptr);
 
   bool remove(int64_t key_id);

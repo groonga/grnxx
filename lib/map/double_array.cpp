@@ -65,6 +65,15 @@ bool DoubleArray::search(int64_t key_id, Slice *key) {
   return front_->search(key_id, key);
 }
 
+bool DoubleArray::lcp_search(const Slice &query, int64_t *key_id,
+                             Slice *key) {
+  open_trie_if_needed();
+  if (!front_) {
+    return false;
+  }
+  return front_->lcp_search(query, key_id, key);
+}
+
 bool DoubleArray::search(const Slice &key, int64_t *key_id) {
   open_trie_if_needed();
   if (!front_) {
