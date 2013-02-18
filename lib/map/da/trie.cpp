@@ -14,13 +14,11 @@ Trie::Trie() {}
 Trie::~Trie() {}
 
 Trie *Trie::create(const TrieOptions &options, io::Pool pool) {
-  // TODO
-  return nullptr;
+  return basic::Trie::create(options, pool);
 }
 
 Trie *Trie::open(io::Pool pool, uint32_t block_id) {
-  // TODO
-  return nullptr;
+  return basic::Trie::open(pool, block_id);
 }
 
 }  // namespace da
