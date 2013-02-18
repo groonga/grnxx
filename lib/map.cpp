@@ -72,4 +72,31 @@ Map *Map::open(io::Pool pool, uint32_t block_id) {
   return nullptr;
 }
 
+void Map::unlink(io::Pool pool, uint32_t block_id) {
+  // Get the address to the header.
+  auto block_info = pool.get_block_info(block_id);
+  auto block_address = pool.get_block_address(*block_info);
+  auto header = static_cast<MapHeader *>(block_address);
+
+  // Check the type.
+  MapType type = header->type;
+
+  // Call the appropriate function.
+  switch (type) {
+    case MAP_UNKNOWN: {
+      break;
+    }
+    case MAP_DOUBLE_ARRAY: {
+      map::DoubleArray::unlink(pool, block_id);
+      return;
+    }
+    // TODO: Other map types will be supported in future.
+//    case ???: {
+//      return map::???::unlink(pool, block_id);
+//    }
+  }
+
+  // TODO: Unknown type error!
+}
+
 }  // namespace grnxx

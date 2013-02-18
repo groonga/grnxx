@@ -39,6 +39,8 @@ class DoubleArray : public Map {
   static DoubleArray *create(const MapOptions &options, io::Pool pool);
   static DoubleArray *open(io::Pool pool, uint32_t block_id);
 
+  static void unlink(io::Pool pool, uint32_t block_id);
+
   uint32_t block_id() const;
 
   bool search(int64_t key_id, Slice *key = nullptr);

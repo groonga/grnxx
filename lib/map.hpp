@@ -50,6 +50,8 @@ class Map {
   static Map *create(const MapOptions &options, io::Pool pool);
   static Map *open(io::Pool pool, uint32_t block_id);
 
+  static void unlink(io::Pool pool, uint32_t block_id);
+
   virtual uint32_t block_id() const = 0;
 
   virtual bool search(int64_t key_id, Slice *key = nullptr) = 0;

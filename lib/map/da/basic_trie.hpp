@@ -416,6 +416,8 @@ class Trie : public da::Trie {
   static Trie *create(const TrieOptions &options, io::Pool pool);
   static Trie *open(io::Pool pool, uint32_t block_id);
 
+  static void unlink(io::Pool pool, uint32_t block_id);
+
   Trie *defrag(const TrieOptions &options);
 
   uint32_t block_id() const;

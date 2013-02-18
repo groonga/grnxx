@@ -53,6 +53,18 @@ DoubleArray *DoubleArray::open(io::Pool pool, uint32_t block_id) {
   return da.release();
 }
 
+void DoubleArray::unlink(io::Pool pool, uint32_t block_id) {
+  std::unique_ptr<DoubleArray> da(DoubleArray::open(pool, block_id));
+
+  if (da->header_->front_block_id != io::BLOCK_INVALID_ID) {
+    da::Trie::unlink(pool, da->header_->front_block_id);
+  }
+  if (da->header_->back_block_id != io::BLOCK_INVALID_ID) {
+    da::Trie::unlink(pool, da->header_->back_block_id);
+  }
+  pool.free_block(block_id);
+}
+
 uint32_t DoubleArray::block_id() const {
   return block_info_->id();
 }

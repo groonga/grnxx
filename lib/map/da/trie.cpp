@@ -21,6 +21,10 @@ Trie *Trie::open(io::Pool pool, uint32_t block_id) {
   return basic::Trie::open(pool, block_id);
 }
 
+void Trie::unlink(io::Pool pool, uint32_t block_id) {
+  return basic::Trie::unlink(pool, block_id);
+}
+
 }  // namespace da
 }  // namespace map
 }  // namespace grnxx

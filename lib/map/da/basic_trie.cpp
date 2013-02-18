@@ -74,6 +74,16 @@ Trie *Trie::open(io::Pool pool, uint32_t block_id) {
   return trie.release();
 }
 
+void Trie::unlink(io::Pool pool, uint32_t block_id) {
+  std::unique_ptr<Trie> trie(Trie::open(pool, block_id));
+
+  pool.free_block(trie->header_->nodes_block_id);
+  pool.free_block(trie->header_->chunks_block_id);
+  pool.free_block(trie->header_->entries_block_id);
+  pool.free_block(trie->header_->keys_block_id);
+  pool.free_block(*trie->block_info_);
+}
+
 Trie *Trie::defrag(const TrieOptions &options) {
   std::unique_ptr<Trie> trie(new (std::nothrow) Trie);
   if (!trie) {
