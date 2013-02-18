@@ -31,8 +31,7 @@ void test_basics() {
 
   grnxx::MapOptions options;
   options.type = grnxx::MAP_DOUBLE_ARRAY;
-  std::unique_ptr<grnxx::Map> map(
-      grnxx::Map::create(options, pool));
+  std::unique_ptr<grnxx::Map> map(grnxx::Map::create(options, pool));
 
   std::vector<grnxx::Slice> keys;
   keys.push_back("apple");
@@ -90,6 +89,44 @@ void test_basics() {
   }
 }
 
+void test_lcp_search() {
+  grnxx::io::Pool pool;
+  pool.open(grnxx::io::POOL_TEMPORARY);
+
+  grnxx::MapOptions options;
+  options.type = grnxx::MAP_DOUBLE_ARRAY;
+  std::unique_ptr<grnxx::Map> map(grnxx::Map::create(options, pool));
+
+  assert(map->insert("AB"));
+  assert(map->insert("ABCD"));
+  assert(map->insert("ABE"));
+
+  std::int64_t key_id;
+  grnxx::Slice key;
+
+  assert(!map->lcp_search("", &key_id, &key));
+  assert(!map->lcp_search("A", &key_id, &key));
+  assert(map->lcp_search("AB", &key_id, &key));
+  assert(key_id == 0);
+  assert(key == "AB");
+  assert(map->lcp_search("ABC", &key_id, &key));
+  assert(key_id == 0);
+  assert(key == "AB");
+  assert(map->lcp_search("ABCD", &key_id, &key));
+  assert(key_id == 1);
+  assert(key == "ABCD");
+  assert(map->lcp_search("ABCDE", &key_id, &key));
+  assert(key_id == 1);
+  assert(key == "ABCD");
+  assert(map->lcp_search("ABE", &key_id, &key));
+  assert(key_id == 2);
+  assert(key == "ABE");
+  assert(map->lcp_search("ABEF", &key_id, &key));
+  assert(key_id == 2);
+  assert(key == "ABE");
+  assert(!map->lcp_search("BCD", &key_id, &key));
+}
+
 void create_keys(std::size_t num_keys,
                  std::size_t min_size, std::size_t max_size,
                  std::unordered_set<std::string> *both_keys,
@@ -129,8 +166,7 @@ void test_insert() {
 
   grnxx::MapOptions options;
   options.type = grnxx::MAP_DOUBLE_ARRAY;
-  std::unique_ptr<grnxx::Map> map(
-      grnxx::Map::create(options, pool));
+  std::unique_ptr<grnxx::Map> map(grnxx::Map::create(options, pool));
 
   std::unordered_set<std::string> both_keys;
   std::vector<grnxx::Slice> true_keys;
@@ -171,8 +207,7 @@ void test_remove() {
 
   grnxx::MapOptions options;
   options.type = grnxx::MAP_DOUBLE_ARRAY;
-  std::unique_ptr<grnxx::Map> map(
-      grnxx::Map::create(options, pool));
+  std::unique_ptr<grnxx::Map> map(grnxx::Map::create(options, pool));
 
   std::unordered_set<std::string> both_keys;
   std::vector<grnxx::Slice> true_keys;
@@ -228,8 +263,7 @@ void test_update() {
 
   grnxx::MapOptions options;
   options.type = grnxx::MAP_DOUBLE_ARRAY;
-  std::unique_ptr<grnxx::Map> map(
-      grnxx::Map::create(options, pool));
+  std::unique_ptr<grnxx::Map> map(grnxx::Map::create(options, pool));
 
   std::unordered_set<std::string> both_keys;
   std::vector<grnxx::Slice> true_keys;
@@ -270,6 +304,7 @@ int main() {
   grnxx::Logger::set_max_level(grnxx::NOTICE_LOGGER);
 
   test_basics();
+  test_lcp_search();
 
   test_insert();
   test_remove();

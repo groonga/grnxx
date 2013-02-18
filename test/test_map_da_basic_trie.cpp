@@ -89,6 +89,44 @@ void test_basics() {
   }
 }
 
+void test_lcp_search() {
+  grnxx::io::Pool pool;
+  pool.open(grnxx::io::POOL_TEMPORARY);
+
+  grnxx::map::da::TrieOptions options;
+  std::unique_ptr<grnxx::map::da::basic::Trie> trie(
+      grnxx::map::da::basic::Trie::create(options, pool));
+
+  assert(trie->insert("AB"));
+  assert(trie->insert("ABCD"));
+  assert(trie->insert("ABE"));
+
+  std::int64_t key_id;
+  grnxx::Slice key;
+
+  assert(!trie->lcp_search("", &key_id, &key));
+  assert(!trie->lcp_search("A", &key_id, &key));
+  assert(trie->lcp_search("AB", &key_id, &key));
+  assert(key_id == 0);
+  assert(key == "AB");
+  assert(trie->lcp_search("ABC", &key_id, &key));
+  assert(key_id == 0);
+  assert(key == "AB");
+  assert(trie->lcp_search("ABCD", &key_id, &key));
+  assert(key_id == 1);
+  assert(key == "ABCD");
+  assert(trie->lcp_search("ABCDE", &key_id, &key));
+  assert(key_id == 1);
+  assert(key == "ABCD");
+  assert(trie->lcp_search("ABE", &key_id, &key));
+  assert(key_id == 2);
+  assert(key == "ABE");
+  assert(trie->lcp_search("ABEF", &key_id, &key));
+  assert(key_id == 2);
+  assert(key == "ABE");
+  assert(!trie->lcp_search("BCD", &key_id, &key));
+}
+
 void create_keys(std::size_t num_keys,
                  std::size_t min_size, std::size_t max_size,
                  std::unordered_set<std::string> *both_keys,
@@ -313,6 +351,7 @@ int main() {
   grnxx::Logger::set_max_level(grnxx::NOTICE_LOGGER);
 
   test_basics();
+  test_lcp_search();
 
   test_insert();
   test_remove();
