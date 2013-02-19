@@ -78,7 +78,7 @@ constexpr uint32_t MAX_CHUNK_LEVEL   = 5;
 // Chunks in the same level compose a doubly linked list. The entry chunk of
 // a linked list is called a leader. INVALID_LEADER means that
 // the linked list is empty and there exists no leader.
-constexpr uint32_t INVALID_LEADER    = 0x7FFFFFFFU;
+constexpr uint32_t INVALID_LEADER    = std::numeric_limits<uint32_t>::max();
 
 struct Header {
   uint32_t nodes_block_id;
