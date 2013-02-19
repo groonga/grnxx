@@ -35,7 +35,7 @@ class Slice {
     : ptr_(static_cast<const uint8_t *>(ptr)),
       size_(size) {}
 
-  // Return true iff *this" is not empty.
+  // Return true iff "*this" is not empty.
   explicit operator bool() const {
     return size_ != 0;
   }
@@ -47,12 +47,12 @@ class Slice {
   }
 
   // Create a slice for the first "n" bytes.
-  Slice prefix(size_t size) const {
-    return Slice(ptr_, size);
+  Slice prefix(size_t n) const {
+    return Slice(ptr_, n);
   }
   // Create a slice for the last "n" bytes.
-  Slice suffix(size_t size) const {
-    return Slice(ptr_ + size_ - size, size);
+  Slice suffix(size_t n) const {
+    return Slice(ptr_ + size_ - n, n);
   }
   // Create a subslice.
   Slice subslice(size_t offset, size_t size) const {
@@ -69,8 +69,8 @@ class Slice {
     size_ -= n;
   }
 
-  // Compare "*this" and "s". Return a negative value if "*this" < "s", zero if
-  // "*this" == "s", or a positive value otherwise (if "*this" > "s").
+  // Compare "*this" and "s" and return a negative value if "*this" < "s",
+  // zero if "*this" == "s", or a positive value otherwise (if "*this" > "s").
   int compare(const Slice &s) const {
     const size_t min_size = (size_ < s.size_) ? size_ : s.size_;
     int result = std::memcmp(ptr_, s.ptr_, min_size);
@@ -90,7 +90,7 @@ class Slice {
            (std::memcmp(ptr_ + size_ - s.size_, s.ptr_, s.size_) == 0);
   }
 
-  // Return the "n"-th byte of "*this".
+  // Return the "i"-th byte of "*this".
   uint8_t operator[](size_t i) const {
     return ptr_[i];
   }
@@ -103,7 +103,7 @@ class Slice {
   const uint8_t *ptr() const {
     return ptr_;
   }
-  // Returns the size of "*this".
+  // Return the size of "*this".
   size_t size() const {
     return size_;
   }
