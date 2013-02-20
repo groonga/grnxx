@@ -54,6 +54,9 @@ void test_basics() {
     assert(key_id == static_cast<std::int64_t>(i));
   }
 
+  const std::uint32_t block_id = map->block_id();
+  map.reset(grnxx::Map::open(pool, block_id));
+
   for (std::size_t i = 0; i < keys.size(); ++i) {
     assert(!map->insert(keys[i]));
   }

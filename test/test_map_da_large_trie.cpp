@@ -54,6 +54,9 @@ void test_basics() {
     assert(key_id == static_cast<std::int64_t>(i));
   }
 
+  const std::uint32_t block_id = trie->block_id();
+  trie.reset(grnxx::map::da::large::Trie::open(pool, block_id));
+
   for (std::size_t i = 0; i < keys.size(); ++i) {
     assert(!trie->insert(keys[i]));
   }

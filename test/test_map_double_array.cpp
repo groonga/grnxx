@@ -54,6 +54,9 @@ void test_basics() {
     assert(key_id == static_cast<std::int64_t>(i));
   }
 
+  const std::uint32_t block_id = da->block_id();
+  da.reset(grnxx::map::DoubleArray::open(pool, block_id));
+
   for (std::size_t i = 0; i < keys.size(); ++i) {
     assert(!da->insert(keys[i]));
   }
@@ -155,7 +158,7 @@ void create_keys(std::size_t num_keys,
 }
 
 void test_insert() {
-  constexpr std::size_t NUM_KEYS = 1 << 16;
+  constexpr std::size_t NUM_KEYS = 1 << 15;
   constexpr std::size_t MIN_SIZE = 1;
   constexpr std::size_t MAX_SIZE = 10;
 
@@ -196,7 +199,7 @@ void test_insert() {
 }
 
 void test_remove() {
-  constexpr std::size_t NUM_KEYS = 1 << 16;
+  constexpr std::size_t NUM_KEYS = 1 << 15;
   constexpr std::size_t MIN_SIZE = 1;
   constexpr std::size_t MAX_SIZE = 10;
 
@@ -252,7 +255,7 @@ void test_remove() {
 }
 
 void test_update() {
-  constexpr std::size_t NUM_KEYS = 1 << 16;
+  constexpr std::size_t NUM_KEYS = 1 << 15;
   constexpr std::size_t MIN_SIZE = 1;
   constexpr std::size_t MAX_SIZE = 10;
 
