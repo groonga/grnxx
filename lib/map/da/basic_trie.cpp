@@ -1,4 +1,5 @@
 #include "basic_trie.hpp"
+#include "large_trie.hpp"
 
 #include "../../lock.hpp"
 #include "../../logger.hpp"
@@ -57,7 +58,7 @@ Trie::~Trie() {
 Trie *Trie::create(const TrieOptions &options, io::Pool pool) {
   std::unique_ptr<Trie> trie(new (std::nothrow) Trie);
   if (!trie) {
-    GRNXX_ERROR() << "new grnxx::map::Trie failed";
+    GRNXX_ERROR() << "new grnxx::map::da::basic::Trie failed";
     GRNXX_THROW();
   }
   trie->create_trie(options, pool);
@@ -67,7 +68,7 @@ Trie *Trie::create(const TrieOptions &options, io::Pool pool) {
 Trie *Trie::open(io::Pool pool, uint32_t block_id) {
   std::unique_ptr<Trie> trie(new (std::nothrow) Trie);
   if (!trie) {
-    GRNXX_ERROR() << "new grnxx::map::Trie failed";
+    GRNXX_ERROR() << "new grnxx::map::da::basic::Trie failed";
     GRNXX_THROW();
   }
   trie->open_trie(pool, block_id);
@@ -84,13 +85,17 @@ void Trie::unlink(io::Pool pool, uint32_t block_id) {
   pool.free_block(*trie->block_info_);
 }
 
-Trie *Trie::defrag(const TrieOptions &options) {
+da::Trie *Trie::defrag(const TrieOptions &options) {
   std::unique_ptr<Trie> trie(new (std::nothrow) Trie);
   if (!trie) {
-    GRNXX_ERROR() << "new grnxx::map::Trie failed";
+    GRNXX_ERROR() << "new grnxx::map::da::basic::Trie failed";
     GRNXX_THROW();
   }
-  trie->defrag_trie(options, *this, pool_);
+  try {
+    trie->defrag_trie(options, *this, pool_);
+  } catch (const TrieException &) {
+    return large::Trie::defrag(options, *this, pool_);
+  }
   return trie.release();
 }
 
@@ -413,19 +418,19 @@ void Trie::defrag_trie(const TrieOptions &options, const Trie &trie,
   }
 
   if (nodes_size > MAX_NODES_SIZE) {
-    GRNXX_ERROR() << "too large request: nodes_size = " << nodes_size
-                  << ", MAX_NODES_SIZE = " << MAX_NODES_SIZE;
-    GRNXX_THROW();
+    GRNXX_NOTICE() << "too large request: nodes_size = " << nodes_size
+                   << ", MAX_NODES_SIZE = " << MAX_NODES_SIZE;
+    throw TrieException();
   }
   if (entries_size > MAX_ENTRIES_SIZE) {
-    GRNXX_ERROR() << "too large request: entries_size = " << entries_size
-                  << ", MAX_ENTRIES_SIZE = " << MAX_ENTRIES_SIZE;
-    GRNXX_THROW();
+    GRNXX_NOTICE() << "too large request: entries_size = " << entries_size
+                   << ", MAX_ENTRIES_SIZE = " << MAX_ENTRIES_SIZE;
+    throw TrieException();
   }
   if (keys_size > MAX_KEYS_SIZE) {
-    GRNXX_ERROR() << "too large request: keys_size = " << keys_size
-                  << ", MAX_KEYS_SIZE = " << MAX_KEYS_SIZE;
-    GRNXX_THROW();
+    GRNXX_NOTICE() << "too large request: keys_size = " << keys_size
+                   << ", MAX_KEYS_SIZE = " << MAX_KEYS_SIZE;
+    throw TrieException();
   }
 
   pool_ = pool;

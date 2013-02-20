@@ -18,17 +18,7 @@
 #ifndef GRNXX_MAP_DA_LARGE_TRIE_HPP
 #define GRNXX_MAP_DA_LARGE_TRIE_HPP
 
-#include "trie.hpp"
-
-#if 0
-# define GRNXX_DEBUG_THROW(msg)\
-   ({ GRNXX_ERROR() << msg; GRNXX_THROW(); })
-# define GRNXX_DEBUG_THROW_IF(cond)\
-   (void)((!(cond)) || (GRNXX_DEBUG_THROW(#cond), 0))
-#else
-# define GRNXX_DEBUG_THROW(msg)
-# define GRNXX_DEBUG_THROW_IF(cond)
-#endif
+#include "basic_trie.hpp"
 
 namespace grnxx {
 namespace map {
@@ -428,7 +418,10 @@ class Trie : public da::Trie {
 
   static void unlink(io::Pool pool, uint32_t block_id);
 
-  Trie *defrag(const TrieOptions &options);
+  static da::Trie *defrag(const TrieOptions &options,
+                          const basic::Trie &basic_trie, io::Pool pool);
+
+  da::Trie *defrag(const TrieOptions &options);
 
   uint32_t block_id() const;
 
@@ -462,6 +455,10 @@ class Trie : public da::Trie {
 
   void create_trie(const TrieOptions &options, io::Pool pool);
   void open_trie(io::Pool pool, uint32_t block_id);
+
+  void defrag_trie(const TrieOptions &options, const basic::Trie &trie,
+                   io::Pool pool);
+  void defrag_trie(const basic::Trie &trie, uint64_t src, uint64_t dest);
 
   void defrag_trie(const TrieOptions &options, const Trie &trie,
                    io::Pool pool);

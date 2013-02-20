@@ -33,6 +33,12 @@
 namespace grnxx {
 namespace map {
 namespace da {
+namespace large {
+
+class Trie;
+
+}  // namespace large
+
 namespace basic {
 
 constexpr  int32_t MIN_KEY_ID     = 0;
@@ -410,6 +416,8 @@ class Key {
 };
 
 class Trie : public da::Trie {
+  friend class large::Trie;
+
  public:
   ~Trie();
 
@@ -418,7 +426,7 @@ class Trie : public da::Trie {
 
   static void unlink(io::Pool pool, uint32_t block_id);
 
-  Trie *defrag(const TrieOptions &options);
+  da::Trie *defrag(const TrieOptions &options);
 
   uint32_t block_id() const;
 

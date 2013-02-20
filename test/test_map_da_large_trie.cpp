@@ -30,7 +30,7 @@ void test_basics() {
   pool.open(grnxx::io::POOL_TEMPORARY);
 
   grnxx::map::da::TrieOptions options;
-  std::unique_ptr<grnxx::map::da::large::Trie> trie(
+  std::unique_ptr<grnxx::map::da::Trie> trie(
       grnxx::map::da::large::Trie::create(options, pool));
 
   std::vector<grnxx::Slice> keys;
@@ -94,7 +94,7 @@ void test_lcp_search() {
   pool.open(grnxx::io::POOL_TEMPORARY);
 
   grnxx::map::da::TrieOptions options;
-  std::unique_ptr<grnxx::map::da::large::Trie> trie(
+  std::unique_ptr<grnxx::map::da::Trie> trie(
       grnxx::map::da::large::Trie::create(options, pool));
 
   assert(trie->insert("AB"));
@@ -165,7 +165,7 @@ void test_insert() {
   pool.open(grnxx::io::POOL_TEMPORARY);
 
   grnxx::map::da::TrieOptions options;
-  std::unique_ptr<grnxx::map::da::large::Trie> trie(
+  std::unique_ptr<grnxx::map::da::Trie> trie(
       grnxx::map::da::large::Trie::create(options, pool));
 
   std::unordered_set<std::string> both_keys;
@@ -206,7 +206,7 @@ void test_remove() {
   pool.open(grnxx::io::POOL_TEMPORARY);
 
   grnxx::map::da::TrieOptions options;
-  std::unique_ptr<grnxx::map::da::large::Trie> trie(
+  std::unique_ptr<grnxx::map::da::Trie> trie(
       grnxx::map::da::large::Trie::create(options, pool));
 
   std::unordered_set<std::string> both_keys;
@@ -262,7 +262,7 @@ void test_update() {
   pool.open(grnxx::io::POOL_TEMPORARY);
 
   grnxx::map::da::TrieOptions options;
-  std::unique_ptr<grnxx::map::da::large::Trie> trie(
+  std::unique_ptr<grnxx::map::da::Trie> trie(
       grnxx::map::da::large::Trie::create(options, pool));
 
   std::unordered_set<std::string> both_keys;
@@ -309,7 +309,7 @@ void test_defrag() {
   pool.open(grnxx::io::POOL_TEMPORARY);
 
   grnxx::map::da::TrieOptions options;
-  std::unique_ptr<grnxx::map::da::large::Trie> trie(
+  std::unique_ptr<grnxx::map::da::Trie> trie(
       grnxx::map::da::large::Trie::create(options, pool));
 
   std::unordered_set<std::string> both_keys;
@@ -327,8 +327,55 @@ void test_defrag() {
   options.nodes_size = grnxx::map::da::large::INITIAL_NODES_SIZE;
   options.entries_size = grnxx::map::da::large::INITIAL_ENTRIES_SIZE;
   options.keys_size = grnxx::map::da::large::INITIAL_KEYS_SIZE;
-  std::unique_ptr<grnxx::map::da::large::Trie> new_trie(
+  std::unique_ptr<grnxx::map::da::Trie> new_trie(
       trie->defrag(options));
+
+  for (std::size_t i = 0; i < NUM_KEYS; ++i) {
+    std::int64_t key_id;
+    assert(new_trie->search(true_keys[i], &key_id));
+    assert(key_id == static_cast<std::int64_t>(i));
+
+    assert(!new_trie->search(false_keys[i], &key_id));
+  }
+
+  for (std::size_t i = 0; i < NUM_KEYS; ++i) {
+    std::int64_t key_id;
+    assert(new_trie->insert(false_keys[i], &key_id));
+    assert(key_id == static_cast<std::int64_t>(NUM_KEYS + i));
+  }
+}
+
+void test_cross_defrag() {
+  constexpr std::size_t NUM_KEYS = 1 << 12;
+  constexpr std::size_t MIN_SIZE = 1;
+  constexpr std::size_t MAX_SIZE = 10;
+
+  std::mt19937 random;
+
+  grnxx::io::Pool pool;
+  pool.open(grnxx::io::POOL_TEMPORARY);
+
+  grnxx::map::da::TrieOptions options;
+  std::unique_ptr<grnxx::map::da::basic::Trie> trie(
+      grnxx::map::da::basic::Trie::create(options, pool));
+
+  std::unordered_set<std::string> both_keys;
+  std::vector<grnxx::Slice> true_keys;
+  std::vector<grnxx::Slice> false_keys;
+  create_keys(NUM_KEYS, MIN_SIZE, MAX_SIZE,
+              &both_keys, &true_keys, &false_keys);
+
+  for (std::size_t i = 0; i < NUM_KEYS; ++i) {
+    std::int64_t key_id;
+    assert(trie->insert(true_keys[i], &key_id));
+    assert(key_id == static_cast<std::int64_t>(i));
+  }
+
+  options.nodes_size = grnxx::map::da::large::INITIAL_NODES_SIZE;
+  options.entries_size = grnxx::map::da::large::INITIAL_ENTRIES_SIZE;
+  options.keys_size = grnxx::map::da::large::INITIAL_KEYS_SIZE;
+  std::unique_ptr<grnxx::map::da::Trie> new_trie(
+      grnxx::map::da::large::Trie::defrag(options, *trie, pool));
 
   for (std::size_t i = 0; i < NUM_KEYS; ++i) {
     std::int64_t key_id;
@@ -358,6 +405,7 @@ int main() {
   test_update();
 
   test_defrag();
+  test_cross_defrag();
 
   return 0;
 }

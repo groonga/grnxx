@@ -30,7 +30,7 @@ void test_basics() {
   pool.open(grnxx::io::POOL_TEMPORARY);
 
   grnxx::map::da::TrieOptions options;
-  std::unique_ptr<grnxx::map::da::basic::Trie> trie(
+  std::unique_ptr<grnxx::map::da::Trie> trie(
       grnxx::map::da::basic::Trie::create(options, pool));
 
   std::vector<grnxx::Slice> keys;
@@ -94,7 +94,7 @@ void test_lcp_search() {
   pool.open(grnxx::io::POOL_TEMPORARY);
 
   grnxx::map::da::TrieOptions options;
-  std::unique_ptr<grnxx::map::da::basic::Trie> trie(
+  std::unique_ptr<grnxx::map::da::Trie> trie(
       grnxx::map::da::basic::Trie::create(options, pool));
 
   assert(trie->insert("AB"));
@@ -165,7 +165,7 @@ void test_insert() {
   pool.open(grnxx::io::POOL_TEMPORARY);
 
   grnxx::map::da::TrieOptions options;
-  std::unique_ptr<grnxx::map::da::basic::Trie> trie(
+  std::unique_ptr<grnxx::map::da::Trie> trie(
       grnxx::map::da::basic::Trie::create(options, pool));
 
   std::unordered_set<std::string> both_keys;
@@ -206,7 +206,7 @@ void test_remove() {
   pool.open(grnxx::io::POOL_TEMPORARY);
 
   grnxx::map::da::TrieOptions options;
-  std::unique_ptr<grnxx::map::da::basic::Trie> trie(
+  std::unique_ptr<grnxx::map::da::Trie> trie(
       grnxx::map::da::basic::Trie::create(options, pool));
 
   std::unordered_set<std::string> both_keys;
@@ -262,7 +262,7 @@ void test_update() {
   pool.open(grnxx::io::POOL_TEMPORARY);
 
   grnxx::map::da::TrieOptions options;
-  std::unique_ptr<grnxx::map::da::basic::Trie> trie(
+  std::unique_ptr<grnxx::map::da::Trie> trie(
       grnxx::map::da::basic::Trie::create(options, pool));
 
   std::unordered_set<std::string> both_keys;
@@ -309,7 +309,7 @@ void test_defrag() {
   pool.open(grnxx::io::POOL_TEMPORARY);
 
   grnxx::map::da::TrieOptions options;
-  std::unique_ptr<grnxx::map::da::basic::Trie> trie(
+  std::unique_ptr<grnxx::map::da::Trie> trie(
       grnxx::map::da::basic::Trie::create(options, pool));
 
   std::unordered_set<std::string> both_keys;
@@ -327,7 +327,7 @@ void test_defrag() {
   options.nodes_size = grnxx::map::da::basic::INITIAL_NODES_SIZE;
   options.entries_size = grnxx::map::da::basic::INITIAL_ENTRIES_SIZE;
   options.keys_size = grnxx::map::da::basic::INITIAL_KEYS_SIZE;
-  std::unique_ptr<grnxx::map::da::basic::Trie> new_trie(
+  std::unique_ptr<grnxx::map::da::Trie> new_trie(
       trie->defrag(options));
 
   for (std::size_t i = 0; i < NUM_KEYS; ++i) {

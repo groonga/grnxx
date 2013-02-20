@@ -61,7 +61,7 @@ Trie::~Trie() {
 Trie *Trie::create(const TrieOptions &options, io::Pool pool) {
   std::unique_ptr<Trie> trie(new (std::nothrow) Trie);
   if (!trie) {
-    GRNXX_ERROR() << "new grnxx::map::Trie failed";
+    GRNXX_ERROR() << "new grnxx::map::da::large::Trie failed";
     GRNXX_THROW();
   }
   trie->create_trie(options, pool);
@@ -71,7 +71,7 @@ Trie *Trie::create(const TrieOptions &options, io::Pool pool) {
 Trie *Trie::open(io::Pool pool, uint32_t block_id) {
   std::unique_ptr<Trie> trie(new (std::nothrow) Trie);
   if (!trie) {
-    GRNXX_ERROR() << "new grnxx::map::Trie failed";
+    GRNXX_ERROR() << "new grnxx::map::da::large::Trie failed";
     GRNXX_THROW();
   }
   trie->open_trie(pool, block_id);
@@ -89,10 +89,21 @@ void Trie::unlink(io::Pool pool, uint32_t block_id) {
   pool.free_block(*trie->block_info_);
 }
 
-Trie *Trie::defrag(const TrieOptions &options) {
+da::Trie *Trie::defrag(const TrieOptions &options,
+                       const basic::Trie &basic_trie, io::Pool pool) {
+  std::unique_ptr<Trie> large_trie(new (std::nothrow) Trie);
+  if (!large_trie) {
+    GRNXX_ERROR() << "new grnxx::map::da::large::Trie failed";
+    GRNXX_THROW();
+  }
+  large_trie->defrag_trie(options, basic_trie, pool);
+  return large_trie.release();
+}
+
+da::Trie *Trie::defrag(const TrieOptions &options) {
   std::unique_ptr<Trie> trie(new (std::nothrow) Trie);
   if (!trie) {
-    GRNXX_ERROR() << "new grnxx::map::Trie failed";
+    GRNXX_ERROR() << "new grnxx::map::da::large::Trie failed";
     GRNXX_THROW();
   }
   trie->defrag_trie(options, *this, pool_);
@@ -401,6 +412,140 @@ void Trie::open_trie(io::Pool pool, uint32_t block_id) {
       pool_.get_block_address(header_->entries_block_id));
   keys_ = static_cast<uint32_t *>(
       pool_.get_block_address(header_->keys_block_id));
+}
+
+void Trie::defrag_trie(const TrieOptions &options, const basic::Trie &trie,
+                       io::Pool pool) {
+  uint64_t nodes_size = options.nodes_size;
+  if (nodes_size == 0) {
+    nodes_size = trie.header_->num_chunks * CHUNK_SIZE;
+    nodes_size *= 2;
+  }
+  uint64_t entries_size = options.entries_size;
+  if (entries_size == 0) {
+    entries_size = trie.header_->max_key_id;
+    entries_size *= 2;
+  }
+  uint64_t keys_size = options.keys_size;
+  if (keys_size == 0) {
+    keys_size = trie.header_->next_key_pos;
+    keys_size *= 2;
+  }
+
+  if (nodes_size > MAX_NODES_SIZE) {
+    GRNXX_ERROR() << "too large request: nodes_size = " << nodes_size
+                  << ", MAX_NODES_SIZE = " << MAX_NODES_SIZE;
+    GRNXX_THROW();
+  }
+  if (entries_size > MAX_ENTRIES_SIZE) {
+    GRNXX_ERROR() << "too large request: entries_size = " << entries_size
+                  << ", MAX_ENTRIES_SIZE = " << MAX_ENTRIES_SIZE;
+    GRNXX_THROW();
+  }
+  if (keys_size > MAX_KEYS_SIZE) {
+    GRNXX_ERROR() << "too large request: keys_size = " << keys_size
+                  << ", MAX_KEYS_SIZE = " << MAX_KEYS_SIZE;
+    GRNXX_THROW();
+  }
+
+  pool_ = pool;
+
+  block_info_ = pool_.create_block(sizeof(Header));
+
+  void * const block_address = pool_.get_block_address(*block_info_);
+  header_ = static_cast<Header *>(block_address);
+  *header_ = Header();
+
+  header_->nodes_size = static_cast<uint64_t>(nodes_size);
+  header_->nodes_size &= ~CHUNK_MASK;
+  if (header_->nodes_size == 0) {
+    header_->nodes_size = INITIAL_NODES_SIZE;
+  }
+  header_->chunks_size = header_->nodes_size / CHUNK_SIZE;
+  header_->entries_size = static_cast<uint64_t>(entries_size);
+  if (header_->entries_size == 0) {
+    header_->entries_size = INITIAL_ENTRIES_SIZE;
+  }
+  header_->keys_size = static_cast<uint64_t>(keys_size);
+  if (header_->keys_size == 0) {
+    header_->keys_size = INITIAL_KEYS_SIZE;
+  }
+
+  create_arrays();
+
+  reserve_node(ROOT_NODE_ID);
+  nodes_[INVALID_OFFSET].set_is_origin(true);
+
+  header_->total_key_length = trie.header_->total_key_length;
+  header_->num_keys = trie.header_->num_keys;
+  header_->max_key_id = trie.header_->max_key_id;
+  header_->next_key_id = trie.header_->next_key_id;
+  for (int64_t key_id = MIN_KEY_ID; key_id <= header_->max_key_id; ++key_id) {
+    // Valid entries will be filled in the next step.
+    if (!trie.entries_[key_id]) {
+      entries_[key_id] = Entry::invalid_entry(trie.entries_[key_id].next());
+    }
+  }
+
+  defrag_trie(trie, ROOT_NODE_ID, ROOT_NODE_ID);
+
+  initialized_ = true;
+}
+
+void Trie::defrag_trie(const basic::Trie &trie, uint64_t src, uint64_t dest) {
+  if (trie.nodes_[src].is_leaf()) {
+    const basic::Key &key = trie.get_key(trie.nodes_[src].key_pos());
+    const uint64_t key_pos = header_->next_key_pos;
+    new (&keys_[key_pos]) Key(key.id(), key.slice());
+    nodes_[dest].set_key(key_pos, key.size());
+    entries_[key.id()] = Entry::valid_entry(key_pos, key.size());
+    header_->next_key_pos += Key::estimate_size(key.size());
+    return;
+  }
+
+  const uint64_t src_offset = trie.nodes_[src].offset();
+  uint64_t dest_offset;
+  {
+    uint16_t labels[MAX_LABEL + 1];
+    uint16_t num_labels = 0;
+
+    uint16_t label = trie.nodes_[src].child();
+    while (label != INVALID_LABEL) {
+      GRNXX_DEBUG_THROW_IF(label > MAX_LABEL);
+      const uint64_t child = src_offset ^ label;
+      if (trie.nodes_[child].is_leaf() ||
+          (trie.nodes_[child].child() != INVALID_LABEL)) {
+        labels[num_labels++] = label;
+      }
+      label = trie.nodes_[child].sibling();
+    }
+    if (num_labels == 0) {
+      return;
+    }
+
+    dest_offset = find_offset(labels, num_labels);
+    for (uint16_t i = 0; i < num_labels; ++i) {
+      const uint64_t child = dest_offset ^ labels[i];
+      reserve_node(child);
+      nodes_[child].set_label(labels[i]);
+      if ((i + 1) < num_labels) {
+        nodes_[child].set_has_sibling(true);
+        siblings_[child] = labels[i + 1];
+      }
+    }
+
+    GRNXX_DEBUG_THROW_IF(nodes_[dest_offset].is_origin());
+    nodes_[dest_offset].set_is_origin(true);
+    nodes_[dest].set_offset(dest_offset);
+    nodes_[dest].set_child(labels[0]);
+  }
+
+  uint16_t label = nodes_[dest].child();
+  while (label != INVALID_LABEL) {
+    defrag_trie(trie, src_offset ^ label, dest_offset ^ label);
+    label = nodes_[dest_offset ^ label].has_sibling() ?
+        siblings_[dest_offset ^ label] : INVALID_LABEL;
+  }
 }
 
 void Trie::defrag_trie(const TrieOptions &options, const Trie &trie,
