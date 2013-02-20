@@ -87,6 +87,7 @@ constexpr uint32_t MAX_CHUNK_LEVEL   = 5;
 constexpr uint32_t INVALID_LEADER    = std::numeric_limits<uint32_t>::max();
 
 struct Header {
+  TrieType type;
   uint32_t nodes_block_id;
   uint32_t chunks_block_id;
   uint32_t entries_block_id;

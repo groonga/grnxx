@@ -25,6 +25,12 @@ namespace grnxx {
 namespace map {
 namespace da {
 
+enum TrieType : int32_t {
+  TRIE_UNKNOWN = 0,
+  TRIE_BASIC   = 1,
+  TRIE_LARGE   = 2
+};
+
 class TrieException : Exception {
  public:
   TrieException() noexcept {}

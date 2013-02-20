@@ -9,7 +9,8 @@ namespace da {
 namespace large {
 
 Header::Header()
-  : nodes_block_id(io::BLOCK_INVALID_ID),
+  : type(TRIE_LARGE),
+    nodes_block_id(io::BLOCK_INVALID_ID),
     siblings_block_id(io::BLOCK_INVALID_ID),
     chunks_block_id(io::BLOCK_INVALID_ID),
     entries_block_id(io::BLOCK_INVALID_ID),

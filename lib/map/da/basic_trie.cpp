@@ -10,7 +10,8 @@ namespace da {
 namespace basic {
 
 Header::Header()
-  : nodes_block_id(io::BLOCK_INVALID_ID),
+  : type(TRIE_BASIC),
+    nodes_block_id(io::BLOCK_INVALID_ID),
     chunks_block_id(io::BLOCK_INVALID_ID),
     entries_block_id(io::BLOCK_INVALID_ID),
     keys_block_id(io::BLOCK_INVALID_ID),
