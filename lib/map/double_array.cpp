@@ -161,7 +161,7 @@ DoubleArray::DoubleArray()
     front_(nullptr),
     back_(nullptr),
     front_block_id_(io::BLOCK_INVALID_ID),
-    inter_thread_mutex_() {}
+    inter_thread_mutex_(MUTEX_UNLOCKED) {}
 
 void DoubleArray::create_double_array(const MapOptions &, io::Pool pool) {
   pool_ = pool;

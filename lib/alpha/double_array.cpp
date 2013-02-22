@@ -43,7 +43,7 @@ DoubleArrayHeader::DoubleArrayHeader()
     num_phantoms_(0),
     num_zombies_(0),
     leaders_(),
-    inter_process_mutex_() {
+    inter_process_mutex_(MUTEX_UNLOCKED) {
   for (uint32_t i = 0; i < DOUBLE_ARRAY_MAX_CHUNK_LEVEL; ++i) {
     leaders_[i] = DOUBLE_ARRAY_INVALID_LEADER;
   }

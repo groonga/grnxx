@@ -28,7 +28,7 @@ Header::Header()
     num_phantoms(0),
     num_zombies(0),
     leaders(),
-    inter_process_mutex() {
+    inter_process_mutex(MUTEX_UNLOCKED) {
   for (uint32_t i = 0; i <= MAX_CHUNK_LEVEL; ++i) {
     leaders[i] = INVALID_LEADER;
   }
