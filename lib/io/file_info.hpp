@@ -19,55 +19,36 @@
 #define GRNXX_IO_FILE_INFO_HPP
 
 #include "../time.hpp"
-#include "file.hpp"
 
 namespace grnxx {
 namespace io {
 
-class FileInfoImpl;
+class File;
 
 class FileInfo {
  public:
   FileInfo();
-  explicit FileInfo(const char *path);
-  explicit FileInfo(const File &file);
+  virtual ~FileInfo();
 
-  FileInfo(const FileInfo &file_info);
-  FileInfo &operator=(const FileInfo &file_info);
+  // Return nullptr iff "path" is not a valid path.
+  static FileInfo *stat(const char *path);
+  static FileInfo *stat(const File &file);
 
-  FileInfo(FileInfo &&file_info);
-  FileInfo &operator=(FileInfo &&file_info);
+  virtual bool is_file() const = 0;
+  virtual bool is_directory() const = 0;
+  virtual int64_t device_id() const = 0;
+  virtual int64_t inode_id() const = 0;
+  virtual int64_t mode_flags() const = 0;
+  virtual int64_t num_links() const = 0;
+  virtual int64_t user_id() const = 0;
+  virtual int64_t group_id() const = 0;
+  virtual uint64_t size() const = 0;
+  virtual Time last_access_time() const = 0;
+  virtual Time last_modification_time() const = 0;
+  virtual Time last_status_change_time() const = 0;
 
-  explicit operator bool() const {
-    return static_cast<bool>(impl_);
-  }
-
-  bool is_file() const;
-  bool is_directory() const;
-  int64_t device_id() const;
-  int64_t inode_id() const;
-  int64_t mode_flags() const;
-  int64_t num_links() const;
-  int64_t user_id() const;
-  int64_t group_id() const;
-  uint64_t size() const;
-  Time last_access_time() const;
-  Time last_modification_time() const;
-  Time last_status_change_time() const;
-
-  void swap(FileInfo &rhs);
-
-  StringBuilder &write_to(StringBuilder &builder) const;
-
- private:
-  std::shared_ptr<FileInfoImpl> impl_;
-
-  // Copyable.
+  virtual StringBuilder &write_to(StringBuilder &builder) const = 0;
 };
-
-inline void swap(FileInfo &lhs, FileInfo &rhs) {
-  lhs.swap(rhs);
-}
 
 inline StringBuilder &operator<<(StringBuilder &builder,
                                  const FileInfo &file_info) {
@@ -77,4 +58,4 @@ inline StringBuilder &operator<<(StringBuilder &builder,
 }  // namespace io
 }  // namespace grnxx
 
-#endif  // GRNXX_IO_FILE_INFO_HPP
+#endif  // GRNXX_IO_FILE_INFO2_HPP

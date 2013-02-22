@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2012  Brazil, Inc.
+  Copyright (C) 2012-2013  Brazil, Inc.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -26,13 +26,9 @@ void test_non_existent_file() {
 
   grnxx::io::File::unlink_if_exists(FILE_PATH);
 
-  grnxx::io::FileInfo file_info(FILE_PATH);
-
-  GRNXX_NOTICE() << "file_info (invalid) = " << file_info;
-
+  std::unique_ptr<grnxx::io::FileInfo> file_info(
+      grnxx::io::FileInfo::stat(FILE_PATH));
   assert(!file_info);
-  assert(!file_info.is_file());
-  assert(!file_info.is_directory());
 }
 
 void test_existent_file() {
@@ -43,16 +39,20 @@ void test_existent_file() {
   grnxx::io::File file(grnxx::io::FILE_CREATE, FILE_PATH);
   file.resize(FILE_SIZE);
 
-  grnxx::io::FileInfo file_info(FILE_PATH);
-
-  GRNXX_NOTICE() << "file_info (regular) = " << file_info;
-
+  std::unique_ptr<grnxx::io::FileInfo> file_info(
+      grnxx::io::FileInfo::stat(FILE_PATH));
   assert(file_info);
-  assert(file_info.is_file());
-  assert(!file_info.is_directory());
-  assert(file_info.size() == FILE_SIZE);
 
-  assert(grnxx::io::FileInfo(file));
+  GRNXX_NOTICE() << "file_info (regular) = " << *file_info;
+
+  assert(file_info->is_file());
+  assert(!file_info->is_directory());
+  assert(file_info->size() == FILE_SIZE);
+
+  file_info.reset(grnxx::io::FileInfo::stat(file));
+  assert(file_info);
+
+  GRNXX_NOTICE() << "file_info (regular) = " << *file_info;
 
   file.close();
   grnxx::io::File::unlink(FILE_PATH);
@@ -61,23 +61,22 @@ void test_existent_file() {
 void test_non_existent_directory() {
   const char DIRECTORY_PATH[] = "no_such_directory/";
 
-  grnxx::io::FileInfo file_info(DIRECTORY_PATH);
-
+  std::unique_ptr<grnxx::io::FileInfo> file_info(
+    grnxx::io::FileInfo::stat(DIRECTORY_PATH));
   assert(!file_info);
-  assert(!file_info.is_file());
-  assert(!file_info.is_directory());
 }
 
 void test_existent_directory() {
   const char DIRECTORY_PATH[] = "./";
 
-  grnxx::io::FileInfo file_info(DIRECTORY_PATH);
-
-  GRNXX_NOTICE() << "file_info (directory) = " << file_info;
-
+  std::unique_ptr<grnxx::io::FileInfo> file_info(
+    grnxx::io::FileInfo::stat(DIRECTORY_PATH));
   assert(file_info);
-  assert(!file_info.is_file());
-  assert(file_info.is_directory());
+
+  GRNXX_NOTICE() << "file_info (directory) = " << *file_info;
+
+  assert(!file_info->is_file());
+  assert(file_info->is_directory());
 }
 
 int main() {
@@ -89,34 +88,6 @@ int main() {
   test_existent_file();
   test_non_existent_directory();
   test_existent_directory();
-
-  const char FILE_PATH[] = "temp.grn";
-
-  grnxx::io::File::unlink_if_exists(FILE_PATH);
-
-  grnxx::io::FileInfo file_info(FILE_PATH);
-
-  GRNXX_NOTICE() << "file_info = " << file_info;
-
-  assert(!file_info);
-
-  grnxx::io::File file(grnxx::io::FILE_TEMPORARY, FILE_PATH);
-  file.resize(12345);
-
-  file_info = grnxx::io::FileInfo(file);
-
-  file_info = grnxx::io::FileInfo(file);
-
-  GRNXX_NOTICE() << "file_info = " << file_info;
-
-  assert(file_info);
-  assert(file_info.is_file());
-  assert(!file_info.is_directory());
-  assert(file_info.size() == 12345);
-
-  file.close();
-
-  assert(!grnxx::io::File::exists("temp.dat"));
 
   return 0;
 }

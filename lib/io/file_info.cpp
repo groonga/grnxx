@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2012  Brazil, Inc.
+  Copyright (C) 2012-2013  Brazil, Inc.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -16,75 +16,173 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 #include "file_info.hpp"
-#include "file_info-impl.hpp"
+
+#include <sys/types.h>
+#include <sys/stat.h>
+
+#include <cerrno>
+
+#include "../error.hpp"
+#include "../exception.hpp"
+#include "../logger.hpp"
+#include "file.hpp"
 
 namespace grnxx {
 namespace io {
+namespace {
 
-FileInfo::FileInfo() : impl_() {}
+#ifdef GRNXX_WINDOWS
+typedef struct _stat Stat;
+#else  // GRNXX_WINDOWS
+typedef struct stat Stat;
+#endif  // GRNXX_WINDOWS
 
-FileInfo::FileInfo(const char *path) : impl_(FileInfoImpl::stat(path)) {}
+class Impl : public FileInfo {
+ public:
+  static Impl *stat(const char *path);
+  static Impl *stat(const File &file);
 
-FileInfo::FileInfo(const File &file) : impl_(FileInfoImpl::stat(file)) {}
+  bool is_file() const {
+#ifdef GRNXX_WINDOWS
+    return (stat_.st_mode & _S_IFREG) != 0;
+#else  // GRNXX_WINDOWS
+    return S_ISREG(stat_.st_mode) != 0;
+#endif  // GRNXX_WINDOWS
+  }
 
-FileInfo::FileInfo(const FileInfo &file_info) : impl_(file_info.impl_) {}
+  bool is_directory() const {
+#ifdef GRNXX_WINDOWS
+    return (stat_.st_mode & _S_IFDIR) != 0;
+#else  // GRNXX_WINDOWS
+    return S_ISDIR(stat_.st_mode) != 0;
+#endif  // GRNXX_WINDOWS
+  }
 
-FileInfo &FileInfo::operator=(const FileInfo &file_info) {
-  impl_ = file_info.impl_;
-  return *this;
+  int64_t device_id() const {
+    return stat_.st_dev;
+  }
+  int64_t inode_id() const {
+    return stat_.st_ino;
+  }
+  int64_t mode_flags() const {
+    return stat_.st_mode;
+  }
+  int64_t num_links() const {
+    return stat_.st_nlink;
+  }
+  int64_t user_id() const {
+    return stat_.st_uid;
+  }
+  int64_t group_id() const {
+    return stat_.st_gid;
+  }
+  uint64_t size() const {
+    return stat_.st_size;
+  }
+  Time last_access_time() const {
+    return Time(static_cast<int64_t>(stat_.st_atime) * 1000000000);
+  }
+  Time last_modification_time() const {
+    return Time(static_cast<int64_t>(stat_.st_mtime) * 1000000000);
+  }
+  Time last_status_change_time() const {
+    return Time(static_cast<int64_t>(stat_.st_ctime) * 1000000000);
+  }
+
+  StringBuilder &write_to(StringBuilder &builder) const;
+
+ private:
+  Stat stat_;
+
+  Impl(const Stat &stat) : stat_(stat) {}
+};
+
+Impl *Impl::stat(const char *path) {
+  if (!path) {
+    GRNXX_ERROR() << "invalid argument: path = " << path;
+    GRNXX_THROW();
+  }
+
+  Stat stat;
+#ifdef GRNXX_WINDOWS
+  if (::_stat(path, &stat) != 0) {
+    if (errno != ENOENT) {
+      GRNXX_WARNING() << "failed to get file information: path = <" << path
+                      << ">: '::_stat' " << Error(errno);
+#else  // GRNXX_WINDOWS
+  if (::stat(path, &stat) != 0) {
+    if (errno != ENOENT) {
+      GRNXX_WARNING() << "failed to get file information: path = <" << path
+                      << ">: '::stat' " << Error(errno);
+#endif  // GRNXX_WINDOWS
+    }
+    return nullptr;
+  }
+
+  std::unique_ptr<Impl> file_info(new (std::nothrow) Impl(stat));
+  if (!file_info) {
+    GRNXX_ERROR() << "new grnxx::io::{anonymous_namespace}::Impl failed";
+    GRNXX_THROW();
+  }
+  return file_info.release();
 }
 
-FileInfo::FileInfo(FileInfo &&file_info) : impl_(std::move(file_info.impl_)) {}
+Impl *Impl::stat(const File &file) {
+  Stat stat;
+#ifdef GRNXX_WINDOWS
+  if (::_stat(file.path().c_str(), &stat) != 0) {
+    if (errno != ENOENT) {
+      GRNXX_WARNING() << "failed to get file information: file = " << file
+                      << ": '::_stat' " << Error(errno);
+    }
+#else  // GRNXX_WINDOWS
+  if (::fstat(*static_cast<const int *>(file.handle()), &stat) != 0) {
+    GRNXX_WARNING() << "failed to get file information: file = " << file
+                    << ": '::fstat' " << Error(errno);
+#endif  // GRNXX_WINDOWS
+    return nullptr;
+  }
 
-FileInfo &FileInfo::operator=(FileInfo &&file_info) {
-  impl_ = std::move(file_info.impl_);
-  return *this;
-}
-
-bool FileInfo::is_file() const {
-  return impl_ ? impl_->is_file() : false;
-}
-bool FileInfo::is_directory() const {
-  return impl_ ? impl_->is_directory() : false;
-}
-int64_t FileInfo::device_id() const {
-  return impl_ ? impl_->device_id() : 0;
-}
-int64_t FileInfo::inode_id() const {
-  return impl_ ? impl_->inode_id() : 0;
-}
-int64_t FileInfo::mode_flags() const {
-  return impl_ ? impl_->mode_flags() : 0;
-}
-int64_t FileInfo::num_links() const {
-  return impl_ ? impl_->num_links() : 0;
-}
-int64_t FileInfo::user_id() const {
-  return impl_ ? impl_->user_id() : 0;
-}
-int64_t FileInfo::group_id() const {
-  return impl_ ? impl_->group_id() : 0;
-}
-uint64_t FileInfo::size() const {
-  return impl_ ? impl_->size() : 0;
-}
-Time FileInfo::last_access_time() const {
-  return impl_ ? impl_->last_access_time() : Time();
-}
-Time FileInfo::last_modification_time() const {
-  return impl_ ? impl_->last_modification_time() : Time();
-}
-Time FileInfo::last_status_change_time() const {
-  return impl_ ? impl_->last_status_change_time() : Time();
+  std::unique_ptr<Impl> file_info(new (std::nothrow) Impl(stat));
+  if (!file_info) {
+    GRNXX_ERROR() << "new grnxx::io::{anonymous_namespace}::Impl failed";
+    GRNXX_THROW();
+  }
+  return file_info.release();
 }
 
-void FileInfo::swap(FileInfo &rhs) {
-  impl_.swap(rhs.impl_);
+StringBuilder &Impl::write_to(StringBuilder &builder) const {
+  if (!builder) {
+    return builder;
+  }
+
+  return builder << "{ is_file = " << is_file()
+                 << ", is_directory = " << is_directory()
+                 << ", device_id = " << device_id()
+                 << ", inode_id = " << inode_id()
+                 << ", mode_flags = " << mode_flags()
+                 << ", num_links = " << num_links()
+                 << ", user_id = " << user_id()
+                 << ", group_id = " << group_id()
+                 << ", size = " << size()
+                 << ", last_access_time = " << last_access_time()
+                 << ", last_modification_time = " << last_modification_time()
+                 << ", last_status_change_time = " << last_status_change_time()
+                 << " }";
 }
 
-StringBuilder &FileInfo::write_to(StringBuilder &builder) const {
-  return impl_ ? impl_->write_to(builder) : (builder << "n/a");
+}  // namespace
+
+FileInfo *FileInfo::stat(const char *path) {
+  return Impl::stat(path);
 }
+
+FileInfo *FileInfo::stat(const File &file) {
+  return Impl::stat(file);
+}
+
+FileInfo::FileInfo() {}
+FileInfo::~FileInfo() {}
 
 }  // namespace io
 }  // namespace grnxx
