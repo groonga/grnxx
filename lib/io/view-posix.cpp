@@ -55,17 +55,17 @@ ViewImpl *ViewImpl::open(ViewFlags flags, uint64_t size) {
   return view.release();
 }
 
-ViewImpl *ViewImpl::open(ViewFlags flags, const File &file) {
+ViewImpl *ViewImpl::open(ViewFlags flags, File *file) {
   std::unique_ptr<ViewImpl> view(new (std::nothrow) ViewImpl);
   if (!view) {
     GRNXX_ERROR() << "new grnxx::io::ViewImpl failed";
     GRNXX_THROW();
   }
-  view->open_view(flags, file, 0, file.size());
+  view->open_view(flags, file, 0, file->size());
   return view.release();
 }
 
-ViewImpl *ViewImpl::open(ViewFlags flags, const File &file,
+ViewImpl *ViewImpl::open(ViewFlags flags, File *file,
                          uint64_t offset, uint64_t size) {
   std::unique_ptr<ViewImpl> view(new (std::nothrow) ViewImpl);
   if (!view) {
@@ -135,7 +135,7 @@ void ViewImpl::open_view(ViewFlags, uint64_t size) {
   }
 }
 
-void ViewImpl::open_view(ViewFlags flags, const File &file,
+void ViewImpl::open_view(ViewFlags flags, File *file,
                          uint64_t offset, uint64_t size) {
   if ((size == 0) || (size > std::numeric_limits<size_t>::max())) {
     GRNXX_ERROR() << "invalid argument: size = " << size << ": (0, "
@@ -151,11 +151,11 @@ void ViewImpl::open_view(ViewFlags flags, const File &file,
   size_ = size;
 
   int protection_flags = PROT_READ | PROT_WRITE;
-  if ((file.flags() & FILE_READ_ONLY) ||
-      ((~file.flags() & FILE_WRITE_ONLY) && (flags & VIEW_READ_ONLY))) {
+  if ((file->flags() & FILE_READ_ONLY) ||
+      ((~file->flags() & FILE_WRITE_ONLY) && (flags & VIEW_READ_ONLY))) {
     flags_ |= VIEW_READ_ONLY;
     protection_flags = PROT_READ;
-  } else if ((file.flags() & FILE_WRITE_ONLY) ||
+  } else if ((file->flags() & FILE_WRITE_ONLY) ||
              (flags & VIEW_WRITE_ONLY)) {
     flags_ |= VIEW_WRITE_ONLY;
     protection_flags = PROT_WRITE;
@@ -171,9 +171,9 @@ void ViewImpl::open_view(ViewFlags flags, const File &file,
   }
 
   address_ = ::mmap(nullptr, size, protection_flags, map_flags,
-                    *static_cast<const int *>(file.handle()), offset);
+                    *static_cast<const int *>(file->handle()), offset);
   if (address_ == MAP_FAILED) {
-    GRNXX_ERROR() << "failed to map view: file = " << file
+    GRNXX_ERROR() << "failed to map view: file = " << *file
                   << ", flags = " << flags << ", offset = " << offset
                   << ", size = " << size << ": '::mmap' " << Error(errno);
     GRNXX_THROW();

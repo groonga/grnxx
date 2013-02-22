@@ -32,7 +32,7 @@ class FileInfo {
 
   // Return nullptr iff "path" is not a valid path.
   static FileInfo *stat(const char *path);
-  static FileInfo *stat(const File &file);
+  static FileInfo *stat(File *file);
 
   virtual bool is_file() const = 0;
   virtual bool is_directory() const = 0;

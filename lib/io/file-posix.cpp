@@ -50,8 +50,7 @@ FileImpl::~FileImpl() {
   }
 }
 
-std::unique_ptr<FileImpl> FileImpl::open(FileFlags flags, const char *path,
-                                         int permission) {
+FileImpl *FileImpl::open(FileFlags flags, const char *path, int permission) {
   std::unique_ptr<FileImpl> file(new (std::nothrow) FileImpl);
   if (!file) {
     GRNXX_ERROR() << "new grnxx::io::FileImpl failed";
@@ -63,7 +62,42 @@ std::unique_ptr<FileImpl> FileImpl::open(FileFlags flags, const char *path,
   } else {
     file->open_regular_file(flags, path, permission);
   }
-  return file;
+  return file.release();
+}
+
+bool FileImpl::exists(const char *path) {
+  if (!path) {
+    GRNXX_ERROR() << "invalid argument: path = " << path;
+    GRNXX_THROW();
+  }
+
+  struct stat stat;
+  if (::stat(path, &stat) != 0) {
+    return false;
+  }
+  return S_ISREG(stat.st_mode);
+}
+
+void FileImpl::unlink(const char *path) {
+  if (!path) {
+    GRNXX_ERROR() << "invalid argument: path = " << path;
+    GRNXX_THROW();
+  }
+
+  if (::unlink(path) != 0) {
+    GRNXX_ERROR() << "failed to unlink file: path = " << path
+                  << ": '::unlink' " << Error(errno);
+    GRNXX_THROW();
+  }
+}
+
+bool FileImpl::unlink_if_exists(const char *path) {
+  if (!path) {
+    GRNXX_ERROR() << "invalid argument: path = " << path;
+    GRNXX_THROW();
+  }
+
+  return ::unlink(path) == 0;
 }
 
 void FileImpl::lock(FileLockMode mode) {
@@ -332,41 +366,6 @@ uint64_t FileImpl::size() const {
     GRNXX_THROW();
   }
   return stat.st_size;
-}
-
-bool FileImpl::exists(const char *path) {
-  if (!path) {
-    GRNXX_ERROR() << "invalid argument: path = " << path;
-    GRNXX_THROW();
-  }
-
-  struct stat stat;
-  if (::stat(path, &stat) != 0) {
-    return false;
-  }
-  return S_ISREG(stat.st_mode);
-}
-
-void FileImpl::unlink(const char *path) {
-  if (!path) {
-    GRNXX_ERROR() << "invalid argument: path = " << path;
-    GRNXX_THROW();
-  }
-
-  if (::unlink(path) != 0) {
-    GRNXX_ERROR() << "failed to unlink file: path = " << path
-                  << ": '::unlink' " << Error(errno);
-    GRNXX_THROW();
-  }
-}
-
-bool FileImpl::unlink_if_exists(const char *path) {
-  if (!path) {
-    GRNXX_ERROR() << "invalid argument: path = " << path;
-    GRNXX_THROW();
-  }
-
-  return ::unlink(path) == 0;
 }
 
 FileImpl::FileImpl()

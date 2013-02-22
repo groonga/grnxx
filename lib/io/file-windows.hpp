@@ -41,6 +41,10 @@ class FileImpl {
   static std::unique_ptr<FileImpl> open(FileFlags flags, const char *path,
                                         int permission);
 
+  static bool exists(const char *path);
+  static void unlink(const char *path);
+  static bool unlink_if_exists(const char *path);
+
   void lock(FileLockMode mode);
   bool lock(FileLockMode mode, Duration timeout);
   bool try_lock(FileLockMode mode);
@@ -78,10 +82,6 @@ class FileImpl {
   }
 
   StringBuilder &write_to(StringBuilder &builder) const;
-
-  static bool exists(const char *path);
-  static void unlink(const char *path);
-  static bool unlink_if_exists(const char *path);
 
  private:
   String path_;

@@ -65,96 +65,67 @@ enum FileLockMode {
   FILE_LOCK_SHARED    = 0x2000   // Create a shared lock.
 };
 
-class FileImpl;
-
 // Note: Windows ignores permission.
 class File {
  public:
   File();
-  explicit File(FileFlags flags, const char *path = nullptr,
-                int permission = 0644);
-  ~File();
+  virtual ~File();
 
-  File(const File &file);
-  File &operator=(const File &file);
-
-  File(File &&file);
-  File &operator=(File &&file);
-
-  explicit operator bool() const {
-    return static_cast<bool>(impl_);
-  }
-
-  void open(FileFlags flags, const char *path) {
-    *this = File(flags | FILE_OPEN, path);
-  }
-  void close() {
-    *this = File();
-  }
-
-  // The following functions operate advisory locks for files, not for
-  // FileImpl instances. The word "advisory" indicates that the file is
-  // accessible even if it is locked.
-
-  void lock(FileLockMode mode);
-  // lock() returns true on success, false on failure.
-  bool lock(FileLockMode mode, Duration timeout);
-  // try_lock() returns false if the file is already locked.
-  bool try_lock(FileLockMode mode);
-  // unlock() returns false if the file is not locked.
-  bool unlock();
-
-  // The following functions are not thread-safe.
-
-  // read() reads data from file at most size bytes and returns the number of
-  // actually read bytes.
-  uint64_t read(void *buf, uint64_t size);
-  uint64_t read(void *buf, uint64_t size, uint64_t offset);
-  // write() writes data into file at most size bytes and returns the number
-  // of actually written bytes.
-  uint64_t write(const void *buf, uint64_t size);
-  uint64_t write(const void *buf, uint64_t size, uint64_t offset);
-
-  void sync();
-
-  // seek() moves the file pointer and returns the new position.
-  uint64_t seek(int64_t offset, int whence = SEEK_SET);
-  // tell() returns the current position.
-  uint64_t tell() const;
-
-  // resize() resizes the file and moves the file pointer to the new
-  // end-of-file.
-  void resize(uint64_t size);
-  // size() returns the file size in bytes.
-  uint64_t size() const;
-
-  // If true, the associated path will be unlinked after closing the file
-  // handle.
-  bool unlink_at_close() const;
-  void set_unlink_at_close(bool value);
-
-  String path() const;
-  FileFlags flags() const;
-
-  const void *handle() const;
-
-  void swap(File &file);
-
-  StringBuilder &write_to(StringBuilder &builder) const;
+  static File *open(FileFlags flags, const char *path = nullptr,
+                    int permission = 0644);
 
   static bool exists(const char *path);
   static void unlink(const char *path);
   static bool unlink_if_exists(const char *path);
 
- private:
-  std::shared_ptr<FileImpl> impl_;
+  // The following functions operate advisory locks for files, not for
+  // FileImpl instances. The word "advisory" indicates that the file is
+  // accessible even if it is locked.
 
-  void throw_if_impl_is_invalid() const;
+  virtual void lock(FileLockMode mode) = 0;
+  // lock() returns true on success, false on failure.
+  virtual bool lock(FileLockMode mode, Duration timeout) = 0;
+  // try_lock() returns false if the file is already locked.
+  virtual bool try_lock(FileLockMode mode) = 0;
+  // unlock() returns false if the file is not locked.
+  virtual bool unlock() = 0;
+
+  // The following functions are not thread-safe.
+
+  // read() reads data from file at most size bytes and returns the number of
+  // actually read bytes.
+  virtual uint64_t read(void *buf, uint64_t size) = 0;
+  virtual uint64_t read(void *buf, uint64_t size, uint64_t offset) = 0;
+  // write() writes data into file at most size bytes and returns the number
+  // of actually written bytes.
+  virtual uint64_t write(const void *buf, uint64_t size) = 0;
+  virtual uint64_t write(const void *buf, uint64_t size, uint64_t offset) = 0;
+
+  virtual void sync() = 0;
+
+  // seek() moves the file pointer and returns the new position.
+  virtual uint64_t seek(int64_t offset, int whence = SEEK_SET) = 0;
+  // tell() returns the current position.
+  virtual uint64_t tell() const = 0;
+
+  // resize() resizes the file and moves the file pointer to the new
+  // end-of-file.
+  virtual void resize(uint64_t size) = 0;
+  // size() returns the file size in bytes.
+  virtual uint64_t size() const = 0;
+
+  // If true, the associated path will be unlinked after closing the file
+  // handle.
+  virtual bool unlink_at_close() const = 0;
+  virtual void set_unlink_at_close(bool value) = 0;
+
+  virtual String path() const = 0;
+  virtual FileFlags flags() const = 0;
+
+  virtual const void *handle() const = 0;
+
+  virtual StringBuilder &write_to(StringBuilder &builder) const = 0;
 };
-
-inline void swap(File &lhs, File &rhs) {
-  lhs.swap(rhs);
-}
 
 inline StringBuilder &operator<<(StringBuilder &builder, const File &file) {
   return file.write_to(builder);

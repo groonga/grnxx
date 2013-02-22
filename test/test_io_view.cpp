@@ -47,13 +47,14 @@ void test_file_backed_mmap() {
   const std::uint64_t MMAP_SIZE = 1 << 20;
 
   // Create a file of "FILE_SIZE" bytes.
-  grnxx::io::File file(grnxx::io::FILE_TEMPORARY, FILE_PATH);
-  file.resize(FILE_SIZE);
-  assert(file.size() == FILE_SIZE);
+  std::unique_ptr<grnxx::io::File> file(
+      grnxx::io::File::open(grnxx::io::FILE_TEMPORARY, FILE_PATH));
+  file->resize(FILE_SIZE);
+  assert(file->size() == FILE_SIZE);
 
   // Create a memory mapping on "file".
   std::unique_ptr<grnxx::io::View> view(
-      grnxx::io::View::open(grnxx::io::VIEW_SHARED, file));
+      grnxx::io::View::open(grnxx::io::VIEW_SHARED, file.get()));
   assert(view);
 
   GRNXX_NOTICE() << "view = " << *view;
@@ -66,7 +67,7 @@ void test_file_backed_mmap() {
 
   // Recreate a memory mapping on "file".
   view.reset();
-  view.reset(grnxx::io::View::open(grnxx::io::VIEW_PRIVATE, file));
+  view.reset(grnxx::io::View::open(grnxx::io::VIEW_PRIVATE, file.get()));
   assert(view);
 
   GRNXX_NOTICE() << "view = " << *view;
@@ -84,7 +85,7 @@ void test_file_backed_mmap() {
   view.reset();
   view.reset(grnxx::io::View::open(grnxx::io::VIEW_SHARED |
                                    grnxx::io::VIEW_PRIVATE,
-                                   file, FILE_SIZE / 2, MMAP_SIZE));
+                                   file.get(), FILE_SIZE / 2, MMAP_SIZE));
   assert(view);
 
   GRNXX_NOTICE() << "view = " << *view;

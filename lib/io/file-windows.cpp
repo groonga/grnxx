@@ -61,6 +61,41 @@ std::unique_ptr<FileImpl> FileImpl::open(FileFlags flags, const char *path,
   return file;
 }
 
+bool FileImpl::exists(const char *path) {
+  if (!path) {
+    GRNXX_ERROR() << "invalid argument: path = " << path;
+    GRNXX_THROW();
+  }
+
+  struct _stat stat;
+  if (::_stat(path, &stat) != 0) {
+    return false;
+  }
+  return stat.st_mode & _S_IFREG;
+}
+
+void FileImpl::unlink(const char *path) {
+  if (!path) {
+    GRNXX_ERROR() << "invalid argument: path = " << path;
+    GRNXX_THROW();
+  }
+
+  if (!::DeleteFile(path)) {
+    GRNXX_ERROR() << "failed to unlink file: path = " << path
+                  << ": '::DeleteFile' " << Error(::GetLastError());
+    GRNXX_THROW();
+  }
+}
+
+bool FileImpl::unlink_if_exists(const char *path) {
+  if (!path) {
+    GRNXX_ERROR() << "invalid argument: path = " << path;
+    GRNXX_THROW();
+  }
+
+  return ::DeleteFile(path);
+}
+
 void FileImpl::lock(FileLockMode mode) {
   if (locked_) {
     GRNXX_ERROR() << "deadlock: file = " << *this;
@@ -310,41 +345,6 @@ uint64_t FileImpl::size() const {
     GRNXX_THROW();
   }
   return file_size.QuadPart;
-}
-
-bool FileImpl::exists(const char *path) {
-  if (!path) {
-    GRNXX_ERROR() << "invalid argument: path = " << path;
-    GRNXX_THROW();
-  }
-
-  struct _stat stat;
-  if (::_stat(path, &stat) != 0) {
-    return false;
-  }
-  return stat.st_mode & _S_IFREG;
-}
-
-void FileImpl::unlink(const char *path) {
-  if (!path) {
-    GRNXX_ERROR() << "invalid argument: path = " << path;
-    GRNXX_THROW();
-  }
-
-  if (!::DeleteFile(path)) {
-    GRNXX_ERROR() << "failed to unlink file: path = " << path
-                  << ": '::DeleteFile' " << Error(::GetLastError());
-    GRNXX_THROW();
-  }
-}
-
-bool FileImpl::unlink_if_exists(const char *path) {
-  if (!path) {
-    GRNXX_ERROR() << "invalid argument: path = " << path;
-    GRNXX_THROW();
-  }
-
-  return ::DeleteFile(path);
 }
 
 FileImpl::FileImpl()

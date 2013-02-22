@@ -40,7 +40,7 @@ typedef struct stat Stat;
 class Impl : public FileInfo {
  public:
   static Impl *stat(const char *path);
-  static Impl *stat(const File &file);
+  static Impl *stat(File *file);
 
   bool is_file() const {
 #ifdef GRNXX_WINDOWS
@@ -127,17 +127,17 @@ Impl *Impl::stat(const char *path) {
   return file_info.release();
 }
 
-Impl *Impl::stat(const File &file) {
+Impl *Impl::stat(File *file) {
   Stat stat;
 #ifdef GRNXX_WINDOWS
-  if (::_stat(file.path().c_str(), &stat) != 0) {
+  if (::_stat(file->path().c_str(), &stat) != 0) {
     if (errno != ENOENT) {
-      GRNXX_WARNING() << "failed to get file information: file = " << file
+      GRNXX_WARNING() << "failed to get file information: file = " << *file
                       << ": '::_stat' " << Error(errno);
     }
 #else  // GRNXX_WINDOWS
-  if (::fstat(*static_cast<const int *>(file.handle()), &stat) != 0) {
-    GRNXX_WARNING() << "failed to get file information: file = " << file
+  if (::fstat(*static_cast<const int *>(file->handle()), &stat) != 0) {
+    GRNXX_WARNING() << "failed to get file information: file = " << *file
                     << ": '::fstat' " << Error(errno);
 #endif  // GRNXX_WINDOWS
     return nullptr;
@@ -177,7 +177,7 @@ FileInfo *FileInfo::stat(const char *path) {
   return Impl::stat(path);
 }
 
-FileInfo *FileInfo::stat(const File &file) {
+FileInfo *FileInfo::stat(File *file) {
   return Impl::stat(file);
 }
 

@@ -68,8 +68,8 @@ class View {
   // Create a file-backed memory mapping.
   // Available flags are as follows:
   //  VIEW_READ_ONLY, VIEW_WRITE_ONLY, VIEW_SHARED, VIEW_PRIVATE.
-  static View *open(ViewFlags flags, const File &file);
-  static View *open(ViewFlags flags, const File &file,
+  static View *open(ViewFlags flags, File *file);
+  static View *open(ViewFlags flags, File *file,
                     uint64_t offset, uint64_t size);
 
   virtual void sync() = 0;

@@ -58,7 +58,7 @@ ViewImpl *ViewImpl::open(ViewFlags flags, uint64_t size) {
   return view.release();
 }
 
-ViewImpl *ViewImpl::open(ViewFlags flags, const File &file) {
+ViewImpl *ViewImpl::open(ViewFlags flags, File *file) {
   std::unique_ptr<ViewImpl> view(new (std::nothrow) ViewImpl);
   if (!view) {
     GRNXX_ERROR() << "new grnxx::io::ViewImpl failed";
@@ -68,7 +68,7 @@ ViewImpl *ViewImpl::open(ViewFlags flags, const File &file) {
   return view.release();
 }
 
-ViewImpl *ViewImpl::open(ViewFlags flags, const File &file,
+ViewImpl *ViewImpl::open(ViewFlags flags, File *file,
                          uint64_t offset, uint64_t size) {
   if (size == 0) {
     GRNXX_ERROR() << "invalid argument: size = " << size;
@@ -135,11 +135,11 @@ void ViewImpl::open_view(ViewFlags, uint64_t size) {
   }
 }
 
-void ViewImpl::open_view(ViewFlags flags, const File &file,
+void ViewImpl::open_view(ViewFlags flags, File *file,
                            uint64_t offset, uint64_t size) {
-  const uint64_t file_size = file.size();
+  const uint64_t file_size = file->size();
   if (file_size == 0) {
-    GRNXX_ERROR() << "invalid argument: file = " << file;
+    GRNXX_ERROR() << "invalid argument: file = " << *file;
     GRNXX_THROW();
   }
   if (flags & (VIEW_ANONYMOUS | VIEW_HUGE_TLB)) {
@@ -161,14 +161,14 @@ void ViewImpl::open_view(ViewFlags flags, const File &file,
 
   int protection_mode = PAGE_READWRITE;
   DWORD desired_access = FILE_MAP_WRITE;
-  if ((file.flags() & FILE_READ_ONLY) ||
-      ((~file.flags() & FILE_WRITE_ONLY) && (flags & VIEW_READ_ONLY))) {
+  if ((file->flags() & FILE_READ_ONLY) ||
+      ((~file->flags() & FILE_WRITE_ONLY) && (flags & VIEW_READ_ONLY))) {
     flags_ |= VIEW_READ_ONLY;
     protection_mode = PAGE_READONLY;
     desired_access = FILE_MAP_READ;
-  } else if (file.flags() & FILE_WRITE_ONLY) {
+  } else if (file->flags() & FILE_WRITE_ONLY) {
     // Write-only memory mapping is not supported on Windows.
-    GRNXX_ERROR() << "mapping file is write-only: file = " << file;
+    GRNXX_ERROR() << "mapping file is write-only: file = " << *file;
     GRNXX_THROW();
   } else {
     // VIEW_WRITE_ONLY is ignored because write-only memory mapping is not
@@ -188,11 +188,11 @@ void ViewImpl::open_view(ViewFlags flags, const File &file,
 
   const DWORD size_high = static_cast<DWORD>((offset + size) >> 32);
   const DWORD size_low = static_cast<DWORD>((offset + size) & 0xFFFFFFFFU);
-  handle_ = ::CreateFileMapping(*static_cast<const HANDLE *>(file.handle()),
+  handle_ = ::CreateFileMapping(*static_cast<const HANDLE *>(file->handle()),
                                 nullptr, protection_mode, size_high, size_low,
                                 nullptr);
   if (!handle_) {
-    GRNXX_ERROR() << "failed to create file mapping: file = " << file
+    GRNXX_ERROR() << "failed to create file mapping: file = " << *file
                   << ", flags = " << flags << ", offset = " << offset
                   << ", size = " << size
                   << ": '::CreateFileMapping' " << Error(::GetLastError());
@@ -204,7 +204,7 @@ void ViewImpl::open_view(ViewFlags flags, const File &file,
   address_ = ::MapViewOfFile(handle_, desired_access, offset_high, offset_low,
                              static_cast<SIZE_T>(size));
   if (!address_) {
-    GRNXX_ERROR() << "failed to map view: file = " << file
+    GRNXX_ERROR() << "failed to map view: file = " << *file
                   << ", flags = " << flags << ", offset = " << offset
                   << ", size = " << size
                   << ": '::MapViewOfFile' " << Error(::GetLastError());

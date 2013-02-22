@@ -66,11 +66,11 @@ View *View::open(ViewFlags flags, uint64_t size) {
   return ViewImpl::open(flags, size);
 }
 
-View *View::open(ViewFlags flags, const File &file) {
+View *View::open(ViewFlags flags, File *file) {
   return ViewImpl::open(flags, file);
 }
 
-View *View::open(ViewFlags flags, const File &file,
+View *View::open(ViewFlags flags, File *file,
                  uint64_t offset, uint64_t size) {
   return ViewImpl::open(flags, file, offset, size);
 }

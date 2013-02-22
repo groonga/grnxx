@@ -81,7 +81,7 @@ class PoolImpl {
   String path_;
   PoolFlags flags_;
   PoolHeader *header_;
-  File files_[POOL_MAX_NUM_FILES];
+  std::unique_ptr<File> files_[POOL_MAX_NUM_FILES];
   Chunk header_chunk_;
   Chunk block_chunks_[POOL_MAX_NUM_BLOCK_CHUNKS];
   Chunk block_info_chunks_[POOL_MAX_NUM_BLOCK_INFO_CHUNKS];

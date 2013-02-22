@@ -170,7 +170,7 @@ StringBuilder &PoolImpl::write_to(StringBuilder &builder) const {
       } else {
         builder << ", ";
       }
-      builder << '[' << i << "] = " << files_[i];
+      builder << '[' << i << "] = " << *files_[i];
     }
   }
   builder << (is_empty ? "{}" : " }");
@@ -225,8 +225,8 @@ void PoolImpl::unlink(const char *path) {
     GRNXX_THROW();
   } else {
     // FIXME
-    File file(FILE_OPEN, path);
-    if (!file.try_lock(FILE_LOCK_EXCLUSIVE)) {
+    std::unique_ptr<File> file(File::open(FILE_OPEN, path));
+    if (!file->try_lock(FILE_LOCK_EXCLUSIVE)) {
       GRNXX_ERROR() << "failed to lock file: path = " << path;
       GRNXX_THROW();
     }
@@ -289,7 +289,7 @@ void PoolImpl::open_temporary_pool(PoolFlags, const char *path,
                                    const PoolOptions &options) {
   path_ = Path::full_path(path);
   flags_ = POOL_TEMPORARY;
-  files_[0].open(FILE_TEMPORARY, path_.c_str());
+  files_[0].reset(File::open(FILE_TEMPORARY, path_.c_str()));
   setup_header(options);
 }
 
@@ -314,23 +314,23 @@ void PoolImpl::open_regular_pool(PoolFlags flags, const char *path,
     flags_ |= POOL_OPEN;
     file_flags |= FILE_OPEN;
   }
-  files_[0].open(file_flags, path_.c_str());
-  files_[0].set_unlink_at_close(true);
+  files_[0].reset(File::open(file_flags, path_.c_str()));
+  files_[0]->set_unlink_at_close(true);
 
   if (flags & POOL_CREATE) {
-    if (files_[0].size() == 0) {
-      if (files_[0].lock(FILE_LOCK_EXCLUSIVE, Duration::seconds(10))) {
-        if (files_[0].size() == 0) {
+    if (files_[0]->size() == 0) {
+      if (files_[0]->lock(FILE_LOCK_EXCLUSIVE, Duration::seconds(10))) {
+        if (files_[0]->size() == 0) {
           setup_header(options);
-          files_[0].unlock();
-          if (!files_[0].lock(FILE_LOCK_SHARED, Duration::seconds(10))) {
+          files_[0]->unlock();
+          if (!files_[0]->lock(FILE_LOCK_SHARED, Duration::seconds(10))) {
             GRNXX_ERROR() << "failed to lock file: path = " << path
                           << ", full_path = " << path_
                           << ", flags = " << flags;
             GRNXX_THROW();
           }
         } else {
-          files_[0].unlock();
+          files_[0]->unlock();
         }
       }
     }
@@ -340,13 +340,13 @@ void PoolImpl::open_regular_pool(PoolFlags flags, const char *path,
     if ((flags & POOL_OPEN) || (~flags & POOL_CREATE)) {
       const Time start_time = Time::now();
       while ((Time::now() - start_time) < Duration::seconds(10)) {
-        if (files_[0].size() != 0) {
+        if (files_[0]->size() != 0) {
           break;
         }
         Thread::sleep(Duration::milliseconds(10));
       }
     }
-    if (files_[0].lock(FILE_LOCK_SHARED, Duration::seconds(10))) {
+    if (files_[0]->lock(FILE_LOCK_SHARED, Duration::seconds(10))) {
       check_header();
     }
   }
@@ -357,13 +357,13 @@ void PoolImpl::open_regular_pool(PoolFlags flags, const char *path,
     GRNXX_THROW();
   }
 
-  files_[0].set_unlink_at_close(false);
+  files_[0]->set_unlink_at_close(false);
 }
 
 void PoolImpl::setup_header(const PoolOptions &options) {
   if (files_[0]) {
-    files_[0].resize(POOL_HEADER_CHUNK_SIZE);
-    header_chunk_ = View::open(get_view_flags(), files_[0],
+    files_[0]->resize(POOL_HEADER_CHUNK_SIZE);
+    header_chunk_ = View::open(get_view_flags(), files_[0].get(),
                                0, POOL_HEADER_CHUNK_SIZE);
   } else {
     header_chunk_ = View::open(get_view_flags(), POOL_HEADER_CHUNK_SIZE);
@@ -374,7 +374,7 @@ void PoolImpl::setup_header(const PoolOptions &options) {
 }
 
 void PoolImpl::check_header() {
-  header_chunk_ = View::open(get_view_flags(), files_[0],
+  header_chunk_ = View::open(get_view_flags(), files_[0].get(),
                              0, POOL_HEADER_CHUNK_SIZE);
   header_ = static_cast<PoolHeader *>(header_chunk_.address());
 
@@ -425,7 +425,7 @@ View *PoolImpl::mmap_chunk(const ChunkInfo &chunk_info) {
   if (flags_ & POOL_ANONYMOUS) {
     return View::open(get_view_flags(), chunk_info.size());
   } else {
-    File &file = files_[chunk_info.file_id()];
+    std::unique_ptr<File> &file = files_[chunk_info.file_id()];
     if (!file) {
       FileFlags file_flags = FILE_CREATE_OR_OPEN;
       if (flags_ & POOL_TEMPORARY) {
@@ -434,22 +434,22 @@ View *PoolImpl::mmap_chunk(const ChunkInfo &chunk_info) {
         file_flags = FILE_READ_ONLY;
       }
       const String &path = generate_path(chunk_info.file_id());
-      file.open(file_flags, path.c_str());
+      file.reset(File::open(file_flags, path.c_str()));
     }
 
     const uint64_t min_file_size = chunk_info.offset() + chunk_info.size();
-    if (file.size() < min_file_size) {
+    if (file->size() < min_file_size) {
       Lock lock(mutable_inter_process_file_mutex());
       if (!lock) {
         GRNXX_ERROR() << "failed to lock files";
         GRNXX_THROW();
       }
-      if (file.size() < min_file_size) {
-        file.resize(min_file_size);
+      if (file->size() < min_file_size) {
+        file->resize(min_file_size);
       }
     }
 
-    return View::open(get_view_flags(), file,
+    return View::open(get_view_flags(), file.get(),
                       chunk_info.offset(), chunk_info.size());
   }
 }

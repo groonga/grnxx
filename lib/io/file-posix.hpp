@@ -25,12 +25,15 @@
 namespace grnxx {
 namespace io {
 
-class FileImpl {
+class FileImpl : public File {
  public:
   ~FileImpl();
 
-  static std::unique_ptr<FileImpl> open(FileFlags flags, const char *path,
-                                        int permission);
+  static FileImpl *open(FileFlags flags, const char *path, int permission);
+
+  static bool exists(const char *path);
+  static void unlink(const char *path);
+  static bool unlink_if_exists(const char *path);
 
   void lock(FileLockMode mode);
   bool lock(FileLockMode mode, Duration timeout);
@@ -70,10 +73,6 @@ class FileImpl {
 
   StringBuilder &write_to(StringBuilder &builder) const;
 
-  static bool exists(const char *path);
-  static void unlink(const char *path);
-  static bool unlink_if_exists(const char *path);
-
  private:
   String path_;
   FileFlags flags_;
@@ -85,15 +84,7 @@ class FileImpl {
 
   void open_regular_file(FileFlags flags, const char *path, int permission);
   void open_temporary_file(FileFlags flags, const char *path, int permission);
-
-  FileImpl(const FileImpl &);
-  FileImpl &operator=(const FileImpl &);
 };
-
-inline StringBuilder &operator<<(StringBuilder &builder,
-                                 const FileImpl &file) {
-  return file.write_to(builder);
-}
 
 }  // namespace io
 }  // namespace grnxx

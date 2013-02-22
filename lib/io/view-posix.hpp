@@ -30,8 +30,8 @@ class ViewImpl : public View {
   ~ViewImpl();
 
   static ViewImpl *open(ViewFlags flags, uint64_t size);
-  static ViewImpl *open(ViewFlags flags, const File &file);
-  static ViewImpl *open(ViewFlags flags, const File &file,
+  static ViewImpl *open(ViewFlags flags, File *file);
+  static ViewImpl *open(ViewFlags flags, File *file,
                         uint64_t offset, uint64_t size);
 
   void sync();
@@ -57,7 +57,7 @@ class ViewImpl : public View {
   ViewImpl();
 
   void open_view(ViewFlags flags, uint64_t size);
-  void open_view(ViewFlags flags, const File &file,
+  void open_view(ViewFlags flags, File *file,
                  uint64_t offset, uint64_t size);
 };
 
