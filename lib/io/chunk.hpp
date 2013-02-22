@@ -41,9 +41,9 @@ class Chunk {
  public:
   Chunk() : view_(), address_(nullptr) {}
 
-  Chunk &operator=(View &&view) {
-    view_ = std::move(view);
-    address_ = std::move(view_.address());
+  Chunk &operator=(View *view) {
+    view_.reset(view);
+    address_ = view->address();
     return *this;
   }
 
@@ -54,7 +54,7 @@ class Chunk {
 
   // Return the associated view of the chunk.
   const View &view() const {
-    return view_;
+    return *view_;
   }
   // Return the address of the chunk.
   void *address() const {
@@ -62,11 +62,11 @@ class Chunk {
   }
 
   StringBuilder &write_to(StringBuilder &builder) const {
-    return builder << view_;
+    return builder << *view_;
   }
 
  private:
-  View view_;
+  std::unique_ptr<View> view_;
   void *address_;
 
   Chunk(const Chunk &);

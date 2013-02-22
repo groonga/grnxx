@@ -18,7 +18,8 @@
 #ifndef GRNXX_IO_VIEW_HPP
 #define GRNXX_IO_VIEW_HPP
 
-#include "file.hpp"
+#include "../basic.hpp"
+#include "../string_builder.hpp"
 
 namespace grnxx {
 namespace io {
@@ -54,65 +55,32 @@ constexpr ViewFlags VIEW_SHARED     = ViewFlags::define(0x2000);
 StringBuilder &operator<<(StringBuilder &builder, ViewFlags flags);
 std::ostream &operator<<(std::ostream &builder, ViewFlags flags);
 
-class ViewImpl;
+class File;
 
 class View {
  public:
   View();
+  virtual ~View();
+
   // Create an anonymous memory mapping.
   // Available flags are VIEW_HUGE_TLB only.
-  explicit View(ViewFlags flags, uint64_t size);
+  static View *open(ViewFlags flags, uint64_t size);
   // Create a file-backed memory mapping.
   // Available flags are as follows:
   //  VIEW_READ_ONLY, VIEW_WRITE_ONLY, VIEW_SHARED, VIEW_PRIVATE.
-  View(ViewFlags flags, const File &file);
-  View(ViewFlags flags, const File &file, uint64_t offset, uint64_t size);
-  ~View();
+  static View *open(ViewFlags flags, const File &file);
+  static View *open(ViewFlags flags, const File &file,
+                    uint64_t offset, uint64_t size);
 
-  View(const View &view);
-  View &operator=(const View &view);
+  virtual void sync() = 0;
+  virtual void sync(uint64_t offset, uint64_t size) = 0;
 
-  View(View &&view);
-  View &operator=(View &&view);
+  virtual ViewFlags flags() const = 0;
+  virtual void *address() const = 0;
+  virtual uint64_t size() const = 0;
 
-  explicit operator bool() const {
-    return static_cast<bool>(impl_);
-  }
-
-  void open(ViewFlags flags, uint64_t size) {
-    *this = View(flags, size);
-  }
-  void open(ViewFlags flags, const File &file) {
-    *this = View(flags, file);
-  }
-  void open(ViewFlags flags, const File &file,
-            uint64_t offset, uint64_t size) {
-    *this = View(flags, file, offset, size);
-  }
-  void close() {
-    *this = View();
-  }
-
-  void sync();
-  void sync(uint64_t offset, uint64_t size);
-
-  File file() const;
-  ViewFlags flags() const;
-  void *address() const;
-  uint64_t offset() const;
-  uint64_t size() const;
-
-  void swap(View &view);
-
-  StringBuilder &write_to(StringBuilder &builder) const;
-
- private:
-  std::shared_ptr<ViewImpl> impl_;
+  virtual StringBuilder &write_to(StringBuilder &builder) const = 0;
 };
-
-inline void swap(View &lhs, View &rhs) {
-  lhs.swap(rhs);
-}
 
 inline StringBuilder &operator<<(StringBuilder &builder, const View &view) {
   return view.write_to(builder);

@@ -59,72 +59,20 @@ std::ostream &operator<<(std::ostream &stream, ViewFlags flags) {
   return stream.write(builder.c_str(), builder.length());
 }
 
-View::View() : impl_() {}
-
-View::View(ViewFlags flags, uint64_t size)
-  : impl_(ViewImpl::map(flags, size)) {}
-
-View::View(ViewFlags flags, const File &file)
-  : impl_(ViewImpl::map(flags, file)) {}
-
-View::View(ViewFlags flags, const File &file, uint64_t offset, uint64_t size)
-  : impl_(ViewImpl::map(flags, file, offset, size)) {}
-
+View::View() {}
 View::~View() {}
 
-View::View(const View &view) : impl_(view.impl_) {}
-
-View &View::operator=(const View &view) {
-  impl_ = view.impl_;
-  return *this;
+View *View::open(ViewFlags flags, uint64_t size) {
+  return ViewImpl::open(flags, size);
 }
 
-View::View(View &&view)
-  : impl_(std::move(view.impl_)) {}
-
-View &View::operator=(View &&view) {
-  impl_ = std::move(view.impl_);
-  return *this;
+View *View::open(ViewFlags flags, const File &file) {
+  return ViewImpl::open(flags, file);
 }
 
-void View::sync() {
-  if (impl_) {
-    impl_->sync();
-  }
-}
-
-void View::sync(uint64_t offset, uint64_t size) {
-  if (impl_) {
-    impl_->sync(offset, size);
-  }
-}
-
-File View::file() const {
-  return impl_ ? impl_->file() : File();
-}
-
-ViewFlags View::flags() const {
-  return impl_ ? impl_->flags() : ViewFlags::none();
-}
-
-void *View::address() const {
-  return impl_ ? impl_->address() : nullptr;
-}
-
-uint64_t View::offset() const {
-  return impl_ ? impl_->offset() : 0;
-}
-
-uint64_t View::size() const {
-  return impl_ ? impl_->size() : 0;
-}
-
-void View::swap(View &view) {
-  impl_.swap(view.impl_);
-}
-
-StringBuilder &View::write_to(StringBuilder &builder) const {
-  return impl_ ? impl_->write_to(builder) : (builder << "n/a");
+View *View::open(ViewFlags flags, const File &file,
+                 uint64_t offset, uint64_t size) {
+  return ViewImpl::open(flags, file, offset, size);
 }
 
 }  // namespace io

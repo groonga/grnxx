@@ -25,29 +25,23 @@
 namespace grnxx {
 namespace io {
 
-class ViewImpl {
+class ViewImpl : public View {
  public:
   ~ViewImpl();
 
-  static std::unique_ptr<ViewImpl> map(ViewFlags flags, uint64_t size);
-  static std::unique_ptr<ViewImpl> map(ViewFlags flags, const File &file);
-  static std::unique_ptr<ViewImpl> map(ViewFlags flags, const File &file,
-                                       uint64_t offset, uint64_t size);
+  static ViewImpl *open(ViewFlags flags, uint64_t size);
+  static ViewImpl *open(ViewFlags flags, const File &file);
+  static ViewImpl *open(ViewFlags flags, const File &file,
+                        uint64_t offset, uint64_t size);
 
   void sync();
   void sync(uint64_t offset, uint64_t size);
 
-  File file() const {
-    return file_;
-  }
   ViewFlags flags() const {
     return flags_;
   }
   void *address() const {
     return address_;
-  }
-  uint64_t offset() const {
-    return offset_;
   }
   uint64_t size() const {
     return size_;
@@ -56,17 +50,15 @@ class ViewImpl {
   StringBuilder &write_to(StringBuilder &builder) const;
 
  private:
-  File file_;
   ViewFlags flags_;
   void *address_;
-  uint64_t offset_;
   uint64_t size_;
 
   ViewImpl();
 
-  void map_on_memory(ViewFlags flags, uint64_t size);
-  void map_on_file(ViewFlags flags, const File &file,
-                   uint64_t offset, uint64_t size);
+  void open_view(ViewFlags flags, uint64_t size);
+  void open_view(ViewFlags flags, const File &file,
+                 uint64_t offset, uint64_t size);
 
   ViewImpl(const ViewImpl &);
   ViewImpl &operator=(const ViewImpl &);

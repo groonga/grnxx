@@ -18,26 +18,27 @@
 #include <cassert>
 
 #include "logger.hpp"
+#include "io/file.hpp"
 #include "io/view.hpp"
 
 void test_anonymous_mmap() {
   const std::uint64_t MMAP_SIZE = 1 << 20;
 
-  grnxx::io::View view;
-  assert(!view);
-
-  view.open(grnxx::io::ViewFlags::none(), MMAP_SIZE);
-
-  GRNXX_NOTICE() << "view = " << view;
-
+  // Create an anonymous memory mapping.
+  std::unique_ptr<grnxx::io::View> view(
+      grnxx::io::View::open(grnxx::io::ViewFlags::none(), MMAP_SIZE));
   assert(view);
-  assert(view.flags() == (grnxx::io::VIEW_ANONYMOUS |
-                          grnxx::io::VIEW_PRIVATE));
-  assert(view.address() != nullptr);
-  assert(view.offset() == 0);
-  assert(view.size() == MMAP_SIZE);
 
-  std::memset(view.address(), 0, view.size());
+  GRNXX_NOTICE() << "view = " << *view;
+
+  // Check members of the view.
+  assert(view->flags() == (grnxx::io::VIEW_ANONYMOUS |
+                          grnxx::io::VIEW_PRIVATE));
+  assert(view->address() != nullptr);
+  assert(view->size() == MMAP_SIZE);
+
+  // Fill the mapping with 0.
+  std::memset(view->address(), 0, view->size());
 }
 
 void test_file_backed_mmap() {
@@ -45,54 +46,55 @@ void test_file_backed_mmap() {
   const std::uint64_t FILE_SIZE = 1 << 24;
   const std::uint64_t MMAP_SIZE = 1 << 20;
 
+  // Create a file of "FILE_SIZE" bytes.
   grnxx::io::File file(grnxx::io::FILE_TEMPORARY, FILE_PATH);
-
   file.resize(FILE_SIZE);
   assert(file.size() == FILE_SIZE);
 
-  // Create a memory mapping.
-  grnxx::io::View view(grnxx::io::VIEW_SHARED, file);
-
-  GRNXX_NOTICE() << "view = " << view;
-
+  // Create a memory mapping on "file".
+  std::unique_ptr<grnxx::io::View> view(
+      grnxx::io::View::open(grnxx::io::VIEW_SHARED, file));
   assert(view);
-  assert(view.flags() == grnxx::io::VIEW_SHARED);
-  assert(view.address() != nullptr);
-  assert(view.offset() == 0);
-  assert(view.size() == FILE_SIZE);
 
-  std::memset(view.address(), 'x', view.size());
+  GRNXX_NOTICE() << "view = " << *view;
 
-  // Create a memory mapping.
-  view.open(grnxx::io::VIEW_PRIVATE, file);
+  assert(view->flags() == grnxx::io::VIEW_SHARED);
+  assert(view->address() != nullptr);
+  assert(view->size() == FILE_SIZE);
 
-  GRNXX_NOTICE() << "view = " << view;
+  std::memset(view->address(), 'x', view->size());
 
+  // Recreate a memory mapping on "file".
+  view.reset();
+  view.reset(grnxx::io::View::open(grnxx::io::VIEW_PRIVATE, file));
   assert(view);
-  assert(view.flags() == grnxx::io::VIEW_PRIVATE);
-  assert(view.address() != nullptr);
-  assert(view.offset() == 0);
-  assert(view.size() == FILE_SIZE);
+
+  GRNXX_NOTICE() << "view = " << *view;
+
+  assert(view->flags() == grnxx::io::VIEW_PRIVATE);
+  assert(view->address() != nullptr);
+  assert(view->size() == FILE_SIZE);
 
   for (std::uint64_t i = 0; i < FILE_SIZE; ++i) {
-    assert(static_cast<const char *>(view.address())[i] == 'x');
+    assert(static_cast<const char *>(view->address())[i] == 'x');
   }
-  std::memset(view.address(), 'z', view.size());
+  std::memset(view->address(), 'z', view->size());
 
-  // Create a memory mapping.
-  view.open(grnxx::io::VIEW_SHARED | grnxx::io::VIEW_PRIVATE,
-            file, FILE_SIZE / 2, MMAP_SIZE);
-
-  GRNXX_NOTICE() << "view = " << view;
-
+  // Create a memory mapping on a part of "file".
+  view.reset();
+  view.reset(grnxx::io::View::open(grnxx::io::VIEW_SHARED |
+                                   grnxx::io::VIEW_PRIVATE,
+                                   file, FILE_SIZE / 2, MMAP_SIZE));
   assert(view);
-  assert(view.flags() == grnxx::io::VIEW_SHARED);
-  assert(view.address() != nullptr);
-  assert(view.offset() == (FILE_SIZE / 2));
-  assert(view.size() == MMAP_SIZE);
+
+  GRNXX_NOTICE() << "view = " << *view;
+
+  assert(view->flags() == grnxx::io::VIEW_SHARED);
+  assert(view->address() != nullptr);
+  assert(view->size() == MMAP_SIZE);
 
   for (std::uint64_t i = 0; i < MMAP_SIZE; ++i) {
-    assert(static_cast<const char *>(view.address())[i] == 'x');
+    assert(static_cast<const char *>(view->address())[i] == 'x');
   }
 }
 

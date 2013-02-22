@@ -363,10 +363,10 @@ void PoolImpl::open_regular_pool(PoolFlags flags, const char *path,
 void PoolImpl::setup_header(const PoolOptions &options) {
   if (files_[0]) {
     files_[0].resize(POOL_HEADER_CHUNK_SIZE);
-    header_chunk_ = View(get_view_flags(), files_[0],
-                         0, POOL_HEADER_CHUNK_SIZE);
+    header_chunk_ = View::open(get_view_flags(), files_[0],
+                               0, POOL_HEADER_CHUNK_SIZE);
   } else {
-    header_chunk_ = View(get_view_flags(), POOL_HEADER_CHUNK_SIZE);
+    header_chunk_ = View::open(get_view_flags(), POOL_HEADER_CHUNK_SIZE);
   }
   std::memset(header_chunk_.address(), 0, POOL_HEADER_CHUNK_SIZE);
   header_ = static_cast<PoolHeader *>(header_chunk_.address());
@@ -374,7 +374,8 @@ void PoolImpl::setup_header(const PoolOptions &options) {
 }
 
 void PoolImpl::check_header() {
-  header_chunk_ = View(get_view_flags(), files_[0], 0, POOL_HEADER_CHUNK_SIZE);
+  header_chunk_ = View::open(get_view_flags(), files_[0],
+                             0, POOL_HEADER_CHUNK_SIZE);
   header_ = static_cast<PoolHeader *>(header_chunk_.address());
 
   // TODO: Check the header.
@@ -420,9 +421,9 @@ void PoolImpl::mmap_block_info_chunk(uint16_t chunk_id) {
   block_info_chunks_[chunk_id] = mmap_chunk(chunk_info);
 }
 
-View PoolImpl::mmap_chunk(const ChunkInfo &chunk_info) {
+View *PoolImpl::mmap_chunk(const ChunkInfo &chunk_info) {
   if (flags_ & POOL_ANONYMOUS) {
-    return View(get_view_flags(), chunk_info.size());
+    return View::open(get_view_flags(), chunk_info.size());
   } else {
     File &file = files_[chunk_info.file_id()];
     if (!file) {
@@ -448,8 +449,8 @@ View PoolImpl::mmap_chunk(const ChunkInfo &chunk_info) {
       }
     }
 
-    return View(get_view_flags(), file,
-                chunk_info.offset(), chunk_info.size());
+    return View::open(get_view_flags(), file,
+                      chunk_info.offset(), chunk_info.size());
   }
 }
 

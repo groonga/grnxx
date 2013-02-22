@@ -18,6 +18,7 @@
 #ifndef GRNXX_IO_POOL_IMPL_HPP
 #define GRNXX_IO_POOL_IMPL_HPP
 
+#include "file.hpp"
 #include "pool.hpp"
 
 namespace grnxx {
@@ -99,7 +100,7 @@ class PoolImpl {
 
   void mmap_block_chunk(uint16_t chunk_id);
   void mmap_block_info_chunk(uint16_t chunk_id);
-  View mmap_chunk(const ChunkInfo &chunk_info);
+  View *mmap_chunk(const ChunkInfo &chunk_info);
 
   ViewFlags get_view_flags() const;
 
