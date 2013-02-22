@@ -33,15 +33,15 @@ enum TrieType : int32_t {
 
 class TrieException : Exception {
  public:
-  TrieException() noexcept {}
-  virtual ~TrieException() noexcept {}
+  TrieException() noexcept : Exception() {}
+  ~TrieException() noexcept {}
 
-  TrieException(const TrieException &) noexcept {}
+  TrieException(const TrieException &x) noexcept : Exception(x) {}
   TrieException &operator=(const TrieException &) noexcept {
     return *this;
   }
 
-  virtual const char *what() const noexcept {
+  const char *what() const noexcept {
     return "";
   }
 };
