@@ -22,6 +22,7 @@
 #include "../error.hpp"
 #include "../exception.hpp"
 #include "../logger.hpp"
+#include "file.hpp"
 
 namespace grnxx {
 namespace io {
@@ -42,7 +43,7 @@ ViewImpl::~ViewImpl() {
   }
 }
 
-std::unique_ptr<ViewImpl> ViewImpl::map(ViewFlags flags, uint64_t size) {
+ViewImpl *ViewImpl::open(ViewFlags flags, uint64_t size) {
   if (size == 0) {
     GRNXX_ERROR() << "invalid argument: size = " << size;
     GRNXX_THROW();
@@ -53,22 +54,22 @@ std::unique_ptr<ViewImpl> ViewImpl::map(ViewFlags flags, uint64_t size) {
     GRNXX_ERROR() << "new grnxx::io::ViewImpl failed";
     GRNXX_THROW();
   }
-  view->map_on_memory(flags, size);
-  return view;
+  view->open_view(flags, size);
+  return view.release();
 }
 
-std::unique_ptr<ViewImpl> ViewImpl::map(ViewFlags flags, const File &file) {
+ViewImpl *ViewImpl::open(ViewFlags flags, const File &file) {
   std::unique_ptr<ViewImpl> view(new (std::nothrow) ViewImpl);
   if (!view) {
     GRNXX_ERROR() << "new grnxx::io::ViewImpl failed";
     GRNXX_THROW();
   }
-  view->map_on_file(flags, file, 0, 0);
-  return view;
+  view->open_view(flags, file, 0, 0);
+  return view.release();
 }
 
-std::unique_ptr<ViewImpl> ViewImpl::map(ViewFlags flags, const File &file,
-                                        uint64_t offset, uint64_t size) {
+ViewImpl *ViewImpl::open(ViewFlags flags, const File &file,
+                         uint64_t offset, uint64_t size) {
   if (size == 0) {
     GRNXX_ERROR() << "invalid argument: size = " << size;
     GRNXX_THROW();
@@ -79,8 +80,8 @@ std::unique_ptr<ViewImpl> ViewImpl::map(ViewFlags flags, const File &file,
     GRNXX_ERROR() << "new grnxx::io::ViewImpl failed";
     GRNXX_THROW();
   }
-  view->map_on_file(flags, file, offset, size);
-  return view;
+  view->open_view(flags, file, offset, size);
+  return view.release();
 }
 
 void ViewImpl::sync() {
@@ -109,10 +110,9 @@ void ViewImpl::sync(uint64_t offset, uint64_t size) {
 }
 
 ViewImpl::ViewImpl()
-  : file_(), flags_(ViewFlags::none()), handle_(nullptr),
-    address_(nullptr), offset_(0), size_(0) {}
+  : flags_(ViewFlags::none()), handle_(nullptr), address_(nullptr), size_(0) {}
 
-void ViewImpl::map_on_memory(ViewFlags, uint64_t size) {
+void ViewImpl::open_view(ViewFlags, uint64_t size) {
   flags_ = VIEW_PRIVATE | VIEW_ANONYMOUS;
   size_ = size;
 
@@ -135,7 +135,7 @@ void ViewImpl::map_on_memory(ViewFlags, uint64_t size) {
   }
 }
 
-void ViewImpl::map_on_file(ViewFlags flags, const File &file,
+void ViewImpl::open_view(ViewFlags flags, const File &file,
                            uint64_t offset, uint64_t size) {
   const uint64_t file_size = file.size();
   if (file_size == 0) {
@@ -157,8 +157,6 @@ void ViewImpl::map_on_file(ViewFlags flags, const File &file,
     GRNXX_THROW();
   }
 
-  file_ = file;
-  offset_ = offset;
   size_ = (size != 0) ? size : file_size;
 
   int protection_mode = PAGE_READWRITE;
@@ -219,14 +217,8 @@ StringBuilder &ViewImpl::write_to(StringBuilder &builder) const {
     return builder;
   }
 
-  if (file_) {
-    builder << "{ file = " << file_.path();
-  } else {
-    builder << "{ file = n/a";
-  }
-  return builder << ", flags = " << flags_
+  return builder << "{ flags = " << flags_
                  << ", address = " << address_
-                 << ", offset = " << offset_
                  << ", size = " << size_ << " }";
 }
 
