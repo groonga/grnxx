@@ -2,7 +2,6 @@ AM_CXXFLAGS = @AM_CXXFLAGS@ -I$(top_srcdir)/lib
 
 TESTS =					\
 	test_alpha_double_array		\
-	test_alpha_double_array2	\
 	test_backtrace			\
 	test_db_array			\
 	test_db_blob_vector		\
@@ -37,9 +36,6 @@ check_PROGRAMS = $(TESTS)
 
 test_alpha_double_array_SOURCES = test_alpha_double_array.cpp
 test_alpha_double_array_LDADD = ../lib/libgrnxx.la
-
-test_alpha_double_array2_SOURCES = test_alpha_double_array2.cpp
-test_alpha_double_array2_LDADD = ../lib/libgrnxx.la
 
 test_backtrace_SOURCES = test_backtrace.cpp
 test_backtrace_LDADD = ../lib/libgrnxx.la
