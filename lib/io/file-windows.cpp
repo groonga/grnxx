@@ -46,8 +46,7 @@ FileImpl::~FileImpl() {
   }
 }
 
-std::unique_ptr<FileImpl> FileImpl::open(FileFlags flags, const char *path,
-                                         int permission) {
+FileImpl *FileImpl::open(FileFlags flags, const char *path, int permission) {
   std::unique_ptr<FileImpl> file(new (std::nothrow) FileImpl);
   if (!file) {
     GRNXX_ERROR() << "new grnxx::io::FileImpl failed";
@@ -58,7 +57,7 @@ std::unique_ptr<FileImpl> FileImpl::open(FileFlags flags, const char *path,
   } else {
     file->open_regular_file(flags, path, permission);
   }
-  return file;
+  return file.release();
 }
 
 bool FileImpl::exists(const char *path) {

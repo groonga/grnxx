@@ -34,12 +34,11 @@
 namespace grnxx {
 namespace io {
 
-class FileImpl {
+class FileImpl : public File{
  public:
   ~FileImpl();
 
-  static std::unique_ptr<FileImpl> open(FileFlags flags, const char *path,
-                                        int permission);
+  static FileImpl *open(FileFlags flags, const char *path, int permission);
 
   static bool exists(const char *path);
   static void unlink(const char *path);
