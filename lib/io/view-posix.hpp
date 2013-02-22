@@ -59,15 +59,7 @@ class ViewImpl : public View {
   void open_view(ViewFlags flags, uint64_t size);
   void open_view(ViewFlags flags, const File &file,
                  uint64_t offset, uint64_t size);
-
-  ViewImpl(const ViewImpl &);
-  ViewImpl &operator=(const ViewImpl &);
 };
-
-inline StringBuilder &operator<<(StringBuilder &builder,
-                                 const ViewImpl &view) {
-  return view.write_to(builder);
-}
 
 }  // namespace io
 }  // namespace grnxx
