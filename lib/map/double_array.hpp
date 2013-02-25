@@ -43,11 +43,11 @@ class DoubleArray : public Map {
 
   uint32_t block_id() const;
 
-  bool search(int64_t key_id, Slice *key = nullptr);
+  bool search(int64_t key_id, MapKey *key = nullptr);
   bool search(const Slice &key, int64_t *key_id = nullptr);
 
   bool lcp_search(const Slice &query, int64_t *key_id = nullptr,
-                  Slice *key = nullptr);
+                  MapKey *key = nullptr);
 
   bool insert(const Slice &key, int64_t *key_id = nullptr);
 

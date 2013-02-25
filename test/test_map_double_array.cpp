@@ -105,7 +105,7 @@ void test_lcp_search() {
   assert(da->insert("ABE"));
 
   std::int64_t key_id;
-  grnxx::Slice key;
+  grnxx::MapKey key;
 
   assert(!da->lcp_search("", &key_id, &key));
   assert(!da->lcp_search("A", &key_id, &key));

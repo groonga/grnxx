@@ -122,6 +122,8 @@ inline bool operator!=(const Slice &lhs, const Slice &rhs) {
   return !(lhs == rhs);
 }
 
+std::ostream &operator<<(std::ostream &stream, const Slice &s);
+
 }  // namespace grnxx
 
 #endif  // GRNXX_SLICE_HPP

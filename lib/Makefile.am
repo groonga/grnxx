@@ -20,6 +20,7 @@ libgrnxx_la_SOURCES =		\
 	mutex.cpp		\
 	os.cpp			\
 	recycler.cpp		\
+	slice.cpp		\
 	string.cpp		\
 	string_builder.cpp	\
 	thread.cpp		\

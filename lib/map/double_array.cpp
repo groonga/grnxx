@@ -69,7 +69,7 @@ uint32_t DoubleArray::block_id() const {
   return block_info_->id();
 }
 
-bool DoubleArray::search(int64_t key_id, Slice *key) {
+bool DoubleArray::search(int64_t key_id, MapKey *key) {
   open_trie_if_needed();
   if (!front_) {
     return false;
@@ -78,7 +78,7 @@ bool DoubleArray::search(int64_t key_id, Slice *key) {
 }
 
 bool DoubleArray::lcp_search(const Slice &query, int64_t *key_id,
-                             Slice *key) {
+                             MapKey *key) {
   open_trie_if_needed();
   if (!front_) {
     return false;

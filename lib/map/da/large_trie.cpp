@@ -115,7 +115,7 @@ uint32_t Trie::block_id() const {
   return block_info_->id();
 }
 
-bool Trie::search(int64_t key_id, Slice *key) {
+bool Trie::search(int64_t key_id, MapKey *key) {
   if ((key_id < MIN_KEY_ID) || (key_id > header_->max_key_id)) {
     return false;
   }
@@ -158,7 +158,7 @@ bool Trie::search(const Slice &key, int64_t *key_id) {
   return false;
 }
 
-bool Trie::lcp_search(const Slice &query, int64_t *key_id, Slice *key) {
+bool Trie::lcp_search(const Slice &query, int64_t *key_id, MapKey *key) {
   bool found = false;
   uint64_t node_id = ROOT_NODE_ID;
   uint64_t query_pos = 0;
