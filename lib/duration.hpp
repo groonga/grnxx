@@ -161,4 +161,4 @@ std::ostream &operator<<(std::ostream &stream, Duration duration);
 
 }  // namespace grnxx
 
-#endif  // GRNXX_TIME_HPP
+#endif  // GRNXX_DURATION_HPP
