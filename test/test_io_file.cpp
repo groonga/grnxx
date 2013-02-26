@@ -97,7 +97,7 @@ void test_resize() {
       grnxx::io::File::open(grnxx::io::FILE_CREATE, FILE_PATH));
 
   file->resize(FILE_SIZE);
-  assert(file->tell() == FILE_SIZE);
+  assert(file->tell() == 0);
   assert(file->size() == FILE_SIZE);
 
   file->resize(0);

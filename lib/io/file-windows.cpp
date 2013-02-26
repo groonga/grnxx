@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2012  Brazil, Inc.
+  Copyright (C) 2012-2013  Brazil, Inc.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -207,16 +207,10 @@ uint64_t FileImpl::read(void *buf, uint64_t size, uint64_t offset) {
     GRNXX_THROW();
   }
 
-  // TODO: must be thread-safe.
+  // The resulting file offset is not defined on failure.
   const uint64_t current_position = seek(0, SEEK_CUR);
   seek(offset, SEEK_SET);
-  uint64_t result;
-  try {
-    result = read(buf, size);
-  } catch (...) {
-    seek(current_position, SEEK_SET);
-    throw;
-  }
+  const uint64_t result = read(buf, size);
   seek(current_position, SEEK_SET);
   return result;
 }
@@ -254,16 +248,10 @@ uint64_t FileImpl::write(const void *buf, uint64_t size, uint64_t offset) {
     GRNXX_THROW();
   }
 
-  // TODO: must be thread-safe.
+  // The resulting file offset is not defined on failure.
   const uint64_t current_position = seek(0, SEEK_CUR);
   seek(offset, SEEK_SET);
-  uint64_t result;
-  try {
-    result = write(buf, size);
-  } catch (...) {
-    seek(current_position, SEEK_SET);
-    throw;
-  }
+  const uint64_t result = write(buf, size);
   seek(current_position, SEEK_SET);
   return result;
 }
@@ -327,6 +315,7 @@ void FileImpl::resize(uint64_t size) {
     GRNXX_THROW();
   }
 
+  const uint64_t offset = tell();
   seek(size, SEEK_SET);
   if (!::SetEndOfFile(handle_)) {
     GRNXX_ERROR() << "failed to resize file: file = " << *this
@@ -334,6 +323,7 @@ void FileImpl::resize(uint64_t size) {
                   << ": '::SetEndOfFile' " << Error(::GetLastError());
     GRNXX_THROW();
   }
+  seek(offset, SEEK_SET);
 }
 
 uint64_t FileImpl::size() const {

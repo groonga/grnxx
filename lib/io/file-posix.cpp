@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2012  Brazil, Inc.
+  Copyright (C) 2012-2013  Brazil, Inc.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -175,9 +175,8 @@ bool FileImpl::unlock() {
   return true;
 }
 
-// TODO: These should be constexpr.
-const uint64_t FILE_IMPL_MAX_OFFSET = std::numeric_limits<off_t>::max();
-const uint64_t FILE_IMPL_MAX_SIZE = std::numeric_limits<ssize_t>::max();
+constexpr uint64_t FILE_IMPL_MAX_OFFSET = std::numeric_limits<off_t>::max();
+constexpr uint64_t FILE_IMPL_MAX_SIZE = std::numeric_limits<ssize_t>::max();
 
 uint64_t FileImpl::read(void *buf, uint64_t size) {
   if (flags_ & FILE_WRITE_ONLY) {
@@ -207,6 +206,7 @@ uint64_t FileImpl::read(void *buf, uint64_t size, uint64_t offset) {
                   << ", max_offset = " << FILE_IMPL_MAX_OFFSET;
     GRNXX_THROW();
   }
+
   const size_t chunk_size =
       static_cast<size_t>(std::min(size, FILE_IMPL_MAX_SIZE));
 #ifdef GRNXX_HAS_PREAD
@@ -218,16 +218,10 @@ uint64_t FileImpl::read(void *buf, uint64_t size, uint64_t offset) {
                   << ": '::pwrite' " << Error(errno);
   }
 #else  // GRNXX_HAS_PREAD
-  // TODO: To be thread-safe and error-tolerant.
+  // The resulting file offset is not defined on failure.
   const uint64_t current_position = tell();
   seek(offset, SEEK_SET);
-  uint64_t result;
-  try {
-    result = read(buf, chunk_size);
-  } catch (...) {
-    seek(current_position, SEEK_SET);
-    throw;
-  }
+  const uint64_t result = read(buf, chunk_size);
   seek(current_position, SEEK_SET);
 #endif  // GRNXX_HAS_PREAD
   return result;
@@ -272,16 +266,10 @@ uint64_t FileImpl::write(const void *buf, uint64_t size, uint64_t offset) {
                   << ": '::pwrite' " << Error(errno);
   }
 #else  // GRNXX_HAS_PWRITE
-  // TODO: To be thread-safe and error-tolerant.
+  // The resulting file offset is not defined on failure.
   const uint64_t current_position = tell();
   seek(offset, SEEK_SET);
-  uint64_t result;
-  try {
-    result = write(buf, chunk_size);
-  } catch (...) {
-    seek(current_position, SEEK_SET);
-    throw;
-  }
+  const uint64_t result = write(buf, chunk_size);
   seek(current_position, SEEK_SET);
 #endif  // GRNXX_HAS_PWRITE
   return result;
@@ -348,7 +336,6 @@ void FileImpl::resize(uint64_t size) {
                   << ": [0, " << MAX_SIZE << ']';
     GRNXX_THROW();
   }
-  seek(static_cast<int64_t>(size), SEEK_SET);
 
   if (::ftruncate(fd_, size) != 0) {
     GRNXX_ERROR() << "failed to resize file: file = " << *this
