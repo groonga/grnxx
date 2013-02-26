@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2012  Brazil, Inc.
+  Copyright (C) 2012-2013  Brazil, Inc.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -62,7 +62,7 @@ class View {
   View();
   virtual ~View();
 
-  // Create an anonymous memory mapping.
+  // Create an anonymous memory mapping of "size" bytes.
   // Available flags are VIEW_HUGE_TLB only.
   static View *open(ViewFlags flags, uint64_t size);
   // Create a file-backed memory mapping.
@@ -72,11 +72,17 @@ class View {
   static View *open(ViewFlags flags, File *file,
                     uint64_t offset, uint64_t size);
 
+  // Flush modified pages.
   virtual void sync() = 0;
+  // Flush modified pages containing the area which starts at "offset" and has
+  // the length of "size" bytes.
   virtual void sync(uint64_t offset, uint64_t size) = 0;
 
+  // Return the enabled flags.
   virtual ViewFlags flags() const = 0;
+  // Return the starting address.
   virtual void *address() const = 0;
+  // Return the size.
   virtual uint64_t size() const = 0;
 
   virtual StringBuilder &write_to(StringBuilder &builder) const = 0;

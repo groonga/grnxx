@@ -142,7 +142,7 @@ class File {
 
   // Return the file path.
   virtual String path() const = 0;
-  // Return enabled file flags.
+  // Return the enabled file flags.
   virtual FileFlags flags() const = 0;
 
   // Return a pointer to the file handle 
