@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2012  Brazil, Inc.
+  Copyright (C) 2012-2013  Brazil, Inc.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -22,7 +22,7 @@
 
 #include "db/blob_vector.hpp"
 #include "logger.hpp"
-#include "time.hpp"
+#include "steady_clock.hpp"
 
 void test_basics() {
   grnxx::io::Pool::unlink_if_exists("temp.grn");
@@ -361,27 +361,29 @@ void test_defrag() {
     vector[ids[i]].set(&value[0], length);
   }
 
-  grnxx::Time start = grnxx::Time::now();
+  grnxx::Time start = grnxx::SteadyClock::now();
   for (std::uint32_t i = 0; i < NUM_VALUES; ++i) {
     grnxx::db::Blob blob = vector[i];
     if (blob.length() > 0) {
       assert(*static_cast<const char *>(blob.address()) == 'X');
     };
   }
-  grnxx::Duration elapsed = (grnxx::Time::now() - start) / NUM_VALUES;
-  GRNXX_NOTICE() << "before defrag: elapsed [ns] = " << elapsed.nanoseconds();
+  grnxx::Duration elapsed = grnxx::SteadyClock::now() - start;
+  GRNXX_NOTICE() << "before defrag: elapsed [ns] = "
+                 << (elapsed.count() * 1000 / NUM_VALUES);
 
   vector.defrag();
 
-  start = grnxx::Time::now();
+  start = grnxx::SteadyClock::now();
   for (std::uint32_t i = 0; i < NUM_VALUES; ++i) {
     grnxx::db::Blob blob = vector[i];
     if (blob.length() > 0) {
       assert(*static_cast<const char *>(blob.address()) == 'X');
     };
   }
-  elapsed = (grnxx::Time::now() - start) / NUM_VALUES;
-  GRNXX_NOTICE() << "after defrag: elapsed [ns] = " << elapsed.nanoseconds();
+  elapsed = grnxx::SteadyClock::now() - start;
+  GRNXX_NOTICE() << "after defrag: elapsed [ns] = "
+                 << (elapsed.count() * 1000 / NUM_VALUES);
 }
 
 int main() {

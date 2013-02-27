@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2012  Brazil, Inc.
+  Copyright (C) 2012-2013  Brazil, Inc.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -19,7 +19,7 @@
 
 #include "intrinsic.hpp"
 #include "logger.hpp"
-#include "time.hpp"
+#include "steady_clock.hpp"
 
 void test_basics() {
   assert(grnxx::bit_scan_reverse(std::uint8_t(100)) == 6);
@@ -100,69 +100,69 @@ void test_times() {
 
   grnxx::Time start, end;
 
-  start = grnxx::Time::now();
+  start = grnxx::SteadyClock::now();
   std::uint64_t total = 0;
   for (std::uint32_t i = 1; i <= LOOP_COUNT; ++i) {
     total += grnxx::bit_scan_reverse(i);
   }
-  end = grnxx::Time::now();
+  end = grnxx::SteadyClock::now();
   GRNXX_NOTICE() << "bit_scan_reverse<32>: total = " << total
                  << ", elapsed [ns] = "
-                 << (1.0 * (end - start).nanoseconds() / LOOP_COUNT);
+                 << (1000.0 * (end - start).count() / LOOP_COUNT);
 
-  start = grnxx::Time::now();
+  start = grnxx::SteadyClock::now();
   total = 0;
   for (std::uint64_t i = 1; i <= LOOP_COUNT; ++i) {
     total += grnxx::bit_scan_reverse(i << 20);
   }
-  end = grnxx::Time::now();
+  end = grnxx::SteadyClock::now();
   GRNXX_NOTICE() << "bit_scan_reverse<64>: total = " << total
                  << ", elapsed [ns] = "
-                 << (1.0 * (end - start).nanoseconds() / LOOP_COUNT);
+                 << (1000.0 * (end - start).count() / LOOP_COUNT);
 
-  start = grnxx::Time::now();
+  start = grnxx::SteadyClock::now();
   volatile std::uint32_t count_32 = 0;
   for (std::uint32_t i = 0; i < LOOP_COUNT; ++i) {
     assert(grnxx::atomic_fetch_and_add(1, &count_32) == i);
   }
-  end = grnxx::Time::now();
+  end = grnxx::SteadyClock::now();
   assert(count_32 == LOOP_COUNT);
   GRNXX_NOTICE() << "atomic_fetch_and_add<32>: total = " << count_32
                  << ", elapsed [ns] = "
-                 << (1.0 * (end - start).nanoseconds() / LOOP_COUNT);
+                 << (1000.0 * (end - start).count() / LOOP_COUNT);
 
-  start = grnxx::Time::now();
+  start = grnxx::SteadyClock::now();
   volatile std::uint64_t count_64 = 0;
   for (std::uint32_t i = 0; i < LOOP_COUNT; ++i) {
     assert(grnxx::atomic_fetch_and_add(1, &count_64) == i);
   }
-  end = grnxx::Time::now();
+  end = grnxx::SteadyClock::now();
   assert(count_64 == LOOP_COUNT);
   GRNXX_NOTICE() << "atomic_fetch_and_add<64>: total = " << count_64
                  << ", elapsed [ns] = "
-                 << (1.0 * (end - start).nanoseconds() / LOOP_COUNT);
+                 << (1000.0 * (end - start).count() / LOOP_COUNT);
 
-  start = grnxx::Time::now();
+  start = grnxx::SteadyClock::now();
   const std::int32_t a_32 = 0, b_32 = 1;
   volatile std::int32_t value_32 = a_32;
   for (std::uint32_t i = 0; i < (LOOP_COUNT / 2); ++i) {
     assert(grnxx::atomic_compare_and_swap(a_32, b_32, &value_32));
     assert(grnxx::atomic_compare_and_swap(b_32, a_32, &value_32));
   }
-  end = grnxx::Time::now();
+  end = grnxx::SteadyClock::now();
   GRNXX_NOTICE() << "atomic_compare_and_swap<32>: elapsed [ns] = "
-                 << (1.0 * (end - start).nanoseconds() / LOOP_COUNT);
+                 << (1000.0 * (end - start).count() / LOOP_COUNT);
 
-  start = grnxx::Time::now();
+  start = grnxx::SteadyClock::now();
   const std::int64_t a_64 = 0, b_64 = 1;
   volatile std::int64_t value_64 = a_64;
   for (std::uint32_t i = 0; i < (LOOP_COUNT / 2); ++i) {
     assert(grnxx::atomic_compare_and_swap(a_64, b_64, &value_64));
     assert(grnxx::atomic_compare_and_swap(b_64, a_64, &value_64));
   }
-  end = grnxx::Time::now();
+  end = grnxx::SteadyClock::now();
   GRNXX_NOTICE() << "atomic_compare_and_swap<64>: elapsed [ns] = "
-                 << (1.0 * (end - start).nanoseconds() / LOOP_COUNT);
+                 << (1000.0 * (end - start).count() / LOOP_COUNT);
 }
 
 int main() {

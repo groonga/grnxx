@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2012  Brazil, Inc.
+  Copyright (C) 2012-2013  Brazil, Inc.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -19,7 +19,7 @@
 
 #include "logger.hpp"
 #include "thread.hpp"
-#include "time.hpp"
+#include "steady_clock.hpp"
 
 int main() {
   grnxx::Logger::set_flags(grnxx::LOGGER_WITH_ALL |
@@ -28,30 +28,30 @@ int main() {
 
   enum { LOOP_COUNT = 1000 };
 
-  grnxx::Time start = grnxx::Time::now();
+  grnxx::Time start = grnxx::SteadyClock::now();
   for (int i = 0; i < LOOP_COUNT; ++i) {
     grnxx::Thread::switch_to_others();
   }
-  grnxx::Time end = grnxx::Time::now();
+  grnxx::Time end = grnxx::SteadyClock::now();
 
   GRNXX_NOTICE() << "switch_to_others(): elapsed [ns]: "
-                 << ((end - start).nanoseconds() / LOOP_COUNT);
+                 << (1000.0 * (end - start).count() / LOOP_COUNT);
 
-  start = grnxx::Time::now();
+  start = grnxx::SteadyClock::now();
   for (int i = 0; i < LOOP_COUNT; ++i) {
     grnxx::Thread::sleep(grnxx::Duration(0));
   }
-  end = grnxx::Time::now();
+  end = grnxx::SteadyClock::now();
 
   GRNXX_NOTICE() << "sleep(0): elapsed [ns]: "
-                 << ((end - start).nanoseconds() / LOOP_COUNT);
+                 << (1000.0 * (end - start).count() / LOOP_COUNT);
 
-  start = grnxx::Time::now();
+  start = grnxx::SteadyClock::now();
   grnxx::Thread::sleep(grnxx::Duration::milliseconds(10));
-  end = grnxx::Time::now();
+  end = grnxx::SteadyClock::now();
 
   GRNXX_NOTICE() << "sleep(10ms): elapsed [ns] = "
-                 << (end - start).nanoseconds();
+                 << (1000.0 * (end - start).count());
 
   return 0;
 }

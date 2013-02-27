@@ -36,6 +36,7 @@ libgrnxx_include_HEADERS =	\
 	features.hpp		\
 	flags_impl.hpp		\
 	grnxx.hpp		\
+	internal_clock.hpp	\
 	intrinsic.hpp		\
 	lock.hpp		\
 	logger.hpp		\
@@ -44,9 +45,11 @@ libgrnxx_include_HEADERS =	\
 	os.hpp			\
 	recycler.hpp		\
 	slice.hpp		\
+	steady_clock.hpp	\
 	string.hpp		\
 	string_builder.hpp	\
 	string_format.hpp	\
+	system_clock.hpp	\
 	thread.hpp		\
 	time.hpp		\
 	version.h

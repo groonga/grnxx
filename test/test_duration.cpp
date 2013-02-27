@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2012  Brazil, Inc.
+  Copyright (C) 2012-2013  Brazil, Inc.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -26,23 +26,22 @@ int main() {
                            grnxx::LOGGER_ENABLE_COUT);
   grnxx::Logger::set_max_level(grnxx::NOTICE_LOGGER);
 
-  assert(grnxx::Duration::max().nanoseconds() ==
-         std::numeric_limits<std::int64_t>::max());
-  assert(grnxx::Duration::min().nanoseconds() ==
+  assert(grnxx::Duration::min().count() ==
          std::numeric_limits<std::int64_t>::min());
+  assert(grnxx::Duration::max().count() ==
+         std::numeric_limits<std::int64_t>::max());
 
-  assert(grnxx::Duration(123).nanoseconds() == 123);
+  assert(grnxx::Duration(123).count() == 123);
 
-  assert(grnxx::Duration::nanoseconds(123).nanoseconds() == 123);
-  assert(grnxx::Duration::seconds(1).nanoseconds() == 1000000000);
-  assert(grnxx::Duration::minutes(1).nanoseconds() == 1000000000LL * 60);
-  assert(grnxx::Duration::hours(1).nanoseconds() == 1000000000LL * 60 * 60);
-  assert(grnxx::Duration::days(1).nanoseconds() ==
-         1000000000LL * 60 * 60 * 24);
-  assert(grnxx::Duration::weeks(1).nanoseconds() ==
-         1000000000LL * 60 * 60 * 24 * 7);
+  assert(grnxx::Duration::microseconds(123).count() == 123);
+  assert(grnxx::Duration::seconds(1).count() == 1000000);
+  assert(grnxx::Duration::minutes(1).count() == 1000000LL * 60);
+  assert(grnxx::Duration::hours(1).count() == 1000000LL * 60 * 60);
+  assert(grnxx::Duration::days(1).count() == 1000000LL * 60 * 60 * 24);
+  assert(grnxx::Duration::weeks(1).count() == 1000000LL * 60 * 60 * 24 * 7);
 
-  GRNXX_NOTICE() << "nanosecond = " << grnxx::Duration::nanoseconds(1);
+  GRNXX_NOTICE() << "microseconds = " << grnxx::Duration::microseconds(1);
+  GRNXX_NOTICE() << "milliseconds = " << grnxx::Duration::milliseconds(1);
   GRNXX_NOTICE() << "second = " << grnxx::Duration::seconds(1);
   GRNXX_NOTICE() << "minute = " << grnxx::Duration::minutes(1);
   GRNXX_NOTICE() << "hour = " << grnxx::Duration::hours(1);
@@ -92,7 +91,7 @@ int main() {
 
   std::stringstream stream;
   stream << grnxx::Duration(123456789);
-  assert(stream.str() == "0.123456789");
+  assert(stream.str() == "123.456789");
 
   stream.str("");
   stream << grnxx::Duration::seconds(123);
@@ -100,11 +99,11 @@ int main() {
 
   stream.str("");
   stream << (grnxx::Duration::seconds(456) + grnxx::Duration(789));
-  assert(stream.str() == "456.000000789");
+  assert(stream.str() == "456.000789");
 
   stream.str("");
   stream << grnxx::Duration(-123456789);
-  assert(stream.str() == "-0.123456789");
+  assert(stream.str() == "-123.456789");
 
   stream.str("");
   stream << grnxx::Duration::seconds(-123);
@@ -112,7 +111,7 @@ int main() {
 
   stream.str("");
   stream << -(grnxx::Duration::seconds(456) + grnxx::Duration(789));
-  assert(stream.str() == "-456.000000789");
+  assert(stream.str() == "-456.000789");
 
   return 0;
 }

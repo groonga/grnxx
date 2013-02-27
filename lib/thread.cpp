@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2012  Brazil, Inc.
+  Copyright (C) 2012-2013  Brazil, Inc.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -46,10 +46,10 @@ bool Thread::switch_to_others() {
 
 void Thread::sleep(Duration duration) {
 #ifdef GRNXX_WINDOWS
-  if (duration.nanoseconds() < 0) {
+  if (duration.count() < 0) {
     ::Sleep(0);
   } else {
-    const int64_t milliseconds = duration.nanoseconds() / 1000000;
+    const int64_t milliseconds = duration.count() / 1000;
     if (milliseconds <
         static_cast<int64_t>(std::numeric_limits<DWORD>::max())) {
       ::Sleep(static_cast<DWORD>(milliseconds));
@@ -59,24 +59,24 @@ void Thread::sleep(Duration duration) {
   }
 #elif defined(GRNXX_HAS_NANOSLEEP)
   struct timespec request;
-  if (duration.nanoseconds() < 0) {
+  if (duration.count() < 0) {
     request.tv_sec = 0;
     request.tv_nsec = 0;
   } else {
-    const int64_t seconds = duration.nanoseconds() / 1000000000;
+    const int64_t seconds = duration.count() / 1000000;
     if (seconds < std::numeric_limits<time_t>::max()) {
       request.tv_sec = static_cast<time_t>(seconds);
     } else {
       request.tv_sec = std::numeric_limits<time_t>::max();
     }
     duration %= Duration::seconds(1);
-    request.tv_nsec = static_cast<long>(duration.nanoseconds());
+    request.tv_nsec = static_cast<long>(duration.count() * 1000);
   }
   // Note that ::nanosleep() requires -lrt option.
   ::nanosleep(&request, nullptr);
 #else  // defined(GRNXX_HAS_NANOSLEEP)
   // Note that POSIX.1-2008 removes the specification of ::usleep().
-  const int64_t microseconds = duration.nanoseconds() / 1000;
+  const int64_t microseconds = duration.count();
   if (microseconds < std::numeric_limits<useconds_t>::max()) {
     ::usleep(static_cast<useconds_t>(microseconds));
   } else {

@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2012  Brazil, Inc.
+  Copyright (C) 2012-2013  Brazil, Inc.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -18,46 +18,47 @@
 #include <cassert>
 
 #include "logger.hpp"
-#include "time.hpp"
+#include "steady_clock.hpp"
+#include "system_clock.hpp"
 
 int main() {
   grnxx::Logger::set_flags(grnxx::LOGGER_WITH_ALL |
                            grnxx::LOGGER_ENABLE_COUT);
   grnxx::Logger::set_max_level(grnxx::NOTICE_LOGGER);
 
-  assert(grnxx::Time::max().nanoseconds() ==
+  assert(grnxx::Time::max().count() ==
          std::numeric_limits<std::int64_t>::max());
-  assert(grnxx::Time::min().nanoseconds() ==
+  assert(grnxx::Time::min().count() ==
          std::numeric_limits<std::int64_t>::min());
 
-  grnxx::Time time = grnxx::Time::now();
-  GRNXX_NOTICE() << "grnxx::Time::now: " << time;
+  grnxx::Time time = grnxx::SystemClock::now();
+  GRNXX_NOTICE() << "grnxx::SystemClock::now: " << time;
 
-  time = grnxx::Time::now_in_seconds();
-  GRNXX_NOTICE() << "grnxx::Time::now_in_seconds: " << time;
+  time = grnxx::SteadyClock::now();
+  GRNXX_NOTICE() << "grnxx::SteadyClock::now: " << time;
 
   enum { LOOP_COUNT = 1 << 16 };
 
-  grnxx::Time start = grnxx::Time::now();
+  grnxx::Time start = grnxx::SteadyClock::now();
   for (int i = 0; i < LOOP_COUNT; ++i) {
-    grnxx::Time::now();
+    grnxx::SystemClock::now();
   }
-  grnxx::Time end = grnxx::Time::now();
+  grnxx::Time end = grnxx::SteadyClock::now();
 
   grnxx::Duration elapsed = end - start;
-  GRNXX_NOTICE() << "grnxx::Time::now: average elapsed [ns] = "
-                 << (elapsed.nanoseconds() / LOOP_COUNT);
+  GRNXX_NOTICE() << "grnxx::SystemClock::now: average elapsed [ns] = "
+                 << (1000.0 * elapsed.count() / LOOP_COUNT);
 
-  start = grnxx::Time::now();
+  start = grnxx::SteadyClock::now();
   for (int i = 0; i < LOOP_COUNT; ++i) {
-    grnxx::Time::now_in_seconds();
+    grnxx::SteadyClock::now();
   }
-  end = grnxx::Time::now();
+  end = grnxx::SteadyClock::now();
 
   elapsed = end - start;
-  GRNXX_NOTICE() << "grnxx::Time::now_in_seconds"
+  GRNXX_NOTICE() << "grnxx::SteadyClock::now"
                  << ": average elapsed [ns] = "
-                 << (elapsed.nanoseconds() / LOOP_COUNT);
+                 << (1000.0 * elapsed.count() / LOOP_COUNT);
 
   return 0;
 }

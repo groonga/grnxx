@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2012  Brazil, Inc.
+  Copyright (C) 2012-2013  Brazil, Inc.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -17,8 +17,8 @@
 */
 #include "mutex.hpp"
 
+#include "steady_clock.hpp"
 #include "thread.hpp"
-#include "time.hpp"
 
 namespace grnxx {
 
@@ -55,11 +55,11 @@ bool Mutex::lock_with_timeout(Duration timeout) {
   const bool has_deadline = timeout >= Duration(0);
   Time deadline;
   if (has_deadline) {
-    deadline = Time::now() + timeout;
+    deadline = SteadyClock::now() + timeout;
   }
 
   for (int i = 0; i < MUTEX_CONTEXT_SWITCH_COUNT; ++i) {
-    if (has_deadline && (Time::now() >= deadline)) {
+    if (has_deadline && (SteadyClock::now() >= deadline)) {
       return false;
     }
     if (try_lock()) {
@@ -68,7 +68,7 @@ bool Mutex::lock_with_timeout(Duration timeout) {
     Thread::switch_to_others();
   }
 
-  while (!has_deadline || (Time::now() < deadline)) {
+  while (!has_deadline || (SteadyClock::now() < deadline)) {
     if (try_lock()) {
       return true;
     }

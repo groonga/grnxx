@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2012  Brazil, Inc.
+  Copyright (C) 2012-2013  Brazil, Inc.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -23,6 +23,7 @@
 
 #include "io/pool.hpp"
 #include "logger.hpp"
+#include "steady_clock.hpp"
 
 void test_constructor() {
   grnxx::io::Pool::unlink_if_exists("temp.grn");
@@ -361,58 +362,58 @@ void benchmark() {
   grnxx::io::Pool pool(grnxx::io::POOL_TEMPORARY, "temp.grn");
 
   // Measure the speed of create_block().
-  grnxx::Time start_time = grnxx::Time::now();
+  grnxx::Time start_time = grnxx::SteadyClock::now();
   for (int i = 0; i < OPERATION_COUNT; ++i) {
     block_infos[i] = pool.create_block(0);
   }
-  grnxx::Duration elapsed = grnxx::Time::now() - start_time;
+  grnxx::Duration elapsed = grnxx::SteadyClock::now() - start_time;
   GRNXX_NOTICE() << "create_block: elapsed [ns] = "
-                 << (elapsed / OPERATION_COUNT).nanoseconds();
+                 << (1000.0 * elapsed.count() / OPERATION_COUNT);
 
   // Measure the speed of get_block_info().
-  start_time = grnxx::Time::now();
+  start_time = grnxx::SteadyClock::now();
   for (int i = 0; i < OPERATION_COUNT; ++i) {
     pool.get_block_info(block_infos[i]->id());
   }
-  elapsed = grnxx::Time::now() - start_time;
+  elapsed = grnxx::SteadyClock::now() - start_time;
   GRNXX_NOTICE() << "get_block_info: elapsed [ns] = "
-                 << (elapsed / OPERATION_COUNT).nanoseconds();
+                 << (1000.0 * elapsed.count() / OPERATION_COUNT);
 
   // Measure the speed of get_block_address().
-  start_time = grnxx::Time::now();
+  start_time = grnxx::SteadyClock::now();
   for (int i = 0; i < OPERATION_COUNT; ++i) {
     pool.get_block_address(*block_infos[i]);
   }
-  elapsed = grnxx::Time::now() - start_time;
+  elapsed = grnxx::SteadyClock::now() - start_time;
   GRNXX_NOTICE() << "get_block_address_by_info (1st): elapsed [ns] = "
-                 << (elapsed / OPERATION_COUNT).nanoseconds();
+                 << (1000.0 * elapsed.count() / OPERATION_COUNT);
 
   // Measure the speed of get_block_address() again.
-  start_time = grnxx::Time::now();
+  start_time = grnxx::SteadyClock::now();
   for (int i = 0; i < OPERATION_COUNT; ++i) {
     pool.get_block_address(*block_infos[i]);
   }
-  elapsed = grnxx::Time::now() - start_time;
+  elapsed = grnxx::SteadyClock::now() - start_time;
   GRNXX_NOTICE() << "get_block_address_by_info (2nd): elapsed [ns] = "
-                 << (elapsed / OPERATION_COUNT).nanoseconds();
+                 << (1000.0 * elapsed.count() / OPERATION_COUNT);
 
   // Measure the speed of get_block_address() again and again.
-  start_time = grnxx::Time::now();
+  start_time = grnxx::SteadyClock::now();
   for (int i = 0; i < OPERATION_COUNT; ++i) {
     pool.get_block_address(block_infos[i]->id());
   }
-  elapsed = grnxx::Time::now() - start_time;
+  elapsed = grnxx::SteadyClock::now() - start_time;
   GRNXX_NOTICE() << "get_block_address_by_id: elapsed [ns] = "
-                 << (elapsed / OPERATION_COUNT).nanoseconds();
+                 << (1000.0 * elapsed.count() / OPERATION_COUNT);
 
   // Measure the speed of free_block().
-  start_time = grnxx::Time::now();
+  start_time = grnxx::SteadyClock::now();
   for (int i = 0; i < OPERATION_COUNT; ++i) {
     pool.free_block(block_infos[i]->id());
   }
-  elapsed = grnxx::Time::now() - start_time;
+  elapsed = grnxx::SteadyClock::now() - start_time;
   GRNXX_NOTICE() << "free_block: elapsed [ns] = "
-                 << (elapsed / OPERATION_COUNT).nanoseconds();
+                 << (1000.0 * elapsed.count() / OPERATION_COUNT);
 }
 
 int main() {

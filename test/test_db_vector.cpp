@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2012  Brazil, Inc.
+  Copyright (C) 2012-2013  Brazil, Inc.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -22,7 +22,7 @@
 
 #include "db/vector.hpp"
 #include "logger.hpp"
-#include "time.hpp"
+#include "steady_clock.hpp"
 
 struct Point {
   double x;
@@ -194,51 +194,51 @@ void test_times() {
 
   std::uint64_t total = 0;
 
-  start = grnxx::Time::now();
+  start = grnxx::SteadyClock::now();
   for (std::uint64_t id = 0; id < VECTOR_SIZE; ++id) {
     vector[id] = T(0);
   }
-  end = grnxx::Time::now();
-  double set_1st_elapsed = 1.0 * (end - start).nanoseconds() / VECTOR_SIZE;
+  end = grnxx::SteadyClock::now();
+  double set_1st_elapsed = 1000.0 * (end - start).count() / VECTOR_SIZE;
 
-  start = grnxx::Time::now();
+  start = grnxx::SteadyClock::now();
   for (std::uint64_t id = 0; id < VECTOR_SIZE; ++id) {
     vector[id] = T(1);
   }
-  end = grnxx::Time::now();
-  double set_2nd_elapsed = 1.0 * (end - start).nanoseconds() / VECTOR_SIZE;
+  end = grnxx::SteadyClock::now();
+  double set_2nd_elapsed = 1000.0 * (end - start).count() / VECTOR_SIZE;
 
-  start = grnxx::Time::now();
+  start = grnxx::SteadyClock::now();
   for (std::uint64_t id = 0; id < VECTOR_SIZE; ++id) {
     total += vector[id];
   }
-  end = grnxx::Time::now();
-  double get_elapsed = 1.0 * (end - start).nanoseconds() / VECTOR_SIZE;
+  end = grnxx::SteadyClock::now();
+  double get_elapsed = 1000.0 * (end - start).count() / VECTOR_SIZE;
 
 
-  start = grnxx::Time::now();
+  start = grnxx::SteadyClock::now();
   for (std::uint64_t id = vector.max_id() - VECTOR_SIZE + 1;
        id <= vector.max_id(); ++id) {
     vector[id] = T(0);
   }
-  end = grnxx::Time::now();
-  double ex_set_1st_elapsed = 1.0 * (end - start).nanoseconds() / VECTOR_SIZE;
+  end = grnxx::SteadyClock::now();
+  double ex_set_1st_elapsed = 1000.0 * (end - start).count() / VECTOR_SIZE;
 
-  start = grnxx::Time::now();
+  start = grnxx::SteadyClock::now();
   for (std::uint64_t id = vector.max_id() - VECTOR_SIZE + 1;
        id <= vector.max_id(); ++id) {
     vector[id] = T(1);
   }
-  end = grnxx::Time::now();
-  double ex_set_2nd_elapsed = 1.0 * (end - start).nanoseconds() / VECTOR_SIZE;
+  end = grnxx::SteadyClock::now();
+  double ex_set_2nd_elapsed = 1000.0 * (end - start).count() / VECTOR_SIZE;
 
-  start = grnxx::Time::now();
+  start = grnxx::SteadyClock::now();
   for (std::uint64_t id = vector.max_id() - VECTOR_SIZE + 1;
        id <= vector.max_id(); ++id) {
     total += vector[id];
   }
-  end = grnxx::Time::now();
-  double ex_get_elapsed = 1.0 * (end - start).nanoseconds() / VECTOR_SIZE;
+  end = grnxx::SteadyClock::now();
+  double ex_get_elapsed = 1000.0 * (end - start).count() / VECTOR_SIZE;
 
 
   const std::uint64_t boundary = vector.page_size() * vector.table_size();
@@ -256,46 +256,46 @@ void test_times() {
     ids[i] = id_begin + (engine() % range);
   }
 
-  start = grnxx::Time::now();
+  start = grnxx::SteadyClock::now();
   for (int i = 0; i < VECTOR_SIZE; ++i) {
     vector[ids[i]] = T(0);
   }
-  end = grnxx::Time::now();
+  end = grnxx::SteadyClock::now();
   double boundary_set_1st_elapsed =
-      1.0 * (end - start).nanoseconds() / VECTOR_SIZE;
+      1000.0 * (end - start).count() / VECTOR_SIZE;
 
-  start = grnxx::Time::now();
+  start = grnxx::SteadyClock::now();
   for (int i = 0; i < VECTOR_SIZE; ++i) {
     vector[ids[i]] = T(1);
   }
-  end = grnxx::Time::now();
+  end = grnxx::SteadyClock::now();
   double boundary_set_2nd_elapsed =
-      1.0 * (end - start).nanoseconds() / VECTOR_SIZE;
+      1000.0 * (end - start).count() / VECTOR_SIZE;
 
-  start = grnxx::Time::now();
+  start = grnxx::SteadyClock::now();
   for (int i = 0; i < VECTOR_SIZE; ++i) {
     total += vector[ids[i]];
   }
-  end = grnxx::Time::now();
+  end = grnxx::SteadyClock::now();
   double boundary_get_elapsed =
-      1.0 * (end - start).nanoseconds() / VECTOR_SIZE;
+      1000.0 * (end - start).count() / VECTOR_SIZE;
 
   const std::uint32_t block_id = vector.block_id();
   vector.close();
 
-  start = grnxx::Time::now();
+  start = grnxx::SteadyClock::now();
   grnxx::db::Vector<T>::unlink(pool, block_id);
-  end = grnxx::Time::now();
-  double unlink_elapsed = (end - start).nanoseconds();
+  end = grnxx::SteadyClock::now();
+  double unlink_elapsed = 1000.0 * (end - start).count();
 
   vector.create(pool, 0);
 
-  start = grnxx::Time::now();
+  start = grnxx::SteadyClock::now();
   for (std::uint64_t id = 0; id < VECTOR_SIZE; ++id) {
     vector[id] = T(0);
   }
-  end = grnxx::Time::now();
-  double default_elapsed = 1.0 * (end - start).nanoseconds() / VECTOR_SIZE;
+  end = grnxx::SteadyClock::now();
+  double default_elapsed = 1000.0 * (end - start).count() / VECTOR_SIZE;
 
 
   GRNXX_NOTICE() << "elapsed [ns]: set = " << set_2nd_elapsed << " ("

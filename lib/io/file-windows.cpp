@@ -26,8 +26,8 @@
 #include "../error.hpp"
 #include "../exception.hpp"
 #include "../logger.hpp"
+#include "../steady_clock.hpp"
 #include "../thread.hpp"
-#include "../time.hpp"
 #include "path.hpp"
 
 namespace grnxx {
@@ -113,8 +113,8 @@ bool FileImpl::lock(FileLockMode mode, Duration timeout) {
   if (try_lock(mode)) {
     return true;
   }
-  const Time deadline = Time::now() + timeout;
-  while (Time::now() < deadline) {
+  const Time deadline = SteadyClock::now() + timeout;
+  while (SteadyClock::now() < deadline) {
     if (try_lock(mode)) {
       return true;
     }

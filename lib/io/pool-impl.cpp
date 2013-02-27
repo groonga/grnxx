@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2012  Brazil, Inc.
+  Copyright (C) 2012-2013  Brazil, Inc.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -22,9 +22,9 @@
 #include "../exception.hpp"
 #include "../lock.hpp"
 #include "../logger.hpp"
+#include "../steady_clock.hpp"
 #include "../string_format.hpp"
 #include "../thread.hpp"
-#include "../time.hpp"
 #include "path.hpp"
 
 namespace grnxx {
@@ -338,8 +338,8 @@ void PoolImpl::open_regular_pool(PoolFlags flags, const char *path,
 
   if (!header_) {
     if ((flags & POOL_OPEN) || (~flags & POOL_CREATE)) {
-      const Time start_time = Time::now();
-      while ((Time::now() - start_time) < Duration::seconds(10)) {
+      const Time start_time = SteadyClock::now();
+      while ((SteadyClock::now() - start_time) < Duration::seconds(10)) {
         if (files_[0]->size() != 0) {
           break;
         }

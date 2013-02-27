@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2012  Brazil, Inc.
+  Copyright (C) 2012-2013  Brazil, Inc.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -17,6 +17,7 @@
 */
 #include "recycler.hpp"
 
+#include "system_clock.hpp"
 
 namespace grnxx {
 
@@ -25,10 +26,10 @@ void Recycler::update() {
   // will not come into this function. However, this is not a perfect barrier.
   count_ = 0;
 
-  // Time::now() takes around 1 microsecond on Core2 Duo 1.6GHz. So, if
+  // SystemClock::now() takes around 1 microsecond on Core2 Duo 1.6GHz. So, if
   // RECYCLER_STAMP_COUNT_PER_UPDATE == 500, stamp() spends 2ns/call for
-  // Time::now() on average.
-  const Time now = Time::now();
+  // SystemClock::now() on average.
+  const Time now = SystemClock::now();
 
   StampPair current_stamp_pair = stamp_pair_;
 

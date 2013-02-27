@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2012  Brazil, Inc.
+  Copyright (C) 2012-2013  Brazil, Inc.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -23,55 +23,66 @@
 
 namespace grnxx {
 
+// Time difference in microseconds.
+// 64-bit tick count (usec) is used.
 class Duration {
  public:
+  // Trivial default constructor.
   Duration() = default;
-  explicit constexpr Duration(int64_t nanoseconds)
-    : nanoseconds_(nanoseconds) {}
+  // Construct a duration object whose tick count is "count".
+  explicit constexpr Duration(int64_t count) : count_(count) {}
 
-  static constexpr Duration nanoseconds(int64_t nanoseconds) {
-    return Duration(nanoseconds);
+  // Return the minimum tick count.
+  static constexpr Duration min() {
+    return Duration(std::numeric_limits<int64_t>::min());
   }
-  static constexpr Duration microseconds(int64_t microseconds) {
-    return Duration(microseconds * 1000);
-  }
-  static constexpr Duration milliseconds(int64_t milliseconds) {
-    return Duration(milliseconds * 1000000);
-  }
-  static constexpr Duration seconds(int64_t seconds) {
-    return Duration(seconds * 1000000000);
-  }
-  static constexpr Duration minutes(int64_t minutes) {
-    return Duration(minutes * 1000000000 * 60);
-  }
-  static constexpr Duration hours(int64_t hours) {
-    return Duration(hours * 1000000000 * 60 * 60);
-  }
-  static constexpr Duration days(int64_t days) {
-    return Duration(days * 1000000000 * 60 * 60 * 24);
-  }
-  static constexpr Duration weeks(int64_t weeks) {
-    return Duration(weeks * 1000000000 * 60 * 60 * 24 * 7);
+  // Return the maximum tick count.
+  static constexpr Duration max() {
+    return Duration(std::numeric_limits<int64_t>::max());
   }
 
-  constexpr int64_t nanoseconds() {
-    return nanoseconds_;
+  // Return a duration of "count" microseconds.
+  static constexpr Duration microseconds(int64_t count) {
+    return Duration(count);
   }
-  void set_nanoseconds(int64_t nanoseconds) {
-    nanoseconds_ = nanoseconds;
+  // Return a duration of "count" milliseconds.
+  static constexpr Duration milliseconds(int64_t count) {
+    return Duration(count * 1000);
+  }
+  // Return a duration of "count" seconds.
+  static constexpr Duration seconds(int64_t count) {
+    return Duration(count * 1000000);
+  }
+  // Return a duration of "count" minutes.
+  static constexpr Duration minutes(int64_t count) {
+    return Duration(count * 1000000 * 60);
+  }
+  // Return a duration of "count" hours.
+  static constexpr Duration hours(int64_t count) {
+    return Duration(count * 1000000 * 60 * 60);
+  }
+  // Return a duration of "count" days.
+  static constexpr Duration days(int64_t count) {
+    return Duration(count * 1000000 * 60 * 60 * 24);
+  }
+  // Return a duration of "count" weeks.
+  static constexpr Duration weeks(int64_t count) {
+    return Duration(count * 1000000 * 60 * 60 * 24 * 7);
+  }
+
+  // Return the tick count.
+  constexpr int64_t count() {
+    return count_;
+  }
+  // Set the tick count.
+  void set_count(int64_t count) {
+    count_ = count;
   }
 
   StringBuilder &write_to(StringBuilder &builder) const;
 
-  static constexpr Duration max() {
-    return Duration(std::numeric_limits<int64_t>::max());
-  }
-  static constexpr Duration min() {
-    return Duration(std::numeric_limits<int64_t>::min());
-  }
-
  private:
-  int64_t nanoseconds_;
+  int64_t count_;
 
   // Copyable.
 };
@@ -82,75 +93,75 @@ inline constexpr Duration operator+(Duration duration) {
   return duration;
 }
 inline constexpr Duration operator-(Duration duration) {
-  return Duration(-duration.nanoseconds());
+  return Duration(-duration.count());
 }
 
 inline Duration &operator+=(Duration &lhs, Duration rhs) {
-  lhs.set_nanoseconds(lhs.nanoseconds() + rhs.nanoseconds());
+  lhs.set_count(lhs.count() + rhs.count());
   return lhs;
 }
 inline Duration &operator-=(Duration &lhs, Duration rhs) {
-  lhs.set_nanoseconds(lhs.nanoseconds() - rhs.nanoseconds());
+  lhs.set_count(lhs.count() - rhs.count());
   return lhs;
 }
 inline Duration &operator*=(Duration &lhs, int64_t rhs) {
-  lhs.set_nanoseconds(lhs.nanoseconds() * rhs);
+  lhs.set_count(lhs.count() * rhs);
   return lhs;
 }
 inline Duration &operator/=(Duration &lhs, int64_t rhs) {
   if (rhs == 0) {
-    lhs.set_nanoseconds(0);
+    lhs.set_count(0);
   } else {
-    lhs.set_nanoseconds(lhs.nanoseconds() / rhs);
+    lhs.set_count(lhs.count() / rhs);
   }
   return lhs;
 }
 inline Duration &operator%=(Duration &lhs, Duration rhs) {
-  if (rhs.nanoseconds() == 0) {
-    lhs.set_nanoseconds(0);
+  if (rhs.count() == 0) {
+    lhs.set_count(0);
   } else {
-    lhs.set_nanoseconds(lhs.nanoseconds() % rhs.nanoseconds());
+    lhs.set_count(lhs.count() % rhs.count());
   }
   return lhs;
 }
 
 inline constexpr Duration operator+(Duration lhs, Duration rhs) {
-  return Duration(lhs.nanoseconds() + rhs.nanoseconds());
+  return Duration(lhs.count() + rhs.count());
 }
 inline constexpr Duration operator-(Duration lhs, Duration rhs) {
-  return Duration(lhs.nanoseconds() - rhs.nanoseconds());
+  return Duration(lhs.count() - rhs.count());
 }
 inline constexpr Duration operator*(Duration lhs, int64_t rhs) {
-  return Duration(lhs.nanoseconds() * rhs);
+  return Duration(lhs.count() * rhs);
 }
 inline constexpr Duration operator*(int64_t lhs, Duration rhs) {
-  return Duration(lhs * rhs.nanoseconds());
+  return Duration(lhs * rhs.count());
 }
 inline constexpr Duration operator/(Duration lhs, int64_t rhs) {
-  return (rhs != 0) ? Duration(lhs.nanoseconds() / rhs) : Duration(0);
+  return (rhs != 0) ? Duration(lhs.count() / rhs) : Duration(0);
 }
 inline constexpr Duration operator%(Duration lhs, Duration rhs) {
-  return (rhs.nanoseconds() != 0) ?
-      Duration(lhs.nanoseconds() % rhs.nanoseconds()) : Duration(0);
+  return (rhs.count() != 0) ?
+      Duration(lhs.count() % rhs.count()) : Duration(0);
 }
 
 inline constexpr bool operator==(Duration lhs, Duration rhs) {
-  return lhs.nanoseconds() == rhs.nanoseconds();
+  return lhs.count() == rhs.count();
 }
 inline constexpr bool operator!=(Duration lhs, Duration rhs) {
-  return lhs.nanoseconds() != rhs.nanoseconds();
+  return lhs.count() != rhs.count();
 }
 inline constexpr bool operator<(Duration lhs, Duration rhs) {
-  return lhs.nanoseconds() < rhs.nanoseconds();
+  return lhs.count() < rhs.count();
 }
 inline constexpr bool operator<=(Duration lhs, Duration rhs) {
-  return lhs.nanoseconds() <= rhs.nanoseconds();
+  return lhs.count() <= rhs.count();
 }
 inline constexpr bool operator>(Duration lhs, Duration rhs) {
-  return lhs.nanoseconds() > rhs.nanoseconds();
+  return lhs.count() > rhs.count();
 }
 inline constexpr bool operator>=(Duration lhs, Duration rhs) {
-  return lhs.nanoseconds() >= rhs.nanoseconds();
+  return lhs.count() >= rhs.count();
 }
 
 inline StringBuilder &operator<<(StringBuilder &builder, Duration duration) {

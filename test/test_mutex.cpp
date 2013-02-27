@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2012  Brazil, Inc.
+  Copyright (C) 2012-2013  Brazil, Inc.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -20,7 +20,7 @@
 #include "lock.hpp"
 #include "logger.hpp"
 #include "mutex.hpp"
-#include "time.hpp"
+#include "steady_clock.hpp"
 
 int main() {
   grnxx::Logger::set_flags(grnxx::LOGGER_WITH_ALL |
@@ -64,15 +64,15 @@ int main() {
 
   enum { LOOP_COUNT = 1 << 20 };
 
-  const grnxx::Time start = grnxx::Time::now();
+  const grnxx::Time start = grnxx::SteadyClock::now();
   for (int i = 0; i < LOOP_COUNT; ++i) {
     grnxx::Lock lock(&mutex);
     assert(lock);
   }
-  const grnxx::Time end = grnxx::Time::now();
+  const grnxx::Time end = grnxx::SteadyClock::now();
 
   GRNXX_NOTICE() << "grnxx::Lock: elapsed [ns] = "
-                 << ((end - start).nanoseconds() / LOOP_COUNT);
+                 << (1000.0 * (end - start).count() / LOOP_COUNT);
 
   return 0;
 }

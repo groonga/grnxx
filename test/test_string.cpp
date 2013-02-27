@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2012  Brazil, Inc.
+  Copyright (C) 2012-2013  Brazil, Inc.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -19,7 +19,7 @@
 
 #include "logger.hpp"
 #include "string.hpp"
-#include "time.hpp"
+#include "steady_clock.hpp"
 
 void test_constructors() {
   assert(!grnxx::String());
@@ -141,23 +141,23 @@ void benchmark() {
   grnxx::String str, str2;
   grnxx::Time start, end;
 
-  start = grnxx::Time::now();
+  start = grnxx::SteadyClock::now();
   for (int i = 0; i < LOOP_COUNT; ++i) {
     str = grnxx::String("This is an apple.");
   }
-  end = grnxx::Time::now();
+  end = grnxx::SteadyClock::now();
 
   GRNXX_NOTICE() << "string creation: elapsed [ns] = "
-                 << ((end - start).nanoseconds() / LOOP_COUNT);
+                 << (1000.0 * (end - start).count() / LOOP_COUNT);
 
-  start = grnxx::Time::now();
+  start = grnxx::SteadyClock::now();
   for (int i = 0; i < LOOP_COUNT; ++i) {
     str2 = str;
   }
-  end = grnxx::Time::now();
+  end = grnxx::SteadyClock::now();
 
   GRNXX_NOTICE() << "string copy: elapsed [ns] = "
-                 << ((end - start).nanoseconds() / LOOP_COUNT);
+                 << (1000.0 * (end - start).count() / LOOP_COUNT);
 }
 
 int main() {

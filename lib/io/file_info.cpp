@@ -80,13 +80,13 @@ class Impl : public FileInfo {
     return stat_.st_size;
   }
   Time last_access_time() const {
-    return Time(static_cast<int64_t>(stat_.st_atime) * 1000000000);
+    return Time(static_cast<int64_t>(stat_.st_atime) * 1000000);
   }
   Time last_modification_time() const {
-    return Time(static_cast<int64_t>(stat_.st_mtime) * 1000000000);
+    return Time(static_cast<int64_t>(stat_.st_mtime) * 1000000);
   }
   Time last_status_change_time() const {
-    return Time(static_cast<int64_t>(stat_.st_ctime) * 1000000000);
+    return Time(static_cast<int64_t>(stat_.st_ctime) * 1000000);
   }
 
   StringBuilder &write_to(StringBuilder &builder) const;

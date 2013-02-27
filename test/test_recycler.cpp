@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2012  Brazil, Inc.
+  Copyright (C) 2012-2013  Brazil, Inc.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -19,6 +19,7 @@
 
 #include "logger.hpp"
 #include "recycler.hpp"
+#include "steady_clock.hpp"
 
 void test() {
   const grnxx::Duration FROZEN_DURATION = grnxx::Duration::minutes(10);
@@ -51,22 +52,22 @@ void benchmark(grnxx::Duration frozen_duration) {
 
   double stamp_elapsed;
   {
-    const grnxx::Time start = grnxx::Time::now();
+    const grnxx::Time start = grnxx::SteadyClock::now();
     for (int i = 0; i < STAMP_COUNT; ++i) {
       recycler.stamp();
     }
-    const grnxx::Time end = grnxx::Time::now();
-    stamp_elapsed = 1.0 * (end - start).nanoseconds() / STAMP_COUNT;
+    const grnxx::Time end = grnxx::SteadyClock::now();
+    stamp_elapsed = 1000.0 * (end - start).count() / STAMP_COUNT;
   }
 
   double check_elapsed;
   {
-    const grnxx::Time start = grnxx::Time::now();
+    const grnxx::Time start = grnxx::SteadyClock::now();
     for (int i = 0; i < CHECK_COUNT; ++i) {
       recycler.check(std::uint16_t(i));
     }
-    const grnxx::Time end = grnxx::Time::now();
-    check_elapsed = 1.0 * (end - start).nanoseconds() / CHECK_COUNT;
+    const grnxx::Time end = grnxx::SteadyClock::now();
+    check_elapsed = 1000.0 * (end - start).count() / CHECK_COUNT;
   }
 
   GRNXX_NOTICE() << "frozen_duration = " << frozen_duration

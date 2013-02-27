@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2012  Brazil, Inc.
+  Copyright (C) 2012-2013  Brazil, Inc.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -23,7 +23,7 @@
 
 #include "backtrace.hpp"
 #include "lock.hpp"
-#include "time.hpp"
+#include "system_clock.hpp"
 
 namespace grnxx {
 
@@ -175,7 +175,7 @@ void Logger::append_line_header() {
 
   const LoggerFlags flags = Logger::flags();
   if (flags & LOGGER_WITH_DATE_TIME) {
-    builder_ << Time::now() << ": ";
+    builder_ << SystemClock::now() << ": ";
   }
   if (flags & LOGGER_WITH_LOCATION) {
     builder_ << file_ << ':' << line_ << ": In " << func_ << "(): ";
