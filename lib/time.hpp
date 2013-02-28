@@ -23,6 +23,9 @@
 
 namespace grnxx {
 
+// TODO
+class DateTime;
+
 // Time in microseconds since the Unix epoch (1970-01-01 00:00:00 UTC).
 // 64-bit tick count (usec) is used.
 class Time {
@@ -40,6 +43,12 @@ class Time {
   static constexpr Time max() {
     return Time(std::numeric_limits<int64_t>::max());
   }
+
+  // TODO
+  // Transform tick count to broken-down time (UTC).
+  DateTime universal_time() const;
+  // Transform tick count to broken-down time (local).
+  DateTime local_time() const;
 
   // Return the tick count.
   constexpr int64_t count() {
