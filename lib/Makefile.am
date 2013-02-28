@@ -12,6 +12,7 @@ libgrnxx_la_LDFLAGS = @AM_LTLDFLAGS@
 
 libgrnxx_la_SOURCES =		\
 	backtrace.cpp		\
+	broken_down_time.cpp	\
 	duration.cpp		\
 	error.cpp		\
 	grnxx.cpp		\
@@ -30,6 +31,7 @@ libgrnxx_includedir = ${includedir}/grnxx
 libgrnxx_include_HEADERS =	\
 	backtrace.hpp		\
 	basic.hpp		\
+	broken_down_time.hpp	\
 	duration.hpp		\
 	error.hpp		\
 	exception.hpp		\

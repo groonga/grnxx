@@ -19,12 +19,10 @@
 #define GRNXX_TIME_HPP
 
 #include "basic.hpp"
+#include "broken_down_time.hpp"
 #include "duration.hpp"
 
 namespace grnxx {
-
-// TODO
-class DateTime;
 
 // Time in microseconds since the Unix epoch (1970-01-01 00:00:00 UTC).
 // 64-bit tick count (usec) is used.
@@ -44,11 +42,11 @@ class Time {
     return Time(std::numeric_limits<int64_t>::max());
   }
 
-  // TODO
+  // TODO: To be implemented.
   // Transform tick count to broken-down time (UTC).
-  DateTime universal_time() const;
+  BrokenDownTime universal_time() const;
   // Transform tick count to broken-down time (local).
-  DateTime local_time() const;
+  BrokenDownTime local_time() const;
 
   // Return the tick count.
   constexpr int64_t count() {
