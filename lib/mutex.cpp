@@ -53,7 +53,7 @@ bool Mutex::lock_with_timeout(Duration timeout) {
   }
 
   const bool has_deadline = timeout >= Duration(0);
-  Stopwatch stopwatch;
+  Stopwatch stopwatch(false);
   if (has_deadline) {
     stopwatch.start();
   }

@@ -26,7 +26,7 @@ int main() {
                            grnxx::LOGGER_ENABLE_COUT);
   grnxx::Logger::set_max_level(grnxx::NOTICE_LOGGER);
 
-  grnxx::Stopwatch stopwatch;
+  grnxx::Stopwatch stopwatch(false);
   assert(stopwatch.elapsed() == grnxx::Duration(0));
 
   stopwatch.start();
