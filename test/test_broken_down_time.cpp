@@ -18,7 +18,7 @@
 #include <cassert>
 
 #include "logger.hpp"
-#include "steady_clock.hpp"
+#include "stopwatch.hpp"
 #include "system_clock.hpp"
 
 int main() {
@@ -35,21 +35,19 @@ int main() {
 
   grnxx::Time now = grnxx::SystemClock::now();
 
-  grnxx::Time start = grnxx::SteadyClock::now();
+  grnxx::Stopwatch stopwatch(true);
   for (int i = 0; i < LOOP_COUNT; ++i) {
     now.universal_time();
   }
-  grnxx::Time end = grnxx::SteadyClock::now();
-  grnxx::Duration elapsed = end - start;
+  grnxx::Duration elapsed = stopwatch.elapsed();
   GRNXX_NOTICE() << "grnxx::Time::universal_time(): average elapsed [ns] = "
                  << (1000.0 * elapsed.count() / LOOP_COUNT);
 
-  start = grnxx::SteadyClock::now();
+  stopwatch.reset();
   for (int i = 0; i < LOOP_COUNT; ++i) {
     now.local_time();
   }
-  end = grnxx::SteadyClock::now();
-  elapsed = end - start;
+  elapsed = stopwatch.elapsed();
   GRNXX_NOTICE() << "grnxx::Time::local_time(): average elapsed [ns] = "
                  << (1000.0 * elapsed.count() / LOOP_COUNT);
 

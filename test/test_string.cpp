@@ -19,7 +19,7 @@
 
 #include "logger.hpp"
 #include "string.hpp"
-#include "steady_clock.hpp"
+#include "stopwatch.hpp"
 
 void test_constructors() {
   assert(!grnxx::String());
@@ -141,23 +141,22 @@ void benchmark() {
   grnxx::String str, str2;
   grnxx::Time start, end;
 
-  start = grnxx::SteadyClock::now();
+  grnxx::Stopwatch stopwatch(true);
   for (int i = 0; i < LOOP_COUNT; ++i) {
     str = grnxx::String("This is an apple.");
   }
-  end = grnxx::SteadyClock::now();
-
+  grnxx::Duration elapsed = stopwatch.elapsed();
   GRNXX_NOTICE() << "string creation: elapsed [ns] = "
-                 << (1000.0 * (end - start).count() / LOOP_COUNT);
+                 << (1000.0 * elapsed.count() / LOOP_COUNT);
 
-  start = grnxx::SteadyClock::now();
+  stopwatch.reset();
   for (int i = 0; i < LOOP_COUNT; ++i) {
     str2 = str;
   }
-  end = grnxx::SteadyClock::now();
+  elapsed = stopwatch.elapsed();
 
   GRNXX_NOTICE() << "string copy: elapsed [ns] = "
-                 << (1000.0 * (end - start).count() / LOOP_COUNT);
+                 << (1000.0 * elapsed.count() / LOOP_COUNT);
 }
 
 int main() {

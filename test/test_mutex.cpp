@@ -20,7 +20,7 @@
 #include "lock.hpp"
 #include "logger.hpp"
 #include "mutex.hpp"
-#include "steady_clock.hpp"
+#include "stopwatch.hpp"
 
 int main() {
   grnxx::Logger::set_flags(grnxx::LOGGER_WITH_ALL |
@@ -64,15 +64,14 @@ int main() {
 
   enum { LOOP_COUNT = 1 << 20 };
 
-  const grnxx::Time start = grnxx::SteadyClock::now();
+  grnxx::Stopwatch stopwatch(true);
   for (int i = 0; i < LOOP_COUNT; ++i) {
     grnxx::Lock lock(&mutex);
     assert(lock);
   }
-  const grnxx::Time end = grnxx::SteadyClock::now();
-
+  const grnxx::Duration elapsed = stopwatch.elapsed();
   GRNXX_NOTICE() << "grnxx::Lock: elapsed [ns] = "
-                 << (1000.0 * (end - start).count() / LOOP_COUNT);
+                 << (1000.0 * elapsed.count() / LOOP_COUNT);
 
   return 0;
 }

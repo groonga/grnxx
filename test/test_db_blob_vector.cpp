@@ -22,7 +22,7 @@
 
 #include "db/blob_vector.hpp"
 #include "logger.hpp"
-#include "steady_clock.hpp"
+#include "stopwatch.hpp"
 
 void test_basics() {
   grnxx::io::Pool::unlink_if_exists("temp.grn");
@@ -361,27 +361,27 @@ void test_defrag() {
     vector[ids[i]].set(&value[0], length);
   }
 
-  grnxx::Time start = grnxx::SteadyClock::now();
+  grnxx::Stopwatch stopwatch(true);
   for (std::uint32_t i = 0; i < NUM_VALUES; ++i) {
     grnxx::db::Blob blob = vector[i];
     if (blob.length() > 0) {
       assert(*static_cast<const char *>(blob.address()) == 'X');
     };
   }
-  grnxx::Duration elapsed = grnxx::SteadyClock::now() - start;
+  grnxx::Duration elapsed = stopwatch.elapsed();
   GRNXX_NOTICE() << "before defrag: elapsed [ns] = "
                  << (elapsed.count() * 1000 / NUM_VALUES);
 
   vector.defrag();
 
-  start = grnxx::SteadyClock::now();
+  stopwatch.reset();
   for (std::uint32_t i = 0; i < NUM_VALUES; ++i) {
     grnxx::db::Blob blob = vector[i];
     if (blob.length() > 0) {
       assert(*static_cast<const char *>(blob.address()) == 'X');
     };
   }
-  elapsed = grnxx::SteadyClock::now() - start;
+  elapsed = stopwatch.elapsed();
   GRNXX_NOTICE() << "after defrag: elapsed [ns] = "
                  << (elapsed.count() * 1000 / NUM_VALUES);
 }

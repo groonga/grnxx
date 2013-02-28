@@ -19,7 +19,7 @@
 
 #include "logger.hpp"
 #include "recycler.hpp"
-#include "steady_clock.hpp"
+#include "stopwatch.hpp"
 
 void test() {
   const grnxx::Duration FROZEN_DURATION = grnxx::Duration::minutes(10);
@@ -52,22 +52,20 @@ void benchmark(grnxx::Duration frozen_duration) {
 
   double stamp_elapsed;
   {
-    const grnxx::Time start = grnxx::SteadyClock::now();
+    grnxx::Stopwatch stopwatch(true);
     for (int i = 0; i < STAMP_COUNT; ++i) {
       recycler.stamp();
     }
-    const grnxx::Time end = grnxx::SteadyClock::now();
-    stamp_elapsed = 1000.0 * (end - start).count() / STAMP_COUNT;
+    stamp_elapsed = 1000.0 * stopwatch.elapsed().count() / STAMP_COUNT;
   }
 
   double check_elapsed;
   {
-    const grnxx::Time start = grnxx::SteadyClock::now();
+    grnxx::Stopwatch stopwatch(true);
     for (int i = 0; i < CHECK_COUNT; ++i) {
       recycler.check(std::uint16_t(i));
     }
-    const grnxx::Time end = grnxx::SteadyClock::now();
-    check_elapsed = 1000.0 * (end - start).count() / CHECK_COUNT;
+    check_elapsed = 1000.0 * stopwatch.elapsed().count() / CHECK_COUNT;
   }
 
   GRNXX_NOTICE() << "frozen_duration = " << frozen_duration

@@ -23,7 +23,7 @@
 
 #include "io/pool.hpp"
 #include "logger.hpp"
-#include "steady_clock.hpp"
+#include "stopwatch.hpp"
 
 void test_constructor() {
   grnxx::io::Pool::unlink_if_exists("temp.grn");
@@ -362,56 +362,56 @@ void benchmark() {
   grnxx::io::Pool pool(grnxx::io::POOL_TEMPORARY, "temp.grn");
 
   // Measure the speed of create_block().
-  grnxx::Time start_time = grnxx::SteadyClock::now();
+  grnxx::Stopwatch stopwatch(true);
   for (int i = 0; i < OPERATION_COUNT; ++i) {
     block_infos[i] = pool.create_block(0);
   }
-  grnxx::Duration elapsed = grnxx::SteadyClock::now() - start_time;
+  grnxx::Duration elapsed = stopwatch.elapsed();
   GRNXX_NOTICE() << "create_block: elapsed [ns] = "
                  << (1000.0 * elapsed.count() / OPERATION_COUNT);
 
   // Measure the speed of get_block_info().
-  start_time = grnxx::SteadyClock::now();
+  stopwatch.reset();
   for (int i = 0; i < OPERATION_COUNT; ++i) {
     pool.get_block_info(block_infos[i]->id());
   }
-  elapsed = grnxx::SteadyClock::now() - start_time;
+  elapsed = stopwatch.elapsed();
   GRNXX_NOTICE() << "get_block_info: elapsed [ns] = "
                  << (1000.0 * elapsed.count() / OPERATION_COUNT);
 
   // Measure the speed of get_block_address().
-  start_time = grnxx::SteadyClock::now();
+  stopwatch.reset();
   for (int i = 0; i < OPERATION_COUNT; ++i) {
     pool.get_block_address(*block_infos[i]);
   }
-  elapsed = grnxx::SteadyClock::now() - start_time;
+  elapsed = stopwatch.elapsed();
   GRNXX_NOTICE() << "get_block_address_by_info (1st): elapsed [ns] = "
                  << (1000.0 * elapsed.count() / OPERATION_COUNT);
 
   // Measure the speed of get_block_address() again.
-  start_time = grnxx::SteadyClock::now();
+  stopwatch.reset();
   for (int i = 0; i < OPERATION_COUNT; ++i) {
     pool.get_block_address(*block_infos[i]);
   }
-  elapsed = grnxx::SteadyClock::now() - start_time;
+  elapsed = stopwatch.elapsed();
   GRNXX_NOTICE() << "get_block_address_by_info (2nd): elapsed [ns] = "
                  << (1000.0 * elapsed.count() / OPERATION_COUNT);
 
   // Measure the speed of get_block_address() again and again.
-  start_time = grnxx::SteadyClock::now();
+  stopwatch.reset();
   for (int i = 0; i < OPERATION_COUNT; ++i) {
     pool.get_block_address(block_infos[i]->id());
   }
-  elapsed = grnxx::SteadyClock::now() - start_time;
+  elapsed = stopwatch.elapsed();
   GRNXX_NOTICE() << "get_block_address_by_id: elapsed [ns] = "
                  << (1000.0 * elapsed.count() / OPERATION_COUNT);
 
   // Measure the speed of free_block().
-  start_time = grnxx::SteadyClock::now();
+  stopwatch.reset();
   for (int i = 0; i < OPERATION_COUNT; ++i) {
     pool.free_block(block_infos[i]->id());
   }
-  elapsed = grnxx::SteadyClock::now() - start_time;
+  elapsed = stopwatch.elapsed();
   GRNXX_NOTICE() << "free_block: elapsed [ns] = "
                  << (1000.0 * elapsed.count() / OPERATION_COUNT);
 }

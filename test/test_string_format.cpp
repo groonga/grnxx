@@ -21,7 +21,7 @@
 #include <sstream>
 
 #include "logger.hpp"
-#include "steady_clock.hpp"
+#include "stopwatch.hpp"
 #include "string_format.hpp"
 
 void test_align() {
@@ -114,90 +114,90 @@ void benchmark() {
   grnxx::Time start, end;
 
 
-  start = grnxx::SteadyClock::now();
+  grnxx::Stopwatch stopwatch(true);
   for (std::uint32_t i = 0; i < LOOP_COUNT; ++i) {
     std::snprintf(buf, sizeof(buf), "%d", __LINE__);
   }
-  end = grnxx::SteadyClock::now();
+  grnxx::Duration elapsed = stopwatch.elapsed();
   GRNXX_NOTICE() << "std::snprintf(int): elapsed [ns]: "
-                 << (1000.0 * (end - start).count() / LOOP_COUNT);
+                 << (1000.0 * elapsed.count() / LOOP_COUNT);
 
-  start = grnxx::SteadyClock::now();
+  stopwatch.reset();
   for (std::uint32_t i = 0; i < LOOP_COUNT; ++i) {
     std::snprintf(buf, sizeof(buf), "%04d", __LINE__);
   }
-  end = grnxx::SteadyClock::now();
+  elapsed = stopwatch.elapsed();
   GRNXX_NOTICE() << "std::snprintf(align_right): elapsed [ns]: "
-                 << (1000.0 * (end - start).count() / LOOP_COUNT);
+                 << (1000.0 * elapsed.count() / LOOP_COUNT);
 
-  start = grnxx::SteadyClock::now();
+  stopwatch.reset();
   for (std::uint32_t i = 0; i < LOOP_COUNT; ++i) {
     std::snprintf(buf, sizeof(buf), "%s:%d: %s: In %s(): %s",
                   __FILE__, __LINE__, "error", __func__, "failed");
   }
-  end = grnxx::SteadyClock::now();
+  elapsed = stopwatch.elapsed();
   GRNXX_NOTICE() << "std::snprintf(complex): elapsed [ns]: "
-                 << (1000.0 * (end - start).count() / LOOP_COUNT);
+                 << (1000.0 * elapsed.count() / LOOP_COUNT);
 
 
-  start = grnxx::SteadyClock::now();
+  stopwatch.reset();
   for (std::uint32_t i = 0; i < LOOP_COUNT; ++i) {
     std::stringstream stream;
     stream.rdbuf()->pubsetbuf(buf, sizeof(buf));
     stream << __LINE__;
   }
-  end = grnxx::SteadyClock::now();
+  elapsed = stopwatch.elapsed();
   GRNXX_NOTICE() << "std::ostream(int): elapsed [ns]: "
-                 << (1000.0 * (end - start).count() / LOOP_COUNT);
+                 << (1000.0 * elapsed.count() / LOOP_COUNT);
 
-  start = grnxx::SteadyClock::now();
+  stopwatch.reset();
   for (std::uint32_t i = 0; i < LOOP_COUNT; ++i) {
     std::stringstream stream;
     stream.rdbuf()->pubsetbuf(buf, sizeof(buf));
     stream << std::setw(4) << std::setfill('0') << __LINE__;
   }
-  end = grnxx::SteadyClock::now();
+  elapsed = stopwatch.elapsed();
   GRNXX_NOTICE() << "std::ostream(align_right): elapsed [ns]: "
-                 << (1000.0 * (end - start).count() / LOOP_COUNT);
+                 << (1000.0 * elapsed.count() / LOOP_COUNT);
 
-  start = grnxx::SteadyClock::now();
+  stopwatch.reset();
   for (std::uint32_t i = 0; i < LOOP_COUNT; ++i) {
     std::stringstream stream;
     stream.rdbuf()->pubsetbuf(buf, sizeof(buf));
     stream << __FILE__ << ':' << __LINE__ << ": " << "error" << ": In "
            << __func__ << "(): " << "failed";
   }
-  end = grnxx::SteadyClock::now();
+  elapsed = stopwatch.elapsed();
   GRNXX_NOTICE() << "std::ostream(complex): elapsed [ns]: "
-                 << (1000.0 * (end - start).count() / LOOP_COUNT);
+                 << (1000.0 * elapsed.count() / LOOP_COUNT);
 
 
-  start = grnxx::SteadyClock::now();
+  stopwatch.reset();
   for (std::uint32_t i = 0; i < LOOP_COUNT; ++i) {
     grnxx::StringBuilder(buf).builder() << __LINE__;
   }
-  end = grnxx::SteadyClock::now();
+  elapsed = stopwatch.elapsed();
   GRNXX_NOTICE() << "grnxx::StringBuilder(int): elapsed [ns]: "
-                 << (1000.0 * (end - start).count() / LOOP_COUNT);
+                 << (1000.0 * elapsed.count() / LOOP_COUNT);
 
-  start = grnxx::SteadyClock::now();
+  stopwatch.reset();
   for (std::uint32_t i = 0; i < LOOP_COUNT; ++i) {
     grnxx::StringBuilder(buf).builder()
         << grnxx::StringFormat::align_right(__LINE__, 4, '0');
   }
-  end = grnxx::SteadyClock::now();
+  elapsed = stopwatch.elapsed();
   GRNXX_NOTICE() << "grnxx::StringBuilder(align_right): elapsed [ns]: "
-                 << (1000.0 * (end - start).count() / LOOP_COUNT);
+                 << (1000.0 * elapsed.count() / LOOP_COUNT);
 
-  start = grnxx::SteadyClock::now();
+  stopwatch.reset();
   for (std::uint32_t i = 0; i < LOOP_COUNT; ++i) {
     grnxx::StringBuilder(buf).builder()
         << __FILE__ << ':' << __LINE__ << ": "
         << "error" << ": In " << __func__ << "(): " << "failed";
   }
-  end = grnxx::SteadyClock::now();
+  elapsed = stopwatch.elapsed();
   GRNXX_NOTICE() << "grnxx::StringBuilder(complex): elapsed [ns]: "
-                 << (1000.0 * (end - start).count() / LOOP_COUNT);
+                 << (1000.0 * elapsed.count() / LOOP_COUNT);
 }
 
 int main() {

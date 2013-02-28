@@ -19,7 +19,7 @@
 
 #include "logger.hpp"
 #include "thread.hpp"
-#include "steady_clock.hpp"
+#include "stopwatch.hpp"
 
 int main() {
   grnxx::Logger::set_flags(grnxx::LOGGER_WITH_ALL |
@@ -28,30 +28,27 @@ int main() {
 
   enum { LOOP_COUNT = 1000 };
 
-  grnxx::Time start = grnxx::SteadyClock::now();
+  grnxx::Stopwatch stopwatch(true);
   for (int i = 0; i < LOOP_COUNT; ++i) {
     grnxx::Thread::switch_to_others();
   }
-  grnxx::Time end = grnxx::SteadyClock::now();
-
+  grnxx::Duration elapsed = stopwatch.elapsed();
   GRNXX_NOTICE() << "switch_to_others(): elapsed [ns]: "
-                 << (1000.0 * (end - start).count() / LOOP_COUNT);
+                 << (1000.0 * elapsed.count() / LOOP_COUNT);
 
-  start = grnxx::SteadyClock::now();
+  stopwatch.reset();
   for (int i = 0; i < LOOP_COUNT; ++i) {
     grnxx::Thread::sleep(grnxx::Duration(0));
   }
-  end = grnxx::SteadyClock::now();
-
+  elapsed = stopwatch.elapsed();
   GRNXX_NOTICE() << "sleep(0): elapsed [ns]: "
-                 << (1000.0 * (end - start).count() / LOOP_COUNT);
+                 << (1000.0 * elapsed.count() / LOOP_COUNT);
 
-  start = grnxx::SteadyClock::now();
+  stopwatch.reset();
   grnxx::Thread::sleep(grnxx::Duration::milliseconds(10));
-  end = grnxx::SteadyClock::now();
-
+  elapsed = stopwatch.elapsed();
   GRNXX_NOTICE() << "sleep(10ms): elapsed [ns] = "
-                 << (1000.0 * (end - start).count());
+                 << (1000.0 * elapsed.count());
 
   return 0;
 }
