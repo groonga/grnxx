@@ -15,46 +15,48 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#ifndef GRNXX_STOPWATCH_HPP
-#define GRNXX_STOPWATCH_HPP
+#include "stopwatch.hpp"
 
-#include "basic.hpp"
-#include "time.hpp"
+#include "steady_clock.hpp"
 
 namespace grnxx {
 
-// To measure the amount of time elapsed.
-class Stopwatch {
- public:
-  // Disable the default constructor so that users don't forget to start a
-  // stopwatch.
-  Stopwatch() = delete;
-
-  // Construct a stopwatch, which is started if is_running == true.
-  explicit Stopwatch(bool is_running);
-
-  // Return true iff the stopwatch is running.
-  bool is_running() const {
-    return is_running_;
+Stopwatch::Stopwatch(bool is_running)
+  : elapsed_(0),
+    start_time_(),
+    is_running_(is_running) {
+  if (is_running) {
+    start_time_ = SteadyClock::now();
   }
+}
 
-  // Start measurement.
-  void start();
-  // Stop measurement.
-  void stop();
+void Stopwatch::start() {
+  if (!is_running_) {
+    start_time_ = SteadyClock::now();
+    is_running_ = true;
+  }
+}
 
-  // Clear the elapsed time.
-  void reset();
+void Stopwatch::stop() {
+  if (is_running_) {
+    elapsed_ += SteadyClock::now() - start_time_;
+    is_running_ = false;
+  }
+}
 
-  // Get the current elapsed time.
-  Duration elapsed() const;
+void Stopwatch::reset() {
+  if (is_running_) {
+    start_time_ = SteadyClock::now();
+  }
+  elapsed_ = Duration(0);
+}
 
- private:
-  Duration elapsed_;
-  Time start_time_;
-  bool is_running_;
-};
+Duration Stopwatch::elapsed() const {
+  if (is_running_) {
+    return elapsed_ + (SteadyClock::now() - start_time_);
+  } else {
+    return elapsed_;
+  }
+}
 
 }  // namespace grnxx
-
-#endif  // GRNXX_STOPWATCH_HPP

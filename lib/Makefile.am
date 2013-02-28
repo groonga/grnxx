@@ -23,6 +23,7 @@ libgrnxx_la_SOURCES =		\
 	recycler.cpp		\
 	slice.cpp		\
 	steady_clock.cpp	\
+	stopwatch.cpp		\
 	string.cpp		\
 	string_builder.cpp	\
 	system_clock.cpp	\
