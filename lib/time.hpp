@@ -42,7 +42,6 @@ class Time {
     return Time(std::numeric_limits<int64_t>::max());
   }
 
-  // TODO: To be implemented.
   // Transform tick count to broken-down time (UTC).
   BrokenDownTime universal_time() const;
   // Transform tick count to broken-down time (local).

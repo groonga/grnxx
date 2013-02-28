@@ -33,9 +33,79 @@
 #include "error.hpp"
 #include "intrinsic.hpp"
 #include "logger.hpp"
+#include "lock.hpp"
 #include "string_format.hpp"
 
 namespace grnxx {
+namespace {
+
+// Note: std::tm does not support usec (microseconds).
+BrokenDownTime create_broken_down_time(const std::tm &tm, std::int64_t count) {
+  BrokenDownTime time;
+  time.usec = static_cast<int>(count % 1000000);
+  time.sec = tm.tm_sec;
+  time.min = tm.tm_min;
+  time.hour = tm.tm_hour;
+  time.mday = tm.tm_mday;
+  time.mon = tm.tm_mon;
+  time.year = tm.tm_year;
+  time.wday = tm.tm_wday;
+  time.yday = tm.tm_yday;
+  time.isdst = tm.tm_isdst;
+  return time;
+}
+
+}  // namespace
+
+BrokenDownTime Time::universal_time() const {
+  const std::time_t posix_time = static_cast<std::time_t>(count_ / 1000000);
+  std::tm tm;
+#ifdef GRNXX_MSC
+  if (::gmtime_s(&posix_time, &tm) != 0) {
+    return BrokenDownTime::invalid_value();
+  }
+#elif defined(GRNXX_HAS_GMTIME_R)
+  if (::gmtime_r(&posix_time, &tm) == nullptr) {
+    return BrokenDownTime::invalid_value();
+  }
+#else  // defined(GRNXX_HAS_GMTIME_R)
+  // Lock is used for exclusive access, but it is still not thread-safe
+  // because other threads may call std::gmtime().
+  static Mutex mutex(MUTEX_UNLOCKED);
+  Lock lock(&mutex);
+  std::tm * const shared_tm = std::gmtime(&posix_time);
+  if (!shared_tm) {
+    return BrokenDownTime::invalid_value();
+  }
+  tm = *shared_tm;
+#endif  // defined(GRNXX_HAS_GMTIME_R)
+  return create_broken_down_time(tm, count_);
+}
+
+BrokenDownTime Time::local_time() const {
+  const std::time_t posix_time = static_cast<std::time_t>(count_ / 1000000);
+  std::tm tm;
+#ifdef GRNXX_MSC
+  if (::localtime_s(&posix_time, &tm) != 0) {
+    return BrokenDownTime::invalid_value();
+  }
+#elif defined(GRNXX_HAS_LOCALTIME_R)
+  if (::localtime_r(&posix_time, &tm) == nullptr) {
+    return BrokenDownTime::invalid_value();
+  }
+#else  // defined(GRNXX_HAS_LOCALTIME_R)
+  // Lock is used for exclusive access, but it is still not thread-safe
+  // because other threads may call std::localtime().
+  static Mutex mutex(MUTEX_UNLOCKED);
+  Lock lock(&mutex);
+  std::tm * const shared_tm = std::localtime(&posix_time);
+  if (!shared_tm) {
+    return BrokenDownTime::invalid_value();
+  }
+  tm = *shared_tm;
+#endif  // defined(GRNXX_HAS_LOCALTIME_R)
+  return create_broken_down_time(tm, count_);
+}
 
 StringBuilder &Time::write_to(StringBuilder &builder) const {
   if (!builder) {

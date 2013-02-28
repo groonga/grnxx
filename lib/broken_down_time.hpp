@@ -35,6 +35,10 @@ struct BrokenDownTime {
   int yday;   // Day in the year.
   int isdst;  // Daylight saving time.
 
+  static constexpr BrokenDownTime invalid_value() {
+    return BrokenDownTime{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+  }
+
   StringBuilder &write_to(StringBuilder &builder) const;
 };
 
