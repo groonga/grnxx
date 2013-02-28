@@ -99,7 +99,19 @@ StringBuilder &Time::write_to(StringBuilder &builder) const {
     return builder;
   }
 
-  return builder << local_time();
+  uint64_t count;
+  if (count_ >= 0) {
+    count = count_;
+  } else {
+    builder << '-';
+    count = -count_;
+  }
+  builder << (count / 1000000);
+  count %= 1000000;
+  if (count != 0) {
+    builder << '.' << StringFormat::align_right(count, 6, '0');
+  }
+  return builder;
 }
 
 std::ostream &operator<<(std::ostream &stream, Time time) {

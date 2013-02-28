@@ -33,10 +33,14 @@ int main() {
          std::numeric_limits<std::int64_t>::min());
 
   grnxx::Time time = grnxx::SystemClock::now();
-  GRNXX_NOTICE() << "grnxx::SystemClock::now: " << time;
+  GRNXX_NOTICE() << "grnxx::SystemClock::now(): " << time;
+  GRNXX_NOTICE() << "grnxx::SystemClock::now().local_time(): "
+                 << time.local_time();
 
   time = grnxx::SteadyClock::now();
-  GRNXX_NOTICE() << "grnxx::SteadyClock::now: " << time;
+  GRNXX_NOTICE() << "grnxx::SteadyClock::now(): " << time;
+  GRNXX_NOTICE() << "grnxx::SteadyClock::now().local_time(): "
+                 << time.local_time();
 
   enum { LOOP_COUNT = 1 << 16 };
 

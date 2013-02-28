@@ -165,9 +165,12 @@ StringBuilder &Impl::write_to(StringBuilder &builder) const {
                  << ", user_id = " << user_id()
                  << ", group_id = " << group_id()
                  << ", size = " << size()
-                 << ", last_access_time = " << last_access_time()
-                 << ", last_modification_time = " << last_modification_time()
-                 << ", last_status_change_time = " << last_status_change_time()
+                 << ", last_access_time = "
+                 << last_access_time().local_time()
+                 << ", last_modification_time = "
+                 << last_modification_time().local_time()
+                 << ", last_status_change_time = "
+                 << last_status_change_time().local_time()
                  << " }";
 }
 

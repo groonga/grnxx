@@ -175,7 +175,7 @@ void Logger::append_line_header() {
 
   const LoggerFlags flags = Logger::flags();
   if (flags & LOGGER_WITH_DATE_TIME) {
-    builder_ << SystemClock::now() << ": ";
+    builder_ << SystemClock::now().local_time() << ": ";
   }
   if (flags & LOGGER_WITH_LOCATION) {
     builder_ << file_ << ':' << line_ << ": In " << func_ << "(): ";

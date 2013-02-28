@@ -97,7 +97,7 @@ StringBuilder &Recycler::write_to(StringBuilder &builder) const {
     if (stamp != stamp_pair.threshold) {
       builder << ", ";
     }
-    builder << '[' << stamp << "] = " << times_[time_id];
+    builder << '[' << stamp << "] = " << times_[time_id].local_time();
   }
   builder << " }";
 
