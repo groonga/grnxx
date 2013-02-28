@@ -22,7 +22,7 @@
 #include "../exception.hpp"
 #include "../lock.hpp"
 #include "../logger.hpp"
-#include "../steady_clock.hpp"
+#include "../stopwatch.hpp"
 #include "../string_format.hpp"
 #include "../thread.hpp"
 #include "path.hpp"
@@ -338,8 +338,8 @@ void PoolImpl::open_regular_pool(PoolFlags flags, const char *path,
 
   if (!header_) {
     if ((flags & POOL_OPEN) || (~flags & POOL_CREATE)) {
-      const Time start_time = SteadyClock::now();
-      while ((SteadyClock::now() - start_time) < Duration::seconds(10)) {
+      Stopwatch stopwatch(true);
+      while (stopwatch.elapsed() < Duration::seconds(10)) {
         if (files_[0]->size() != 0) {
           break;
         }

@@ -23,10 +23,22 @@
 
 namespace grnxx {
 
+enum {
+  STOPWATCH_RUNNING
+};
+
 // To measure the amount of time elapsed.
 class Stopwatch {
  public:
-  Stopwatch() : elapsed_(0), start_time_(), is_running_(false) {}
+  // Construct a stopwatch, which is started if is_running == true.
+  explicit Stopwatch(bool is_running = false)
+    : elapsed_(0),
+      start_time_(),
+      is_running_(is_running) {
+    if (is_running) {
+      start_time_ = SteadyClock::now();
+    }
+  }
 
   // Return true iff the stopwatch is running.
   bool is_running() const {

@@ -26,7 +26,7 @@
 #include "../error.hpp"
 #include "../exception.hpp"
 #include "../logger.hpp"
-#include "../steady_clock.hpp"
+#include "../stopwatch.hpp"
 #include "../thread.hpp"
 #include "path.hpp"
 
@@ -113,8 +113,8 @@ bool FileImpl::lock(FileLockMode mode, Duration timeout) {
   if (try_lock(mode)) {
     return true;
   }
-  const Time deadline = SteadyClock::now() + timeout;
-  while (SteadyClock::now() < deadline) {
+  Stopwatch stopwatch(true);
+  while (stopwatch.elapsed() < timeout) {
     if (try_lock(mode)) {
       return true;
     }

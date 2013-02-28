@@ -17,7 +17,7 @@
 */
 #include "mutex.hpp"
 
-#include "steady_clock.hpp"
+#include "stopwatch.hpp"
 #include "thread.hpp"
 
 namespace grnxx {
@@ -53,13 +53,13 @@ bool Mutex::lock_with_timeout(Duration timeout) {
   }
 
   const bool has_deadline = timeout >= Duration(0);
-  Time deadline;
+  Stopwatch stopwatch;
   if (has_deadline) {
-    deadline = SteadyClock::now() + timeout;
+    stopwatch.start();
   }
 
   for (int i = 0; i < MUTEX_CONTEXT_SWITCH_COUNT; ++i) {
-    if (has_deadline && (SteadyClock::now() >= deadline)) {
+    if (has_deadline && (stopwatch.elapsed() >= timeout)) {
       return false;
     }
     if (try_lock()) {
@@ -68,7 +68,7 @@ bool Mutex::lock_with_timeout(Duration timeout) {
     Thread::switch_to_others();
   }
 
-  while (!has_deadline || (SteadyClock::now() < deadline)) {
+  while (!has_deadline || (stopwatch.elapsed() < timeout)) {
     if (try_lock()) {
       return true;
     }
