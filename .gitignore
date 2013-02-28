@@ -53,6 +53,7 @@ test/test_mutex
 test/test_os
 test/test_recycler
 test/test_slice
+test/test_stopwatch
 test/test_string
 test/test_string_builder
 test/test_string_format
