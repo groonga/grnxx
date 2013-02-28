@@ -21,16 +21,11 @@
 #include "basic.hpp"
 #include "time.hpp"
 
-#include <chrono>
-
 namespace grnxx {
 
 class SystemClock {
  public:
-  static Time now() {
-    return Time(std::chrono::duration_cast<std::chrono::microseconds>(
-                std::chrono::system_clock::now().time_since_epoch()).count());
-  }
+  static Time now();
 };
 
 }  // namespace grnxx

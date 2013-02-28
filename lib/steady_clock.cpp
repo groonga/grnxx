@@ -15,19 +15,15 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#ifndef GRNXX_STEADY_CLOCK_HPP
-#define GRNXX_STEADY_CLOCK_HPP
+#include "steady_clock.hpp"
 
-#include "basic.hpp"
-#include "time.hpp"
+#include <chrono>
 
 namespace grnxx {
 
-class SteadyClock {
- public:
-  static Time now();
-};
+Time SteadyClock::now() {
+  return Time(std::chrono::duration_cast<std::chrono::microseconds>(
+              std::chrono::steady_clock::now().time_since_epoch()).count());
+}
 
 }  // namespace grnxx
-
-#endif  // GRNXX_STEADY_CLOCK_HPP
