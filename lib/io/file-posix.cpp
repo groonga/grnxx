@@ -106,7 +106,7 @@ void FileImpl::lock(FileLockMode mode) {
     GRNXX_THROW();
   }
   while (!try_lock(mode)) {
-    Thread::sleep(FILE_LOCK_SLEEP_DURATION);
+    Thread::sleep_for(FILE_LOCK_SLEEP_DURATION);
   }
 }
 
@@ -123,7 +123,7 @@ bool FileImpl::lock(FileLockMode mode, Duration timeout) {
     if (try_lock(mode)) {
       return true;
     }
-    Thread::sleep(FILE_LOCK_SLEEP_DURATION);
+    Thread::sleep_for(FILE_LOCK_SLEEP_DURATION);
   }
   return false;
 }

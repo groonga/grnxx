@@ -20,6 +20,7 @@
 #include "logger.hpp"
 #include "thread.hpp"
 #include "stopwatch.hpp"
+#include "system_clock.hpp"
 
 int main() {
   grnxx::Logger::set_flags(grnxx::LOGGER_WITH_ALL |
@@ -38,16 +39,23 @@ int main() {
 
   stopwatch.reset();
   for (int i = 0; i < LOOP_COUNT; ++i) {
-    grnxx::Thread::sleep(grnxx::Duration(0));
+    grnxx::Thread::sleep_for(grnxx::Duration(0));
   }
   elapsed = stopwatch.elapsed();
-  GRNXX_NOTICE() << "sleep(0): elapsed [ns]: "
+  GRNXX_NOTICE() << "sleep_for(0): elapsed [ns]: "
                  << (1000.0 * elapsed.count() / LOOP_COUNT);
 
   stopwatch.reset();
-  grnxx::Thread::sleep(grnxx::Duration::milliseconds(10));
+  grnxx::Thread::sleep_for(grnxx::Duration::milliseconds(10));
   elapsed = stopwatch.elapsed();
-  GRNXX_NOTICE() << "sleep(10ms): elapsed [ns] = "
+  GRNXX_NOTICE() << "sleep_for(10ms): elapsed [ns] = "
+                 << (1000.0 * elapsed.count());
+
+  stopwatch.reset();
+  grnxx::Thread::sleep_until(grnxx::SystemClock::now() +
+                             grnxx::Duration::milliseconds(10));
+  elapsed = stopwatch.elapsed();
+  GRNXX_NOTICE() << "sleep_until(now + 10ms): elapsed [ns] = "
                  << (1000.0 * elapsed.count());
 
   return 0;

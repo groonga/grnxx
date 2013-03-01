@@ -37,7 +37,7 @@ void Mutex::lock_without_timeout() {
   }
 
   while (!try_lock()) {
-    Thread::sleep(MUTEX_SLEEP_DURATION);
+    Thread::sleep_for(MUTEX_SLEEP_DURATION);
   }
 }
 
@@ -72,7 +72,7 @@ bool Mutex::lock_with_timeout(Duration timeout) {
     if (try_lock()) {
       return true;
     }
-    Thread::sleep(MUTEX_SLEEP_DURATION);
+    Thread::sleep_for(MUTEX_SLEEP_DURATION);
   }
 
   return false;

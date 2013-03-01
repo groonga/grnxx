@@ -39,14 +39,14 @@ int main() {
   GRNXX_NOTICE() << "grnxx::InternalClock::now().local_time(): "
                  << time.local_time();
 
-  grnxx::Thread::sleep(grnxx::Duration::milliseconds(500));
+  grnxx::Thread::sleep_for(grnxx::Duration::milliseconds(500));
 
   time = grnxx::InternalClock::now();
   GRNXX_NOTICE() << "grnxx::InternalClock::now(): " << time;
   GRNXX_NOTICE() << "grnxx::InternalClock::now().local_time(): "
                  << time.local_time();
 
-  grnxx::Thread::sleep(grnxx::Duration::milliseconds(500));
+  grnxx::Thread::sleep_for(grnxx::Duration::milliseconds(500));
 
   time = grnxx::InternalClock::now();
   GRNXX_NOTICE() << "grnxx::InternalClock::now(): " << time;

@@ -30,28 +30,28 @@ int main() {
   assert(stopwatch.elapsed() == grnxx::Duration(0));
 
   stopwatch.start();
-  grnxx::Thread::sleep(grnxx::Duration::milliseconds(1));
+  grnxx::Thread::sleep_for(grnxx::Duration::milliseconds(1));
   grnxx::Duration elapsed = stopwatch.elapsed();
   assert(elapsed > grnxx::Duration(0));
 
-  grnxx::Thread::sleep(grnxx::Duration::milliseconds(1));
+  grnxx::Thread::sleep_for(grnxx::Duration::milliseconds(1));
   assert(stopwatch.elapsed() > elapsed);
 
   stopwatch.stop();
   elapsed = stopwatch.elapsed();
 
-  grnxx::Thread::sleep(grnxx::Duration::milliseconds(1));
+  grnxx::Thread::sleep_for(grnxx::Duration::milliseconds(1));
   assert(stopwatch.elapsed() == elapsed);
 
   stopwatch.start();
-  grnxx::Thread::sleep(grnxx::Duration::milliseconds(1));
+  grnxx::Thread::sleep_for(grnxx::Duration::milliseconds(1));
   assert(stopwatch.elapsed() > elapsed);
 
   GRNXX_NOTICE() << "stopwatch.elapsed() = " << stopwatch.elapsed();
 
   elapsed = stopwatch.elapsed();
   stopwatch.reset();
-  grnxx::Thread::sleep(grnxx::Duration::milliseconds(1));
+  grnxx::Thread::sleep_for(grnxx::Duration::milliseconds(1));
   assert(stopwatch.elapsed() < elapsed);
   assert(stopwatch.elapsed() > grnxx::Duration(0));
 
@@ -59,7 +59,7 @@ int main() {
   stopwatch.reset();
   assert(stopwatch.elapsed() == grnxx::Duration(0));
 
-  grnxx::Thread::sleep(grnxx::Duration::milliseconds(1));
+  grnxx::Thread::sleep_for(grnxx::Duration::milliseconds(1));
   assert(stopwatch.elapsed() == grnxx::Duration(0));
 
   return 0;

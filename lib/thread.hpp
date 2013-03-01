@@ -19,14 +19,16 @@
 #define GRNXX_THREAD_HPP
 
 #include "basic.hpp"
-#include "duration.hpp"
+#include "time.hpp"
 
 namespace grnxx {
 
 class Thread {
  public:
   static void yield();
-  static void sleep(Duration duration);
+
+  static void sleep_for(Duration duration);
+  static void sleep_until(Time time);
 
  private:
   Thread(const Thread &);

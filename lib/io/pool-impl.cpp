@@ -343,7 +343,7 @@ void PoolImpl::open_regular_pool(PoolFlags flags, const char *path,
         if (files_[0]->size() != 0) {
           break;
         }
-        Thread::sleep(Duration::milliseconds(10));
+        Thread::sleep_for(Duration::milliseconds(10));
       }
     }
     if (files_[0]->lock(FILE_LOCK_SHARED, Duration::seconds(10))) {

@@ -30,13 +30,15 @@
 
 #include <thread>
 
+#include "system_clock.hpp"
+
 namespace grnxx {
 
 void Thread::yield() {
   std::this_thread::yield();
 }
 
-void Thread::sleep(Duration duration) {
+void Thread::sleep_for(Duration duration) {
 #ifdef GRNXX_WINDOWS
   if (duration.count() < 0) {
     ::Sleep(0);
@@ -75,6 +77,13 @@ void Thread::sleep(Duration duration) {
     ::usleep(std::numeric_limits<useconds_t>::max());
   }
 #endif  // defined(GRNXX_HAS_NANOSLEEP)
+}
+
+void Thread::sleep_until(Time time) {
+  const Time now = SystemClock::now();
+  if (time > now) {
+    sleep_for(time - now);
+  }
 }
 
 }  // namespace grnxx

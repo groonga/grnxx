@@ -44,7 +44,7 @@ Time *internal_time = nullptr;
 void internal_clock_routine() {
   // TODO: Fix this endless loop.
   while (true) {
-    Thread::sleep(UPDATE_INTERVAL);
+    Thread::sleep_for(UPDATE_INTERVAL);
     *internal_time = SystemClock::now();
   }
 }
