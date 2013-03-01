@@ -33,7 +33,7 @@ void Mutex::lock_without_timeout() {
     if (try_lock()) {
       return;
     }
-    Thread::switch_to_others();
+    Thread::yield();
   }
 
   while (!try_lock()) {
@@ -65,7 +65,7 @@ bool Mutex::lock_with_timeout(Duration timeout) {
     if (try_lock()) {
       return true;
     }
-    Thread::switch_to_others();
+    Thread::yield();
   }
 
   while (!has_deadline || (stopwatch.elapsed() < timeout)) {

@@ -25,7 +25,7 @@ namespace grnxx {
 
 class Thread {
  public:
-  static bool switch_to_others();
+  static void yield();
   static void sleep(Duration duration);
 
  private:

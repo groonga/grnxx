@@ -30,10 +30,10 @@ int main() {
 
   grnxx::Stopwatch stopwatch(true);
   for (int i = 0; i < LOOP_COUNT; ++i) {
-    grnxx::Thread::switch_to_others();
+    grnxx::Thread::yield();
   }
   grnxx::Duration elapsed = stopwatch.elapsed();
-  GRNXX_NOTICE() << "switch_to_others(): elapsed [ns]: "
+  GRNXX_NOTICE() << "yield(): elapsed [ns]: "
                  << (1000.0 * elapsed.count() / LOOP_COUNT);
 
   stopwatch.reset();

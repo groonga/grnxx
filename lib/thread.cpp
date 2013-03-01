@@ -24,24 +24,16 @@
 # include <windows.h>
 #endif  // GRNXX_WINDOWS
 
-#ifdef GRNXX_HAS_SCHED_YIELD
-# include <sched.h>
-#endif  // GRNXX_HAS_SCHED_YIELD
-
 #ifdef GRNXX_HAS_NANOSLEEP
 # include <time.h>
 #endif  // GRNXX_HAS_NANOSLEEP
 
+#include <thread>
+
 namespace grnxx {
 
-bool Thread::switch_to_others() {
-#ifdef GRNXX_WINDOWS
-  return ::SwitchToThread() != 0;
-#elif defined(GRNXX_HAS_SCHED_YIELD)
-  return ::sched_yield() == 0;
-#else  // defined(GRNXX_HAS_SCHED_YIELD)
-  sleep(Duration(0));
-#endif  // defined(GRNXX_HAS_SCHED_YIELD)
+void Thread::yield() {
+  std::this_thread::yield();
 }
 
 void Thread::sleep(Duration duration) {
