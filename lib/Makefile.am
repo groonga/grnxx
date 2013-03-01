@@ -16,6 +16,7 @@ libgrnxx_la_SOURCES =		\
 	duration.cpp		\
 	error.cpp		\
 	grnxx.cpp		\
+	internal_clock.cpp	\
 	logger.cpp		\
 	map.cpp			\
 	mutex.cpp		\

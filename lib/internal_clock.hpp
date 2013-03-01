@@ -25,8 +25,17 @@ namespace grnxx {
 
 class InternalClock {
  public:
-  // TODO
-  static Time now();
+  static Time now() {
+    if (now_ == Time::min()) {
+      return start();
+    }
+    return now_;
+  }
+
+ private:
+  static Time now_;
+
+  static Time start();
 };
 
 }  // namespace grnxx
