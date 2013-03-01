@@ -34,15 +34,12 @@ if test "x$enable_backtrace" != "xno"; then
   AC_CHECK_LIB([bfd], [bfd_openr])
 fi
 
-# Checks for header files.
-
-# Checks for typedefs, structures, and compiler characteristics.
-
-# Checks for library functions.
 #AC_CHECK_LIB([rt], [clock_gettime])
+AC_CHECK_LIB([pthread], [pthread_create])
 AC_CHECK_LIB([pthread], [pthread_create],
-             [AM_CXXFLAGS="${AM_CXXFLAGS} -pthread"
-              LIBS="${LIBS} -lpthread"])
+             [AM_CXXFLAGS="${AM_CXXFLAGS} -pthread"])
+
+AC_CHECK_FUNCS([pthread_atfork])
 
 AC_CONFIG_FILES([Makefile
                  lib/Makefile

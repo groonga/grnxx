@@ -17,7 +17,11 @@
 */
 #include "internal_clock.hpp"
 
-#include <pthread.h>
+#include "../config.h"
+
+#ifdef HAVE_PTHREAD_ATFORK
+# include <pthread.h>
+#endif  // HAVE_PTHREAD_ATFORK
 
 #include <thread>
 
@@ -56,14 +60,15 @@ void start_internal_clock() {
     return;
   }
 
+#ifdef HAVE_PTHREAD_ATFORK
   // Start a new thread, if fork() is invoked, on the child process.
   int error = ::pthread_atfork(nullptr, nullptr, start_internal_clock);
   if (error != 0) {
-    // TODO: Error handling.
+    // The current process works well even if this failed.
     GRNXX_WARNING() << "failed to set a fork handler: '::pthread_atfork' "
                     << Error(error);
-    // The current process works well even if this failed.
   }
+#endif  // HAVE_PTHREAD_ATFORK
 
   *internal_time = SystemClock::now();
 }
