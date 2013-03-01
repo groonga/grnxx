@@ -50,6 +50,7 @@ libgrnxx_include_HEADERS =	\
 	os.hpp			\
 	recycler.hpp		\
 	slice.hpp		\
+	stopwatch.hpp		\
 	string.hpp		\
 	string_builder.hpp	\
 	string_format.hpp	\
