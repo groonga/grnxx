@@ -14,11 +14,22 @@ AC_PROG_INSTALL
 
 AC_CONFIG_MACRO_DIR([m4])
 
-AM_CXXFLAGS="-Wall -Wextra -std=c++0x -fno-strict-aliasing"
-AM_LTLDFLAGS="-no-undefined"
+AM_CXXFLAGS="-Wall -Wextra -std=c++11 -fno-strict-aliasing"
 
 AC_SUBST([AM_CXXFLAGS])
 AC_SUBST([AM_LTLDFLAGS])
+
+AC_CANONICAL_HOST
+
+case "${host}" in
+  *-*-mingw*|*-*-cygwin*)
+#    AM_CXXFLAGS="${AM_CXXFLAGS} -DGRNXX_DLL"
+    AM_LTLDFLAGS="-no-undefined"
+    ;;
+  *)
+    AM_LTLDFLAGS=""
+    ;;
+esac
 
 # Checks for libraries.
 
