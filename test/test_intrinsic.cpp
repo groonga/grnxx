@@ -98,8 +98,6 @@ void test_basics() {
 void test_times() {
   enum { LOOP_COUNT = 1 << 20 };
 
-  grnxx::Time start, end;
-
   grnxx::Stopwatch stopwatch(true);
   std::uint64_t total = 0;
   for (std::uint32_t i = 1; i <= LOOP_COUNT; ++i) {

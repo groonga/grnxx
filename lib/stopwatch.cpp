@@ -17,43 +17,48 @@
 */
 #include "stopwatch.hpp"
 
-#include "steady_clock.hpp"
+#include <chrono>
+//#include "steady_clock.hpp"
 
 namespace grnxx {
+namespace {
+
+int64_t now() {
+  return std::chrono::duration_cast<std::chrono::microseconds>(
+      std::chrono::steady_clock::now().time_since_epoch()).count();
+}
+
+}  // namespace
 
 Stopwatch::Stopwatch(bool is_running)
   : elapsed_(0),
-    start_time_(),
-    is_running_(is_running) {
-  if (is_running) {
-    start_time_ = SteadyClock::now();
-  }
-}
+    start_count_(is_running ? now() : 0),
+    is_running_(is_running) {}
 
 void Stopwatch::start() {
   if (!is_running_) {
-    start_time_ = SteadyClock::now();
+    start_count_ = now();
     is_running_ = true;
   }
 }
 
 void Stopwatch::stop() {
   if (is_running_) {
-    elapsed_ += SteadyClock::now() - start_time_;
+    elapsed_ += Duration(now() - start_count_);
     is_running_ = false;
   }
 }
 
 void Stopwatch::reset() {
   if (is_running_) {
-    start_time_ = SteadyClock::now();
+    start_count_ = now();
   }
   elapsed_ = Duration(0);
 }
 
 Duration Stopwatch::elapsed() const {
   if (is_running_) {
-    return elapsed_ + (SteadyClock::now() - start_time_);
+    return elapsed_ + Duration(now() - start_count_);
   } else {
     return elapsed_;
   }

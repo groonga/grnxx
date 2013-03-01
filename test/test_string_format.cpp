@@ -111,7 +111,6 @@ void benchmark() {
   static const std::uint32_t LOOP_COUNT = 1 << 16;
 
   char buf[1024] = "";
-  grnxx::Time start, end;
 
 
   grnxx::Stopwatch stopwatch(true);

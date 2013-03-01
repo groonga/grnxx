@@ -19,7 +19,7 @@
 #define GRNXX_STOPWATCH_HPP
 
 #include "basic.hpp"
-#include "time.hpp"
+#include "duration.hpp"
 
 namespace grnxx {
 
@@ -51,7 +51,7 @@ class Stopwatch {
 
  private:
   Duration elapsed_;
-  Time start_time_;
+  int64_t start_count_;
   bool is_running_;
 };
 

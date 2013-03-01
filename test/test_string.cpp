@@ -139,7 +139,6 @@ void benchmark() {
   const int LOOP_COUNT = 1 << 16;
 
   grnxx::String str, str2;
-  grnxx::Time start, end;
 
   grnxx::Stopwatch stopwatch(true);
   for (int i = 0; i < LOOP_COUNT; ++i) {

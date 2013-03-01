@@ -18,7 +18,6 @@
 #include <cassert>
 
 #include "logger.hpp"
-#include "steady_clock.hpp"
 #include "stopwatch.hpp"
 #include "system_clock.hpp"
 
@@ -37,11 +36,6 @@ int main() {
   GRNXX_NOTICE() << "grnxx::SystemClock::now().local_time(): "
                  << time.local_time();
 
-  time = grnxx::SteadyClock::now();
-  GRNXX_NOTICE() << "grnxx::SteadyClock::now(): " << time;
-  GRNXX_NOTICE() << "grnxx::SteadyClock::now().local_time(): "
-                 << time.local_time();
-
   enum { LOOP_COUNT = 1 << 16 };
 
   grnxx::Stopwatch stopwatch(true);
@@ -50,14 +44,6 @@ int main() {
   }
   grnxx::Duration elapsed = stopwatch.elapsed();
   GRNXX_NOTICE() << "grnxx::SystemClock::now: average elapsed [ns] = "
-                 << (1000.0 * elapsed.count() / LOOP_COUNT);
-
-  stopwatch.reset();
-  for (int i = 0; i < LOOP_COUNT; ++i) {
-    grnxx::SteadyClock::now();
-  }
-  elapsed = stopwatch.elapsed();
-  GRNXX_NOTICE() << "grnxx::SteadyClock::now: average elapsed [ns] = "
                  << (1000.0 * elapsed.count() / LOOP_COUNT);
 
   return 0;
