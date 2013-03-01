@@ -22,8 +22,11 @@
 namespace grnxx {
 
 Time SystemClock::now() {
+  // The epoch of std::chrono::system_clock is not guaranteed to be the Unix
+  // epoch. So, (now() - from_time_t(0)) is used instead of time_since_epoch().
   return Time(std::chrono::duration_cast<std::chrono::microseconds>(
-              std::chrono::system_clock::now().time_since_epoch()).count());
+              (std::chrono::system_clock::now() -
+               std::chrono::system_clock::from_time_t(0))).count());
 }
 
 }  // namespace grnxx
