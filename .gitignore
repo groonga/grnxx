@@ -37,6 +37,7 @@ test/test_error
 test/test_exception
 test/test_features
 test/test_grnxx
+test/test_internal_clock
 test/test_intrinsic
 test/test_io_alpha_pool
 test/test_io_file

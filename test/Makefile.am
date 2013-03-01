@@ -11,6 +11,7 @@ TESTS =					\
 	test_exception			\
 	test_features			\
 	test_grnxx			\
+	test_internal_clock		\
 	test_intrinsic			\
 	test_io_file			\
 	test_io_file_info		\
@@ -64,6 +65,9 @@ test_features_LDADD = ../lib/libgrnxx.la
 
 test_grnxx_SOURCES = test_grnxx.cpp
 test_grnxx_LDADD = ../lib/libgrnxx.la
+
+test_internal_clock_SOURCES = test_internal_clock.cpp
+test_internal_clock_LDADD = ../lib/libgrnxx.la
 
 test_intrinsic_SOURCES = test_intrinsic.cpp
 test_intrinsic_LDADD = ../lib/libgrnxx.la
