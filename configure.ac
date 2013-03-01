@@ -40,6 +40,9 @@ fi
 
 # Checks for library functions.
 #AC_CHECK_LIB([rt], [clock_gettime])
+AC_CHECK_LIB([pthread], [pthread_create],
+             [AM_CXXFLAGS="${AM_CXXFLAGS} -pthread"
+              LIBS="${LIBS} -lpthread"])
 
 AC_CONFIG_FILES([Makefile
                  lib/Makefile
@@ -56,8 +59,9 @@ echo
 echo "$PACKAGE_NAME $PACKAGE_VERSION configuration:"
 echo "-----------------------"
 echo "  CXX:                   ${CXX}"
-echo "  CXXFLAGS:              ${CXXFLAGS}"
-echo "  Libraries:             ${LIBS}"
+echo "  CXXFLAGS:              ${CXXFLAGS} ${AM_CXXFLAGS}"
+echo "  LTLDFLAGS:             ${AM_LTLDFLAGS}"
+echo "  LIBS:                  ${LIBS}"
 echo
 echo "Paths:"
 echo "  Install path prefix:   ${prefix}"
