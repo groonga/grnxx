@@ -52,6 +52,11 @@ AC_CHECK_LIB([pthread], [pthread_create],
 
 AC_CHECK_FUNCS([pthread_atfork])
 
+AC_CHECK_FUNC([sched_yield],
+              [AM_CXXFLAGS="${AM_CXXFLAGS} -D_GLIBCXX_USE_SCHED_YIELD"])
+AC_CHECK_FUNC([nanosleep],
+              [AM_CXXFLAGS="${AM_CXXFLAGS} -D_GLIBCXX_USE_NANOSLEEP"])
+
 AC_CONFIG_FILES([Makefile
                  lib/Makefile
                  lib/alpha/Makefile
