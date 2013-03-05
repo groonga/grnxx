@@ -173,6 +173,49 @@ class Map {
   // TODO
 };
 
+class MapScan {
+ public:
+  ~MapScan();
+
+  // Create an object to find keys in "query".
+  static MapScan *open(Map *map, const Slice &query);
+
+  // Scan the rest of the query and return true iff a key is found (success).
+  // On success, the found key is accessible via accessors.
+  bool next();
+
+  // Return the query.
+  const Slice &query() const {
+    return query_;
+  }
+  // Return the start position of the found key.
+  uint64_t offset() const {
+    return offset_;
+  }
+  // Return the size of the found key.
+  uint64_t size() const {
+    return size_;
+  }
+  // Return the ID of the found key.
+  int64_t key_id() const {
+    return key_id_;
+  }
+  // Return a reference to the found key.
+  const MapKey &key() const {
+    return key_;
+  }
+
+ protected:
+  Map *map_;
+  Slice query_;
+  uint64_t offset_;
+  uint64_t size_;
+  int64_t key_id_;
+  MapKey key_;
+
+  MapScan();
+};
+
 }  // namespace grnxx
 
 #endif  // GRNXX_MAP_HPP

@@ -18,6 +18,9 @@
 #include "map.hpp"
 #include "map/double_array.hpp"
 
+#include "exception.hpp"
+#include "logger.hpp"
+
 namespace grnxx {
 
 MapOptions::MapOptions() : type(MAP_UNKNOWN) {}
@@ -98,5 +101,41 @@ void Map::unlink(io::Pool pool, uint32_t block_id) {
 
   // TODO: Unknown type error!
 }
+
+MapScan::~MapScan() {}
+
+MapScan *MapScan::open(Map *map, const Slice &query) {
+  std::unique_ptr<MapScan> scan(new (std::nothrow) MapScan);
+  if (!scan) {
+    GRNXX_ERROR() << "new grnxx::MapScan failed";
+    GRNXX_THROW();
+  }
+  scan->map_ = map;
+  scan->query_ = query;
+  return scan.release();
+}
+
+bool MapScan::next() {
+  offset_ += size_;
+  while (offset_ < query_.size()) {
+    if (map_->lcp_search(query_.subslice(offset_, query_.size() - offset_),
+                         &key_id_, &key_)) {
+      size_ = key_.size();
+      return true;
+    }
+    // TODO: Move to the next character, not the next byte.
+    ++offset_;
+  }
+  size_ = 0;
+  return false;
+}
+
+MapScan::MapScan()
+  : map_(nullptr),
+    query_(),
+    offset_(0),
+    size_(0),
+    key_id_(-1),
+    key_() {}
 
 }  // namespace grnxx

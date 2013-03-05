@@ -130,6 +130,41 @@ void test_lcp_search() {
   assert(!map->lcp_search("BCD", &key_id, &key));
 }
 
+void test_scan() {
+  grnxx::io::Pool pool;
+  pool.open(grnxx::io::POOL_TEMPORARY);
+
+  grnxx::MapOptions options;
+  options.type = grnxx::MAP_DOUBLE_ARRAY;
+  std::unique_ptr<grnxx::Map> map(grnxx::Map::create(options, pool));
+
+  assert(map->insert("AB"));
+  assert(map->insert("ABCD"));
+  assert(map->insert("BCD"));
+  assert(map->insert("CDE"));
+  assert(map->insert("EF"));
+  assert(map->insert("EFG"));
+  assert(map->insert("EFGH"));
+
+  grnxx::Slice query = "ABCDXEFG";
+
+  std::unique_ptr<grnxx::MapScan> scan(grnxx::MapScan::open(map.get(), query));
+
+  assert(scan->next());
+  assert(scan->offset() == 0);
+  assert(scan->size() == 4);
+  assert(scan->key_id() == 1);
+  assert(scan->key() == "ABCD");
+
+  assert(scan->next());
+  assert(scan->offset() == 5);
+  assert(scan->size() == 3);
+  assert(scan->key_id() == 5);
+  assert(scan->key() == "EFG");
+
+  assert(!scan->next());
+}
+
 void create_keys(std::size_t num_keys,
                  std::size_t min_size, std::size_t max_size,
                  std::unordered_set<std::string> *both_keys,
@@ -308,6 +343,7 @@ int main() {
 
   test_basics();
   test_lcp_search();
+  test_scan();
 
   test_insert();
   test_remove();
