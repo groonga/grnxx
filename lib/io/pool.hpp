@@ -60,8 +60,8 @@ constexpr uint64_t POOL_HEADER_CHUNK_SIZE      = CHUNK_UNIT_SIZE;
 constexpr char POOL_HEADER_FORMAT_STRING[64]  = "grnxx::io::Pool";
 constexpr char POOL_HEADER_VERSION_STRING[64] = "0.0.0";
 
-class PoolFlagsIdentifier {};
-typedef FlagsImpl<PoolFlagsIdentifier> PoolFlags;
+class Pool;
+typedef FlagsImpl<Pool> PoolFlags;
 
 // If POOL_READ_ONLY is not specified, a pool is created/opened in
 // read-write mode.

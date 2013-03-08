@@ -27,8 +27,8 @@ constexpr int FILE_UNIQUE_PATH_GENERATION_MAX_NUM_TRIALS = 10;
 
 constexpr Duration FILE_LOCK_SLEEP_DURATION = Duration::milliseconds(10);
 
-class FileFlagsIdentifier {};
-typedef FlagsImpl<FileFlagsIdentifier> FileFlags;
+class File;
+typedef FlagsImpl<File> FileFlags;
 
 // FILE_WRITE_ONLY is ignored if FILE_READ_ONLY is enabled.
 // FILE_READ_ONLY is disabled if FILE_CREATE is specified.

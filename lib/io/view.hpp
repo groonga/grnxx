@@ -24,8 +24,8 @@
 namespace grnxx {
 namespace io {
 
-class ViewFlagsIdentifier {};
-typedef FlagsImpl<ViewFlagsIdentifier> ViewFlags;
+class View;
+typedef FlagsImpl<View> ViewFlags;
 
 // VIEW_WRITE_ONLY is ignored if VIEW_READ_ONLY is enabled.
 // VIEW_READ_ONLY is disabled if VIEW_CREATE is specified.

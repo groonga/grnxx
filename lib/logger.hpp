@@ -41,8 +41,8 @@ enum LoggerLevel {
   NOTICE_LOGGER  = 0x0002
 };
 
-class LoggerFlagsIdentifier {};
-typedef FlagsImpl<LoggerFlagsIdentifier> LoggerFlags;
+class Logger;
+typedef FlagsImpl<Logger> LoggerFlags;
 
 constexpr LoggerFlags LOGGER_WITH_DATE_TIME = LoggerFlags::define(0x0001);
 constexpr LoggerFlags LOGGER_WITH_LOCATION  = LoggerFlags::define(0x0002);

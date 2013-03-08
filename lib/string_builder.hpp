@@ -26,8 +26,8 @@ namespace grnxx {
 
 constexpr size_t STRING_BUILDER_BUF_SIZE_MIN = 64;
 
-class StringBuilderFlagsIdentifier {};
-typedef FlagsImpl<StringBuilderFlagsIdentifier> StringBuilderFlags;
+class StringBuilder;
+typedef FlagsImpl<StringBuilder> StringBuilderFlags;
 
 constexpr StringBuilderFlags STRING_BUILDER_AUTO_RESIZE =
     StringBuilderFlags::define(0x01);
