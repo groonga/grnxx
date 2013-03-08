@@ -18,9 +18,9 @@
 #ifndef GRNXX_IO_POOL_HPP
 #define GRNXX_IO_POOL_HPP
 
-#include "../mutex.hpp"
-#include "../recycler.hpp"
-#include "chunk.hpp"
+#include "io/chunk.hpp"
+#include "mutex.hpp"
+#include "recycler.hpp"
 
 namespace grnxx {
 namespace io {

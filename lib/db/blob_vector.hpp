@@ -18,7 +18,7 @@
 #ifndef GRNXX_DB_BLOB_VECTOR_HPP
 #define GRNXX_DB_BLOB_VECTOR_HPP
 
-#include "vector.hpp"
+#include "db/vector.hpp"
 
 namespace grnxx {
 namespace db {

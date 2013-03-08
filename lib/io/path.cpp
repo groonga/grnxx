@@ -15,15 +15,15 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#include "path.hpp"
+#include "io/path.hpp"
 
 #include <cerrno>
 #include <cstdlib>
 #include <random>
 
-#include "../error.hpp"
-#include "../exception.hpp"
-#include "../logger.hpp"
+#include "error.hpp"
+#include "exception.hpp"
+#include "logger.hpp"
 
 namespace grnxx {
 namespace io {

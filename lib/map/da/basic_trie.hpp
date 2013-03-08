@@ -18,7 +18,7 @@
 #ifndef GRNXX_MAP_DA_BASIC_TRIE_HPP
 #define GRNXX_MAP_DA_BASIC_TRIE_HPP
 
-#include "trie.hpp"
+#include "map/da/trie.hpp"
 
 #if 0
 # define GRNXX_DEBUG_THROW(msg)\

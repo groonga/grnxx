@@ -15,14 +15,14 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#include "view.hpp"
-#include "view-posix.hpp"
-#include "view-windows.hpp"
+#include "io/view.hpp"
 
 #include <ostream>
 
-#include "../exception.hpp"
-#include "../logger.hpp"
+#include "exception.hpp"
+#include "io/view-posix.hpp"
+#include "io/view-windows.hpp"
+#include "logger.hpp"
 
 namespace grnxx {
 namespace io {

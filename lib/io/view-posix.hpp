@@ -18,7 +18,7 @@
 #ifndef GRNXX_IO_VIEW_POSIX_HPP
 #define GRNXX_IO_VIEW_POSIX_HPP
 
-#include "view.hpp"
+#include "io/view.hpp"
 
 #ifndef GRNXX_WINDOWS
 

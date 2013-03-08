@@ -18,7 +18,7 @@
 #ifndef GRNXX_IO_BLOCK_HPP
 #define GRNXX_IO_BLOCK_HPP
 
-#include "../string_builder.hpp"
+#include "string_builder.hpp"
 
 namespace grnxx {
 namespace io {

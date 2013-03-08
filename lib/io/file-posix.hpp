@@ -18,7 +18,7 @@
 #ifndef GRNXX_IO_FILE_POSIX_HPP
 #define GRNXX_IO_FILE_POSIX_HPP
 
-#include "file.hpp"
+#include "io/file.hpp"
 
 #ifndef GRNXX_WINDOWS
 

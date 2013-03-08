@@ -15,17 +15,17 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#include "pool-impl.hpp"
+#include "io/pool-impl.hpp"
 
 #include <vector>
 
-#include "../exception.hpp"
-#include "../lock.hpp"
-#include "../logger.hpp"
-#include "../stopwatch.hpp"
-#include "../string_format.hpp"
-#include "../thread.hpp"
-#include "path.hpp"
+#include "exception.hpp"
+#include "io/path.hpp"
+#include "lock.hpp"
+#include "logger.hpp"
+#include "stopwatch.hpp"
+#include "string_format.hpp"
+#include "thread.hpp"
 
 namespace grnxx {
 namespace io {

@@ -18,7 +18,7 @@
 #ifndef GRNXX_ALPHA_DOUBLE_ARRAY_HPP
 #define GRNXX_ALPHA_DOUBLE_ARRAY_HPP
 
-#include "../db/vector.hpp"
+#include "db/vector.hpp"
 
 namespace grnxx {
 namespace alpha {

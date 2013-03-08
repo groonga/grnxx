@@ -18,7 +18,7 @@
 #ifndef GRNXX_IO_FILE_HPP
 #define GRNXX_IO_FILE_HPP
 
-#include "../duration.hpp"
+#include "duration.hpp"
 
 namespace grnxx {
 namespace io {

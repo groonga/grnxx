@@ -18,7 +18,7 @@
 #ifndef GRNXX_IO_PATH_HPP
 #define GRNXX_IO_PATH_HPP
 
-#include "../string.hpp"
+#include "string.hpp"
 
 namespace grnxx {
 namespace io {

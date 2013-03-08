@@ -18,8 +18,8 @@
 #ifndef GRNXX_IO_VIEW_HPP
 #define GRNXX_IO_VIEW_HPP
 
-#include "../basic.hpp"
-#include "../string_builder.hpp"
+#include "basic.hpp"
+#include "string_builder.hpp"
 
 namespace grnxx {
 namespace io {

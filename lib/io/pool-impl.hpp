@@ -18,8 +18,8 @@
 #ifndef GRNXX_IO_POOL_IMPL_HPP
 #define GRNXX_IO_POOL_IMPL_HPP
 
-#include "file.hpp"
-#include "pool.hpp"
+#include "io/file.hpp"
+#include "io/pool.hpp"
 
 namespace grnxx {
 namespace io {

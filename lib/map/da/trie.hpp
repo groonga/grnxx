@@ -18,8 +18,8 @@
 #ifndef GRNXX_MAP_DA_TRIE_HPP
 #define GRNXX_MAP_DA_TRIE_HPP
 
-#include "../../exception.hpp"
-#include "../../map.hpp"
+#include "exception.hpp"
+#include "map.hpp"
 
 namespace grnxx {
 namespace map {

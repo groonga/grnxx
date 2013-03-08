@@ -15,14 +15,14 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#include "view-windows.hpp"
+#include "io/view-windows.hpp"
 
 #ifdef GRNXX_WINDOWS
 
-#include "../error.hpp"
-#include "../exception.hpp"
-#include "../logger.hpp"
-#include "file.hpp"
+#include "error.hpp"
+#include "exception.hpp"
+#include "logger.hpp"
+#include "io/file.hpp"
 
 namespace grnxx {
 namespace io {

@@ -18,8 +18,8 @@
 #ifndef GRNXX_MAP_DOUBLE_ARRAY_HPP
 #define GRNXX_MAP_DOUBLE_ARRAY_HPP
 
-#include "../map.hpp"
-#include "da/trie.hpp"
+#include "map.hpp"
+#include "map/da/trie.hpp"
 
 namespace grnxx {
 namespace map {

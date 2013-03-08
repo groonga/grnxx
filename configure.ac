@@ -14,7 +14,7 @@ AC_PROG_INSTALL
 
 AC_CONFIG_MACRO_DIR([m4])
 
-AM_CXXFLAGS="-Wall -Wextra -std=c++11 -fno-strict-aliasing"
+AM_CXXFLAGS="-Wall -Wextra -std=c++11 -fno-strict-aliasing -I\${top_srcdir}/lib"
 
 AC_SUBST([AM_CXXFLAGS])
 AC_SUBST([AM_LTLDFLAGS])

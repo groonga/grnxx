@@ -18,7 +18,7 @@
 #ifndef GRNXX_DB_VECTOR_HPP
 #define GRNXX_DB_VECTOR_HPP
 
-#include "../io/pool.hpp"
+#include "io/pool.hpp"
 
 namespace grnxx {
 namespace db {

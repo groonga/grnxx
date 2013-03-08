@@ -18,7 +18,7 @@
 #ifndef GRNXX_MAP_DA_LARGE_TRIE_HPP
 #define GRNXX_MAP_DA_LARGE_TRIE_HPP
 
-#include "basic_trie.hpp"
+#include "map/da/basic_trie.hpp"
 
 namespace grnxx {
 namespace map {

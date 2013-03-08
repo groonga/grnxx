@@ -18,8 +18,8 @@
 #ifndef GRNXX_IO_CHUNK_HPP
 #define GRNXX_IO_CHUNK_HPP
 
-#include "block.hpp"
-#include "view.hpp"
+#include "io/block.hpp"
+#include "io/view.hpp"
 
 namespace grnxx {
 namespace io {

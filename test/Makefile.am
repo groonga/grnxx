@@ -1,4 +1,4 @@
-AM_CXXFLAGS = @AM_CXXFLAGS@ -I$(top_srcdir)/lib
+AM_CXXFLAGS = @AM_CXXFLAGS@
 
 TESTS =					\
 	test_alpha_double_array		\

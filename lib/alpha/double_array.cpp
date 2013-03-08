@@ -15,11 +15,11 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#include "double_array.hpp"
+#include "alpha/double_array.hpp"
 
-#include "../exception.hpp"
-#include "../lock.hpp"
-#include "../logger.hpp"
+#include "exception.hpp"
+#include "lock.hpp"
+#include "logger.hpp"
 
 namespace grnxx {
 namespace alpha {

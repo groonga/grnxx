@@ -15,12 +15,12 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#include "pool-impl.hpp"
+#include "io/pool-impl.hpp"
 
 #include <ostream>
 
-#include "../exception.hpp"
-#include "../logger.hpp"
+#include "exception.hpp"
+#include "logger.hpp"
 
 namespace grnxx {
 namespace io {
