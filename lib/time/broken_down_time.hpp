@@ -15,8 +15,8 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#ifndef GRNXX_BROKEN_DOWN_TIME_HPP
-#define GRNXX_BROKEN_DOWN_TIME_HPP
+#ifndef GRNXX_TIME_BROKEN_DOWN_TIME_HPP
+#define GRNXX_TIME_BROKEN_DOWN_TIME_HPP
 
 #include "basic.hpp"
 #include "string_builder.hpp"
@@ -51,4 +51,4 @@ std::ostream &operator<<(std::ostream &stream, const BrokenDownTime &time);
 
 }  // namespace grnxx
 
-#endif  // GRNXX_BROKEN_DOWN_TIME_HPP
+#endif  // GRNXX_TIME_BROKEN_DOWN_TIME_HPP

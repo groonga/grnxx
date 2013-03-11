@@ -15,39 +15,52 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#include "duration.hpp"
+#include "time/stopwatch.hpp"
 
-#include <ostream>
-
-#include "string_format.hpp"
+#include <chrono>
 
 namespace grnxx {
+namespace {
 
-StringBuilder &Duration::write_to(StringBuilder &builder) const {
-  if (!builder) {
-    return builder;
-  }
-
-  uint64_t count;
-  if (count_ >= 0) {
-    count = count_;
-  } else {
-    builder << '-';
-    count = -count_;
-  }
-  builder << (count / 1000000);
-  count %= 1000000;
-  if (count != 0) {
-    builder << '.' << StringFormat::align_right(count, 6, '0');
-  }
-  return builder;
+int64_t now() {
+  return std::chrono::duration_cast<std::chrono::microseconds>(
+      std::chrono::steady_clock::now().time_since_epoch()).count();
 }
 
-std::ostream &operator<<(std::ostream &stream, Duration duration) {
-  char buf[32];
-  StringBuilder builder(buf);
-  builder << duration;
-  return stream.write(builder.c_str(), builder.length());
+}  // namespace
+
+Stopwatch::Stopwatch(bool is_running)
+  : elapsed_(0),
+    start_count_(is_running ? now() : 0),
+    is_running_(is_running) {}
+
+void Stopwatch::start() {
+  if (!is_running_) {
+    start_count_ = now();
+    is_running_ = true;
+  }
+}
+
+void Stopwatch::stop() {
+  if (is_running_) {
+    elapsed_ += Duration(now() - start_count_);
+    is_running_ = false;
+  }
+}
+
+void Stopwatch::reset() {
+  if (is_running_) {
+    start_count_ = now();
+  }
+  elapsed_ = Duration(0);
+}
+
+Duration Stopwatch::elapsed() const {
+  if (is_running_) {
+    return elapsed_ + Duration(now() - start_count_);
+  } else {
+    return elapsed_;
+  }
 }
 
 }  // namespace grnxx

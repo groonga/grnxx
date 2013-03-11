@@ -23,7 +23,7 @@
 
 #include "io/pool.hpp"
 #include "logger.hpp"
-#include "stopwatch.hpp"
+#include "time/stopwatch.hpp"
 
 void test_constructor() {
   grnxx::io::Pool::unlink_if_exists("temp.grn");

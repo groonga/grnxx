@@ -20,9 +20,9 @@
 #include <cassert>
 
 #include "logger.hpp"
-#include "internal_clock.hpp"
-#include "stopwatch.hpp"
 #include "thread.hpp"
+#include "time/internal_clock.hpp"
+#include "time/stopwatch.hpp"
 
 int main() {
   grnxx::Logger::set_flags(grnxx::LOGGER_WITH_ALL |

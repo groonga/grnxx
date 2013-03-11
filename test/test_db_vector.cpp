@@ -22,7 +22,7 @@
 
 #include "db/vector.hpp"
 #include "logger.hpp"
-#include "stopwatch.hpp"
+#include "time/stopwatch.hpp"
 
 struct Point {
   double x;

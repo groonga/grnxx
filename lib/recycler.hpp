@@ -18,7 +18,7 @@
 #ifndef GRNXX_RECYCLER_HPP
 #define GRNXX_RECYCLER_HPP
 
-#include "time.hpp"
+#include "time/time.hpp"
 
 namespace grnxx {
 

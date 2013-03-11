@@ -22,7 +22,7 @@
 
 #include "db/blob_vector.hpp"
 #include "logger.hpp"
-#include "stopwatch.hpp"
+#include "time/stopwatch.hpp"
 
 void test_basics() {
   grnxx::io::Pool::unlink_if_exists("temp.grn");

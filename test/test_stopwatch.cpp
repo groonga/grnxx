@@ -18,8 +18,8 @@
 #include <cassert>
 
 #include "logger.hpp"
-#include "stopwatch.hpp"
 #include "thread.hpp"
+#include "time/stopwatch.hpp"
 
 int main() {
   grnxx::Logger::set_flags(grnxx::LOGGER_WITH_ALL |

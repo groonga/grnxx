@@ -31,8 +31,8 @@
 #include "exception.hpp"
 #include "io/path.hpp"
 #include "logger.hpp"
-#include "stopwatch.hpp"
 #include "thread.hpp"
+#include "time/stopwatch.hpp"
 
 namespace grnxx {
 namespace io {

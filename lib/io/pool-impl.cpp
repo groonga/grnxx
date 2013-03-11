@@ -23,9 +23,9 @@
 #include "io/path.hpp"
 #include "lock.hpp"
 #include "logger.hpp"
-#include "stopwatch.hpp"
 #include "string_format.hpp"
 #include "thread.hpp"
+#include "time/stopwatch.hpp"
 
 namespace grnxx {
 namespace io {

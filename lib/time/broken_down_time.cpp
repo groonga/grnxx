@@ -15,18 +15,34 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#include "system_clock.hpp"
+#include "time/broken_down_time.hpp"
 
-#include <chrono>
+#include <iostream>
+
+#include "string_format.hpp"
 
 namespace grnxx {
 
-Time SystemClock::now() {
-  // The epoch of std::chrono::system_clock is not guaranteed to be the Unix
-  // epoch. So, (now() - from_time_t(0)) is used instead of time_since_epoch().
-  return Time(std::chrono::duration_cast<std::chrono::microseconds>(
-              (std::chrono::system_clock::now() -
-               std::chrono::system_clock::from_time_t(0))).count());
+StringBuilder &BrokenDownTime::write_to(StringBuilder &builder) const {
+  if (!builder) {
+    return builder;
+  }
+
+  builder << (1900 + year) << '-'
+          << StringFormat::align_right(mon + 1, 2, '0') << '-'
+          << StringFormat::align_right(mday, 2, '0') << ' '
+          << StringFormat::align_right(hour, 2, '0') << ':'
+          << StringFormat::align_right(min, 2, '0') << ':'
+          << StringFormat::align_right(sec, 2, '0') << '.'
+          << StringFormat::align_right(usec, 6, '0');
+  return builder;
+}
+
+std::ostream &operator<<(std::ostream &stream, const BrokenDownTime &time) {
+  char buf[32];
+  StringBuilder builder(buf);
+  builder << time;
+  return stream.write(builder.c_str(), builder.length());
 }
 
 }  // namespace grnxx

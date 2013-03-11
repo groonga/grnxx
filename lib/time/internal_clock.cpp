@@ -15,7 +15,7 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#include "internal_clock.hpp"
+#include "time/internal_clock.hpp"
 
 #include "../config.h"
 
@@ -29,7 +29,7 @@
 #include "lock.hpp"
 #include "logger.hpp"
 #include "thread.hpp"
-#include "system_clock.hpp"
+#include "time/system_clock.hpp"
 
 namespace grnxx {
 namespace {

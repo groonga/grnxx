@@ -1,4 +1,4 @@
-SUBDIRS = alpha db io map
+SUBDIRS = alpha db io map time
 
 lib_LTLIBRARIES = libgrnxx.la
 
@@ -6,43 +6,35 @@ libgrnxx_la_LIBADD =		\
 	alpha/libgrnxx_alpha.la	\
 	db/libgrnxx_db.la	\
 	io/libgrnxx_io.la	\
-	map/libgrnxx_map.la
+	map/libgrnxx_map.la	\
+	time/libgrnxx_time.la
 
 libgrnxx_la_LDFLAGS = @AM_LTLDFLAGS@
 
 libgrnxx_la_SOURCES =		\
 	backtrace.cpp		\
-	broken_down_time.cpp	\
-	duration.cpp		\
 	error.cpp		\
 	grnxx.cpp		\
-	internal_clock.cpp	\
 	logger.cpp		\
 	map.cpp			\
 	mutex.cpp		\
 	os.cpp			\
 	recycler.cpp		\
 	slice.cpp		\
-	stopwatch.cpp		\
 	storage.cpp		\
 	string.cpp		\
 	string_builder.cpp	\
-	system_clock.cpp	\
-	thread.cpp		\
-	time.cpp
+	thread.cpp
 
 libgrnxx_includedir = ${includedir}/grnxx
 libgrnxx_include_HEADERS =	\
 	backtrace.hpp		\
 	basic.hpp		\
-	broken_down_time.hpp	\
-	duration.hpp		\
 	error.hpp		\
 	exception.hpp		\
 	features.hpp		\
 	flags_impl.hpp		\
 	grnxx.hpp		\
-	internal_clock.hpp	\
 	intrinsic.hpp		\
 	lock.hpp		\
 	logger.hpp		\
@@ -51,14 +43,11 @@ libgrnxx_include_HEADERS =	\
 	os.hpp			\
 	recycler.hpp		\
 	slice.hpp		\
-	stopwatch.hpp		\
 	storage.hpp		\
 	string.hpp		\
 	string_builder.hpp	\
 	string_format.hpp	\
-	system_clock.hpp	\
 	thread.hpp		\
-	time.hpp		\
 	version.h
 
 EXTRA_DIST = version.sh

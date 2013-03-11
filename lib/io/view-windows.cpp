@@ -21,8 +21,8 @@
 
 #include "error.hpp"
 #include "exception.hpp"
-#include "logger.hpp"
 #include "io/file.hpp"
+#include "logger.hpp"
 
 namespace grnxx {
 namespace io {

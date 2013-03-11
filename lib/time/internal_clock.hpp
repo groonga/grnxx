@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2012-2013  Brazil, Inc.
+  Copyright (C) 2013  Brazil, Inc.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -15,46 +15,29 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#ifndef GRNXX_STOPWATCH_HPP
-#define GRNXX_STOPWATCH_HPP
+#ifndef GRNXX_TIME_INTERNAL_CLOCK_HPP
+#define GRNXX_TIME_INTERNAL_CLOCK_HPP
 
 #include "basic.hpp"
-#include "duration.hpp"
+#include "time/time.hpp"
 
 namespace grnxx {
 
-// To measure the amount of time elapsed.
-class Stopwatch {
+class InternalClock {
  public:
-  // Disable the default constructor so that users don't forget to start a
-  // stopwatch.
-  Stopwatch() = delete;
-
-  // Construct a stopwatch, which is started if is_running == true.
-  explicit Stopwatch(bool is_running);
-
-  // Return true iff the stopwatch is running.
-  bool is_running() const {
-    return is_running_;
+  static Time now() {
+    if (now_ == Time::min()) {
+      return start();
+    }
+    return now_;
   }
 
-  // Start measurement.
-  void start();
-  // Stop measurement.
-  void stop();
-
-  // Clear the elapsed time.
-  void reset();
-
-  // Get the current elapsed time.
-  Duration elapsed() const;
-
  private:
-  Duration elapsed_;
-  int64_t start_count_;
-  bool is_running_;
+  static Time now_;
+
+  static Time start();
 };
 
 }  // namespace grnxx
 
-#endif  // GRNXX_STOPWATCH_HPP
+#endif  // GRNXX_TIME_INTERNAL_CLOCK_HPP

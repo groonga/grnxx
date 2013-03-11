@@ -19,8 +19,8 @@
 #define GRNXX_MUTEX_HPP
 
 #include "basic.hpp"
-#include "duration.hpp"
 #include "intrinsic.hpp"
+#include "time/duration.hpp"
 
 namespace grnxx {
 

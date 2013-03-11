@@ -19,7 +19,7 @@
 
 #include "logger.hpp"
 #include "string.hpp"
-#include "stopwatch.hpp"
+#include "time/stopwatch.hpp"
 
 void test_constructors() {
   assert(!grnxx::String());

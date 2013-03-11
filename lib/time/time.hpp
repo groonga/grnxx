@@ -15,12 +15,12 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#ifndef GRNXX_TIME_HPP
-#define GRNXX_TIME_HPP
+#ifndef GRNXX_TIME_TIME_HPP
+#define GRNXX_TIME_TIME_HPP
 
 #include "basic.hpp"
-#include "broken_down_time.hpp"
-#include "duration.hpp"
+#include "time/broken_down_time.hpp"
+#include "time/duration.hpp"
 
 namespace grnxx {
 
@@ -115,4 +115,4 @@ std::ostream &operator<<(std::ostream &stream, Time time);
 
 }  // namespace grnxx
 
-#endif  // GRNXX_TIME_HPP
+#endif  // GRNXX_TIME_TIME_HPP

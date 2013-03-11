@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2012  Brazil, Inc.
+  Copyright (C) 2012-2013  Brazil, Inc.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -15,26 +15,46 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#ifndef GRNXX_THREAD_HPP
-#define GRNXX_THREAD_HPP
+#ifndef GRNXX_TIME_STOPWATCH_HPP
+#define GRNXX_TIME_STOPWATCH_HPP
 
 #include "basic.hpp"
-#include "time/time.hpp"
+#include "time/duration.hpp"
 
 namespace grnxx {
 
-class Thread {
+// To measure the amount of time elapsed.
+class Stopwatch {
  public:
-  static void yield();
+  // Disable the default constructor so that users don't forget to start a
+  // stopwatch.
+  Stopwatch() = delete;
 
-  static void sleep_for(Duration duration);
-  static void sleep_until(Time time);
+  // Construct a stopwatch, which is started if is_running == true.
+  explicit Stopwatch(bool is_running);
+
+  // Return true iff the stopwatch is running.
+  bool is_running() const {
+    return is_running_;
+  }
+
+  // Start measurement.
+  void start();
+  // Stop measurement.
+  void stop();
+
+  // Clear the elapsed time.
+  void reset();
+
+  // Get the current elapsed time.
+  Duration elapsed() const;
 
  private:
-  Thread(const Thread &);
-  Thread &operator=(const Thread &);
+  Duration elapsed_;
+  int64_t start_count_;
+  bool is_running_;
 };
 
 }  // namespace grnxx
 
-#endif  // GRNXX_THREAD_HPP
+#endif  // GRNXX_TIME_STOPWATCH_HPP

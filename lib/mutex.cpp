@@ -17,8 +17,8 @@
 */
 #include "mutex.hpp"
 
-#include "stopwatch.hpp"
 #include "thread.hpp"
+#include "time/stopwatch.hpp"
 
 namespace grnxx {
 

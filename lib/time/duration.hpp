@@ -15,8 +15,8 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#ifndef GRNXX_DURATION_HPP
-#define GRNXX_DURATION_HPP
+#ifndef GRNXX_TIME_DURATION_HPP
+#define GRNXX_TIME_DURATION_HPP
 
 #include "basic.hpp"
 #include "string_builder.hpp"
@@ -172,4 +172,4 @@ std::ostream &operator<<(std::ostream &stream, Duration duration);
 
 }  // namespace grnxx
 
-#endif  // GRNXX_DURATION_HPP
+#endif  // GRNXX_TIME_DURATION_HPP
