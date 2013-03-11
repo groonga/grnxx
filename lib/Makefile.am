@@ -24,6 +24,7 @@ libgrnxx_la_SOURCES =		\
 	recycler.cpp		\
 	slice.cpp		\
 	stopwatch.cpp		\
+	storage.cpp		\
 	string.cpp		\
 	string_builder.cpp	\
 	system_clock.cpp	\
@@ -51,6 +52,7 @@ libgrnxx_include_HEADERS =	\
 	recycler.hpp		\
 	slice.hpp		\
 	stopwatch.hpp		\
+	storage.hpp		\
 	string.hpp		\
 	string_builder.hpp	\
 	string_format.hpp	\
