@@ -122,54 +122,7 @@ inline std::ostream &operator<<(std::ostream &stream, const MapKey &key) {
   return stream << key.slice();
 }
 
-class Map {
- public:
-  Map();
-  virtual ~Map();
-
-  // Create a map on "pool".
-  static Map *create(const MapOptions &options, io::Pool pool);
-  // Open a map.
-  static Map *open(io::Pool pool, uint32_t block_id);
-
-  // Remove blocks allocated to a map.
-  static void unlink(io::Pool pool, uint32_t block_id);
-
-  // Return the header block ID of "*this".
-  virtual uint32_t block_id() const = 0;
-
-  // Search the key associated with "key_id" and return true on success.
-  // Assign the found key to "*key" iff "key" != nullptr.
-  virtual bool search(int64_t key_id, MapKey *key = nullptr) = 0;
-  // Search "key" and return true on success.
-  // Assign the ID to "*key_id" iff "key_id" != nullptr.
-  virtual bool search(const Slice &key, int64_t *key_id = nullptr) = 0;
-
-  // Search a prefix key of "query" and return true on success.
-  // Assign the longest prefix key to "*key" iff "key" != nullptr.
-  // Assign the ID to "*key_id" iff "key_id" != nullptr.
-  virtual bool lcp_search(const Slice &query, int64_t *key_id = nullptr,
-                          MapKey *key = nullptr) = 0;
-
-  // Insert "key" and return true on success.
-  // Assign the ID to "*key_id" iff "key_id" != nullptr.
-  virtual bool insert(const Slice &key, int64_t *key_id = nullptr) = 0;
-
-  // Remove the key associated with "key_id" and return true on success.
-  virtual bool remove(int64_t key_id) = 0;
-  // Remove "key" and return true on success.
-  virtual bool remove(const Slice &key) = 0;
-
-  // Replace the key associated with "key_id" with "dest_key" and return true
-  // on success.
-  virtual bool update(int64_t key_id, const Slice &dest_key) = 0;
-  // Replace "src_key" with "dest_key" and return true on success.
-  // Assign the ID to "*key_id" iff "key_id" != nullptr.
-  virtual bool update(const Slice &src_key, const Slice &dest_key,
-                      int64_t *key_id = nullptr) = 0;
-
-  // TODO
-};
+class Map;
 
 class MapScan {
  public:
@@ -216,6 +169,59 @@ class MapScan {
   GetChar get_char_;
 
   MapScan();
+};
+
+class Map {
+ public:
+  Map();
+  virtual ~Map();
+
+  // Create a map on "pool".
+  static Map *create(const MapOptions &options, io::Pool pool);
+  // Open a map.
+  static Map *open(io::Pool pool, uint32_t block_id);
+
+  // Remove blocks allocated to a map.
+  static void unlink(io::Pool pool, uint32_t block_id);
+
+  // Return the header block ID of "*this".
+  virtual uint32_t block_id() const = 0;
+
+  // Search the key associated with "key_id" and return true on success.
+  // Assign the found key to "*key" iff "key" != nullptr.
+  virtual bool search(int64_t key_id, MapKey *key = nullptr) = 0;
+  // Search "key" and return true on success.
+  // Assign the ID to "*key_id" iff "key_id" != nullptr.
+  virtual bool search(const Slice &key, int64_t *key_id = nullptr) = 0;
+
+  // Search a prefix key of "query" and return true on success.
+  // Assign the longest prefix key to "*key" iff "key" != nullptr.
+  // Assign the ID to "*key_id" iff "key_id" != nullptr.
+  virtual bool lcp_search(const Slice &query, int64_t *key_id = nullptr,
+                          MapKey *key = nullptr) = 0;
+
+  // Insert "key" and return true on success.
+  // Assign the ID to "*key_id" iff "key_id" != nullptr.
+  virtual bool insert(const Slice &key, int64_t *key_id = nullptr) = 0;
+
+  // Remove the key associated with "key_id" and return true on success.
+  virtual bool remove(int64_t key_id) = 0;
+  // Remove "key" and return true on success.
+  virtual bool remove(const Slice &key) = 0;
+
+  // Replace the key associated with "key_id" with "dest_key" and return true
+  // on success.
+  virtual bool update(int64_t key_id, const Slice &dest_key) = 0;
+  // Replace "src_key" with "dest_key" and return true on success.
+  // Assign the ID to "*key_id" iff "key_id" != nullptr.
+  virtual bool update(const Slice &src_key, const Slice &dest_key,
+                      int64_t *key_id = nullptr) = 0;
+
+  // Start scan to find keys in "query" and return an object for the scan.
+  // The object must be deleted after the scan.
+  MapScan *scan(const Slice &query, MapScan::GetChar get_char = nullptr);
+
+  // TODO
 };
 
 }  // namespace grnxx

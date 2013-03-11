@@ -149,7 +149,7 @@ void test_scan() {
 
   grnxx::Slice query = "ABCDXEFG";
 
-  std::unique_ptr<grnxx::MapScan> scan(grnxx::MapScan::open(map.get(), query));
+  std::unique_ptr<grnxx::MapScan> scan(map->scan(query));
 
   assert(scan->next());
   assert(scan->offset() == 0);
@@ -167,30 +167,10 @@ void test_scan() {
 
   grnxx::MapScan::GetChar get_char =
       [](const grnxx::Slice &slice) -> grnxx::Slice {
-        return slice ? slice.prefix(1) : grnxx::Slice();
+        return slice ? slice.prefix(2) : grnxx::Slice();
       };
 
-  scan.reset(grnxx::MapScan::open(map.get(), query, get_char));
-
-  assert(scan->next());
-  assert(scan->offset() == 0);
-  assert(scan->size() == 4);
-  assert(scan->key_id() == 1);
-  assert(scan->key() == "ABCD");
-
-  assert(scan->next());
-  assert(scan->offset() == 5);
-  assert(scan->size() == 3);
-  assert(scan->key_id() == 5);
-  assert(scan->key() == "EFG");
-
-  assert(!scan->next());
-
-  get_char = [](const grnxx::Slice &slice) -> grnxx::Slice {
-    return slice ? slice.prefix(2) : grnxx::Slice();
-  };
-
-  scan.reset(grnxx::MapScan::open(map.get(), query, get_char));
+  scan.reset(map->scan(query, get_char));
 
   assert(scan->next());
   assert(scan->offset() == 0);

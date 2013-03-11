@@ -27,6 +27,47 @@ MapOptions::MapOptions() : type(MAP_UNKNOWN) {}
 
 MapHeader::MapHeader() : type(MAP_UNKNOWN) {}
 
+MapScan::~MapScan() {}
+
+MapScan *MapScan::open(Map *map, const Slice &query, GetChar get_char) {
+  std::unique_ptr<MapScan> scan(new (std::nothrow) MapScan);
+  if (!scan) {
+    GRNXX_ERROR() << "new grnxx::MapScan failed";
+    GRNXX_THROW();
+  }
+  scan->map_ = map;
+  scan->query_ = query;
+  scan->get_char_ = get_char;
+  return scan.release();
+}
+
+bool MapScan::next() {
+  offset_ += size_;
+  while (offset_ < query_.size()) {
+    const Slice query_left = query_.subslice(offset_, query_.size() - offset_);
+    if (map_->lcp_search(query_left, &key_id_, &key_)) {
+      size_ = key_.size();
+      return true;
+    }
+    // Move to the next character.
+    if (get_char_) {
+      offset_ += get_char_(query_left).size();
+    } else {
+      ++offset_;
+    }
+  }
+  size_ = 0;
+  return false;
+}
+
+MapScan::MapScan()
+  : map_(nullptr),
+    query_(),
+    offset_(0),
+    size_(0),
+    key_id_(-1),
+    key_() {}
+
 Map::Map() {}
 Map::~Map() {}
 
@@ -102,45 +143,8 @@ void Map::unlink(io::Pool pool, uint32_t block_id) {
   // TODO: Unknown type error!
 }
 
-MapScan::~MapScan() {}
-
-MapScan *MapScan::open(Map *map, const Slice &query, GetChar get_char) {
-  std::unique_ptr<MapScan> scan(new (std::nothrow) MapScan);
-  if (!scan) {
-    GRNXX_ERROR() << "new grnxx::MapScan failed";
-    GRNXX_THROW();
-  }
-  scan->map_ = map;
-  scan->query_ = query;
-  scan->get_char_ = get_char;
-  return scan.release();
+MapScan *Map::scan(const Slice &query, MapScan::GetChar get_char) {
+  return MapScan::open(this, query, get_char);
 }
-
-bool MapScan::next() {
-  offset_ += size_;
-  while (offset_ < query_.size()) {
-    const Slice query_left = query_.subslice(offset_, query_.size() - offset_);
-    if (map_->lcp_search(query_left, &key_id_, &key_)) {
-      size_ = key_.size();
-      return true;
-    }
-    // Move to the next character.
-    if (get_char_) {
-      offset_ += get_char_(query_left).size();
-    } else {
-      ++offset_;
-    }
-  }
-  size_ = 0;
-  return false;
-}
-
-MapScan::MapScan()
-  : map_(nullptr),
-    query_(),
-    offset_(0),
-    size_(0),
-    key_id_(-1),
-    key_() {}
 
 }  // namespace grnxx
