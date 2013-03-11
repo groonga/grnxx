@@ -16,10 +16,10 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 #include "map.hpp"
-#include "map/double_array.hpp"
 
 #include "exception.hpp"
 #include "logger.hpp"
+#include "map/double_array.hpp"
 
 namespace grnxx {
 
@@ -104,7 +104,7 @@ void Map::unlink(io::Pool pool, uint32_t block_id) {
 
 MapScan::~MapScan() {}
 
-MapScan *MapScan::open(Map *map, const Slice &query) {
+MapScan *MapScan::open(Map *map, const Slice &query, GetChar get_char) {
   std::unique_ptr<MapScan> scan(new (std::nothrow) MapScan);
   if (!scan) {
     GRNXX_ERROR() << "new grnxx::MapScan failed";
@@ -112,19 +112,24 @@ MapScan *MapScan::open(Map *map, const Slice &query) {
   }
   scan->map_ = map;
   scan->query_ = query;
+  scan->get_char_ = get_char;
   return scan.release();
 }
 
 bool MapScan::next() {
   offset_ += size_;
   while (offset_ < query_.size()) {
-    if (map_->lcp_search(query_.subslice(offset_, query_.size() - offset_),
-                         &key_id_, &key_)) {
+    const Slice query_left = query_.subslice(offset_, query_.size() - offset_);
+    if (map_->lcp_search(query_left, &key_id_, &key_)) {
       size_ = key_.size();
       return true;
     }
-    // TODO: Move to the next character, not the next byte.
-    ++offset_;
+    // Move to the next character.
+    if (get_char_) {
+      offset_ += get_char_(query_left).size();
+    } else {
+      ++offset_;
+    }
   }
   size_ = 0;
   return false;

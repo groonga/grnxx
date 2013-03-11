@@ -18,8 +18,6 @@
 #ifndef GRNXX_MAP_HPP
 #define GRNXX_MAP_HPP
 
-// Tentative version.
-
 #include "io/pool.hpp"
 #include "slice.hpp"
 
@@ -175,10 +173,13 @@ class Map {
 
 class MapScan {
  public:
+  typedef Slice (*GetChar)(const Slice &);
+
   ~MapScan();
 
   // Create an object to find keys in "query".
-  static MapScan *open(Map *map, const Slice &query);
+  static MapScan *open(Map *map, const Slice &query,
+                       GetChar get_char = nullptr);
 
   // Scan the rest of the query and return true iff a key is found (success).
   // On success, the found key is accessible via accessors.
@@ -212,6 +213,7 @@ class MapScan {
   uint64_t size_;
   int64_t key_id_;
   MapKey key_;
+  GetChar get_char_;
 
   MapScan();
 };
