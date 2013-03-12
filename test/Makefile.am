@@ -4,6 +4,7 @@ TESTS =					\
 	test_alpha_double_array		\
 	test_backtrace			\
 	test_broken_down_time		\
+	test_charset			\
 	test_db_blob_vector		\
 	test_db_vector			\
 	test_duration			\
@@ -44,6 +45,9 @@ test_backtrace_LDADD = ../lib/libgrnxx.la
 
 test_broken_down_time_SOURCES = test_broken_down_time.cpp
 test_broken_down_time_LDADD = ../lib/libgrnxx.la
+
+test_charset_SOURCES = test_charset.cpp
+test_charset_LDADD = ../lib/libgrnxx.la
 
 test_db_blob_vector_SOURCES = test_db_blob_vector.cpp
 test_db_blob_vector_LDADD = ../lib/libgrnxx.la
