@@ -21,6 +21,7 @@
 #include <unordered_set>
 #include <vector>
 
+#include "charset.hpp"
 #include "map.hpp"
 #include "logger.hpp"
 #include "time/time.hpp"
@@ -165,12 +166,7 @@ void test_scan() {
 
   assert(!scan->next());
 
-  grnxx::MapScan::GetChar get_char =
-      [](const grnxx::Slice &slice) -> grnxx::Slice {
-        return slice ? slice.prefix(2) : grnxx::Slice();
-      };
-
-  scan.reset(map->scan(query, get_char));
+  scan.reset(map->scan(query, grnxx::Charset::open(grnxx::CHARSET_UTF_8)));
 
   assert(scan->next());
   assert(scan->offset() == 0);
@@ -179,10 +175,50 @@ void test_scan() {
   assert(scan->key() == "ABCD");
 
   assert(scan->next());
-  assert(scan->offset() == 6);
-  assert(scan->size() == 2);
-  assert(scan->key_id() == 7);
-  assert(scan->key() == "FG");
+  assert(scan->offset() == 5);
+  assert(scan->size() == 3);
+  assert(scan->key_id() == 5);
+  assert(scan->key() == "EFG");
+
+  assert(!scan->next());
+
+  map.reset(grnxx::Map::create(options, pool));
+
+  assert(map->insert("今"));
+  assert(map->insert("今日"));
+  assert(map->insert("明日"));
+  assert(map->insert("良い"));
+  assert(map->insert("悪い"));
+  assert(map->insert("天気"));
+  assert(map->insert("です"));
+
+  query = "今日は良い天気ですね";
+
+  scan.reset(map->scan(query, grnxx::Charset::open(grnxx::CHARSET_UTF_8)));
+
+  assert(scan->next());
+  assert(scan->offset() == 0);
+  assert(scan->size() == 6);
+  assert(scan->key_id() == 1);
+  assert(scan->key() == "今日");
+
+  assert(scan->next());
+  assert(scan->offset() == 9);
+  assert(scan->size() == 6);
+  assert(scan->key_id() == 3);
+  assert(scan->key() == "良い");
+
+  assert(scan->next());
+  assert(scan->offset() == 15);
+  assert(scan->size() == 6);
+  assert(scan->key_id() == 5);
+  assert(scan->key() == "天気");
+
+  assert(scan->next());
+  assert(scan->offset() == 21);
+  assert(scan->size() == 6);
+  assert(scan->key_id() == 6);
+  assert(scan->key() == "です");
 
   assert(!scan->next());
 }

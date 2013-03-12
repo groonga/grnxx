@@ -23,6 +23,9 @@
 
 namespace grnxx {
 
+class Charset;
+class Map;
+
 enum MapType : int32_t {
   MAP_UNKNOWN      = 0,
   MAP_DOUBLE_ARRAY = 1   // grnxx::map::DoubleArray.
@@ -122,17 +125,13 @@ inline std::ostream &operator<<(std::ostream &stream, const MapKey &key) {
   return stream << key.slice();
 }
 
-class Map;
-
 class MapScan {
  public:
-  typedef Slice (*GetChar)(const Slice &);
-
   ~MapScan();
 
   // Create an object to find keys in "query".
   static MapScan *open(Map *map, const Slice &query,
-                       GetChar get_char = nullptr);
+                       const Charset *charset = nullptr);
 
   // Scan the rest of the query and return true iff a key is found (success).
   // On success, the found key is accessible via accessors.
@@ -166,7 +165,7 @@ class MapScan {
   uint64_t size_;
   int64_t key_id_;
   MapKey key_;
-  GetChar get_char_;
+  const Charset *charset_;
 
   MapScan();
 };
@@ -219,7 +218,7 @@ class Map {
 
   // Start scan to find keys in "query" and return an object for the scan.
   // The object must be deleted after the scan.
-  MapScan *scan(const Slice &query, MapScan::GetChar get_char = nullptr);
+  MapScan *scan(const Slice &query, const Charset *charset = nullptr);
 
   // TODO
 };

@@ -17,6 +17,7 @@
 */
 #include "map.hpp"
 
+#include "charset.hpp"
 #include "exception.hpp"
 #include "logger.hpp"
 #include "map/double_array.hpp"
@@ -29,7 +30,7 @@ MapHeader::MapHeader() : type(MAP_UNKNOWN) {}
 
 MapScan::~MapScan() {}
 
-MapScan *MapScan::open(Map *map, const Slice &query, GetChar get_char) {
+MapScan *MapScan::open(Map *map, const Slice &query, const Charset *charset) {
   std::unique_ptr<MapScan> scan(new (std::nothrow) MapScan);
   if (!scan) {
     GRNXX_ERROR() << "new grnxx::MapScan failed";
@@ -37,7 +38,7 @@ MapScan *MapScan::open(Map *map, const Slice &query, GetChar get_char) {
   }
   scan->map_ = map;
   scan->query_ = query;
-  scan->get_char_ = get_char;
+  scan->charset_ = charset;
   return scan.release();
 }
 
@@ -50,8 +51,8 @@ bool MapScan::next() {
       return true;
     }
     // Move to the next character.
-    if (get_char_) {
-      offset_ += get_char_(query_left).size();
+    if (charset_) {
+      offset_ += charset_->get_char(query_left).size();
     } else {
       ++offset_;
     }
@@ -143,8 +144,8 @@ void Map::unlink(io::Pool pool, uint32_t block_id) {
   // TODO: Unknown type error!
 }
 
-MapScan *Map::scan(const Slice &query, MapScan::GetChar get_char) {
-  return MapScan::open(this, query, get_char);
+MapScan *Map::scan(const Slice &query, const Charset *charset) {
+  return MapScan::open(this, query, charset);
 }
 
 }  // namespace grnxx
