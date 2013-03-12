@@ -60,6 +60,7 @@ AC_CHECK_FUNC([nanosleep],
 AC_CONFIG_FILES([Makefile
                  lib/Makefile
                  lib/alpha/Makefile
+                 lib/charset/Makefile
                  lib/db/Makefile
                  lib/io/Makefile
                  lib/map/Makefile
