@@ -125,7 +125,6 @@ inline std::ostream &operator<<(std::ostream &stream, const MapKey &key) {
   return stream << key.slice();
 }
 
-// TODO
 class MapCursor {
  public:
   MapCursor();
@@ -151,6 +150,24 @@ class MapCursor {
   int64_t key_id_;
   MapKey key_;
 };
+
+typedef FlagsImpl<MapCursor> MapCursorFlags;
+
+// Get keys in ascending order.
+constexpr MapCursorFlags MAP_CURSOR_ASCENDING    =
+    MapCursorFlags::define(0x01);
+// Get keys in descending order.
+constexpr MapCursorFlags MAP_CURSOR_DESCENDING   =
+    MapCursorFlags::define(0x02);
+// Get keys except the begin.
+constexpr MapCursorFlags MAP_CURSOR_EXCEPT_BEGIN =
+    MapCursorFlags::define(0x10);
+// Get keys except the end.
+constexpr MapCursorFlags MAP_CURSOR_EXCEPT_END   =
+    MapCursorFlags::define(0x20);
+// Get keys except the exact match.
+constexpr MapCursorFlags MAP_CURSOR_EXCEPT_QUERY =
+    MapCursorFlags::define(0x40);
 
 class MapScan {
  public:
@@ -247,7 +264,28 @@ class Map {
   // The object must be deleted after the scan.
   MapScan *open_scan(const Slice &query, const Charset *charset = nullptr);
 
-  // TODO
+  // Find keys in an ID range ["begin", "end"] and return the keys in ID order.
+  // "flags" accepts MAP_CURSOR_ASCENDING, MAP_CURSOR_DESCENDING,
+  // MAP_CURSOR_EXCEPT_BEGIN, and MAP_CURSOR_EXCEPT_END.
+  virtual MapCursor *open_id_cursor(MapCursorFlags flags,
+                                    int64_t begin, int64_t end,
+                                    int64_t offset, int64_t limit) = 0;
+  // Find keys in a range ["begin", "end"] and return the keys in lexicographic
+  // order. "flags" accepts  MAP_CURSOR_ASCENDING, MAP_CURSOR_DESCENDING,
+  // MAP_CURSOR_EXCEPT_BEGIN, and MAP_CURSOR_EXCEPT_END.
+  virtual MapCursor *open_key_cursor(MapCursorFlags flags,
+                                     const Slice &begin, const Slice &end,
+                                     int64_t offset, int64_t limit) = 0;
+  // Find keys in prefixes of "query". "flags" accepts MAP_CURSOR_ASCENDING,
+  // MAP_CURSOR_DESCENDING, and MAP_CURSOR_EXCEPT_QUERY.
+  virtual MapCursor *open_prefix_cursor(MapCursorFlags flags,
+                                        const Slice &query,
+                                        int64_t offset, int64_t limit) = 0;
+  // Find keys starting with "query". "flags" accepts MAP_CURSOR_ASCENDING,
+  // MAP_CURSOR_DESCENDING, and MAP_CURSOR_EXCEPT_QUERY.
+  virtual MapCursor *open_predictive_cursor(MapCursorFlags flags,
+                                            const Slice &query,
+                                            int64_t offset, int64_t limit) = 0;
 };
 
 }  // namespace grnxx

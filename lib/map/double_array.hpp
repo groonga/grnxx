@@ -58,6 +58,16 @@ class DoubleArray : public Map {
   bool update(const Slice &src_key, const Slice &dest_key,
               int64_t *key_id = nullptr);
 
+  MapCursor *open_id_cursor(MapCursorFlags flags, int64_t begin, int64_t end,
+                            int64_t offset, int64_t limit);
+  MapCursor *open_key_cursor(MapCursorFlags flags,
+                             const Slice &begin, const Slice &end,
+                             int64_t offset, int64_t limit);
+  MapCursor *open_prefix_cursor(MapCursorFlags flags, const Slice &query,
+                                int64_t offset, int64_t limit);
+  MapCursor *open_predictive_cursor(MapCursorFlags flags, const Slice &query,
+                                    int64_t offset, int64_t limit);
+
  private:
   io::Pool pool_;
   const io::BlockInfo *block_info_;

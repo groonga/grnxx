@@ -154,6 +154,34 @@ bool DoubleArray::update(const Slice &src_key, const Slice &dest_key,
   }
 }
 
+MapCursor *DoubleArray::open_id_cursor(MapCursorFlags flags,
+                                       int64_t begin, int64_t end,
+                                       int64_t offset, int64_t limit) {
+  // TODO
+  return nullptr;
+}
+
+MapCursor *DoubleArray::open_key_cursor(MapCursorFlags flags,
+                                        const Slice &begin, const Slice &end,
+                                        int64_t offset, int64_t limit) {
+  // TODO
+  return nullptr;
+}
+
+MapCursor *DoubleArray::open_prefix_cursor(MapCursorFlags flags,
+                                           const Slice &query,
+                                           int64_t offset, int64_t limit) {
+  // TODO
+  return nullptr;
+}
+
+MapCursor *DoubleArray::open_predictive_cursor(MapCursorFlags flags,
+                                               const Slice &query,
+                                               int64_t offset, int64_t limit) {
+  // TODO
+  return nullptr;
+}
+
 DoubleArray::DoubleArray()
   : pool_(),
     block_info_(nullptr),
