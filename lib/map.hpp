@@ -245,7 +245,7 @@ class Map {
 
   // Start scan to find keys in "query" and return an object for the scan.
   // The object must be deleted after the scan.
-  MapScan *scan(const Slice &query, const Charset *charset = nullptr);
+  MapScan *open_scan(const Slice &query, const Charset *charset = nullptr);
 
   // TODO
 };

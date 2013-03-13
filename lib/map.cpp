@@ -147,7 +147,7 @@ void Map::unlink(io::Pool pool, uint32_t block_id) {
   // TODO: Unknown type error!
 }
 
-MapScan *Map::scan(const Slice &query, const Charset *charset) {
+MapScan *Map::open_scan(const Slice &query, const Charset *charset) {
   return MapScan::open(this, query, charset);
 }
 

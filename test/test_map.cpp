@@ -150,7 +150,7 @@ void test_scan() {
 
   grnxx::Slice query = "ABCDXEFG";
 
-  std::unique_ptr<grnxx::MapScan> scan(map->scan(query));
+  std::unique_ptr<grnxx::MapScan> scan(map->open_scan(query));
 
   assert(scan->next());
   assert(scan->offset() == 0);
@@ -166,7 +166,8 @@ void test_scan() {
 
   assert(!scan->next());
 
-  scan.reset(map->scan(query, grnxx::Charset::open(grnxx::CHARSET_UTF_8)));
+  scan.reset(map->open_scan(
+      query, grnxx::Charset::open(grnxx::CHARSET_UTF_8)));
 
   assert(scan->next());
   assert(scan->offset() == 0);
@@ -194,7 +195,8 @@ void test_scan() {
 
   query = "今日は良い天気ですね";
 
-  scan.reset(map->scan(query, grnxx::Charset::open(grnxx::CHARSET_UTF_8)));
+  scan.reset(map->open_scan(
+      query, grnxx::Charset::open(grnxx::CHARSET_UTF_8)));
 
   assert(scan->next());
   assert(scan->offset() == 0);
