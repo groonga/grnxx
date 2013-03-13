@@ -84,7 +84,7 @@ constexpr PoolFlags POOL_HUGE_TLB       = PoolFlags::define(0x0080);
 // Open an existing pool.
 constexpr PoolFlags POOL_OPEN           = PoolFlags::define(0x0100);
 // Create a pool, if it does not exist, or open an existing pool.
-constexpr PoolFlags POOL_CREATE_OR_OPEN = PoolFlags::define(0x0040);
+constexpr PoolFlags POOL_CREATE_OR_OPEN = PoolFlags::define(0x0140);
 // Create a temporary pool.
 constexpr PoolFlags POOL_TEMPORARY      = PoolFlags::define(0x0200);
 
