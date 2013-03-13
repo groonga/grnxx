@@ -125,6 +125,33 @@ inline std::ostream &operator<<(std::ostream &stream, const MapKey &key) {
   return stream << key.slice();
 }
 
+// TODO
+class MapCursor {
+ public:
+  MapCursor();
+  virtual ~MapCursor();
+
+  // Move the cursor to the next key and return true on success.
+  virtual bool next() = 0;
+
+  // Remove the current key and return true on success.
+  virtual bool remove_key() = 0;
+
+  // Return the ID of the current key.
+  int64_t key_id() const {
+    return key_id_;
+  }
+  // Return a reference to the current key.
+  const MapKey &key() const {
+    return key_;
+  }
+
+ protected:
+  Map *map_;
+  int64_t key_id_;
+  MapKey key_;
+};
+
 class MapScan {
  public:
   ~MapScan();

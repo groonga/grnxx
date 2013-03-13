@@ -28,6 +28,9 @@ MapOptions::MapOptions() : type(MAP_UNKNOWN) {}
 
 MapHeader::MapHeader() : type(MAP_UNKNOWN) {}
 
+MapCursor::MapCursor() : map_(nullptr), key_id_(-1), key_() {}
+MapCursor::~MapCursor() {}
+
 MapScan::~MapScan() {}
 
 MapScan *MapScan::open(Map *map, const Slice &query, const Charset *charset) {
