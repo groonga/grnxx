@@ -136,6 +136,8 @@ void create_keys(std::size_t num_keys,
                  std::unordered_set<std::string> *both_keys,
                  std::vector<grnxx::Slice> *true_keys,
                  std::vector<grnxx::Slice> *false_keys) {
+  std::mt19937 random;
+
   both_keys->clear();
   true_keys->resize(num_keys);
   false_keys->resize(num_keys);
@@ -162,8 +164,6 @@ void test_insert() {
   constexpr std::size_t NUM_KEYS = 1 << 12;
   constexpr std::size_t MIN_SIZE = 1;
   constexpr std::size_t MAX_SIZE = 10;
-
-  std::mt19937 random;
 
   grnxx::io::Pool pool;
   pool.open(grnxx::io::POOL_TEMPORARY);
@@ -203,8 +203,6 @@ void test_remove() {
   constexpr std::size_t NUM_KEYS = 1 << 12;
   constexpr std::size_t MIN_SIZE = 1;
   constexpr std::size_t MAX_SIZE = 10;
-
-  std::mt19937 random;
 
   grnxx::io::Pool pool;
   pool.open(grnxx::io::POOL_TEMPORARY);
@@ -260,8 +258,6 @@ void test_update() {
   constexpr std::size_t MIN_SIZE = 1;
   constexpr std::size_t MAX_SIZE = 10;
 
-  std::mt19937 random;
-
   grnxx::io::Pool pool;
   pool.open(grnxx::io::POOL_TEMPORARY);
 
@@ -307,8 +303,6 @@ void test_defrag() {
   constexpr std::size_t MIN_SIZE = 1;
   constexpr std::size_t MAX_SIZE = 10;
 
-  std::mt19937 random;
-
   grnxx::io::Pool pool;
   pool.open(grnxx::io::POOL_TEMPORARY);
 
@@ -353,8 +347,6 @@ void test_id_cursor() {
   constexpr std::size_t NUM_KEYS = 1 << 12;
   constexpr std::size_t MIN_SIZE = 1;
   constexpr std::size_t MAX_SIZE = 10;
-
-  std::mt19937 random;
 
   grnxx::io::Pool pool;
   pool.open(grnxx::io::POOL_TEMPORARY);
@@ -424,6 +416,85 @@ void test_id_cursor() {
   assert(!cursor->next());
 }
 
+void test_prefix_cursor() {
+  grnxx::io::Pool pool;
+  pool.open(grnxx::io::POOL_TEMPORARY);
+
+  grnxx::map::da::TrieOptions options;
+  std::unique_ptr<grnxx::map::da::basic::Trie> trie(
+      grnxx::map::da::basic::Trie::create(options, pool));
+
+  std::vector<grnxx::Slice> keys;
+  keys.push_back("0");
+  keys.push_back("01");
+  keys.push_back("012");
+  keys.push_back("0123");
+  keys.push_back("01234");
+
+  for (std::size_t i = 0; i < keys.size(); ++i) {
+    std::int64_t key_id;
+    assert(trie->insert(keys[i], &key_id));
+    assert(key_id == static_cast<std::int64_t>(i));
+  }
+
+  std::unique_ptr<grnxx::MapCursor> cursor(
+      trie->open_prefix_cursor(grnxx::MapCursorFlags(), 0, "01234", 0, -1));
+  for (std::size_t i = 0; i < keys.size(); ++i) {
+    assert(cursor->next());
+    assert(cursor->key_id() == static_cast<std::int64_t>(i));
+    assert(cursor->key() == keys[i]);
+  }
+  assert(!cursor->next());
+
+  cursor.reset(trie->open_prefix_cursor(
+      grnxx::MapCursorFlags(), 0, "01", 0, -1));
+  assert(cursor->next());
+  assert(cursor->key_id() == 0);
+  assert(cursor->next());
+  assert(cursor->key_id() == 1);
+  assert(!cursor->next());
+
+  cursor.reset(trie->open_prefix_cursor(
+      grnxx::MapCursorFlags(), 0, "01234", 3, -1));
+  assert(cursor->next());
+  assert(cursor->key_id() == 3);
+  assert(cursor->next());
+  assert(cursor->key_id() == 4);
+  assert(!cursor->next());
+
+  cursor.reset(trie->open_prefix_cursor(
+      grnxx::MapCursorFlags(), 0, "01234", 1, 2));
+  assert(cursor->next());
+  assert(cursor->key_id() == 1);
+  assert(cursor->next());
+  assert(cursor->key_id() == 2);
+  assert(!cursor->next());
+
+  cursor.reset(trie->open_prefix_cursor(
+      grnxx::MAP_CURSOR_DESCENDING, 0, "01234", 1, 2));
+  assert(cursor->next());
+  assert(cursor->key_id() == 3);
+  assert(cursor->next());
+  assert(cursor->key_id() == 2);
+  assert(!cursor->next());
+
+  cursor.reset(trie->open_prefix_cursor(
+      grnxx::MAP_CURSOR_EXCEPT_MIN, 1, "01234", 0, 2));
+  assert(cursor->next());
+  assert(cursor->key_id() == 1);
+  assert(cursor->next());
+  assert(cursor->key_id() == 2);
+  assert(!cursor->next());
+
+  cursor.reset(trie->open_prefix_cursor(
+      grnxx::MAP_CURSOR_EXCEPT_MAX, 0, "01234", 2, -1));
+  assert(cursor->next());
+  assert(cursor->key_id() == 2);
+  assert(cursor->next());
+  assert(cursor->key_id() == 3);
+  assert(!cursor->next());
+}
+
 int main() {
   grnxx::Logger::set_flags(grnxx::LOGGER_WITH_ALL |
                            grnxx::LOGGER_ENABLE_COUT);
@@ -439,6 +510,7 @@ int main() {
   test_defrag();
 
   test_id_cursor();
+  test_prefix_cursor();
 
   return 0;
 }
