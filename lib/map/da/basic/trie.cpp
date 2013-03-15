@@ -1,8 +1,9 @@
-#include "map/da/basic_trie.hpp"
+#include "map/da/basic/trie.hpp"
 
 #include "lock.hpp"
 #include "logger.hpp"
-#include "map/da/large_trie.hpp"
+#include "map/da/basic/id_cursor.hpp"
+#include "map/da/large/trie.hpp"
 
 namespace grnxx {
 namespace map {
@@ -335,6 +336,34 @@ bool Trie::update(const Slice &src_key, const Slice &dest_key,
     return true;
   }
   return false;
+}
+
+MapCursor *Trie::open_id_cursor(MapCursorFlags flags,
+                                int64_t min, int64_t max,
+                                int64_t offset, int64_t limit) {
+  // TODO
+  return nullptr;
+}
+
+MapCursor *Trie::open_key_cursor(MapCursorFlags flags,
+                                 const Slice &min, const Slice &max,
+                                 int64_t offset, int64_t limit) {
+  // TODO
+  return nullptr;
+}
+
+MapCursor *Trie::open_prefix_cursor(MapCursorFlags flags,
+                                    const Slice &max,
+                                    int64_t offset, int64_t limit) {
+  // TODO
+  return nullptr;
+}
+
+MapCursor *Trie::open_predictive_cursor(MapCursorFlags flags,
+                                        const Slice &min,
+                                        int64_t offset, int64_t limit) {
+  // TODO
+  return nullptr;
 }
 
 Trie::Trie()

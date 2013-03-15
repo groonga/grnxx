@@ -82,6 +82,19 @@ class Trie {
   virtual bool update(int64_t key_id, const Slice &dest_key) = 0;
   virtual bool update(const Slice &src_key, const Slice &dest_key,
                       int64_t *key_id = nullptr) = 0;
+
+  virtual MapCursor *open_id_cursor(MapCursorFlags flags,
+                                    int64_t min, int64_t max,
+                                    int64_t offset, int64_t limit) = 0;
+  virtual MapCursor *open_key_cursor(MapCursorFlags flags,
+                                     const Slice &min, const Slice &max,
+                                     int64_t offset, int64_t limit) = 0;
+  virtual MapCursor *open_prefix_cursor(MapCursorFlags flags,
+                                        const Slice &max,
+                                        int64_t offset, int64_t limit) = 0;
+  virtual MapCursor *open_predictive_cursor(MapCursorFlags flags,
+                                            const Slice &min,
+                                            int64_t offset, int64_t limit) = 0;
 };
 
 }  // namespace da

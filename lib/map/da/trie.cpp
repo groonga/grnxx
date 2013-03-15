@@ -1,8 +1,8 @@
 #include "map/da/trie.hpp"
 
 #include "logger.hpp"
-#include "map/da/basic_trie.hpp"
-#include "map/da/large_trie.hpp"
+#include "map/da/basic/trie.hpp"
+#include "map/da/large/trie.hpp"
 
 namespace grnxx {
 namespace map {

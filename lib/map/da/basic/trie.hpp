@@ -86,6 +86,8 @@ constexpr uint32_t MAX_CHUNK_LEVEL   = 5;
 // the linked list is empty and there exists no leader.
 constexpr uint32_t INVALID_LEADER    = std::numeric_limits<uint32_t>::max();
 
+class IDCursor;
+
 struct Header {
   TrieType type;
   uint32_t nodes_block_id;
@@ -418,6 +420,7 @@ class Key {
 
 class Trie : public da::Trie {
   friend class large::Trie;
+  friend class IDCursor;
 
  public:
   ~Trie();
@@ -445,6 +448,16 @@ class Trie : public da::Trie {
   bool update(int64_t key_id, const Slice &dest_key);
   bool update(const Slice &src_key, const Slice &dest_key,
               int64_t *key_id = nullptr);
+
+  MapCursor *open_id_cursor(MapCursorFlags flags, int64_t min, int64_t max,
+                            int64_t offset, int64_t limit);
+  MapCursor *open_key_cursor(MapCursorFlags flags,
+                             const Slice &min, const Slice &max,
+                             int64_t offset, int64_t limit);
+  MapCursor *open_prefix_cursor(MapCursorFlags flags, const Slice &max,
+                                int64_t offset, int64_t limit);
+  MapCursor *open_predictive_cursor(MapCursorFlags flags, const Slice &min,
+                                    int64_t offset, int64_t limit);
 
  private:
   io::Pool pool_;

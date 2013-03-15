@@ -155,31 +155,47 @@ bool DoubleArray::update(const Slice &src_key, const Slice &dest_key,
 }
 
 MapCursor *DoubleArray::open_id_cursor(MapCursorFlags flags,
-                                       int64_t begin, int64_t end,
+                                       int64_t min, int64_t max,
                                        int64_t offset, int64_t limit) {
-  // TODO
-  return nullptr;
+  open_trie_if_needed();
+  if (!front_) {
+    // TODO
+    return nullptr;
+  }
+  return front_->open_id_cursor(flags, min, max, offset, limit);
 }
 
 MapCursor *DoubleArray::open_key_cursor(MapCursorFlags flags,
-                                        const Slice &begin, const Slice &end,
+                                        const Slice &min, const Slice &max,
                                         int64_t offset, int64_t limit) {
-  // TODO
-  return nullptr;
+  open_trie_if_needed();
+  if (!front_) {
+    // TODO
+    return nullptr;
+  }
+  return front_->open_key_cursor(flags, min, max, offset, limit);
 }
 
 MapCursor *DoubleArray::open_prefix_cursor(MapCursorFlags flags,
-                                           const Slice &query,
+                                           const Slice &max,
                                            int64_t offset, int64_t limit) {
-  // TODO
-  return nullptr;
+  open_trie_if_needed();
+  if (!front_) {
+    // TODO
+    return nullptr;
+  }
+  return front_->open_prefix_cursor(flags, max, offset, limit);
 }
 
 MapCursor *DoubleArray::open_predictive_cursor(MapCursorFlags flags,
-                                               const Slice &query,
+                                               const Slice &min,
                                                int64_t offset, int64_t limit) {
-  // TODO
-  return nullptr;
+  open_trie_if_needed();
+  if (!front_) {
+    // TODO
+    return nullptr;
+  }
+  return front_->open_predictive_cursor(flags, min, offset, limit);
 }
 
 DoubleArray::DoubleArray()

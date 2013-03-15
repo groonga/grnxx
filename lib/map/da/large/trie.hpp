@@ -18,7 +18,7 @@
 #ifndef GRNXX_MAP_DA_LARGE_TRIE_HPP
 #define GRNXX_MAP_DA_LARGE_TRIE_HPP
 
-#include "map/da/basic_trie.hpp"
+#include "map/da/basic/trie.hpp"
 
 namespace grnxx {
 namespace map {
@@ -440,6 +440,16 @@ class Trie : public da::Trie {
   bool update(int64_t key_id, const Slice &dest_key);
   bool update(const Slice &src_key, const Slice &dest_key,
               int64_t *key_id = nullptr);
+
+  MapCursor *open_id_cursor(MapCursorFlags flags, int64_t min, int64_t max,
+                            int64_t offset, int64_t limit);
+  MapCursor *open_key_cursor(MapCursorFlags flags,
+                             const Slice &min, const Slice &max,
+                             int64_t offset, int64_t limit);
+  MapCursor *open_prefix_cursor(MapCursorFlags flags, const Slice &max,
+                                int64_t offset, int64_t limit);
+  MapCursor *open_predictive_cursor(MapCursorFlags flags, const Slice &min,
+                                    int64_t offset, int64_t limit);
 
  private:
   io::Pool pool_;

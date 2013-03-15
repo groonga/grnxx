@@ -133,9 +133,6 @@ class MapCursor {
   // Move the cursor to the next key and return true on success.
   virtual bool next() = 0;
 
-  // Remove the current key and return true on success.
-  virtual bool remove_key() = 0;
-
   // Return the ID of the current key.
   int64_t key_id() const {
     return key_id_;
@@ -146,7 +143,6 @@ class MapCursor {
   }
 
  protected:
-  Map *map_;
   int64_t key_id_;
   MapKey key_;
 };
@@ -154,20 +150,17 @@ class MapCursor {
 typedef FlagsImpl<MapCursor> MapCursorFlags;
 
 // Get keys in ascending order.
-constexpr MapCursorFlags MAP_CURSOR_ASCENDING    =
+constexpr MapCursorFlags MAP_CURSOR_ASCENDING  =
     MapCursorFlags::define(0x01);
 // Get keys in descending order.
-constexpr MapCursorFlags MAP_CURSOR_DESCENDING   =
+constexpr MapCursorFlags MAP_CURSOR_DESCENDING =
     MapCursorFlags::define(0x02);
-// Get keys except the begin.
-constexpr MapCursorFlags MAP_CURSOR_EXCEPT_BEGIN =
+// Get keys except "min".
+constexpr MapCursorFlags MAP_CURSOR_EXCEPT_MIN =
     MapCursorFlags::define(0x10);
-// Get keys except the end.
-constexpr MapCursorFlags MAP_CURSOR_EXCEPT_END   =
+// Get keys except "max".
+constexpr MapCursorFlags MAP_CURSOR_EXCEPT_MAX =
     MapCursorFlags::define(0x20);
-// Get keys except the exact match.
-constexpr MapCursorFlags MAP_CURSOR_EXCEPT_QUERY =
-    MapCursorFlags::define(0x40);
 
 class MapScan {
  public:
@@ -264,27 +257,27 @@ class Map {
   // The object must be deleted after the scan.
   MapScan *open_scan(const Slice &query, const Charset *charset = nullptr);
 
-  // Find keys in an ID range ["begin", "end"] and return the keys in ID order.
+  // Find keys in an ID range ["min", "max"] and return the keys in ID order.
   // "flags" accepts MAP_CURSOR_ASCENDING, MAP_CURSOR_DESCENDING,
-  // MAP_CURSOR_EXCEPT_BEGIN, and MAP_CURSOR_EXCEPT_END.
+  // MAP_CURSOR_EXCEPT_MIN, and MAP_CURSOR_EXCEPT_MAX.
   virtual MapCursor *open_id_cursor(MapCursorFlags flags,
-                                    int64_t begin, int64_t end,
+                                    int64_t min, int64_t max,
                                     int64_t offset, int64_t limit) = 0;
-  // Find keys in a range ["begin", "end"] and return the keys in lexicographic
+  // Find keys in a range ["min", "max"] and return the keys in lexicographic
   // order. "flags" accepts  MAP_CURSOR_ASCENDING, MAP_CURSOR_DESCENDING,
-  // MAP_CURSOR_EXCEPT_BEGIN, and MAP_CURSOR_EXCEPT_END.
+  // MAP_CURSOR_EXCEPT_MIN, and MAP_CURSOR_EXCEPT_MAX.
   virtual MapCursor *open_key_cursor(MapCursorFlags flags,
-                                     const Slice &begin, const Slice &end,
+                                     const Slice &min, const Slice &max,
                                      int64_t offset, int64_t limit) = 0;
   // Find keys in prefixes of "query". "flags" accepts MAP_CURSOR_ASCENDING,
-  // MAP_CURSOR_DESCENDING, and MAP_CURSOR_EXCEPT_QUERY.
+  // MAP_CURSOR_DESCENDING, and MAP_CURSOR_EXCEPT_MAX.
   virtual MapCursor *open_prefix_cursor(MapCursorFlags flags,
-                                        const Slice &query,
+                                        const Slice &max,
                                         int64_t offset, int64_t limit) = 0;
   // Find keys starting with "query". "flags" accepts MAP_CURSOR_ASCENDING,
-  // MAP_CURSOR_DESCENDING, and MAP_CURSOR_EXCEPT_QUERY.
+  // MAP_CURSOR_DESCENDING, and MAP_CURSOR_EXCEPT_MIN.
   virtual MapCursor *open_predictive_cursor(MapCursorFlags flags,
-                                            const Slice &query,
+                                            const Slice &min,
                                             int64_t offset, int64_t limit) = 0;
 };
 

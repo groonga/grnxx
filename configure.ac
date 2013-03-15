@@ -65,6 +65,8 @@ AC_CONFIG_FILES([Makefile
                  lib/io/Makefile
                  lib/map/Makefile
                  lib/map/da/Makefile
+                 lib/map/da/basic/Makefile
+                 lib/map/da/large/Makefile
                  lib/time/Makefile
                  src/Makefile
                  test/Makefile])

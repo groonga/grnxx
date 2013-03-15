@@ -28,7 +28,7 @@ MapOptions::MapOptions() : type(MAP_UNKNOWN) {}
 
 MapHeader::MapHeader() : type(MAP_UNKNOWN) {}
 
-MapCursor::MapCursor() : map_(nullptr), key_id_(-1), key_() {}
+MapCursor::MapCursor() : key_id_(-1), key_() {}
 MapCursor::~MapCursor() {}
 
 MapScan::~MapScan() {}
