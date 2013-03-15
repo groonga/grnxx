@@ -15,7 +15,7 @@ IDCursor *IDCursor::open(Trie *trie, MapCursorFlags flags,
                          int64_t offset, int64_t limit) {
   std::unique_ptr<IDCursor> cursor(new (std::nothrow) IDCursor);
   if (!cursor) {
-    GRNXX_ERROR() << "new grnxx::map::da::large::IDCursor failed";
+    GRNXX_ERROR() << "new grnxx::map::da::basic::IDCursor failed";
     GRNXX_THROW();
   }
   cursor->open_cursor(trie, flags, min, max, offset, limit);
