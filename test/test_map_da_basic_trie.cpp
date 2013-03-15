@@ -21,7 +21,8 @@
 #include <unordered_set>
 #include <vector>
 
-#include "map/da/basic_trie.hpp"
+#include "map/da/basic/id_cursor.hpp"
+#include "map/da/basic/trie.hpp"
 #include "logger.hpp"
 #include "time/time.hpp"
 
@@ -348,6 +349,82 @@ void test_defrag() {
   }
 }
 
+void test_id_cursor() {
+  constexpr std::size_t NUM_KEYS = 1 << 12;
+  constexpr std::size_t MIN_SIZE = 1;
+  constexpr std::size_t MAX_SIZE = 10;
+
+  std::mt19937 random;
+
+  grnxx::io::Pool pool;
+  pool.open(grnxx::io::POOL_TEMPORARY);
+
+  grnxx::map::da::TrieOptions options;
+  std::unique_ptr<grnxx::map::da::basic::Trie> trie(
+      grnxx::map::da::basic::Trie::create(options, pool));
+
+  std::unordered_set<std::string> both_keys;
+  std::vector<grnxx::Slice> true_keys;
+  std::vector<grnxx::Slice> false_keys;
+  create_keys(NUM_KEYS, MIN_SIZE, MAX_SIZE,
+              &both_keys, &true_keys, &false_keys);
+
+  for (std::size_t i = 0; i < NUM_KEYS; ++i) {
+    std::int64_t key_id;
+    assert(trie->insert(true_keys[i], &key_id));
+    assert(key_id == static_cast<std::int64_t>(i));
+  }
+
+  std::unique_ptr<grnxx::MapCursor> cursor(
+      grnxx::map::da::basic::IDCursor::open(
+          trie.get(), grnxx::MapCursorFlags(), 0, -1, 0, -1));
+  for (std::size_t i = 0; i < NUM_KEYS; ++i) {
+    assert(cursor->next());
+    assert(cursor->key_id() == static_cast<std::int64_t>(i));
+    assert(cursor->key() == true_keys[i]);
+  }
+  assert(!cursor->next());
+
+  cursor.reset(grnxx::map::da::basic::IDCursor::open(
+      trie.get(), grnxx::MapCursorFlags(), 0, -1, NUM_KEYS / 2, -1));
+  for (std::size_t i = NUM_KEYS / 2; i < NUM_KEYS; ++i) {
+    assert(cursor->next());
+    assert(cursor->key_id() == static_cast<std::int64_t>(i));
+    assert(cursor->key() == true_keys[i]);
+  }
+  assert(!cursor->next());
+
+  cursor.reset(grnxx::map::da::basic::IDCursor::open(
+      trie.get(), grnxx::MapCursorFlags(), 0, -1, 0, NUM_KEYS / 2));
+  for (std::size_t i = 0; i < NUM_KEYS / 2; ++i) {
+    assert(cursor->next());
+    assert(cursor->key_id() == static_cast<std::int64_t>(i));
+    assert(cursor->key() == true_keys[i]);
+  }
+  assert(!cursor->next());
+
+  cursor.reset(grnxx::map::da::basic::IDCursor::open(
+      trie.get(), grnxx::MAP_CURSOR_DESCENDING, 0, -1, 0, -1));
+  for (std::size_t i = 0; i < NUM_KEYS; ++i) {
+    assert(cursor->next());
+    assert(cursor->key_id() == static_cast<std::int64_t>(NUM_KEYS - i - 1));
+    assert(cursor->key() == true_keys[NUM_KEYS - i - 1]);
+  }
+  assert(!cursor->next());
+
+  cursor.reset(grnxx::map::da::basic::IDCursor::open(
+      trie.get(), grnxx::MAP_CURSOR_EXCEPT_MIN, 0, 1, 0, -1));
+  assert(cursor->next());
+  assert(cursor->key_id() == 1);
+  assert(!cursor->next());
+
+  cursor.reset(grnxx::map::da::basic::IDCursor::open(
+      trie.get(), grnxx::MAP_CURSOR_EXCEPT_MAX, 2, 3, 0, -1));
+  assert(cursor->next());
+  assert(cursor->key_id() == 2);
+  assert(!cursor->next());
+}
+
 int main() {
   grnxx::Logger::set_flags(grnxx::LOGGER_WITH_ALL |
                            grnxx::LOGGER_ENABLE_COUT);
@@ -361,6 +438,8 @@ int main() {
   test_update();
 
   test_defrag();
+
+  test_id_cursor();
 
   return 0;
 }

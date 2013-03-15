@@ -21,7 +21,7 @@
 #include <unordered_set>
 #include <vector>
 
-#include "map/da/large_trie.hpp"
+#include "map/da/large/trie.hpp"
 #include "logger.hpp"
 #include "time/time.hpp"
 
