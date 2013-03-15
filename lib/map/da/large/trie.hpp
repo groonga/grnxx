@@ -446,7 +446,8 @@ class Trie : public da::Trie {
   MapCursor *open_key_cursor(MapCursorFlags flags,
                              const Slice &min, const Slice &max,
                              int64_t offset, int64_t limit);
-  MapCursor *open_prefix_cursor(MapCursorFlags flags, const Slice &max,
+  MapCursor *open_prefix_cursor(MapCursorFlags flags,
+                                size_t min, const Slice &max,
                                 int64_t offset, int64_t limit);
   MapCursor *open_predictive_cursor(MapCursorFlags flags, const Slice &min,
                                     int64_t offset, int64_t limit);

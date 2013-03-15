@@ -90,7 +90,7 @@ class Trie {
                                      const Slice &min, const Slice &max,
                                      int64_t offset, int64_t limit) = 0;
   virtual MapCursor *open_prefix_cursor(MapCursorFlags flags,
-                                        const Slice &max,
+                                        size_t min, const Slice &max,
                                         int64_t offset, int64_t limit) = 0;
   virtual MapCursor *open_predictive_cursor(MapCursorFlags flags,
                                             const Slice &min,

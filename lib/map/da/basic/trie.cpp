@@ -341,8 +341,7 @@ bool Trie::update(const Slice &src_key, const Slice &dest_key,
 MapCursor *Trie::open_id_cursor(MapCursorFlags flags,
                                 int64_t min, int64_t max,
                                 int64_t offset, int64_t limit) {
-  // TODO
-  return nullptr;
+  return IDCursor::open(this, flags, min, max, offset, limit);
 }
 
 MapCursor *Trie::open_key_cursor(MapCursorFlags flags,
@@ -353,7 +352,7 @@ MapCursor *Trie::open_key_cursor(MapCursorFlags flags,
 }
 
 MapCursor *Trie::open_prefix_cursor(MapCursorFlags flags,
-                                    const Slice &max,
+                                    size_t min, const Slice &max,
                                     int64_t offset, int64_t limit) {
   // TODO
   return nullptr;

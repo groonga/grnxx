@@ -376,8 +376,7 @@ void test_id_cursor() {
   }
 
   std::unique_ptr<grnxx::MapCursor> cursor(
-      grnxx::map::da::basic::IDCursor::open(
-          trie.get(), grnxx::MapCursorFlags(), 0, -1, 0, -1));
+      trie->open_id_cursor(grnxx::MapCursorFlags(), 0, -1, 0, -1));
   for (std::size_t i = 0; i < NUM_KEYS; ++i) {
     assert(cursor->next());
     assert(cursor->key_id() == static_cast<std::int64_t>(i));
@@ -385,8 +384,8 @@ void test_id_cursor() {
   }
   assert(!cursor->next());
 
-  cursor.reset(grnxx::map::da::basic::IDCursor::open(
-      trie.get(), grnxx::MapCursorFlags(), 0, -1, NUM_KEYS / 2, -1));
+  cursor.reset(trie->open_id_cursor(
+      grnxx::MapCursorFlags(), 0, -1, NUM_KEYS / 2, -1));
   for (std::size_t i = NUM_KEYS / 2; i < NUM_KEYS; ++i) {
     assert(cursor->next());
     assert(cursor->key_id() == static_cast<std::int64_t>(i));
@@ -394,8 +393,8 @@ void test_id_cursor() {
   }
   assert(!cursor->next());
 
-  cursor.reset(grnxx::map::da::basic::IDCursor::open(
-      trie.get(), grnxx::MapCursorFlags(), 0, -1, 0, NUM_KEYS / 2));
+  cursor.reset(trie->open_id_cursor(
+      grnxx::MapCursorFlags(), 0, -1, 0, NUM_KEYS / 2));
   for (std::size_t i = 0; i < NUM_KEYS / 2; ++i) {
     assert(cursor->next());
     assert(cursor->key_id() == static_cast<std::int64_t>(i));
@@ -403,8 +402,8 @@ void test_id_cursor() {
   }
   assert(!cursor->next());
 
-  cursor.reset(grnxx::map::da::basic::IDCursor::open(
-      trie.get(), grnxx::MAP_CURSOR_DESCENDING, 0, -1, 0, -1));
+  cursor.reset(trie->open_id_cursor(
+      grnxx::MAP_CURSOR_DESCENDING, 0, -1, 0, -1));
   for (std::size_t i = 0; i < NUM_KEYS; ++i) {
     assert(cursor->next());
     assert(cursor->key_id() == static_cast<std::int64_t>(NUM_KEYS - i - 1));
@@ -412,14 +411,14 @@ void test_id_cursor() {
   }
   assert(!cursor->next());
 
-  cursor.reset(grnxx::map::da::basic::IDCursor::open(
-      trie.get(), grnxx::MAP_CURSOR_EXCEPT_MIN, 0, 1, 0, -1));
+  cursor.reset(trie->open_id_cursor(
+      grnxx::MAP_CURSOR_EXCEPT_MIN, 0, 1, 0, -1));
   assert(cursor->next());
   assert(cursor->key_id() == 1);
   assert(!cursor->next());
 
-  cursor.reset(grnxx::map::da::basic::IDCursor::open(
-      trie.get(), grnxx::MAP_CURSOR_EXCEPT_MAX, 2, 3, 0, -1));
+  cursor.reset(trie->open_id_cursor(
+      grnxx::MAP_CURSOR_EXCEPT_MAX, 2, 3, 0, -1));
   assert(cursor->next());
   assert(cursor->key_id() == 2);
   assert(!cursor->next());

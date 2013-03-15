@@ -272,7 +272,7 @@ class Map {
   // Find keys in prefixes of "query". "flags" accepts MAP_CURSOR_ASCENDING,
   // MAP_CURSOR_DESCENDING, and MAP_CURSOR_EXCEPT_MAX.
   virtual MapCursor *open_prefix_cursor(MapCursorFlags flags,
-                                        const Slice &max,
+                                        size_t min, const Slice &max,
                                         int64_t offset, int64_t limit) = 0;
   // Find keys starting with "query". "flags" accepts MAP_CURSOR_ASCENDING,
   // MAP_CURSOR_DESCENDING, and MAP_CURSOR_EXCEPT_MIN.

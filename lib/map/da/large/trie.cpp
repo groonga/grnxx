@@ -364,7 +364,7 @@ MapCursor *Trie::open_key_cursor(MapCursorFlags flags,
 }
 
 MapCursor *Trie::open_prefix_cursor(MapCursorFlags flags,
-                                    const Slice &max,
+                                    size_t min, const Slice &max,
                                     int64_t offset, int64_t limit) {
   // TODO
   return nullptr;

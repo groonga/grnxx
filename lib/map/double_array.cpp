@@ -177,14 +177,14 @@ MapCursor *DoubleArray::open_key_cursor(MapCursorFlags flags,
 }
 
 MapCursor *DoubleArray::open_prefix_cursor(MapCursorFlags flags,
-                                           const Slice &max,
+                                           size_t min, const Slice &max,
                                            int64_t offset, int64_t limit) {
   open_trie_if_needed();
   if (!front_) {
     // TODO
     return nullptr;
   }
-  return front_->open_prefix_cursor(flags, max, offset, limit);
+  return front_->open_prefix_cursor(flags, min, max, offset, limit);
 }
 
 MapCursor *DoubleArray::open_predictive_cursor(MapCursorFlags flags,
