@@ -87,6 +87,7 @@ constexpr uint32_t MAX_CHUNK_LEVEL   = 5;
 constexpr uint32_t INVALID_LEADER    = std::numeric_limits<uint32_t>::max();
 
 class IDCursor;
+class PrefixCursor;
 
 struct Header {
   TrieType type;
@@ -421,6 +422,7 @@ class Key {
 class Trie : public da::Trie {
   friend class large::Trie;
   friend class IDCursor;
+  friend class PrefixCursor;
 
  public:
   ~Trie();
