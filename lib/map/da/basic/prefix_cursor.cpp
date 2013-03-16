@@ -119,6 +119,7 @@ void PrefixCursor::open_cursor(Trie *trie, MapCursorFlags flags,
     step_ = 1;
   }
 } catch (...) {
+  // TODO: Catch only std::vector's exception.
   GRNXX_ERROR() << "std::vector::push_back() failed";
   GRNXX_THROW();
 }
