@@ -416,6 +416,75 @@ void test_id_cursor() {
   assert(!cursor->next());
 }
 
+void test_predictive_cursor() {
+  grnxx::io::Pool pool;
+  pool.open(grnxx::io::POOL_TEMPORARY);
+
+  grnxx::map::da::TrieOptions options;
+  std::unique_ptr<grnxx::map::da::basic::Trie> trie(
+      grnxx::map::da::basic::Trie::create(options, pool));
+
+  std::vector<grnxx::Slice> keys;
+  keys.push_back("0");
+  keys.push_back("01");
+  keys.push_back("012");
+  keys.push_back("0123");
+  keys.push_back("0145");
+
+  for (std::size_t i = 0; i < keys.size(); ++i) {
+    std::int64_t key_id;
+    assert(trie->insert(keys[i], &key_id));
+    assert(key_id == static_cast<std::int64_t>(i));
+  }
+
+  std::unique_ptr<grnxx::MapCursor> cursor(
+      trie->open_predictive_cursor(grnxx::MapCursorFlags(), "", 0, -1));
+  for (std::size_t i = 0; i < keys.size(); ++i) {
+    assert(cursor->next());
+    assert(cursor->key_id() == static_cast<std::int64_t>(i));
+    assert(cursor->key() == keys[i]);
+  }
+  assert(!cursor->next());
+
+  cursor.reset(trie->open_predictive_cursor(
+      grnxx::MapCursorFlags(), "012", 0, -1));
+  assert(cursor->next());
+  assert(cursor->key_id() == 2);
+  assert(cursor->next());
+  assert(cursor->key_id() == 3);
+  assert(!cursor->next());
+
+  cursor.reset(trie->open_predictive_cursor(
+      grnxx::MapCursorFlags(), "01", 2, -1));
+  assert(cursor->next());
+  assert(cursor->key_id() == 3);
+  assert(cursor->next());
+  assert(cursor->key_id() == 4);
+  assert(!cursor->next());
+
+  cursor.reset(trie->open_predictive_cursor(
+      grnxx::MapCursorFlags(), "", 1, 2));
+  assert(cursor->next());
+  assert(cursor->key_id() == 1);
+  assert(cursor->next());
+  assert(cursor->key_id() == 2);
+  assert(!cursor->next());
+
+  cursor.reset(trie->open_predictive_cursor(
+      grnxx::MAP_CURSOR_DESCENDING, "01", 1, 2));
+  assert(cursor->next());
+  assert(cursor->key_id() == 3);
+  assert(cursor->next());
+  assert(cursor->key_id() == 2);
+  assert(!cursor->next());
+
+  cursor.reset(trie->open_predictive_cursor(
+      grnxx::MAP_CURSOR_EXCEPT_MIN, "012", 0, -1));
+  assert(cursor->next());
+  assert(cursor->key_id() == 3);
+  assert(!cursor->next());
+}
+
 void test_prefix_cursor() {
   grnxx::io::Pool pool;
   pool.open(grnxx::io::POOL_TEMPORARY);
@@ -510,6 +579,7 @@ int main() {
   test_defrag();
 
   test_id_cursor();
+  test_predictive_cursor();
   test_prefix_cursor();
 
   return 0;

@@ -3,6 +3,7 @@
 #include "lock.hpp"
 #include "logger.hpp"
 #include "map/da/basic/id_cursor.hpp"
+#include "map/da/basic/predictive_cursor.hpp"
 #include "map/da/basic/prefix_cursor.hpp"
 #include "map/da/large/trie.hpp"
 
@@ -361,8 +362,7 @@ MapCursor *Trie::open_prefix_cursor(MapCursorFlags flags,
 MapCursor *Trie::open_predictive_cursor(MapCursorFlags flags,
                                         const Slice &min,
                                         int64_t offset, int64_t limit) {
-  // TODO
-  return nullptr;
+  return PredictiveCursor::open(this, flags, min, offset, limit);
 }
 
 Trie::Trie()

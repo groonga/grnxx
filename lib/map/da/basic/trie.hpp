@@ -86,9 +86,6 @@ constexpr uint32_t MAX_CHUNK_LEVEL   = 5;
 // the linked list is empty and there exists no leader.
 constexpr uint32_t INVALID_LEADER    = std::numeric_limits<uint32_t>::max();
 
-class IDCursor;
-class PrefixCursor;
-
 struct Header {
   TrieType type;
   uint32_t nodes_block_id;
@@ -419,9 +416,14 @@ class Key {
   uint8_t buf_[2];
 };
 
+class IDCursor;
+class PredictiveCursor;
+class PrefixCursor;
+
 class Trie : public da::Trie {
   friend class large::Trie;
   friend class IDCursor;
+  friend class PredictiveCursor;
   friend class PrefixCursor;
 
  public:
