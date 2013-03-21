@@ -63,7 +63,7 @@ void PredictiveCursor::open_cursor(Trie *trie, MapCursorFlags flags,
   for (size_t i = 0; i < min.size(); ++i) {
     const Node node = trie_->nodes_[node_id];
     if (node.is_leaf()) {
-      if (offset == 0) {
+      if (offset <= 0) {
         const Key &key = trie_->get_key(node.key_pos());
         if ((key.size() >= min_size_) &&
             (key.slice().subslice(i, min.size() - i) ==
@@ -111,7 +111,7 @@ bool PredictiveCursor::ascending_next() try {
     if (node.is_leaf()) {
       const Key &key = trie_->get_key(node.key_pos());
       if (key.size() >= min_size_) {
-        if (offset_ != 0) {
+        if (offset_ > 0) {
           --offset_;
         } else if (limit_ != 0) {
           key_id_ = key.id();
@@ -142,7 +142,7 @@ bool PredictiveCursor::descending_next() try {
       if (node.is_leaf()) {
         const Key &key = trie_->get_key(node.key_pos());
         if (key.size() >= min_size_) {
-          if (offset_ != 0) {
+          if (offset_ > 0) {
             --offset_;
           } else if (limit_ != 0) {
             key_id_ = key.id();
