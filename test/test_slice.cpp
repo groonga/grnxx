@@ -142,6 +142,15 @@ void test_compare() {
   assert(cde.compare(abc) > 0);
   assert(cde.compare(abcde) > 0);
   assert(cde.compare(cde) == 0);
+
+  grnxx::Slice xycde("xycde");
+
+  assert(abcde.compare(xycde, 0) < 0);
+  assert(abcde.compare(xycde, 1) < 0);
+  assert(abcde.compare(xycde, 2) == 0);
+  assert(abcde.compare(xycde, 3) == 0);
+  assert(abcde.compare(xycde, 4) == 0);
+  assert(abcde.compare(xycde, 5) == 0);
 }
 
 void test_starts_with() {

@@ -79,6 +79,18 @@ class Slice {
     }
     return (size_ < s.size_) ? -1 : (size_ > s.size_);
   }
+  // Compare "*this" and "s" and return a negative value if "*this" < "s",
+  // zero if "*this" == "s", or a positive value otherwise (if "*this" > "s").
+  // The starting "offset" bytes of "*this" and "s" are ignored. Note that too
+  // large "offset" results in undefined behavior.
+  int compare(const Slice &s, size_t offset) const {
+    const size_t min_size = (size_ < s.size_) ? size_ : s.size_;
+    int result = std::memcmp(ptr_ + offset, s.ptr_ + offset, min_size - offset);
+    if (result != 0) {
+      return result;
+    }
+    return (size_ < s.size_) ? -1 : (size_ > s.size_);
+  }
 
   // Return true iff "s" is a prefix of "*this".
   bool starts_with(const Slice &s) const {
