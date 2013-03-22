@@ -2,6 +2,10 @@
 
 #include "lock.hpp"
 #include "logger.hpp"
+#include "map/da/large/id_cursor.hpp"
+#include "map/da/large/key_cursor.hpp"
+#include "map/da/large/predictive_cursor.hpp"
+#include "map/da/large/prefix_cursor.hpp"
 
 namespace grnxx {
 namespace map {
@@ -352,29 +356,25 @@ bool Trie::update(const Slice &src_key, const Slice &dest_key,
 MapCursor *Trie::open_id_cursor(MapCursorFlags flags,
                                 int64_t min, int64_t max,
                                 int64_t offset, int64_t limit) {
-  // TODO
-  return nullptr;
+  return IDCursor::open(this, flags, min, max, offset, limit);
 }
 
 MapCursor *Trie::open_key_cursor(MapCursorFlags flags,
                                  const Slice &min, const Slice &max,
                                  int64_t offset, int64_t limit) {
-  // TODO
-  return nullptr;
+  return KeyCursor::open(this, flags, min, max, offset, limit);
 }
 
 MapCursor *Trie::open_prefix_cursor(MapCursorFlags flags,
                                     size_t min, const Slice &max,
                                     int64_t offset, int64_t limit) {
-  // TODO
-  return nullptr;
+  return PrefixCursor::open(this, flags, min, max, offset, limit);
 }
 
 MapCursor *Trie::open_predictive_cursor(MapCursorFlags flags,
                                         const Slice &min,
                                         int64_t offset, int64_t limit) {
-  // TODO
-  return nullptr;
+  return PredictiveCursor::open(this, flags, min, offset, limit);
 }
 
 Trie::Trie()
