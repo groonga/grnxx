@@ -70,6 +70,7 @@ void KeyCursor::open_cursor(Trie *trie, MapCursorFlags flags,
   }
 }
 
+// TODO: std::vector::push_back() may throw an exception.
 void KeyCursor::ascending_init(const Slice &min, const Slice &max) {
   if (max) {
     has_end_ = true;
@@ -138,6 +139,7 @@ void KeyCursor::ascending_init(const Slice &min, const Slice &max) {
   }
 }
 
+// TODO: std::vector::push_back() may throw an exception.
 void KeyCursor::descending_init(const Slice &min, const Slice &max) {
   if (min) {
     has_end_ = true;
@@ -199,6 +201,7 @@ void KeyCursor::descending_init(const Slice &min, const Slice &max) {
   }
 }
 
+// TODO: std::vector::push_back() may throw an exception.
 bool KeyCursor::ascending_next() {
   while (!node_ids_.empty()) {
     const uint64_t node_id = node_ids_.back();
@@ -235,6 +238,7 @@ bool KeyCursor::ascending_next() {
   return false;
 }
 
+// TODO: std::vector::push_back() may throw an exception.
 bool KeyCursor::descending_next() {
   while (!node_ids_.empty()) {
     const bool post_order = node_ids_.back() & POST_ORDER_FLAG;

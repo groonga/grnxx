@@ -154,7 +154,7 @@ bool PredictiveCursor::descending_next() try {
       }
     } else {
       node_ids_.back() |= POST_ORDER_FLAG;
-      uint64_t label = trie_->nodes_[node_id].child();
+      uint16_t label = trie_->nodes_[node_id].child();
       while (label != INVALID_LABEL) {
         node_ids_.push_back(node.offset() ^ label);
         label = trie_->nodes_[node.offset() ^ label].sibling();
