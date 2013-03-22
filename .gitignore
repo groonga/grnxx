@@ -29,7 +29,6 @@ stamp-h1
 temp/
 test/test_alpha_double_array
 test/test_backtrace
-test/test_broken_down_time
 test/test_charset
 test/test_db_blob_vector
 test/test_db_vector
@@ -38,9 +37,7 @@ test/test_error
 test/test_exception
 test/test_features
 test/test_grnxx
-test/test_internal_clock
 test/test_intrinsic
-test/test_io_alpha_pool
 test/test_io_file
 test/test_io_file_info
 test/test_io_path
@@ -55,7 +52,6 @@ test/test_mutex
 test/test_os
 test/test_recycler
 test/test_slice
-test/test_stopwatch
 test/test_string
 test/test_string_builder
 test/test_string_format

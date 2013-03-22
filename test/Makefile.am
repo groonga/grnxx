@@ -3,7 +3,6 @@ AM_CXXFLAGS = @AM_CXXFLAGS@
 TESTS =					\
 	test_alpha_double_array		\
 	test_backtrace			\
-	test_broken_down_time		\
 	test_charset			\
 	test_db_blob_vector		\
 	test_db_vector			\
@@ -12,7 +11,6 @@ TESTS =					\
 	test_exception			\
 	test_features			\
 	test_grnxx			\
-	test_internal_clock		\
 	test_intrinsic			\
 	test_io_file			\
 	test_io_file_info		\
@@ -28,7 +26,6 @@ TESTS =					\
 	test_os				\
 	test_recycler			\
 	test_slice			\
-	test_stopwatch			\
 	test_string			\
 	test_string_builder		\
 	test_string_format		\
@@ -42,9 +39,6 @@ test_alpha_double_array_LDADD = ../lib/grnxx/libgrnxx.la
 
 test_backtrace_SOURCES = test_backtrace.cpp
 test_backtrace_LDADD = ../lib/grnxx/libgrnxx.la
-
-test_broken_down_time_SOURCES = test_broken_down_time.cpp
-test_broken_down_time_LDADD = ../lib/grnxx/libgrnxx.la
 
 test_charset_SOURCES = test_charset.cpp
 test_charset_LDADD = ../lib/grnxx/libgrnxx.la
@@ -69,9 +63,6 @@ test_features_LDADD = ../lib/grnxx/libgrnxx.la
 
 test_grnxx_SOURCES = test_grnxx.cpp
 test_grnxx_LDADD = ../lib/grnxx/libgrnxx.la
-
-test_internal_clock_SOURCES = test_internal_clock.cpp
-test_internal_clock_LDADD = ../lib/grnxx/libgrnxx.la
 
 test_intrinsic_SOURCES = test_intrinsic.cpp
 test_intrinsic_LDADD = ../lib/grnxx/libgrnxx.la
@@ -117,9 +108,6 @@ test_recycler_LDADD = ../lib/grnxx/libgrnxx.la
 
 test_slice_SOURCES = test_slice.cpp
 test_slice_LDADD = ../lib/grnxx/libgrnxx.la
-
-test_stopwatch_SOURCES = test_stopwatch.cpp
-test_stopwatch_LDADD = ../lib/grnxx/libgrnxx.la
 
 test_string_SOURCES = test_string.cpp
 test_string_LDADD = ../lib/grnxx/libgrnxx.la

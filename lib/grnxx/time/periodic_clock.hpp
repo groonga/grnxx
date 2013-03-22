@@ -28,12 +28,14 @@ class PeriodicClock {
   PeriodicClock();
   ~PeriodicClock();
 
-  Time now() const {
+  static Time now() {
     return (now_ == Time::min()) ? SystemClock::now() : now_;
   }
 
  private:
   static Time now_;
+
+  static void routine();
 };
 
 }  // namespace grnxx

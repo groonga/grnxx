@@ -17,21 +17,63 @@
 */
 #include "grnxx/time/periodic_clock.hpp"
 
+#include <thread>
+
+#include "grnxx/intrinsic.hpp"
+#include "grnxx/thread.hpp"
+
 namespace grnxx {
 namespace {
 
-// TODO
+// Accuracy of the periodic clock. Note that a short sleep may lead to a
+// busy-wait loop, which exhausts CPU resources.
+constexpr Duration UPDATE_INTERVAL = Duration::milliseconds(100);
+
+volatile uint32_t ref_count = 0;
+std::thread thread;
 
 }  // namespace
 
 Time PeriodicClock::now_ = Time::min();
 
 PeriodicClock::PeriodicClock() {
-  // TODO
+  for ( ; ; ) {
+    const uint32_t count = ref_count;
+    if (atomic_compare_and_swap(count, count + 1, &ref_count)) {
+      if (count == 0) {
+        // Start the internal thread.
+        try {
+          thread = std::thread(routine);
+          now_ = SystemClock::now();
+        } catch (...) {
+          // Do nothing on failure.
+        }
+      }
+      break;
+    }
+  }
 }
 
 PeriodicClock::~PeriodicClock() {
-  // TODO
+  for ( ; ; ) {
+    const uint32_t count = ref_count;
+    if (atomic_compare_and_swap(count, count - 1, &ref_count)) {
+      if (count == 1) {
+        // Stop the internal thread.
+        thread.join();
+        now_ = Time::min();
+      }
+      break;
+    }
+  }
+}
+
+// Periodically update the internal time variable.
+void PeriodicClock::routine() {
+  while (ref_count != 0) {
+    Thread::sleep_for(UPDATE_INTERVAL);
+    now_ = SystemClock::now();
+  }
 }
 
 }  // namespace grnxx
