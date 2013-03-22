@@ -71,12 +71,12 @@ void KeyCursor::open_cursor(Trie *trie, MapCursorFlags flags,
 }
 
 void KeyCursor::ascending_init(const Slice &min, const Slice &max) {
-  if (max.ptr() && (max.size() != 0)) {
+  if (max) {
     has_end_ = true;
     end_ = String(reinterpret_cast<const char *>(max.ptr()), max.size());
   }
 
-  if (!min.ptr() || (min.size() == 0)) {
+  if (!min) {
     node_ids_.push_back(ROOT_NODE_ID);
     return;
   }
@@ -139,12 +139,12 @@ void KeyCursor::ascending_init(const Slice &min, const Slice &max) {
 }
 
 void KeyCursor::descending_init(const Slice &min, const Slice &max) {
-  if (min.ptr() && (min.size() != 0)) {
+  if (min) {
     has_end_ = true;
     end_ = String(reinterpret_cast<const char *>(min.ptr()), min.size());
   }
 
-  if (!max.ptr() || (max.size() == 0)) {
+  if (!max) {
     node_ids_.push_back(ROOT_NODE_ID);
     return;
   }
