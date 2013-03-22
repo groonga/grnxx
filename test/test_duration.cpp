@@ -18,8 +18,8 @@
 #include <cassert>
 #include <sstream>
 
-#include "logger.hpp"
-#include "time/duration.hpp"
+#include "grnxx/logger.hpp"
+#include "grnxx/time/duration.hpp"
 
 int main() {
   grnxx::Logger::set_flags(grnxx::LOGGER_WITH_ALL |

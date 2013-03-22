@@ -19,8 +19,8 @@
 #include <cerrno>
 #include <cstdio>
 
-#include "error.hpp"
-#include "logger.hpp"
+#include "grnxx/error.hpp"
+#include "grnxx/logger.hpp"
 
 //void f3() {
 //  std::cerr << "I'm f3()" << std::endl;

@@ -20,9 +20,9 @@
 #include <random>
 #include <vector>
 
-#include "db/blob_vector.hpp"
-#include "logger.hpp"
-#include "time/stopwatch.hpp"
+#include "grnxx/db/blob_vector.hpp"
+#include "grnxx/logger.hpp"
+#include "grnxx/time/stopwatch.hpp"
 
 void test_basics() {
   grnxx::io::Pool::unlink_if_exists("temp.grn");

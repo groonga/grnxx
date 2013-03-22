@@ -17,8 +17,8 @@
 */
 #include <cassert>
 
-#include "logger.hpp"
-#include "slice.hpp"
+#include "grnxx/logger.hpp"
+#include "grnxx/slice.hpp"
 
 void test_constructors() {
   grnxx::Slice slice;

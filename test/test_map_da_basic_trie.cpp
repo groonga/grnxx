@@ -21,10 +21,10 @@
 #include <unordered_set>
 #include <vector>
 
-#include "map/da/basic/id_cursor.hpp"
-#include "map/da/basic/trie.hpp"
-#include "logger.hpp"
-#include "time/time.hpp"
+#include "grnxx/map/da/basic/id_cursor.hpp"
+#include "grnxx/map/da/basic/trie.hpp"
+#include "grnxx/logger.hpp"
+#include "grnxx/time/time.hpp"
 
 void test_basics() {
   grnxx::io::Pool pool;

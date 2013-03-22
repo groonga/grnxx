@@ -1,0 +1,104 @@
+/*
+  Copyright (C) 2013  Brazil, Inc.
+
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 2.1 of the License, or (at your option) any later version.
+
+  This library is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
+
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+*/
+#ifndef GRNXX_MAP_DA_TRIE_HPP
+#define GRNXX_MAP_DA_TRIE_HPP
+
+#include "grnxx/exception.hpp"
+#include "grnxx/map.hpp"
+
+namespace grnxx {
+namespace map {
+namespace da {
+
+enum TrieType : int32_t {
+  TRIE_UNKNOWN = 0,
+  TRIE_BASIC   = 1,
+  TRIE_LARGE   = 2
+};
+
+class TrieException : Exception {
+ public:
+  TrieException() noexcept : Exception() {}
+  ~TrieException() noexcept {}
+
+  TrieException(const TrieException &x) noexcept : Exception(x) {}
+  TrieException &operator=(const TrieException &) noexcept {
+    return *this;
+  }
+
+  const char *what() const noexcept {
+    return "";
+  }
+};
+
+struct TrieOptions {
+  uint64_t nodes_size;
+  uint64_t entries_size;
+  uint64_t keys_size;
+
+  TrieOptions();
+};
+
+class Trie {
+ public:
+  Trie();
+  virtual ~Trie();
+
+  static Trie *create(const TrieOptions &options, io::Pool pool);
+  static Trie *open(io::Pool pool, uint32_t block_id);
+
+  static void unlink(io::Pool pool, uint32_t block_id);
+
+  virtual Trie *defrag(const TrieOptions &options) = 0;
+
+  virtual uint32_t block_id() const = 0;
+
+  virtual bool search(int64_t key_id, MapKey *key = nullptr) = 0;
+  virtual bool search(const Slice &key, int64_t *key_id = nullptr) = 0;
+
+  virtual bool lcp_search(const Slice &query, int64_t *key_id = nullptr,
+                          MapKey *key = nullptr) = 0;
+
+  virtual bool insert(const Slice &key, int64_t *key_id = nullptr) = 0;
+
+  virtual bool remove(int64_t key_id) = 0;
+  virtual bool remove(const Slice &key) = 0;
+
+  virtual bool update(int64_t key_id, const Slice &dest_key) = 0;
+  virtual bool update(const Slice &src_key, const Slice &dest_key,
+                      int64_t *key_id = nullptr) = 0;
+
+  virtual MapCursor *open_id_cursor(MapCursorFlags flags,
+                                    int64_t min, int64_t max,
+                                    int64_t offset, int64_t limit) = 0;
+  virtual MapCursor *open_key_cursor(MapCursorFlags flags,
+                                     const Slice &min, const Slice &max,
+                                     int64_t offset, int64_t limit) = 0;
+  virtual MapCursor *open_prefix_cursor(MapCursorFlags flags,
+                                        size_t min, const Slice &max,
+                                        int64_t offset, int64_t limit) = 0;
+  virtual MapCursor *open_predictive_cursor(MapCursorFlags flags,
+                                            const Slice &min,
+                                            int64_t offset, int64_t limit) = 0;
+};
+
+}  // namespace da
+}  // namespace map
+}  // namespace grnxx
+
+#endif  // GRNXX_MAP_DA_TRIE_HPP

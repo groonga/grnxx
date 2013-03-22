@@ -21,9 +21,9 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include "io/pool.hpp"
-#include "logger.hpp"
-#include "time/stopwatch.hpp"
+#include "grnxx/io/pool.hpp"
+#include "grnxx/logger.hpp"
+#include "grnxx/time/stopwatch.hpp"
 
 void test_constructor() {
   grnxx::io::Pool::unlink_if_exists("temp.grn");

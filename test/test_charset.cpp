@@ -17,8 +17,8 @@
 */
 #include <cassert>
 
-#include "logger.hpp"
-#include "charset.hpp"
+#include "grnxx/logger.hpp"
+#include "grnxx/charset.hpp"
 
 void test_ascii() {
   const grnxx::Slice query = "Hello, world!";

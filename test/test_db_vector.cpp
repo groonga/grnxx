@@ -20,9 +20,9 @@
 #include <random>
 #include <vector>
 
-#include "db/vector.hpp"
-#include "logger.hpp"
-#include "time/stopwatch.hpp"
+#include "grnxx/db/vector.hpp"
+#include "grnxx/logger.hpp"
+#include "grnxx/time/stopwatch.hpp"
 
 struct Point {
   double x;

@@ -17,10 +17,10 @@
 */
 #include <cassert>
 
-#include "lock.hpp"
-#include "logger.hpp"
-#include "mutex.hpp"
-#include "time/stopwatch.hpp"
+#include "grnxx/lock.hpp"
+#include "grnxx/logger.hpp"
+#include "grnxx/mutex.hpp"
+#include "grnxx/time/stopwatch.hpp"
 
 int main() {
   grnxx::Logger::set_flags(grnxx::LOGGER_WITH_ALL |

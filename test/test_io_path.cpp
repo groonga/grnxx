@@ -18,8 +18,8 @@
 #include <cassert>
 #include <sstream>
 
-#include "io/path.hpp"
-#include "logger.hpp"
+#include "grnxx/io/path.hpp"
+#include "grnxx/logger.hpp"
 
 int main() {
   grnxx::Logger::set_flags(grnxx::LOGGER_WITH_ALL |

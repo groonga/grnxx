@@ -21,10 +21,10 @@
 #include <unordered_set>
 #include <vector>
 
-#include "charset.hpp"
-#include "map.hpp"
-#include "logger.hpp"
-#include "time/time.hpp"
+#include "grnxx/charset.hpp"
+#include "grnxx/map.hpp"
+#include "grnxx/logger.hpp"
+#include "grnxx/time/time.hpp"
 
 void test_basics() {
   grnxx::io::Pool pool;

@@ -17,8 +17,8 @@
 */
 #include <cassert>
 
-#include "io/file.hpp"
-#include "logger.hpp"
+#include "grnxx/io/file.hpp"
+#include "grnxx/logger.hpp"
 
 void test_create() {
   const char FILE_PATH[] = "temp.grn";

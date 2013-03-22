@@ -21,9 +21,9 @@
 #include <unordered_set>
 #include <vector>
 
-#include "alpha/double_array.hpp"
-#include "logger.hpp"
-#include "time/time.hpp"
+#include "grnxx/alpha/double_array.hpp"
+#include "grnxx/logger.hpp"
+#include "grnxx/time/time.hpp"
 
 void test_basics() {
   grnxx::io::Pool pool;

@@ -3,7 +3,7 @@
 
 #include <iostream>
 
-#include "grnxx.hpp"
+#include "grnxx/grnxx.hpp"
 
 namespace {
 

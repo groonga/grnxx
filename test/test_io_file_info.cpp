@@ -17,9 +17,9 @@
 */
 #include <cassert>
 
-#include "io/file.hpp"
-#include "io/file_info.hpp"
-#include "logger.hpp"
+#include "grnxx/io/file.hpp"
+#include "grnxx/io/file_info.hpp"
+#include "grnxx/logger.hpp"
 
 void test_non_existent_file() {
   const char FILE_PATH[] = "temp.grn";

@@ -17,9 +17,9 @@
 */
 #include <cassert>
 
-#include "logger.hpp"
-#include "time/stopwatch.hpp"
-#include "time/system_clock.hpp"
+#include "grnxx/logger.hpp"
+#include "grnxx/time/stopwatch.hpp"
+#include "grnxx/time/system_clock.hpp"
 
 int main() {
   grnxx::Logger::set_flags(grnxx::LOGGER_WITH_ALL |

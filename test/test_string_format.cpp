@@ -20,9 +20,9 @@
 #include <iostream>
 #include <sstream>
 
-#include "logger.hpp"
-#include "string_format.hpp"
-#include "time/stopwatch.hpp"
+#include "grnxx/logger.hpp"
+#include "grnxx/string_format.hpp"
+#include "grnxx/time/stopwatch.hpp"
 
 void test_align() {
   grnxx::StringBuilder builder;

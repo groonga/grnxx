@@ -17,8 +17,8 @@
 */
 #include <cassert>
 
-#include "os.hpp"
-#include "logger.hpp"
+#include "grnxx/os.hpp"
+#include "grnxx/logger.hpp"
 
 int main() {
   grnxx::Logger::set_flags(grnxx::LOGGER_WITH_ALL |

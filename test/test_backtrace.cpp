@@ -17,8 +17,8 @@
 */
 #include <cassert>
 
-#include "backtrace.hpp"
-#include "logger.hpp"
+#include "grnxx/backtrace.hpp"
+#include "grnxx/logger.hpp"
 
 void function_3rd() {
   GRNXX_NOTICE() << __FUNCTION__ << "()";

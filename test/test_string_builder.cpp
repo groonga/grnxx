@@ -17,9 +17,9 @@
 */
 #include <cassert>
 
-#include "logger.hpp"
-#include "string_builder.hpp"
-#include "time/time.hpp"
+#include "grnxx/logger.hpp"
+#include "grnxx/string_builder.hpp"
+#include "grnxx/time/time.hpp"
 
 void test_basic_operations() {
   grnxx::StringBuilder builder;

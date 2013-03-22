@@ -18,8 +18,8 @@
 #include <cassert>
 #include <cerrno>
 
-#include "error.hpp"
-#include "logger.hpp"
+#include "grnxx/error.hpp"
+#include "grnxx/logger.hpp"
 
 int main() {
   grnxx::Logger::set_flags(grnxx::LOGGER_WITH_ALL |

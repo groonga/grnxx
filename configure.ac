@@ -3,7 +3,7 @@
 
 AC_PREREQ([2.67])
 AC_INIT([grnxx], [pre-alpha], [groonga@razil.jp])
-AC_CONFIG_SRCDIR([lib/grnxx.hpp])
+AC_CONFIG_SRCDIR([lib/grnxx/grnxx.hpp])
 AC_CONFIG_HEADERS(config.h)
 AM_INIT_AUTOMAKE
 
@@ -59,15 +59,16 @@ AC_CHECK_FUNC([nanosleep],
 
 AC_CONFIG_FILES([Makefile
                  lib/Makefile
-                 lib/alpha/Makefile
-                 lib/charset/Makefile
-                 lib/db/Makefile
-                 lib/io/Makefile
-                 lib/map/Makefile
-                 lib/map/da/Makefile
-                 lib/map/da/basic/Makefile
-                 lib/map/da/large/Makefile
-                 lib/time/Makefile
+                 lib/grnxx/Makefile
+                 lib/grnxx/alpha/Makefile
+                 lib/grnxx/charset/Makefile
+                 lib/grnxx/db/Makefile
+                 lib/grnxx/io/Makefile
+                 lib/grnxx/map/Makefile
+                 lib/grnxx/map/da/Makefile
+                 lib/grnxx/map/da/basic/Makefile
+                 lib/grnxx/map/da/large/Makefile
+                 lib/grnxx/time/Makefile
                  src/Makefile
                  test/Makefile])
 AC_OUTPUT

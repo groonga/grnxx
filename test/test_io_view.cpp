@@ -17,9 +17,9 @@
 */
 #include <cassert>
 
-#include "logger.hpp"
-#include "io/file.hpp"
-#include "io/view.hpp"
+#include "grnxx/logger.hpp"
+#include "grnxx/io/file.hpp"
+#include "grnxx/io/view.hpp"
 
 void test_anonymous_mmap() {
   const std::uint64_t MMAP_SIZE = 1 << 20;
