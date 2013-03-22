@@ -417,12 +417,14 @@ class Key {
 };
 
 class IDCursor;
+class KeyCursor;
 class PredictiveCursor;
 class PrefixCursor;
 
 class Trie : public da::Trie {
   friend class large::Trie;
   friend class IDCursor;
+  friend class KeyCursor;
   friend class PredictiveCursor;
   friend class PrefixCursor;
 

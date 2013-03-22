@@ -3,6 +3,7 @@
 #include "lock.hpp"
 #include "logger.hpp"
 #include "map/da/basic/id_cursor.hpp"
+#include "map/da/basic/key_cursor.hpp"
 #include "map/da/basic/predictive_cursor.hpp"
 #include "map/da/basic/prefix_cursor.hpp"
 #include "map/da/large/trie.hpp"
@@ -349,8 +350,7 @@ MapCursor *Trie::open_id_cursor(MapCursorFlags flags,
 MapCursor *Trie::open_key_cursor(MapCursorFlags flags,
                                  const Slice &min, const Slice &max,
                                  int64_t offset, int64_t limit) {
-  // TODO
-  return nullptr;
+  return KeyCursor::open(this, flags, min, max, offset, limit);
 }
 
 MapCursor *Trie::open_prefix_cursor(MapCursorFlags flags,
