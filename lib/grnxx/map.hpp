@@ -269,12 +269,12 @@ class Map {
   virtual MapCursor *open_key_cursor(MapCursorFlags flags,
                                      const Slice &min, const Slice &max,
                                      int64_t offset, int64_t limit) = 0;
-  // Find keys in prefixes of "query". "flags" accepts MAP_CURSOR_ASCENDING,
+  // Find keys in prefixes of "max". "flags" accepts MAP_CURSOR_ASCENDING,
   // MAP_CURSOR_DESCENDING, and MAP_CURSOR_EXCEPT_MAX.
   virtual MapCursor *open_prefix_cursor(MapCursorFlags flags,
                                         size_t min, const Slice &max,
                                         int64_t offset, int64_t limit) = 0;
-  // Find keys starting with "query". "flags" accepts MAP_CURSOR_ASCENDING,
+  // Find keys starting with "min". "flags" accepts MAP_CURSOR_ASCENDING,
   // MAP_CURSOR_DESCENDING, and MAP_CURSOR_EXCEPT_MIN.
   virtual MapCursor *open_predictive_cursor(MapCursorFlags flags,
                                             const Slice &min,
