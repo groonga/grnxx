@@ -26,7 +26,7 @@ namespace charset {
 // Shift_JIS.
 class Shift_JIS : public Charset {
  public:
-  static const Charset *open();
+  static const Charset *get();
 
   CharsetCode code() const;
 

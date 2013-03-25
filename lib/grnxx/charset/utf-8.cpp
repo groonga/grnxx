@@ -22,7 +22,7 @@
 namespace grnxx {
 namespace charset {
 
-const Charset *UTF_8::open() {
+const Charset *UTF_8::get() {
   static UTF_8 singleton;
   return &singleton;
 }

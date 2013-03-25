@@ -23,7 +23,7 @@
 void test_ascii() {
   const grnxx::Slice query = "Hello, world!";
 
-  const grnxx::Charset *charset = grnxx::Charset::open(grnxx::CHARSET_EUC_JP);
+  const grnxx::Charset *charset = grnxx::Charset::get(grnxx::CHARSET_EUC_JP);
   grnxx::Slice query_left = query;
   while (query_left) {
     const grnxx::Slice next = charset->get_char(query);
@@ -31,7 +31,7 @@ void test_ascii() {
     query_left.remove_prefix(next.size());
   }
 
-  charset = grnxx::Charset::open(grnxx::CHARSET_SHIFT_JIS);
+  charset = grnxx::Charset::get(grnxx::CHARSET_SHIFT_JIS);
   query_left = query;
   while (query_left) {
     const grnxx::Slice next = charset->get_char(query);
@@ -39,7 +39,7 @@ void test_ascii() {
     query_left.remove_prefix(next.size());
   }
 
-  charset = grnxx::Charset::open(grnxx::CHARSET_UTF_8);
+  charset = grnxx::Charset::get(grnxx::CHARSET_UTF_8);
   query_left = query;
   while (query_left) {
     const grnxx::Slice next = charset->get_char(query);
@@ -51,7 +51,7 @@ void test_ascii() {
 void test_euc_jp() {
   const grnxx::Slice query = "\xCA\xB8\xBB\xFA\xCE\xF3";
 
-  const grnxx::Charset *charset = grnxx::Charset::open(grnxx::CHARSET_EUC_JP);
+  const grnxx::Charset *charset = grnxx::Charset::get(grnxx::CHARSET_EUC_JP);
   grnxx::Slice query_left = query;
   while (query_left) {
     const grnxx::Slice next = charset->get_char(query);
@@ -64,7 +64,7 @@ void test_shift_jis() {
   const grnxx::Slice query = "\x95\xB6\x8E\x9A\x97\xF1";
 
   const grnxx::Charset *charset =
-      grnxx::Charset::open(grnxx::CHARSET_SHIFT_JIS);
+      grnxx::Charset::get(grnxx::CHARSET_SHIFT_JIS);
   grnxx::Slice query_left = query;
   while (query_left) {
     const grnxx::Slice next = charset->get_char(query);
@@ -76,7 +76,7 @@ void test_shift_jis() {
 void test_utf_8() {
   const grnxx::Slice query = "\xE6\x96\x87\xE5\xAD\x97\xE5\x88\x97";
 
-  const grnxx::Charset *charset = grnxx::Charset::open(grnxx::CHARSET_UTF_8);
+  const grnxx::Charset *charset = grnxx::Charset::get(grnxx::CHARSET_UTF_8);
   grnxx::Slice query_left = query;
   while (query_left) {
     const grnxx::Slice next = charset->get_char(query);

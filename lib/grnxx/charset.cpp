@@ -44,16 +44,16 @@ StringBuilder &operator<<(StringBuilder &builder, CharsetCode code) {
 Charset::Charset() {}
 Charset::~Charset() {}
 
-const Charset *Charset::open(CharsetCode code) {
+const Charset *Charset::get(CharsetCode code) {
   switch (code) {
     case CHARSET_SHIFT_JIS: {
-      return charset::Shift_JIS::open();
+      return charset::Shift_JIS::get();
     }
     case CHARSET_EUC_JP: {
-      return charset::EUC_JP::open();
+      return charset::EUC_JP::get();
     }
     case CHARSET_UTF_8: {
-      return charset::UTF_8::open();
+      return charset::UTF_8::get();
     }
     case CHARSET_UNKNOWN: {
       break;

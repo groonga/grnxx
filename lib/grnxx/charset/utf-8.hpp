@@ -26,7 +26,7 @@ namespace charset {
 // UTF-8.
 class UTF_8 : public Charset {
  public:
-  static const Charset *open();
+  static const Charset *get();
 
   CharsetCode code() const;
 

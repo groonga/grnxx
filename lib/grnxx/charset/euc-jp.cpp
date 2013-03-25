@@ -20,7 +20,7 @@
 namespace grnxx {
 namespace charset {
 
-const Charset *EUC_JP::open() {
+const Charset *EUC_JP::get() {
   static EUC_JP singleton;
   return &singleton;
 }

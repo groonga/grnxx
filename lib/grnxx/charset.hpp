@@ -41,7 +41,7 @@ class Charset {
   virtual ~Charset();
 
   // Return a reference to a specific charset.
-  static const Charset *open(CharsetCode code);
+  static const Charset *get(CharsetCode code);
 
   // Return the charset code.
   virtual CharsetCode code() const = 0;

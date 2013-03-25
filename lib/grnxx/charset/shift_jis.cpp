@@ -20,7 +20,7 @@
 namespace grnxx {
 namespace charset {
 
-const Charset *Shift_JIS::open() {
+const Charset *Shift_JIS::get() {
   static Shift_JIS singleton;
   return &singleton;
 }

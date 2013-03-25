@@ -167,7 +167,7 @@ void test_scan() {
   assert(!scan->next());
 
   scan.reset(map->open_scan(
-      query, grnxx::Charset::open(grnxx::CHARSET_UTF_8)));
+      query, grnxx::Charset::get(grnxx::CHARSET_UTF_8)));
 
   assert(scan->next());
   assert(scan->offset() == 0);
@@ -196,7 +196,7 @@ void test_scan() {
   query = "今日は良い天気ですね";
 
   scan.reset(map->open_scan(
-      query, grnxx::Charset::open(grnxx::CHARSET_UTF_8)));
+      query, grnxx::Charset::get(grnxx::CHARSET_UTF_8)));
 
   assert(scan->next());
   assert(scan->offset() == 0);

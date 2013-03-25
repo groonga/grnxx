@@ -26,7 +26,7 @@ namespace charset {
 // EUC-JP: Extended_UNIX_Code_Packed_Format_for_Japanese.
 class EUC_JP : public Charset {
  public:
-  static const Charset *open();
+  static const Charset *get();
 
   CharsetCode code() const;
 
