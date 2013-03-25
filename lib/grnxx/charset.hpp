@@ -46,9 +46,12 @@ class Charset {
   // Return the charset code.
   virtual CharsetCode code() const = 0;
 
-  // Return the first character of the string "slice". This function may return
-  // an empty slice if "slice" is empty or an invalid sequence.
+  // Return the first character of "slice". This function may return an empty
+  // slice if "slice" is empty or an invalid sequence.
   virtual Slice get_char(const Slice &slice) const = 0;
+  // Return the size of the first character of "slice". This function may
+  // return 0 if "slice" is empty or an invalid sequence.
+  virtual size_t get_char_size(const Slice &slice) const = 0;
 };
 
 }  // namespace grnxx

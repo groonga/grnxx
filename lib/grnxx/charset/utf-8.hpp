@@ -31,6 +31,7 @@ class UTF_8 : public Charset {
   CharsetCode code() const;
 
   Slice get_char(const Slice &slice) const;
+  size_t get_char_size(const Slice &slice) const;
 };
 
 }  // namespace charset

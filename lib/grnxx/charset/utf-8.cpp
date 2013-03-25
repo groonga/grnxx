@@ -32,8 +32,12 @@ CharsetCode UTF_8::code() const {
 }
 
 Slice UTF_8::get_char(const Slice &slice) const {
+  return slice.prefix(get_char_size(slice));
+}
+
+size_t UTF_8::get_char_size(const Slice &slice) const {
   if (!slice) {
-    return slice;
+    return 0;
   }
   if (slice[0] & 0x80) {
     // A multibyte character can be 2, 3, or 4 bytes long. Also, the 2nd,
@@ -41,36 +45,38 @@ Slice UTF_8::get_char(const Slice &slice) const {
     // be 10.
     const size_t char_size =
         31 - bit_scan_reverse(~(static_cast<uint32_t>(slice[0]) << 24));
-    // Return an empty slice if the character is incomplete.
+    // Return 0 if the character is incomplete.
     if (char_size > slice.size()) {
-      return slice.prefix(0);
+      return 0;
     }
     switch (char_size) {
       case 4: {
-        // Return an empty slice if the 4th byte is invalid.
+        // Return 0 if the 4th byte is invalid.
         if ((slice[3] & 0xC0) != 0x80) {
-          return slice.prefix(0);
+          return 0;
         }
       }
       case 3: {
-        // Return an empty slice if the 3rd byte is invalid.
+        // Return 0 if the 3rd byte is invalid.
         if ((slice[2] & 0xC0) != 0x80) {
-          return slice.prefix(0);
+          return 0;
         }
       }
       case 2: {
-        // Return an empty slice if the 2nd byte is invalid.
+        // Return 0 if the 2nd byte is invalid.
         if ((slice[1] & 0xC0) != 0x80) {
-          return slice.prefix(0);
+          return 0;
         }
-        return slice.prefix(char_size);
+        return char_size;
       }
       default: {
-        return slice.prefix(0);
+        // Return 0 if the character size is invalid.
+        return 0;
       }
     }
   }
-  return slice.prefix(1);
+  // Return 1 for an ASCII character.
+  return 1;
 }
 
 }  // namespace charset

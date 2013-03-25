@@ -30,45 +30,50 @@ CharsetCode EUC_JP::code() const {
 }
 
 Slice EUC_JP::get_char(const Slice &slice) const {
+  return slice.prefix(get_char_size(slice));
+}
+
+size_t EUC_JP::get_char_size(const Slice &slice) const {
   if (!slice) {
-    return slice;
+    return 0;
   }
   // Reference: http://ja.wikipedia.org/wiki/EUC-JP
   if (slice[0] & 0x80) {
-    // 3-byte characters start with 0x8F.
+    // A 3-byte character starts with 0x8F.
     if (slice[0] == 0x8F) {
-      // Return an empty slice if the character is incomplete.
+      // Return 0 if the character is incomplete.
       if (slice.size() < 3) {
-        return slice.prefix(0);
+        return 0;
       }
-      // Return an empty slice if the 2nd byte is invalid.
+      // Return 0 if the 2nd byte is invalid.
       // In fact, only bytes in [A1, A8], [B0, ED], and [F3, FE] are valid.
       if (static_cast<unsigned>(slice[1] - 0xA1) > (0xFE - 0xA1)) {
-        return slice.prefix(0);
+        return 0;
       }
-      // Return an empty slice if the 3rd byte is invalid.
+      // Return 0 if the 3rd byte is invalid.
       if (static_cast<unsigned>(slice[2] - 0xA1) > (0xFE - 0xA1)) {
-        return slice.prefix(0);
+        return 0;
       }
-      return slice.prefix(3);
+      return 3;
     } else {
-      // Return an empty slice if the 1st byte is invalid.
+      // Return 0 if the 1st byte is invalid.
       // In fact, only bytes in [A1, A8], [AD, AD], and [B0, FE] are valid.
       if (static_cast<unsigned>(slice[0] - 0xA1) > (0xFE - 0xA1)) {
-        return slice.prefix(0);
+        return 0;
       }
-      // Return an empty slice if the character is incomplete.
+      // Return 0 if the character is incomplete.
       if (slice.size() < 2) {
-        return slice.prefix(0);
+        return 0;
       }
-      // Return an empty slice if the 2nd byte is invalid.
+      // Return 0 if the 2nd byte is invalid.
       if (static_cast<unsigned>(slice[1] - 0xA1) > (0xFE - 0xA1)) {
-        return slice.prefix(0);
+        return 0;
       }
-      return slice.prefix(2);
+      return 2;
     }
   }
-  return slice.prefix(1);
+  // Return 1 for an ASCII character.
+  return 1;
 }
 
 }  // namespace charset

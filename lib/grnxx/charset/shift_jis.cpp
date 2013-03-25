@@ -30,23 +30,28 @@ CharsetCode Shift_JIS::code() const {
 }
 
 Slice Shift_JIS::get_char(const Slice &slice) const {
+  return slice.prefix(get_char_size(slice));
+}
+
+size_t Shift_JIS::get_char_size(const Slice &slice) const {
   if (!slice) {
-    return slice;
+    return 0;
   }
   // The 1st byte of a multibyte character is in [81, 9F] or [E0, FC].
   // Reference: http://www.st.rim.or.jp/~phinloda/cqa/cqa15.html#Q4
   if (static_cast<unsigned>((slice[0] ^ 0x20) - 0xA1) < 0x3C) {
-    // Return an empty slice if the character is incomplete.
+    // Return 0 if the character is incomplete.
     if (slice.size() < 2) {
-      return slice.prefix(0);
+      return 0;
     }
-    // Return an empty slice if the 2nd byte is invalid.
+    // Return 0 if the 2nd byte is invalid.
     if (static_cast<unsigned>(slice[1] - 0x40) > (0xFC - 0x40)) {
-      return slice.prefix(0);
+      return 0;
     }
-    return slice.prefix(2);
+    return 2;
   }
-  return slice.prefix(1);
+  // Return 1 for an ASCII character.
+  return 1;
 }
 
 }  // namespace charset
