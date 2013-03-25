@@ -55,7 +55,7 @@ bool MapScan::next() {
     }
     // Move to the next character.
     if (charset_) {
-      offset_ += charset_->get_char(query_left).size();
+      offset_ += charset_->get_char_size(query_left);
     } else {
       ++offset_;
     }
