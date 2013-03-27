@@ -54,7 +54,7 @@ struct TrieOptions {
   TrieOptions();
 };
 
-class Trie {
+class Trie : public Map {
  public:
   Trie();
   virtual ~Trie();
@@ -65,36 +65,6 @@ class Trie {
   static void unlink(io::Pool pool, uint32_t block_id);
 
   virtual Trie *defrag(const TrieOptions &options) = 0;
-
-  virtual uint32_t block_id() const = 0;
-
-  virtual bool search(int64_t key_id, MapKey *key = nullptr) = 0;
-  virtual bool search(const Slice &key, int64_t *key_id = nullptr) = 0;
-
-  virtual bool lcp_search(const Slice &query, int64_t *key_id = nullptr,
-                          MapKey *key = nullptr) = 0;
-
-  virtual bool insert(const Slice &key, int64_t *key_id = nullptr) = 0;
-
-  virtual bool remove(int64_t key_id) = 0;
-  virtual bool remove(const Slice &key) = 0;
-
-  virtual bool update(int64_t key_id, const Slice &dest_key) = 0;
-  virtual bool update(const Slice &src_key, const Slice &dest_key,
-                      int64_t *key_id = nullptr) = 0;
-
-  virtual MapCursor *open_id_cursor(MapCursorFlags flags,
-                                    int64_t min, int64_t max,
-                                    int64_t offset, int64_t limit) = 0;
-  virtual MapCursor *open_key_cursor(MapCursorFlags flags,
-                                     const Slice &min, const Slice &max,
-                                     int64_t offset, int64_t limit) = 0;
-  virtual MapCursor *open_prefix_cursor(MapCursorFlags flags,
-                                        size_t min, const Slice &max,
-                                        int64_t offset, int64_t limit) = 0;
-  virtual MapCursor *open_predictive_cursor(MapCursorFlags flags,
-                                            const Slice &min,
-                                            int64_t offset, int64_t limit) = 0;
 };
 
 }  // namespace da
