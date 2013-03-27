@@ -133,6 +133,10 @@ class MapCursor {
   // Move the cursor to the next key and return true on success.
   virtual bool next() = 0;
 
+  // TODO
+  // Remove the current key and return true on success.
+//  virtual bool remove() = 0;
+
   // Return the ID of the current key.
   int64_t key_id() const {
     return key_id_;
