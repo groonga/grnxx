@@ -89,7 +89,6 @@ void PrefixCursor::open_cursor(Trie *trie, MapCursorFlags flags,
   if (i == query.size()) {
     const Node node = trie_->nodes_[node_id];
     if (node.is_leaf()) {
-      const Key &key = trie_->get_key(node.key_pos());
       if ((node.key_size() >= min) && (node.key_size() <= query.size())) {
         nodes_.push_back(node);
       }
