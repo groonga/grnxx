@@ -270,7 +270,7 @@ class Map {
                                      const Slice &min, const Slice &max,
                                      int64_t offset, int64_t limit) = 0;
   // Find keys in prefixes of "max". "flags" accepts MAP_CURSOR_ASCENDING,
-  // MAP_CURSOR_DESCENDING, and MAP_CURSOR_EXCEPT_MAX.
+  // MAP_CURSOR_DESCENDING, MAP_CURSOR_EXCEPT_MIN, and MAP_CURSOR_EXCEPT_MAX.
   virtual MapCursor *open_prefix_cursor(MapCursorFlags flags,
                                         size_t min, const Slice &max,
                                         int64_t offset, int64_t limit) = 0;
