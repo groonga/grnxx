@@ -119,7 +119,7 @@ bool Array<T>::reset(int64_t key_id, T dest_key) {
 
 template <typename T>
 bool Array<T>::search(T key, int64_t *key_id) {
-  for (int64_t i = 0; i < header_->max_key_id; ++i) {
+  for (int64_t i = 0; i <= header_->max_key_id; ++i) {
     if (get_bit(i)) {
       if (key == keys_[i]) {
         if (key_id) {
@@ -135,7 +135,7 @@ bool Array<T>::search(T key, int64_t *key_id) {
 template <typename T>
 bool Array<T>::insert(T key, int64_t *key_id) {
   int64_t key_id_candidate = -1;
-  for (int64_t i = 0; i < header_->max_key_id; ++i) {
+  for (int64_t i = 0; i <= header_->max_key_id; ++i) {
     if (get_bit(i)) {
       if (key == keys_[i]) {
         if (key_id) {
@@ -143,7 +143,7 @@ bool Array<T>::insert(T key, int64_t *key_id) {
         }
         return false;
       }
-    } else if (key_id_candidate != -1) {
+    } else if (key_id_candidate == -1) {
       // Use the youngest ID if there exist IDs associated with removed keys.
       key_id_candidate = i;
     }
@@ -152,6 +152,7 @@ bool Array<T>::insert(T key, int64_t *key_id) {
     key_id_candidate = ++header_->max_key_id;
   }
   keys_[key_id_candidate] = key;
+  set_bit(key_id_candidate, true);
   if (key_id) {
     *key_id = key_id_candidate;
   }
