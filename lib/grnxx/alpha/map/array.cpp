@@ -110,6 +110,9 @@ bool Array<T>::reset(int64_t key_id, T dest_key) {
   if (!get_bit(key_id)) {
     return false;
   }
+  if (search(dest_key)) {
+    return false;
+  }
   keys_[key_id] = dest_key;
   return true;
 }
@@ -169,6 +172,9 @@ template <typename T>
 bool Array<T>::update(T src_key, T dest_key, int64_t *key_id) {
   int64_t src_key_id;
   if (!search(src_key, &src_key_id)) {
+    return false;
+  }
+  if (search(dest_key)) {
     return false;
   }
   keys_[src_key_id] = dest_key;
