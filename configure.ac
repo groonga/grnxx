@@ -61,6 +61,7 @@ AC_CONFIG_FILES([Makefile
                  lib/Makefile
                  lib/grnxx/Makefile
                  lib/grnxx/alpha/Makefile
+                 lib/grnxx/alpha/map/Makefile
                  lib/grnxx/charset/Makefile
                  lib/grnxx/db/Makefile
                  lib/grnxx/io/Makefile
