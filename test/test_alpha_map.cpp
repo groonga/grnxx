@@ -17,6 +17,7 @@
 */
 #include <cassert>
 #include <cmath>
+#include <functional>
 #include <random>
 #include <unordered_map>
 
@@ -25,8 +26,33 @@
 #include "grnxx/time/time.hpp"
 
 template <typename T>
+bool isNaN(T) {
+  return false;
+}
+
+template<>
+bool isNaN(double key) {
+  return std::isnan(key);
+}
+
+template <typename T>
+struct Hash {
+  size_t operator()(T key) const {
+    return std::hash<T>()(key);
+  }
+};
+
+template <>
+struct Hash<grnxx::alpha::GeoPoint> {
+  size_t operator()(grnxx::alpha::GeoPoint key) const {
+    return std::hash<std::int64_t>()(key.latitude()) ^
+           std::hash<std::int64_t>()(key.longitude());
+  }
+};
+
+template <typename T>
 void compare_maps(const std::unique_ptr<grnxx::alpha::Map<T>> &map,
-                  const std::unordered_map<T, std::int64_t> &hash_map) {
+                  const std::unordered_map<T, std::int64_t, Hash<T>> &hash_map) {
   for (auto it = hash_map.begin(); it != hash_map.end(); ++it) {
     const T key = it->first;
     const std::int64_t key_id = it->second;
@@ -54,11 +80,11 @@ void test_map() {
       grnxx::alpha::Map<T>::create(grnxx::alpha::MAP_ARRAY, pool));
 
   constexpr std::size_t size = (sizeof(T) == 1) ? 128 : 1024;
-  std::unordered_map<T, std::int64_t> hash_map;
+  std::unordered_map<T, std::int64_t, Hash<T>> hash_map;
   while (hash_map.size() < size) {
     const std::uint64_t key_src = rng();
     const T key = *reinterpret_cast<const T *>(&key_src);
-    if (std::isnan(static_cast<double>(key))) {
+    if (isNaN(key)) {
       continue;
     }
 
@@ -195,6 +221,7 @@ int main() {
   test_map<uint32_t>();
   test_map<uint64_t>();
   test_map<double>();
+  test_map<grnxx::alpha::GeoPoint>();
 
   test_nan();
 
