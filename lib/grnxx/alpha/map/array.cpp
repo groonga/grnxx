@@ -47,6 +47,14 @@ struct Helper<T, false> {
   }
 };
 
+db::Blob slice_to_blob(Slice slice) {
+  return db::Blob(slice.ptr(), slice.size());
+}
+
+Slice blob_to_slice(const db::Blob &blob) {
+  return Slice(blob.address(), blob.length());
+}
+
 }  // namespace
 
 ArrayHeader::ArrayHeader()
@@ -87,9 +95,9 @@ Array<T> *Array<T>::open(io::Pool pool, uint32_t block_id) {
 
 template <typename T>
 bool Array<T>::unlink(io::Pool pool, uint32_t block_id) {
-  Array<T> *array = open(pool, block_id);
-  pool.free_block(array->header_->bits_block_id);
-  pool.free_block(array->header_->keys_block_id);
+  std::unique_ptr<Array<T>> array(open(pool, block_id));
+  array->bits_.unlink(pool, array->header_->bits_block_id);
+  array->keys_.unlink(pool, array->header_->keys_block_id);
   pool.free_block(array->block_id());
   return false;
 }
@@ -239,6 +247,163 @@ template class Array<uint32_t>;
 template class Array<uint64_t>;
 template class Array<double>;
 template class Array<GeoPoint>;
+
+Array<Slice>::~Array() {}
+
+Array<Slice> *Array<Slice>::create(io::Pool pool, const MapOptions &) {
+  std::unique_ptr<Array<Slice>> array(new (std::nothrow) Array<Slice>);
+  array->pool_ = pool;
+  array->block_info_ = pool.create_block(sizeof(ArrayHeader));
+  array->header_ = static_cast<ArrayHeader *>(
+      pool.get_block_address(*array->block_info_));
+  *array->header_ = ArrayHeader();
+  array->keys_.create(pool);
+  array->header_->keys_block_id = array->keys_.block_id();
+  return array.release();
+}
+
+Array<Slice> *Array<Slice>::open(io::Pool pool, uint32_t block_id) {
+  std::unique_ptr<Array<Slice>> array(new (std::nothrow) Array<Slice>);
+  array->pool_ = pool;
+  array->block_info_ = pool.get_block_info(block_id);
+  array->header_ = static_cast<ArrayHeader *>(
+      pool.get_block_address(*array->block_info_));
+  array->keys_.open(pool, array->header_->keys_block_id);
+  return array.release();
+}
+
+bool Array<Slice>::unlink(io::Pool pool, uint32_t block_id) {
+  std::unique_ptr<Array<Slice>> array(open(pool, block_id));
+  array->keys_.unlink(pool, array->header_->keys_block_id);
+  pool.free_block(array->block_id());
+  return false;
+}
+
+uint32_t Array<Slice>::block_id() const {
+  return block_info_->id();
+}
+
+MapType Array<Slice>::type() const {
+  return MAP_ARRAY;
+}
+
+bool Array<Slice>::get(int64_t key_id, Slice *key) {
+  if ((key_id < 0) || (key_id > header_->max_key_id)) {
+    return false;
+  }
+  db::Blob blob = keys_[key_id].get();
+  if (!blob) {
+    return false;
+  }
+  if (key) {
+    *key = blob_to_slice(blob);
+  }
+  return true;
+}
+
+bool Array<Slice>::unset(int64_t key_id) {
+  if ((key_id < 0) || (key_id > header_->max_key_id)) {
+    return false;
+  }
+  db::Blob blob = keys_[key_id].get();
+  if (!blob) {
+    return false;
+  }
+  keys_[key_id] = nullptr;
+  return true;
+}
+
+bool Array<Slice>::reset(int64_t key_id, Slice dest_key) {
+  if ((key_id < 0) || (key_id > header_->max_key_id)) {
+    return false;
+  }
+  db::Blob blob = keys_[key_id].get();
+  if (!blob) {
+    return false;
+  }
+  if (!dest_key || search(dest_key)) {
+    return false;
+  }
+  keys_[key_id] = slice_to_blob(dest_key);
+  return true;
+}
+
+bool Array<Slice>::search(Slice key, int64_t *key_id) {
+  for (int64_t i = 0; i <= header_->max_key_id; ++i) {
+    db::Blob blob = keys_[i].get();
+    if (key == blob_to_slice(blob)) {
+      if (key_id) {
+        *key_id = i;
+      }
+      return true;
+    }
+  }
+  return false;
+}
+
+bool Array<Slice>::insert(Slice key, int64_t *key_id) {
+  if (!key) {
+    return false;
+  }
+  int64_t key_id_candidate = -1;
+  for (int64_t i = 0; i <= header_->max_key_id; ++i) {
+    db::Blob blob = keys_[i].get();
+    if (key == blob_to_slice(blob)) {
+      if (key_id) {
+        *key_id = i;
+      }
+      return false;
+    } else if (key_id_candidate == -1) {
+      // Use the youngest ID if there exist IDs associated with removed keys.
+      key_id_candidate = i;
+    }
+  }
+  if (key_id_candidate == -1) {
+    key_id_candidate = ++header_->max_key_id;
+  }
+  keys_[key_id_candidate] = slice_to_blob(key);
+  if (key_id) {
+    *key_id = key_id_candidate;
+  }
+  return true;
+}
+
+bool Array<Slice>::remove(Slice key) {
+  int64_t key_id;
+  if (!search(key, &key_id)) {
+    return false;
+  }
+  keys_[key_id] = nullptr;
+  return true;
+}
+
+bool Array<Slice>::update(Slice src_key, Slice dest_key, int64_t *key_id) {
+  int64_t src_key_id;
+  if (!search(src_key, &src_key_id)) {
+    return false;
+  }
+  if (!dest_key || search(dest_key)) {
+    return false;
+  }
+  keys_[src_key_id] = slice_to_blob(dest_key);
+  if (key_id) {
+    *key_id = src_key_id;
+  }
+  return true;
+}
+
+void Array<Slice>::truncate() {
+  for (int64_t i = 0; i <= header_->max_key_id; ++i) {
+    keys_[i] = nullptr;
+  }
+  header_->max_key_id = -1;
+}
+
+Array<Slice>::Array()
+  : pool_(),
+    block_info_(nullptr),
+    header_(nullptr),
+    keys_() {}
 
 }  // namespace map
 }  // namespace alpha

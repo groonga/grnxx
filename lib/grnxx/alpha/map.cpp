@@ -51,7 +51,7 @@ template class MapCursor<uint32_t>;
 template class MapCursor<uint64_t>;
 template class MapCursor<double>;
 template class MapCursor<GeoPoint>;
-//template class MapCursor<Slice>;
+template class MapCursor<Slice>;
 
 template <typename T>
 Map<T>::Map() {}
@@ -172,7 +172,7 @@ template class Map<uint32_t>;
 template class Map<uint64_t>;
 template class Map<double>;
 template class Map<GeoPoint>;
-//template class Map<Slice>;
+template class Map<Slice>;
 
 }  // namespace alpha
 }  // namespace grnxx

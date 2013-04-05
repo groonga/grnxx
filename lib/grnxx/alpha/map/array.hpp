@@ -20,6 +20,7 @@
 
 #include "grnxx/alpha/map.hpp"
 #include "grnxx/db/vector.hpp"
+#include "grnxx/db/blob_vector.hpp"
 
 namespace grnxx {
 namespace alpha {
@@ -78,6 +79,40 @@ class Array : public grnxx::alpha::Map<T> {
       bits_[key_id / 32] &= ~(1U << (key_id % 32));
     }
   }
+};
+
+template <>
+class Array<Slice> : public grnxx::alpha::Map<Slice> {
+ public:
+  ~Array();
+
+  static Array *create(io::Pool pool,
+                       const MapOptions &options = MapOptions());
+  static Array *open(io::Pool pool, uint32_t block_id);
+
+  static bool unlink(io::Pool pool, uint32_t block_id);
+
+  uint32_t block_id() const;
+  MapType type() const;
+
+  bool get(int64_t key_id, Slice *key = nullptr);
+  bool unset(int64_t key_id);
+  bool reset(int64_t key_id, Slice dest_key);
+
+  bool search(Slice key, int64_t *key_id = nullptr);
+  bool insert(Slice key, int64_t *key_id = nullptr);
+  bool remove(Slice key);
+  bool update(Slice src_key, Slice dest_key, int64_t *key_id = nullptr);
+
+  void truncate();
+
+ private:
+  io::Pool pool_;
+  const io::BlockInfo *block_info_;
+  ArrayHeader *header_;
+  db::BlobVector keys_;
+
+  Array();
 };
 
 }  // namespace map
