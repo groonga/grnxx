@@ -24,25 +24,28 @@ namespace alpha {
 namespace map {
 namespace {
 
-template <typename T>
-bool equal_to(T x, T y) {
-  return x == y;
-}
-
-template <>
-bool equal_to(double x, double y) {
-  return (std::isnan(x) && std::isnan(y)) || (x == y);
-}
+template <typename T, bool HAS_NAN = std::numeric_limits<T>::has_quiet_NaN>
+struct Helper;
 
 template <typename T>
-T normalize(T x) {
-  return x;
-}
+struct Helper<T, true> {
+  static bool equal_to(T x, T y) {
+    return (std::isnan(x) && std::isnan(y)) || (x == y);
+  }
+  static T normalize(T x) {
+    return std::isnan(x) ? std::numeric_limits<T>::quiet_NaN() : x;
+  }
+};
 
-template <>
-double normalize(double x) {
-  return std::isnan(x) ? std::numeric_limits<double>::quiet_NaN() : x;
-}
+template <typename T>
+struct Helper<T, false> {
+  static bool equal_to(T x, T y) {
+    return x == y;
+  }
+  static T normalize(T x) {
+    return x;
+  }
+};
 
 }  // namespace
 
@@ -138,7 +141,7 @@ bool Array<T>::reset(int64_t key_id, T dest_key) {
   if (search(dest_key)) {
     return false;
   }
-  keys_[key_id] = normalize(dest_key);
+  keys_[key_id] = Helper<T>::normalize(dest_key);
   return true;
 }
 
@@ -146,7 +149,7 @@ template <typename T>
 bool Array<T>::search(T key, int64_t *key_id) {
   for (int64_t i = 0; i <= header_->max_key_id; ++i) {
     if (get_bit(i)) {
-      if (equal_to(key, keys_[i])) {
+      if (Helper<T>::equal_to(key, keys_[i])) {
         if (key_id) {
           *key_id = i;
         }
@@ -162,7 +165,7 @@ bool Array<T>::insert(T key, int64_t *key_id) {
   int64_t key_id_candidate = -1;
   for (int64_t i = 0; i <= header_->max_key_id; ++i) {
     if (get_bit(i)) {
-      if (equal_to(key, keys_[i])) {
+      if (Helper<T>::equal_to(key, keys_[i])) {
         if (key_id) {
           *key_id = i;
         }
@@ -176,7 +179,7 @@ bool Array<T>::insert(T key, int64_t *key_id) {
   if (key_id_candidate == -1) {
     key_id_candidate = ++header_->max_key_id;
   }
-  keys_[key_id_candidate] = normalize(key);
+  keys_[key_id_candidate] = Helper<T>::normalize(key);
   set_bit(key_id_candidate, true);
   if (key_id) {
     *key_id = key_id_candidate;
@@ -203,7 +206,7 @@ bool Array<T>::update(T src_key, T dest_key, int64_t *key_id) {
   if (search(dest_key)) {
     return false;
   }
-  keys_[src_key_id] = normalize(dest_key);
+  keys_[src_key_id] = Helper<T>::normalize(dest_key);
   if (key_id) {
     *key_id = src_key_id;
   }
