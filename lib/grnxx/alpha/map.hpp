@@ -24,6 +24,45 @@
 namespace grnxx {
 namespace alpha {
 
+class GeoPoint {
+ public:
+  GeoPoint() = default;
+  GeoPoint(int32_t latitude, int32_t longitude)
+    : value_((static_cast<uint64_t>(latitude) << LATITUDE_BITS) |
+             (static_cast<uint64_t>(longitude) << LONGITUDE_BITS)) {}
+
+  bool operator==(GeoPoint rhs) const {
+    return value_ == rhs.value_;
+  }
+  bool operator!=(GeoPoint rhs) const {
+    return value_ != rhs.value_;
+  }
+
+  int32_t latitude() const {
+    return static_cast<int32_t>((value_ & LATITUDE_MASK) >> LATITUDE_BITS);
+  }
+  int32_t longitude() const {
+    return static_cast<int32_t>((value_ & LONGITUDE_MASK) >> LONGITUDE_BITS);
+  }
+
+  void set_latitude(int32_t latitude) {
+    value_ = (value_ & LONGITUDE_MASK) |
+             (static_cast<uint64_t>(latitude) << LATITUDE_BITS);
+  }
+  void set_longitude(int32_t longitude) {
+    value_ = (value_ & LATITUDE_MASK) |
+             (static_cast<uint64_t>(longitude) << LONGITUDE_BITS);
+  }
+
+ private:
+  uint64_t value_;
+
+  static constexpr uint64_t LATITUDE_MASK  = 0xFFFFFFFFULL;
+  static constexpr uint8_t  LATITUDE_BITS  = 0;
+  static constexpr uint64_t LONGITUDE_MASK = 0xFFFFFFFFULL << 32;
+  static constexpr uint8_t  LONGITUDE_BITS = 32;
+};
+
 enum MapType : int32_t {
   MAP_UNKNOWN      = 0,
   MAP_ARRAY        = 1,  // Test implementation.

@@ -238,6 +238,7 @@ template class Array<uint16_t>;
 template class Array<uint32_t>;
 template class Array<uint64_t>;
 template class Array<double>;
+template class Array<GeoPoint>;
 
 }  // namespace map
 }  // namespace alpha
