@@ -17,9 +17,34 @@
 */
 #include "array.hpp"
 
+#include <cmath>
+
 namespace grnxx {
 namespace alpha {
 namespace map {
+namespace {
+
+template <typename T>
+bool equal_to(T x, T y) {
+  return x == y;
+}
+
+template <>
+bool equal_to(double x, double y) {
+  return (std::isnan(x) && std::isnan(y)) || (x == y);
+}
+
+template <typename T>
+T normalize(T x) {
+  return x;
+}
+
+template <>
+double normalize(double x) {
+  return std::isnan(x) ? std::numeric_limits<double>::quiet_NaN() : x;
+}
+
+}  // namespace
 
 ArrayHeader::ArrayHeader()
   : map_type(MAP_ARRAY),
@@ -113,7 +138,7 @@ bool Array<T>::reset(int64_t key_id, T dest_key) {
   if (search(dest_key)) {
     return false;
   }
-  keys_[key_id] = dest_key;
+  keys_[key_id] = normalize(dest_key);
   return true;
 }
 
@@ -121,7 +146,7 @@ template <typename T>
 bool Array<T>::search(T key, int64_t *key_id) {
   for (int64_t i = 0; i <= header_->max_key_id; ++i) {
     if (get_bit(i)) {
-      if (key == keys_[i]) {
+      if (equal_to(key, keys_[i])) {
         if (key_id) {
           *key_id = i;
         }
@@ -137,7 +162,7 @@ bool Array<T>::insert(T key, int64_t *key_id) {
   int64_t key_id_candidate = -1;
   for (int64_t i = 0; i <= header_->max_key_id; ++i) {
     if (get_bit(i)) {
-      if (key == keys_[i]) {
+      if (equal_to(key, keys_[i])) {
         if (key_id) {
           *key_id = i;
         }
@@ -151,7 +176,7 @@ bool Array<T>::insert(T key, int64_t *key_id) {
   if (key_id_candidate == -1) {
     key_id_candidate = ++header_->max_key_id;
   }
-  keys_[key_id_candidate] = key;
+  keys_[key_id_candidate] = normalize(key);
   set_bit(key_id_candidate, true);
   if (key_id) {
     *key_id = key_id_candidate;
@@ -178,7 +203,7 @@ bool Array<T>::update(T src_key, T dest_key, int64_t *key_id) {
   if (search(dest_key)) {
     return false;
   }
-  keys_[src_key_id] = dest_key;
+  keys_[src_key_id] = normalize(dest_key);
   if (key_id) {
     *key_id = src_key_id;
   }

@@ -16,6 +16,7 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 #include <cassert>
+#include <cmath>
 #include <random>
 #include <unordered_map>
 
@@ -142,6 +143,44 @@ void test_map() {
   }
 }
 
+void test_nan() {
+  grnxx::io::Pool pool;
+  pool.open(grnxx::io::POOL_ANONYMOUS);
+
+  std::unique_ptr<grnxx::alpha::Map<double>> map;
+  map.reset(map->create(grnxx::alpha::MAP_ARRAY, pool));
+
+  const double nan = std::numeric_limits<double>::quiet_NaN();
+
+  std::int64_t key_id;
+  assert(map->insert(nan, &key_id));
+  assert(key_id == 0);
+  assert(!map->insert(nan));
+
+  double key;
+  assert(map->get(key_id, &key));
+  assert(std::isnan(key));
+  assert(map->search(nan, &key_id));
+  assert(key_id == 0);
+
+  assert(map->unset(key_id));
+  assert(!map->unset(key_id));
+
+  assert(map->insert(nan));
+  assert(map->remove(nan));
+  assert(!map->remove(nan));
+
+  assert(!map->reset(nan, nan));
+  assert(map->insert(nan, &key_id));
+  assert(!map->reset(key_id, nan));
+  assert(map->reset(key_id, 0.0));
+  assert(map->reset(key_id, nan));
+
+  assert(!map->update(nan, nan));
+  assert(map->update(nan, 0.0));
+  assert(map->update(0.0, nan));
+}
+
 int main() {
   grnxx::Logger::set_flags(grnxx::LOGGER_WITH_ALL |
                            grnxx::LOGGER_ENABLE_COUT);
@@ -156,6 +195,8 @@ int main() {
   test_map<uint32_t>();
   test_map<uint64_t>();
   test_map<double>();
+
+  test_nan();
 
   return 0;
 }
