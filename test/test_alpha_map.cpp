@@ -77,6 +77,11 @@ void test_map() {
     assert(map->search(key, &stored_key_id));
     assert(stored_key_id == key_id);
   }
+
+  std::uint32_t block_id = map->block_id();
+  map.reset();
+  map.reset(grnxx::alpha::Map<T>::open(pool, block_id));
+
   compare_maps(map, hash_map);
 
   for (auto it = hash_map.begin(); it != hash_map.end(); ++it) {
