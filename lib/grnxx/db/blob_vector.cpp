@@ -386,6 +386,10 @@ void BlobVectorImpl::free_value(BlobVectorCell cell) {
     case BLOB_VECTOR_MEDIUM: {
       Lock lock(mutable_inter_thread_mutex());
 
+      if (!index_store_) {
+        index_store_.open(pool_, header_->index_store_block_id());
+      }
+
       const uint32_t page_id = static_cast<uint32_t>(
           cell.offset() >> BLOB_VECTOR_VALUE_STORE_PAGE_SIZE_BITS);
       index_store_[page_id].set_num_values(

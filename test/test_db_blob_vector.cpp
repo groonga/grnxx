@@ -82,6 +82,7 @@ void test_basics() {
   pool.open(grnxx::io::POOL_OPEN, "temp.grn");
   vector.open(pool, block_id);
 
+
   GRNXX_NOTICE() << "blob_vector = " << vector;
 
   assert(blob = vector[0]);
@@ -311,7 +312,7 @@ void test_mixed() {
   for (std::uint32_t loop_id = 0; loop_id < NUM_LOOPS; ++loop_id) {
     for (std::uint32_t i = 0; i < NUM_VALUES; ++i) {
       const std::uint32_t value_id = random() % VECTOR_SIZE;
-      switch (random() & 3) {
+      switch (random() % 5) {
         case 0: {
           vector[value_id] = nullptr;
           break;
@@ -333,6 +334,12 @@ void test_mixed() {
         }
         case 3: {
           vector[value_id] = grnxx::db::Blob(&value[0], value.length());
+          break;
+        }
+        case 4: {
+          const std::uint32_t block_id = vector.block_id();
+          vector.close();
+          vector.open(pool, block_id);
           break;
         }
       }
