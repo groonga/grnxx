@@ -15,7 +15,7 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#include "array.hpp"
+#include "grnxx/alpha/map/array.hpp"
 
 #include <cmath>
 
@@ -353,7 +353,7 @@ bool Array<Slice>::insert(Slice key, int64_t *key_id) {
         *key_id = i;
       }
       return false;
-    } else if (key_id_candidate == -1) {
+    } else if (!blob && (key_id_candidate == -1)) {
       // Use the youngest ID if there exist IDs associated with removed keys.
       key_id_candidate = i;
     }

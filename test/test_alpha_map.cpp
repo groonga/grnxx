@@ -19,6 +19,7 @@
 #include <cmath>
 #include <functional>
 #include <random>
+#include <vector>
 #include <unordered_map>
 
 #include "grnxx/alpha/map.hpp"
@@ -37,18 +38,60 @@ bool isNaN(double key) {
 
 template <typename T>
 struct Hash {
-  size_t operator()(T key) const {
+  std::size_t operator()(T key) const {
     return std::hash<T>()(key);
   }
 };
 
 template <>
 struct Hash<grnxx::alpha::GeoPoint> {
-  size_t operator()(grnxx::alpha::GeoPoint key) const {
+  std::size_t operator()(grnxx::alpha::GeoPoint key) const {
     return std::hash<std::int64_t>()(key.latitude()) ^
            std::hash<std::int64_t>()(key.longitude());
   }
 };
+
+template <>
+struct Hash<grnxx::Slice> {
+  std::size_t operator()(const grnxx::Slice &key) const {
+    std::size_t hash_value = 14695981039346656037ULL;
+    for (std::size_t i = 0; i < key.size(); ++i) {
+      hash_value *= 1099511628211ULL;
+      hash_value ^= key[i];
+    }
+    return hash_value;
+  }
+};
+
+template <typename T>
+void generate_key(T *key) {
+  static std::mt19937_64 rng;
+
+  std::uint64_t key_src = rng();
+  *key = *reinterpret_cast<const T *>(&key_src);
+  while (isNaN(*key)) {
+    key_src = rng();
+    *key = *reinterpret_cast<const T *>(&key_src);
+  }
+}
+
+void generate_key(grnxx::Slice *key) {
+  static std::mt19937_64 rng;
+  static std::vector<std::string> keys;
+
+  const std::size_t MIN_SIZE = 8;  // TODO: should be 1 in future.
+  const std::size_t MAX_SIZE = 100;  // TODO: should be 4096 in future.
+
+  std::size_t size = MIN_SIZE + (rng() % (MAX_SIZE - MIN_SIZE + 1));
+  std::string key_buf;
+  key_buf.resize(size);
+  for (std::size_t i = 0; i < size; ++i) {
+    key_buf[i] = 'A' + (rng() % 26);
+  }
+  keys.push_back(key_buf);
+
+  *key = grnxx::Slice(keys.back().data(), keys.back().size());
+}
 
 template <typename T>
 void compare_maps(const std::unique_ptr<grnxx::alpha::Map<T>> &map,
@@ -71,22 +114,17 @@ template <typename T>
 void test_map() {
   GRNXX_NOTICE() << __PRETTY_FUNCTION__;
 
-  std::mt19937_64 rng;
-
   grnxx::io::Pool pool;
   pool.open(grnxx::io::POOL_ANONYMOUS);
 
   std::unique_ptr<grnxx::alpha::Map<T>> map(
       grnxx::alpha::Map<T>::create(grnxx::alpha::MAP_ARRAY, pool));
 
-  constexpr std::size_t size = (sizeof(T) == 1) ? 128 : 1024;
+  constexpr std::size_t MAP_SIZE = (sizeof(T) == 1) ? 128 : 1024;
   std::unordered_map<T, std::int64_t, Hash<T>> hash_map;
-  while (hash_map.size() < size) {
-    const std::uint64_t key_src = rng();
-    const T key = *reinterpret_cast<const T *>(&key_src);
-    if (isNaN(key)) {
-      continue;
-    }
+  while (hash_map.size() < MAP_SIZE) {
+    T key;
+    generate_key(&key);
 
     auto pair = hash_map.insert(std::make_pair(key, hash_map.size()));
     const int64_t key_id = pair.first->second;
@@ -104,6 +142,8 @@ void test_map() {
     assert(map->search(key, &stored_key_id));
     assert(stored_key_id == key_id);
   }
+
+  compare_maps(map, hash_map);
 
   std::uint32_t block_id = map->block_id();
   map.reset();
@@ -222,6 +262,7 @@ int main() {
   test_map<uint64_t>();
   test_map<double>();
   test_map<grnxx::alpha::GeoPoint>();
+  test_map<grnxx::Slice>();
 
   test_nan();
 
