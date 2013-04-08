@@ -79,8 +79,8 @@ void generate_key(grnxx::Slice *key) {
   static std::mt19937_64 rng;
   static std::vector<std::string> keys;
 
-  const std::size_t MIN_SIZE = 8;  // TODO: should be 1 in future.
-  const std::size_t MAX_SIZE = 100;  // TODO: should be 4096 in future.
+  const std::size_t MIN_SIZE = 1;
+  const std::size_t MAX_SIZE = 16;  // TODO: should be 4096 in future.
 
   std::size_t size = MIN_SIZE + (rng() % (MAX_SIZE - MIN_SIZE + 1));
   std::string key_buf;

@@ -18,6 +18,7 @@
 #include "grnxx/alpha/map/array.hpp"
 
 #include <cmath>
+#include <string>
 
 namespace grnxx {
 namespace alpha {
@@ -47,12 +48,14 @@ struct Helper<T, false> {
   }
 };
 
-db::Blob slice_to_blob(Slice slice) {
-  return db::Blob(slice.ptr(), slice.size());
+db::Blob slice_to_blob(Slice slice, std::string *buf) {
+  buf->assign(reinterpret_cast<const char *>(slice.ptr()), slice.size());
+  buf->resize(buf->size() + 7, ' ');
+  return db::Blob(buf->data(), buf->size());
 }
 
 Slice blob_to_slice(const db::Blob &blob) {
-  return Slice(blob.address(), blob.length());
+  return Slice(blob.address(), blob.length() - 7);
 }
 
 }  // namespace
@@ -324,7 +327,8 @@ bool Array<Slice>::reset(int64_t key_id, Slice dest_key) {
   if (!dest_key || search(dest_key)) {
     return false;
   }
-  keys_[key_id] = slice_to_blob(dest_key);
+  std::string buf;
+  keys_[key_id] = slice_to_blob(dest_key, &buf);
   return true;
 }
 
@@ -361,7 +365,8 @@ bool Array<Slice>::insert(Slice key, int64_t *key_id) {
   if (key_id_candidate == -1) {
     key_id_candidate = ++header_->max_key_id;
   }
-  keys_[key_id_candidate] = slice_to_blob(key);
+  std::string buf;
+  keys_[key_id_candidate] = slice_to_blob(key, &buf);
   if (key_id) {
     *key_id = key_id_candidate;
   }
@@ -385,7 +390,8 @@ bool Array<Slice>::update(Slice src_key, Slice dest_key, int64_t *key_id) {
   if (!dest_key || search(dest_key)) {
     return false;
   }
-  keys_[src_key_id] = slice_to_blob(dest_key);
+  std::string buf;
+  keys_[src_key_id] = slice_to_blob(dest_key, &buf);
   if (key_id) {
     *key_id = src_key_id;
   }
