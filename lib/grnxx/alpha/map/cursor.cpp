@@ -17,6 +17,8 @@
 */
 #include "grnxx/alpha/map/cursor.hpp"
 
+#include <algorithm>
+
 namespace grnxx {
 namespace alpha {
 namespace map {
@@ -24,40 +26,30 @@ namespace map {
 template <typename T>
 IDCursor<T>::IDCursor(Map<T> *map, int64_t min, int64_t max,
                       const MapCursorOptions &options)
-  : MapCursor<T>(), map_(map), end_(), step_(), left_(options.limit) {
-  // TODO?
-//  if (options.flags & MAP_CURSOR_ORDER_BY_ID) {
-//  } else if (options.flags & MAP_CURSOR_ORDER_BY_KEY) {
-//  }
-
+  : MapCursor<T>(), map_(map), cur_(), end_(), step_(), count_(0),
+    options_(options), keys_() {
   if (min < 0) {
     min = 0;
-  } else if (options.flags & MAP_CURSOR_EXCEPT_MIN) {
+  } else if (options_.flags & MAP_CURSOR_EXCEPT_MIN) {
     ++min;
   }
 
   if ((max < 0) || (max > map_->max_key_id())) {
     max = map_->max_key_id();
-  } else if (options.flags & MAP_CURSOR_EXCEPT_MAX) {
+  } else if (options_.flags & MAP_CURSOR_EXCEPT_MAX) {
     --max;
   }
 
-  if (~options.flags & MAP_CURSOR_REVERSE_ORDER) {
-    this->key_id_ = min - 1;
-    end_ = max;
-    step_ = 1;
-  } else {
-    this->key_id_ = max + 1;
-    end_ = min;
-    step_ = -1;
+  if (min > max) {
+    cur_ = end_ = 0;
+    return;
   }
 
-  uint64_t count = 0;
-  while ((count < options.offset) && (this->key_id_ != end_)) {
-    this->key_id_ += step_;
-    if (map_->get(this->key_id_)) {
-      ++count;
-    }
+  if ((options_.flags & MAP_CURSOR_ORDER_BY_ID) ||
+      (~options_.flags & MAP_CURSOR_ORDER_BY_KEY)) {
+    init_order_by_id(min, max);
+  } else {
+    init_order_by_key(min, max);
   }
 }
 
@@ -66,15 +58,24 @@ IDCursor<T>::~IDCursor() {}
 
 template <typename T>
 bool IDCursor<T>::next() {
-  if (left_ == 0) {
+  if (count_ >= options_.limit) {
     return false;
   }
-  while (this->key_id_ != end_) {
-    this->key_id_ += step_;
-    if (map_->get(this->key_id_, &this->key_)) {
-      --left_;
-      return true;
+  if (options_.flags & MAP_CURSOR_ORDER_BY_ID) {
+    while (cur_ != end_) {
+      cur_ += step_;
+      if (map_->get(cur_, &this->key_)) {
+        this->key_id_ = cur_;
+        ++count_;
+        return true;
+      }
     }
+  } else if (cur_ != end_) {
+    cur_ += step_;
+    this->key_ = keys_[cur_].first;
+    this->key_id_ = keys_[cur_].second;
+    ++count_;
+    return true;
   }
   return false;
 }
@@ -82,6 +83,60 @@ bool IDCursor<T>::next() {
 template <typename T>
 bool IDCursor<T>::remove() {
   return map_->unset(this->key_id_);
+}
+
+template <typename T>
+void IDCursor<T>::init_order_by_id(int64_t min, int64_t max) {
+  options_.flags |= MAP_CURSOR_ORDER_BY_ID;
+  options_.flags &= ~MAP_CURSOR_ORDER_BY_KEY;
+
+  if (~options_.flags & MAP_CURSOR_REVERSE_ORDER) {
+    cur_ = min - 1;
+    end_ = max;
+    step_ = 1;
+  } else {
+    cur_ = max + 1;
+    end_ = min;
+    step_ = -1;
+  }
+
+  uint64_t count = 0;
+  while ((count < options_.offset) && (cur_ != end_)) {
+    cur_ += step_;
+    if (map_->get(cur_)) {
+      ++count;
+    }
+  }
+}
+
+template <typename T>
+void IDCursor<T>::init_order_by_key(int64_t min, int64_t max) {
+  cur_ = min - 1;
+  end_ = max;
+  while (cur_ != end_) {
+    ++cur_;
+    T key;
+    if (map_->get(cur_, &key)) {
+      keys_.push_back(std::make_pair(key, cur_));
+    }
+  }
+  std::sort(keys_.begin(), keys_.end());
+
+  if (~options_.flags & MAP_CURSOR_REVERSE_ORDER) {
+    cur_ = -1;
+    end_ = keys_.size() - 1;
+    step_ = 1;
+  } else {
+    cur_ = keys_.size();
+    end_ = 0;
+    step_ = -1;
+  }
+}
+
+template <>
+void IDCursor<GeoPoint>::init_order_by_key(int64_t, int64_t) {
+  // Not supported.
+  return;
 }
 
 template class IDCursor<int8_t>;
@@ -101,10 +156,10 @@ KeyCursor<T>::KeyCursor(Map<T> *map, T min, T max,
                         const MapCursorOptions &options)
   : MapCursor<T>(), map_(map), min_(min), max_(max), end_(), step_(),
     left_(options.limit), flags_(options.flags) {
-  // TODO?
-//  if (options.flags & MAP_CURSOR_ORDER_BY_ID) {
-//  } else if (options.flags & MAP_CURSOR_ORDER_BY_KEY) {
-//  }
+  if ((~options.flags & MAP_CURSOR_ORDER_BY_ID) &&
+      (options.flags & MAP_CURSOR_ORDER_BY_KEY)) {
+    // TODO: Order by key.
+  }
 
   uint64_t count = 0;
   if (~flags_ & MAP_CURSOR_REVERSE_ORDER) {

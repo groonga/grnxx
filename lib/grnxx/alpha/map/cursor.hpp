@@ -20,6 +20,8 @@
 
 #include "grnxx/alpha/map.hpp"
 
+#include <vector>
+
 namespace grnxx {
 namespace alpha {
 namespace map {
@@ -36,9 +38,15 @@ class IDCursor : public MapCursor<T> {
 
  private:
   Map<T> *map_;
+  int64_t cur_;
   int64_t end_;
   int64_t step_;
-  uint64_t left_;
+  uint64_t count_;
+  MapCursorOptions options_;
+  std::vector<std::pair<T, int64_t>> keys_;
+
+  void init_order_by_id(int64_t min, int64_t max);
+  void init_order_by_key(int64_t min, int64_t max);
 };
 
 template <typename T>

@@ -64,6 +64,15 @@ struct Hash<grnxx::Slice> {
 };
 
 template <typename T>
+using Map = grnxx::alpha::Map<T>;
+
+template <typename T>
+using MapCursor = grnxx::alpha::MapCursor<T>;
+
+template <typename T>
+using HashMap = std::unordered_map<T, std::int64_t, Hash<T>>;
+
+template <typename T>
 void generate_key(T *key) {
   static std::mt19937_64 rng;
 
@@ -94,8 +103,8 @@ void generate_key(grnxx::Slice *key) {
 }
 
 template <typename T>
-void compare_maps(const std::unique_ptr<grnxx::alpha::Map<T>> &map,
-                  const std::unordered_map<T, std::int64_t, Hash<T>> &hash_map) {
+void compare_maps(const std::unique_ptr<Map<T>> &map,
+                  const HashMap<T> &hash_map) {
   for (auto it = hash_map.begin(); it != hash_map.end(); ++it) {
     const T key = it->first;
     const std::int64_t key_id = it->second;
@@ -111,9 +120,41 @@ void compare_maps(const std::unique_ptr<grnxx::alpha::Map<T>> &map,
 }
 
 template <typename T>
-void test_basic_cursor(const std::unique_ptr<grnxx::alpha::Map<T>> &map,
+void test_basic_cursor(const std::unique_ptr<Map<T>> &map,
                        std::size_t MAP_SIZE) {
-  std::unique_ptr<grnxx::alpha::MapCursor<T>> cursor(
+  std::unique_ptr<MapCursor<T>> cursor(
+      map->open_basic_cursor());
+  for (std::size_t i = 0; i < MAP_SIZE; ++i) {
+    assert(cursor->next());
+  }
+  assert(!cursor->next());
+
+  grnxx::alpha::MapCursorOptions options;
+  options.flags |= grnxx::alpha::MAP_CURSOR_EXCEPT_MIN |
+                   grnxx::alpha::MAP_CURSOR_EXCEPT_MAX;
+  cursor.reset(map->open_basic_cursor(options));
+  for (std::size_t i = 0; i < MAP_SIZE; ++i) {
+    assert(cursor->next());
+  }
+  assert(!cursor->next());
+
+  options.flags = grnxx::alpha::MAP_CURSOR_ORDER_BY_KEY;
+  cursor.reset(map->open_basic_cursor(options));
+  assert(cursor->next());
+  T prev_key = cursor->key();
+  for (std::size_t i = 1; i < MAP_SIZE; ++i) {
+    assert(cursor->next());
+    assert(prev_key < cursor->key());
+    prev_key = cursor->key();
+  }
+  assert(!cursor->next());
+}
+
+template <>
+void test_basic_cursor(
+    const std::unique_ptr<Map<grnxx::alpha::GeoPoint>> &map,
+    std::size_t MAP_SIZE) {
+  std::unique_ptr<MapCursor<grnxx::alpha::GeoPoint>> cursor(
       map->open_basic_cursor());
   for (std::size_t i = 0; i < MAP_SIZE; ++i) {
     assert(cursor->next());
@@ -131,14 +172,14 @@ void test_basic_cursor(const std::unique_ptr<grnxx::alpha::Map<T>> &map,
 }
 
 template <typename T>
-void test_id_cursor(const std::unique_ptr<grnxx::alpha::Map<T>> &map,
+void test_id_cursor(const std::unique_ptr<Map<T>> &map,
                     std::size_t MAP_SIZE) {
   const std::int64_t MIN_ID = MAP_SIZE / 4;
   const std::int64_t MAX_ID = (MAP_SIZE * 3) / 4;
 
   grnxx::alpha::MapCursorOptions options;
   options.flags |= grnxx::alpha::MAP_CURSOR_ORDER_BY_ID;
-  std::unique_ptr<grnxx::alpha::MapCursor<T>> cursor(
+  std::unique_ptr<MapCursor<T>> cursor(
       map->open_id_cursor(MIN_ID, MAX_ID, options));
   for (std::int64_t i = MIN_ID; i <= MAX_ID; ++i) {
     assert(cursor->next());
@@ -160,10 +201,53 @@ void test_id_cursor(const std::unique_ptr<grnxx::alpha::Map<T>> &map,
     assert(cursor->key() == key);
   }
   assert(!cursor->next());
+
+  options.flags = grnxx::alpha::MAP_CURSOR_ORDER_BY_KEY;
+  cursor.reset(map->open_id_cursor(MIN_ID, MAX_ID, options));
+  assert(cursor->next());
+  T prev_key = cursor->key();
+  for (std::int64_t i = MIN_ID + 1; i <= MAX_ID; ++i) {
+    assert(cursor->next());
+    assert(prev_key < cursor->key());
+    prev_key = cursor->key();
+  }
+  assert(!cursor->next());
+}
+
+template <>
+void test_id_cursor(const std::unique_ptr<Map<grnxx::alpha::GeoPoint>> &map,
+                    std::size_t MAP_SIZE) {
+  const std::int64_t MIN_ID = MAP_SIZE / 4;
+  const std::int64_t MAX_ID = (MAP_SIZE * 3) / 4;
+
+  grnxx::alpha::MapCursorOptions options;
+  options.flags |= grnxx::alpha::MAP_CURSOR_ORDER_BY_ID;
+  std::unique_ptr<MapCursor<grnxx::alpha::GeoPoint>> cursor(
+      map->open_id_cursor(MIN_ID, MAX_ID, options));
+  for (std::int64_t i = MIN_ID; i <= MAX_ID; ++i) {
+    assert(cursor->next());
+    assert(cursor->key_id() == i);
+    grnxx::alpha::GeoPoint key;
+    assert(map->get(i, &key));
+    assert(cursor->key() == key);
+  }
+  assert(!cursor->next());
+
+  options.flags |= grnxx::alpha::MAP_CURSOR_EXCEPT_MIN |
+                   grnxx::alpha::MAP_CURSOR_EXCEPT_MAX;
+  cursor.reset(map->open_id_cursor(MIN_ID, MAX_ID, options));
+  for (std::int64_t i = MIN_ID + 1; i <= (MAX_ID - 1); ++i) {
+    assert(cursor->next());
+    assert(cursor->key_id() == i);
+    grnxx::alpha::GeoPoint key;
+    assert(map->get(i, &key));
+    assert(cursor->key() == key);
+  }
+  assert(!cursor->next());
 }
 
 template <typename T>
-void test_key_cursor(const std::unique_ptr<grnxx::alpha::Map<T>> &map) {
+void test_key_cursor(const std::unique_ptr<Map<T>> &map) {
   T min_key, max_key;
   generate_key(&min_key);
   generate_key(&max_key);
@@ -171,7 +255,7 @@ void test_key_cursor(const std::unique_ptr<grnxx::alpha::Map<T>> &map) {
     std::swap(min_key, max_key);
   }
 
-  std::unique_ptr<grnxx::alpha::MapCursor<T>> cursor(
+  std::unique_ptr<MapCursor<T>> cursor(
       map->open_key_cursor(min_key, max_key));
   while (cursor->next()) {
     assert(cursor->key() >= min_key);
@@ -191,7 +275,7 @@ void test_key_cursor(const std::unique_ptr<grnxx::alpha::Map<T>> &map) {
 }
 
 void test_key_cursor(
-    const std::unique_ptr<grnxx::alpha::Map<grnxx::alpha::GeoPoint>> &) {
+    const std::unique_ptr<Map<grnxx::alpha::GeoPoint>> &) {
   // Not supported.
 }
 
@@ -202,11 +286,11 @@ void test_map() {
   grnxx::io::Pool pool;
   pool.open(grnxx::io::POOL_ANONYMOUS);
 
-  std::unique_ptr<grnxx::alpha::Map<T>> map(
-      grnxx::alpha::Map<T>::create(grnxx::alpha::MAP_ARRAY, pool));
+  std::unique_ptr<Map<T>> map(
+      Map<T>::create(grnxx::alpha::MAP_ARRAY, pool));
 
   constexpr std::size_t MAP_SIZE = (sizeof(T) == 1) ? 128 : 1024;
-  std::unordered_map<T, std::int64_t, Hash<T>> hash_map;
+  HashMap<T> hash_map;
   while (hash_map.size() < MAP_SIZE) {
     T key;
     generate_key(&key);
@@ -236,7 +320,7 @@ void test_map() {
 
   std::uint32_t block_id = map->block_id();
   map.reset();
-  map.reset(grnxx::alpha::Map<T>::open(pool, block_id));
+  map.reset(Map<T>::open(pool, block_id));
 
   compare_maps(map, hash_map);
 
@@ -302,7 +386,7 @@ void test_nan() {
   grnxx::io::Pool pool;
   pool.open(grnxx::io::POOL_ANONYMOUS);
 
-  std::unique_ptr<grnxx::alpha::Map<double>> map;
+  std::unique_ptr<Map<double>> map;
   map.reset(map->create(grnxx::alpha::MAP_ARRAY, pool));
 
   const double nan = std::numeric_limits<double>::quiet_NaN();
