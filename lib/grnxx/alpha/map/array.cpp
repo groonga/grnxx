@@ -20,8 +20,6 @@
 #include <cmath>
 #include <string>
 
-#include "grnxx/alpha/map/cursor.hpp"
-
 namespace grnxx {
 namespace alpha {
 namespace map {
@@ -240,30 +238,6 @@ void Array<T>::truncate() {
 }
 
 template <typename T>
-MapCursor<T> *Array<T>::open_basic_cursor(const MapCursorOptions &options) {
-  return new (std::nothrow) BasicCursor<T>(this, options);
-}
-
-template <typename T>
-MapCursor<T> *Array<T>::open_id_cursor(int64_t min, int64_t max,
-                                       const MapCursorOptions &options) {
-  return new (std::nothrow) IDCursor<T>(this, min, max, options);
-}
-
-template <typename T>
-MapCursor<T> *Array<T>::open_key_cursor(T min, T max,
-                                        const MapCursorOptions &options) {
-  return new (std::nothrow) KeyCursor<T>(this, min, max, options);
-}
-
-template <>
-MapCursor<GeoPoint> *Array<GeoPoint>::open_key_cursor(
-    GeoPoint, GeoPoint, const MapCursorOptions &) {
-  // Not supported.
-  return nullptr;
-}
-
-template <typename T>
 Array<T>::Array()
   : pool_(),
     block_info_(nullptr),
@@ -438,21 +412,6 @@ void Array<Slice>::truncate() {
     keys_[i] = nullptr;
   }
   header_->max_key_id = -1;
-}
-
-MapCursor<Slice> *Array<Slice>::open_basic_cursor(
-    const MapCursorOptions &options) {
-  return new (std::nothrow) BasicCursor<Slice>(this, options);
-}
-
-MapCursor<Slice> *Array<Slice>::open_id_cursor(
-    int64_t min, int64_t max, const MapCursorOptions &options) {
-  return new (std::nothrow) IDCursor<Slice>(this, min, max, options);
-}
-
-MapCursor<Slice> *Array<Slice>::open_key_cursor(
-    Slice min, Slice max, const MapCursorOptions &options) {
-  return new (std::nothrow) KeyCursor<Slice>(this, min, max, options);
 }
 
 Array<Slice>::Array()

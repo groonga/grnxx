@@ -22,68 +22,6 @@ namespace alpha {
 namespace map {
 
 template <typename T>
-BasicCursor<T>::BasicCursor(Map<T> *map, const MapCursorOptions &options)
-  : MapCursor<T>(), map_(map), end_(), step_(), left_(options.limit) {
-  // TODO?
-//  if (options.flags & MAP_CURSOR_ORDER_BY_ID) {
-//  } else if (options.flags & MAP_CURSOR_ORDER_BY_KEY) {
-//  }
-
-  if (~options.flags & MAP_CURSOR_REVERSE_ORDER) {
-    this->key_id_ = -1;
-    end_ = map_->max_key_id();
-    step_ = 1;
-  } else {
-    this->key_id_ = map_->max_key_id() + 1;
-    end_ = 0;
-    step_ = -1;
-  }
-
-  uint64_t count = 0;
-  while ((count < options.offset) && (this->key_id_ != end_)) {
-    this->key_id_ += step_;
-    if (map_->get(this->key_id_)) {
-      ++count;
-    }
-  }
-}
-
-template <typename T>
-BasicCursor<T>::~BasicCursor() {}
-
-template <typename T>
-bool BasicCursor<T>::next() {
-  if (left_ == 0) {
-    return false;
-  }
-  while (this->key_id_ != end_) {
-    this->key_id_ += step_;
-    if (map_->get(this->key_id_, &this->key_)) {
-      --left_;
-      return true;
-    }
-  }
-  return false;
-}
-
-template <typename T>
-bool BasicCursor<T>::remove() {
-  return map_->unset(this->key_id_);
-}
-
-template class BasicCursor<int8_t>;
-template class BasicCursor<int16_t>;
-template class BasicCursor<int32_t>;
-template class BasicCursor<int64_t>;
-template class BasicCursor<uint8_t>;
-template class BasicCursor<uint16_t>;
-template class BasicCursor<uint32_t>;
-template class BasicCursor<uint64_t>;
-template class BasicCursor<double>;
-template class BasicCursor<GeoPoint>;
-template class BasicCursor<Slice>;
-
-template <typename T>
 IDCursor<T>::IDCursor(Map<T> *map, int64_t min, int64_t max,
                       const MapCursorOptions &options)
   : MapCursor<T>(), map_(map), end_(), step_(), left_(options.limit) {
@@ -98,7 +36,7 @@ IDCursor<T>::IDCursor(Map<T> *map, int64_t min, int64_t max,
     ++min;
   }
 
-  if (max > map_->max_key_id()) {
+  if ((max < 0) || (max > map_->max_key_id())) {
     max = map_->max_key_id();
   } else if (options.flags & MAP_CURSOR_EXCEPT_MAX) {
     --max;
@@ -230,6 +168,29 @@ bool KeyCursor<T>::in_range(T key) const {
     }
   } else if (key > max_) {
     return false;
+  }
+
+  return true;
+}
+
+template <>
+bool KeyCursor<Slice>::in_range(Slice key) const {
+  if (flags_ & MAP_CURSOR_EXCEPT_MIN) {
+    if (key <= min_) {
+      return false;
+    }
+  } else if (key < min_) {
+    return false;
+  }
+
+  if (max_) {
+    if (flags_ & MAP_CURSOR_EXCEPT_MAX) {
+      if (key >= max_) {
+        return false;
+      }
+    } else if (key > max_) {
+      return false;
+    }
   }
 
   return true;

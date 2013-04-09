@@ -25,22 +25,6 @@ namespace alpha {
 namespace map {
 
 template <typename T>
-class BasicCursor : public MapCursor<T> {
- public:
-  explicit BasicCursor(Map<T> *map, const MapCursorOptions &options);
-  ~BasicCursor();
-
-  bool next();
-  bool remove();
-
- private:
-  Map<T> *map_;
-  int64_t end_;
-  int64_t step_;
-  uint64_t left_;
-};
-
-template <typename T>
 class IDCursor : public MapCursor<T> {
  public:
   explicit IDCursor(Map<T> *map, int64_t min, int64_t max,

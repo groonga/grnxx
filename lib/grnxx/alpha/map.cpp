@@ -170,20 +170,25 @@ void Map<T>::truncate() {
 }
 
 template <typename T>
-MapCursor<T> *Map<T>::open_basic_cursor(const MapCursorOptions &) {
-  // Not supported.
-  return nullptr;
+MapCursor<T> *Map<T>::open_basic_cursor(const MapCursorOptions &options) {
+  return new (std::nothrow) map::IDCursor<T>(this, -1, -1, options);
 }
 
 template <typename T>
-MapCursor<T> *Map<T>::open_id_cursor(int64_t, int64_t,
-                                     const MapCursorOptions &) {
-  // Not supported.
-  return nullptr;
+MapCursor<T> *Map<T>::open_id_cursor(int64_t min, int64_t max,
+                                     const MapCursorOptions &options) {
+  return new (std::nothrow) map::IDCursor<T>(this, min, max, options);
 }
 
 template <typename T>
-MapCursor<T> *Map<T>::open_key_cursor(T, T, const MapCursorOptions &) {
+MapCursor<T> *Map<T>::open_key_cursor(T min, T max,
+                                      const MapCursorOptions &options) {
+  return new (std::nothrow) map::KeyCursor<T>(this, min, max, options);
+}
+
+template <>
+MapCursor<GeoPoint> *Map<GeoPoint>::open_key_cursor(GeoPoint, GeoPoint,
+                                                    const MapCursorOptions &) {
   // Not supported.
   return nullptr;
 }
