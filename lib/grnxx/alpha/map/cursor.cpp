@@ -32,13 +32,15 @@ IDCursor<T>::IDCursor(Map<T> *map, int64_t min, int64_t max,
 
   if (min < 0) {
     min = 0;
+  } else if (options.flags & MAP_CURSOR_EXCEPT_MIN) {
+    ++min;
   }
-  // EXCEPT_MIN
 
   if (max > map_->max_key_id()) {
     max = map_->max_key_id();
+  } else if (options.flags & MAP_CURSOR_EXCEPT_MAX) {
+    --max;
   }
-  // EXCEPT_MAX
 
   if (~options.flags & MAP_CURSOR_REVERSE_ORDER) {
     this->key_id_ = min - 1;
@@ -98,7 +100,7 @@ template <typename T>
 KeyCursor<T>::KeyCursor(Map<T> *map, T min, T max,
                         const MapCursorOptions &options)
   : MapCursor<T>(), map_(map), min_(min), max_(max), end_(), step_(),
-    left_(options.limit) {
+    left_(options.limit), flags_(options.flags) {
   // TODO?
 //  if (options.flags & MAP_CURSOR_ORDER_BY_ID) {
 //  } else if (options.flags & MAP_CURSOR_ORDER_BY_KEY) {
@@ -118,7 +120,7 @@ KeyCursor<T>::KeyCursor(Map<T> *map, T min, T max,
   while ((count < options.offset) && (this->key_id_ != end_)) {
     this->key_id_ += step_;
     if (map_->get(this->key_id_, &this->key_)) {
-      if ((this->key_ >= min_) && (this->key_ <= max_)) {
+      if (in_range(this->key_)) {
         ++count;
       }
     }
@@ -136,7 +138,7 @@ bool KeyCursor<T>::next() {
   while (this->key_id_ != end_) {
     this->key_id_ += step_;
     if (map_->get(this->key_id_, &this->key_)) {
-      if ((this->key_ >= min_) && (this->key_ <= max_)) {
+      if (in_range(this->key_)) {
         --left_;
         return true;
       }
@@ -148,6 +150,27 @@ bool KeyCursor<T>::next() {
 template <typename T>
 bool KeyCursor<T>::remove() {
   return map_->unset(this->key_id_);
+}
+
+template <typename T>
+bool KeyCursor<T>::in_range(T key) const {
+  if (flags_ & MAP_CURSOR_EXCEPT_MIN) {
+    if (key <= min_) {
+      return false;
+    }
+  } else if (key < min_) {
+    return false;
+  }
+
+  if (flags_ & MAP_CURSOR_EXCEPT_MAX) {
+    if (key >= max_) {
+      return false;
+    }
+  } else if (key > max_) {
+    return false;
+  }
+
+  return true;
 }
 
 template class KeyCursor<int8_t>;

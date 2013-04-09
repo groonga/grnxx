@@ -83,13 +83,19 @@ typedef FlagsImpl<MapCursorFlagsIdentifier> MapCursorFlags;
 
 // Sort keys by ID.
 constexpr MapCursorFlags MAP_CURSOR_ORDER_BY_ID   =
-    MapCursorFlags::define(0x01);
+    MapCursorFlags::define(0x001);
 // Sort keys by key.
 constexpr MapCursorFlags MAP_CURSOR_ORDER_BY_KEY  =
-    MapCursorFlags::define(0x02);
+    MapCursorFlags::define(0x002);
 // Access keys in reverse order.
 constexpr MapCursorFlags MAP_CURSOR_REVERSE_ORDER =
-    MapCursorFlags::define(0x10);
+    MapCursorFlags::define(0x010);
+// Return keys except min.
+constexpr MapCursorFlags MAP_CURSOR_EXCEPT_MIN    =
+    MapCursorFlags::define(0x100);
+// Return keys except max.
+constexpr MapCursorFlags MAP_CURSOR_EXCEPT_MAX    =
+    MapCursorFlags::define(0x200);
 
 struct MapCursorOptions {
   MapCursorFlags flags;

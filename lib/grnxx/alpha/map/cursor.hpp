@@ -59,6 +59,8 @@ class KeyCursor : public MapCursor<T> {
   int64_t step_;
   uint64_t left_;
   MapCursorFlags flags_;
+
+  bool in_range(T key) const;
 };
 
 }  // namespace map

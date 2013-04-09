@@ -241,7 +241,10 @@ void Array<T>::truncate() {
 
 template <typename T>
 MapCursor<T> *Array<T>::open_basic_cursor(const MapCursorOptions &options) {
-  return new (std::nothrow) IDCursor<T>(this, 0, header_->max_key_id, options);
+  MapCursorOptions dummy_options = options;
+  dummy_options.flags &= ~(MAP_CURSOR_EXCEPT_MIN | MAP_CURSOR_EXCEPT_MAX);
+  return new (std::nothrow) IDCursor<T>(
+      this, 0, header_->max_key_id, dummy_options);
 }
 
 template <typename T>
@@ -442,8 +445,10 @@ void Array<Slice>::truncate() {
 
 MapCursor<Slice> *Array<Slice>::open_basic_cursor(
     const MapCursorOptions &options) {
+  MapCursorOptions dummy_options = options;
+  dummy_options.flags &= ~(MAP_CURSOR_EXCEPT_MIN | MAP_CURSOR_EXCEPT_MAX);
   return new (std::nothrow) IDCursor<Slice>(
-      this, 0, header_->max_key_id, options);
+      this, 0, header_->max_key_id, dummy_options);
 }
 
 MapCursor<Slice> *Array<Slice>::open_id_cursor(
