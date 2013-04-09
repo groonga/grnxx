@@ -154,31 +154,13 @@ template class IDCursor<Slice>;
 template <typename T>
 KeyCursor<T>::KeyCursor(Map<T> *map, T min, T max,
                         const MapCursorOptions &options)
-  : MapCursor<T>(), map_(map), min_(min), max_(max), end_(), step_(),
-    left_(options.limit), flags_(options.flags) {
-  if ((~options.flags & MAP_CURSOR_ORDER_BY_ID) &&
-      (options.flags & MAP_CURSOR_ORDER_BY_KEY)) {
-    // TODO: Order by key.
-  }
-
-  uint64_t count = 0;
-  if (~flags_ & MAP_CURSOR_REVERSE_ORDER) {
-    this->key_id_ = -1;
-    end_ = map_->max_key_id();
-    step_ = 1;
+  : MapCursor<T>(), map_(map), min_(min), max_(max), cur_(), end_(), step_(),
+    count_(0), options_(options), keys_() {
+  if ((options_.flags & MAP_CURSOR_ORDER_BY_ID) ||
+      (~options_.flags & MAP_CURSOR_ORDER_BY_KEY)) {
+    init_order_by_id();
   } else {
-    this->key_id_ = map_->max_key_id() + 1;
-    end_ = 0;
-    step_ = -1;
-  }
-
-  while ((count < options.offset) && (this->key_id_ != end_)) {
-    this->key_id_ += step_;
-    if (map_->get(this->key_id_, &this->key_)) {
-      if (in_range(this->key_)) {
-        ++count;
-      }
-    }
+    init_order_by_key();
   }
 }
 
@@ -187,17 +169,26 @@ KeyCursor<T>::~KeyCursor() {}
 
 template <typename T>
 bool KeyCursor<T>::next() {
-  if (left_ == 0) {
+  if (count_ >= options_.limit) {
     return false;
   }
-  while (this->key_id_ != end_) {
-    this->key_id_ += step_;
-    if (map_->get(this->key_id_, &this->key_)) {
-      if (in_range(this->key_)) {
-        --left_;
-        return true;
+  if (options_.flags & MAP_CURSOR_ORDER_BY_ID) {
+    while (cur_ != end_) {
+      cur_ += step_;
+      if (map_->get(cur_, &this->key_)) {
+        if (in_range(this->key_)) {
+          this->key_id_ = cur_;
+          ++count_;
+          return true;
+        }
       }
     }
+  } else if (cur_ != end_) {
+    cur_ += step_;
+    this->key_ = keys_[cur_].first;
+    this->key_id_ = keys_[cur_].second;
+    ++count_;
+    return true;
   }
   return false;
 }
@@ -208,8 +199,58 @@ bool KeyCursor<T>::remove() {
 }
 
 template <typename T>
+void KeyCursor<T>::init_order_by_id() {
+  options_.flags |= MAP_CURSOR_ORDER_BY_ID;
+  options_.flags &= ~MAP_CURSOR_ORDER_BY_KEY;
+
+  if (~options_.flags & MAP_CURSOR_REVERSE_ORDER) {
+    cur_ = -1;
+    end_ = map_->max_key_id();
+    step_ = 1;
+  } else {
+    cur_ = map_->max_key_id() + 1;
+    end_ = 0;
+    step_ = -1;
+  }
+
+  uint64_t count = 0;
+  while ((count < options_.offset) && (cur_ != end_)) {
+    cur_ += step_;
+    if (map_->get(cur_, &this->key_)) {
+      if (in_range(this->key_)) {
+        ++count;
+      }
+    }
+  }
+}
+
+template <typename T>
+void KeyCursor<T>::init_order_by_key() {
+  std::int64_t max_key_id = map_->max_key_id();
+  for (std::int64_t i = 0; i <= max_key_id; ++i) {
+    T key;
+    if (map_->get(i, &key)) {
+      if (in_range(key)) {
+        keys_.push_back(std::make_pair(key, i));
+      }
+    }
+  }
+  std::sort(keys_.begin(), keys_.end());
+
+  if (~options_.flags & MAP_CURSOR_REVERSE_ORDER) {
+    cur_ = -1;
+    end_ = keys_.size() - 1;
+    step_ = 1;
+  } else {
+    cur_ = keys_.size();
+    end_ = 0;
+    step_ = -1;
+  }
+}
+
+template <typename T>
 bool KeyCursor<T>::in_range(T key) const {
-  if (flags_ & MAP_CURSOR_EXCEPT_MIN) {
+  if (options_.flags & MAP_CURSOR_EXCEPT_MIN) {
     if (key <= min_) {
       return false;
     }
@@ -217,7 +258,7 @@ bool KeyCursor<T>::in_range(T key) const {
     return false;
   }
 
-  if (flags_ & MAP_CURSOR_EXCEPT_MAX) {
+  if (options_.flags & MAP_CURSOR_EXCEPT_MAX) {
     if (key >= max_) {
       return false;
     }
@@ -230,7 +271,7 @@ bool KeyCursor<T>::in_range(T key) const {
 
 template <>
 bool KeyCursor<Slice>::in_range(Slice key) const {
-  if (flags_ & MAP_CURSOR_EXCEPT_MIN) {
+  if (options_.flags & MAP_CURSOR_EXCEPT_MIN) {
     if (key <= min_) {
       return false;
     }
@@ -239,7 +280,7 @@ bool KeyCursor<Slice>::in_range(Slice key) const {
   }
 
   if (max_) {
-    if (flags_ & MAP_CURSOR_EXCEPT_MAX) {
+    if (options_.flags & MAP_CURSOR_EXCEPT_MAX) {
       if (key >= max_) {
         return false;
       }

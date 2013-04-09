@@ -63,10 +63,15 @@ class KeyCursor : public MapCursor<T> {
   Map<T> *map_;
   T min_;
   T max_;
+  int64_t cur_;
   int64_t end_;
   int64_t step_;
-  uint64_t left_;
-  MapCursorFlags flags_;
+  uint64_t count_;
+  MapCursorOptions options_;
+  std::vector<std::pair<T, int64_t>> keys_;
+
+  void init_order_by_id();
+  void init_order_by_key();
 
   bool in_range(T key) const;
 };

@@ -272,6 +272,21 @@ void test_key_cursor(const std::unique_ptr<Map<T>> &map) {
     assert(cursor->key() < max_key);
   }
   assert(!cursor->next());
+
+  options.flags = grnxx::alpha::MAP_CURSOR_ORDER_BY_KEY;
+  cursor.reset(map->open_key_cursor(min_key, max_key, options));
+  if (cursor->next()) {
+    assert(cursor->key() >= min_key);
+    assert(cursor->key() <= max_key);
+  }
+  T prev_key = cursor->key();
+  while (cursor->next()) {
+    assert(cursor->key() >= min_key);
+    assert(cursor->key() <= max_key);
+    assert(prev_key < cursor->key());
+    prev_key = cursor->key();
+  }
+  assert(!cursor->next());
 }
 
 void test_key_cursor(
