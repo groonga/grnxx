@@ -49,6 +49,8 @@ class Array : public grnxx::alpha::Map<T> {
   uint32_t block_id() const;
   MapType type() const;
 
+  int64_t max_key_id() const;
+
   bool get(int64_t key_id, T *key = nullptr);
   bool unset(int64_t key_id);
   bool reset(int64_t key_id, T dest_key);
@@ -59,6 +61,13 @@ class Array : public grnxx::alpha::Map<T> {
   bool update(T src_key, T dest_key, int64_t *key_id = nullptr);
 
   void truncate();
+
+  MapCursor<T> *open_basic_cursor(
+      const MapCursorOptions &options = MapCursorOptions());
+  MapCursor<T> *open_id_cursor(int64_t min, int64_t max,
+      const MapCursorOptions &options = MapCursorOptions());
+  MapCursor<T> *open_key_cursor(T min, T max,
+      const MapCursorOptions &options = MapCursorOptions());
 
  private:
   io::Pool pool_;
@@ -95,6 +104,8 @@ class Array<Slice> : public grnxx::alpha::Map<Slice> {
   uint32_t block_id() const;
   MapType type() const;
 
+  int64_t max_key_id() const;
+
   bool get(int64_t key_id, Slice *key = nullptr);
   bool unset(int64_t key_id);
   bool reset(int64_t key_id, Slice dest_key);
@@ -105,6 +116,13 @@ class Array<Slice> : public grnxx::alpha::Map<Slice> {
   bool update(Slice src_key, Slice dest_key, int64_t *key_id = nullptr);
 
   void truncate();
+
+  MapCursor<Slice> *open_basic_cursor(
+      const MapCursorOptions &options = MapCursorOptions());
+  MapCursor<Slice> *open_id_cursor(int64_t min, int64_t max,
+      const MapCursorOptions &options = MapCursorOptions());
+  MapCursor<Slice> *open_key_cursor(Slice min, Slice max,
+      const MapCursorOptions &options = MapCursorOptions());
 
  private:
   io::Pool pool_;

@@ -20,6 +20,8 @@
 #include <cmath>
 #include <string>
 
+#include "grnxx/alpha/map/cursor.hpp"
+
 namespace grnxx {
 namespace alpha {
 namespace map {
@@ -113,6 +115,11 @@ uint32_t Array<T>::block_id() const {
 template <typename T>
 MapType Array<T>::type() const {
   return MAP_ARRAY;
+}
+
+template <typename T>
+int64_t Array<T>::max_key_id() const {
+  return header_->max_key_id;
 }
 
 template <typename T>
@@ -233,6 +240,30 @@ void Array<T>::truncate() {
 }
 
 template <typename T>
+MapCursor<T> *Array<T>::open_basic_cursor(const MapCursorOptions &options) {
+  return new (std::nothrow) IDCursor<T>(this, 0, header_->max_key_id, options);
+}
+
+template <typename T>
+MapCursor<T> *Array<T>::open_id_cursor(int64_t min, int64_t max,
+                                       const MapCursorOptions &options) {
+  return new (std::nothrow) IDCursor<T>(this, min, max, options);
+}
+
+template <typename T>
+MapCursor<T> *Array<T>::open_key_cursor(T min, T max,
+                                        const MapCursorOptions &options) {
+  return new (std::nothrow) KeyCursor<T>(this, min, max, options);
+}
+
+template <>
+MapCursor<GeoPoint> *Array<GeoPoint>::open_key_cursor(
+    GeoPoint, GeoPoint, const MapCursorOptions &) {
+  // Not supported.
+  return nullptr;
+}
+
+template <typename T>
 Array<T>::Array()
   : pool_(),
     block_info_(nullptr),
@@ -288,6 +319,10 @@ uint32_t Array<Slice>::block_id() const {
 
 MapType Array<Slice>::type() const {
   return MAP_ARRAY;
+}
+
+int64_t Array<Slice>::max_key_id() const {
+  return header_->max_key_id;
 }
 
 bool Array<Slice>::get(int64_t key_id, Slice *key) {
@@ -403,6 +438,22 @@ void Array<Slice>::truncate() {
     keys_[i] = nullptr;
   }
   header_->max_key_id = -1;
+}
+
+MapCursor<Slice> *Array<Slice>::open_basic_cursor(
+    const MapCursorOptions &options) {
+  return new (std::nothrow) IDCursor<Slice>(
+      this, 0, header_->max_key_id, options);
+}
+
+MapCursor<Slice> *Array<Slice>::open_id_cursor(
+    int64_t min, int64_t max, const MapCursorOptions &options) {
+  return new (std::nothrow) IDCursor<Slice>(this, min, max, options);
+}
+
+MapCursor<Slice> *Array<Slice>::open_key_cursor(
+    Slice min, Slice max, const MapCursorOptions &options) {
+  return new (std::nothrow) KeyCursor<Slice>(this, min, max, options);
 }
 
 Array<Slice>::Array()

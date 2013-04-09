@@ -78,7 +78,27 @@ struct MapHeader {
   MapType type;
 };
 
-// TODO: Not supported yet.
+struct MapCursorFlagsIdentifier;
+typedef FlagsImpl<MapCursorFlagsIdentifier> MapCursorFlags;
+
+// Sort keys by ID.
+constexpr MapCursorFlags MAP_CURSOR_ORDER_BY_ID   =
+    MapCursorFlags::define(0x01);
+// Sort keys by key.
+constexpr MapCursorFlags MAP_CURSOR_ORDER_BY_KEY  =
+    MapCursorFlags::define(0x02);
+// Access keys in reverse order.
+constexpr MapCursorFlags MAP_CURSOR_REVERSE_ORDER =
+    MapCursorFlags::define(0x10);
+
+struct MapCursorOptions {
+  MapCursorFlags flags;
+  uint64_t offset;
+  uint64_t limit;
+
+  constexpr MapCursorOptions() : flags(), offset(0), limit(-1) {}
+};
+
 template <typename T>
 class MapCursor {
  public:
@@ -100,7 +120,7 @@ class MapCursor {
     return key_;
   }
 
- private:
+ protected:
   int64_t key_id_;
   T key_;
 };
@@ -125,6 +145,10 @@ class Map {
   // Return the type of "*this".
   virtual MapType type() const;
 
+  // Return the maximum key ID ever used.
+  // If the map is empty, the return value can be -1.
+  virtual int64_t max_key_id() const;
+
   // Get a key associated with "key_id" and return true on success.
   // Assign the found key to "*key" iff "key" != nullptr.
   virtual bool get(int64_t key_id, T *key = nullptr);
@@ -148,6 +172,13 @@ class Map {
 
   // Remove all the keys in "*this".
   virtual void truncate();
+
+  virtual MapCursor<T> *open_basic_cursor(
+      const MapCursorOptions &options = MapCursorOptions());
+  virtual MapCursor<T> *open_id_cursor(int64_t min, int64_t max,
+      const MapCursorOptions &options = MapCursorOptions());
+  virtual MapCursor<T> *open_key_cursor(T min, T max,
+      const MapCursorOptions &options = MapCursorOptions());
 };
 
 }  // namespace alpha

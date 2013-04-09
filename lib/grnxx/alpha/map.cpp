@@ -18,6 +18,7 @@
 #include "grnxx/alpha/map.hpp"
 
 #include "grnxx/alpha/map/array.hpp"
+#include "grnxx/alpha/map/cursor.hpp"
 #include "grnxx/slice.hpp"
 
 namespace grnxx {
@@ -116,6 +117,12 @@ MapType Map<T>::type() const {
 }
 
 template <typename T>
+int64_t Map<T>::max_key_id() const {
+  // Not supported.
+  return -1;
+}
+
+template <typename T>
 bool Map<T>::get(int64_t, T *) {
   // Not supported.
   return false;
@@ -160,6 +167,25 @@ bool Map<T>::update(T, T, int64_t *) {
 template <typename T>
 void Map<T>::truncate() {
   // Not supported.
+}
+
+template <typename T>
+MapCursor<T> *Map<T>::open_basic_cursor(const MapCursorOptions &) {
+  // Not supported.
+  return nullptr;
+}
+
+template <typename T>
+MapCursor<T> *Map<T>::open_id_cursor(int64_t, int64_t,
+                                     const MapCursorOptions &) {
+  // Not supported.
+  return nullptr;
+}
+
+template <typename T>
+MapCursor<T> *Map<T>::open_key_cursor(T, T, const MapCursorOptions &) {
+  // Not supported.
+  return nullptr;
 }
 
 template class Map<int8_t>;

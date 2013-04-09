@@ -111,6 +111,60 @@ void compare_maps(const std::unique_ptr<grnxx::alpha::Map<T>> &map,
 }
 
 template <typename T>
+void test_basic_cursor(const std::unique_ptr<grnxx::alpha::Map<T>> &map,
+                       std::size_t MAP_SIZE) {
+  std::unique_ptr<grnxx::alpha::MapCursor<T>> cursor(
+      map->open_basic_cursor());
+  for (std::size_t i = 0; i < MAP_SIZE; ++i) {
+    assert(cursor->next());
+  }
+  assert(!cursor->next());
+}
+
+template <typename T>
+void test_id_cursor(const std::unique_ptr<grnxx::alpha::Map<T>> &map,
+                    std::size_t MAP_SIZE) {
+  const std::int64_t MIN_ID = MAP_SIZE / 4;
+  const std::int64_t MAX_ID = (MAP_SIZE * 3) / 4;
+
+  grnxx::alpha::MapCursorOptions options;
+  options.flags |= grnxx::alpha::MAP_CURSOR_ORDER_BY_ID;
+  std::unique_ptr<grnxx::alpha::MapCursor<T>> cursor(
+      map->open_id_cursor(MIN_ID, MAX_ID, options));
+  for (std::int64_t i = MIN_ID; i <= MAX_ID; ++i) {
+    assert(cursor->next());
+    assert(cursor->key_id() == i);
+    T key;
+    assert(map->get(i, &key));
+    assert(cursor->key() == key);
+  }
+  assert(!cursor->next());
+}
+
+template <typename T>
+void test_key_cursor(const std::unique_ptr<grnxx::alpha::Map<T>> &map) {
+  T min_key, max_key;
+  generate_key(&min_key);
+  generate_key(&max_key);
+  if (min_key > max_key) {
+    std::swap(min_key, max_key);
+  }
+
+  std::unique_ptr<grnxx::alpha::MapCursor<T>> cursor(
+      map->open_key_cursor(min_key, max_key));
+  while (cursor->next()) {
+    assert(cursor->key() >= min_key);
+    assert(cursor->key() <= max_key);
+  }
+  assert(!cursor->next());
+}
+
+void test_key_cursor(
+    const std::unique_ptr<grnxx::alpha::Map<grnxx::alpha::GeoPoint>> &) {
+  // Not supported.
+}
+
+template <typename T>
 void test_map() {
   GRNXX_NOTICE() << __PRETTY_FUNCTION__;
 
@@ -144,6 +198,10 @@ void test_map() {
   }
 
   compare_maps(map, hash_map);
+
+  test_basic_cursor(map, MAP_SIZE);
+  test_id_cursor(map, MAP_SIZE);
+  test_key_cursor(map);
 
   std::uint32_t block_id = map->block_id();
   map.reset();
