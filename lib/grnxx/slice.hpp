@@ -134,6 +134,24 @@ inline bool operator!=(const Slice &lhs, const Slice &rhs) {
   return !(lhs == rhs);
 }
 
+inline bool operator<(const Slice &lhs, const Slice &rhs) {
+  const size_t min_size = (lhs.size() < rhs.size()) ? lhs.size() : rhs.size();
+  int result = std::memcmp(lhs.ptr(), rhs.ptr(), min_size);
+  return (result < 0) || ((result == 0) && (lhs.size() < rhs.size()));
+}
+
+inline bool operator>(const Slice &lhs, const Slice &rhs) {
+  return rhs < lhs;
+}
+
+inline bool operator<=(const Slice &lhs, const Slice &rhs) {
+  return !(lhs > rhs);
+}
+
+inline bool operator>=(const Slice &lhs, const Slice &rhs) {
+  return rhs <= lhs;
+}
+
 std::ostream &operator<<(std::ostream &stream, const Slice &s);
 
 }  // namespace grnxx

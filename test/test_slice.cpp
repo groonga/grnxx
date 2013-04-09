@@ -164,6 +164,77 @@ void test_starts_with() {
   assert(!slice.starts_with("abc"));
 }
 
+void test_equal_to() {
+  grnxx::Slice abc("abc");
+  grnxx::Slice abc2("abc");
+  grnxx::Slice abcde("abcde");
+  grnxx::Slice cde("cde");
+
+  assert(abc == abc);
+  assert(!(abc == abcde));
+  assert(!(abcde == abc));
+  assert(!(abc == cde));
+}
+
+void test_not_equal_to() {
+  grnxx::Slice abc("abc");
+  grnxx::Slice abcde("abcde");
+  grnxx::Slice cde("cde");
+
+  assert(!(abc != abc));
+  assert(abc != abcde);
+  assert(abcde != abc);
+  assert(abc != cde);
+}
+
+void test_less() {
+  grnxx::Slice abc("abc");
+  grnxx::Slice abcde("abcde");
+  grnxx::Slice cde("cde");
+
+  assert(!(abc < abc));
+  assert(abc < abcde);
+  assert(!(abcde < abc));
+  assert(abc < cde);
+  assert(!(cde < abc));
+}
+
+void test_greater() {
+  grnxx::Slice abc("abc");
+  grnxx::Slice abcde("abcde");
+  grnxx::Slice cde("cde");
+
+  assert(!(abc > abc));
+  assert(!(abc > abcde));
+  assert(abcde > abc);
+  assert(!(abc > cde));
+  assert(cde > abc);
+}
+
+void test_less_equal() {
+  grnxx::Slice abc("abc");
+  grnxx::Slice abcde("abcde");
+  grnxx::Slice cde("cde");
+
+  assert(abc <= abc);
+  assert(abc <= abcde);
+  assert(!(abcde <= abc));
+  assert(abc <= cde);
+  assert(!(cde <= abc));
+}
+
+void test_greater_equal() {
+  grnxx::Slice abc("abc");
+  grnxx::Slice abcde("abcde");
+  grnxx::Slice cde("cde");
+
+  assert(abc >= abc);
+  assert(!(abc >= abcde));
+  assert(abcde >= abc);
+  assert(!(abc >= cde));
+  assert(cde >= abc);
+}
+
 void test_ends_with() {
   grnxx::Slice slice("cde");
 
@@ -187,6 +258,12 @@ int main() {
   test_remove_prefix();
   test_remove_suffix();
   test_compare();
+  test_equal_to();
+  test_not_equal_to();
+  test_less();
+  test_greater();
+  test_less_equal();
+  test_greater_equal();
   test_starts_with();
   test_ends_with();
 
