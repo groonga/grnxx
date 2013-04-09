@@ -26,6 +26,8 @@ class Slice {
  public:
   // Create an empty (zero-size) slice.
   Slice() : ptr_(nullptr), size_(0) {}
+  // Create an empty (zero-size) slice.
+  Slice(std::nullptr_t) : ptr_(nullptr), size_(0) {}
   // Create a slice that refers to a zero-terminated string.
   Slice(const char *str)
     : ptr_(reinterpret_cast<const uint8_t *>(str)),
