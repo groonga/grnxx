@@ -295,7 +295,7 @@ void test_key_cursor(
 }
 
 template <typename T>
-void test_map() {
+void test_map_array() {
   GRNXX_NOTICE() << __PRETTY_FUNCTION__;
 
   grnxx::io::Pool pool;
@@ -435,24 +435,133 @@ void test_nan() {
   assert(map->update(0.0, nan));
 }
 
+template <typename T>
+void test_map_double_array() {
+  GRNXX_NOTICE() << __PRETTY_FUNCTION__;
+
+  grnxx::io::Pool pool;
+  pool.open(grnxx::io::POOL_ANONYMOUS);
+
+  std::unique_ptr<Map<T>> map(
+      Map<T>::create(grnxx::alpha::MAP_DOUBLE_ARRAY, pool));
+
+  constexpr std::size_t MAP_SIZE = (sizeof(T) == 1) ? 128 : 1024;
+  HashMap<T> hash_map;
+  while (hash_map.size() < MAP_SIZE) {
+    T key;
+    generate_key(&key);
+
+    auto pair = hash_map.insert(std::make_pair(key, hash_map.size()));
+    const int64_t key_id = pair.first->second;
+    const bool is_new = pair.second;
+
+    std::int64_t stored_key_id;
+    assert(map->insert(key, &stored_key_id) == is_new);
+    assert(stored_key_id == key_id);
+    assert(!map->insert(key, &stored_key_id));
+
+    T stored_key;
+    assert(map->get(key_id, &stored_key));
+    assert(stored_key == key);
+
+    assert(map->search(key, &stored_key_id));
+    assert(stored_key_id == key_id);
+  }
+
+  compare_maps(map, hash_map);
+
+  test_basic_cursor(map, MAP_SIZE);
+  test_id_cursor(map, MAP_SIZE);
+  test_key_cursor(map);
+
+  std::uint32_t block_id = map->block_id();
+  map.reset();
+  map.reset(Map<T>::open(pool, block_id));
+
+  compare_maps(map, hash_map);
+
+  for (auto it = hash_map.begin(); it != hash_map.end(); ++it) {
+    assert(map->unset(it->second));
+    assert(!map->unset(it->second));
+  }
+
+  for (auto it = hash_map.begin(); it != hash_map.end(); ++it) {
+    assert(map->insert(it->first));
+  }
+  for (auto it = hash_map.begin(); it != hash_map.end(); ++it) {
+    assert(map->remove(it->first));
+    assert(!map->remove(it->first));
+  }
+
+  // FIXME: truncate() is not supported.
+
+//  for (auto it = hash_map.begin(); it != hash_map.end(); ++it) {
+//    assert(map->insert(it->first));
+//  }
+//  map->truncate();
+//  for (auto it = hash_map.begin(); it != hash_map.end(); ++it) {
+//    assert(!map->get(it->second));
+//  }
+
+//  map->truncate();
+  map.reset(Map<T>::create(grnxx::alpha::MAP_DOUBLE_ARRAY, pool));
+  for (auto it = hash_map.begin(); it != hash_map.end(); ++it) {
+    assert(map->insert(it->first, &it->second));
+  }
+  for (auto it = hash_map.begin(); it != hash_map.end(); ++it) {
+    auto old_it = it;
+    auto new_it = ++it;
+    assert(map->unset(new_it->second));
+    assert(map->reset(old_it->second, new_it->first));
+
+    T key;
+    assert(map->get(old_it->second, &key));
+    assert(key == new_it->first);
+    std::int64_t key_id;
+    assert(map->search(key, &key_id));
+    assert(key_id == old_it->second);
+  }
+
+//  map->truncate();
+  map.reset(Map<T>::create(grnxx::alpha::MAP_DOUBLE_ARRAY, pool));
+  for (auto it = hash_map.begin(); it != hash_map.end(); ++it) {
+    assert(map->insert(it->first, &it->second));
+  }
+  for (auto it = hash_map.begin(); it != hash_map.end(); ++it) {
+    auto old_it = it;
+    auto new_it = ++it;
+    assert(map->remove(new_it->first));
+    assert(map->update(old_it->first, new_it->first));
+
+    T key;
+    assert(map->get(old_it->second, &key));
+    assert(key == new_it->first);
+    std::int64_t key_id;
+    assert(map->search(key, &key_id));
+    assert(key_id == old_it->second);
+  }
+}
+
 int main() {
   grnxx::Logger::set_flags(grnxx::LOGGER_WITH_ALL |
                            grnxx::LOGGER_ENABLE_COUT);
   grnxx::Logger::set_max_level(grnxx::NOTICE_LOGGER);
 
-  test_map<int8_t>();
-  test_map<int16_t>();
-  test_map<int32_t>();
-  test_map<int64_t>();
-  test_map<uint8_t>();
-  test_map<uint16_t>();
-  test_map<uint32_t>();
-  test_map<uint64_t>();
-  test_map<double>();
-  test_map<grnxx::alpha::GeoPoint>();
-  test_map<grnxx::Slice>();
+  test_map_array<int8_t>();
+  test_map_array<int16_t>();
+  test_map_array<int32_t>();
+  test_map_array<int64_t>();
+  test_map_array<uint8_t>();
+  test_map_array<uint16_t>();
+  test_map_array<uint32_t>();
+  test_map_array<uint64_t>();
+  test_map_array<double>();
+  test_map_array<grnxx::alpha::GeoPoint>();
+  test_map_array<grnxx::Slice>();
 
   test_nan();
+
+  test_map_double_array<grnxx::Slice>();
 
   return 0;
 }

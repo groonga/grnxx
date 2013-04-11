@@ -19,6 +19,7 @@
 
 #include "grnxx/alpha/map/array.hpp"
 #include "grnxx/alpha/map/cursor.hpp"
+#include "grnxx/alpha/map/double_array.hpp"
 #include "grnxx/slice.hpp"
 
 namespace grnxx {
@@ -74,6 +75,24 @@ Map<T> *Map<T>::create(MapType type, io::Pool pool,
   }
 }
 
+// FIXME: DoubleArray only supports Slice.
+template <>
+Map<Slice> *Map<Slice>::create(MapType type, io::Pool pool,
+                               const MapOptions &options) {
+  switch (type) {
+    case MAP_ARRAY: {
+      return map::Array<Slice>::create(pool, options);
+    }
+    case MAP_DOUBLE_ARRAY: {
+      return map::DoubleArray<Slice>::create(pool, options);
+    }
+    default: {
+      // Not supported yet.
+      return nullptr;
+    }
+  }
+}
+
 template <typename T>
 Map<T> *Map<T>::open(io::Pool pool, uint32_t block_id) {
   const MapHeader *header = static_cast<const MapHeader *>(
@@ -81,6 +100,25 @@ Map<T> *Map<T>::open(io::Pool pool, uint32_t block_id) {
   switch (header->type) {
     case MAP_ARRAY: {
       return map::Array<T>::open(pool, block_id);
+    }
+    default: {
+      // Not supported yet.
+      return nullptr;
+    }
+  }
+}
+
+// FIXME: DoubleArray only supports Slice.
+template <>
+Map<Slice> *Map<Slice>::open(io::Pool pool, uint32_t block_id) {
+  const MapHeader *header = static_cast<const MapHeader *>(
+      pool.get_block_address(block_id));
+  switch (header->type) {
+    case MAP_ARRAY: {
+      return map::Array<Slice>::open(pool, block_id);
+    }
+    case MAP_DOUBLE_ARRAY: {
+      return map::DoubleArray<Slice>::open(pool, block_id);
     }
     default: {
       // Not supported yet.

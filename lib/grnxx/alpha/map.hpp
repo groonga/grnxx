@@ -141,10 +141,13 @@ class Map {
   // Remove all the keys in "*this".
   virtual void truncate();
 
+  // Create a cursor that accesses all the keys.
   virtual MapCursor<T> *open_basic_cursor(
       const MapCursorOptions &options = MapCursorOptions());
+  // Create a cursor that accesses keys in range [min, max].
   virtual MapCursor<T> *open_id_cursor(int64_t min, int64_t max,
       const MapCursorOptions &options = MapCursorOptions());
+  // Create a cursor that accesses keys in range [min, max].
   virtual MapCursor<T> *open_key_cursor(T min, T max,
       const MapCursorOptions &options = MapCursorOptions());
 };
