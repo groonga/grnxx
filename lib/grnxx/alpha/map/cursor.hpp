@@ -29,8 +29,8 @@ namespace map {
 template <typename T>
 class IDCursor : public MapCursor<T> {
  public:
-  explicit IDCursor(Map<T> *map, int64_t min, int64_t max,
-                    const MapCursorOptions &options);
+  IDCursor(Map<T> *map, int64_t min, int64_t max,
+           const MapCursorOptions &options);
   ~IDCursor();
 
   bool next();
@@ -50,19 +50,16 @@ class IDCursor : public MapCursor<T> {
 };
 
 template <typename T>
-class KeyCursor : public MapCursor<T> {
+class ConditionalCursor : public MapCursor<T> {
  public:
-  explicit KeyCursor(Map<T> *map, T min, T max,
-                     const MapCursorOptions &options);
-  ~KeyCursor();
+  ConditionalCursor(Map<T> *map, const MapCursorOptions &options);
+  virtual ~ConditionalCursor();
 
   bool next();
   bool remove();
 
- private:
+ protected:
   Map<T> *map_;
-  T min_;
-  T max_;
   int64_t cur_;
   int64_t end_;
   int64_t step_;
@@ -70,10 +67,69 @@ class KeyCursor : public MapCursor<T> {
   MapCursorOptions options_;
   std::vector<std::pair<T, int64_t>> keys_;
 
+  void init();
   void init_order_by_id();
   void init_order_by_key();
 
-  bool in_range(T key) const;
+  virtual bool is_valid(T key) const = 0;
+};
+
+template <typename T>
+class KeyCursor : public ConditionalCursor<T> {
+ public:
+  KeyCursor(Map<T> *map, T min, T max, const MapCursorOptions &options);
+  ~KeyCursor();
+
+ private:
+  T min_;
+  T max_;
+
+  bool is_valid(T key) const;
+};
+
+// TODO
+//class BitwiseCompletionCursor : public ConditionalCursor<GeoPoint> {
+// public:
+//  BitwiseCompletionCursor(Map<GeoPoint> *map, GeoPoint query, size_t bit_size,
+//                          const MapCursorOptions &options);
+//  ~BitwiseCompletionCursor();
+//};
+
+class PrefixCursor : public ConditionalCursor<Slice> {
+ public:
+  PrefixCursor(Map<Slice> *map, Slice query, size_t min_size,
+               const MapCursorOptions &options);
+  ~PrefixCursor();
+
+ private:
+  Slice query_;
+  size_t min_size_;
+
+  bool is_valid(Slice key) const;
+};
+
+class CompletionCursor : public ConditionalCursor<Slice> {
+ public:
+  CompletionCursor(Map<Slice> *map, Slice query,
+                   const MapCursorOptions &options);
+  ~CompletionCursor();
+
+ private:
+  Slice query_;
+
+  bool is_valid(Slice key) const;
+};
+
+class ReverseCompletionCursor : public ConditionalCursor<Slice> {
+ public:
+  ReverseCompletionCursor(Map<Slice> *map, Slice query,
+                          const MapCursorOptions &options);
+  ~ReverseCompletionCursor();
+
+ private:
+  Slice query_;
+
+  bool is_valid(Slice key) const;
 };
 
 }  // namespace map

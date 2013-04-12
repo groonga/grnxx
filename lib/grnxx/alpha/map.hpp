@@ -28,7 +28,7 @@ namespace alpha {
 enum MapType : int32_t {
   MAP_UNKNOWN      = 0,
   MAP_ARRAY        = 1,  // Test implementation.
-  MAP_DOUBLE_ARRAY = 2,  // TODO: Not supported yet.
+  MAP_DOUBLE_ARRAY = 2,  // Partly implemented.
   MAP_PATRICIA     = 3,  // TODO: Not supported yet.
   MAP_HASH_TABLE   = 4   // TODO: Not supported yet.
 };
@@ -58,6 +58,9 @@ constexpr MapCursorFlags MAP_CURSOR_EXCEPT_MIN    =
 // Return keys except max.
 constexpr MapCursorFlags MAP_CURSOR_EXCEPT_MAX    =
     MapCursorFlags::define(0x200);
+// Return keys except exact match.
+constexpr MapCursorFlags MAP_CURSOR_EXCEPT_QUERY  =
+    MapCursorFlags::define(0x400);
 
 struct MapCursorOptions {
   MapCursorFlags flags;
@@ -141,14 +144,36 @@ class Map {
   // Remove all the keys in "*this".
   virtual void truncate();
 
-  // Create a cursor that accesses all the keys.
+  // Create a cursor for accessing all the keys.
   virtual MapCursor<T> *open_basic_cursor(
       const MapCursorOptions &options = MapCursorOptions());
-  // Create a cursor that accesses keys in range [min, max].
+  // Create a cursor for accessing keys in range [min, max].
   virtual MapCursor<T> *open_id_cursor(int64_t min, int64_t max,
       const MapCursorOptions &options = MapCursorOptions());
-  // Create a cursor that accesses keys in range [min, max].
+  // Create a cursor for accessing keys in range [min, max].
   virtual MapCursor<T> *open_key_cursor(T min, T max,
+      const MapCursorOptions &options = MapCursorOptions());
+
+  // Only for GeoPoint.
+  // Create a cursor for accessing keys whose most significant "bit_size" bits
+  // are same as the MSBs of "query".
+  virtual MapCursor<T> *open_bitwise_completion_cursor(
+      T query, size_t bit_size,
+      const MapCursorOptions &options = MapCursorOptions());
+  // Create a cursor for accessing keys similar to "query".
+//  virtual MapCursor<T> *open_neighbor_cursor(
+//      T query, size_t min_size,
+//      const MapCursorOptions &options = MapCursorOptions());
+
+  // Only for Slice.
+  // Create a cursor for accessing keys matching a prefix of "query".
+  virtual MapCursor<T> *open_prefix_cursor(T query, size_t min_size,
+      const MapCursorOptions &options = MapCursorOptions());
+  // Create a cursor for accessing keys starting with "query".
+  virtual MapCursor<T> *open_completion_cursor(T query,
+      const MapCursorOptions &options = MapCursorOptions());
+  // Create a cursor for accessing keys ending with "query".
+  virtual MapCursor<T> *open_reverse_completion_cursor(T query,
       const MapCursorOptions &options = MapCursorOptions());
 };
 

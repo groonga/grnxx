@@ -152,23 +152,16 @@ template class IDCursor<GeoPoint>;
 template class IDCursor<Slice>;
 
 template <typename T>
-KeyCursor<T>::KeyCursor(Map<T> *map, T min, T max,
-                        const MapCursorOptions &options)
-  : MapCursor<T>(), map_(map), min_(min), max_(max), cur_(), end_(), step_(),
-    count_(0), options_(options), keys_() {
-  if ((options_.flags & MAP_CURSOR_ORDER_BY_ID) ||
-      (~options_.flags & MAP_CURSOR_ORDER_BY_KEY)) {
-    init_order_by_id();
-  } else {
-    init_order_by_key();
-  }
-}
+ConditionalCursor<T>::ConditionalCursor(Map<T> *map,
+                                        const MapCursorOptions &options)
+  : MapCursor<T>(), map_(map), cur_(), end_(), step_(), count_(0),
+    options_(options), keys_() {}
 
 template <typename T>
-KeyCursor<T>::~KeyCursor() {}
+ConditionalCursor<T>::~ConditionalCursor() {}
 
 template <typename T>
-bool KeyCursor<T>::next() {
+bool ConditionalCursor<T>::next() {
   if (count_ >= options_.limit) {
     return false;
   }
@@ -176,7 +169,7 @@ bool KeyCursor<T>::next() {
     while (cur_ != end_) {
       cur_ += step_;
       if (map_->get(cur_, &this->key_)) {
-        if (in_range(this->key_)) {
+        if (is_valid(this->key_)) {
           this->key_id_ = cur_;
           ++count_;
           return true;
@@ -194,12 +187,22 @@ bool KeyCursor<T>::next() {
 }
 
 template <typename T>
-bool KeyCursor<T>::remove() {
+bool ConditionalCursor<T>::remove() {
   return map_->unset(this->key_id_);
 }
 
 template <typename T>
-void KeyCursor<T>::init_order_by_id() {
+void ConditionalCursor<T>::init() {
+  if ((options_.flags & MAP_CURSOR_ORDER_BY_ID) ||
+      (~options_.flags & MAP_CURSOR_ORDER_BY_KEY)) {
+    init_order_by_id();
+  } else {
+    init_order_by_key();
+  }
+}
+
+template <typename T>
+void ConditionalCursor<T>::init_order_by_id() {
   options_.flags |= MAP_CURSOR_ORDER_BY_ID;
   options_.flags &= ~MAP_CURSOR_ORDER_BY_KEY;
 
@@ -217,7 +220,7 @@ void KeyCursor<T>::init_order_by_id() {
   while ((count < options_.offset) && (cur_ != end_)) {
     cur_ += step_;
     if (map_->get(cur_, &this->key_)) {
-      if (in_range(this->key_)) {
+      if (is_valid(this->key_)) {
         ++count;
       }
     }
@@ -225,12 +228,12 @@ void KeyCursor<T>::init_order_by_id() {
 }
 
 template <typename T>
-void KeyCursor<T>::init_order_by_key() {
+void ConditionalCursor<T>::init_order_by_key() {
   std::int64_t max_key_id = map_->max_key_id();
   for (std::int64_t i = 0; i <= max_key_id; ++i) {
     T key;
     if (map_->get(i, &key)) {
-      if (in_range(key)) {
+      if (is_valid(key)) {
         keys_.push_back(std::make_pair(key, i));
       }
     }
@@ -248,9 +251,30 @@ void KeyCursor<T>::init_order_by_key() {
   }
 }
 
+template class ConditionalCursor<int8_t>;
+template class ConditionalCursor<int16_t>;
+template class ConditionalCursor<int32_t>;
+template class ConditionalCursor<int64_t>;
+template class ConditionalCursor<uint8_t>;
+template class ConditionalCursor<uint16_t>;
+template class ConditionalCursor<uint32_t>;
+template class ConditionalCursor<uint64_t>;
+template class ConditionalCursor<double>;
+template class ConditionalCursor<Slice>;
+
 template <typename T>
-bool KeyCursor<T>::in_range(T key) const {
-  if (options_.flags & MAP_CURSOR_EXCEPT_MIN) {
+KeyCursor<T>::KeyCursor(Map<T> *map, T min, T max,
+                        const MapCursorOptions &options)
+  : ConditionalCursor<T>(map, options), min_(min), max_(max) {
+  this->init();
+}
+
+template <typename T>
+KeyCursor<T>::~KeyCursor() {}
+
+template <typename T>
+bool KeyCursor<T>::is_valid(T key) const {
+  if (this->options_.flags & MAP_CURSOR_EXCEPT_MIN) {
     if (key <= min_) {
       return false;
     }
@@ -258,7 +282,7 @@ bool KeyCursor<T>::in_range(T key) const {
     return false;
   }
 
-  if (options_.flags & MAP_CURSOR_EXCEPT_MAX) {
+  if (this->options_.flags & MAP_CURSOR_EXCEPT_MAX) {
     if (key >= max_) {
       return false;
     }
@@ -270,8 +294,8 @@ bool KeyCursor<T>::in_range(T key) const {
 }
 
 template <>
-bool KeyCursor<Slice>::in_range(Slice key) const {
-  if (options_.flags & MAP_CURSOR_EXCEPT_MIN) {
+bool KeyCursor<Slice>::is_valid(Slice key) const {
+  if (this->options_.flags & MAP_CURSOR_EXCEPT_MIN) {
     if (key <= min_) {
       return false;
     }
@@ -280,7 +304,7 @@ bool KeyCursor<Slice>::in_range(Slice key) const {
   }
 
   if (max_) {
-    if (options_.flags & MAP_CURSOR_EXCEPT_MAX) {
+    if (this->options_.flags & MAP_CURSOR_EXCEPT_MAX) {
       if (key >= max_) {
         return false;
       }
@@ -302,6 +326,59 @@ template class KeyCursor<uint32_t>;
 template class KeyCursor<uint64_t>;
 template class KeyCursor<double>;
 template class KeyCursor<Slice>;
+
+PrefixCursor::PrefixCursor(Map<Slice> *map, Slice query, size_t min_size,
+                           const MapCursorOptions &options)
+  : ConditionalCursor<Slice>(map, options),
+    query_(query), min_size_(min_size) {
+  if (this->options_.flags & MAP_CURSOR_EXCEPT_QUERY) {
+    query_.remove_suffix(1);
+  }
+  this->init();
+}
+
+PrefixCursor::~PrefixCursor() {}
+
+bool PrefixCursor::is_valid(Slice key) const {
+  if (key.size() < min_size_) {
+    return false;
+  }
+  return query_.starts_with(key);
+}
+
+CompletionCursor::CompletionCursor(Map<Slice> *map, Slice query,
+                                   const MapCursorOptions &options)
+  : ConditionalCursor<Slice>(map, options), query_(query) {
+  this->init();
+}
+
+CompletionCursor::~CompletionCursor() {}
+
+bool CompletionCursor::is_valid(Slice key) const {
+  if (this->options_.flags & MAP_CURSOR_EXCEPT_QUERY) {
+    if (key.size() <= query_.size()) {
+      return false;
+    }
+  }
+  return key.starts_with(query_);
+}
+
+ReverseCompletionCursor::ReverseCompletionCursor(
+    Map<Slice> *map, Slice query, const MapCursorOptions &options)
+  : ConditionalCursor<Slice>(map, options), query_(query) {
+  this->init();
+}
+
+ReverseCompletionCursor::~ReverseCompletionCursor() {}
+
+bool ReverseCompletionCursor::is_valid(Slice key) const {
+  if (this->options_.flags & MAP_CURSOR_EXCEPT_QUERY) {
+    if (key.size() <= query_.size()) {
+      return false;
+    }
+  }
+  return key.ends_with(query_);
+}
 
 }  // namespace map
 }  // namespace alpha

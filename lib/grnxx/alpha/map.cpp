@@ -231,6 +231,73 @@ MapCursor<GeoPoint> *Map<GeoPoint>::open_key_cursor(GeoPoint, GeoPoint,
   return nullptr;
 }
 
+template <typename T>
+MapCursor<T> *Map<T>::open_bitwise_completion_cursor(
+    T, size_t, const MapCursorOptions &) {
+  // Not supported.
+  return nullptr;
+}
+
+template <>
+MapCursor<GeoPoint> *Map<GeoPoint>::open_bitwise_completion_cursor(
+    GeoPoint query, size_t bit_size, const MapCursorOptions &options) {
+  // TODO: Not supported.
+  return nullptr;
+}
+
+template <typename T>
+MapCursor<T> *Map<T>::open_neighbor_cursor(
+    T, size_t, const MapCursorOptions &) {
+  // Not supported.
+  return nullptr;
+}
+
+template <>
+MapCursor<GeoPoint> *Map<GeoPoint>::open_neighbor_cursor(
+    GeoPoint query, size_t min_size, const MapCursorOptions &options) {
+  // TODO: Not supported.
+  return nullptr;
+}
+
+template <typename T>
+MapCursor<T> *Map<T>::open_prefix_cursor(
+    T, size_t, const MapCursorOptions &) {
+  // Not supported.
+  return nullptr;
+}
+
+template <>
+MapCursor<Slice> *Map<Slice>::open_prefix_cursor(
+    Slice query, size_t min_size, const MapCursorOptions &options) {
+  return new (std::nothrow) map::PrefixCursor(this, query, min_size, options);
+}
+
+template <typename T>
+MapCursor<T> *Map<T>::open_completion_cursor(
+    T, const MapCursorOptions &) {
+  // Not supported.
+  return nullptr;
+}
+
+template <>
+MapCursor<Slice> *Map<Slice>::open_completion_cursor(
+    Slice query, const MapCursorOptions &options) {
+  return new (std::nothrow) map::CompletionCursor(this, query, options);
+}
+
+template <typename T>
+MapCursor<T> *Map<T>::open_reverse_completion_cursor(
+    T, const MapCursorOptions &) {
+  // Not supported.
+  return nullptr;
+}
+
+template <>
+MapCursor<Slice> *Map<Slice>::open_reverse_completion_cursor(
+    Slice query, const MapCursorOptions &options) {
+  return new (std::nothrow) map::ReverseCompletionCursor(this, query, options);
+}
+
 template class Map<int8_t>;
 template class Map<int16_t>;
 template class Map<int32_t>;
