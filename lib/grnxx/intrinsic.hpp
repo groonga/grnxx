@@ -54,6 +54,13 @@ inline uint8_t bit_scan_reverse(Value value);
 template <typename Value>
 inline uint8_t bit_scan_forward(Value value);
 
+// byte_swap() returns the byte-swapped value.
+// For example, byte_swap(0x12345678U) returns 0x78564312U.
+inline uint8_t byte_swap(uint8_t value);
+inline uint16_t byte_swap(uint16_t value);
+inline uint32_t byte_swap(uint32_t value);
+inline uint64_t byte_swap(uint64_t value);
+
 // atomic_compare_and_swap() atomically performs the following.
 //  if (*value == expected) {
 //    *value = desired;
@@ -247,6 +254,52 @@ class Intrinsic {
   typedef typename IntrinsicType<sizeof(Value)>::Value InternalValue;
   typedef volatile InternalValue *InternalPointer;
 };
+
+// Implementation of byte_swap.
+
+inline uint8_t byte_swap(uint8_t value) {
+  return value;
+}
+
+inline uint16_t byte_swap(uint16_t value) {
+#ifdef GRNXX_MSC
+  return ::_byteswap_ushort(value);
+#elif defined(GRNXX_HAS_GNUC_BUILTIN_BSWAP)
+  return ::__builtin_bswap16(value);
+#else  // defined(GRNXX_HAS_GNUC_BUILTIN_BSWAP)
+  return (value << 8) | (value >> 8);
+#endif  // defined(GRNXX_HAS_GNUC_BUILTIN_BSWAP)
+}
+
+inline uint32_t byte_swap(uint32_t value) {
+#ifdef GRNXX_MSC
+  return ::_byteswap_ulong(value);
+#elif defined(GRNXX_HAS_GNUC_BUILTIN_BSWAP)
+  return ::__builtin_bswap32(value);
+#else  // defined(GRNXX_HAS_GNUC_BUILTIN_BSWAP)
+  return (value << 24) |
+         ((value & (0xFF <<  8)) << 8) |
+         ((value & (0xFF << 16)) >> 8) |
+         (value >> 24);
+#endif  // defined(GRNXX_HAS_GNUC_BUILTIN_BSWAP)
+}
+
+inline uint64_t byte_swap(uint64_t value) {
+#ifdef GRNXX_MSC
+  return ::_byteswap_uint64(value);
+#elif defined(GRNXX_HAS_GNUC_BUILTIN_BSWAP)
+  return ::__builtin_bswap64(value);
+#else  // defined(GRNXX_HAS_GNUC_BUILTIN_BSWAP)
+  return (value << 56) |
+         ((value & (0xFFULL <<  8)) << 40) |
+         ((value & (0xFFULL << 16)) << 24) |
+         ((value & (0xFFULL << 24)) <<  8) |
+         ((value & (0xFFULL << 32)) >>  8) |
+         ((value & (0xFFULL << 40)) >> 24) |
+         ((value & (0xFFULL << 48)) >> 40) |
+         (value >> 56);
+#endif  // defined(GRNXX_HAS_GNUC_BUILTIN_BSWAP)
+}
 
 // Implementation of atomic_compare_and_swap.
 

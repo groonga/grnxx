@@ -32,6 +32,15 @@ void test_basics() {
   assert(grnxx::bit_scan_forward(std::uint32_t(1) << 30) == 30);
   assert(grnxx::bit_scan_forward(std::uint64_t(1) << 63) == 63);
 
+  assert(grnxx::byte_swap(static_cast<std::uint8_t>(0x12)) ==
+         static_cast<std::uint8_t>(0x12));
+  assert(grnxx::byte_swap(static_cast<std::uint16_t>(0x1234)) ==
+         static_cast<std::uint16_t>(0x3412));
+  assert(grnxx::byte_swap(static_cast<std::uint32_t>(0x12345678U)) ==
+         static_cast<std::uint32_t>(0x78563412U));
+  assert(grnxx::byte_swap(static_cast<std::uint64_t>(0x123456789ABCDEF0ULL)) ==
+         static_cast<std::uint64_t>(0xF0DEBC9A78563412ULL));
+
   volatile std::int32_t value_32 = 0;
   assert(grnxx::atomic_fetch_and_add(5, &value_32) == 0);
   assert(grnxx::atomic_fetch_and_add(-10, &value_32) == 5);
