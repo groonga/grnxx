@@ -203,6 +203,28 @@ bool Map<T>::update(T, T, int64_t *) {
 }
 
 template <typename T>
+bool Map<T>::find_longest_prefix_match(T query, int64_t *key_id, T *key) {
+  // Not supported.
+  return false;
+}
+
+template <>
+bool Map<Slice>::find_longest_prefix_match(Slice query, int64_t *key_id,
+                                           Slice *key) {
+  // Naive implementation.
+  for (size_t size = query.size(); size > 0; --size) {
+    const Slice prefix = query.prefix(size);
+    if (find(prefix, key_id)) {
+      if (key) {
+        *key = prefix;
+      }
+      return true;
+    }
+  }
+  return false;
+}
+
+template <typename T>
 void Map<T>::truncate() {
   // Not supported.
 }

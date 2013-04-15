@@ -144,6 +144,12 @@ class Map {
   // Assign the ID to "*key_id" iff "key_id" != nullptr.
   virtual bool update(T src_key, T dest_key, int64_t *key_id = nullptr);
 
+  // Perform the longest prefix matching and return true on success.
+  // Assign the ID to "*key_id" iff "key_id" != nullptr.
+  // Assign the key to "*key" iff "key" != nullptr.
+  virtual bool find_longest_prefix_match(T query, int64_t *key_id = nullptr,
+                                         T *key = nullptr);
+
   // Remove all the keys in "*this".
   virtual void truncate();
 
