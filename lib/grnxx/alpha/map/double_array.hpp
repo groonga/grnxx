@@ -55,6 +55,9 @@ class DoubleArray : public Map<T> {
   bool remove(T key);
   bool update(T src_key, T dest_key, int64_t *key_id = nullptr);
 
+  bool find_longest_prefix_match(T query, int64_t *key_id = nullptr,
+                                 T *key = nullptr);
+
   // TODO
   void truncate();
 

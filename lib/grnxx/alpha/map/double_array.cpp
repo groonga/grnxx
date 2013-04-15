@@ -680,6 +680,82 @@ bool DoubleArray<T>::update(T src_key, T dest_key, int64_t *key_id) {
 }
 
 template <typename T>
+bool DoubleArray<T>::find_longest_prefix_match(T query, int64_t *key_id,
+                                               T *key) {
+  bool found = false;
+  uint32_t node_id = ROOT_NODE_ID;
+  uint32_t query_pos = 0;
+
+  for ( ; query_pos < query.size(); ++query_pos) {
+    const DoubleArrayNode node = nodes_[node_id];
+    if (node.is_leaf()) {
+      const DoubleArrayKey &match = get_key(node.key_pos());
+      if ((match.size() <= query.size()) &&
+          match.equals_to(Slice(query.address(), match.size()), query_pos)) {
+        if (key_id) {
+          *key_id = match.id();
+        }
+        if (key) {
+          *key = match.slice();
+        }
+        found = true;
+      }
+      return found;
+    }
+
+    if (nodes_[node_id].child() == TERMINAL_LABEL) {
+      const DoubleArrayNode leaf_node = nodes_[node.offset() ^ TERMINAL_LABEL];
+      if (leaf_node.is_leaf()) {
+        if (key_id || key) {
+          const DoubleArrayKey &match = get_key(leaf_node.key_pos());
+          if (key_id) {
+            *key_id = match.id();
+          }
+          if (key) {
+            *key = match.slice();
+          }
+        }
+        found = true;
+      }
+    }
+
+    node_id = node.offset() ^ query[query_pos];
+    if (nodes_[node_id].label() != query[query_pos]) {
+      return found;
+    }
+  }
+
+  const DoubleArrayNode node = nodes_[node_id];
+  if (node.is_leaf()) {
+    const DoubleArrayKey &match = get_key(node.key_pos());
+    if (match.size() <= query.size()) {
+      if (key_id) {
+        *key_id = match.id();
+      }
+      if (key) {
+        *key = match.slice();
+      }
+      found = true;
+    }
+  } else if (nodes_[node_id].child() == TERMINAL_LABEL) {
+    const DoubleArrayNode leaf_node = nodes_[node.offset() ^ TERMINAL_LABEL];
+    if (leaf_node.is_leaf()) {
+      if (key_id || key) {
+        const DoubleArrayKey &match = get_key(leaf_node.key_pos());
+        if (key_id) {
+          *key_id = match.id();
+        }
+        if (key) {
+          *key = match.slice();
+        }
+      }
+      found = true;
+    }
+  }
+  return found;
+}
+
+template <typename T>
 void DoubleArray<T>::truncate() {
   // TODO
 }
