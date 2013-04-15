@@ -44,22 +44,25 @@ struct MapCursorFlagsIdentifier;
 typedef FlagsImpl<MapCursorFlagsIdentifier> MapCursorFlags;
 
 // Sort keys by ID.
-constexpr MapCursorFlags MAP_CURSOR_ORDER_BY_ID   =
+constexpr MapCursorFlags MAP_CURSOR_ORDER_BY_ID       =
     MapCursorFlags::define(0x001);
 // Sort keys by key.
-constexpr MapCursorFlags MAP_CURSOR_ORDER_BY_KEY  =
+constexpr MapCursorFlags MAP_CURSOR_ORDER_BY_KEY      =
     MapCursorFlags::define(0x002);
+// TODO: Sort keys by distance.
+constexpr MapCursorFlags MAP_CURSOR_ORDER_BY_DISTANCE =
+    MapCursorFlags::define(0x004);
 // Access keys in reverse order.
-constexpr MapCursorFlags MAP_CURSOR_REVERSE_ORDER =
+constexpr MapCursorFlags MAP_CURSOR_REVERSE_ORDER     =
     MapCursorFlags::define(0x010);
 // Return keys except min.
-constexpr MapCursorFlags MAP_CURSOR_EXCEPT_MIN    =
+constexpr MapCursorFlags MAP_CURSOR_EXCEPT_MIN        =
     MapCursorFlags::define(0x100);
 // Return keys except max.
-constexpr MapCursorFlags MAP_CURSOR_EXCEPT_MAX    =
+constexpr MapCursorFlags MAP_CURSOR_EXCEPT_MAX        =
     MapCursorFlags::define(0x200);
 // Return keys except exact match.
-constexpr MapCursorFlags MAP_CURSOR_EXCEPT_QUERY  =
+constexpr MapCursorFlags MAP_CURSOR_EXCEPT_QUERY      =
     MapCursorFlags::define(0x400);
 
 struct MapCursorOptions {
@@ -160,10 +163,6 @@ class Map {
   virtual MapCursor<T> *open_bitwise_completion_cursor(
       T query, size_t bit_size,
       const MapCursorOptions &options = MapCursorOptions());
-  // Create a cursor for accessing keys close to "query".
-//  virtual MapCursor<T> *open_neighbor_cursor(
-//      T query, size_t min_size,
-//      const MapCursorOptions &options = MapCursorOptions());
 
   // Only for Slice.
   // Create a cursor for accessing keys matching a prefix of "query".

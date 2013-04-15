@@ -245,20 +245,6 @@ MapCursor<GeoPoint> *Map<GeoPoint>::open_bitwise_completion_cursor(
       this, query, bit_size, options);
 }
 
-//template <typename T>
-//MapCursor<T> *Map<T>::open_neighbor_cursor(
-//    T, size_t, const MapCursorOptions &) {
-//  // Not supported.
-//  return nullptr;
-//}
-
-//template <>
-//MapCursor<GeoPoint> *Map<GeoPoint>::open_neighbor_cursor(
-//    GeoPoint query, size_t min_size, const MapCursorOptions &options) {
-//  // TODO: Not supported.
-//  return nullptr;
-//}
-
 template <typename T>
 MapCursor<T> *Map<T>::open_prefix_cursor(
     T, size_t, const MapCursorOptions &) {
