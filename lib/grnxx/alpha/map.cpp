@@ -20,7 +20,10 @@
 #include "grnxx/alpha/map/array.hpp"
 #include "grnxx/alpha/map/cursor.hpp"
 #include "grnxx/alpha/map/double_array.hpp"
+#include "grnxx/charset.hpp"
+#include "grnxx/exception.hpp"
 #include "grnxx/slice.hpp"
+#include "grnxx/logger.hpp"
 
 namespace grnxx {
 namespace alpha {
@@ -306,6 +309,23 @@ MapCursor<Slice> *Map<Slice>::open_reverse_completion_cursor(
   return new (std::nothrow) map::ReverseCompletionCursor(this, query, options);
 }
 
+template <typename T>
+MapScan *Map<T>::open_scan(T, const Charset *) {
+  // Not supported
+  return nullptr;
+}
+
+template <>
+MapScan *Map<Slice>::open_scan(Slice query, const Charset *charset) {
+  std::unique_ptr<MapScan> scan(
+      new (std::nothrow) MapScan(this, query, charset));
+  if (!scan) {
+    GRNXX_ERROR() << "new grnxx::MapScan failed";
+    GRNXX_THROW();
+  }
+  return scan.release();
+}
+
 template class Map<int8_t>;
 template class Map<int16_t>;
 template class Map<int32_t>;
@@ -317,6 +337,36 @@ template class Map<uint64_t>;
 template class Map<double>;
 template class Map<GeoPoint>;
 template class Map<Slice>;
+
+MapScan::~MapScan() {}
+
+bool MapScan::next() {
+  offset_ += size_;
+  while (offset_ < query_.size()) {
+    const Slice query_left = query_.subslice(offset_, query_.size() - offset_);
+    if (map_->find_longest_prefix_match(query_left, &key_id_, &key_)) {
+      size_ = key_.size();
+      return true;
+    }
+    // Move to the next character.
+    if (charset_) {
+      offset_ += charset_->get_char_size(query_left);
+    } else {
+      ++offset_;
+    }
+  }
+  size_ = 0;
+  return false;
+}
+
+MapScan::MapScan(Map<Slice> *map, const Slice &query, const Charset *charset)
+  : map_(map),
+    query_(query),
+    offset_(0),
+    size_(0),
+    key_id_(-1),
+    key_(),
+    charset_(charset) {}
 
 }  // namespace alpha
 }  // namespace grnxx

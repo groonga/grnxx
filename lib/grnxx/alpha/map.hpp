@@ -23,7 +23,14 @@
 #include "grnxx/slice.hpp"
 
 namespace grnxx {
+
+// Forward declaration.
+class Charset;
+
 namespace alpha {
+
+// Forward declaration.
+class MapScan;
 
 enum MapType : int32_t {
   MAP_UNKNOWN      = 0,
@@ -180,6 +187,53 @@ class Map {
   // Create a cursor for accessing keys ending with "query".
   virtual MapCursor<T> *open_reverse_completion_cursor(T query,
       const MapCursorOptions &options = MapCursorOptions());
+
+  // Only for Slice.
+  // Create a MapScan object to find keys in "query".
+  MapScan *open_scan(T query, const Charset *charset = nullptr);
+};
+
+class MapScan {
+  friend class Map<Slice>;
+
+ public:
+  ~MapScan();
+
+  // Scan the rest of the query and return true iff a key is found (success).
+  // On success, the found key is accessible via accessors.
+  bool next();
+
+  // Return the query.
+  const Slice &query() const {
+    return query_;
+  }
+  // Return the start position of the found key.
+  uint64_t offset() const {
+    return offset_;
+  }
+  // Return the size of the found key.
+  uint64_t size() const {
+    return size_;
+  }
+  // Return the ID of the found key.
+  int64_t key_id() const {
+    return key_id_;
+  }
+  // Return a reference to the found key.
+  const Slice &key() const {
+    return key_;
+  }
+
+ protected:
+  Map<Slice> *map_;
+  Slice query_;
+  uint64_t offset_;
+  uint64_t size_;
+  int64_t key_id_;
+  Slice key_;
+  const Charset *charset_;
+
+  MapScan(Map<Slice> *map, const Slice &query, const Charset *charset);
 };
 
 }  // namespace alpha
