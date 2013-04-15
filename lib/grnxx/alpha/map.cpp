@@ -203,7 +203,7 @@ bool Map<T>::update(T, T, int64_t *) {
 }
 
 template <typename T>
-bool Map<T>::find_longest_prefix_match(T query, int64_t *key_id, T *key) {
+bool Map<T>::find_longest_prefix_match(T, int64_t *, T *) {
   // Not supported.
   return false;
 }
