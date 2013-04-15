@@ -55,7 +55,7 @@ class Array : public grnxx::alpha::Map<T> {
   bool unset(int64_t key_id);
   bool reset(int64_t key_id, T dest_key);
 
-  bool search(T key, int64_t *key_id = nullptr);
+  bool find(T key, int64_t *key_id = nullptr);
   bool insert(T key, int64_t *key_id = nullptr);
   bool remove(T key);
   bool update(T src_key, T dest_key, int64_t *key_id = nullptr);
@@ -103,7 +103,7 @@ class Array<Slice> : public grnxx::alpha::Map<Slice> {
   bool unset(int64_t key_id);
   bool reset(int64_t key_id, Slice dest_key);
 
-  bool search(Slice key, int64_t *key_id = nullptr);
+  bool find(Slice key, int64_t *key_id = nullptr);
   bool insert(Slice key, int64_t *key_id = nullptr);
   bool remove(Slice key);
   bool update(Slice src_key, Slice dest_key, int64_t *key_id = nullptr);

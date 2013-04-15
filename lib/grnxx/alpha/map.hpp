@@ -132,9 +132,9 @@ class Map {
   // on success.
   virtual bool reset(int64_t key_id, T dest_key);
 
-  // Search "key" and return true on success.
+  // Find "key" and return true on success.
   // Assign the ID to "*key_id" iff "key_id" != nullptr.
-  virtual bool search(T key, int64_t *key_id = nullptr);
+  virtual bool find(T key, int64_t *key_id = nullptr);
   // Insert "key" and return true on success.
   // Assign the ID to "*key_id" iff "key_id" != nullptr.
   virtual bool insert(T key, int64_t *key_id = nullptr);

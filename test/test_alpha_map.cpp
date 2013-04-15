@@ -114,7 +114,7 @@ void compare_maps(const std::unique_ptr<Map<T>> &map,
     assert(stored_key == key);
 
     std::int64_t stored_key_id;
-    assert(map->search(key, &stored_key_id));
+    assert(map->find(key, &stored_key_id));
     assert(stored_key_id == key_id);
   }
 }
@@ -323,7 +323,7 @@ void test_map_array() {
     assert(map->get(key_id, &stored_key));
     assert(stored_key == key);
 
-    assert(map->search(key, &stored_key_id));
+    assert(map->find(key, &stored_key_id));
     assert(stored_key_id == key_id);
   }
 
@@ -374,7 +374,7 @@ void test_map_array() {
     assert(map->get(old_it->second, &key));
     assert(key == new_it->first);
     std::int64_t key_id;
-    assert(map->search(key, &key_id));
+    assert(map->find(key, &key_id));
     assert(key_id == old_it->second);
   }
 
@@ -392,7 +392,7 @@ void test_map_array() {
     assert(map->get(old_it->second, &key));
     assert(key == new_it->first);
     std::int64_t key_id;
-    assert(map->search(key, &key_id));
+    assert(map->find(key, &key_id));
     assert(key_id == old_it->second);
   }
 }
@@ -414,7 +414,7 @@ void test_nan() {
   double key;
   assert(map->get(key_id, &key));
   assert(std::isnan(key));
-  assert(map->search(nan, &key_id));
+  assert(map->find(nan, &key_id));
   assert(key_id == 0);
 
   assert(map->unset(key_id));
@@ -464,7 +464,7 @@ void test_map_double_array() {
     assert(map->get(key_id, &stored_key));
     assert(stored_key == key);
 
-    assert(map->search(key, &stored_key_id));
+    assert(map->find(key, &stored_key_id));
     assert(stored_key_id == key_id);
   }
 
@@ -518,7 +518,7 @@ void test_map_double_array() {
     assert(map->get(old_it->second, &key));
     assert(key == new_it->first);
     std::int64_t key_id;
-    assert(map->search(key, &key_id));
+    assert(map->find(key, &key_id));
     assert(key_id == old_it->second);
   }
 
@@ -537,7 +537,7 @@ void test_map_double_array() {
     assert(map->get(old_it->second, &key));
     assert(key == new_it->first);
     std::int64_t key_id;
-    assert(map->search(key, &key_id));
+    assert(map->find(key, &key_id));
     assert(key_id == old_it->second);
   }
 }

@@ -179,7 +179,7 @@ bool Map<T>::reset(int64_t, T) {
 }
 
 template <typename T>
-bool Map<T>::search(T, int64_t *) {
+bool Map<T>::find(T, int64_t *) {
   // Not supported.
   return false;
 }

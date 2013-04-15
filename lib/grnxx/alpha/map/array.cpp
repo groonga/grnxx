@@ -154,7 +154,7 @@ bool Array<T>::reset(int64_t key_id, T dest_key) {
   if (!get_bit(key_id)) {
     return false;
   }
-  if (search(dest_key)) {
+  if (find(dest_key)) {
     return false;
   }
   keys_[key_id] = Helper<T>::normalize(dest_key);
@@ -162,7 +162,7 @@ bool Array<T>::reset(int64_t key_id, T dest_key) {
 }
 
 template <typename T>
-bool Array<T>::search(T key, int64_t *key_id) {
+bool Array<T>::find(T key, int64_t *key_id) {
   for (int64_t i = 0; i <= header_->max_key_id; ++i) {
     if (get_bit(i)) {
       if (Helper<T>::equal_to(key, keys_[i])) {
@@ -206,7 +206,7 @@ bool Array<T>::insert(T key, int64_t *key_id) {
 template <typename T>
 bool Array<T>::remove(T key) {
   int64_t key_id;
-  if (!search(key, &key_id)) {
+  if (!find(key, &key_id)) {
     return false;
   }
   set_bit(key_id, false);
@@ -216,10 +216,10 @@ bool Array<T>::remove(T key) {
 template <typename T>
 bool Array<T>::update(T src_key, T dest_key, int64_t *key_id) {
   int64_t src_key_id;
-  if (!search(src_key, &src_key_id)) {
+  if (!find(src_key, &src_key_id)) {
     return false;
   }
-  if (search(dest_key)) {
+  if (find(dest_key)) {
     return false;
   }
   keys_[src_key_id] = Helper<T>::normalize(dest_key);
@@ -333,7 +333,7 @@ bool Array<Slice>::reset(int64_t key_id, Slice dest_key) {
   if (!blob) {
     return false;
   }
-  if (!dest_key || search(dest_key)) {
+  if (!dest_key || find(dest_key)) {
     return false;
   }
   std::string buf;
@@ -341,7 +341,7 @@ bool Array<Slice>::reset(int64_t key_id, Slice dest_key) {
   return true;
 }
 
-bool Array<Slice>::search(Slice key, int64_t *key_id) {
+bool Array<Slice>::find(Slice key, int64_t *key_id) {
   for (int64_t i = 0; i <= header_->max_key_id; ++i) {
     db::Blob blob = keys_[i].get();
     if (key == blob_to_slice(blob)) {
@@ -384,7 +384,7 @@ bool Array<Slice>::insert(Slice key, int64_t *key_id) {
 
 bool Array<Slice>::remove(Slice key) {
   int64_t key_id;
-  if (!search(key, &key_id)) {
+  if (!find(key, &key_id)) {
     return false;
   }
   keys_[key_id] = nullptr;
@@ -393,10 +393,10 @@ bool Array<Slice>::remove(Slice key) {
 
 bool Array<Slice>::update(Slice src_key, Slice dest_key, int64_t *key_id) {
   int64_t src_key_id;
-  if (!search(src_key, &src_key_id)) {
+  if (!find(src_key, &src_key_id)) {
     return false;
   }
-  if (!dest_key || search(dest_key)) {
+  if (!dest_key || find(dest_key)) {
     return false;
   }
   std::string buf;

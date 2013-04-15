@@ -567,14 +567,14 @@ bool DoubleArray<T>::reset(int64_t key_id, T dest_key) {
 }
 
 template <typename T>
-bool DoubleArray<T>::search(T key, int64_t *key_id) {
+bool DoubleArray<T>::find(T key, int64_t *key_id) {
   if ((key.size() < MIN_KEY_SIZE) || (key.size() > MAX_KEY_SIZE)) {
     return false;
   }
 
   uint32_t node_id = ROOT_NODE_ID;
   size_t query_pos = 0;
-  if (!search_leaf(key, node_id, query_pos)) {
+  if (!find_leaf(key, node_id, query_pos)) {
     return false;
   }
 
@@ -609,7 +609,7 @@ bool DoubleArray<T>::insert(T key, int64_t *key_id) {
   uint32_t node_id = ROOT_NODE_ID;
   size_t query_pos = 0;
 
-  search_leaf(key, node_id, query_pos);
+  find_leaf(key, node_id, query_pos);
   if (!insert_leaf(key, node_id, query_pos)) {
     if (key_id) {
       *key_id = get_key(nodes_[node_id].key_pos()).id();
@@ -667,7 +667,7 @@ bool DoubleArray<T>::update(T src_key, T dest_key, int64_t *key_id) {
   Lock lock(&header_->inter_process_mutex);
 
   int64_t src_key_id;
-  if (!search(src_key, &src_key_id)) {
+  if (!find(src_key, &src_key_id)) {
     return false;
   }
   if (update_key(static_cast<int32_t>(src_key_id), src_key, dest_key)) {
@@ -782,7 +782,7 @@ template <typename T>
 bool DoubleArray<T>::remove_key(const Slice &key) {
   uint32_t node_id = ROOT_NODE_ID;
   size_t query_pos = 0;
-  if (!search_leaf(key, node_id, query_pos)) {
+  if (!find_leaf(key, node_id, query_pos)) {
     return false;
   }
 
@@ -808,7 +808,7 @@ bool DoubleArray<T>::update_key(int32_t key_id, const Slice &src_key,
   uint32_t node_id = ROOT_NODE_ID;
   size_t query_pos = 0;
 
-  search_leaf(dest_key, node_id, query_pos);
+  find_leaf(dest_key, node_id, query_pos);
   if (!insert_leaf(dest_key, node_id, query_pos)) {
     return false;
   }
@@ -821,7 +821,7 @@ bool DoubleArray<T>::update_key(int32_t key_id, const Slice &src_key,
 
   node_id = ROOT_NODE_ID;
   query_pos = 0;
-  if (!search_leaf(src_key, node_id, query_pos)) {
+  if (!find_leaf(src_key, node_id, query_pos)) {
     GRNXX_ERROR() << "key not found (unexpected)";
     GRNXX_THROW();
   }
@@ -830,8 +830,8 @@ bool DoubleArray<T>::update_key(int32_t key_id, const Slice &src_key,
 }
 
 template <typename T>
-bool DoubleArray<T>::search_leaf(const Slice &key, uint32_t &node_id,
-                                 size_t &query_pos) {
+bool DoubleArray<T>::find_leaf(const Slice &key, uint32_t &node_id,
+                               size_t &query_pos) {
   for ( ; query_pos < key.size(); ++query_pos) {
     const DoubleArrayNode node = nodes_[node_id];
     if (node.is_leaf()) {

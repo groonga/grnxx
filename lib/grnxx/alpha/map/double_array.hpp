@@ -50,7 +50,7 @@ class DoubleArray : public Map<T> {
   bool unset(int64_t key_id);
   bool reset(int64_t key_id, T dest_key);
 
-  bool search(T key, int64_t *key_id = nullptr);
+  bool find(T key, int64_t *key_id = nullptr);
   bool insert(T key, int64_t *key_id = nullptr);
   bool remove(T key);
   bool update(T src_key, T dest_key, int64_t *key_id = nullptr);
@@ -86,7 +86,7 @@ class DoubleArray : public Map<T> {
   bool update_key(int32_t key_id, const Slice &src_key,
                   const Slice &dest_key);
 
-  bool search_leaf(const Slice &key, uint32_t &node_id, size_t &query_pos);
+  bool find_leaf(const Slice &key, uint32_t &node_id, size_t &query_pos);
   bool insert_leaf(const Slice &key, uint32_t &node_id, size_t query_pos);
 
   uint32_t insert_node(uint32_t node_id, uint16_t label);
