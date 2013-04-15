@@ -160,7 +160,7 @@ class Map {
   virtual MapCursor<T> *open_bitwise_completion_cursor(
       T query, size_t bit_size,
       const MapCursorOptions &options = MapCursorOptions());
-  // Create a cursor for accessing keys similar to "query".
+  // Create a cursor for accessing keys close to "query".
 //  virtual MapCursor<T> *open_neighbor_cursor(
 //      T query, size_t min_size,
 //      const MapCursorOptions &options = MapCursorOptions());

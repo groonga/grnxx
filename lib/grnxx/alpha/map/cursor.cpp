@@ -201,6 +201,11 @@ void ConditionalCursor<T>::init() {
   }
 }
 
+template <>
+void ConditionalCursor<GeoPoint>::init() {
+  init_order_by_id();
+}
+
 template <typename T>
 void ConditionalCursor<T>::init_order_by_id() {
   options_.flags |= MAP_CURSOR_ORDER_BY_ID;
@@ -249,6 +254,11 @@ void ConditionalCursor<T>::init_order_by_key() {
     end_ = 0;
     step_ = -1;
   }
+}
+
+template <>
+void ConditionalCursor<GeoPoint>::init_order_by_key() {
+  // Not supported.
 }
 
 template class ConditionalCursor<int8_t>;
@@ -326,6 +336,38 @@ template class KeyCursor<uint32_t>;
 template class KeyCursor<uint64_t>;
 template class KeyCursor<double>;
 template class KeyCursor<Slice>;
+
+BitwiseCompletionCursor::BitwiseCompletionCursor(
+    Map<GeoPoint> *map, GeoPoint query, size_t bit_size,
+    const MapCursorOptions &options)
+  : ConditionalCursor<GeoPoint>(map, options),
+    query_(query), mask_() {
+  if (bit_size >= 64) {
+    bit_size = 64;
+  }
+  switch (bit_size) {
+    case 0: {
+      mask_ = 0;
+      break;
+    }
+    case 1: {
+      mask_ = GeoPoint(1 << 31, 0).value();
+      break;
+    }
+    default: {
+      mask_ = GeoPoint(0xFFFFFFFFU << (32 - (bit_size / 2) - (bit_size % 2)),
+                       0xFFFFFFFFU << (32 - (bit_size / 2))).value();
+      break;
+    }
+  }
+  this->init();
+}
+
+BitwiseCompletionCursor::~BitwiseCompletionCursor() {}
+
+bool BitwiseCompletionCursor::is_valid(GeoPoint key) const {
+  return ((key.value() ^ query_.value()) & mask_) != 0;
+}
 
 PrefixCursor::PrefixCursor(Map<Slice> *map, Slice query, size_t min_size,
                            const MapCursorOptions &options)

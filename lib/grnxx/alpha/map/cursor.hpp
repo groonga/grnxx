@@ -87,13 +87,18 @@ class KeyCursor : public ConditionalCursor<T> {
   bool is_valid(T key) const;
 };
 
-// TODO
-//class BitwiseCompletionCursor : public ConditionalCursor<GeoPoint> {
-// public:
-//  BitwiseCompletionCursor(Map<GeoPoint> *map, GeoPoint query, size_t bit_size,
-//                          const MapCursorOptions &options);
-//  ~BitwiseCompletionCursor();
-//};
+class BitwiseCompletionCursor : public ConditionalCursor<GeoPoint> {
+ public:
+  BitwiseCompletionCursor(Map<GeoPoint> *map, GeoPoint query, size_t bit_size,
+                          const MapCursorOptions &options);
+  ~BitwiseCompletionCursor();
+
+ private:
+  GeoPoint query_;
+  uint64_t mask_;
+
+  bool is_valid(GeoPoint key) const;
+};
 
 class PrefixCursor : public ConditionalCursor<Slice> {
  public:
