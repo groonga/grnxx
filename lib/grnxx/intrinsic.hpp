@@ -264,32 +264,32 @@ inline uint8_t byte_swap(uint8_t value) {
 inline uint16_t byte_swap(uint16_t value) {
 #ifdef GRNXX_MSC
   return ::_byteswap_ushort(value);
-#elif defined(GRNXX_HAS_GNUC_BUILTIN_BSWAP)
+#elif defined(GRNXX_HAS_GNUC_BUILTIN_BSWAP16)
   return ::__builtin_bswap16(value);
-#else  // defined(GRNXX_HAS_GNUC_BUILTIN_BSWAP)
+#else  // defined(GRNXX_HAS_GNUC_BUILTIN_BSWAP16)
   return (value << 8) | (value >> 8);
-#endif  // defined(GRNXX_HAS_GNUC_BUILTIN_BSWAP)
+#endif  // defined(GRNXX_HAS_GNUC_BUILTIN_BSWAP16)
 }
 
 inline uint32_t byte_swap(uint32_t value) {
 #ifdef GRNXX_MSC
   return ::_byteswap_ulong(value);
-#elif defined(GRNXX_HAS_GNUC_BUILTIN_BSWAP)
+#elif defined(GRNXX_HAS_GNUC_BUILTIN_BSWAP32)
   return ::__builtin_bswap32(value);
-#else  // defined(GRNXX_HAS_GNUC_BUILTIN_BSWAP)
+#else  // defined(GRNXX_HAS_GNUC_BUILTIN_BSWAP32)
   return (value << 24) |
          ((value & (0xFF <<  8)) << 8) |
          ((value & (0xFF << 16)) >> 8) |
          (value >> 24);
-#endif  // defined(GRNXX_HAS_GNUC_BUILTIN_BSWAP)
+#endif  // defined(GRNXX_HAS_GNUC_BUILTIN_BSWAP32)
 }
 
 inline uint64_t byte_swap(uint64_t value) {
 #ifdef GRNXX_MSC
   return ::_byteswap_uint64(value);
-#elif defined(GRNXX_HAS_GNUC_BUILTIN_BSWAP)
+#elif defined(GRNXX_HAS_GNUC_BUILTIN_BSWAP64)
   return ::__builtin_bswap64(value);
-#else  // defined(GRNXX_HAS_GNUC_BUILTIN_BSWAP)
+#else  // defined(GRNXX_HAS_GNUC_BUILTIN_BSWAP64)
   return (value << 56) |
          ((value & (0xFFULL <<  8)) << 40) |
          ((value & (0xFFULL << 16)) << 24) |
@@ -298,7 +298,7 @@ inline uint64_t byte_swap(uint64_t value) {
          ((value & (0xFFULL << 40)) >> 24) |
          ((value & (0xFFULL << 48)) >> 40) |
          (value >> 56);
-#endif  // defined(GRNXX_HAS_GNUC_BUILTIN_BSWAP)
+#endif  // defined(GRNXX_HAS_GNUC_BUILTIN_BSWAP64)
 }
 
 // Implementation of atomic_compare_and_swap.
