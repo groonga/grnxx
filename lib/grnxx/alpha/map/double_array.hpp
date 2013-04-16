@@ -30,7 +30,6 @@ struct DoubleArrayHeaderForOthers;
 class DoubleArrayNodeForOthers;
 class DoubleArrayChunkForOthers;
 class DoubleArrayEntryForOthers;
-class DoubleArrayKeyForOthers;
 
 // Forward declarations.
 struct DoubleArrayHeaderForSlice;
@@ -61,7 +60,6 @@ class DoubleArray : public Map<T> {
   typedef DoubleArrayNodeForOthers DoubleArrayNode;
   typedef DoubleArrayChunkForOthers DoubleArrayChunk;
   typedef DoubleArrayEntryForOthers DoubleArrayEntry;
-  typedef DoubleArrayKeyForOthers DoubleArrayKey;
 
   ~DoubleArray();
 
@@ -85,14 +83,8 @@ class DoubleArray : public Map<T> {
   bool remove(T key);
   bool update(T src_key, T dest_key, int64_t *key_id = nullptr);
 
-  bool find_longest_prefix_match(T query, int64_t *key_id = nullptr,
-                                 T *key = nullptr);
-
   // TODO
   void truncate();
-
-  // TODO
-//  DoubleArray<T> *defrag();
 
  private:
   io::Pool pool_;
@@ -101,7 +93,7 @@ class DoubleArray : public Map<T> {
   DoubleArrayNode *nodes_;
   DoubleArrayChunk *chunks_;
   DoubleArrayEntry *entries_;
-  uint32_t *keys_;
+  T *keys_;
   bool initialized_;
 
   DoubleArray();
@@ -111,19 +103,14 @@ class DoubleArray : public Map<T> {
 
   void create_arrays();
 
-  const DoubleArrayKey &get_key(uint32_t key_pos) const {
-    return *reinterpret_cast<const DoubleArrayKey *>(&keys_[key_pos]);
-  }
-
-  bool remove_key(const Slice &key);
+  bool remove_key(T key);
   bool update_key(int32_t key_id, const Slice &src_key,
                   const Slice &dest_key);
 
-  bool find_leaf(const Slice &key, uint32_t &node_id, size_t &query_pos);
+  bool find_leaf(const uint8_t *key_buf, uint32_t &node_id, size_t &query_pos);
   bool insert_leaf(const Slice &key, uint32_t &node_id, size_t query_pos);
 
   uint32_t insert_node(uint32_t node_id, uint16_t label);
-  uint32_t append_key(const Slice &key, int32_t key_id);
 
   uint32_t separate(const Slice &key, uint32_t node_id, size_t i);
   void resolve(uint32_t node_id, uint16_t label);
@@ -138,11 +125,6 @@ class DoubleArray : public Map<T> {
   void update_chunk_level(uint32_t chunk_id, uint32_t level);
   void set_chunk_level(uint32_t chunk_id, uint32_t level);
   void unset_chunk_level(uint32_t chunk_id);
-
-  // TODO
-//  void defrag_trie(const TrieOptions &options, const Trie &trie,
-//                   io::Pool pool);
-//  void defrag_trie(const Trie &trie, uint32_t src, uint32_t dest);
 };
 
 template <>
@@ -182,9 +164,6 @@ class DoubleArray<Slice> : public Map<Slice> {
   // TODO
   void truncate();
 
-  // TODO
-//  DoubleArray<Slice> *defrag();
-
  private:
   io::Pool pool_;
   const io::BlockInfo *block_info_;
@@ -229,11 +208,6 @@ class DoubleArray<Slice> : public Map<Slice> {
   void update_chunk_level(uint32_t chunk_id, uint32_t level);
   void set_chunk_level(uint32_t chunk_id, uint32_t level);
   void unset_chunk_level(uint32_t chunk_id);
-
-  // TODO
-//  void defrag_trie(const TrieOptions &options, const Trie &trie,
-//                   io::Pool pool);
-//  void defrag_trie(const Trie &trie, uint32_t src, uint32_t dest);
 };
 
 }  // namespace map
