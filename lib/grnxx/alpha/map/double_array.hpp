@@ -77,6 +77,8 @@ class DoubleArray : public Map<T> {
   uint64_t num_keys() const;
 
   bool get(int64_t key_id, T *key = nullptr);
+  bool get_next(int64_t key_id, int64_t *next_key_id = nullptr,
+                T *next_key = nullptr);
   bool unset(int64_t key_id);
   bool reset(int64_t key_id, T dest_key);
 
@@ -154,6 +156,8 @@ class DoubleArray<Slice> : public Map<Slice> {
   uint64_t num_keys() const;
 
   bool get(int64_t key_id, Slice *key = nullptr);
+  bool get_next(int64_t key_id, int64_t *next_key_id = nullptr,
+                Slice *next_key = nullptr);
   bool unset(int64_t key_id);
   bool reset(int64_t key_id, Slice dest_key);
 

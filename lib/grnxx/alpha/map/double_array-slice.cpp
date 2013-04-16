@@ -515,6 +515,29 @@ bool DoubleArray<Slice>::get(int64_t key_id, Slice *key) {
   return true;
 }
 
+bool DoubleArray<Slice>::get_next(int64_t key_id, int64_t *next_key_id,
+                                  Slice *next_key) {
+  if (key_id >= header_->max_key_id) {
+    return false;
+  }
+  if (key_id < 0) {
+    key_id = -1;
+  }
+  for (++key_id; key_id <= header_->max_key_id; ++key_id) {
+    const DoubleArrayEntry entry = entries_[key_id];
+    if (entry) {
+      if (next_key_id) {
+        *next_key_id = key_id;
+      }
+      if (next_key) {
+        *next_key = get_key(entry.key_pos()).slice();
+      }
+      return true;
+    }
+  }
+  return false;
+}
+
 bool DoubleArray<Slice>::unset(int64_t key_id) {
   Lock lock(&header_->inter_process_mutex);
 

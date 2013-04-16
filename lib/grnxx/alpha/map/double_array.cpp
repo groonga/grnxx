@@ -555,6 +555,30 @@ bool DoubleArray<T>::get(int64_t key_id, T *key) {
 }
 
 template <typename T>
+bool DoubleArray<T>::get_next(int64_t key_id, int64_t *next_key_id,
+                              T *next_key) {
+  if (key_id >= header_->max_key_id) {
+    return false;
+  }
+  if (key_id < 0) {
+    key_id = -1;
+  }
+  for (++key_id; key_id <= header_->max_key_id; ++key_id) {
+    const DoubleArrayEntry entry = entries_[key_id];
+    if (entry) {
+      if (next_key_id) {
+        *next_key_id = key_id;
+      }
+      if (next_key) {
+        *next_key = keys_[key_id];
+      }
+      return true;
+    }
+  }
+  return false;
+}
+
+template <typename T>
 bool DoubleArray<T>::unset(int64_t key_id) {
   Lock lock(&header_->inter_process_mutex);
 
