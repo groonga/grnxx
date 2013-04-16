@@ -139,6 +139,7 @@ class Map {
   virtual bool get(int64_t key_id, T *key = nullptr);
   // Find the next key and return true on success. The next key means the key
   // associated with the smallest valid ID that is greater than "key_id".
+  // If "key_id" < 0, this finds the first key.
   // Assign the ID to "*next_key_id" iff "next_key_id" != nullptr.
   // Assign the key to "*next_key" iff "next_key" != nullptr.
   virtual bool get_next(int64_t key_id, int64_t *next_key_id = nullptr,

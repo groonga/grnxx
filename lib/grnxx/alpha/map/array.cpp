@@ -64,7 +64,9 @@ ArrayHeader::ArrayHeader()
   : map_type(MAP_ARRAY),
     bits_block_id(io::BLOCK_INVALID_ID),
     keys_block_id(io::BLOCK_INVALID_ID),
-    max_key_id(-1) {}
+    max_key_id(-1),
+    next_key_id(0),
+    num_keys(0) {}
 
 template <typename T>
 Array<T>::~Array() {}
@@ -121,6 +123,16 @@ int64_t Array<T>::max_key_id() const {
 }
 
 template <typename T>
+int64_t Array<T>::next_key_id() const {
+  return header_->next_key_id;
+}
+
+template <typename T>
+uint64_t Array<T>::num_keys() const {
+  return header_->num_keys;
+}
+
+template <typename T>
 bool Array<T>::get(int64_t key_id, T *key) {
   if ((key_id < 0) || (key_id > header_->max_key_id)) {
     return false;
@@ -135,6 +147,28 @@ bool Array<T>::get(int64_t key_id, T *key) {
 }
 
 template <typename T>
+bool Array<T>::get_next(int64_t key_id, int64_t *next_key_id, T *next_key) {
+  if (key_id >= header_->max_key_id) {
+    return false;
+  }
+  if (key_id < 0) {
+    key_id = -1;
+  }
+  for (++key_id; key_id <= header_->max_key_id; ++key_id) {
+    if (get_bit(key_id)) {
+      if (next_key_id) {
+        *next_key_id = key_id;
+      }
+      if (next_key) {
+        *next_key = keys_[key_id];
+      }
+      return true;
+    }
+  }
+  return false;
+}
+
+template <typename T>
 bool Array<T>::unset(int64_t key_id) {
   if ((key_id < 0) || (key_id > header_->max_key_id)) {
     return false;
@@ -143,6 +177,10 @@ bool Array<T>::unset(int64_t key_id) {
     return false;
   }
   set_bit(key_id, false);
+  if (key_id < header_->next_key_id) {
+    header_->next_key_id = key_id;
+  }
+  --header_->num_keys;
   return true;
 }
 
@@ -179,6 +217,7 @@ bool Array<T>::find(T key, int64_t *key_id) {
 template <typename T>
 bool Array<T>::insert(T key, int64_t *key_id) {
   int64_t key_id_candidate = -1;
+  int64_t next_key_id_candidate = -1;
   for (int64_t i = 0; i <= header_->max_key_id; ++i) {
     if (get_bit(i)) {
       if (Helper<T>::equal_to(key, keys_[i])) {
@@ -188,8 +227,11 @@ bool Array<T>::insert(T key, int64_t *key_id) {
         return false;
       }
     } else if (key_id_candidate == -1) {
-      // Use the youngest ID if there exist IDs associated with removed keys.
+      // Use the first invalid ID if exists.
       key_id_candidate = i;
+    } else if (next_key_id_candidate == -1) {
+      // Use the second invalid ID if exists.
+      next_key_id_candidate = i;
     }
   }
   if (key_id_candidate == -1) {
@@ -197,6 +239,9 @@ bool Array<T>::insert(T key, int64_t *key_id) {
   }
   keys_[key_id_candidate] = Helper<T>::normalize(key);
   set_bit(key_id_candidate, true);
+  header_->next_key_id = (next_key_id_candidate != -1) ?
+      next_key_id_candidate : (header_->max_key_id + 1);
+  ++header_->num_keys;
   if (key_id) {
     *key_id = key_id_candidate;
   }
@@ -210,6 +255,10 @@ bool Array<T>::remove(T key) {
     return false;
   }
   set_bit(key_id, false);
+  if (key_id < header_->next_key_id) {
+    header_->next_key_id = key_id;
+  }
+  --header_->num_keys;
   return true;
 }
 
@@ -235,6 +284,8 @@ void Array<T>::truncate() {
     set_bit(i, false);
   }
   header_->max_key_id = -1;
+  header_->next_key_id = 0;
+  header_->num_keys = 0;
 }
 
 template <typename T>
@@ -299,6 +350,14 @@ int64_t Array<Slice>::max_key_id() const {
   return header_->max_key_id;
 }
 
+int64_t Array<Slice>::next_key_id() const {
+  return header_->next_key_id;
+}
+
+uint64_t Array<Slice>::num_keys() const {
+  return header_->num_keys;
+}
+
 bool Array<Slice>::get(int64_t key_id, Slice *key) {
   if ((key_id < 0) || (key_id > header_->max_key_id)) {
     return false;
@@ -313,6 +372,29 @@ bool Array<Slice>::get(int64_t key_id, Slice *key) {
   return true;
 }
 
+bool Array<Slice>::get_next(int64_t key_id, int64_t *next_key_id,
+                            Slice *next_key) {
+  if (key_id >= header_->max_key_id) {
+    return false;
+  }
+  if (key_id < 0) {
+    key_id = -1;
+  }
+  for (++key_id; key_id <= header_->max_key_id; ++key_id) {
+    db::Blob blob = keys_[key_id].get();
+    if (blob) {
+      if (next_key_id) {
+        *next_key_id = key_id;
+      }
+      if (next_key) {
+        *next_key = blob_to_slice(blob);
+      }
+      return true;
+    }
+  }
+  return false;
+}
+
 bool Array<Slice>::unset(int64_t key_id) {
   if ((key_id < 0) || (key_id > header_->max_key_id)) {
     return false;
@@ -322,6 +404,10 @@ bool Array<Slice>::unset(int64_t key_id) {
     return false;
   }
   keys_[key_id] = nullptr;
+  if (key_id < header_->next_key_id) {
+    header_->next_key_id = key_id;
+  }
+  --header_->num_keys;
   return true;
 }
 
@@ -359,6 +445,7 @@ bool Array<Slice>::insert(Slice key, int64_t *key_id) {
     return false;
   }
   int64_t key_id_candidate = -1;
+  int64_t next_key_id_candidate = -1;
   for (int64_t i = 0; i <= header_->max_key_id; ++i) {
     db::Blob blob = keys_[i].get();
     if (key == blob_to_slice(blob)) {
@@ -366,9 +453,14 @@ bool Array<Slice>::insert(Slice key, int64_t *key_id) {
         *key_id = i;
       }
       return false;
-    } else if (!blob && (key_id_candidate == -1)) {
-      // Use the youngest ID if there exist IDs associated with removed keys.
-      key_id_candidate = i;
+    } else if (!blob) {
+      if (key_id_candidate == -1) {
+        // Use the first invalid ID if exists.
+        key_id_candidate = i;
+      } else if (next_key_id_candidate == -1) {
+        // Use the second invalid ID if exists.
+        next_key_id_candidate = i;
+      }
     }
   }
   if (key_id_candidate == -1) {
@@ -376,6 +468,9 @@ bool Array<Slice>::insert(Slice key, int64_t *key_id) {
   }
   std::string buf;
   keys_[key_id_candidate] = slice_to_blob(key, &buf);
+  header_->next_key_id = (next_key_id_candidate != -1) ?
+      next_key_id_candidate : (header_->max_key_id + 1);
+  ++header_->num_keys;
   if (key_id) {
     *key_id = key_id_candidate;
   }
@@ -388,6 +483,10 @@ bool Array<Slice>::remove(Slice key) {
     return false;
   }
   keys_[key_id] = nullptr;
+  if (key_id < header_->next_key_id) {
+    header_->next_key_id = key_id;
+  }
+  --header_->num_keys;
   return true;
 }
 
@@ -412,6 +511,8 @@ void Array<Slice>::truncate() {
     keys_[i] = nullptr;
   }
   header_->max_key_id = -1;
+  header_->next_key_id = 0;
+  header_->num_keys = 0;
 }
 
 Array<Slice>::Array()

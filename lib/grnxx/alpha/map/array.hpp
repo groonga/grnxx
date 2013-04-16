@@ -31,6 +31,8 @@ struct ArrayHeader {
   uint32_t bits_block_id;
   uint32_t keys_block_id;
   int64_t max_key_id;
+  int64_t next_key_id;
+  uint64_t num_keys;
 
   ArrayHeader();
 };
@@ -50,8 +52,12 @@ class Array : public grnxx::alpha::Map<T> {
   MapType type() const;
 
   int64_t max_key_id() const;
+  int64_t next_key_id() const;
+  uint64_t num_keys() const;
 
   bool get(int64_t key_id, T *key = nullptr);
+  bool get_next(int64_t key_id, int64_t *next_key_id = nullptr,
+                T *next_key = nullptr);
   bool unset(int64_t key_id);
   bool reset(int64_t key_id, T dest_key);
 
@@ -98,8 +104,12 @@ class Array<Slice> : public grnxx::alpha::Map<Slice> {
   MapType type() const;
 
   int64_t max_key_id() const;
+  int64_t next_key_id() const;
+  uint64_t num_keys() const;
 
   bool get(int64_t key_id, Slice *key = nullptr);
+  bool get_next(int64_t key_id, int64_t *next_key_id = nullptr,
+                Slice *next_key = nullptr);
   bool unset(int64_t key_id);
   bool reset(int64_t key_id, Slice dest_key);
 
