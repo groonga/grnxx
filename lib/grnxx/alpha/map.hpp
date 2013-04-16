@@ -129,10 +129,20 @@ class Map {
   // Return the maximum key ID ever used.
   // If the map is empty, the return value can be -1.
   virtual int64_t max_key_id() const;
+  // Return the ID of the expected next inserted ID.
+  virtual int64_t next_key_id() const;
+  // Return the number of keys.
+  virtual uint64_t num_keys() const;
 
   // Get a key associated with "key_id" and return true on success.
   // Assign the found key to "*key" iff "key" != nullptr.
   virtual bool get(int64_t key_id, T *key = nullptr);
+  // Find the next key and return true on success. The next key means the key
+  // associated with the smallest valid ID that is greater than "key_id".
+  // Assign the ID to "*next_key_id" iff "next_key_id" != nullptr.
+  // Assign the key to "*next_key" iff "next_key" != nullptr.
+  virtual bool get_next(int64_t key_id, int64_t *next_key_id = nullptr,
+                        T *next_key = nullptr);
   // Remove a key associated with "key_id" and return true on success.
   virtual bool unset(int64_t key_id);
   // Replace a key associated with "key_id" with "dest_key" and return true

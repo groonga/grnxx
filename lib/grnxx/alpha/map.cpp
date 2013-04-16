@@ -164,8 +164,25 @@ int64_t Map<T>::max_key_id() const {
 }
 
 template <typename T>
+int64_t Map<T>::next_key_id() const {
+  // Not supported.
+  return -1;
+}
+
+template <typename T>
+uint64_t Map<T>::num_keys() const {
+  // Not supported.
+  return 0;
+}
+
+template <typename T>
 bool Map<T>::get(int64_t, T *) {
   // Not supported.
+  return false;
+}
+
+template <typename T>
+bool Map<T>::get_next(int64_t, int64_t *, T *) {
   return false;
 }
 
