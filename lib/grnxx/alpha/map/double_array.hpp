@@ -73,6 +73,8 @@ class DoubleArray : public Map<T> {
   MapType type() const;
 
   int64_t max_key_id() const;
+  int64_t next_key_id() const;
+  uint64_t num_keys() const;
 
   bool get(int64_t key_id, T *key = nullptr);
   bool unset(int64_t key_id);
@@ -148,6 +150,8 @@ class DoubleArray<Slice> : public Map<Slice> {
   MapType type() const;
 
   int64_t max_key_id() const;
+  int64_t next_key_id() const;
+  uint64_t num_keys() const;
 
   bool get(int64_t key_id, Slice *key = nullptr);
   bool unset(int64_t key_id);

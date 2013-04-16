@@ -491,6 +491,14 @@ int64_t DoubleArray<Slice>::max_key_id() const {
   return header_->max_key_id;
 }
 
+int64_t DoubleArray<Slice>::next_key_id() const {
+  return header_->next_key_id;
+}
+
+uint64_t DoubleArray<Slice>::num_keys() const {
+  return header_->num_keys;
+}
+
 bool DoubleArray<Slice>::get(int64_t key_id, Slice *key) {
   if ((key_id < MIN_KEY_ID) || (key_id > header_->max_key_id)) {
     return false;

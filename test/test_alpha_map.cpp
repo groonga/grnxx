@@ -472,9 +472,13 @@ void test_map_double_array() {
     const std::int64_t key_id = pair.first->second;
     const bool is_new = pair.second;
 
+    const std::int64_t next_key_id = map->next_key_id();
     std::int64_t stored_key_id;
     assert(map->insert(key, &stored_key_id) == is_new);
     assert(stored_key_id == key_id);
+    if (is_new) {
+      assert(next_key_id == key_id);
+    }
     assert(!map->insert(key, &stored_key_id));
 
     T stored_key;
@@ -483,7 +487,20 @@ void test_map_double_array() {
 
     assert(map->find(key, &stored_key_id));
     assert(stored_key_id == key_id);
+
+    assert(map->num_keys() == hash_map.size());
   }
+
+//  {
+//    std::int64_t key_id = -1;
+//    for (std::size_t i = 0; i < MAP_SIZE; ++i) {
+//      T key;
+//      assert(map->get_next(key_id, &key_id, &key));
+//      assert(key_id == static_cast<std::int64_t>(i));
+//      assert(key_id == hash_map[key]);
+//    }
+//    assert(!map->get_next(key_id));
+//  }
 
   compare_maps(map, hash_map);
 

@@ -529,6 +529,16 @@ int64_t DoubleArray<T>::max_key_id() const {
 }
 
 template <typename T>
+int64_t DoubleArray<T>::next_key_id() const {
+  return header_->next_key_id;
+}
+
+template <typename T>
+uint64_t DoubleArray<T>::num_keys() const {
+  return header_->num_keys;
+}
+
+template <typename T>
 bool DoubleArray<T>::get(int64_t key_id, T *key) {
   if ((key_id < MIN_KEY_ID) || (key_id > header_->max_key_id)) {
     return false;
