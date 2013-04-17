@@ -108,15 +108,15 @@ class DoubleArray : public Map<T> {
   void create_arrays();
 
   bool remove_key(T key);
-  bool update_key(int32_t key_id, const Slice &src_key,
-                  const Slice &dest_key);
+  bool update_key(int32_t key_id, T src_key, T dest_key);
 
   bool find_leaf(const uint8_t *key_buf, uint32_t &node_id, size_t &query_pos);
-  bool insert_leaf(const Slice &key, uint32_t &node_id, size_t query_pos);
+  bool insert_leaf(T key, const uint8_t *key_buf, uint32_t &node_id,
+                   size_t query_pos);
 
   uint32_t insert_node(uint32_t node_id, uint16_t label);
 
-  uint32_t separate(const Slice &key, uint32_t node_id, size_t i);
+  uint32_t separate(const uint8_t *key_buf, uint32_t node_id, size_t i);
   void resolve(uint32_t node_id, uint16_t label);
   void migrate_nodes(uint32_t node_id, uint32_t dest_offset,
                      const uint16_t *labels, uint16_t num_labels);

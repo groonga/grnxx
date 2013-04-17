@@ -19,6 +19,7 @@ AM_CXXFLAGS="-Wall -Wextra -std=c++11 -fno-strict-aliasing -I\${top_srcdir}/lib"
 AC_SUBST([AM_CXXFLAGS])
 AC_SUBST([AM_LTLDFLAGS])
 
+AC_C_BIGENDIAN
 AC_CANONICAL_HOST
 
 case "${host}" in

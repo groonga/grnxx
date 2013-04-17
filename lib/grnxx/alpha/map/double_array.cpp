@@ -17,6 +17,8 @@
 */
 #include "grnxx/alpha/map/double_array.hpp"
 
+#include <cmath>
+
 #include "../config.h"
 #include "grnxx/lock.hpp"
 #include "grnxx/logger.hpp"
@@ -28,9 +30,6 @@ namespace {
 
 constexpr  int32_t MIN_KEY_ID     = 0;
 constexpr  int32_t MAX_KEY_ID     = 0x7FFFFFFE;
-
-constexpr   size_t MIN_KEY_SIZE   = 1;
-constexpr   size_t MAX_KEY_SIZE   = 4095;
 
 constexpr uint32_t INVALID_OFFSET = 0;
 
@@ -70,6 +69,29 @@ constexpr uint32_t MAX_CHUNK_LEVEL   = 5;
 // a linked list is called a leader. INVALID_LEADER means that
 // the linked list is empty and there exists no leader.
 constexpr uint32_t INVALID_LEADER    = std::numeric_limits<uint32_t>::max();
+
+template <typename T, bool HAS_NAN = std::numeric_limits<T>::has_quiet_NaN>
+struct Helper;
+
+template <typename T>
+struct Helper<T, true> {
+  static bool equal_to(T x, T y) {
+    return (std::isnan(x) && std::isnan(y)) || (x == y);
+  }
+  static T normalize(T x) {
+    return std::isnan(x) ? std::numeric_limits<T>::quiet_NaN() : x;
+  }
+};
+
+template <typename T>
+struct Helper<T, false> {
+  static bool equal_to(T x, T y) {
+    return x == y;
+  }
+  static T normalize(T x) {
+    return x;
+  }
+};
 
 void convert_key(int8_t key, uint8_t *key_buf) {
 #ifndef WORDS_BIGENDIAN
@@ -594,12 +616,9 @@ bool DoubleArray<T>::unset(int64_t key_id) {
 
 template <typename T>
 bool DoubleArray<T>::reset(int64_t key_id, T dest_key) {
-  if ((dest_key.size() < MIN_KEY_SIZE) || (dest_key.size() > MAX_KEY_SIZE)) {
-    GRNXX_ERROR() << "invalid key: size = " << dest_key.size();
-    GRNXX_THROW();
-  }
-
   Lock lock(&header_->inter_process_mutex);
+
+  dest_key = Helper<T>::normalize(dest_key);
 
   if ((key_id < MIN_KEY_ID) || (key_id > header_->max_key_id)) {
     return false;
@@ -613,9 +632,7 @@ bool DoubleArray<T>::reset(int64_t key_id, T dest_key) {
 
 template <typename T>
 bool DoubleArray<T>::find(T key, int64_t *key_id) {
-  if ((key.size() < MIN_KEY_SIZE) || (key.size() > MAX_KEY_SIZE)) {
-    return false;
-  }
+  key = Helper<T>::normalize(key);
 
   uint8_t key_buf[sizeof(T)];
   convert_key(key, key_buf);
@@ -634,7 +651,7 @@ bool DoubleArray<T>::find(T key, int64_t *key_id) {
 
   // TODO: NaN.
   const int32_t found_key_id = node.key_id();
-  if (keys_[found_key_id] == key) {
+  if (Helper<T>::equal_to(keys_[found_key_id], key)) {
     if (key_id) {
       *key_id = found_key_id;
     }
@@ -643,57 +660,54 @@ bool DoubleArray<T>::find(T key, int64_t *key_id) {
   return false;
 }
 
-//template <typename T>
-//bool DoubleArray<T>::insert(T key, int64_t *key_id) {
-//  if ((key.size() < MIN_KEY_SIZE) || (key.size() > MAX_KEY_SIZE)) {
-//    GRNXX_ERROR() << "invalid key: size = " << key.size();
-//    GRNXX_THROW();
-//  }
+template <typename T>
+bool DoubleArray<T>::insert(T key, int64_t *key_id) {
+  Lock lock(&header_->inter_process_mutex);
 
-//  Lock lock(&header_->inter_process_mutex);
+  key = Helper<T>::normalize(key);
 
-////  GRN_DAT_THROW_IF(STATUS_ERROR, (status_flags() & CHANGING_MASK) != 0);
-////  StatusFlagManager status_flag_manager(header_, INSERTING_FLAG);
+//  GRN_DAT_THROW_IF(STATUS_ERROR, (status_flags() & CHANGING_MASK) != 0);
+//  StatusFlagManager status_flag_manager(header_, INSERTING_FLAG);
 
-//  uint32_t node_id = ROOT_NODE_ID;
-//  size_t query_pos = 0;
+  uint8_t key_buf[sizeof(T)];
+  convert_key(key, key_buf);
 
-//  find_leaf(key, node_id, query_pos);
-//  if (!insert_leaf(key, node_id, query_pos)) {
-//    if (key_id) {
-//      *key_id = nodes_[node_id].key_id();
-//    }
-//    return false;
-//  }
+  uint32_t node_id = ROOT_NODE_ID;
+  size_t query_pos = 0;
 
-//  const int32_t new_key_id = header_->next_key_id;
-//  keys_[new_key_id] = key;
+  find_leaf(key_buf, node_id, query_pos);
+  if (!insert_leaf(key, key_buf, node_id, query_pos)) {
+    if (key_id) {
+      *key_id = nodes_[node_id].key_id();
+    }
+    return false;
+  }
 
-//  ++header_->num_keys;
+  const int32_t new_key_id = header_->next_key_id;
+  keys_[new_key_id] = key;
 
-//  if (new_key_id > header_->max_key_id) {
-//    header_->max_key_id = new_key_id;
-//    header_->next_key_id = new_key_id + 1;
-//  } else {
-//    header_->next_key_id = entries_[new_key_id].next();
-//  }
+  ++header_->num_keys;
 
-//  entries_[new_key_id] = DoubleArrayEntry::valid_entry();
-//  nodes_[node_id].set_key_id(new_key_id);
-//  if (key_id) {
-//    *key_id = new_key_id;
-//  }
-//  return true;
-//}
+  if (new_key_id > header_->max_key_id) {
+    header_->max_key_id = new_key_id;
+    header_->next_key_id = new_key_id + 1;
+  } else {
+    header_->next_key_id = entries_[new_key_id].next();
+  }
+
+  entries_[new_key_id] = DoubleArrayEntry::valid_entry();
+  nodes_[node_id].set_key_id(new_key_id);
+  if (key_id) {
+    *key_id = new_key_id;
+  }
+  return true;
+}
 
 template <typename T>
 bool DoubleArray<T>::remove(T key) {
-  if ((key.size() < MIN_KEY_SIZE) || (key.size() > MAX_KEY_SIZE)) {
-    GRNXX_ERROR() << "invalid key: size = " << key.size();
-    GRNXX_THROW();
-  }
-
   Lock lock(&header_->inter_process_mutex);
+
+  key = Helper<T>::normalize(key);
 
 //  GRN_DAT_THROW_IF(STATUS_ERROR, (status_flags() & CHANGING_MASK) != 0);
 //  StatusFlagManager status_flag_manager(header_, REMOVING_FLAG);
@@ -703,16 +717,10 @@ bool DoubleArray<T>::remove(T key) {
 
 template <typename T>
 bool DoubleArray<T>::update(T src_key, T dest_key, int64_t *key_id) {
-  if ((src_key.size() < MIN_KEY_SIZE) || (src_key.size() > MAX_KEY_SIZE)) {
-    GRNXX_ERROR() << "invalid source key: size = " << src_key.size();
-    GRNXX_THROW();
-  }
-  if ((dest_key.size() < MIN_KEY_SIZE) || (dest_key.size() > MAX_KEY_SIZE)) {
-    GRNXX_ERROR() << "invalid destination key: size = " << dest_key.size();
-    GRNXX_THROW();
-  }
-
   Lock lock(&header_->inter_process_mutex);
+
+  src_key = Helper<T>::normalize(src_key);
+  dest_key = Helper<T>::normalize(dest_key);
 
   int64_t src_key_id;
   if (!find(src_key, &src_key_id)) {
@@ -795,7 +803,7 @@ void DoubleArray<T>::open_double_array(io::Pool pool, uint32_t block_id) {
       pool_.get_block_address(header_->chunks_block_id));
   entries_ = static_cast<DoubleArrayEntry *>(
       pool_.get_block_address(header_->entries_block_id));
-  keys_ = static_cast<uint32_t *>(
+  keys_ = static_cast<T *>(
       pool_.get_block_address(header_->keys_block_id));
 }
 
@@ -838,7 +846,7 @@ bool DoubleArray<T>::remove_key(T key) {
   }
 
   const int32_t key_id = nodes_[node_id].key_id();
-  if (keys_[key_id] != key) {
+  if (!Helper<T>::equal_to(keys_[key_id], key)) {
     return false;
   }
 
@@ -850,30 +858,35 @@ bool DoubleArray<T>::remove_key(T key) {
   return true;
 }
 
-//template <typename T>
-//bool DoubleArray<T>::update_key(int32_t key_id, const Slice &src_key,
-//                                const Slice &dest_key) {
-//  uint32_t node_id = ROOT_NODE_ID;
-//  size_t query_pos = 0;
+template <typename T>
+bool DoubleArray<T>::update_key(int32_t key_id, T src_key, T dest_key) {
+  uint32_t node_id = ROOT_NODE_ID;
+  size_t query_pos = 0;
 
-//  find_leaf(dest_key, node_id, query_pos);
-//  if (!insert_leaf(dest_key, node_id, query_pos)) {
-//    return false;
-//  }
+  uint8_t dest_key_buf[sizeof(T)];
+  convert_key(dest_key, dest_key_buf);
 
-//  keys_[key_id] = dest_key;
-//  entries_[key_id] = DoubleArrayEntry::valid_entry(key_id);
-//  nodes_[node_id].set_key_id(key_id);
+  find_leaf(dest_key_buf, node_id, query_pos);
+  if (!insert_leaf(dest_key, dest_key_buf, node_id, query_pos)) {
+    return false;
+  }
 
-//  node_id = ROOT_NODE_ID;
-//  query_pos = 0;
-//  if (!find_leaf(src_key, node_id, query_pos)) {
-//    GRNXX_ERROR() << "key not found (unexpected)";
-//    GRNXX_THROW();
-//  }
-//  nodes_[node_id].set_offset(INVALID_OFFSET);
-//  return true;
-//}
+  keys_[key_id] = dest_key;
+  entries_[key_id] = DoubleArrayEntry::valid_entry();
+  nodes_[node_id].set_key_id(key_id);
+
+  uint8_t src_key_buf[sizeof(T)];
+  convert_key(src_key, src_key_buf);
+
+  node_id = ROOT_NODE_ID;
+  query_pos = 0;
+  if (!find_leaf(src_key_buf, node_id, query_pos)) {
+    GRNXX_ERROR() << "key not found (unexpected)";
+    GRNXX_THROW();
+  }
+  nodes_[node_id].set_offset(INVALID_OFFSET);
+  return true;
+}
 
 template <typename T>
 bool DoubleArray<T>::find_leaf(const uint8_t *key_buf, uint32_t &node_id,
@@ -903,57 +916,60 @@ bool DoubleArray<T>::find_leaf(const uint8_t *key_buf, uint32_t &node_id,
   return nodes_[node_id].is_leaf();
 }
 
-//template <typename T>
-//bool DoubleArray<T>::insert_leaf(const Slice &key, uint32_t &node_id,
-//                                 size_t query_pos) {
-//  const DoubleArrayNode node = nodes_[node_id];
-//  if (node.is_leaf()) {
-//    const DoubleArrayKey &found_key = get_key(node.key_pos());
-//    size_t i = query_pos;
-//    while ((i < key.size()) && (i < found_key.size())) {
-//      if (key[i] != found_key[i]) {
-//        break;
-//      }
-//      ++i;
-//    }
-//    if ((i == key.size()) && (i == found_key.size())) {
-//      return false;
-//    }
+template <typename T>
+bool DoubleArray<T>::insert_leaf(T key, const uint8_t *key_buf,
+                                 uint32_t &node_id, size_t query_pos) {
+  const DoubleArrayNode node = nodes_[node_id];
+  if (node.is_leaf()) {
+    const T found_key = keys_[node.key_id()];
+    if (Helper<T>::equal_to(key, found_key)) {
+      return false;
+    }
 
-//    if (header_->num_keys >= header_->entries_size) {
-//      GRNXX_NOTICE() << "too many keys: num_keys = " << header_->num_keys
-//                     << ", entries_size = " << header_->entries_size;
-//      throw DoubleArrayException();
-//    }
+    uint8_t found_key_buf[sizeof(T)];
+    convert_key(found_key, found_key_buf);
+    size_t i = query_pos;
+    while (i < sizeof(T)) {
+      if (key_buf[i] != found_key_buf[i]) {
+        break;
+      }
+      ++i;
+    }
 
-////    GRNXX_DEBUG_THROW_IF(static_cast<uint32_t>(header_->next_key_id) >= header_->entries_size);
+    if (header_->num_keys >= header_->entries_size) {
+      GRNXX_NOTICE() << "too many keys: num_keys = " << header_->num_keys
+                     << ", entries_size = " << header_->entries_size;
+      throw DoubleArrayException();
+    }
 
-//    for (size_t j = query_pos; j < i; ++j) {
-//      node_id = insert_node(node_id, key[j]);
-//    }
-//    node_id = separate(key, node_id, i);
-//    return true;
-//  } else if (node.label() == TERMINAL_LABEL) {
-//    return true;
-//  } else {
-//    if (header_->num_keys >= header_->entries_size) {
-//      GRNXX_NOTICE() << "too many keys: num_keys = " << header_->num_keys
-//                     << ", entries_size = " << header_->entries_size;
-//      throw DoubleArrayException();
-//    }
+//    GRNXX_DEBUG_THROW_IF(static_cast<uint32_t>(header_->next_key_id) >= header_->entries_size);
 
-//    const uint16_t label = (query_pos < key.size()) ?
-//        static_cast<uint16_t>(key[query_pos]) : TERMINAL_LABEL;
-//    if ((node.offset() == INVALID_OFFSET) ||
-//        !nodes_[node.offset() ^ label].is_phantom()) {
-//      // The offset of this node must be updated.
-//      resolve(node_id, label);
-//    }
-//    // The new node will be the leaf node associated with the query.
-//    node_id = insert_node(node_id, label);
-//    return true;
-//  }
-//}
+    for (size_t j = query_pos; j < i; ++j) {
+      node_id = insert_node(node_id, key_buf[j]);
+    }
+    node_id = separate(key_buf, node_id, i);
+    return true;
+  } else if (node.label() == TERMINAL_LABEL) {
+    return true;
+  } else {
+    if (header_->num_keys >= header_->entries_size) {
+      GRNXX_NOTICE() << "too many keys: num_keys = " << header_->num_keys
+                     << ", entries_size = " << header_->entries_size;
+      throw DoubleArrayException();
+    }
+
+    const uint16_t label = (query_pos < sizeof(T)) ?
+        static_cast<uint16_t>(key_buf[query_pos]) : TERMINAL_LABEL;
+    if ((node.offset() == INVALID_OFFSET) ||
+        !nodes_[node.offset() ^ label].is_phantom()) {
+      // The offset of this node must be updated.
+      resolve(node_id, label);
+    }
+    // The new node will be the leaf node associated with the query.
+    node_id = insert_node(node_id, label);
+    return true;
+  }
+}
 
 template <typename T>
 uint32_t DoubleArray<T>::insert_node(uint32_t node_id, uint16_t label) {
@@ -1012,51 +1028,52 @@ uint32_t DoubleArray<T>::insert_node(uint32_t node_id, uint16_t label) {
   return next;
 }
 
-//template <typename T>
-//uint32_t DoubleArray<T>::separate(const Slice &key, uint32_t node_id,
-//                                  size_t i) {
-////  GRNXX_DEBUG_THROW_IF(node_id >= (header_->num_chunks * CHUNK_SIZE));
-////  GRNXX_DEBUG_THROW_IF(!nodes_[node_id].is_leaf());
-////  GRNXX_DEBUG_THROW_IF(i > key.size());
+template <typename T>
+uint32_t DoubleArray<T>::separate(const uint8_t *key_buf, uint32_t node_id,
+                                  size_t i) {
+//  GRNXX_DEBUG_THROW_IF(node_id >= (header_->num_chunks * CHUNK_SIZE));
+//  GRNXX_DEBUG_THROW_IF(!nodes_[node_id].is_leaf());
+//  GRNXX_DEBUG_THROW_IF(i > sizeof(T));
 
-//  const DoubleArrayNode node = nodes_[node_id];
-//  const DoubleArrayKey &found_key = get_key(node.key_pos());
+  const DoubleArrayNode node = nodes_[node_id];
+  uint8_t found_key_buf[sizeof(T)];
+  convert_key(keys_[node.key_id()], found_key_buf);
 
-//  uint16_t labels[2];
-//  labels[0] = (i < found_key.size()) ?
-//      static_cast<uint16_t>(found_key[i]) : TERMINAL_LABEL;
-//  labels[1] = (i < key.size()) ?
-//      static_cast<uint16_t>(key[i]) : TERMINAL_LABEL;
-////  GRNXX_DEBUG_THROW_IF(labels[0] == labels[1]);
+  uint16_t labels[2];
+  labels[0] = (i < sizeof(T)) ?
+      static_cast<uint16_t>(found_key_buf[i]) : TERMINAL_LABEL;
+  labels[1] = (i < sizeof(T)) ?
+      static_cast<uint16_t>(key_buf[i]) : TERMINAL_LABEL;
+//  GRNXX_DEBUG_THROW_IF(labels[0] == labels[1]);
 
-//  const uint32_t offset = find_offset(labels, 2);
+  const uint32_t offset = find_offset(labels, 2);
 
-//  uint32_t next = offset ^ labels[0];
-//  reserve_node(next);
-////  GRNXX_DEBUG_THROW_IF(nodes_[offset].is_origin());
+  uint32_t next = offset ^ labels[0];
+  reserve_node(next);
+//  GRNXX_DEBUG_THROW_IF(nodes_[offset].is_origin());
 
-//  nodes_[next].set_label(labels[0]);
-//  nodes_[next].set_key_pos(node.key_pos());
+  nodes_[next].set_label(labels[0]);
+  nodes_[next].set_key_id(node.key_id());
 
-//  next = offset ^ labels[1];
-//  reserve_node(next);
+  next = offset ^ labels[1];
+  reserve_node(next);
 
-//  nodes_[next].set_label(labels[1]);
+  nodes_[next].set_label(labels[1]);
 
-//  nodes_[offset].set_is_origin(true);
-//  nodes_[node_id].set_offset(offset);
+  nodes_[offset].set_is_origin(true);
+  nodes_[node_id].set_offset(offset);
 
-//  if ((labels[0] == TERMINAL_LABEL) ||
-//      ((labels[1] != TERMINAL_LABEL) &&
-//       (labels[0] < labels[1]))) {
-//    nodes_[offset ^ labels[0]].set_sibling(labels[1]);
-//    nodes_[node_id].set_child(labels[0]);
-//  } else {
-//    nodes_[offset ^ labels[1]].set_sibling(labels[0]);
-//    nodes_[node_id].set_child(labels[1]);
-//  }
-//  return next;
-//}
+  if ((labels[0] == TERMINAL_LABEL) ||
+      ((labels[1] != TERMINAL_LABEL) &&
+       (labels[0] < labels[1]))) {
+    nodes_[offset ^ labels[0]].set_sibling(labels[1]);
+    nodes_[node_id].set_child(labels[0]);
+  } else {
+    nodes_[offset ^ labels[1]].set_sibling(labels[0]);
+    nodes_[node_id].set_child(labels[1]);
+  }
+  return next;
+}
 
 template <typename T>
 void DoubleArray<T>::resolve(uint32_t node_id, uint16_t label) {
@@ -1333,16 +1350,16 @@ void DoubleArray<T>::unset_chunk_level(uint32_t chunk_id) {
   }
 }
 
-//template class DoubleArray<int8_t>;
-//template class DoubleArray<int16_t>;
-//template class DoubleArray<int32_t>;
-//template class DoubleArray<int64_t>;
-//template class DoubleArray<uint8_t>;
-//template class DoubleArray<uint16_t>;
-//template class DoubleArray<uint32_t>;
-//template class DoubleArray<uint64_t>;
-//template class DoubleArray<double>;
-//template class DoubleArray<GeoPoint>;
+template class DoubleArray<int8_t>;
+template class DoubleArray<int16_t>;
+template class DoubleArray<int32_t>;
+template class DoubleArray<int64_t>;
+template class DoubleArray<uint8_t>;
+template class DoubleArray<uint16_t>;
+template class DoubleArray<uint32_t>;
+template class DoubleArray<uint64_t>;
+template class DoubleArray<double>;
+template class DoubleArray<GeoPoint>;
 
 }  // namespace map
 }  // namespace alpha
