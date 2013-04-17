@@ -491,16 +491,16 @@ void test_map_double_array() {
     assert(map->num_keys() == hash_map.size());
   }
 
-//  {
-//    std::int64_t key_id = -1;
-//    for (std::size_t i = 0; i < MAP_SIZE; ++i) {
-//      T key;
-//      assert(map->get_next(key_id, &key_id, &key));
-//      assert(key_id == static_cast<std::int64_t>(i));
-//      assert(key_id == hash_map[key]);
-//    }
-//    assert(!map->get_next(key_id));
-//  }
+  {
+    std::int64_t key_id = -1;
+    for (std::size_t i = 0; i < MAP_SIZE; ++i) {
+      T key;
+      assert(map->get_next(key_id, &key_id, &key));
+      assert(key_id == static_cast<std::int64_t>(i));
+      assert(key_id == hash_map[key]);
+    }
+    assert(!map->get_next(key_id));
+  }
 
   compare_maps(map, hash_map);
 
