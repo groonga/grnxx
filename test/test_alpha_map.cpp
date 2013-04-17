@@ -414,44 +414,6 @@ void test_map_array() {
   }
 }
 
-void test_map_array_nan() {
-  grnxx::io::Pool pool;
-  pool.open(grnxx::io::POOL_ANONYMOUS);
-
-  std::unique_ptr<Map<double>> map;
-  map.reset(map->create(grnxx::alpha::MAP_ARRAY, pool));
-
-  const double nan = std::numeric_limits<double>::quiet_NaN();
-
-  std::int64_t key_id;
-  assert(map->insert(nan, &key_id));
-  assert(key_id == 0);
-  assert(!map->insert(nan));
-
-  double key;
-  assert(map->get(key_id, &key));
-  assert(std::isnan(key));
-  assert(map->find(nan, &key_id));
-  assert(key_id == 0);
-
-  assert(map->unset(key_id));
-  assert(!map->unset(key_id));
-
-  assert(map->insert(nan));
-  assert(map->remove(nan));
-  assert(!map->remove(nan));
-
-  assert(!map->reset(nan, nan));
-  assert(map->insert(nan, &key_id));
-  assert(!map->reset(key_id, nan));
-  assert(map->reset(key_id, 0.0));
-  assert(map->reset(key_id, nan));
-
-  assert(!map->update(nan, nan));
-  assert(map->update(nan, 0.0));
-  assert(map->update(0.0, nan));
-}
-
 template <typename T>
 void test_map_double_array() {
   GRNXX_NOTICE() << __PRETTY_FUNCTION__;
@@ -576,12 +538,12 @@ void test_map_double_array() {
   }
 }
 
-void test_map_double_array_nan() {
+void test_map_nan(grnxx::alpha::MapType map_type) {
   grnxx::io::Pool pool;
   pool.open(grnxx::io::POOL_ANONYMOUS);
 
   std::unique_ptr<Map<double>> map;
-  map.reset(map->create(grnxx::alpha::MAP_DOUBLE_ARRAY, pool));
+  map.reset(map->create(map_type, pool));
 
   const double nan = std::numeric_limits<double>::quiet_NaN();
 
@@ -614,6 +576,45 @@ void test_map_double_array_nan() {
   assert(map->update(0.0, nan));
 }
 
+void test_map_zero(grnxx::alpha::MapType map_type) {
+  grnxx::io::Pool pool;
+  pool.open(grnxx::io::POOL_ANONYMOUS);
+
+  std::unique_ptr<Map<double>> map;
+  map.reset(map->create(map_type, pool));
+
+  std::int64_t key_id;
+  assert(map->insert(+0.0, &key_id));
+  assert(key_id == 0);
+  assert(!map->insert(+0.0));
+  assert(!map->insert(-0.0));
+
+  double key;
+  assert(map->get(key_id, &key));
+  assert(key == 0.0);
+  assert(map->find(+0.0, &key_id));
+  assert(key_id == 0);
+  assert(map->find(-0.0, &key_id));
+  assert(key_id == 0);
+
+  assert(map->unset(key_id));
+  assert(!map->unset(key_id));
+
+  assert(map->insert(+0.0));
+  assert(map->remove(-0.0));
+  assert(!map->remove(+0.0));
+
+  assert(!map->reset(+0.0, -0.0));
+  assert(map->insert(+0.0, &key_id));
+  assert(!map->reset(key_id, -0.0));
+  assert(map->reset(key_id, 1.0));
+  assert(map->reset(key_id, +0.0));
+
+  assert(!map->update(+0.0, -0.0));
+  assert(map->update(-0.0, 1.0));
+  assert(map->update(1.0, 0.0));
+}
+
 int main() {
   grnxx::Logger::set_flags(grnxx::LOGGER_WITH_ALL |
                            grnxx::LOGGER_ENABLE_COUT);
@@ -631,7 +632,8 @@ int main() {
   test_map_array<grnxx::alpha::GeoPoint>();
   test_map_array<grnxx::Slice>();
 
-  test_map_array_nan();
+  test_map_nan(grnxx::alpha::MAP_ARRAY);
+  test_map_zero(grnxx::alpha::MAP_ARRAY);
 
   test_map_double_array<int8_t>();
   test_map_double_array<std::int16_t>();
@@ -645,7 +647,8 @@ int main() {
   test_map_double_array<grnxx::alpha::GeoPoint>();
   test_map_double_array<grnxx::Slice>();
 
-  test_map_double_array_nan();
+  test_map_nan(grnxx::alpha::MAP_DOUBLE_ARRAY);
+  test_map_zero(grnxx::alpha::MAP_DOUBLE_ARRAY);
 
   return 0;
 }
