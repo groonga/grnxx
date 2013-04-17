@@ -76,7 +76,8 @@ struct Helper;
 template <typename T>
 struct Helper<T, true> {
   static bool equal_to(T x, T y) {
-    return (std::isnan(x) && std::isnan(y)) || (x == y);
+    return *reinterpret_cast<uint64_t *>(&x) ==
+           *reinterpret_cast<uint64_t *>(&y);
   }
   static T normalize(T x) {
     if (std::isnan(x)) {

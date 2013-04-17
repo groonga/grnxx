@@ -31,7 +31,8 @@ struct Helper;
 template <typename T>
 struct Helper<T, true> {
   static bool equal_to(T x, T y) {
-    return (std::isnan(x) && std::isnan(y)) || (x == y);
+    return *reinterpret_cast<uint64_t *>(&x) ==
+           *reinterpret_cast<uint64_t *>(&y);
   }
   static T normalize(T x) {
     if (std::isnan(x)) {
@@ -206,6 +207,7 @@ bool Array<T>::reset(int64_t key_id, T dest_key) {
 
 template <typename T>
 bool Array<T>::find(T key, int64_t *key_id) {
+  key = Helper<T>::normalize(key);
   for (int64_t i = 0; i <= header_->max_key_id; ++i) {
     if (get_bit(i)) {
       if (Helper<T>::equal_to(key, keys_[i])) {
@@ -221,6 +223,7 @@ bool Array<T>::find(T key, int64_t *key_id) {
 
 template <typename T>
 bool Array<T>::insert(T key, int64_t *key_id) {
+  key = Helper<T>::normalize(key);
   int64_t key_id_candidate = -1;
   int64_t next_key_id_candidate = -1;
   for (int64_t i = 0; i <= header_->max_key_id; ++i) {
