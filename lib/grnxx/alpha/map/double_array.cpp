@@ -743,7 +743,11 @@ bool DoubleArray<T>::update(T src_key, T dest_key, int64_t *key_id) {
 
 template <typename T>
 void DoubleArray<T>::truncate() {
-  // TODO
+  nodes_[ROOT_NODE_ID].set_child(INVALID_LABEL);
+  nodes_[ROOT_NODE_ID].set_offset(INVALID_OFFSET);
+  header_->next_key_id = 0;
+  header_->max_key_id = -1;
+  header_->num_keys = 0;
 }
 
 template <typename T>

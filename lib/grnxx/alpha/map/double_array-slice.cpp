@@ -757,7 +757,11 @@ bool DoubleArray<Slice>::find_longest_prefix_match(
 }
 
 void DoubleArray<Slice>::truncate() {
-  // TODO
+  nodes_[ROOT_NODE_ID].set_child(INVALID_LABEL);
+  nodes_[ROOT_NODE_ID].set_offset(INVALID_OFFSET);
+  header_->next_key_id = 0;
+  header_->max_key_id = -1;
+  header_->num_keys = 0;
 }
 
 DoubleArray<Slice>::DoubleArray()
