@@ -34,7 +34,12 @@ struct Helper<T, true> {
     return (std::isnan(x) && std::isnan(y)) || (x == y);
   }
   static T normalize(T x) {
-    return std::isnan(x) ? std::numeric_limits<T>::quiet_NaN() : x;
+    if (std::isnan(x)) {
+      return std::numeric_limits<T>::quiet_NaN();
+    } else if (x == 0.0) {
+      return +0.0;
+    }
+    return x;
   }
 };
 
