@@ -136,7 +136,6 @@ void IDCursor<T>::init_order_by_key(int64_t min, int64_t max) {
 template <>
 void IDCursor<GeoPoint>::init_order_by_key(int64_t, int64_t) {
   // Not supported.
-  return;
 }
 
 template class IDCursor<int8_t>;

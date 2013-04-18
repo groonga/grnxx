@@ -17,7 +17,9 @@
 */
 #include "grnxx/alpha/map/double_array.hpp"
 
+#include <algorithm>
 #include <cmath>
+#include <vector>
 
 #include "../config.h"
 #include "grnxx/lock.hpp"
@@ -482,6 +484,146 @@ class DoubleArrayEntryForOthers {
 };
 
 template <typename T>
+class DoubleArrayIDCursor : public MapCursor<T> {
+ public:
+  DoubleArrayIDCursor(DoubleArray<T> *double_array,
+                      int64_t min, int64_t max,
+                      const MapCursorOptions &options);
+  ~DoubleArrayIDCursor();
+
+  bool next();
+  bool remove();
+
+ private:
+  DoubleArray<T> *double_array_;
+  int64_t cur_;
+  int64_t end_;
+  int64_t step_;
+  uint64_t count_;
+  MapCursorOptions options_;
+  std::vector<std::pair<T, int64_t>> keys_;
+
+  void init_order_by_id(int64_t min, int64_t max);
+  void init_order_by_key(int64_t min, int64_t max);
+};
+
+template <typename T>
+DoubleArrayIDCursor<T>::DoubleArrayIDCursor(
+    DoubleArray<T> *double_array, int64_t min, int64_t max,
+    const MapCursorOptions &options)
+  : MapCursor<T>(), double_array_(double_array), cur_(), end_(), step_(),
+    count_(0), options_(options), keys_() {
+  if (min < 0) {
+    min = 0;
+  } else if (options_.flags & MAP_CURSOR_EXCEPT_MIN) {
+    ++min;
+  }
+
+  if ((max < 0) || (max > double_array_->max_key_id())) {
+    max = double_array_->max_key_id();
+  } else if (options_.flags & MAP_CURSOR_EXCEPT_MAX) {
+    --max;
+  }
+
+  if (min > max) {
+    cur_ = end_ = 0;
+    return;
+  }
+
+  if ((options_.flags & MAP_CURSOR_ORDER_BY_ID) ||
+      (~options_.flags & MAP_CURSOR_ORDER_BY_KEY)) {
+    init_order_by_id(min, max);
+  } else {
+    init_order_by_key(min, max);
+  }
+}
+
+template <typename T>
+DoubleArrayIDCursor<T>::~DoubleArrayIDCursor() {}
+
+template <typename T>
+bool DoubleArrayIDCursor<T>::next() {
+  if (count_ >= options_.limit) {
+    return false;
+  }
+  if (options_.flags & MAP_CURSOR_ORDER_BY_ID) {
+    while (cur_ != end_) {
+      cur_ += step_;
+      if (double_array_->get(cur_, &this->key_)) {
+        this->key_id_ = cur_;
+        ++count_;
+        return true;
+      }
+    }
+  } else if (cur_ != end_) {
+    cur_ += step_;
+    this->key_ = keys_[cur_].first;
+    this->key_id_ = keys_[cur_].second;
+    ++count_;
+    return true;
+  }
+  return false;
+}
+
+template <typename T>
+bool DoubleArrayIDCursor<T>::remove() {
+  return double_array_->unset(this->key_id_);
+}
+
+template <typename T>
+void DoubleArrayIDCursor<T>::init_order_by_id(int64_t min, int64_t max) {
+  options_.flags |= MAP_CURSOR_ORDER_BY_ID;
+  options_.flags &= ~MAP_CURSOR_ORDER_BY_KEY;
+
+  if (~options_.flags & MAP_CURSOR_REVERSE_ORDER) {
+    cur_ = min - 1;
+    end_ = max;
+    step_ = 1;
+  } else {
+    cur_ = max + 1;
+    end_ = min;
+    step_ = -1;
+  }
+
+  uint64_t count = 0;
+  while ((count < options_.offset) && (cur_ != end_)) {
+    cur_ += step_;
+    if (double_array_->get(cur_)) {
+      ++count;
+    }
+  }
+}
+
+template <typename T>
+void DoubleArrayIDCursor<T>::init_order_by_key(int64_t min, int64_t max) {
+  cur_ = min - 1;
+  end_ = max;
+  while (cur_ != end_) {
+    ++cur_;
+    T key;
+    if (double_array_->get(cur_, &key)) {
+      keys_.push_back(std::make_pair(key, cur_));
+    }
+  }
+  std::sort(keys_.begin(), keys_.end());
+
+  if (~options_.flags & MAP_CURSOR_REVERSE_ORDER) {
+    cur_ = -1;
+    end_ = keys_.size() - 1;
+    step_ = 1;
+  } else {
+    cur_ = keys_.size();
+    end_ = 0;
+    step_ = -1;
+  }
+}
+
+template <>
+void DoubleArrayIDCursor<GeoPoint>::init_order_by_key(int64_t, int64_t) {
+  // Not supported.
+}
+
+template <typename T>
 DoubleArray<T>::~DoubleArray() {
   if (!initialized_) try {
     // Free allocated blocks if initialization failed.
@@ -748,6 +890,12 @@ void DoubleArray<T>::truncate() {
   header_->next_key_id = 0;
   header_->max_key_id = -1;
   header_->num_keys = 0;
+}
+
+template <typename T>
+MapCursor<T> *DoubleArray<T>::open_id_cursor(int64_t min, int64_t max,
+                                             const MapCursorOptions &options) {
+  return new (std::nothrow) DoubleArrayIDCursor<T>(this, min, max, options);
 }
 
 template <typename T>

@@ -100,8 +100,8 @@ class DoubleArray : public Map<T> {
   // TODO
 //  MapCursor<T> *open_basic_cursor(
 //      const MapCursorOptions &options = MapCursorOptions());
-//  MapCursor<T> *open_id_cursor(int64_t min, int64_t max,
-//      const MapCursorOptions &options = MapCursorOptions());
+  MapCursor<T> *open_id_cursor(int64_t min, int64_t max,
+      const MapCursorOptions &options = MapCursorOptions());
 //  MapCursor<T> *open_key_cursor(T min, T max,
 //      const MapCursorOptions &options = MapCursorOptions());
 
