@@ -818,8 +818,8 @@ bool DoubleArrayKeyCursor<Slice>::next_order_by_key() {
       if (options_.offset > 0) {
         --options_.offset;
       } else {
-        key_id_ = key.id();
-        key_ = key.slice();
+        this->key_id_ = key.id();
+        this->key_ = key.slice();
         ++count_;
         return true;
       }
@@ -853,8 +853,8 @@ bool DoubleArrayKeyCursor<Slice>::next_reverse_order_by_key() {
         if (options_.offset > 0) {
           --options_.offset;
         } else {
-          key_id_ = key.id();
-          key_ = key.slice();
+          this->key_id_ = key.id();
+          this->key_ = key.slice();
           ++count_;
           return true;
         }

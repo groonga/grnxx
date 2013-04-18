@@ -507,6 +507,8 @@ class DoubleArrayIDCursor : public MapCursor<T> {
   void init_order_by_key(int64_t min, int64_t max);
 };
 
+constexpr uint64_t POST_ORDER_FLAG = uint64_t(1) << 63;
+
 template <typename T>
 DoubleArrayIDCursor<T>::DoubleArrayIDCursor(
     DoubleArray<T> *double_array, int64_t min, int64_t max,
@@ -621,6 +623,303 @@ void DoubleArrayIDCursor<T>::init_order_by_key(int64_t min, int64_t max) {
 template <>
 void DoubleArrayIDCursor<GeoPoint>::init_order_by_key(int64_t, int64_t) {
   // Not supported.
+}
+
+template <typename T>
+class DoubleArrayKeyCursor : public MapCursor<T>{
+ public:
+  DoubleArrayKeyCursor(DoubleArray<T> *double_array, T min, T max,
+                       const MapCursorOptions &options);
+  ~DoubleArrayKeyCursor();
+
+  bool next();
+  bool remove();
+
+ private:
+  DoubleArray<T> *double_array_;
+  uint64_t cur_;
+  uint64_t count_;
+  T min_;
+  T max_;
+  MapCursorOptions options_;
+  std::vector<uint64_t> node_ids_;
+  std::vector<std::pair<int64_t, T>> keys_;
+
+  void init_order_by_id();
+  void init_order_by_key();
+  void init_reverse_order_by_key();
+
+  bool next_order_by_id();
+  bool next_order_by_key();
+  bool next_reverse_order_by_key();
+};
+
+template <typename T>
+DoubleArrayKeyCursor<T>::DoubleArrayKeyCursor(
+    DoubleArray<T> *double_array, T min, T max,
+    const MapCursorOptions &options)
+  : MapCursor<T>(), double_array_(double_array), cur_(), count_(0),
+    min_(min), max_(max), options_(options), node_ids_(), keys_() {
+  if ((options_.flags & MAP_CURSOR_ORDER_BY_ID) &&
+      (~options_.flags & MAP_CURSOR_ORDER_BY_KEY)) {
+    init_order_by_id();
+  } else if (~options_.flags & MAP_CURSOR_REVERSE_ORDER) {
+    init_order_by_key();
+  } else {
+    init_reverse_order_by_key();
+  }
+}
+
+template <typename T>
+DoubleArrayKeyCursor<T>::~DoubleArrayKeyCursor() {}
+
+template <typename T>
+bool DoubleArrayKeyCursor<T>::next() {
+  if (count_ >= options_.limit) {
+    return false;
+  }
+  if ((options_.flags & MAP_CURSOR_ORDER_BY_ID) &&
+      (~options_.flags & MAP_CURSOR_ORDER_BY_KEY)) {
+    return next_order_by_id();
+  } else if (~options_.flags & MAP_CURSOR_REVERSE_ORDER) {
+    return next_order_by_key();
+  } else {
+    return next_reverse_order_by_key();
+  }
+}
+
+template <typename T>
+bool DoubleArrayKeyCursor<T>::remove() {
+  return double_array_->unset(this->key_id_);
+}
+
+template <typename T>
+void DoubleArrayKeyCursor<T>::init_order_by_id() {
+  init_order_by_key();
+
+  while (!node_ids_.empty()) {
+    const uint64_t node_id = node_ids_.back();
+    node_ids_.pop_back();
+
+    const DoubleArrayNodeForOthers node = double_array_->nodes_[node_id];
+    if (node.sibling() != INVALID_LABEL) {
+      node_ids_.push_back(node_id ^ node.label() ^ node.sibling());
+    }
+
+    if (node.is_leaf()) {
+      const T key = double_array_->keys_[node.key_id()];
+      if ((key > max_) ||
+          ((key == max_) && (options_.flags & MAP_CURSOR_EXCEPT_MAX))) {
+        break;
+      }
+      keys_.push_back(std::make_pair(node.key_id(), key));
+      ++count_;
+    } else if (node.child() != INVALID_LABEL) {
+      node_ids_.push_back(node.offset() ^ node.child());
+    }
+  }
+
+  std::sort(keys_.begin(), keys_.end());
+  if (options_.flags & MAP_CURSOR_REVERSE_ORDER) {
+    std::reverse(keys_.begin(), keys_.end());
+  }
+  cur_ = options_.offset;
+}
+
+template <typename T>
+void DoubleArrayKeyCursor<T>::init_order_by_key() {
+  uint8_t min_buf[sizeof(T)];
+  convert_key(min_, min_buf);
+
+  uint64_t node_id = ROOT_NODE_ID;
+  DoubleArrayNodeForOthers node;
+  for (size_t i = 0; i < sizeof(T); ++i) {
+    node = double_array_->nodes_[node_id];
+    if (node.is_leaf()) {
+      const T key = double_array_->keys_[node.key_id()];
+      if ((key > min_) ||
+          ((key == min_) && (~options_.flags & MAP_CURSOR_EXCEPT_MIN))) {
+        node_ids_.push_back(node_id);
+      } else if (node.sibling() != INVALID_LABEL) {
+        node_ids_.push_back(node_id ^ node.label() ^ node.sibling());
+      }
+      return;
+    } else if (node.sibling() != INVALID_LABEL) {
+      node_ids_.push_back(node_id ^ node.label() ^ node.sibling());
+    }
+
+    node_id = node.offset() ^ min_buf[i];
+    if (double_array_->nodes_[node_id].label() != min_buf[i]) {
+      uint16_t label = node.child();
+      if (label == TERMINAL_LABEL) {
+        label = double_array_->nodes_[node.offset() ^ label].sibling();
+      }
+      while (label != INVALID_LABEL) {
+        if (label > min_buf[i]) {
+          node_ids_.push_back(node.offset() ^ label);
+          break;
+        }
+        label = double_array_->nodes_[node.offset() ^ label].sibling();
+      }
+      return;
+    }
+  }
+
+  node = double_array_->nodes_[node_id];
+  if (node.is_leaf()) {
+    if (~options_.flags & MAP_CURSOR_EXCEPT_MIN) {
+      node_ids_.push_back(node_id);
+    } else if (node.sibling() != INVALID_LABEL) {
+      node_ids_.push_back(node_id ^ node.label() ^ node.sibling());
+    }
+    return;
+  } else if (node.sibling() != INVALID_LABEL) {
+    node_ids_.push_back(node_id ^ node.label() ^ node.sibling());
+  }
+
+  uint16_t label = node.child();
+  if ((label == TERMINAL_LABEL) && (options_.flags & MAP_CURSOR_EXCEPT_MIN)) {
+    label = double_array_->nodes_[node.offset() ^ label].sibling();
+  }
+  if (label != INVALID_LABEL) {
+    node_ids_.push_back(node.offset() ^ label);
+  }
+}
+
+template <typename T>
+void DoubleArrayKeyCursor<T>::init_reverse_order_by_key() {
+  uint8_t max_buf[sizeof(T)];
+  convert_key(max_, max_buf);
+
+  uint64_t node_id = ROOT_NODE_ID;
+  for (size_t i = 0; i < sizeof(T); ++i) {
+    const DoubleArrayNodeForOthers node = double_array_->nodes_[node_id];
+    if (node.is_leaf()) {
+      const T key = double_array_->keys_[node.key_id()];
+      if ((key < max_) ||
+          ((key == max_) && (~options_.flags & MAP_CURSOR_EXCEPT_MAX))) {
+        node_ids_.push_back(node_id | POST_ORDER_FLAG);
+      }
+      return;
+    }
+
+    uint16_t label = double_array_->nodes_[node_id].child();
+    if (label == TERMINAL_LABEL) {
+      node_id = node.offset() ^ label;
+      node_ids_.push_back(node_id | POST_ORDER_FLAG);
+      label = double_array_->nodes_[node_id].sibling();
+    }
+    while (label != INVALID_LABEL) {
+      node_id = node.offset() ^ label;
+      if (label < max_buf[i]) {
+        node_ids_.push_back(node_id);
+      } else if (label > max_buf[i]) {
+        return;
+      } else {
+        break;
+      }
+      label = double_array_->nodes_[node_id].sibling();
+    }
+    if (label == INVALID_LABEL) {
+      return;
+    }
+  }
+
+  const DoubleArrayNodeForOthers node = double_array_->nodes_[node_id];
+  if (node.is_leaf()) {
+    if (~options_.flags & MAP_CURSOR_EXCEPT_MAX) {
+      node_ids_.push_back(node_id | POST_ORDER_FLAG);
+    }
+    return;
+  }
+
+  uint16_t label = double_array_->nodes_[node_id].child();
+  if ((label == TERMINAL_LABEL) &&
+      (~options_.flags & MAP_CURSOR_EXCEPT_MAX)) {
+    node_ids_.push_back((node.offset() ^ label) | POST_ORDER_FLAG);
+  }
+}
+
+template <typename T>
+bool DoubleArrayKeyCursor<T>::next_order_by_id() {
+  if (cur_ < keys_.size()) {
+    this->key_id_ = keys_[cur_].first;
+    this->key_ = keys_[cur_].second;
+    ++cur_;
+    ++count_;
+    return true;
+  }
+  return false;
+}
+
+template <typename T>
+bool DoubleArrayKeyCursor<T>::next_order_by_key() {
+  while (!node_ids_.empty()) {
+    const uint64_t node_id = node_ids_.back();
+    node_ids_.pop_back();
+
+    const DoubleArrayNodeForOthers node = double_array_->nodes_[node_id];
+    if (node.sibling() != INVALID_LABEL) {
+      node_ids_.push_back(node_id ^ node.label() ^ node.sibling());
+    }
+
+    if (node.is_leaf()) {
+      const T key = double_array_->keys_[node.key_id()];
+      if ((key > max_) ||
+          ((key == max_) && (options_.flags & MAP_CURSOR_EXCEPT_MAX))) {
+        node_ids_.clear();
+        return false;
+      }
+      if (options_.offset > 0) {
+        --options_.offset;
+      } else {
+        this->key_id_ = node.key_id();
+        this->key_ = key;
+        ++count_;
+        return true;
+      }
+    } else if (node.child() != INVALID_LABEL) {
+      node_ids_.push_back(node.offset() ^ node.child());
+    }
+  }
+  return false;
+}
+
+template <typename T>
+bool DoubleArrayKeyCursor<T>::next_reverse_order_by_key() {
+  while (!node_ids_.empty()) {
+    const bool post_order = node_ids_.back() & POST_ORDER_FLAG;
+    const uint64_t node_id = node_ids_.back() & ~POST_ORDER_FLAG;
+
+    const DoubleArrayNodeForOthers node = double_array_->nodes_[node_id];
+    if (post_order) {
+      node_ids_.pop_back();
+      if (node.is_leaf()) {
+        const T key = double_array_->keys_[node.key_id()];
+        if ((key < min_) ||
+            ((key == min_) && (options_.flags & MAP_CURSOR_EXCEPT_MIN))) {
+          node_ids_.clear();
+          return false;
+        }
+        if (options_.offset > 0) {
+          --options_.offset;
+        } else {
+          this->key_id_ = node.key_id();
+          this->key_ = key;
+          ++count_;
+          return true;
+        }
+      }
+    } else {
+      node_ids_.back() |= POST_ORDER_FLAG;
+      uint16_t label = double_array_->nodes_[node_id].child();
+      while (label != INVALID_LABEL) {
+        node_ids_.push_back(node.offset() ^ label);
+        label = double_array_->nodes_[node.offset() ^ label].sibling();
+      }
+    }
+  }
+  return false;
 }
 
 template <typename T>
@@ -893,9 +1192,34 @@ void DoubleArray<T>::truncate() {
 }
 
 template <typename T>
+MapCursor<T> *DoubleArray<T>::open_basic_cursor(
+    const MapCursorOptions &options) {
+  if ((options.flags & MAP_CURSOR_ORDER_BY_ID) ||
+      (~options.flags & MAP_CURSOR_ORDER_BY_KEY)) {
+    return open_id_cursor(-1, -1, options);
+  } else {
+    // TODO: KeyCursor should be used.
+    return open_id_cursor(-1, -1, options);
+  }
+}
+
+template <typename T>
 MapCursor<T> *DoubleArray<T>::open_id_cursor(int64_t min, int64_t max,
                                              const MapCursorOptions &options) {
   return new (std::nothrow) DoubleArrayIDCursor<T>(this, min, max, options);
+}
+
+template <typename T>
+MapCursor<T> *DoubleArray<T>::open_key_cursor(
+    T min, T max, const MapCursorOptions &options) {
+  return new (std::nothrow) DoubleArrayKeyCursor<T>(this, min, max, options);
+}
+
+template <>
+MapCursor<GeoPoint> *DoubleArray<GeoPoint>::open_key_cursor(
+    GeoPoint, GeoPoint, const MapCursorOptions &) {
+  // Not supported.
+  return nullptr;
 }
 
 template <typename T>

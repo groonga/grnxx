@@ -60,8 +60,8 @@ class DoubleArrayKeyForSlice;
 
 template <typename T>
 class DoubleArray : public Map<T> {
-  friend DoubleArrayIDCursor<T>;
-  friend DoubleArrayKeyCursor<T>;
+  friend class DoubleArrayIDCursor<T>;
+  friend class DoubleArrayKeyCursor<T>;
 
  public:
   typedef DoubleArrayHeaderForOthers DoubleArrayHeader;
@@ -97,13 +97,12 @@ class DoubleArray : public Map<T> {
 
   void truncate();
 
-  // TODO
-//  MapCursor<T> *open_basic_cursor(
-//      const MapCursorOptions &options = MapCursorOptions());
+  MapCursor<T> *open_basic_cursor(
+      const MapCursorOptions &options = MapCursorOptions());
   MapCursor<T> *open_id_cursor(int64_t min, int64_t max,
       const MapCursorOptions &options = MapCursorOptions());
-//  MapCursor<T> *open_key_cursor(T min, T max,
-//      const MapCursorOptions &options = MapCursorOptions());
+  MapCursor<T> *open_key_cursor(T min, T max,
+      const MapCursorOptions &options = MapCursorOptions());
 
   // TODO
 //  MapCursor<T> *open_bitwise_completion_cursor(
@@ -153,10 +152,10 @@ class DoubleArray : public Map<T> {
 
 template <>
 class DoubleArray<Slice> : public Map<Slice> {
-  friend DoubleArrayIDCursor<Slice>;
-  friend DoubleArrayKeyCursor<Slice>;
-  friend DoubleArrayPrefixCursor<Slice>;
-  friend DoubleArrayCompletionCursor<Slice>;
+  friend class DoubleArrayIDCursor<Slice>;
+  friend class DoubleArrayKeyCursor<Slice>;
+  friend class DoubleArrayPrefixCursor<Slice>;
+  friend class DoubleArrayCompletionCursor<Slice>;
 
  public:
   typedef DoubleArrayHeaderForSlice DoubleArrayHeader;
