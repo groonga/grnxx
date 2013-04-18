@@ -205,9 +205,8 @@ class DoubleArray<Slice> : public Map<Slice> {
 
   MapCursor<Slice> *open_prefix_cursor(Slice query, size_t min_size,
       const MapCursorOptions &options = MapCursorOptions());
-  // TODO
-//  MapCursor<Slice> *open_completion_cursor(Slice query,
-//      const MapCursorOptions &options = MapCursorOptions());
+  MapCursor<Slice> *open_completion_cursor(Slice query,
+      const MapCursorOptions &options = MapCursorOptions());
 
  private:
   io::Pool pool_;

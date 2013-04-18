@@ -426,6 +426,9 @@ class DoubleArrayKeyForSlice {
   uint8_t buf_[2];
 };
 
+constexpr uint64_t IS_ROOT_FLAG    = uint64_t(1) << 63;
+constexpr uint64_t POST_ORDER_FLAG = uint64_t(1) << 63;
+
 template <>
 class DoubleArrayIDCursor<Slice> : public MapCursor<Slice> {
  public:
@@ -554,8 +557,6 @@ void DoubleArrayIDCursor<Slice>::init_order_by_key(int64_t min, int64_t max) {
     step_ = -1;
   }
 }
-
-constexpr uint64_t POST_ORDER_FLAG = uint64_t(1) << 63;
 
 template <>
 class DoubleArrayKeyCursor<Slice> : public MapCursor<Slice>{
@@ -994,35 +995,209 @@ void DoubleArrayPrefixCursor<Slice>::init_order_by_key(
   }
 }
 
-//template <>
-//class DoubleArrayCompletionCursor<Slice> : public MapCursor<Slice>{
-// public:
-//  DoubleArrayCompletionCursor(DoubleArray<Slice> *double_array,
-//                              Slice query,
-//                              const MapCursorOptions &options);
-//  ~DoubleArrayCompletionCursor();
+template <>
+class DoubleArrayCompletionCursor<Slice> : public MapCursor<Slice>{
+ public:
+  DoubleArrayCompletionCursor(DoubleArray<Slice> *double_array,
+                              Slice query,
+                              const MapCursorOptions &options);
+  ~DoubleArrayCompletionCursor();
 
-//  bool next();
-//  bool remove();
+  bool next();
+  bool remove();
 
-// private:
-//  DoubleArray<Slice> *double_array_;
-//  int64_t cur_;
-//  uint64_t count_;
-//  Slice min_;
-//  Slice max_;
-//  MapCursorOptions options_;
-//  std::vector<uint64_t> node_ids_;
-//  std::vector<std::pair<int64_t, Slice>> keys_;
+ private:
+  DoubleArray<Slice> *double_array_;
+  uint64_t cur_;
+  uint64_t count_;
+  Slice query_;
+  size_t min_size_;
+  MapCursorOptions options_;
+  std::vector<uint64_t> node_ids_;
+  std::vector<std::pair<int64_t, Slice>> keys_;
 
-//  void init_order_by_id();
-//  void init_order_by_key();
-//  void init_reverse_order_by_key();
+  void init_order_by_id();
+  void init_order_by_key();
 
-//  bool next_order_by_id();
-//  bool next_order_by_key();
-//  bool next_reverse_order_by_key();
-//};
+  bool next_order_by_id();
+  bool next_order_by_key();
+  bool next_reverse_order_by_key();
+};
+
+DoubleArrayCompletionCursor<Slice>::DoubleArrayCompletionCursor(
+    DoubleArray<Slice> *double_array, Slice query,
+    const MapCursorOptions &options)
+  : MapCursor<Slice>(), double_array_(double_array), cur_(), count_(0),
+    query_(query), min_size_(), options_(options), node_ids_(), keys_() {
+  if ((~options_.flags & MAP_CURSOR_ORDER_BY_ID) ||
+      (options_.flags & MAP_CURSOR_ORDER_BY_KEY)) {
+    init_order_by_id();
+  } else {
+    init_order_by_key();
+  }
+}
+
+DoubleArrayCompletionCursor<Slice>::~DoubleArrayCompletionCursor() {}
+
+bool DoubleArrayCompletionCursor<Slice>::next() {
+  if (count_ >= options_.limit) {
+    return false;
+  }
+  if ((options_.flags & MAP_CURSOR_ORDER_BY_ID) &&
+      (~options_.flags & MAP_CURSOR_ORDER_BY_KEY)) {
+    return next_order_by_id();
+  } else if (~options_.flags & MAP_CURSOR_REVERSE_ORDER) {
+    return next_order_by_key();
+  } else {
+    return next_reverse_order_by_key();
+  }
+}
+
+bool DoubleArrayCompletionCursor<Slice>::remove() {
+  return double_array_->unset(this->key_id_);
+}
+
+void DoubleArrayCompletionCursor<Slice>::init_order_by_id() {
+  init_order_by_key();
+
+  while (!node_ids_.empty()) {
+    const bool is_root = node_ids_.back() & IS_ROOT_FLAG;
+    const uint64_t node_id = node_ids_.back() & ~IS_ROOT_FLAG;
+    node_ids_.pop_back();
+
+    const DoubleArrayNodeForSlice node = double_array_->nodes_[node_id];
+    if (!is_root && (node.sibling() != INVALID_LABEL)) {
+      node_ids_.push_back(node_id ^ node.label() ^ node.sibling());
+    }
+
+    if (node.is_leaf()) {
+      const DoubleArrayKeyForSlice &key =
+          double_array_->get_key(node.key_pos());
+      if (key.size() >= min_size_) {
+        keys_.push_back(std::make_pair(key.id(), key.slice()));
+      }
+    } else if (node.child() != INVALID_LABEL) {
+      node_ids_.push_back(node.offset() ^ node.child());
+    }
+  }
+
+  std::sort(keys_.begin(), keys_.end());
+  if (options_.flags & MAP_CURSOR_REVERSE_ORDER) {
+    std::reverse(keys_.begin(), keys_.end());
+  }
+  cur_ = options_.offset;
+}
+
+void DoubleArrayCompletionCursor<Slice>::init_order_by_key() {
+  min_size_ = query_.size();
+  if (options_.flags & MAP_CURSOR_EXCEPT_QUERY) {
+    ++min_size_;
+  }
+
+  uint64_t node_id = ROOT_NODE_ID;
+  for (size_t i = 0; i < query_.size(); ++i) {
+    const DoubleArrayNodeForSlice node = double_array_->nodes_[node_id];
+    if (node.is_leaf()) {
+      const DoubleArrayKeyForSlice &key =
+          double_array_->get_key(node.key_pos());
+      if ((key.size() >= min_size_) &&
+          (key.slice().subslice(i, query_.size() - i) ==
+           query_.subslice(i, query_.size() - i))) {
+        if (~options_.flags & MAP_CURSOR_REVERSE_ORDER) {
+          node_id |= IS_ROOT_FLAG;
+        }
+        node_ids_.push_back(node_id);
+      }
+      return;
+    }
+
+    node_id = node.offset() ^ query_[i];
+    if (double_array_->nodes_[node_id].label() != query_[i]) {
+      return;
+    }
+  }
+
+  if (~options_.flags & MAP_CURSOR_REVERSE_ORDER) {
+    node_id |= IS_ROOT_FLAG;
+  }
+  node_ids_.push_back(node_id);
+}
+
+bool DoubleArrayCompletionCursor<Slice>::next_order_by_id() {
+  if (cur_ < keys_.size()) {
+    this->key_id_ = keys_[cur_].first;
+    this->key_ = keys_[cur_].second;
+    ++cur_;
+    ++count_;
+    return true;
+  }
+  return false;
+}
+
+bool DoubleArrayCompletionCursor<Slice>::next_order_by_key() {
+  while (!node_ids_.empty()) {
+    const bool is_root = node_ids_.back() & IS_ROOT_FLAG;
+    const uint64_t node_id = node_ids_.back() & ~IS_ROOT_FLAG;
+    node_ids_.pop_back();
+
+    const DoubleArrayNodeForSlice node = double_array_->nodes_[node_id];
+    if (!is_root && (node.sibling() != INVALID_LABEL)) {
+      node_ids_.push_back(node_id ^ node.label() ^ node.sibling());
+    }
+
+    if (node.is_leaf()) {
+      const DoubleArrayKeyForSlice &key =
+          double_array_->get_key(node.key_pos());
+      if (key.size() >= min_size_) {
+        if (options_.offset > 0) {
+          --options_.offset;
+        } else {
+          this->key_id_ = key.id();
+          this->key_ = key.slice();
+          ++count_;
+          return true;
+        }
+      }
+    } else if (node.child() != INVALID_LABEL) {
+      node_ids_.push_back(node.offset() ^ node.child());
+    }
+  }
+  return false;
+}
+
+bool DoubleArrayCompletionCursor<Slice>::next_reverse_order_by_key() {
+  while (!node_ids_.empty()) {
+    const bool post_order = node_ids_.back() & POST_ORDER_FLAG;
+    const uint64_t node_id = node_ids_.back() & ~POST_ORDER_FLAG;
+
+    const DoubleArrayNodeForSlice node = double_array_->nodes_[node_id];
+    if (post_order) {
+      node_ids_.pop_back();
+      if (node.is_leaf()) {
+        const DoubleArrayKeyForSlice &key =
+            double_array_->get_key(node.key_pos());
+        if (key.size() >= min_size_) {
+          if (options_.offset > 0) {
+            --options_.offset;
+          } else {
+            this->key_id_ = key.id();
+            this->key_ = key.slice();
+            ++count_;
+            return true;
+          }
+        }
+      }
+    } else {
+      node_ids_.back() |= POST_ORDER_FLAG;
+      uint16_t label = double_array_->nodes_[node_id].child();
+      while (label != INVALID_LABEL) {
+        node_ids_.push_back(node.offset() ^ label);
+        label = double_array_->nodes_[node.offset() ^ label].sibling();
+      }
+    }
+  }
+  return false;
+}
 
 DoubleArray<Slice>::~DoubleArray() {
   if (!initialized_) try {
@@ -1393,10 +1568,11 @@ MapCursor<Slice> *DoubleArray<Slice>::open_prefix_cursor(
       this, query, min_size, options);
 }
 
-//MapCursor<Slice> *open_completion_cursor(Slice query, const MapCursorOptions) {
-//  return new (std::nothrow) DoubleArrayCompletionCursor<Slice>(
-//      this, query, options);
-//}
+MapCursor<Slice> *DoubleArray<Slice>::open_completion_cursor(
+    Slice query, const MapCursorOptions &options) {
+  return new (std::nothrow) DoubleArrayCompletionCursor<Slice>(
+      this, query, options);
+}
 
 DoubleArray<Slice>::DoubleArray()
   : pool_(),
