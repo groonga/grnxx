@@ -25,10 +25,10 @@ namespace grnxx {
 namespace alpha {
 namespace map {
 
-template <typename T>
-class DoubleArrayIDCursor;
-template <typename T>
-class DoubleArrayKeyCursor;
+template <typename T> class DoubleArrayIDCursor;
+template <typename T> class DoubleArrayKeyCursor;
+template <typename T> class DoubleArrayPrefixCursor;
+template <typename T> class DoubleArrayCompletionCursor;
 
 // Forward declarations.
 struct DoubleArrayHeaderForOthers;
@@ -155,6 +155,8 @@ template <>
 class DoubleArray<Slice> : public Map<Slice> {
   friend DoubleArrayIDCursor<Slice>;
   friend DoubleArrayKeyCursor<Slice>;
+  friend DoubleArrayPrefixCursor<Slice>;
+  friend DoubleArrayCompletionCursor<Slice>;
 
  public:
   typedef DoubleArrayHeaderForSlice DoubleArrayHeader;
@@ -201,12 +203,10 @@ class DoubleArray<Slice> : public Map<Slice> {
   MapCursor<Slice> *open_key_cursor(Slice min, Slice max,
       const MapCursorOptions &options = MapCursorOptions());
 
+  MapCursor<Slice> *open_prefix_cursor(Slice query, size_t min_size,
+      const MapCursorOptions &options = MapCursorOptions());
   // TODO
-//  MapCursor<T> *open_prefix_cursor(T query, size_t min_size,
-//      const MapCursorOptions &options = MapCursorOptions());
-//  MapCursor<T> *open_completion_cursor(T query,
-//      const MapCursorOptions &options = MapCursorOptions());
-//  MapCursor<T> *open_reverse_completion_cursor(T query,
+//  MapCursor<Slice> *open_completion_cursor(Slice query,
 //      const MapCursorOptions &options = MapCursorOptions());
 
  private:
