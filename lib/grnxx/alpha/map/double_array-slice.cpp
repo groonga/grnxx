@@ -17,6 +17,9 @@
 */
 #include "grnxx/alpha/map/double_array.hpp"
 
+#include <algorithm>
+#include <vector>
+
 #include "grnxx/lock.hpp"
 #include "grnxx/logger.hpp"
 
@@ -423,6 +426,448 @@ class DoubleArrayKeyForSlice {
   uint8_t buf_[2];
 };
 
+template <>
+class DoubleArrayIDCursor<Slice> : public MapCursor<Slice> {
+ public:
+  DoubleArrayIDCursor(DoubleArray<Slice> *double_array,
+                      int64_t min, int64_t max,
+                      const MapCursorOptions &options);
+  ~DoubleArrayIDCursor();
+
+  bool next();
+  bool remove();
+
+ private:
+  DoubleArray<Slice> *double_array_;
+  int64_t cur_;
+  int64_t end_;
+  int64_t step_;
+  uint64_t count_;
+  MapCursorOptions options_;
+  std::vector<std::pair<Slice, int64_t>> keys_;
+
+  void init_order_by_id(int64_t min, int64_t max);
+  void init_order_by_key(int64_t min, int64_t max);
+};
+
+DoubleArrayIDCursor<Slice>::DoubleArrayIDCursor(
+    DoubleArray<Slice> *double_array, int64_t min, int64_t max,
+    const MapCursorOptions &options)
+  : MapCursor<Slice>(), double_array_(double_array), cur_(), end_(), step_(),
+    count_(0), options_(options), keys_() {
+  if (min < 0) {
+    min = 0;
+  } else if (options_.flags & MAP_CURSOR_EXCEPT_MIN) {
+    ++min;
+  }
+
+  if ((max < 0) || (max > double_array_->max_key_id())) {
+    max = double_array_->max_key_id();
+  } else if (options_.flags & MAP_CURSOR_EXCEPT_MAX) {
+    --max;
+  }
+
+  if (min > max) {
+    cur_ = end_ = 0;
+    return;
+  }
+
+  if ((options_.flags & MAP_CURSOR_ORDER_BY_ID) ||
+      (~options_.flags & MAP_CURSOR_ORDER_BY_KEY)) {
+    init_order_by_id(min, max);
+  } else {
+    init_order_by_key(min, max);
+  }
+}
+
+DoubleArrayIDCursor<Slice>::~DoubleArrayIDCursor() {}
+
+bool DoubleArrayIDCursor<Slice>::next() {
+  if (count_ >= options_.limit) {
+    return false;
+  }
+  if (options_.flags & MAP_CURSOR_ORDER_BY_ID) {
+    while (cur_ != end_) {
+      cur_ += step_;
+      if (double_array_->get(cur_, &this->key_)) {
+        this->key_id_ = cur_;
+        ++count_;
+        return true;
+      }
+    }
+  } else if (cur_ != end_) {
+    cur_ += step_;
+    this->key_ = keys_[cur_].first;
+    this->key_id_ = keys_[cur_].second;
+    ++count_;
+    return true;
+  }
+  return false;
+}
+
+bool DoubleArrayIDCursor<Slice>::remove() {
+  return double_array_->unset(this->key_id_);
+}
+
+void DoubleArrayIDCursor<Slice>::init_order_by_id(int64_t min, int64_t max) {
+  options_.flags |= MAP_CURSOR_ORDER_BY_ID;
+  options_.flags &= ~MAP_CURSOR_ORDER_BY_KEY;
+
+  if (~options_.flags & MAP_CURSOR_REVERSE_ORDER) {
+    cur_ = min - 1;
+    end_ = max;
+    step_ = 1;
+  } else {
+    cur_ = max + 1;
+    end_ = min;
+    step_ = -1;
+  }
+
+  uint64_t count = 0;
+  while ((count < options_.offset) && (cur_ != end_)) {
+    cur_ += step_;
+    if (double_array_->get(cur_)) {
+      ++count;
+    }
+  }
+}
+
+void DoubleArrayIDCursor<Slice>::init_order_by_key(int64_t min, int64_t max) {
+  cur_ = min - 1;
+  end_ = max;
+  while (cur_ != end_) {
+    ++cur_;
+    Slice key;
+    if (double_array_->get(cur_, &key)) {
+      keys_.push_back(std::make_pair(key, cur_));
+    }
+  }
+  std::sort(keys_.begin(), keys_.end());
+
+  if (~options_.flags & MAP_CURSOR_REVERSE_ORDER) {
+    cur_ = -1;
+    end_ = keys_.size() - 1;
+    step_ = 1;
+  } else {
+    cur_ = keys_.size();
+    end_ = 0;
+    step_ = -1;
+  }
+}
+
+constexpr uint64_t POST_ORDER_FLAG = uint64_t(1) << 63;
+
+template <>
+class DoubleArrayKeyCursor<Slice> : public MapCursor<Slice>{
+ public:
+  DoubleArrayKeyCursor(DoubleArray<Slice> *double_array,
+                       Slice min, Slice max,
+                       const MapCursorOptions &options);
+  ~DoubleArrayKeyCursor();
+
+  bool next();
+  bool remove();
+
+ private:
+  DoubleArray<Slice> *double_array_;
+  int64_t cur_;
+  uint64_t count_;
+  Slice min_;
+  Slice max_;
+  MapCursorOptions options_;
+  std::vector<uint64_t> node_ids_;
+  std::vector<std::pair<int64_t, Slice>> keys_;
+
+  void init_order_by_id();
+  void init_order_by_key();
+  void init_reverse_order_by_key();
+
+  bool next_order_by_id();
+  bool next_order_by_key();
+  bool next_reverse_order_by_key();
+};
+
+DoubleArrayKeyCursor<Slice>::DoubleArrayKeyCursor(
+    DoubleArray<Slice> *double_array, Slice min, Slice max,
+    const MapCursorOptions &options)
+  : MapCursor<Slice>(), double_array_(double_array), cur_(), count_(0),
+    min_(min), max_(max), options_(options), node_ids_(), keys_() {
+  if ((options_.flags & MAP_CURSOR_ORDER_BY_ID) &&
+      (~options_.flags & MAP_CURSOR_ORDER_BY_KEY)) {
+    init_order_by_id();
+  } else if (~options_.flags & MAP_CURSOR_REVERSE_ORDER) {
+    init_order_by_key();
+  } else {
+    init_reverse_order_by_key();
+  }
+}
+
+DoubleArrayKeyCursor<Slice>::~DoubleArrayKeyCursor() {}
+
+bool DoubleArrayKeyCursor<Slice>::next() {
+  if ((options_.flags & MAP_CURSOR_ORDER_BY_ID) &&
+      (~options_.flags & MAP_CURSOR_ORDER_BY_KEY)) {
+    return next_order_by_id();
+  } else if (~options_.flags & MAP_CURSOR_REVERSE_ORDER) {
+    return next_order_by_key();
+  } else {
+    return next_reverse_order_by_key();
+  }
+}
+
+bool DoubleArrayKeyCursor<Slice>::remove() {
+  return double_array_->unset(this->key_id_);
+}
+
+void DoubleArrayKeyCursor<Slice>::init_order_by_id() {
+  init_order_by_key();
+
+  while (!node_ids_.empty()) {
+    const uint64_t node_id = node_ids_.back();
+    node_ids_.pop_back();
+
+    const DoubleArrayNodeForSlice node = double_array_->nodes_[node_id];
+    if (node.sibling() != INVALID_LABEL) {
+      node_ids_.push_back(node_id ^ node.label() ^ node.sibling());
+    }
+
+    if (node.is_leaf()) {
+      const DoubleArrayKeyForSlice &key =
+          double_array_->get_key(node.key_pos());
+      if (max_) {
+        const int result = key.slice().compare(Slice(max_.ptr(), max_.size()));
+        if ((result > 0) ||
+            ((result == 0) && (options_.flags & MAP_CURSOR_EXCEPT_MAX))) {
+          break;
+        }
+      }
+      keys_.push_back(std::make_pair(key.id(), key.slice()));
+      ++count_;
+    } else if (node.child() != INVALID_LABEL) {
+      node_ids_.push_back(node.offset() ^ node.child());
+    }
+  }
+  std::sort(keys_.begin(), keys_.end());
+
+  cur_ = options_.offset - 1;
+}
+
+void DoubleArrayKeyCursor<Slice>::init_order_by_key() {
+  if (!min_) {
+    node_ids_.push_back(ROOT_NODE_ID);
+    return;
+  }
+
+  uint64_t node_id = ROOT_NODE_ID;
+  DoubleArrayNodeForSlice node;
+  for (size_t i = 0; i < min_.size(); ++i) {
+    node = double_array_->nodes_[node_id];
+    if (node.is_leaf()) {
+      const DoubleArrayKeyForSlice &key =
+          double_array_->get_key(node.key_pos());
+      const int result = key.slice().compare(min_, i);
+      if ((result > 0) ||
+          ((result == 0) && (~options_.flags & MAP_CURSOR_EXCEPT_MIN))) {
+        node_ids_.push_back(node_id);
+      } else if (node.sibling() != INVALID_LABEL) {
+        node_ids_.push_back(node_id ^ node.label() ^ node.sibling());
+      }
+      return;
+    } else if (node.sibling() != INVALID_LABEL) {
+      node_ids_.push_back(node_id ^ node.label() ^ node.sibling());
+    }
+
+    node_id = node.offset() ^ min_[i];
+    if (double_array_->nodes_[node_id].label() != min_[i]) {
+      uint16_t label = node.child();
+      if (label == TERMINAL_LABEL) {
+        label = double_array_->nodes_[node.offset() ^ label].sibling();
+      }
+      while (label != INVALID_LABEL) {
+        if (label > min_[i]) {
+          node_ids_.push_back(node.offset() ^ label);
+          break;
+        }
+        label = double_array_->nodes_[node.offset() ^ label].sibling();
+      }
+      return;
+    }
+  }
+
+  node = double_array_->nodes_[node_id];
+  if (node.is_leaf()) {
+    const DoubleArrayKeyForSlice &key = double_array_->get_key(node.key_pos());
+    if ((key.size() != min_.size()) ||
+        (~options_.flags & MAP_CURSOR_EXCEPT_MIN)) {
+      node_ids_.push_back(node_id);
+    } else if (node.sibling() != INVALID_LABEL) {
+      node_ids_.push_back(node_id ^ node.label() ^ node.sibling());
+    }
+    return;
+  } else if (node.sibling() != INVALID_LABEL) {
+    node_ids_.push_back(node_id ^ node.label() ^ node.sibling());
+  }
+
+  uint16_t label = node.child();
+  if ((label == TERMINAL_LABEL) && (options_.flags & MAP_CURSOR_EXCEPT_MIN)) {
+    label = double_array_->nodes_[node.offset() ^ label].sibling();
+  }
+  if (label != INVALID_LABEL) {
+    node_ids_.push_back(node.offset() ^ label);
+  }
+}
+
+void DoubleArrayKeyCursor<Slice>::init_reverse_order_by_key() {
+  if (!max_) {
+    node_ids_.push_back(ROOT_NODE_ID);
+    return;
+  }
+
+  uint64_t node_id = ROOT_NODE_ID;
+  for (size_t i = 0; i < max_.size(); ++i) {
+    const DoubleArrayNodeForSlice node = double_array_->nodes_[node_id];
+    if (node.is_leaf()) {
+      const DoubleArrayKeyForSlice &key =
+          double_array_->get_key(node.key_pos());
+      const int result = key.slice().compare(max_, i);
+      if ((result < 0) ||
+          ((result == 0) && (~options_.flags & MAP_CURSOR_EXCEPT_MAX))) {
+        node_ids_.push_back(node_id | POST_ORDER_FLAG);
+      }
+      return;
+    }
+
+    uint16_t label = double_array_->nodes_[node_id].child();
+    if (label == TERMINAL_LABEL) {
+      node_id = node.offset() ^ label;
+      node_ids_.push_back(node_id | POST_ORDER_FLAG);
+      label = double_array_->nodes_[node_id].sibling();
+    }
+    while (label != INVALID_LABEL) {
+      node_id = node.offset() ^ label;
+      if (label < max_[i]) {
+        node_ids_.push_back(node_id);
+      } else if (label > max_[i]) {
+        return;
+      } else {
+        break;
+      }
+      label = double_array_->nodes_[node_id].sibling();
+    }
+    if (label == INVALID_LABEL) {
+      return;
+    }
+  }
+
+  const DoubleArrayNodeForSlice node = double_array_->nodes_[node_id];
+  if (node.is_leaf()) {
+    const DoubleArrayKeyForSlice &key = double_array_->get_key(node.key_pos());
+    if ((key.size() == max_.size()) &&
+        (~options_.flags & MAP_CURSOR_EXCEPT_MAX)) {
+      node_ids_.push_back(node_id | POST_ORDER_FLAG);
+    }
+    return;
+  }
+
+  uint16_t label = double_array_->nodes_[node_id].child();
+  if ((label == TERMINAL_LABEL) &&
+      (~options_.flags & MAP_CURSOR_EXCEPT_MAX)) {
+    node_ids_.push_back((node.offset() ^ label) | POST_ORDER_FLAG);
+  }
+}
+
+bool DoubleArrayKeyCursor<Slice>::next_order_by_id() {
+  if (count_ >= options_.limit) {
+    return false;
+  }
+  while (cur_ < static_cast<int64_t>(keys_.size())) {
+    ++cur_;
+    if (double_array_->get(cur_, &this->key_)) {
+      this->key_id_ = cur_;
+      ++count_;
+      return true;
+    }
+  }
+  return false;
+}
+
+bool DoubleArrayKeyCursor<Slice>::next_order_by_key() {
+  while (!node_ids_.empty()) {
+    const uint64_t node_id = node_ids_.back();
+    node_ids_.pop_back();
+
+    const DoubleArrayNodeForSlice node = double_array_->nodes_[node_id];
+    if (node.sibling() != INVALID_LABEL) {
+      node_ids_.push_back(node_id ^ node.label() ^ node.sibling());
+    }
+
+    if (node.is_leaf()) {
+      const DoubleArrayKeyForSlice &key =
+          double_array_->get_key(node.key_pos());
+      if (max_) {
+        const int result = key.slice().compare(Slice(max_.ptr(), max_.size()));
+        if ((result > 0) ||
+            ((result == 0) && (options_.flags & MAP_CURSOR_EXCEPT_MAX))) {
+          node_ids_.clear();
+          return false;
+        }
+      }
+      if (options_.offset > 0) {
+        --options_.offset;
+      } else {
+        key_id_ = key.id();
+        key_ = key.slice();
+        ++count_;
+        return true;
+      }
+    } else if (node.child() != INVALID_LABEL) {
+      node_ids_.push_back(node.offset() ^ node.child());
+    }
+  }
+  return false;
+}
+
+bool DoubleArrayKeyCursor<Slice>::next_reverse_order_by_key() {
+  while (!node_ids_.empty()) {
+    const bool post_order = node_ids_.back() & POST_ORDER_FLAG;
+    const uint64_t node_id = node_ids_.back() & ~POST_ORDER_FLAG;
+
+    const DoubleArrayNodeForSlice node = double_array_->nodes_[node_id];
+    if (post_order) {
+      node_ids_.pop_back();
+      if (node.is_leaf()) {
+        const DoubleArrayKeyForSlice &key =
+            double_array_->get_key(node.key_pos());
+        if (min_) {
+          const int result =
+              key.slice().compare(Slice(min_.ptr(), min_.size()));
+          if ((result < 0) ||
+              ((result == 0) && (options_.flags & MAP_CURSOR_EXCEPT_MIN))) {
+            node_ids_.clear();
+            return false;
+          }
+        }
+        if (options_.offset > 0) {
+          --options_.offset;
+        } else {
+          key_id_ = key.id();
+          key_ = key.slice();
+          ++count_;
+          return true;
+        }
+      }
+    } else {
+      node_ids_.back() |= POST_ORDER_FLAG;
+      uint16_t label = double_array_->nodes_[node_id].child();
+      while (label != INVALID_LABEL) {
+        node_ids_.push_back(node.offset() ^ label);
+        label = double_array_->nodes_[node.offset() ^ label].sibling();
+      }
+    }
+  }
+  return false;
+}
+
 DoubleArray<Slice>::~DoubleArray() {
   if (!initialized_) try {
     // Free allocated blocks if initialization failed.
@@ -762,6 +1207,28 @@ void DoubleArray<Slice>::truncate() {
   header_->next_key_id = 0;
   header_->max_key_id = -1;
   header_->num_keys = 0;
+}
+
+MapCursor<Slice> *DoubleArray<Slice>::open_basic_cursor(
+    const MapCursorOptions &options) {
+  if ((options.flags & MAP_CURSOR_ORDER_BY_ID) ||
+      (~options.flags & MAP_CURSOR_ORDER_BY_KEY)) {
+    return open_id_cursor(-1, -1, options);
+  } else {
+    return open_key_cursor(nullptr, nullptr, options);
+  }
+}
+
+MapCursor<Slice> *DoubleArray<Slice>::open_id_cursor(
+    int64_t min, int64_t max, const MapCursorOptions &options) {
+  return new (std::nothrow) DoubleArrayIDCursor<Slice>(
+      this, min, max, options);
+}
+
+MapCursor<Slice> *DoubleArray<Slice>::open_key_cursor(
+    Slice min, Slice max, const MapCursorOptions &options) {
+  return new (std::nothrow) DoubleArrayKeyCursor<Slice>(
+      this, min, max, options);
 }
 
 DoubleArray<Slice>::DoubleArray()

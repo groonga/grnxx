@@ -25,18 +25,16 @@ namespace grnxx {
 namespace alpha {
 namespace map {
 
+template <typename T>
+class DoubleArrayIDCursor;
+template <typename T>
+class DoubleArrayKeyCursor;
+
 // Forward declarations.
 struct DoubleArrayHeaderForOthers;
 class DoubleArrayNodeForOthers;
 class DoubleArrayChunkForOthers;
 class DoubleArrayEntryForOthers;
-
-// Forward declarations.
-struct DoubleArrayHeaderForSlice;
-class DoubleArrayNodeForSlice;
-class DoubleArrayChunkForSlice;
-class DoubleArrayEntryForSlice;
-class DoubleArrayKeyForSlice;
 
 class DoubleArrayException : Exception {
  public:
@@ -53,8 +51,18 @@ class DoubleArrayException : Exception {
   }
 };
 
+// Forward declarations.
+struct DoubleArrayHeaderForSlice;
+class DoubleArrayNodeForSlice;
+class DoubleArrayChunkForSlice;
+class DoubleArrayEntryForSlice;
+class DoubleArrayKeyForSlice;
+
 template <typename T>
 class DoubleArray : public Map<T> {
+  friend DoubleArrayIDCursor<T>;
+  friend DoubleArrayKeyCursor<T>;
+
  public:
   typedef DoubleArrayHeaderForOthers DoubleArrayHeader;
   typedef DoubleArrayNodeForOthers DoubleArrayNode;
@@ -87,8 +95,20 @@ class DoubleArray : public Map<T> {
   bool remove(T key);
   bool update(T src_key, T dest_key, int64_t *key_id = nullptr);
 
-  // TODO
   void truncate();
+
+  // TODO
+//  MapCursor<T> *open_basic_cursor(
+//      const MapCursorOptions &options = MapCursorOptions());
+//  MapCursor<T> *open_id_cursor(int64_t min, int64_t max,
+//      const MapCursorOptions &options = MapCursorOptions());
+//  MapCursor<T> *open_key_cursor(T min, T max,
+//      const MapCursorOptions &options = MapCursorOptions());
+
+  // TODO
+//  MapCursor<T> *open_bitwise_completion_cursor(
+//      T query, size_t bit_size,
+//      const MapCursorOptions &options = MapCursorOptions());
 
  private:
   io::Pool pool_;
@@ -133,6 +153,9 @@ class DoubleArray : public Map<T> {
 
 template <>
 class DoubleArray<Slice> : public Map<Slice> {
+  friend DoubleArrayIDCursor<Slice>;
+  friend DoubleArrayKeyCursor<Slice>;
+
  public:
   typedef DoubleArrayHeaderForSlice DoubleArrayHeader;
   typedef DoubleArrayNodeForSlice DoubleArrayNode;
@@ -169,8 +192,22 @@ class DoubleArray<Slice> : public Map<Slice> {
   bool find_longest_prefix_match(Slice query, int64_t *key_id = nullptr,
                                  Slice *key = nullptr);
 
-  // TODO
   void truncate();
+
+  MapCursor<Slice> *open_basic_cursor(
+      const MapCursorOptions &options = MapCursorOptions());
+  MapCursor<Slice> *open_id_cursor(int64_t min, int64_t max,
+      const MapCursorOptions &options = MapCursorOptions());
+  MapCursor<Slice> *open_key_cursor(Slice min, Slice max,
+      const MapCursorOptions &options = MapCursorOptions());
+
+  // TODO
+//  MapCursor<T> *open_prefix_cursor(T query, size_t min_size,
+//      const MapCursorOptions &options = MapCursorOptions());
+//  MapCursor<T> *open_completion_cursor(T query,
+//      const MapCursorOptions &options = MapCursorOptions());
+//  MapCursor<T> *open_reverse_completion_cursor(T query,
+//      const MapCursorOptions &options = MapCursorOptions());
 
  private:
   io::Pool pool_;
