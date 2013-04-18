@@ -647,7 +647,11 @@ void DoubleArrayKeyCursor<Slice>::init_order_by_id() {
       node_ids_.push_back(node.offset() ^ node.child());
     }
   }
+
   std::sort(keys_.begin(), keys_.end());
+  if (options_.flags & MAP_CURSOR_REVERSE_ORDER) {
+    std::reverse(keys_.begin(), keys_.end());
+  }
 
   cur_ = options_.offset - 1;
 }
