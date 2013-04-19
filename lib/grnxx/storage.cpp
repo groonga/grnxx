@@ -35,9 +35,7 @@ StringBuilder &operator<<(StringBuilder &builder, StorageFlags flags) {
   if (flags) {
     bool is_first = true;
     GRNXX_FLAGS_WRITE(STORAGE_ANONYMOUS);
-    GRNXX_FLAGS_WRITE(STORAGE_CREATE);
     GRNXX_FLAGS_WRITE(STORAGE_HUGE_TLB);
-    GRNXX_FLAGS_WRITE(STORAGE_OPEN);
     GRNXX_FLAGS_WRITE(STORAGE_READ_ONLY);
     GRNXX_FLAGS_WRITE(STORAGE_TEMPORARY);
     return builder;
@@ -56,39 +54,59 @@ std::ostream &operator<<(std::ostream &stream, StorageFlags flags) {
 StorageOptions::StorageOptions()
   : max_num_files(1000),
     max_file_size(1ULL << 40),
-    chunk_size_ratio(1.0 / 64) {}
+    chunk_size_ratio(1.0 / 64),
+    root_size(4096) {}
 
-StorageNodeInfo::StorageNodeInfo()
+StorageNodeHeader::StorageNodeHeader()
   : id(0),
     status(STORAGE_PHANTOM),
     bits(0),
     chunk_id(0),
     offset(0),
     size(0),
-    next_id(0),
-    prev_id(0),
-    next_phantom_id(0),
-    sibling_id(0),
-    modified_time(0),
+    next_node_id(0),
+    prev_node_id(0),
+    next_phantom_node_id(0),
+    sibling_node_id(0),
+    last_modified_time(0),
     reserved{},
     user_data{} {}
 
 Storage::Storage() {}
 Storage::~Storage() {}
 
-Storage *Storage::open(StorageFlags flags, const char *path,
-                       const StorageOptions &options) {
+Storage *Storage::create(StorageFlags flags,
+                         const char *path,
+                         const StorageOptions &options) {
+  // TODO
+  return nullptr;
+}
+
+Storage *Storage::open(StorageFlags flags,
+                       const char *path) {
+  // TODO
+  return nullptr;
+}
+
+Storage *Storage::create_or_open(StorageFlags flags,
+                                 const char *path,
+                                 const StorageOptions &options) {
   // TODO
   return nullptr;
 }
 
 bool Storage::exists(const char *path) {
-  // TODO
-  return false;
+  std::unique_ptr<Storage> storage(open(STORAGE_READ_ONLY, path));
+  return static_cast<bool>(storage);
 }
 
-void Storage::unlink(const char *path) {
-  // TODO
+bool Storage::unlink(const char *path) {
+  std::unique_ptr<Storage> storage(open(STORAGE_READ_ONLY, path));
+  if (!storage) {
+    return false;
+  }
+  // TODO: Remove files.
+  return true;
 }
 
 }  // namespace grnxx
