@@ -29,6 +29,7 @@ template <typename T> class DoubleArrayIDCursor;
 template <typename T> class DoubleArrayKeyCursor;
 template <typename T> class DoubleArrayPrefixCursor;
 template <typename T> class DoubleArrayCompletionCursor;
+class DoubleArrayBitwiseCompletionCursor;
 
 // Forward declarations.
 struct DoubleArrayHeaderForOthers;
@@ -62,6 +63,7 @@ template <typename T>
 class DoubleArray : public Map<T> {
   friend class DoubleArrayIDCursor<T>;
   friend class DoubleArrayKeyCursor<T>;
+  friend class DoubleArrayBitwiseCompletionCursor;
 
  public:
   typedef DoubleArrayHeaderForOthers DoubleArrayHeader;
@@ -104,10 +106,9 @@ class DoubleArray : public Map<T> {
   MapCursor<T> *open_key_cursor(T min, T max,
       const MapCursorOptions &options = MapCursorOptions());
 
-  // TODO
-//  MapCursor<T> *open_bitwise_completion_cursor(
-//      T query, size_t bit_size,
-//      const MapCursorOptions &options = MapCursorOptions());
+  MapCursor<T> *open_bitwise_completion_cursor(
+      T query, size_t bit_size,
+      const MapCursorOptions &options = MapCursorOptions());
 
  private:
   io::Pool pool_;

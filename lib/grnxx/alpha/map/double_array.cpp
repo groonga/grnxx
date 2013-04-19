@@ -507,6 +507,7 @@ class DoubleArrayIDCursor : public MapCursor<T> {
   void init_order_by_key(int64_t min, int64_t max);
 };
 
+constexpr uint64_t IS_ROOT_FLAG    = uint64_t(1) << 62;
 constexpr uint64_t POST_ORDER_FLAG = uint64_t(1) << 63;
 
 template <typename T>
@@ -626,7 +627,7 @@ void DoubleArrayIDCursor<GeoPoint>::init_order_by_key(int64_t, int64_t) {
 }
 
 template <typename T>
-class DoubleArrayKeyCursor : public MapCursor<T>{
+class DoubleArrayKeyCursor : public MapCursor<T> {
  public:
   DoubleArrayKeyCursor(DoubleArray<T> *double_array, T min, T max,
                        const MapCursorOptions &options);
@@ -922,6 +923,230 @@ bool DoubleArrayKeyCursor<T>::next_reverse_order_by_key() {
   return false;
 }
 
+class DoubleArrayBitwiseCompletionCursor : public MapCursor<GeoPoint> {
+ public:
+  DoubleArrayBitwiseCompletionCursor(DoubleArray<GeoPoint> *double_array,
+                                     GeoPoint query, size_t bit_size,
+                                     const MapCursorOptions &options);
+  ~DoubleArrayBitwiseCompletionCursor();
+
+  bool next();
+  bool remove();
+
+ private:
+  DoubleArray<GeoPoint> *double_array_;
+  uint64_t cur_;
+  uint64_t count_;
+  GeoPoint query_;
+  size_t bit_size_;
+  uint64_t mask_;
+  MapCursorOptions options_;
+  std::vector<uint64_t> node_ids_;
+  std::vector<std::pair<int64_t, GeoPoint>> keys_;
+
+  void init_order_by_id();
+  void init_order_by_key();
+
+  bool next_order_by_id();
+  bool next_order_by_key();
+  bool next_reverse_order_by_key();
+};
+
+DoubleArrayBitwiseCompletionCursor::DoubleArrayBitwiseCompletionCursor(
+    DoubleArray<GeoPoint> *double_array, GeoPoint query, size_t bit_size,
+    const MapCursorOptions &options)
+  : MapCursor<GeoPoint>(), double_array_(double_array), cur_(), count_(0),
+    query_(query), bit_size_(bit_size), mask_(), options_(options),
+    node_ids_(), keys_() {
+  if ((~options_.flags & MAP_CURSOR_ORDER_BY_ID) ||
+      (options_.flags & MAP_CURSOR_ORDER_BY_KEY)) {
+    init_order_by_id();
+  } else {
+    init_order_by_key();
+  }
+}
+
+DoubleArrayBitwiseCompletionCursor::~DoubleArrayBitwiseCompletionCursor() {}
+
+bool DoubleArrayBitwiseCompletionCursor::next() {
+  if (count_ >= options_.limit) {
+    return false;
+  }
+  if ((options_.flags & MAP_CURSOR_ORDER_BY_ID) &&
+      (~options_.flags & MAP_CURSOR_ORDER_BY_KEY)) {
+    return next_order_by_id();
+  } else if (~options_.flags & MAP_CURSOR_REVERSE_ORDER) {
+    return next_order_by_key();
+  } else {
+    return next_reverse_order_by_key();
+  }
+}
+
+bool DoubleArrayBitwiseCompletionCursor::remove() {
+  return double_array_->unset(this->key_id_);
+}
+
+void DoubleArrayBitwiseCompletionCursor::init_order_by_id() {
+  init_order_by_key();
+
+  while (!node_ids_.empty()) {
+    const bool is_root = node_ids_.back() & IS_ROOT_FLAG;
+    const uint64_t node_id = node_ids_.back() & ~IS_ROOT_FLAG;
+    node_ids_.pop_back();
+
+    const DoubleArrayNodeForOthers node = double_array_->nodes_[node_id];
+    if (!is_root && (node.sibling() != INVALID_LABEL)) {
+      node_ids_.push_back(node_id ^ node.label() ^ node.sibling());
+    }
+
+    if (node.is_leaf()) {
+      const GeoPoint key = double_array_->keys_[node.key_id()];
+      if (((key.value() ^ query_.value()) & mask_) != 0) {
+        keys_.push_back(std::make_pair(node.key_id(), key));
+      }
+    } else if (node.child() != INVALID_LABEL) {
+      node_ids_.push_back(node.offset() ^ node.child());
+    }
+  }
+
+  std::sort(keys_.begin(), keys_.end(),
+            [](const std::pair<int64_t, GeoPoint> &lhs,
+               const std::pair<int64_t, GeoPoint> &rhs) {
+              return lhs.first < rhs.first;
+            });
+  if (options_.flags & MAP_CURSOR_REVERSE_ORDER) {
+    std::reverse(keys_.begin(), keys_.end());
+  }
+  cur_ = options_.offset;
+}
+
+void DoubleArrayBitwiseCompletionCursor::init_order_by_key() {
+  if (bit_size_ >= 64) {
+    bit_size_ = 64;
+  }
+  switch (bit_size_) {
+    case 0: {
+      mask_ = 0;
+      break;
+    }
+    case 1: {
+      mask_ = GeoPoint(1 << 31, 0).value();
+      break;
+    }
+    default: {
+      mask_ = GeoPoint(0xFFFFFFFFU << (32 - (bit_size_ / 2) - (bit_size_ % 2)),
+                       0xFFFFFFFFU << (32 - (bit_size_ / 2))).value();
+      break;
+    }
+  }
+
+  // Note: MAP_CURSOR_EXCEPT_QUERY does not make sense.
+
+  uint8_t query_buf[sizeof(GeoPoint)];
+  convert_key(query_, query_buf);
+
+  size_t min_size = bit_size_ / 8;
+
+  uint64_t node_id = ROOT_NODE_ID;
+  for (size_t i = 0; i < min_size; ++i) {
+    const DoubleArrayNodeForOthers node = double_array_->nodes_[node_id];
+    if (node.is_leaf()) {
+      const GeoPoint key = double_array_->keys_[node.key_id()];
+      if (((key.value() ^ query_.value()) ^ mask_) != 0) {
+        if (~options_.flags & MAP_CURSOR_REVERSE_ORDER) {
+          node_id |= IS_ROOT_FLAG;
+        }
+        node_ids_.push_back(node_id);
+      }
+      return;
+    }
+
+    node_id = node.offset() ^ query_buf[i];
+    if (double_array_->nodes_[node_id].label() != query_buf[i]) {
+      return;
+    }
+  }
+
+  if (~options_.flags & MAP_CURSOR_REVERSE_ORDER) {
+    node_id |= IS_ROOT_FLAG;
+  }
+  node_ids_.push_back(node_id);
+}
+
+bool DoubleArrayBitwiseCompletionCursor::next_order_by_id() {
+  if (cur_ < keys_.size()) {
+    this->key_id_ = keys_[cur_].first;
+    this->key_ = keys_[cur_].second;
+    ++cur_;
+    ++count_;
+    return true;
+  }
+  return false;
+}
+
+bool DoubleArrayBitwiseCompletionCursor::next_order_by_key() {
+  while (!node_ids_.empty()) {
+    const bool is_root = node_ids_.back() & IS_ROOT_FLAG;
+    const uint64_t node_id = node_ids_.back() & ~IS_ROOT_FLAG;
+    node_ids_.pop_back();
+
+    const DoubleArrayNodeForOthers node = double_array_->nodes_[node_id];
+    if (!is_root && (node.sibling() != INVALID_LABEL)) {
+      node_ids_.push_back(node_id ^ node.label() ^ node.sibling());
+    }
+
+    if (node.is_leaf()) {
+      const GeoPoint key = double_array_->keys_[node.key_id()];
+      if (((key.value() ^ query_.value()) ^ mask_) != 0) {
+        if (options_.offset > 0) {
+          --options_.offset;
+        } else {
+          this->key_id_ = node.key_id();
+          this->key_ = key;
+          ++count_;
+          return true;
+        }
+      }
+    } else if (node.child() != INVALID_LABEL) {
+      node_ids_.push_back(node.offset() ^ node.child());
+    }
+  }
+  return false;
+}
+
+bool DoubleArrayBitwiseCompletionCursor::next_reverse_order_by_key() {
+  while (!node_ids_.empty()) {
+    const bool post_order = node_ids_.back() & POST_ORDER_FLAG;
+    const uint64_t node_id = node_ids_.back() & ~POST_ORDER_FLAG;
+
+    const DoubleArrayNodeForOthers node = double_array_->nodes_[node_id];
+    if (post_order) {
+      node_ids_.pop_back();
+      if (node.is_leaf()) {
+        const GeoPoint key = double_array_->keys_[node.key_id()];
+        if (((key.value() ^ query_.value()) ^ mask_) != 0) {
+          if (options_.offset > 0) {
+            --options_.offset;
+          } else {
+            this->key_id_ = node.key_id();
+            this->key_ = key;
+            ++count_;
+            return true;
+          }
+        }
+      }
+    } else {
+      node_ids_.back() |= POST_ORDER_FLAG;
+      uint16_t label = double_array_->nodes_[node_id].child();
+      while (label != INVALID_LABEL) {
+        node_ids_.push_back(node.offset() ^ label);
+        label = double_array_->nodes_[node.offset() ^ label].sibling();
+      }
+    }
+  }
+  return false;
+}
+
 template <typename T>
 DoubleArray<T>::~DoubleArray() {
   if (!initialized_) try {
@@ -1096,7 +1321,6 @@ bool DoubleArray<T>::find(T key, int64_t *key_id) {
     return false;
   }
 
-  // TODO: NaN.
   const int32_t found_key_id = node.key_id();
   if (Helper<T>::equal_to(keys_[found_key_id], key)) {
     if (key_id) {
@@ -1220,6 +1444,20 @@ MapCursor<GeoPoint> *DoubleArray<GeoPoint>::open_key_cursor(
     GeoPoint, GeoPoint, const MapCursorOptions &) {
   // Not supported.
   return nullptr;
+}
+
+template <typename T>
+MapCursor<T> *DoubleArray<T>::open_bitwise_completion_cursor(
+    T, size_t, const MapCursorOptions &) {
+  // Not supported.
+  return nullptr;
+}
+
+template <>
+MapCursor<GeoPoint> *DoubleArray<GeoPoint>::open_bitwise_completion_cursor(
+    GeoPoint query, size_t bit_size, const MapCursorOptions &options) {
+  return new (std::nothrow) DoubleArrayBitwiseCompletionCursor(
+      this, query, bit_size, options);
 }
 
 template <typename T>

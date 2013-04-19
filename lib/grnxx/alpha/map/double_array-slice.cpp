@@ -559,7 +559,7 @@ void DoubleArrayIDCursor<Slice>::init_order_by_key(int64_t min, int64_t max) {
 }
 
 template <>
-class DoubleArrayKeyCursor<Slice> : public MapCursor<Slice>{
+class DoubleArrayKeyCursor<Slice> : public MapCursor<Slice> {
  public:
   DoubleArrayKeyCursor(DoubleArray<Slice> *double_array,
                        Slice min, Slice max,
@@ -872,7 +872,7 @@ bool DoubleArrayKeyCursor<Slice>::next_reverse_order_by_key() {
 }
 
 template <>
-class DoubleArrayPrefixCursor<Slice> : public MapCursor<Slice>{
+class DoubleArrayPrefixCursor<Slice> : public MapCursor<Slice> {
  public:
   DoubleArrayPrefixCursor(DoubleArray<Slice> *double_array,
                           Slice query, size_t min_size,
@@ -996,7 +996,7 @@ void DoubleArrayPrefixCursor<Slice>::init_order_by_key(
 }
 
 template <>
-class DoubleArrayCompletionCursor<Slice> : public MapCursor<Slice>{
+class DoubleArrayCompletionCursor<Slice> : public MapCursor<Slice> {
  public:
   DoubleArrayCompletionCursor(DoubleArray<Slice> *double_array,
                               Slice query,
