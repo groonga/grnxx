@@ -365,7 +365,7 @@ BitwiseCompletionCursor::BitwiseCompletionCursor(
 BitwiseCompletionCursor::~BitwiseCompletionCursor() {}
 
 bool BitwiseCompletionCursor::is_valid(GeoPoint key) const {
-  return ((key.value() ^ query_.value()) & mask_) != 0;
+  return ((key.value() ^ query_.value()) & mask_) == 0;
 }
 
 PrefixCursor::PrefixCursor(Map<Slice> *map, Slice query, size_t min_size,

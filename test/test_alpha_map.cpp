@@ -490,6 +490,36 @@ void test_map_zero(grnxx::alpha::MapType map_type) {
   assert(map->update(1.0, 0.0));
 }
 
+void test_bitwise_completion_cursor(grnxx::alpha::MapType map_type) {
+  grnxx::io::Pool pool;
+  pool.open(grnxx::io::POOL_ANONYMOUS);
+
+  std::unique_ptr<Map<grnxx::alpha::GeoPoint>> map;
+  map.reset(map->create(map_type, pool));
+
+  for (int i = 0; i < 128; ++i) {
+    grnxx::alpha::GeoPoint key;
+    generate_key(&key);
+
+    std::int64_t key_id;
+    map->insert(key, &key_id);
+
+    for (std::size_t j = 0; j <= 64; ++j) {
+      bool found = false;
+      std::unique_ptr<MapCursor<grnxx::alpha::GeoPoint>> cursor(
+          map->open_bitwise_completion_cursor(key, j));
+      assert(cursor->next());
+      do {
+        if (cursor->key_id() == key_id) {
+          assert(cursor->key() == key);
+          found = true;
+        }
+      } while (cursor->next());
+      assert(found);
+    }
+  }
+}
+
 int main() {
   grnxx::Logger::set_flags(grnxx::LOGGER_WITH_ALL |
                            grnxx::LOGGER_ENABLE_COUT);
@@ -509,6 +539,7 @@ int main() {
 
   test_map_nan(grnxx::alpha::MAP_ARRAY);
   test_map_zero(grnxx::alpha::MAP_ARRAY);
+  test_bitwise_completion_cursor(grnxx::alpha::MAP_ARRAY);
 
   test_map<std::int8_t>(grnxx::alpha::MAP_DOUBLE_ARRAY);
   test_map<std::int16_t>(grnxx::alpha::MAP_DOUBLE_ARRAY);
@@ -524,6 +555,7 @@ int main() {
 
   test_map_nan(grnxx::alpha::MAP_DOUBLE_ARRAY);
   test_map_zero(grnxx::alpha::MAP_DOUBLE_ARRAY);
+//  test_bitwise_completion_cursor(grnxx::alpha::MAP_DOUBLE_ARRAY);
 
   return 0;
 }
