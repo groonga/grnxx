@@ -17,39 +17,7 @@
 */
 #include "grnxx/storage.hpp"
 
-#include <ostream>
-
 namespace grnxx {
-
-#define GRNXX_FLAGS_WRITE(flag) do { \
-  if (flags & flag) { \
-    if (!is_first) { \
-      builder << " | "; \
-    } \
-    builder << #flag; \
-    is_first = false; \
-  } \
-} while (false)
-
-StringBuilder &operator<<(StringBuilder &builder, StorageFlags flags) {
-  if (flags) {
-    bool is_first = true;
-    GRNXX_FLAGS_WRITE(STORAGE_ANONYMOUS);
-    GRNXX_FLAGS_WRITE(STORAGE_HUGE_TLB);
-    GRNXX_FLAGS_WRITE(STORAGE_READ_ONLY);
-    GRNXX_FLAGS_WRITE(STORAGE_TEMPORARY);
-    return builder;
-  } else {
-    return builder << "0";
-  }
-}
-
-std::ostream &operator<<(std::ostream &stream, StorageFlags flags) {
-  char buf[256];
-  StringBuilder builder(buf);
-  builder << flags;
-  return stream.write(builder.c_str(), builder.length());
-}
 
 StorageOptions::StorageOptions()
   : max_num_files(1000),
@@ -75,34 +43,39 @@ StorageNodeHeader::StorageNodeHeader()
 Storage::Storage() {}
 Storage::~Storage() {}
 
-Storage *Storage::create(StorageFlags flags,
-                         const char *path,
+Storage *Storage::create(const char *path,
+                         StorageFlags flags,
                          const StorageOptions &options) {
   // TODO
   return nullptr;
 }
 
-Storage *Storage::open(StorageFlags flags,
-                       const char *path) {
+Storage *Storage::open(const char *path,
+                       StorageFlags flags) {
   // TODO
   return nullptr;
 }
 
-Storage *Storage::create_or_open(StorageFlags flags,
-                                 const char *path,
+Storage *Storage::open_or_create(const char *path,
+                                 StorageFlags flags,
                                  const StorageOptions &options) {
   // TODO
   return nullptr;
 }
 
 bool Storage::exists(const char *path) {
-  std::unique_ptr<Storage> storage(open(STORAGE_READ_ONLY, path));
-  return static_cast<bool>(storage);
+  std::unique_ptr<Storage> storage(open(path, STORAGE_READ_ONLY));
+  if (!storage) {
+    // TODO: Error: memory allocation failed.
+    return false;
+  }
+  return true;
 }
 
 bool Storage::unlink(const char *path) {
-  std::unique_ptr<Storage> storage(open(STORAGE_READ_ONLY, path));
+  std::unique_ptr<Storage> storage(open(path, STORAGE_READ_ONLY));
   if (!storage) {
+    // TODO: Error: memory allocation failed.
     return false;
   }
   // TODO: Remove files.

@@ -27,6 +27,7 @@ TESTS =					\
 	test_os				\
 	test_recycler			\
 	test_slice			\
+	test_storage			\
 	test_string			\
 	test_string_builder		\
 	test_string_format		\
@@ -112,6 +113,9 @@ test_recycler_LDADD = ../lib/grnxx/libgrnxx.la
 
 test_slice_SOURCES = test_slice.cpp
 test_slice_LDADD = ../lib/grnxx/libgrnxx.la
+
+test_storage_SOURCES = test_storage.cpp
+test_storage_LDADD = ../lib/grnxx/libgrnxx.la
 
 test_string_SOURCES = test_string.cpp
 test_string_LDADD = ../lib/grnxx/libgrnxx.la

@@ -1,4 +1,11 @@
-SUBDIRS = alpha charset db io map time
+SUBDIRS =				\
+	alpha				\
+	charset				\
+	db				\
+	io				\
+	map				\
+	storage				\
+	time
 
 lib_LTLIBRARIES = libgrnxx.la
 
@@ -8,6 +15,7 @@ libgrnxx_la_LIBADD =			\
 	db/libgrnxx_db.la		\
 	io/libgrnxx_io.la		\
 	map/libgrnxx_map.la		\
+	storage/libgrnxx_storage.la	\
 	time/libgrnxx_time.la
 
 libgrnxx_la_LDFLAGS = @AM_LTLDFLAGS@

@@ -70,6 +70,7 @@ AC_CONFIG_FILES([Makefile
                  lib/grnxx/map/da/Makefile
                  lib/grnxx/map/da/basic/Makefile
                  lib/grnxx/map/da/large/Makefile
+                 lib/grnxx/storage/Makefile
                  lib/grnxx/time/Makefile
                  src/Makefile
                  test/Makefile])

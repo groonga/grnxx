@@ -48,26 +48,27 @@ struct StorageNodeHeader {
   // The ID of the chunk to which this node belongs.
   uint16_t chunk_id;
   // (Non-phantom)
-  // The offset of this node in chunk. The actual offset is "offset" << "bits".
+  // The offset of this node in chunk.
+  // The actual offset is "offset" << "bits".
   uint32_t offset;
   // (Non-phantom)
   // The size of this node. The actual size is "size" << "bits".
   uint32_t size;
   // (Non-phantom)
-  // The ID of the next node in chunk. INVALID_ID indicates that this node is
-  // the last node in chunk.
+  // The ID of the next node in chunk.
+  // INVALID_ID indicates that this node is the last node in chunk.
   uint32_t next_node_id;
   // (Non-phantom)
-  // The ID of the previous node in chunk. INVALID_ID indicates that this node
-  // is the first node in chunk.
+  // The ID of the previous node in chunk.
+  // INVALID_ID indicates that this node is the first node in chunk.
   uint32_t prev_node_id;
   union {
     // (Phantom)
     // The ID of the next phantom node.
     uint32_t next_phantom_node_id;
     // (Active, marked, or unlinked)
-    // The ID of the latest child node. INVALID_ID indicates that this node has
-    // no children.
+    // The ID of the latest child node.
+    // INVALID_ID indicates that this node has no children.
     uint32_t child_id;
     // (Idle)
     // The ID of the next idle node.
@@ -75,12 +76,12 @@ struct StorageNodeHeader {
   };
   union {
     // (Active or marked)
-    // The ID of the next sibling node. INVALID_ID indicates that this node has
-    // no elder siblings.
+    // The ID of the next sibling node.
+    // INVALID_ID indicates that this node has no elder siblings.
     uint32_t sibling_node_id;
     // (Unlinked)
-    // The ID of the next unlinked node. INVALID_ID indicates that this node
-    // is the last unlinked node.
+    // The ID of the next unlinked node.
+    // INVALID_ID indicates that this node is the last unlinked node.
     uint32_t next_unlinked_node_id;
     // (Idle)
     // The ID of the previous idle node.
@@ -110,22 +111,16 @@ struct StorageNode {
 class Storage;
 typedef FlagsImpl<Storage> StorageFlags;
 
-// Create an anonymous (non-file-backed) temporary storage. All other flags,
-// except STORAGE_HUGE_TLB, are ignored.
-constexpr StorageFlags STORAGE_ANONYMOUS = StorageFlags::define(0x01);
-// Try to use huge pages. If huge pages are not available, regular pages will
-// be used.
-constexpr StorageFlags STORAGE_HUGE_TLB  = StorageFlags::define(0x02);
-// Open a storage in read-only mode. If this flag is not specified, a storage
-// is opened in read-write mode.
-constexpr StorageFlags STORAGE_READ_ONLY = StorageFlags::define(0x04);
-// Create a file-backed temporary storage. All other flags, except
-// STORAGE_ANONYMOUS and STORAGE_HUGE_TLB, are ignored.
-constexpr StorageFlags STORAGE_TEMPORARY = StorageFlags::define(0x08);
-
-// Generate a string from a set of flags.
-StringBuilder &operator<<(StringBuilder &builder, StorageFlags flags);
-std::ostream &operator<<(std::ostream &builder, StorageFlags flags);
+// Use the default settings.
+constexpr StorageFlags STORAGE_DEFAULT   = StorageFlags::define(0x00);
+// Use huge pages if available, or use regular pages.
+constexpr StorageFlags STORAGE_HUGE_TLB  = StorageFlags::define(0x01);
+// Open a storage in read-only mode.
+// If not specified, a storage is opened in read-write mode.
+constexpr StorageFlags STORAGE_READ_ONLY = StorageFlags::define(0x02);
+// Create an anonymous (non-file-backed) temporary storage if "path" ==
+// nullptr, or create a file-backed temporary storage.
+constexpr StorageFlags STORAGE_TEMPORARY = StorageFlags::define(0x04);
 
 struct StorageOptions {
   // The maximum number of files.
@@ -153,20 +148,20 @@ class Storage {
   Storage();
   virtual ~Storage();
 
-  // Create a storage if missing. If "flags" contains STORAGE_ANONYMOUS or
-  // STORAGE_TEMPORARY, "path" == nullptr is acceptable. Available flags are
-  // STORAGE_ANONYMOUS, STORAGE_HUGE_TLB, and STORAGE_TEMPORARY.
-  static Storage *create(StorageFlags flags,
-                         const char *path = nullptr,
+  // Create a storage.
+  // "path" == nullptr is acceptable iff "flags" contains STORAGE_TEMPORARY.
+  // Available flags are STORAGE_HUGE_TLB and STORAGE_TEMPORARY.
+  static Storage *create(const char *path,
+                         StorageFlags flags = STORAGE_DEFAULT,
                          const StorageOptions &options = StorageOptions());
-  // Open an existing storage. Available flags are STORAGE_HUGE_TLB and
-  // STORAGE_READ_ONLY.
-  static Storage *open(StorageFlags flags,
-                       const char *path = nullptr);
-  // Create a storage if missing, or open an existing storage. The available
-  // flag is STORAGE_HUGE_TLB.
-  static Storage *create_or_open(StorageFlags flags,
-                                 const char *path = nullptr,
+  // Open a storage.
+  // Available flags are STORAGE_HUGE_TLB and STORAGE_READ_ONLY.
+  static Storage *open(const char *path,
+                       StorageFlags flags = STORAGE_DEFAULT);
+  // Open or create a storage.
+  // The available flags is STORAGE_HUGE_TLB.
+  static Storage *open_or_create(const char *path,
+                                 StorageFlags flags = STORAGE_DEFAULT,
                                  const StorageOptions &options = StorageOptions());
 
   // Return true iff "path" refers to a valid storage.
@@ -186,7 +181,7 @@ class Storage {
   // Return the address to the header.
   virtual const StorageHeader *header() const = 0;
 
-  // Open an existing node.
+  // Open a node.
   virtual StorageNode open_node(uint32_t node_id) = 0;
   // Create a node of at least "size" bytes under "parent_node".
   virtual StorageNode create_node(const StorageNode &parent_node,
