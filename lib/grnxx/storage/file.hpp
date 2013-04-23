@@ -28,7 +28,7 @@ class StringBuilder;
 namespace storage {
 
 class File;
-typedef FlagsImpl<File> FileFlags;
+using FileFlags = FlagsImpl<File>;
 
 // Use the default settings.
 constexpr FileFlags FILE_DEFAULT   = FileFlags::define(0x00);
@@ -41,7 +41,7 @@ constexpr FileFlags FILE_TEMPORARY = FileFlags::define(0x02);
 StringBuilder &operator<<(StringBuilder &builder, FileFlags flags);
 
 class FileLock;
-typedef FlagsImpl<FileLock> FileLockFlags;
+using FileLockFlags = FlagsImpl<FileLock>;
 
 // Apply an exclusive advisory lock.
 constexpr FileLockFlags FILE_LOCK_SHARED      = FileLockFlags::define(0x01);

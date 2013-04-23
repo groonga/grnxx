@@ -22,113 +22,51 @@
 #include "grnxx/time/time.hpp"
 
 namespace grnxx {
+namespace storage {
 
-enum StorageNodeStatus : uint8_t {
-  // A node without body.
-  STORAGE_PHANTOM  = 0,
-  // An active node.
-  STORAGE_ACTIVE   = 1,
-  // A marked node to be unlinked.
-  STORAGE_MARKED   = 2,
-  // An unlinked node.
-  STORAGE_UNLINKED = 3,
-  // An unused node.
-  STORAGE_IDLE     = 4,
-};
+struct NodeHeader;
 
-struct StorageNodeHeader {
-  // The ID of this node.
-  uint32_t id;
-  // The status of this node.
-  StorageNodeStatus status;
-  // (Non-phantom)
-  // For calculating the actual offset and size, see also "offset" and "size".
-  uint8_t bits;
-  // (Non-phantom)
-  // The ID of the chunk to which this node belongs.
-  uint16_t chunk_id;
-  // (Non-phantom)
-  // The offset of this node in chunk.
-  // The actual offset is "offset" << "bits".
-  uint32_t offset;
-  // (Non-phantom)
-  // The size of this node. The actual size is "size" << "bits".
-  uint32_t size;
-  // (Non-phantom)
-  // The ID of the next node in chunk.
-  // INVALID_ID indicates that this node is the last node in chunk.
-  uint32_t next_node_id;
-  // (Non-phantom)
-  // The ID of the previous node in chunk.
-  // INVALID_ID indicates that this node is the first node in chunk.
-  uint32_t prev_node_id;
-  union {
-    // (Phantom)
-    // The ID of the next phantom node.
-    uint32_t next_phantom_node_id;
-    // (Active, marked, or unlinked)
-    // The ID of the latest child node.
-    // INVALID_ID indicates that this node has no children.
-    uint32_t child_id;
-    // (Idle)
-    // The ID of the next idle node.
-    uint32_t next_idle_node_id;
-  };
-  union {
-    // (Active or marked)
-    // The ID of the next sibling node.
-    // INVALID_ID indicates that this node has no elder siblings.
-    uint32_t sibling_node_id;
-    // (Unlinked)
-    // The ID of the next unlinked node.
-    // INVALID_ID indicates that this node is the last unlinked node.
-    uint32_t next_unlinked_node_id;
-    // (Idle)
-    // The ID of the previous idle node.
-    uint32_t prev_idle_node_id;
-  };
-  // The time of the last modification.
-  Time last_modified_time;
-  // Reserved for future use.
-  uint8_t reserved[8];
-  // User data.
-  uint8_t user_data[16];
-
-  // Initialize the members.
-  StorageNodeHeader();
-};
-
-static_assert(sizeof(StorageNodeHeader) == 64,
-              "sizeof(StorageNodeHeader) != 64");
-
-struct StorageNode {
-  // The address to the node header.
-  StorageNodeHeader *header;
-  // The address to the node body.
-  void *body;
-};
+}  // namespace storage
 
 class Storage;
-typedef FlagsImpl<Storage> StorageFlags;
+using StorageFlags = FlagsImpl<Storage>;
 
 // Use the default settings.
 constexpr StorageFlags STORAGE_DEFAULT   = StorageFlags::define(0x00);
+// Create an anonymous storage.
+// This flag is implicitly enabled if "path" == nullptr and "flags" does not
+// contain STORAGE_TEMPORARY.
+constexpr StorageFlags STORAGE_ANONYMOUS = StorageFlags::define(0x01);
 // Use huge pages if available, or use regular pages.
-constexpr StorageFlags STORAGE_HUGE_TLB  = StorageFlags::define(0x01);
+constexpr StorageFlags STORAGE_HUGE_TLB  = StorageFlags::define(0x02);
 // Open a storage in read-only mode.
 // If not specified, a storage is opened in read-write mode.
-constexpr StorageFlags STORAGE_READ_ONLY = StorageFlags::define(0x02);
-// Create an anonymous (non-file-backed) temporary storage if "path" ==
-// nullptr, or create a file-backed temporary storage.
-constexpr StorageFlags STORAGE_TEMPORARY = StorageFlags::define(0x04);
+constexpr StorageFlags STORAGE_READ_ONLY = StorageFlags::define(0x04);
+// Create a file-backed temporary storage.
+constexpr StorageFlags STORAGE_TEMPORARY = StorageFlags::define(0x08);
+
+StringBuilder &operator<<(StringBuilder &builder, StorageFlags flags);
+
+enum StorageNodeStatus : uint8_t {
+  // A node without body.
+  STORAGE_NODE_PHANTOM  = 0,
+  // An active node.
+  STORAGE_NODE_ACTIVE   = 1,
+  // A marked node to be unlinked.
+  STORAGE_NODE_MARKED   = 2,
+  // An unlinked node.
+  STORAGE_NODE_UNLINKED = 3,
+  // An unused node.
+  STORAGE_NODE_IDLE     = 4
+};
+
+StringBuilder &operator<<(StringBuilder &builder, StorageNodeStatus status);
 
 struct StorageOptions {
   // The maximum number of files.
   uint64_t max_num_files;
   // The maximum size of each file.
   uint64_t max_file_size;
-  // The ratio of the new chunk size to the storage total size.
-  double chunk_size_ratio;
   // The size of the root node.
   uint64_t root_size;
 
@@ -136,11 +74,35 @@ struct StorageOptions {
   StorageOptions();
 };
 
-struct StorageHeader {
-  // TODO
+using StorageNodeHeader = storage::NodeHeader;
 
-  // Initialize the members.
-  StorageHeader();
+struct StorageNode {
+ public:
+  StorageNode() = default;
+  StorageNode(StorageNodeHeader *header, void *body)
+      : header_(header),
+        body_(body) {}
+
+  // Return the ID.
+  uint32_t id() const;
+  // Return the status.
+  StorageNodeStatus status() const;
+  // Return the body size.
+  uint64_t size() const;
+  // Return the last modified time.
+  Time modified_time() const;
+  // Return the address to the user data (16 bytes) in the header.
+  void *user_data() const;
+  // Return the address to the body.
+  void *body() const {
+    return body_;
+  }
+
+ private:
+  // The address to the node header.
+  StorageNodeHeader *header_;
+  // The address to the node body.
+  void *body_;
 };
 
 class Storage {
@@ -149,7 +111,8 @@ class Storage {
   virtual ~Storage();
 
   // Create a storage.
-  // "path" == nullptr is acceptable iff "flags" contains STORAGE_TEMPORARY.
+  // STORAGE_ANONYMOUS is implicitly enabled if "path" == nullptr and "flags"
+  // does not contain STORAGE_TEMPORARY.
   // Available flags are STORAGE_HUGE_TLB and STORAGE_TEMPORARY.
   static Storage *create(const char *path,
                          StorageFlags flags = STORAGE_DEFAULT,
@@ -173,25 +136,29 @@ class Storage {
   static constexpr uint32_t root_id() {
     return 0U;
   }
-  // Return an invalid ID.
+  // Return the invalid node ID.
   static constexpr uint32_t invalid_id() {
     return std::numeric_limits<uint32_t>::max();
   }
 
-  // Return the address to the header.
-  virtual const StorageHeader *header() const = 0;
-
+  // Create a node of at least "size" bytes under the specified parent node.
+  virtual StorageNode create_node(uint32_t parent_node_id, uint64_t size) = 0;
   // Open a node.
   virtual StorageNode open_node(uint32_t node_id) = 0;
-  // Create a node of at least "size" bytes under "parent_node".
-  virtual StorageNode create_node(const StorageNode &parent_node,
-                                  uint64_t size) = 0;
+
   // Mark a node to be unlinked. Note that the marked node and its descendants
   // will be unlinked by sweep().
-  virtual bool unlink_node(const StorageNode &node) = 0;
+  virtual bool unlink_node(uint32_t node_id) = 0;
 
   // Sweep marked nodes whose last modified time < (now - lifetime).
   virtual void sweep(Duration lifetime) = 0;
+
+  // Return the storage path.
+  virtual const char *path() const = 0;
+  // Return the activated flags.
+  virtual StorageFlags flags() const = 0;
+
+  // TODO: Member functions to get details, such as total size, #nodes, etc.
 };
 
 }  // namespace grnxx

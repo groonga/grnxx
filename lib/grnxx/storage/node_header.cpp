@@ -15,42 +15,25 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#include "grnxx/storage/view.hpp"
-
-#include "grnxx/storage/view-posix.hpp"
-#include "grnxx/storage/view-windows.hpp"
-#include "grnxx/string_builder.hpp"
+#include "grnxx/storage/node_header.hpp"
 
 namespace grnxx {
 namespace storage {
 
-#define GRNXX_FLAGS_WRITE(flag) do { \
-  if (flags & flag) { \
-    if (!is_first) { \
-      builder << " | "; \
-    } \
-    builder << #flag; \
-    is_first = false; \
-  } \
-} while (false)
-
-StringBuilder &operator<<(StringBuilder &builder, ViewFlags flags) {
-  bool is_first = true;
-  GRNXX_FLAGS_WRITE(VIEW_ANONYMOUS);
-  GRNXX_FLAGS_WRITE(VIEW_HUGE_TLB);
-  GRNXX_FLAGS_WRITE(VIEW_READ_ONLY);
-  if (is_first) {
-    builder << "VIEW_DEFAULT";
-  }
-  return builder;
-}
-
-View::View() {}
-View::~View() {}
-
-View *View::create(File *file, int64_t offset, int64_t size, ViewFlags flags) {
-  return ViewImpl::create(file, offset, size, flags);
-}
+NodeHeader::NodeHeader()
+    : id(0),
+      status(STORAGE_NODE_PHANTOM),
+      bits(0),
+      chunk_id(0),
+      offset(0),
+      size(0),
+      next_node_id(0),
+      prev_node_id(0),
+      next_phantom_node_id(0),
+      sibling_node_id(0),
+      modified_time(0),
+      reserved{},
+      user_data{} {}
 
 }  // namespace storage
 }  // namespace grnxx

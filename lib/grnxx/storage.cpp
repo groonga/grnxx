@@ -17,28 +17,74 @@
 */
 #include "grnxx/storage.hpp"
 
+#include "grnxx/storage/node_header.hpp"
+
 namespace grnxx {
 
-StorageOptions::StorageOptions()
-  : max_num_files(1000),
-    max_file_size(1ULL << 40),
-    chunk_size_ratio(1.0 / 64),
-    root_size(4096) {}
+#define GRNXX_FLAGS_WRITE(flag) do { \
+  if (flags & flag) { \
+    if (!is_first) { \
+      builder << " | "; \
+    } \
+    builder << #flag; \
+    is_first = false; \
+  } \
+} while (false)
 
-StorageNodeHeader::StorageNodeHeader()
-  : id(0),
-    status(STORAGE_PHANTOM),
-    bits(0),
-    chunk_id(0),
-    offset(0),
-    size(0),
-    next_node_id(0),
-    prev_node_id(0),
-    next_phantom_node_id(0),
-    sibling_node_id(0),
-    last_modified_time(0),
-    reserved{},
-    user_data{} {}
+StringBuilder &operator<<(StringBuilder &builder, StorageFlags flags) {
+  bool is_first = true;
+  GRNXX_FLAGS_WRITE(STORAGE_ANONYMOUS);
+  GRNXX_FLAGS_WRITE(STORAGE_HUGE_TLB);
+  GRNXX_FLAGS_WRITE(STORAGE_READ_ONLY);
+  GRNXX_FLAGS_WRITE(STORAGE_TEMPORARY);
+  if (is_first) {
+    builder << "STORAGE_DEFAULT";
+  }
+  return builder;
+}
+
+#define GRNXX_STATUS_CASE(status) \
+  case status: { \
+    return builder << #status; \
+  }
+
+StringBuilder &operator<<(StringBuilder &builder, StorageNodeStatus status) {
+  switch (status) {
+    GRNXX_STATUS_CASE(STORAGE_NODE_PHANTOM)
+    GRNXX_STATUS_CASE(STORAGE_NODE_ACTIVE)
+    GRNXX_STATUS_CASE(STORAGE_NODE_MARKED)
+    GRNXX_STATUS_CASE(STORAGE_NODE_UNLINKED)
+    GRNXX_STATUS_CASE(STORAGE_NODE_IDLE)
+    default: {
+      return builder << "n/a";
+    }
+  }
+}
+
+StorageOptions::StorageOptions()
+    : max_num_files(1000),
+      max_file_size(1ULL << 40),
+      root_size(4096) {}
+
+uint32_t StorageNode::id() const {
+  return header_->id;
+}
+
+StorageNodeStatus StorageNode::status() const {
+  return header_->status;
+}
+
+uint64_t StorageNode::size() const {
+  return header_->size << header_->bits;
+}
+
+Time StorageNode::modified_time() const {
+  return header_->modified_time;
+}
+
+void *StorageNode::user_data() const {
+  return header_->user_data;
+}
 
 Storage::Storage() {}
 Storage::~Storage() {}

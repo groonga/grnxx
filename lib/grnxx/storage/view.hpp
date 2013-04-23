@@ -28,7 +28,7 @@ class StringBuilder;
 namespace storage {
 
 class View;
-typedef FlagsImpl<View> ViewFlags;
+using ViewFlags = FlagsImpl<View>;
 
 // Use the default settings.
 constexpr ViewFlags VIEW_DEFAULT   = ViewFlags::define(0x00);

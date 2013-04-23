@@ -35,26 +35,24 @@ namespace storage {
 } while (false)
 
 StringBuilder &operator<<(StringBuilder &builder, FileFlags flags) {
-  if (flags) {
-    bool is_first = true;
-    GRNXX_FLAGS_WRITE(FILE_READ_ONLY);
-    GRNXX_FLAGS_WRITE(FILE_TEMPORARY);
-    return builder;
-  } else {
-    return builder << "FILE_DEFAULT";
+  bool is_first = true;
+  GRNXX_FLAGS_WRITE(FILE_READ_ONLY);
+  GRNXX_FLAGS_WRITE(FILE_TEMPORARY);
+  if (is_first) {
+    builder << "FILE_DEFAULT";
   }
+  return builder;
 }
 
 StringBuilder &operator<<(StringBuilder &builder, FileLockFlags flags) {
-  if (flags) {
-    bool is_first = true;
-    GRNXX_FLAGS_WRITE(FILE_LOCK_SHARED);
-    GRNXX_FLAGS_WRITE(FILE_LOCK_EXCLUSIVE);
-    GRNXX_FLAGS_WRITE(FILE_LOCK_NONBLOCKING);
-    return builder;
-  } else {
-    return builder << "0";
+  bool is_first = true;
+  GRNXX_FLAGS_WRITE(FILE_LOCK_SHARED);
+  GRNXX_FLAGS_WRITE(FILE_LOCK_EXCLUSIVE);
+  GRNXX_FLAGS_WRITE(FILE_LOCK_NONBLOCKING);
+  if (is_first) {
+    builder << "0";
   }
+  return builder;
 }
 
 File::File() {}

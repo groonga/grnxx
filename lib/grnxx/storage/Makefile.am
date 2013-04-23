@@ -9,7 +9,8 @@ libgrnxx_storage_la_SOURCES =		\
 	path.cpp			\
 	view.cpp			\
 	view-posix.cpp			\
-	view-windows.cpp
+	view-windows.cpp		\
+	node_header.cpp
 
 libgrnxx_storage_includedir = ${includedir}/grnxx/storage
 libgrnxx_storage_include_HEADERS =	\
@@ -19,4 +20,5 @@ libgrnxx_storage_include_HEADERS =	\
 	path.hpp			\
 	view.hpp			\
 	view-posix.hpp			\
-	view-windows.hpp
+	view-windows.hpp		\
+	node_header.hpp
