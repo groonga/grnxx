@@ -63,7 +63,7 @@ FileImpl *FileImpl::create(const char *path, FileFlags flags) {
     GRNXX_ERROR() << "new grnxx::storage::FileImpl failed";
     return nullptr;
   }
-  if (~flags & FILE_TEMPORARY) {
+  if (path && (~flags & FILE_TEMPORARY)) {
     if (!file->create_persistent_file(path, flags)) {
       return nullptr;
     }

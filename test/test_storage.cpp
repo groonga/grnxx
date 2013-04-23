@@ -79,11 +79,9 @@ void test_file_create() {
                                           grnxx::storage::FILE_TEMPORARY));
   assert(file);
 
-  file.reset(grnxx::storage::File::create(nullptr,
-                                          grnxx::storage::FILE_TEMPORARY));
+  file.reset(grnxx::storage::File::create(nullptr));
   assert(file);
-  file.reset(grnxx::storage::File::create(nullptr,
-                                          grnxx::storage::FILE_TEMPORARY));
+  file.reset(grnxx::storage::File::create(nullptr));
   assert(file);
 
   grnxx::storage::File::unlink(FILE_PATH);
@@ -172,7 +170,7 @@ void test_file_lock_and_unlock() {
 
 void test_file_sync() {
   std::unique_ptr<grnxx::storage::File> file(
-      grnxx::storage::File::create(nullptr, grnxx::storage::FILE_TEMPORARY));
+      grnxx::storage::File::create(nullptr));
   assert(file);
 
   assert(file->sync());
@@ -180,7 +178,7 @@ void test_file_sync() {
 
 void test_file_resize_and_size() {
   std::unique_ptr<grnxx::storage::File> file(
-      grnxx::storage::File::create(nullptr, grnxx::storage::FILE_TEMPORARY));
+      grnxx::storage::File::create(nullptr));
   assert(file);
 
   assert(file->size() == 0);
@@ -230,7 +228,7 @@ void test_file_flags() {
 
 void test_file_handle() {
   std::unique_ptr<grnxx::storage::File> file(
-      grnxx::storage::File::create(nullptr, grnxx::storage::FILE_TEMPORARY));
+      grnxx::storage::File::create(nullptr));
   assert(file);
 
   assert(file->handle());
@@ -240,8 +238,7 @@ void test_view_create() {
   std::unique_ptr<grnxx::storage::File> file;
   std::unique_ptr<grnxx::storage::View> view;
 
-  file.reset(grnxx::storage::File::create(nullptr,
-                                          grnxx::storage::FILE_TEMPORARY));
+  file.reset(grnxx::storage::File::create(nullptr));
   assert(file);
   view.reset(grnxx::storage::View::create(file.get()));
   assert(!view);
@@ -284,8 +281,7 @@ void test_view_sync() {
   std::unique_ptr<grnxx::storage::File> file;
   std::unique_ptr<grnxx::storage::View> view;
 
-  file.reset(grnxx::storage::File::create(nullptr,
-                                          grnxx::storage::FILE_TEMPORARY));
+  file.reset(grnxx::storage::File::create(nullptr));
   assert(file);
   assert(file->resize(1 << 20));
 
@@ -337,8 +333,7 @@ void test_view_address() {
   std::unique_ptr<grnxx::storage::File> file;
   std::unique_ptr<grnxx::storage::View> view;
 
-  file.reset(grnxx::storage::File::create(nullptr,
-                                          grnxx::storage::FILE_TEMPORARY));
+  file.reset(grnxx::storage::File::create(nullptr));
   assert(file);
   assert(file->resize(10));
 
@@ -354,8 +349,7 @@ void test_view_size() {
   std::unique_ptr<grnxx::storage::File> file;
   std::unique_ptr<grnxx::storage::View> view;
 
-  file.reset(grnxx::storage::File::create(nullptr,
-                                          grnxx::storage::FILE_TEMPORARY));
+  file.reset(grnxx::storage::File::create(nullptr));
   assert(file);
   assert(file->resize(1 << 20));
 

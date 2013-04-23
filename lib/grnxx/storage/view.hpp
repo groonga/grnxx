@@ -33,12 +33,12 @@ typedef FlagsImpl<View> ViewFlags;
 // Use the default settings.
 constexpr ViewFlags VIEW_DEFAULT   = ViewFlags::define(0x00);
 // Create an anonymous memory mapping.
-// This flag is automatically enabled if "file" == nullptr.
+// This flag is implicitly enabled if "file" == nullptr.
 constexpr ViewFlags VIEW_ANONYMOUS = ViewFlags::define(0x01);
 // Use huge pages if available, or use regular pages.
 constexpr ViewFlags VIEW_HUGE_TLB  = ViewFlags::define(0x02);
 // Create a read-only memory mapping.
-// This flag is automatically enabled if "file" is read-only.
+// This flag is implicitly enabled if "file" is read-only.
 constexpr ViewFlags VIEW_READ_ONLY = ViewFlags::define(0x04);
 
 StringBuilder &operator<<(StringBuilder &builder, ViewFlags flags);

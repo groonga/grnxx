@@ -35,6 +35,7 @@ constexpr FileFlags FILE_DEFAULT   = FileFlags::define(0x00);
 // Open a file in read-only mode.
 constexpr FileFlags FILE_READ_ONLY = FileFlags::define(0x01);
 // Create a temporary file.
+// This flag is implicitly enabled if "path" == nullptr.
 constexpr FileFlags FILE_TEMPORARY = FileFlags::define(0x02);
 
 StringBuilder &operator<<(StringBuilder &builder, FileFlags flags);
@@ -57,18 +58,17 @@ class File {
   virtual ~File();
 
   // Create a file.
-  // "path" == nullptr is acceptable iff "flags" contains FILE_TEMPORARY.
+  // FILE_TEMPORARY is implicitly enabled if "path" == nullptr.
   // The available flag is FILE_TEMPORARY.
-  static File *create(const char *path = nullptr,
+  static File *create(const char *path,
                       FileFlags flags = FILE_DEFAULT);
   // Open a file.
   // The available flag is FILE_READ_ONLY.
-  static File *open(const char *path = nullptr,
+  static File *open(const char *path,
                     FileFlags flags = FILE_DEFAULT);
   // Open or create a file.
-  // "path" == nullptr is acceptable iff "flags" contains FILE_TEMPORARY.
   // There are no available flags.
-  static File *open_or_create(const char *path = nullptr,
+  static File *open_or_create(const char *path,
                               FileFlags flags = FILE_DEFAULT);
 
   // Return true iff "path" refers to a regular file.
