@@ -20,6 +20,7 @@
 
 #include "grnxx/storage/file.hpp"
 #include "grnxx/storage/path.hpp"
+#include "grnxx/storage/view.hpp"
 #include "grnxx/logger.hpp"
 
 namespace {
@@ -195,11 +196,34 @@ void test_file_path() {
   std::unique_ptr<grnxx::storage::File> file;
 
   file.reset(grnxx::storage::File::create(FILE_PATH));
+  assert(file);
   assert(std::strcmp(file->path(), FILE_PATH) == 0);
 
   file.reset(grnxx::storage::File::create(FILE_PATH,
                                           grnxx::storage::FILE_TEMPORARY));
+  assert(file);
   assert(std::strcmp(file->path(), FILE_PATH) != 0);
+
+  assert(grnxx::storage::File::unlink(FILE_PATH));
+}
+
+void test_file_flags() {
+  const char FILE_PATH[] = "temp.grn";
+  std::unique_ptr<grnxx::storage::File> file;
+
+  file.reset(grnxx::storage::File::create(FILE_PATH));
+  assert(file);
+  assert(file->flags() == grnxx::storage::FILE_DEFAULT);
+
+  file.reset(grnxx::storage::File::open(FILE_PATH,
+                                        grnxx::storage::FILE_READ_ONLY));
+  assert(file);
+  assert(file->flags() == grnxx::storage::FILE_READ_ONLY);
+
+  file.reset(grnxx::storage::File::create(FILE_PATH,
+                                          grnxx::storage::FILE_TEMPORARY));
+  assert(file);
+  assert(file->flags() == grnxx::storage::FILE_TEMPORARY);
 
   assert(grnxx::storage::File::unlink(FILE_PATH));
 }
@@ -210,6 +234,144 @@ void test_file_handle() {
   assert(file);
 
   assert(file->handle());
+}
+
+void test_view_create() {
+  std::unique_ptr<grnxx::storage::File> file;
+  std::unique_ptr<grnxx::storage::View> view;
+
+  file.reset(grnxx::storage::File::create(nullptr,
+                                          grnxx::storage::FILE_TEMPORARY));
+  assert(file);
+  view.reset(grnxx::storage::View::create(file.get()));
+  assert(!view);
+
+  assert(file->resize(1 << 20));
+
+  view.reset(grnxx::storage::View::create(file.get()));
+  assert(view);
+  view.reset(grnxx::storage::View::create(file.get(), 0));
+  assert(view);
+  view.reset(grnxx::storage::View::create(file.get(), 0, -1));
+  assert(view);
+  view.reset(grnxx::storage::View::create(file.get(), 0, file->size()));
+  assert(view);
+  view.reset(grnxx::storage::View::create(file.get(), 0, 10));
+  assert(view);
+
+  view.reset(grnxx::storage::View::create(file.get(), -1));
+  assert(!view);
+  view.reset(grnxx::storage::View::create(file.get(), file->size() + 1));
+  assert(!view);
+  view.reset(grnxx::storage::View::create(file.get(), 0, 0));
+  assert(!view);
+  view.reset(grnxx::storage::View::create(file.get(), 0, file->size() + 1));
+  assert(!view);
+  view.reset(grnxx::storage::View::create(file.get(), file->size() / 2,
+                                          file->size()));
+  assert(!view);
+
+  view.reset(grnxx::storage::View::create(nullptr, 0, 1 << 20));
+  assert(view);
+
+  view.reset(grnxx::storage::View::create(nullptr, 0, 0));
+  assert(!view);
+  view.reset(grnxx::storage::View::create(nullptr, 0, -1));
+  assert(!view);
+}
+
+void test_view_sync() {
+  std::unique_ptr<grnxx::storage::File> file;
+  std::unique_ptr<grnxx::storage::View> view;
+
+  file.reset(grnxx::storage::File::create(nullptr,
+                                          grnxx::storage::FILE_TEMPORARY));
+  assert(file);
+  assert(file->resize(1 << 20));
+
+  view.reset(grnxx::storage::View::create(file.get()));
+  assert(view);
+  assert(view->sync());
+  assert(view->sync(0));
+  assert(view->sync(0, -1));
+  assert(view->sync(0, 0));
+  assert(view->sync(0, file->size()));
+
+  assert(!view->sync(-1));
+  assert(!view->sync(file->size() + 1));
+  assert(!view->sync(0, file->size() + 1));
+  assert(!view->sync(file->size() / 2, file->size()));
+
+  view.reset(grnxx::storage::View::create(nullptr, 0, 1 << 20));
+  assert(view);
+  assert(!view->sync());
+}
+
+void test_view_flags() {
+  const char FILE_PATH[] = "temp.grn";
+  grnxx::storage::File::unlink(FILE_PATH);
+  std::unique_ptr<grnxx::storage::File> file;
+  std::unique_ptr<grnxx::storage::View> view;
+
+  file.reset(grnxx::storage::File::create(FILE_PATH));
+  assert(file);
+  assert(file->resize(1 << 20));
+
+  view.reset(grnxx::storage::View::create(file.get()));
+  assert(view);
+  assert(view->flags() == grnxx::storage::VIEW_DEFAULT);
+
+  file.reset(grnxx::storage::File::open(FILE_PATH,
+                                        grnxx::storage::FILE_READ_ONLY));
+  assert(file);
+
+  view.reset(grnxx::storage::View::create(file.get()));
+  assert(view);
+  assert(view->flags() == grnxx::storage::VIEW_READ_ONLY);
+
+  file.reset();
+  assert(grnxx::storage::File::unlink(FILE_PATH));
+}
+
+void test_view_address() {
+  std::unique_ptr<grnxx::storage::File> file;
+  std::unique_ptr<grnxx::storage::View> view;
+
+  file.reset(grnxx::storage::File::create(nullptr,
+                                          grnxx::storage::FILE_TEMPORARY));
+  assert(file);
+  assert(file->resize(10));
+
+  view.reset(grnxx::storage::View::create(file.get()));
+  assert(view);
+  std::memcpy(view->address(), "0123456789", 10);
+  view.reset(grnxx::storage::View::create(file.get()));
+  assert(view);
+  assert(std::memcmp(view->address(), "0123456789", 10) == 0);
+}
+
+void test_view_size() {
+  std::unique_ptr<grnxx::storage::File> file;
+  std::unique_ptr<grnxx::storage::View> view;
+
+  file.reset(grnxx::storage::File::create(nullptr,
+                                          grnxx::storage::FILE_TEMPORARY));
+  assert(file);
+  assert(file->resize(1 << 20));
+
+  view.reset(grnxx::storage::View::create(file.get()));
+  assert(view);
+  assert(view->size() == file->size());
+  view.reset(grnxx::storage::View::create(file.get(), file->size() / 2));
+  assert(view);
+  assert(view->size() == (file->size() / 2));
+  view.reset(grnxx::storage::View::create(file.get(), 0, file->size() / 2));
+  assert(view);
+  assert(view->size() == (file->size() / 2));
+
+  view.reset(grnxx::storage::View::create(nullptr, 0, 1 << 20));
+  assert(view);
+  assert(view->size() == (1 << 20));
 }
 
 void test_path() {
@@ -226,7 +388,16 @@ void test_file() {
   test_file_sync();
   test_file_resize_and_size();
   test_file_path();
+  test_file_flags();
   test_file_handle();
+}
+
+void test_view() {
+  test_view_create();
+  test_view_sync();
+  test_view_flags();
+  test_view_address();
+  test_view_size();
 }
 
 }  // namespace
@@ -238,6 +409,7 @@ int main() {
 
   test_path();
   test_file();
+  test_view();
 
   return 0;
 }
