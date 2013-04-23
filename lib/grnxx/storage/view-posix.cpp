@@ -53,16 +53,24 @@ View *ViewImpl::create(File *file, int64_t offset, int64_t size,
     return nullptr;
   }
   if (file) {
-    view->create_file_backed_view(file, offset, size, flags);
+    if (!view->create_file_backed_view(file, offset, size, flags)) {
+      return nullptr;
+    }
   } else {
-    view->create_anonymous_view(size, flags);
+    if (!view->create_anonymous_view(size, flags)) {
+      return nullptr;
+    }
   }
   return view.release();
 }
 
 bool ViewImpl::sync(int64_t offset, int64_t size) {
+  if ((flags_ & VIEW_ANONYMOUS) || (flags_ & VIEW_READ_ONLY)) {
+    GRNXX_WARNING() << "invalid operation: flags = " << flags_;
+    return false;
+  }
   if ((offset < 0) || (offset > size_) || (size > size_) ||
-      ((size >= 0) && ((offset + size) > size_))) {
+      ((size >= 0) && (size > (size_ - offset)))) {
     GRNXX_ERROR() << "invalid argument: offset = " << offset
                   << ", size = " << size << ", view_size = " << size_;
     return false;
@@ -95,10 +103,15 @@ int64_t ViewImpl::size() const {
 bool ViewImpl::create_file_backed_view(File *file, int64_t offset, int64_t size,
                                        ViewFlags flags) {
   const int64_t file_size = file->size();
-  if ((offset < 0) || (offset >= file_size) || (size == 0)) {
+  if ((offset < 0) || (offset >= file_size) ||
+      (size == 0) || (size > file_size) ||
+      ((size > 0) && (size > (file_size - offset)))) {
     GRNXX_ERROR() << "invalid argument: offset = " << offset
                   << ", size = " << size << ", file_size = " << file_size;
     return false;
+  }
+  if (size < 0) {
+    size = file_size - offset;
   }
   if (file->flags() & FILE_READ_ONLY) {
     flags_ |= VIEW_READ_ONLY;
