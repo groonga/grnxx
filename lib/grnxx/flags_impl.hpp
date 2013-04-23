@@ -25,8 +25,8 @@ namespace grnxx {
 template <typename T, typename U = uint32_t>
 class FlagsImpl {
  public:
-  typedef T Identifier;
-  typedef U Type;
+  using Identifier = T;
+  using Type = U;
 
   FlagsImpl() = default;
 
@@ -79,11 +79,6 @@ class FlagsImpl {
 
   explicit constexpr FlagsImpl(Type flags) : flags_(flags) {}
 };
-
-class FlagsImplExampleIdentifier {};
-typedef FlagsImpl<FlagsImplExampleIdentifier> FlagsImplExample;
-
-GRNXX_ASSERT_POD(FlagsImplExample);
 
 }  // namespace grnxx
 
