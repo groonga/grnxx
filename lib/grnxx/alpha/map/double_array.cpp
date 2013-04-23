@@ -958,8 +958,8 @@ DoubleArrayBitwiseCompletionCursor::DoubleArrayBitwiseCompletionCursor(
   : MapCursor<GeoPoint>(), double_array_(double_array), cur_(), count_(0),
     query_(query), bit_size_(bit_size), mask_(), options_(options),
     node_ids_(), keys_() {
-  if ((~options_.flags & MAP_CURSOR_ORDER_BY_ID) ||
-      (options_.flags & MAP_CURSOR_ORDER_BY_KEY)) {
+  if ((options_.flags & MAP_CURSOR_ORDER_BY_ID) &&
+      (~options_.flags & MAP_CURSOR_ORDER_BY_KEY)) {
     init_order_by_id();
   } else {
     init_order_by_key();
@@ -1001,7 +1001,7 @@ void DoubleArrayBitwiseCompletionCursor::init_order_by_id() {
 
     if (node.is_leaf()) {
       const GeoPoint key = double_array_->keys_[node.key_id()];
-      if (((key.value() ^ query_.value()) & mask_) != 0) {
+      if (((key.value() ^ query_.value()) & mask_) == 0) {
         keys_.push_back(std::make_pair(node.key_id(), key));
       }
     } else if (node.child() != INVALID_LABEL) {
@@ -1052,7 +1052,7 @@ void DoubleArrayBitwiseCompletionCursor::init_order_by_key() {
     const DoubleArrayNodeForOthers node = double_array_->nodes_[node_id];
     if (node.is_leaf()) {
       const GeoPoint key = double_array_->keys_[node.key_id()];
-      if (((key.value() ^ query_.value()) ^ mask_) != 0) {
+      if (((key.value() ^ query_.value()) & mask_) == 0) {
         if (~options_.flags & MAP_CURSOR_REVERSE_ORDER) {
           node_id |= IS_ROOT_FLAG;
         }
@@ -1097,7 +1097,7 @@ bool DoubleArrayBitwiseCompletionCursor::next_order_by_key() {
 
     if (node.is_leaf()) {
       const GeoPoint key = double_array_->keys_[node.key_id()];
-      if (((key.value() ^ query_.value()) ^ mask_) != 0) {
+      if (((key.value() ^ query_.value()) & mask_) == 0) {
         if (options_.offset > 0) {
           --options_.offset;
         } else {
@@ -1124,7 +1124,7 @@ bool DoubleArrayBitwiseCompletionCursor::next_reverse_order_by_key() {
       node_ids_.pop_back();
       if (node.is_leaf()) {
         const GeoPoint key = double_array_->keys_[node.key_id()];
-        if (((key.value() ^ query_.value()) ^ mask_) != 0) {
+        if (((key.value() ^ query_.value()) & mask_) == 0) {
           if (options_.offset > 0) {
             --options_.offset;
           } else {

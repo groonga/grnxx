@@ -555,7 +555,7 @@ int main() {
 
   test_map_nan(grnxx::alpha::MAP_DOUBLE_ARRAY);
   test_map_zero(grnxx::alpha::MAP_DOUBLE_ARRAY);
-//  test_bitwise_completion_cursor(grnxx::alpha::MAP_DOUBLE_ARRAY);
+  test_bitwise_completion_cursor(grnxx::alpha::MAP_DOUBLE_ARRAY);
 
   return 0;
 }
