@@ -56,7 +56,7 @@ class View {
   static View *create(File *file,
                       int64_t offset = 0,
                       int64_t size = -1,
-                      ViewFlags flags = ViewFlags());
+                      ViewFlags flags = VIEW_DEFAULT);
 
   // Flush modified pages.
   virtual bool sync(int64_t offset = 0, int64_t size = -1) = 0;
