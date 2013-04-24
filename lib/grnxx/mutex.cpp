@@ -17,6 +17,7 @@
 */
 #include "grnxx/mutex.hpp"
 
+#include "grnxx/string_builder.hpp"
 #include "grnxx/thread.hpp"
 #include "grnxx/time/stopwatch.hpp"
 

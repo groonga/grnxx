@@ -24,6 +24,8 @@
 
 namespace grnxx {
 
+class StringBuilder;
+
 // Time in microseconds since the Unix epoch (1970-01-01 00:00:00 UTC).
 // 64-bit tick count (usec) is used.
 class Time {

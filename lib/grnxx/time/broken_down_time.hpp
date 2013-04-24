@@ -19,9 +19,10 @@
 #define GRNXX_TIME_BROKEN_DOWN_TIME_HPP
 
 #include "grnxx/basic.hpp"
-#include "grnxx/string_builder.hpp"
 
 namespace grnxx {
+
+class StringBuilder;
 
 struct BrokenDownTime {
   int usec;   // Microseconds.

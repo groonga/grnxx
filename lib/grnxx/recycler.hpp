@@ -22,6 +22,8 @@
 
 namespace grnxx {
 
+class StringBuilder;
+
 constexpr uint8_t  RECYCLER_STAMP_BUF_SIZE_BITS = 6;
 constexpr uint16_t RECYCLER_STAMP_BUF_SIZE      =
     uint16_t(1 << RECYCLER_STAMP_BUF_SIZE_BITS);

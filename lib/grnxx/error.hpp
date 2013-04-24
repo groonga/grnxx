@@ -19,9 +19,10 @@
 #define GRNXX_ERROR_HPP
 
 #include "grnxx/basic.hpp"
-#include "grnxx/string_builder.hpp"
 
 namespace grnxx {
+
+class StringBuilder;
 
 enum ErrorType {
   POSIX_ERROR,

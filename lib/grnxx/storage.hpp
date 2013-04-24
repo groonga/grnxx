@@ -19,6 +19,7 @@
 #define GRNXX_STORAGE_HPP
 
 #include "grnxx/basic.hpp"
+#include "grnxx/flags_impl.hpp"
 #include "grnxx/time/time.hpp"
 
 namespace grnxx {
@@ -26,6 +27,9 @@ namespace storage {
 
 struct NodeHeader;
 class StorageImpl;
+
+constexpr uint32_t ROOT_NODE_ID    = 0;
+constexpr uint32_t INVALID_NODE_ID = std::numeric_limits<uint32_t>::max();
 
 }  // namespace storage
 
@@ -65,6 +69,9 @@ enum StorageNodeStatus : uint8_t {
 };
 
 StringBuilder &operator<<(StringBuilder &builder, StorageNodeStatus status);
+
+constexpr uint32_t STORAGE_ROOT_NODE_ID    = storage::ROOT_NODE_ID;
+constexpr uint32_t STORAGE_INVALID_NODE_ID = storage::INVALID_NODE_ID;
 
 struct StorageOptions {
   // The maximum number of files.
@@ -133,15 +140,6 @@ class Storage {
   static bool exists(const char *path);
   // Remove a storage and return true on success.
   static bool unlink(const char *path);
-
-  // Return the ID of the root node.
-  static constexpr uint32_t root_id() {
-    return 0U;
-  }
-  // Return the invalid node ID.
-  static constexpr uint32_t invalid_id() {
-    return std::numeric_limits<uint32_t>::max();
-  }
 
   // Create a node of at least "size" bytes under the specified parent node.
   virtual StorageNode create_node(uint32_t parent_node_id, uint64_t size) = 0;

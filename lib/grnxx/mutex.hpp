@@ -24,6 +24,8 @@
 
 namespace grnxx {
 
+class StringBuilder;
+
 enum MutexStatus : uint32_t {
   MUTEX_UNLOCKED = 0,
   MUTEX_LOCKED   = 1

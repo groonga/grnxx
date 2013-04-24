@@ -19,9 +19,10 @@
 #define GRNXX_TIME_DURATION_HPP
 
 #include "grnxx/basic.hpp"
-#include "grnxx/string_builder.hpp"
 
 namespace grnxx {
+
+class StringBuilder;
 
 // Time difference in microseconds.
 // 64-bit tick count (usec) is used.

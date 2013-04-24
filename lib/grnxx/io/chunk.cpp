@@ -17,6 +17,8 @@
 */
 #include "grnxx/io/chunk.hpp"
 
+#include "grnxx/string_builder.hpp"
+
 namespace grnxx {
 namespace io {
 

@@ -26,6 +26,8 @@
 
 #include <ostream>
 
+#include "grnxx/string_builder.hpp"
+
 namespace grnxx {
 namespace {
 

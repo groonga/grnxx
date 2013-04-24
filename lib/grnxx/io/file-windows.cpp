@@ -27,6 +27,7 @@
 #include "grnxx/exception.hpp"
 #include "grnxx/io/path.hpp"
 #include "grnxx/logger.hpp"
+#include "grnxx/string_builder.hpp"
 #include "grnxx/thread.hpp"
 #include "grnxx/time/stopwatch.hpp"
 

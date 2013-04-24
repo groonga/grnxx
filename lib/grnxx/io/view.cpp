@@ -23,6 +23,7 @@
 #include "grnxx/io/view-posix.hpp"
 #include "grnxx/io/view-windows.hpp"
 #include "grnxx/logger.hpp"
+#include "grnxx/string_builder.hpp"
 
 namespace grnxx {
 namespace io {

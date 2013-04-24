@@ -19,6 +19,7 @@
 #define GRNXX_DB_VECTOR_HPP
 
 #include "grnxx/io/pool.hpp"
+#include "grnxx/string_builder.hpp"
 
 namespace grnxx {
 namespace db {

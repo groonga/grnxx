@@ -19,9 +19,11 @@
 #define GRNXX_ALPHA_GEO_POINT_HPP
 
 #include "grnxx/basic.hpp"
-#include "grnxx/string_builder.hpp"
 
 namespace grnxx {
+
+class StringBuilder;
+
 namespace alpha {
 
 // Latitude and longitude (lat/long).

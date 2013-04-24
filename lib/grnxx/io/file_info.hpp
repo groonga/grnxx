@@ -21,6 +21,9 @@
 #include "grnxx/time/time.hpp"
 
 namespace grnxx {
+
+class StringBuilder;
+
 namespace io {
 
 class File;

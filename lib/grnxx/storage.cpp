@@ -19,6 +19,7 @@
 
 #include "grnxx/storage/node_header.hpp"
 #include "grnxx/storage/storage_impl.hpp"
+#include "grnxx/string_builder.hpp"
 
 namespace grnxx {
 

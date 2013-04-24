@@ -20,9 +20,10 @@
 
 #include "grnxx/basic.hpp"
 #include "grnxx/slice.hpp"
-#include "grnxx/string_builder.hpp"
 
 namespace grnxx {
+
+class StringBuilder;
 
 // The values correspond to MIB enum numbers.
 // Reference: http://www.iana.org/assignments/character-sets/character-sets.xml

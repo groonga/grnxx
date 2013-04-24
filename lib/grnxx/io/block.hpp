@@ -18,9 +18,12 @@
 #ifndef GRNXX_IO_BLOCK_HPP
 #define GRNXX_IO_BLOCK_HPP
 
-#include "grnxx/string_builder.hpp"
+#include "grnxx/basic.hpp"
 
 namespace grnxx {
+
+class StringBuilder;
+
 namespace io {
 
 constexpr uint8_t  BLOCK_UNIT_SIZE_BITS = 12;

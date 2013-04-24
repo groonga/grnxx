@@ -19,6 +19,7 @@
 #define GRNXX_DB_BLOB_VECTOR_HPP
 
 #include "grnxx/db/vector.hpp"
+#include "grnxx/string_builder.hpp"
 
 namespace grnxx {
 namespace db {

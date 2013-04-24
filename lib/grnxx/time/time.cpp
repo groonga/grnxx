@@ -21,6 +21,7 @@
 #include <ostream>
 
 #include "grnxx/lock.hpp"
+#include "grnxx/string_builder.hpp"
 #include "grnxx/string_format.hpp"
 
 namespace grnxx {

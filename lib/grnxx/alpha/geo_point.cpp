@@ -17,6 +17,8 @@
 */
 #include "grnxx/alpha/geo_point.hpp"
 
+#include "grnxx/string_builder.hpp"
+
 namespace grnxx {
 namespace alpha {
 

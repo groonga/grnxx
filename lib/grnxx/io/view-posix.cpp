@@ -26,6 +26,7 @@
 #include "grnxx/exception.hpp"
 #include "grnxx/io/file.hpp"
 #include "grnxx/logger.hpp"
+#include "grnxx/string_builder.hpp"
 
 #ifndef MAP_ANONYMOUS
 # ifdef MAP_ANON

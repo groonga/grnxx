@@ -19,9 +19,12 @@
 #define GRNXX_IO_VIEW_HPP
 
 #include "grnxx/basic.hpp"
-#include "grnxx/string_builder.hpp"
+#include "grnxx/flags_impl.hpp"
 
 namespace grnxx {
+
+class StringBuilder;
+
 namespace io {
 
 class View;

@@ -20,6 +20,7 @@
 #include "grnxx/charset/euc-jp.hpp"
 #include "grnxx/charset/shift_jis.hpp"
 #include "grnxx/charset/utf-8.hpp"
+#include "grnxx/string_builder.hpp"
 
 namespace grnxx {
 
