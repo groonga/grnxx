@@ -17,30 +17,93 @@
 */
 #include "grnxx/storage/storage_impl.hpp"
 
+#include "grnxx/logger.hpp"
+#include "grnxx/storage/file.hpp"
+#include "grnxx/storage/header.hpp"
+#include "grnxx/storage/path.hpp"
+#include "grnxx/storage/view.hpp"
+
 namespace grnxx {
 namespace storage {
+namespace {
 
-StorageImpl::StorageImpl() : Storage() {}
+constexpr uint32_t MAX_NODE_ID = INVALID_NODE_ID - 1;
+
+// TODO: Define constant values.
+
+}  // namespace
+
+StorageImpl::StorageImpl()
+    : Storage(),
+      path_(),
+      flags_(STORAGE_DEFAULT),
+      header_(nullptr),
+      files_(),
+      header_view_(),
+      node_header_views_(),
+      node_body_views_() {}
+
 StorageImpl::~StorageImpl() {}
 
 StorageImpl *StorageImpl::create(const char *path,
                                  StorageFlags flags,
                                  const StorageOptions &options) {
-  // TODO
-  return nullptr;
+  if (!options.is_valid()) {
+    GRNXX_ERROR() << "invalid argument: options = " << options;
+    return false;
+  }
+  std::unique_ptr<StorageImpl> storage(new (std::nothrow) StorageImpl);
+  if (!storage) {
+    GRNXX_ERROR() << "new grnxx::storage::StorageImpl failed";
+    return nullptr;
+  }
+  if (path && (~flags & STORAGE_TEMPORARY)) {
+    storage->create_persistent_storage(path, flags, options);
+  } else if (flags & STORAGE_TEMPORARY) {
+    storage->create_temporary_storage(path, flags, options);
+  } else {
+    storage->create_anonymous_storage(flags, options);
+  }
+  return storage.release();
 }
 
 StorageImpl *StorageImpl::open(const char *path,
                                StorageFlags flags) {
-  // TODO
-  return nullptr;
+  if (!path) {
+    GRNXX_ERROR() << "invalid argument: path = nullptr";
+    return nullptr;
+  }
+  std::unique_ptr<StorageImpl> storage(new (std::nothrow) StorageImpl);
+  if (!storage) {
+    GRNXX_ERROR() << "new grnxx::storage::StorageImpl failed";
+    return nullptr;
+  }
+  if (!storage->open_storage(path, flags)) {
+    return nullptr;
+  }
+  return storage.release();
 }
 
 StorageImpl *StorageImpl::open_or_create(const char *path,
                                          StorageFlags flags,
                                          const StorageOptions &options) {
-  // TODO
-  return nullptr;
+  if (!path) {
+    GRNXX_ERROR() << "invalid argument: path = nullptr";
+    return nullptr;
+  }
+  if (!options.is_valid()) {
+    GRNXX_ERROR() << "invalid argument: options = " << options;
+    return false;
+  }
+  std::unique_ptr<StorageImpl> storage(new (std::nothrow) StorageImpl);
+  if (!storage) {
+    GRNXX_ERROR() << "new grnxx::storage::StorageImpl failed";
+    return nullptr;
+  }
+  if (!storage->open_or_create_storage(path, flags, options)) {
+    return nullptr;
+  }
+  return storage.release();
 }
 
 bool StorageImpl::exists(const char *path) {
@@ -61,16 +124,35 @@ bool StorageImpl::unlink(const char *path) {
 }
 
 StorageNode StorageImpl::create_node(uint32_t parent_node_id, uint64_t size) {
+  if (parent_node_id >= header_->num_nodes) {
+    GRNXX_ERROR() << "invalid argument: parent_node_id = " << parent_node_id
+                  << ", num_nodes = " << header_->num_nodes;
+    return StorageNode(nullptr, nullptr);
+  } else if (size > header_->max_file_size) {
+    GRNXX_ERROR() << "invalid argument: size = " << size
+                  << ", max_file_size = " << header_->max_file_size;
+    return StorageNode(nullptr, nullptr);
+  }
   // TODO
   return StorageNode(nullptr, nullptr);
 }
 
 StorageNode StorageImpl::open_node(uint32_t node_id) {
+  if (node_id >= header_->num_nodes) {
+    GRNXX_ERROR() << "invalid argument: node_id = " << node_id
+                  << ", num_nodes = " << header_->num_nodes;
+    return StorageNode(nullptr, nullptr);
+  }
   // TODO
   return StorageNode(nullptr, nullptr);
 }
 
 bool StorageImpl::unlink_node(uint32_t node_id) {
+  if (node_id >= header_->num_nodes) {
+    GRNXX_ERROR() << "invalid argument: node_id = " << node_id
+                  << ", num_nodes = " << header_->num_nodes;
+    return false;
+  }
   // TODO
   return false;
 }
@@ -81,13 +163,81 @@ bool StorageImpl::sweep(Duration lifetime) {
 }
 
 const char *StorageImpl::path() const {
-  // TODO
-  return nullptr;
+  return path_.get();
 }
 
 StorageFlags StorageImpl::flags() const {
+  return flags_;
+}
+
+bool StorageImpl::create_persistent_storage(const char *path,
+                                            StorageFlags flags,
+                                            const StorageOptions &options) {
+  path_.reset(Path::clone_path(path));
+  if (!path_) {
+    return false;
+  }
+  if (flags & STORAGE_HUGE_TLB) {
+    flags_ |= STORAGE_HUGE_TLB;
+  }
   // TODO
-  return STORAGE_DEFAULT;
+  return false;
+}
+
+bool StorageImpl::create_temporary_storage(const char *path,
+                                           StorageFlags flags,
+                                           const StorageOptions &options) {
+  if (path) {
+    path_.reset(Path::clone_path(path));
+    if (!path_) {
+      return false;
+    }
+  }
+  flags_ |= STORAGE_TEMPORARY;
+  if (flags & STORAGE_HUGE_TLB) {
+    flags_ |= STORAGE_HUGE_TLB;
+  }
+  // TODO
+  return false;
+}
+
+bool StorageImpl::create_anonymous_storage(StorageFlags flags,
+                                           const StorageOptions &options) {
+  flags_ |= STORAGE_ANONYMOUS;
+  if (flags & STORAGE_HUGE_TLB) {
+    flags_ |= STORAGE_HUGE_TLB;
+  }
+  // TODO
+  return false;
+}
+
+bool StorageImpl::open_storage(const char *path, StorageFlags flags) {
+  path_.reset(Path::clone_path(path));
+  if (!path_) {
+    return false;
+  }
+  if (flags & STORAGE_READ_ONLY) {
+    flags_ |= STORAGE_READ_ONLY;
+  }
+  if (flags & STORAGE_HUGE_TLB) {
+    flags_ |= STORAGE_HUGE_TLB;
+  }
+  // TODO
+  return false;
+}
+
+bool StorageImpl::open_or_create_storage(const char *path,
+                                         StorageFlags flags,
+                                         const StorageOptions &options) {
+  path_.reset(Path::clone_path(path));
+  if (!path_) {
+    return false;
+  }
+  if (flags & STORAGE_HUGE_TLB) {
+    flags_ |= STORAGE_HUGE_TLB;
+  }
+  // TODO
+  return false;
 }
 
 }  // namespace storage

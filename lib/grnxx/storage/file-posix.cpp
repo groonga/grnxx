@@ -40,7 +40,7 @@ constexpr int UNIQUE_PATH_GENERATION_TRIAL_COUNT = 10;
 
 FileImpl::FileImpl()
     : File(),
-      path_(nullptr),
+      path_(),
       flags_(FILE_DEFAULT),
       fd_(-1),
       locked_(false) {}

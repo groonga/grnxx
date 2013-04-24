@@ -39,7 +39,7 @@ struct Header {
   // The grnxx version.
   char version[HEADER_VERSION_SIZE];
   // The maximum number of files.
-  uint64_t max_num_files;
+  uint32_t max_num_files;
   // The maximum size of each file.
   uint64_t max_file_size;
   // The total size including headers.

@@ -75,7 +75,7 @@ constexpr uint32_t STORAGE_INVALID_NODE_ID = storage::INVALID_NODE_ID;
 
 struct StorageOptions {
   // The maximum number of files.
-  uint64_t max_num_files;
+  uint32_t max_num_files;
   // The maximum size of each file.
   uint64_t max_file_size;
   // The size of the root node.
@@ -83,7 +83,13 @@ struct StorageOptions {
 
   // Initialize the members with the default parameters.
   StorageOptions();
+
+  // Return true if the parameters are valid.
+  bool is_valid() const;
 };
+
+StringBuilder &operator<<(StringBuilder &builder,
+                          const StorageOptions &options);
 
 class StorageNode {
  public:
@@ -154,6 +160,7 @@ class Storage {
   virtual bool sweep(Duration lifetime) = 0;
 
   // Return the storage path.
+  // Note that an anonymous or temporary storage may return nullptr.
   virtual const char *path() const = 0;
   // Return the activated flags.
   virtual StorageFlags flags() const = 0;

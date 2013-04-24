@@ -23,6 +23,10 @@
 namespace grnxx {
 namespace storage {
 
+struct Header;
+class File;
+class View;
+
 class StorageImpl : public Storage {
  public:
   StorageImpl();
@@ -53,6 +57,23 @@ class StorageImpl : public Storage {
   // TODO: Member functions to get details, such as total size, #nodes, etc.
 
  private:
+  std::unique_ptr<char[]> path_;
+  StorageFlags flags_;
+  Header *header_;
+  std::unique_ptr<std::unique_ptr<File>> files_;
+  std::unique_ptr<View> header_view_;
+  std::unique_ptr<std::unique_ptr<View>> node_header_views_;
+  std::unique_ptr<std::unique_ptr<View>> node_body_views_;
+
+  bool create_persistent_storage(const char *path, StorageFlags flags,
+                                 const StorageOptions &options);
+  bool create_temporary_storage(const char *path, StorageFlags flags,
+                                const StorageOptions &options);
+  bool create_anonymous_storage(StorageFlags flags,
+                                const StorageOptions &options);
+  bool open_storage(const char *path, StorageFlags flags);
+  bool open_or_create_storage(const char *path, StorageFlags flags,
+                              const StorageOptions &options);
 };
 
 }  // namespace storage

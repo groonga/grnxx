@@ -27,6 +27,8 @@ class StringBuilder;
 
 namespace storage {
 
+class File;
+
 class View;
 using ViewFlags = FlagsImpl<View>;
 
@@ -42,8 +44,6 @@ constexpr ViewFlags VIEW_HUGE_TLB  = ViewFlags::define(0x02);
 constexpr ViewFlags VIEW_READ_ONLY = ViewFlags::define(0x04);
 
 StringBuilder &operator<<(StringBuilder &builder, ViewFlags flags);
-
-class File;
 
 class View {
  public:

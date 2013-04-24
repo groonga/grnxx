@@ -22,6 +22,15 @@
 #include "grnxx/string_builder.hpp"
 
 namespace grnxx {
+namespace {
+
+constexpr uint32_t MAX_NUM_FILES_LOWER_LIMIT = 1;
+constexpr uint32_t MAX_NUM_FILES_UPPER_LIMIT = 1000;
+constexpr uint64_t MAX_FILE_SIZE_LOWER_LIMIT = 1ULL << 40;
+constexpr uint64_t MAX_FILE_SIZE_UPPER_LIMIT = 1ULL << 30;
+constexpr uint64_t ROOT_SIZE_DEFAULT         = 1ULL << 12;
+
+}  // namespace
 
 #define GRNXX_FLAGS_WRITE(flag) do { \
   if (flags & flag) { \
@@ -64,9 +73,34 @@ StringBuilder &operator<<(StringBuilder &builder, StorageNodeStatus status) {
 }
 
 StorageOptions::StorageOptions()
-    : max_num_files(1000),
-      max_file_size(1ULL << 40),
-      root_size(4096) {}
+    : max_num_files(MAX_NUM_FILES_UPPER_LIMIT),
+      max_file_size(MAX_FILE_SIZE_UPPER_LIMIT),
+      root_size(ROOT_SIZE_DEFAULT) {}
+
+bool StorageOptions::is_valid() const {
+  if ((max_num_files < MAX_NUM_FILES_LOWER_LIMIT) ||
+      (max_num_files > MAX_NUM_FILES_UPPER_LIMIT)) {
+    return false;
+  }
+  if ((max_file_size < MAX_FILE_SIZE_LOWER_LIMIT) ||
+      (max_file_size > MAX_FILE_SIZE_UPPER_LIMIT)) {
+    return false;
+  }
+  if (root_size > max_file_size) {
+    return false;
+  }
+  return true;
+}
+
+StringBuilder &operator<<(StringBuilder &builder,
+                          const StorageOptions &options) {
+  if (!builder) {
+    return builder;
+  }
+  return builder << "{ max_num_files = " << options.max_num_files
+                 << ", max_file_size = " << options.max_file_size
+                 << ", root_size = " << options.root_size << " }";
+}
 
 uint32_t StorageNode::id() const {
   return header_->id;
