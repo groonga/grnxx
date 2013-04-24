@@ -15,7 +15,7 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#include "grnxx/storage/view-windows.hpp"
+#include "grnxx/storage/chunk-windows.hpp"
 
 #ifdef GRNXX_WINDOWS
 
@@ -26,17 +26,17 @@
 namespace grnxx {
 namespace storage {
 
-ViewImpl::ViewImpl()
-    : flags_(VIEW_DEFAULT),
+ChunkImpl::ChunkImpl()
+    : flags_(CHUNK_DEFAULT),
       handle_(nullptr),
       address_(nullptr),
       size_(0) {}
 
-ViewImpl::~ViewImpl() {
+ChunkImpl::~ChunkImpl() {
   if (address_) {
-    if (!::UnmapViewOfFile(address_)) {
-      GRNXX_ERROR() << "failed to unmap view"
-                    << ": '::UnmapViewOfFile' " << Error(::GetLastError());
+    if (!::UnmapChunkOfFile(address_)) {
+      GRNXX_ERROR() << "failed to unmap chunk"
+                    << ": '::UnmapChunkOfFile' " << Error(::GetLastError());
     }
   }
   if (handle_) {
@@ -47,52 +47,52 @@ ViewImpl::~ViewImpl() {
   }
 }
 
-View *ViewImpl::create(File *file, int64_t offset, int64_t size,
-                       ViewFlags flags) {
-  std::unique_ptr<ViewImpl> view(new (std::nothrow) ViewImpl);
-  if (!view) {
+ChunkImpl *ChunkImpl::create(File *file, int64_t offset, int64_t size,
+                             ChunkFlags flags) {
+  std::unique_ptr<ChunkImpl> chunk(new (std::nothrow) ChunkImpl);
+  if (!chunk) {
     GRNXX_ERROR() << "new grnxx::storage::FileImpl failed";
     return nullptr;
   }
   if (file) {
-    if (!view->create_file_backed_view(file, offset, size, flags)) {
+    if (!chunk->create_file_backed_chunk(file, offset, size, flags)) {
       return nullptr;
     }
   } else {
-    if (!view->create_anonymous_view(size, flags)) {
+    if (!chunk->create_anonymous_chunk(size, flags)) {
       return nullptr;
     }
   }
-  return view.release();
+  return chunk.release();
 }
 
-bool ViewImpl::sync(int64_t offset, int64_t size) {
-  if ((flags_ & VIEW_ANONYMOUS) || (flags_ & VIEW_READ_ONLY)) {
+bool ChunkImpl::sync(int64_t offset, int64_t size) {
+  if ((flags_ & CHUNK_ANONYMOUS) || (flags_ & CHUNK_READ_ONLY)) {
     GRNXX_WARNING() << "invalid operation: flags = " << flags_;
     return false;
   }
   if ((offset < 0) || (offset > size_) || (size > size_) ||
       ((size >= 0) && (size > (size_ - offset)))) {
     GRNXX_ERROR() << "invalid argument: offset = " << offset
-                  << ", size = " << size << ", view_size = " << size_;
+                  << ", size = " << size << ", chunk_size = " << size_;
     return false;
   }
   if (size < 0) {
     size = size_ - offset;
   }
   if (size > 0) {
-    if (!::FlushViewOfFile(static_cast<char *>(address_) + offset, size)) {
-      GRNXX_ERROR() << "failed to sync view: offset = " << offset
+    if (!::FlushChunkOfFile(static_cast<char *>(address_) + offset, size)) {
+      GRNXX_ERROR() << "failed to sync chunk: offset = " << offset
                     << ", size = " << size
-                    << ": '::FlushViewOfFile' " << Error(::GetLastError());
+                    << ": '::FlushChunkOfFile' " << Error(::GetLastError());
       return false;
     }
   }
   return true;
 }
 
-bool ViewImpl::create_file_backed_view(File *file, int64_t offset, int64_t size,
-                                       ViewFlags flags) {
+bool ChunkImpl::create_file_backed_chunk(File *file, int64_t offset,
+                                         int64_t size, ChunkFlags flags) {
   const int64_t file_size = file->size();
   if ((offset < 0) || (offset >= file_size) ||
       (size == 0) || (size > file_size) ||
@@ -105,12 +105,12 @@ bool ViewImpl::create_file_backed_view(File *file, int64_t offset, int64_t size,
     size = file_size - offset;
   }
   if (file->flags() & FILE_READ_ONLY) {
-    flags_ |= VIEW_READ_ONLY;
+    flags_ |= CHUNK_READ_ONLY;
   }
   size_ = size;
   int protection_mode = PAGE_READWRITE;
   DWORD desired_access = FILE_MAP_WRITE;
-  if (flags_ & VIEW_READ_ONLY) {
+  if (flags_ & CHUNK_READ_ONLY) {
     protection_mode = PAGE_READONLY;
     desired_access = FILE_MAP_READ;
   }
@@ -128,24 +128,24 @@ bool ViewImpl::create_file_backed_view(File *file, int64_t offset, int64_t size,
   }
   const DWORD offset_high = static_cast<DWORD>(offset >> 32);
   const DWORD offset_low = static_cast<DWORD>(offset);
-  address_ = ::MapViewOfFile(handle_, desired_access, offset_high, offset_low,
+  address_ = ::MapChunkOfFile(handle_, desired_access, offset_high, offset_low,
                              static_cast<SIZE_T>(size));
   if (!address_) {
-    GRNXX_ERROR() << "failed to map view: "
+    GRNXX_ERROR() << "failed to map chunk: "
                   << "file_path = " << file->path() << ", offset = " << offset
                   << ", size = " << size << ", flags = " << flags
-                  << ": '::MapViewOfFile' " << Error(::GetLastError());
+                  << ": '::MapChunkOfFile' " << Error(::GetLastError());
     return false;
   }
   return true;
 }
 
-bool ViewImpl::create_anonymous_view(int64_t size, ViewFlags flags) {
+bool ChunkImpl::create_anonymous_chunk(int64_t size, ChunkFlags flags) {
   if (size <= 0) {
     GRNXX_ERROR() << "invalid argument: size = " << size;
     return false;
   }
-  flags_ = VIEW_ANONYMOUS;
+  flags_ = CHUNK_ANONYMOUS;
   size_ = size;
   const DWORD size_high = static_cast<DWORD>(size >> 32);
   const DWORD size_low = static_cast<DWORD>(size);
@@ -157,11 +157,11 @@ bool ViewImpl::create_anonymous_view(int64_t size, ViewFlags flags) {
                   << ": '::CreateFileMapping' " << Error(::GetLastError());
     return false;
   }
-  address_ = ::MapViewOfFile(handle_, FILE_MAP_WRITE, 0, 0, 0);
+  address_ = ::MapChunkOfFile(handle_, FILE_MAP_WRITE, 0, 0, 0);
   if (!address_) {
-    GRNXX_ERROR() << "failed to map anonymous view: "
+    GRNXX_ERROR() << "failed to map anonymous chunk: "
                   << "size = " << size << ", flags = " << flags
-                  << ": '::MapViewOfFile' " << Error(::GetLastError());
+                  << ": '::MapChunkOfFile' " << Error(::GetLastError());
     return false;
   }
   return true;

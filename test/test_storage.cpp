@@ -20,7 +20,7 @@
 
 #include "grnxx/storage/file.hpp"
 #include "grnxx/storage/path.hpp"
-#include "grnxx/storage/view.hpp"
+#include "grnxx/storage/chunk.hpp"
 #include "grnxx/logger.hpp"
 
 namespace {
@@ -234,138 +234,138 @@ void test_file_handle() {
   assert(file->handle());
 }
 
-void test_view_create() {
+void test_chunk_create() {
   std::unique_ptr<grnxx::storage::File> file;
-  std::unique_ptr<grnxx::storage::View> view;
+  std::unique_ptr<grnxx::storage::Chunk> chunk;
 
   file.reset(grnxx::storage::File::create(nullptr));
   assert(file);
-  view.reset(grnxx::storage::View::create(file.get()));
-  assert(!view);
+  chunk.reset(grnxx::storage::Chunk::create(file.get()));
+  assert(!chunk);
 
   assert(file->resize(1 << 20));
 
-  view.reset(grnxx::storage::View::create(file.get()));
-  assert(view);
-  view.reset(grnxx::storage::View::create(file.get(), 0));
-  assert(view);
-  view.reset(grnxx::storage::View::create(file.get(), 0, -1));
-  assert(view);
-  view.reset(grnxx::storage::View::create(file.get(), 0, file->size()));
-  assert(view);
-  view.reset(grnxx::storage::View::create(file.get(), 0, 10));
-  assert(view);
+  chunk.reset(grnxx::storage::Chunk::create(file.get()));
+  assert(chunk);
+  chunk.reset(grnxx::storage::Chunk::create(file.get(), 0));
+  assert(chunk);
+  chunk.reset(grnxx::storage::Chunk::create(file.get(), 0, -1));
+  assert(chunk);
+  chunk.reset(grnxx::storage::Chunk::create(file.get(), 0, file->size()));
+  assert(chunk);
+  chunk.reset(grnxx::storage::Chunk::create(file.get(), 0, 10));
+  assert(chunk);
 
-  view.reset(grnxx::storage::View::create(file.get(), -1));
-  assert(!view);
-  view.reset(grnxx::storage::View::create(file.get(), file->size() + 1));
-  assert(!view);
-  view.reset(grnxx::storage::View::create(file.get(), 0, 0));
-  assert(!view);
-  view.reset(grnxx::storage::View::create(file.get(), 0, file->size() + 1));
-  assert(!view);
-  view.reset(grnxx::storage::View::create(file.get(), file->size() / 2,
-                                          file->size()));
-  assert(!view);
+  chunk.reset(grnxx::storage::Chunk::create(file.get(), -1));
+  assert(!chunk);
+  chunk.reset(grnxx::storage::Chunk::create(file.get(), file->size() + 1));
+  assert(!chunk);
+  chunk.reset(grnxx::storage::Chunk::create(file.get(), 0, 0));
+  assert(!chunk);
+  chunk.reset(grnxx::storage::Chunk::create(file.get(), 0, file->size() + 1));
+  assert(!chunk);
+  chunk.reset(grnxx::storage::Chunk::create(file.get(), file->size() / 2,
+                                            file->size()));
+  assert(!chunk);
 
-  view.reset(grnxx::storage::View::create(nullptr, 0, 1 << 20));
-  assert(view);
+  chunk.reset(grnxx::storage::Chunk::create(nullptr, 0, 1 << 20));
+  assert(chunk);
 
-  view.reset(grnxx::storage::View::create(nullptr, 0, 0));
-  assert(!view);
-  view.reset(grnxx::storage::View::create(nullptr, 0, -1));
-  assert(!view);
+  chunk.reset(grnxx::storage::Chunk::create(nullptr, 0, 0));
+  assert(!chunk);
+  chunk.reset(grnxx::storage::Chunk::create(nullptr, 0, -1));
+  assert(!chunk);
 }
 
-void test_view_sync() {
+void test_chunk_sync() {
   std::unique_ptr<grnxx::storage::File> file;
-  std::unique_ptr<grnxx::storage::View> view;
+  std::unique_ptr<grnxx::storage::Chunk> chunk;
 
   file.reset(grnxx::storage::File::create(nullptr));
   assert(file);
   assert(file->resize(1 << 20));
 
-  view.reset(grnxx::storage::View::create(file.get()));
-  assert(view);
-  assert(view->sync());
-  assert(view->sync(0));
-  assert(view->sync(0, -1));
-  assert(view->sync(0, 0));
-  assert(view->sync(0, file->size()));
+  chunk.reset(grnxx::storage::Chunk::create(file.get()));
+  assert(chunk);
+  assert(chunk->sync());
+  assert(chunk->sync(0));
+  assert(chunk->sync(0, -1));
+  assert(chunk->sync(0, 0));
+  assert(chunk->sync(0, file->size()));
 
-  assert(!view->sync(-1));
-  assert(!view->sync(file->size() + 1));
-  assert(!view->sync(0, file->size() + 1));
-  assert(!view->sync(file->size() / 2, file->size()));
+  assert(!chunk->sync(-1));
+  assert(!chunk->sync(file->size() + 1));
+  assert(!chunk->sync(0, file->size() + 1));
+  assert(!chunk->sync(file->size() / 2, file->size()));
 
-  view.reset(grnxx::storage::View::create(nullptr, 0, 1 << 20));
-  assert(view);
-  assert(!view->sync());
+  chunk.reset(grnxx::storage::Chunk::create(nullptr, 0, 1 << 20));
+  assert(chunk);
+  assert(!chunk->sync());
 }
 
-void test_view_flags() {
+void test_chunk_flags() {
   const char FILE_PATH[] = "temp.grn";
   grnxx::storage::File::unlink(FILE_PATH);
   std::unique_ptr<grnxx::storage::File> file;
-  std::unique_ptr<grnxx::storage::View> view;
+  std::unique_ptr<grnxx::storage::Chunk> chunk;
 
   file.reset(grnxx::storage::File::create(FILE_PATH));
   assert(file);
   assert(file->resize(1 << 20));
 
-  view.reset(grnxx::storage::View::create(file.get()));
-  assert(view);
-  assert(view->flags() == grnxx::storage::VIEW_DEFAULT);
+  chunk.reset(grnxx::storage::Chunk::create(file.get()));
+  assert(chunk);
+  assert(chunk->flags() == grnxx::storage::CHUNK_DEFAULT);
 
   file.reset(grnxx::storage::File::open(FILE_PATH,
                                         grnxx::storage::FILE_READ_ONLY));
   assert(file);
 
-  view.reset(grnxx::storage::View::create(file.get()));
-  assert(view);
-  assert(view->flags() == grnxx::storage::VIEW_READ_ONLY);
+  chunk.reset(grnxx::storage::Chunk::create(file.get()));
+  assert(chunk);
+  assert(chunk->flags() == grnxx::storage::CHUNK_READ_ONLY);
 
   file.reset();
   assert(grnxx::storage::File::unlink(FILE_PATH));
 }
 
-void test_view_address() {
+void test_chunk_address() {
   std::unique_ptr<grnxx::storage::File> file;
-  std::unique_ptr<grnxx::storage::View> view;
+  std::unique_ptr<grnxx::storage::Chunk> chunk;
 
   file.reset(grnxx::storage::File::create(nullptr));
   assert(file);
   assert(file->resize(10));
 
-  view.reset(grnxx::storage::View::create(file.get()));
-  assert(view);
-  std::memcpy(view->address(), "0123456789", 10);
-  view.reset(grnxx::storage::View::create(file.get()));
-  assert(view);
-  assert(std::memcmp(view->address(), "0123456789", 10) == 0);
+  chunk.reset(grnxx::storage::Chunk::create(file.get()));
+  assert(chunk);
+  std::memcpy(chunk->address(), "0123456789", 10);
+  chunk.reset(grnxx::storage::Chunk::create(file.get()));
+  assert(chunk);
+  assert(std::memcmp(chunk->address(), "0123456789", 10) == 0);
 }
 
-void test_view_size() {
+void test_chunk_size() {
   std::unique_ptr<grnxx::storage::File> file;
-  std::unique_ptr<grnxx::storage::View> view;
+  std::unique_ptr<grnxx::storage::Chunk> chunk;
 
   file.reset(grnxx::storage::File::create(nullptr));
   assert(file);
   assert(file->resize(1 << 20));
 
-  view.reset(grnxx::storage::View::create(file.get()));
-  assert(view);
-  assert(view->size() == file->size());
-  view.reset(grnxx::storage::View::create(file.get(), file->size() / 2));
-  assert(view);
-  assert(view->size() == (file->size() / 2));
-  view.reset(grnxx::storage::View::create(file.get(), 0, file->size() / 2));
-  assert(view);
-  assert(view->size() == (file->size() / 2));
+  chunk.reset(grnxx::storage::Chunk::create(file.get()));
+  assert(chunk);
+  assert(chunk->size() == file->size());
+  chunk.reset(grnxx::storage::Chunk::create(file.get(), file->size() / 2));
+  assert(chunk);
+  assert(chunk->size() == (file->size() / 2));
+  chunk.reset(grnxx::storage::Chunk::create(file.get(), 0, file->size() / 2));
+  assert(chunk);
+  assert(chunk->size() == (file->size() / 2));
 
-  view.reset(grnxx::storage::View::create(nullptr, 0, 1 << 20));
-  assert(view);
-  assert(view->size() == (1 << 20));
+  chunk.reset(grnxx::storage::Chunk::create(nullptr, 0, 1 << 20));
+  assert(chunk);
+  assert(chunk->size() == (1 << 20));
 }
 
 void test_path() {
@@ -386,12 +386,12 @@ void test_file() {
   test_file_handle();
 }
 
-void test_view() {
-  test_view_create();
-  test_view_sync();
-  test_view_flags();
-  test_view_address();
-  test_view_size();
+void test_chunk() {
+  test_chunk_create();
+  test_chunk_sync();
+  test_chunk_flags();
+  test_chunk_address();
+  test_chunk_size();
 }
 
 }  // namespace
@@ -403,7 +403,7 @@ int main() {
 
   test_path();
   test_file();
-  test_view();
+  test_chunk();
 
   return 0;
 }

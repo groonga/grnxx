@@ -25,7 +25,8 @@ namespace storage {
 
 struct Header;
 class File;
-class View;
+class Chunk;
+struct ChunkIndex;
 
 class StorageImpl : public Storage {
  public:
@@ -60,10 +61,12 @@ class StorageImpl : public Storage {
   std::unique_ptr<char[]> path_;
   StorageFlags flags_;
   Header *header_;
-  std::unique_ptr<std::unique_ptr<File>> files_;
-  std::unique_ptr<View> header_view_;
-  std::unique_ptr<std::unique_ptr<View>> node_header_views_;
-  std::unique_ptr<std::unique_ptr<View>> node_body_views_;
+  ChunkIndex *node_header_chunk_indexes_;
+  ChunkIndex *node_body_chunk_indexes_;
+  std::unique_ptr<std::unique_ptr<File>[]> files_;
+  std::unique_ptr<Chunk> header_chunk_;
+  std::unique_ptr<std::unique_ptr<Chunk>[]> node_header_chunks_;
+  std::unique_ptr<std::unique_ptr<Chunk>[]> node_body_chunks_;
 
   bool create_persistent_storage(const char *path, StorageFlags flags,
                                  const StorageOptions &options);
@@ -74,6 +77,8 @@ class StorageImpl : public Storage {
   bool open_storage(const char *path, StorageFlags flags);
   bool open_or_create_storage(const char *path, StorageFlags flags,
                               const StorageOptions &options);
+
+  bool prepare_files_and_chunks(const StorageOptions &options);
 };
 
 }  // namespace storage

@@ -15,42 +15,43 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#include "grnxx/storage/view.hpp"
+#ifndef GRNXX_STORAGE_CHUNK_POSIX_HPP
+#define GRNXX_STORAGE_CHUNK_POSIX_HPP
 
-#include "grnxx/storage/view-posix.hpp"
-#include "grnxx/storage/view-windows.hpp"
-#include "grnxx/string_builder.hpp"
+#include "grnxx/storage/chunk.hpp"
+
+#ifndef GRNXX_WINDOWS
 
 namespace grnxx {
 namespace storage {
 
-#define GRNXX_FLAGS_WRITE(flag) do { \
-  if (flags & flag) { \
-    if (!is_first) { \
-      builder << " | "; \
-    } \
-    builder << #flag; \
-    is_first = false; \
-  } \
-} while (false)
+class ChunkImpl : public Chunk {
+ public:
+  ChunkImpl();
+  ~ChunkImpl();
 
-StringBuilder &operator<<(StringBuilder &builder, ViewFlags flags) {
-  bool is_first = true;
-  GRNXX_FLAGS_WRITE(VIEW_ANONYMOUS);
-  GRNXX_FLAGS_WRITE(VIEW_HUGE_TLB);
-  GRNXX_FLAGS_WRITE(VIEW_READ_ONLY);
-  if (is_first) {
-    builder << "VIEW_DEFAULT";
-  }
-  return builder;
-}
+  static ChunkImpl *create(File *file, int64_t offset, int64_t size,
+                           ChunkFlags flags);
 
-View::View() {}
-View::~View() {}
+  bool sync(int64_t offset, int64_t size);
 
-View *View::create(File *file, int64_t offset, int64_t size, ViewFlags flags) {
-  return ViewImpl::create(file, offset, size, flags);
-}
+  ChunkFlags flags() const;
+  void *address() const;
+  int64_t size() const;
+
+ private:
+  ChunkFlags flags_;
+  void *address_;
+  int64_t size_;
+
+  bool create_file_backed_chunk(File *file, int64_t offset, int64_t size,
+                                ChunkFlags flags);
+  bool create_anonymous_chunk(int64_t size, ChunkFlags flags);
+};
 
 }  // namespace storage
 }  // namespace grnxx
+
+#endif  // GRNXX_WINDOWS
+
+#endif  // GRNXX_STORAGE_CHUNK_POSIX_HPP

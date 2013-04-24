@@ -3,6 +3,9 @@ noinst_LTLIBRARIES = libgrnxx_storage.la
 libgrnxx_storage_la_LDFLAGS = @AM_LTLDFLAGS@
 
 libgrnxx_storage_la_SOURCES =		\
+	chunk.cpp			\
+	chunk-posix.cpp			\
+	chunk-windows.cpp		\
 	chunk_index.cpp			\
 	file.cpp			\
 	file-posix.cpp			\
@@ -10,13 +13,13 @@ libgrnxx_storage_la_SOURCES =		\
 	header.cpp			\
 	node_header.cpp			\
 	path.cpp			\
-	storage_impl.cpp		\
-	view.cpp			\
-	view-posix.cpp			\
-	view-windows.cpp
+	storage_impl.cpp
 
 libgrnxx_storage_includedir = ${includedir}/grnxx/storage
 libgrnxx_storage_include_HEADERS =	\
+	chunk.hpp			\
+	chunk-posix.hpp			\
+	chunk-windows.hpp		\
 	chunk_index.hpp			\
 	file.hpp			\
 	file-posix.hpp			\
@@ -24,7 +27,4 @@ libgrnxx_storage_include_HEADERS =	\
 	header.hpp			\
 	node_header.hpp			\
 	path.hpp			\
-	storage_impl.hpp		\
-	view.hpp			\
-	view-posix.hpp			\
-	view-windows.hpp
+	storage_impl.hpp

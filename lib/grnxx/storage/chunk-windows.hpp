@@ -15,10 +15,10 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#ifndef GRNXX_STORAGE_VIEW_WINDOWS_HPP
-#define GRNXX_STORAGE_VIEW_WINDOWS_HPP
+#ifndef GRNXX_STORAGE_CHUNK_WINDOWS_HPP
+#define GRNXX_STORAGE_CHUNK_WINDOWS_HPP
 
-#include "grnxx/storage/view.hpp"
+#include "grnxx/storage/chunk.hpp"
 
 #ifdef GRNXX_WINDOWS
 
@@ -32,29 +32,29 @@
 namespace grnxx {
 namespace storage {
 
-class ViewImpl : public View {
+class ChunkImpl : public Chunk {
  public:
-  ViewImpl();
-  ~ViewImpl();
+  ChunkImpl();
+  ~ChunkImpl();
 
-  static View *create(File *file, int64_t offset, int64_t size,
-                      ViewFlags flags);
+  static ChunkImpl *create(File *file, int64_t offset, int64_t size,
+                           ChunkFlags flags);
 
   bool sync(int64_t offset, int64_t size);
 
-  ViewFlags flags() const;
+  ChunkFlags flags() const;
   void *address() const;
   int64_t size() const;
 
  private:
-  ViewFlags flags_;
+  ChunkFlags flags_;
   HANDLE handle_;
   void *address_;
   uint64_t size_;
 
-  bool create_file_backed_view(File *file, int64_t offset, int64_t size,
-                               ViewFlags flags);
-  bool create_anonymous_view(int64_t size, ViewFlags flags);
+  bool create_file_backed_chunk(File *file, int64_t offset, int64_t size,
+                                ChunkFlags flags);
+  bool create_anonymous_chunk(int64_t size, ChunkFlags flags);
 };
 
 }  // namespace storage
@@ -62,4 +62,4 @@ class ViewImpl : public View {
 
 #endif  // GRNXX_WINDOWS
 
-#endif  // GRNXX_STORAGE_VIEW_WINDOWS_HPP
+#endif  // GRNXX_STORAGE_CHUNK_WINDOWS_HPP

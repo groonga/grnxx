@@ -18,16 +18,20 @@
 #include "grnxx/storage/storage_impl.hpp"
 
 #include "grnxx/logger.hpp"
+#include "grnxx/storage/chunk.hpp"
+#include "grnxx/storage/chunk_index.hpp"
 #include "grnxx/storage/file.hpp"
 #include "grnxx/storage/header.hpp"
 #include "grnxx/storage/path.hpp"
-#include "grnxx/storage/view.hpp"
 
 namespace grnxx {
 namespace storage {
 namespace {
 
 constexpr uint32_t MAX_NODE_ID = INVALID_NODE_ID - 1;
+
+constexpr uint32_t MAX_NUM_NODE_HEADER_CHUNKS = 32;
+constexpr uint32_t MAX_NUM_NODE_BODY_CHUNKS   = 2048;
 
 // TODO: Define constant values.
 
@@ -38,10 +42,12 @@ StorageImpl::StorageImpl()
       path_(),
       flags_(STORAGE_DEFAULT),
       header_(nullptr),
+      node_header_chunk_indexes_(nullptr),
+      node_body_chunk_indexes_(nullptr),
       files_(),
-      header_view_(),
-      node_header_views_(),
-      node_body_views_() {}
+      header_chunk_(),
+      node_header_chunks_(),
+      node_body_chunks_() {}
 
 StorageImpl::~StorageImpl() {}
 
@@ -50,7 +56,7 @@ StorageImpl *StorageImpl::create(const char *path,
                                  const StorageOptions &options) {
   if (!options.is_valid()) {
     GRNXX_ERROR() << "invalid argument: options = " << options;
-    return false;
+    return nullptr;
   }
   std::unique_ptr<StorageImpl> storage(new (std::nothrow) StorageImpl);
   if (!storage) {
@@ -58,11 +64,17 @@ StorageImpl *StorageImpl::create(const char *path,
     return nullptr;
   }
   if (path && (~flags & STORAGE_TEMPORARY)) {
-    storage->create_persistent_storage(path, flags, options);
+    if (!storage->create_persistent_storage(path, flags, options)) {
+      return nullptr;
+    }
   } else if (flags & STORAGE_TEMPORARY) {
-    storage->create_temporary_storage(path, flags, options);
+    if (!storage->create_temporary_storage(path, flags, options)) {
+      return nullptr;
+    }
   } else {
-    storage->create_anonymous_storage(flags, options);
+    if (!storage->create_anonymous_storage(flags, options)) {
+      return nullptr;
+    }
   }
   return storage.release();
 }
@@ -93,7 +105,7 @@ StorageImpl *StorageImpl::open_or_create(const char *path,
   }
   if (!options.is_valid()) {
     GRNXX_ERROR() << "invalid argument: options = " << options;
-    return false;
+    return nullptr;
   }
   std::unique_ptr<StorageImpl> storage(new (std::nothrow) StorageImpl);
   if (!storage) {
@@ -238,6 +250,31 @@ bool StorageImpl::open_or_create_storage(const char *path,
   }
   // TODO
   return false;
+}
+
+bool StorageImpl::prepare_files_and_chunks(const StorageOptions &options) {
+  files_.reset(
+      new (std::nothrow) std::unique_ptr<File>[options.max_num_files]);
+  if (!files_) {
+    GRNXX_ERROR() << "new std::unique_ptr<grnxx::storage::File>[] failed: "
+                  << "size = " << options.max_num_files;
+    return false;
+  }
+  node_header_chunks_.reset(
+      new (std::nothrow) std::unique_ptr<Chunk>[MAX_NUM_NODE_HEADER_CHUNKS]);
+  if (!node_header_chunks_) {
+    GRNXX_ERROR() << "new std::unique_ptr<grnxx::storage::Chunk>[] failed: "
+                  << "size = " << MAX_NUM_NODE_HEADER_CHUNKS;
+    return false;
+  }
+  node_body_chunks_.reset(
+      new (std::nothrow) std::unique_ptr<Chunk>[MAX_NUM_NODE_BODY_CHUNKS]);
+  if (!node_header_chunks_) {
+    GRNXX_ERROR() << "new std::unique_ptr<grnxx::storage::Chunk>[] failed: "
+                  << "size = " << MAX_NUM_NODE_BODY_CHUNKS;
+    return false;
+  }
+  return true;
 }
 
 }  // namespace storage
