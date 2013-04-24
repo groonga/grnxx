@@ -6,6 +6,7 @@ libgrnxx_storage_la_SOURCES =		\
 	file.cpp			\
 	file-posix.cpp			\
 	file-windows.cpp		\
+	header.cpp			\
 	node_header.cpp			\
 	path.cpp			\
 	storage_impl.cpp		\
@@ -18,6 +19,7 @@ libgrnxx_storage_include_HEADERS =	\
 	file.hpp			\
 	file-posix.hpp			\
 	file-windows.hpp		\
+	header.hpp			\
 	node_header.hpp			\
 	path.hpp			\
 	storage_impl.hpp		\
