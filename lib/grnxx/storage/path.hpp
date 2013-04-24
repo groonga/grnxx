@@ -34,6 +34,10 @@ class Path {
   // For example, when "prefix" == "temp", the result is "temp_XXXXXXXX",
   // where X indicates a random character ('0'-'9' or 'A'-'Z').
   static char *unique_path(const char *prefix);
+
+  // Create a clone of "path" and return an allocated buffer which must be
+  // freed with delete[].
+  static char *clone_path(const char *path);
 };
 
 }  // namespace storage

@@ -139,5 +139,19 @@ char *Path::unique_path(const char *prefix) {
   return path;
 }
 
+char *Path::clone_path(const char *path) {
+  if (!path) {
+    path = "";
+  }
+  const size_t size = std::strlen(path) + 1;
+  char * const path_clone = new (std::nothrow) char[size];
+  if (!path_clone) {
+    GRNXX_ERROR() << "new char[] failed: size = " << size;
+    return nullptr;
+  }
+  std::memcpy(path_clone, path, size);
+  return path_clone;
+}
+
 }  // namespace storage
 }  // namespace grnxx

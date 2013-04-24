@@ -59,8 +59,6 @@ class FileImpl : public File {
   bool create_temporary_file(const char *path_prefix, FileFlags flags);
   bool open_file(const char *path, FileFlags flags);
   bool open_or_create_file(const char *path, FileFlags flags);
-
-  bool clone_path(const char *path);
 };
 
 }  // namespace storage

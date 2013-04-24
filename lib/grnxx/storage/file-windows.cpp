@@ -251,7 +251,8 @@ bool FileImpl::create_persistent_file(const char *path, FileFlags flags) {
     GRNXX_ERROR() << "invalid argument: path = nullptr";
     return false;
   }
-  if (!clone_path(path)) {
+  path_.reset(Path::clone_path(path));
+  if (!path_) {
     return false;
   }
   const DWORD desired_access = GENERIC_READ | GENERIC_WRITE;
@@ -294,7 +295,8 @@ bool FileImpl::create_temporary_file(const char *path, FileFlags flags) {
 }
 
 bool FileImpl::open_file(const char *path, FileFlags flags) {
-  if (!clone_path(path)) {
+  path_.reset(Path::clone_path(path));
+  if (!path_) {
     return false;
   }
   DWORD desired_access = GENERIC_READ | GENERIC_WRITE;
@@ -318,7 +320,8 @@ bool FileImpl::open_file(const char *path, FileFlags flags) {
 }
 
 bool FileImpl::open_or_create_file(const char *path, FileFlags flags) {
-  if (!clone_path(path)) {
+  path_.reset(Path::clone_path(path));
+  if (!path_) {
     return false;
   }
   const DWORD desired_access = GENERIC_READ | GENERIC_WRITE;
@@ -334,17 +337,6 @@ bool FileImpl::open_or_create_file(const char *path, FileFlags flags) {
                   << ": '::CreateFileA' " << Error(::GetLastError());
     return false;
   }
-  return true;
-}
-
-bool FileImpl::clone_path(const char *path) {
-  const size_t size = std::strlen(path) + 1;
-  path_.reset(new (std::nothrow) char[size]);
-  if (!path_) {
-    GRNXX_ERROR() << "new char[] failed: size = " << size;
-    return false;
-  }
-  std::memcpy(path_.get(), path, size);
   return true;
 }
 
