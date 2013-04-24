@@ -18,6 +18,7 @@
 #include "grnxx/storage.hpp"
 
 #include "grnxx/storage/node_header.hpp"
+#include "grnxx/storage/storage_impl.hpp"
 
 namespace grnxx {
 
@@ -92,40 +93,26 @@ Storage::~Storage() {}
 Storage *Storage::create(const char *path,
                          StorageFlags flags,
                          const StorageOptions &options) {
-  // TODO
-  return nullptr;
+  return StorageImpl::create(path, flags, options);
 }
 
 Storage *Storage::open(const char *path,
                        StorageFlags flags) {
-  // TODO
-  return nullptr;
+  return StorageImpl::open(path, flags);
 }
 
 Storage *Storage::open_or_create(const char *path,
                                  StorageFlags flags,
                                  const StorageOptions &options) {
-  // TODO
-  return nullptr;
+  return StorageImpl::open_or_create(path, flags, options);
 }
 
 bool Storage::exists(const char *path) {
-  std::unique_ptr<Storage> storage(open(path, STORAGE_READ_ONLY));
-  if (!storage) {
-    // TODO: Error: memory allocation failed.
-    return false;
-  }
-  return true;
+  return StorageImpl::exists(path);
 }
 
 bool Storage::unlink(const char *path) {
-  std::unique_ptr<Storage> storage(open(path, STORAGE_READ_ONLY));
-  if (!storage) {
-    // TODO: Error: memory allocation failed.
-    return false;
-  }
-  // TODO: Remove files.
-  return true;
+  return StorageImpl::unlink(path);
 }
 
 }  // namespace grnxx

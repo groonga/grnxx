@@ -25,8 +25,12 @@ namespace grnxx {
 namespace storage {
 
 struct NodeHeader;
+class StorageImpl;
 
 }  // namespace storage
+
+using StorageNodeHeader = storage::NodeHeader;
+using StorageImpl = storage::StorageImpl;
 
 class Storage;
 using StorageFlags = FlagsImpl<Storage>;
@@ -73,8 +77,6 @@ struct StorageOptions {
   // Initialize the members with the default parameters.
   StorageOptions();
 };
-
-using StorageNodeHeader = storage::NodeHeader;
 
 struct StorageNode {
  public:
@@ -151,7 +153,7 @@ class Storage {
   virtual bool unlink_node(uint32_t node_id) = 0;
 
   // Sweep marked nodes whose last modified time < (now - lifetime).
-  virtual void sweep(Duration lifetime) = 0;
+  virtual bool sweep(Duration lifetime) = 0;
 
   // Return the storage path.
   virtual const char *path() const = 0;
