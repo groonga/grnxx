@@ -20,7 +20,6 @@
 
 #include "grnxx/basic.hpp"
 #include "grnxx/mutex.hpp"
-#include "grnxx/storage.hpp"
 
 namespace grnxx {
 namespace storage {

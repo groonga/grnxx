@@ -18,6 +18,7 @@
 #include "grnxx/storage/header.hpp"
 
 #include "grnxx/version.h"
+#include "grnxx/storage.hpp"
 
 #define GRNXX_STORAGE_HEADER_FORMAT  "grnxx::Storage"
 #define GRNXX_STORAGE_HEADER_VERSION GRNXX_VERSION
