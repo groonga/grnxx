@@ -78,7 +78,7 @@ struct StorageOptions {
   StorageOptions();
 };
 
-struct StorageNode {
+class StorageNode {
  public:
   StorageNode() = default;
   StorageNode(StorageNodeHeader *header, void *body)
