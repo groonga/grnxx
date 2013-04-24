@@ -1029,8 +1029,8 @@ DoubleArrayCompletionCursor<Slice>::DoubleArrayCompletionCursor(
     const MapCursorOptions &options)
   : MapCursor<Slice>(), double_array_(double_array), cur_(), count_(0),
     query_(query), min_size_(), options_(options), node_ids_(), keys_() {
-  if ((~options_.flags & MAP_CURSOR_ORDER_BY_ID) ||
-      (options_.flags & MAP_CURSOR_ORDER_BY_KEY)) {
+  if ((options_.flags & MAP_CURSOR_ORDER_BY_ID) &&
+      (~options_.flags & MAP_CURSOR_ORDER_BY_KEY)) {
     init_order_by_id();
   } else {
     init_order_by_key();
