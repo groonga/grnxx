@@ -126,6 +126,10 @@ class Map {
   // Return the type of "*this".
   virtual MapType type() const;
 
+  // Return the minimum key ID.
+  constexpr int64_t min_key_id() {
+    return 0;
+  }
   // Return the maximum key ID ever used.
   // If the map is empty, the return value can be -1.
   virtual int64_t max_key_id() const;

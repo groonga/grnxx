@@ -332,6 +332,9 @@ void test_map(grnxx::alpha::MapType map_type) {
     assert(map->num_keys() == hash_map.size());
   }
 
+  assert(map->min_key_id() == 0);
+  assert(map->max_key_id() == static_cast<std::int64_t>(MAP_SIZE - 1));
+
   {
     std::int64_t key_id = -1;
     for (std::size_t i = 0; i < MAP_SIZE; ++i) {
