@@ -19,6 +19,7 @@
 #define GRNXX_STORAGE_STORAGE_IMPL_HPP
 
 #include "grnxx/storage.hpp"
+#include "grnxx/time/periodic_clock.hpp"
 
 namespace grnxx {
 namespace storage {
@@ -67,6 +68,7 @@ class StorageImpl : public Storage {
   std::unique_ptr<Chunk> header_chunk_;
   std::unique_ptr<std::unique_ptr<Chunk>[]> node_header_chunks_;
   std::unique_ptr<std::unique_ptr<Chunk>[]> node_body_chunks_;
+  PeriodicClock clock_;
 
   bool create_file_backed_storage(const char *path, StorageFlags flags,
                                   const StorageOptions &options);
@@ -78,7 +80,20 @@ class StorageImpl : public Storage {
 
   bool prepare_pointers();
   void prepare_indexes();
-  bool prepare_files_and_chunks(uint16_t max_num_files);
+
+  NodeHeader *create_active_node(uint64_t size);
+  NodeHeader *find_idle_node(uint64_t size);
+  NodeHeader *create_idle_node(uint64_t size);
+  bool divide_idle_node(NodeHeader *node_header, uint64_t size);
+  bool activate_idle_node(NodeHeader *node_header);
+  NodeHeader *create_phantom_node();
+
+  NodeHeader *get_node_header(uint32_t node_id);
+  void *get_node_body(const NodeHeader *node_header);
+  Chunk *get_node_header_chunk(uint16_t chunk_id);
+  Chunk *get_node_body_chunk(uint16_t chunk_id);
+  File *get_file(uint16_t file_id);
+  char *generate_path(uint16_t file_id);
 
   Chunk *create_chunk(File *file, int64_t offset, int64_t size);
 };

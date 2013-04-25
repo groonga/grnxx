@@ -23,15 +23,13 @@
 namespace grnxx {
 namespace storage {
 
-using NodeStatus = StorageNodeStatus;
-
 constexpr size_t NODE_HEADER_SIZE = 64;
 
 struct NodeHeader {
   // The node ID.
   uint32_t id;
   // The node status.
-  NodeStatus status;
+  StorageNodeStatus status;
   uint8_t reserved_;
   // (Non-phantom)
   // The ID of the chunk to which the node belongs.
@@ -57,7 +55,7 @@ struct NodeHeader {
     // (Active, marked, or unlinked)
     // The ID of the latest child node.
     // STORAGE_INVALID_NODE_ID indicates that the node has no children.
-    uint32_t child_id;
+    uint32_t child_node_id;
     // (Idle)
     // The ID of the next idle node.
     uint32_t next_idle_node_id;

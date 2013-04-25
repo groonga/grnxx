@@ -28,9 +28,6 @@ namespace storage {
 struct NodeHeader;
 class StorageImpl;
 
-constexpr uint32_t ROOT_NODE_ID    = 0;
-constexpr uint32_t INVALID_NODE_ID = std::numeric_limits<uint32_t>::max();
-
 }  // namespace storage
 
 using StorageNodeHeader = storage::NodeHeader;
@@ -70,14 +67,15 @@ enum StorageNodeStatus : uint8_t {
 
 StringBuilder &operator<<(StringBuilder &builder, StorageNodeStatus status);
 
-constexpr uint32_t STORAGE_ROOT_NODE_ID    = storage::ROOT_NODE_ID;
-constexpr uint32_t STORAGE_INVALID_NODE_ID = storage::INVALID_NODE_ID;
+constexpr uint32_t STORAGE_ROOT_NODE_ID    = 0;
+constexpr uint32_t STORAGE_INVALID_NODE_ID =
+    std::numeric_limits<uint32_t>::max();
 
 struct StorageOptions {
-  // The maximum number of files.
-  uint16_t max_num_files;
   // The maximum size of each file.
   uint64_t max_file_size;
+  // The maximum number of files.
+  uint16_t max_num_files;
   // The size of the root node.
   uint64_t root_size;
 

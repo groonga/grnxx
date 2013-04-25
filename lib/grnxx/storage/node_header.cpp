@@ -21,16 +21,16 @@ namespace grnxx {
 namespace storage {
 
 NodeHeader::NodeHeader()
-    : id(0),
+    : id(STORAGE_INVALID_NODE_ID),
       status(STORAGE_NODE_PHANTOM),
       reserved_(0),
       chunk_id(0),
       offset(0),
       size(0),
-      next_node_id(0),
-      prev_node_id(0),
-      next_phantom_node_id(0),
-      sibling_node_id(0),
+      next_node_id(STORAGE_INVALID_NODE_ID),
+      prev_node_id(STORAGE_INVALID_NODE_ID),
+      next_phantom_node_id(STORAGE_INVALID_NODE_ID),
+      sibling_node_id(STORAGE_INVALID_NODE_ID),
       modified_time(0),
       user_data{} {}
 

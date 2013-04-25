@@ -24,10 +24,10 @@
 namespace grnxx {
 namespace {
 
-constexpr uint32_t MAX_NUM_FILES_LOWER_LIMIT = 1;
-constexpr uint32_t MAX_NUM_FILES_UPPER_LIMIT = 1000;
-constexpr uint64_t MAX_FILE_SIZE_LOWER_LIMIT = 1ULL << 40;
-constexpr uint64_t MAX_FILE_SIZE_UPPER_LIMIT = 1ULL << 30;
+constexpr uint64_t MAX_FILE_SIZE_LOWER_LIMIT = 1ULL << 30;
+constexpr uint64_t MAX_FILE_SIZE_UPPER_LIMIT = 1ULL << 40;
+constexpr uint16_t MAX_NUM_FILES_LOWER_LIMIT = 1;
+constexpr uint16_t MAX_NUM_FILES_UPPER_LIMIT = 1000;
 constexpr uint64_t ROOT_SIZE_DEFAULT         = 1ULL << 12;
 
 }  // namespace
@@ -73,17 +73,17 @@ StringBuilder &operator<<(StringBuilder &builder, StorageNodeStatus status) {
 }
 
 StorageOptions::StorageOptions()
-    : max_num_files(MAX_NUM_FILES_UPPER_LIMIT),
-      max_file_size(MAX_FILE_SIZE_UPPER_LIMIT),
+    : max_file_size(MAX_FILE_SIZE_UPPER_LIMIT),
+      max_num_files(MAX_NUM_FILES_UPPER_LIMIT),
       root_size(ROOT_SIZE_DEFAULT) {}
 
 bool StorageOptions::is_valid() const {
-  if ((max_num_files < MAX_NUM_FILES_LOWER_LIMIT) ||
-      (max_num_files > MAX_NUM_FILES_UPPER_LIMIT)) {
-    return false;
-  }
   if ((max_file_size < MAX_FILE_SIZE_LOWER_LIMIT) ||
       (max_file_size > MAX_FILE_SIZE_UPPER_LIMIT)) {
+    return false;
+  }
+  if ((max_num_files < MAX_NUM_FILES_LOWER_LIMIT) ||
+      (max_num_files > MAX_NUM_FILES_UPPER_LIMIT)) {
     return false;
   }
   if (root_size > max_file_size) {

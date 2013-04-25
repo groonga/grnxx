@@ -37,20 +37,18 @@ Header::Header()
       version{ GRNXX_STORAGE_HEADER_VERSION },
       max_file_size(0),
       max_num_files(0),
-      num_node_chunks(0),
+      num_node_body_chunks(0),
       num_nodes(0),
       total_size(0),
       max_num_nodes(0),
-      latest_phantom_node_id(INVALID_NODE_ID),
-      latest_unlinked_node_id(INVALID_NODE_ID),
+      latest_phantom_node_id(STORAGE_INVALID_NODE_ID),
+      latest_unlinked_node_id(STORAGE_INVALID_NODE_ID),
       oldest_idle_node_ids(),
       inter_process_data_mutex(MUTEX_UNLOCKED),
       inter_process_file_mutex(MUTEX_UNLOCKED),
       reserved_() {
-  static constexpr size_t NUM_LISTS =
-      sizeof(oldest_idle_node_ids) / sizeof(*oldest_idle_node_ids);
-  for (size_t i = 0; i < NUM_LISTS; ++i) {
-    oldest_idle_node_ids[i] = INVALID_NODE_ID;
+  for (size_t i = 0; i < NUM_IDLE_NODE_LISTS; ++i) {
+    oldest_idle_node_ids[i] = STORAGE_INVALID_NODE_ID;
   }
 }
 

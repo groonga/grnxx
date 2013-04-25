@@ -26,14 +26,14 @@ namespace storage {
 constexpr size_t CHUNK_INDEX_SIZE = 32;
 
 struct ChunkIndex {
-  uint32_t id_;
-  uint16_t file_id_;
-  uint16_t reserved_0_;
-  uint64_t offset_;
-  uint64_t size_;
-  uint64_t reserved_1_;
+  uint32_t id;
+  uint16_t file_id;
+  uint16_t reserved_0;
+  uint64_t offset;
+  uint64_t size;
+  uint64_t reserved_1;
 
-  explicit ChunkIndex(uint32_t id);
+  ChunkIndex();
 };
 
 static_assert(sizeof(ChunkIndex) == CHUNK_INDEX_SIZE,

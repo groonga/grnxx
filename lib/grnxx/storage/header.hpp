@@ -33,6 +33,8 @@ constexpr size_t HEADER_FORMAT_SIZE  = 32;
 // The buffer size allocated for the version string.
 constexpr size_t HEADER_VERSION_SIZE = 32;
 
+constexpr size_t NUM_IDLE_NODE_LISTS = 64;
+
 struct Header {
   // The identifier for checking the file format.
   char format[HEADER_FORMAT_SIZE];
@@ -42,8 +44,8 @@ struct Header {
   uint64_t max_file_size;
   // The maximum number of files.
   uint16_t max_num_files;
-  // The number of node chunks.
-  uint16_t num_node_chunks;
+  // The number of node body chunks.
+  uint16_t num_node_body_chunks;
   // The number of nodes.
   uint32_t num_nodes;
   // The total size including headers.
@@ -56,7 +58,7 @@ struct Header {
   // The ID of the latest unlinked node.
   uint32_t latest_unlinked_node_id;
   // The IDs of the oldest idle nodes.
-  uint32_t oldest_idle_node_ids[64];
+  uint32_t oldest_idle_node_ids[NUM_IDLE_NODE_LISTS];
   // A mutex object for exclusively updating data.
   Mutex inter_process_data_mutex;
   // A mutex object for exclusively update files.
