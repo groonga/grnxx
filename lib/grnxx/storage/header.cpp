@@ -33,20 +33,20 @@ constexpr char HEADER_FORMAT[HEADER_FORMAT_SIZE] = GRNXX_STORAGE_HEADER_FORMAT;
 }  // namespace
 
 Header::Header()
-    : format{ GRNXX_STORAGE_HEADER_FORMAT },
+    : format{},
       version{ GRNXX_STORAGE_HEADER_VERSION },
-      max_num_files(0),
       max_file_size(0),
-      total_size(0),
-      num_files(0),
+      max_num_files(0),
       num_node_chunks(0),
       num_nodes(0),
+      total_size(0),
       max_num_nodes(0),
       latest_phantom_node_id(INVALID_NODE_ID),
       latest_unlinked_node_id(INVALID_NODE_ID),
       oldest_idle_node_ids(),
       inter_process_data_mutex(MUTEX_UNLOCKED),
-      inter_process_file_mutex(MUTEX_UNLOCKED) {
+      inter_process_file_mutex(MUTEX_UNLOCKED),
+      reserved_() {
   static constexpr size_t NUM_LISTS =
       sizeof(oldest_idle_node_ids) / sizeof(*oldest_idle_node_ids);
   for (size_t i = 0; i < NUM_LISTS; ++i) {
@@ -56,6 +56,10 @@ Header::Header()
 
 bool Header::is_valid() const {
   return std::memcmp(format, HEADER_FORMAT, HEADER_FORMAT_SIZE) == 0;
+}
+
+void Header::validate() {
+  std::memcpy(format, HEADER_FORMAT, sizeof(HEADER_FORMAT_SIZE));
 }
 
 }  // namespace storage

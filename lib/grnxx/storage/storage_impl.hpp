@@ -68,17 +68,19 @@ class StorageImpl : public Storage {
   std::unique_ptr<std::unique_ptr<Chunk>[]> node_header_chunks_;
   std::unique_ptr<std::unique_ptr<Chunk>[]> node_body_chunks_;
 
-  bool create_persistent_storage(const char *path, StorageFlags flags,
-                                 const StorageOptions &options);
-  bool create_temporary_storage(const char *path, StorageFlags flags,
-                                const StorageOptions &options);
+  bool create_file_backed_storage(const char *path, StorageFlags flags,
+                                  const StorageOptions &options);
   bool create_anonymous_storage(StorageFlags flags,
                                 const StorageOptions &options);
   bool open_storage(const char *path, StorageFlags flags);
   bool open_or_create_storage(const char *path, StorageFlags flags,
                               const StorageOptions &options);
 
-  bool prepare_files_and_chunks(const StorageOptions &options);
+  bool prepare_pointers();
+  void prepare_indexes();
+  bool prepare_files_and_chunks(uint16_t max_num_files);
+
+  Chunk *create_chunk(File *file, int64_t offset, int64_t size);
 };
 
 }  // namespace storage

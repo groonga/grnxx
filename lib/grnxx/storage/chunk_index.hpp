@@ -23,15 +23,21 @@
 namespace grnxx {
 namespace storage {
 
+constexpr size_t CHUNK_INDEX_SIZE = 32;
+
 struct ChunkIndex {
   uint32_t id_;
-  uint32_t file_id_;
+  uint16_t file_id_;
+  uint16_t reserved_0_;
   uint64_t offset_;
   uint64_t size_;
-  uint64_t reserved_;
+  uint64_t reserved_1_;
 
   explicit ChunkIndex(uint32_t id);
 };
+
+static_assert(sizeof(ChunkIndex) == CHUNK_INDEX_SIZE,
+              "sizeof(ChunkIndex) != CHUNK_INDEX_SIZE");
 
 }  // namespace storage
 }  // namespace grnxx

@@ -111,7 +111,7 @@ StorageNodeStatus StorageNode::status() const {
 }
 
 uint64_t StorageNode::size() const {
-  return header_->size << header_->bits;
+  return header_->size;
 }
 
 Time StorageNode::modified_time() const {

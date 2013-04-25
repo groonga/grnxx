@@ -75,7 +75,7 @@ constexpr uint32_t STORAGE_INVALID_NODE_ID = storage::INVALID_NODE_ID;
 
 struct StorageOptions {
   // The maximum number of files.
-  uint32_t max_num_files;
+  uint16_t max_num_files;
   // The maximum size of each file.
   uint64_t max_file_size;
   // The size of the root node.

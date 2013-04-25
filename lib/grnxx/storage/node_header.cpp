@@ -23,7 +23,7 @@ namespace storage {
 NodeHeader::NodeHeader()
     : id(0),
       status(STORAGE_NODE_PHANTOM),
-      bits(0),
+      reserved_(0),
       chunk_id(0),
       offset(0),
       size(0),
@@ -32,7 +32,6 @@ NodeHeader::NodeHeader()
       next_phantom_node_id(0),
       sibling_node_id(0),
       modified_time(0),
-      reserved{},
       user_data{} {}
 
 }  // namespace storage

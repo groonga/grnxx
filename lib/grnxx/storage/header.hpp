@@ -38,18 +38,16 @@ struct Header {
   char format[HEADER_FORMAT_SIZE];
   // The grnxx version.
   char version[HEADER_VERSION_SIZE];
-  // The maximum number of files.
-  uint32_t max_num_files;
   // The maximum size of each file.
   uint64_t max_file_size;
-  // The total size including headers.
-  uint64_t total_size;
-  // The number of files.
-  uint32_t num_files;
+  // The maximum number of files.
+  uint16_t max_num_files;
   // The number of node chunks.
-  uint32_t num_node_chunks;
+  uint16_t num_node_chunks;
   // The number of nodes.
   uint32_t num_nodes;
+  // The total size including headers.
+  uint64_t total_size;
   // The upper limit of the number of nodes.
   // This value is extended when a node header chunk is added.
   uint32_t max_num_nodes;
@@ -63,15 +61,19 @@ struct Header {
   Mutex inter_process_data_mutex;
   // A mutex object for exclusively update files.
   Mutex inter_process_file_mutex;
+  uint8_t reserved_[148];
 
-  // Initialize the members.
+  // Initialize the members except "format".
   Header();
 
   // Return true if the header seems to be correct.
   bool is_valid() const;
+
+  // Initialize "format".
+  void validate();
 };
 
-static_assert(sizeof(Header) <= HEADER_SIZE, "sizeof(Header) > HEADER_SIZE");
+static_assert(sizeof(Header) == HEADER_SIZE, "sizeof(Header) != HEADER_SIZE");
 
 }  // namespace storage
 }  // namespace grnxx

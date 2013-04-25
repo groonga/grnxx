@@ -23,9 +23,10 @@ namespace storage {
 ChunkIndex::ChunkIndex(uint32_t id)
     : id_(id),
       file_id_(0),
+      reserved_0_(0),
       offset_(0),
       size_(0),
-      reserved_(0) {}
+      reserved_1_(0) {}
 
 }  // namespace storage
 }  // namespace grnxx
