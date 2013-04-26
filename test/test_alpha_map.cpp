@@ -22,6 +22,7 @@
 #include <vector>
 #include <unordered_map>
 
+#include "grnxx/alpha/geo_point.hpp"
 #include "grnxx/alpha/map.hpp"
 #include "grnxx/logger.hpp"
 #include "grnxx/time/time.hpp"
@@ -374,12 +375,12 @@ void test_map(grnxx::alpha::MapType map_type) {
   for (auto it = hash_map.begin(); it != hash_map.end(); ++it) {
     assert(map->insert(it->first));
   }
-  map->truncate();
+  assert(map->truncate());
   for (auto it = hash_map.begin(); it != hash_map.end(); ++it) {
     assert(!map->get(it->second));
   }
 
-  map->truncate();
+  assert(map->truncate());
   for (auto it = hash_map.begin(); it != hash_map.end(); ++it) {
     assert(map->insert(it->first, &it->second));
   }
@@ -397,7 +398,7 @@ void test_map(grnxx::alpha::MapType map_type) {
     assert(key_id == old_it->second);
   }
 
-  map->truncate();
+  assert(map->truncate());
   for (auto it = hash_map.begin(); it != hash_map.end(); ++it) {
     assert(map->insert(it->first, &it->second));
   }
