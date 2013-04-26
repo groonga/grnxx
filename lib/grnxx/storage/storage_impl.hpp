@@ -87,6 +87,16 @@ class StorageImpl : public Storage {
   bool divide_idle_node(NodeHeader *node_header, uint64_t size);
   bool activate_idle_node(NodeHeader *node_header);
   NodeHeader *create_phantom_node();
+  bool associate_node_with_chunk(NodeHeader *node_header,
+                                 ChunkIndex *chunk_index);
+
+  ChunkIndex *create_node_header_chunk(ChunkIndex **remainder_chunk_index);
+  ChunkIndex *create_node_body_chunk(uint64_t size,
+                                     ChunkIndex **remainder_chunk_index);
+  ChunkIndex *create_node_body_chunk(uint64_t size);
+
+  bool register_idle_node(NodeHeader *node_header);
+  bool unregister_idle_node(NodeHeader *node_header);
 
   NodeHeader *get_node_header(uint32_t node_id);
   void *get_node_body(const NodeHeader *node_header);
