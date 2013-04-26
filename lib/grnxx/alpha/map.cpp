@@ -20,6 +20,7 @@
 #include "grnxx/alpha/map/array.hpp"
 #include "grnxx/alpha/map/cursor.hpp"
 #include "grnxx/alpha/map/double_array.hpp"
+#include "grnxx/alpha/map/header.hpp"
 #include "grnxx/charset.hpp"
 #include "grnxx/exception.hpp"
 #include "grnxx/slice.hpp"
@@ -83,7 +84,7 @@ Map<T> *Map<T>::create(MapType type, io::Pool pool,
 
 template <typename T>
 Map<T> *Map<T>::open(io::Pool pool, uint32_t block_id) {
-  const MapHeader *header = static_cast<const MapHeader *>(
+  const map::Header *header = static_cast<const map::Header *>(
       pool.get_block_address(block_id));
   switch (header->type) {
     case MAP_ARRAY: {
@@ -101,7 +102,7 @@ Map<T> *Map<T>::open(io::Pool pool, uint32_t block_id) {
 
 template <typename T>
 bool Map<T>::unlink(io::Pool pool, uint32_t block_id) {
-  const MapHeader *header = static_cast<const MapHeader *>(
+  const map::Header *header = static_cast<const map::Header *>(
       pool.get_block_address(block_id));
   switch (header->type) {
     case MAP_ARRAY: {

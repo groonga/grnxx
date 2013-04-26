@@ -12,4 +12,5 @@ libgrnxx_alpha_map_includedir = ${includedir}/grnxx/alpha/map
 libgrnxx_alpha_map_include_HEADERS =	\
 	array.hpp			\
 	cursor.hpp			\
-	double_array.hpp
+	double_array.hpp		\
+	header.hpp

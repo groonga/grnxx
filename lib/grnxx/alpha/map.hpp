@@ -41,10 +41,6 @@ enum MapType : int32_t {
 struct MapOptions {
 };
 
-struct MapHeader {
-  MapType type;
-};
-
 struct MapCursorFlagsIdentifier;
 typedef FlagsImpl<MapCursorFlagsIdentifier> MapCursorFlags;
 
