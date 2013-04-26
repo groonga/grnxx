@@ -33,8 +33,8 @@ struct Helper;
 template <typename T>
 struct Helper<T, true> {
   static bool equal_to(T x, T y) {
-    return *reinterpret_cast<uint64_t *>(&x) ==
-           *reinterpret_cast<uint64_t *>(&y);
+    return *reinterpret_cast<const uint64_t *>(&x) ==
+           *reinterpret_cast<const uint64_t *>(&y);
   }
   static T normalize(T x) {
     if (std::isnan(x)) {
@@ -69,12 +69,20 @@ Slice blob_to_slice(const db::Blob &blob) {
 }  // namespace
 
 ArrayHeader::ArrayHeader()
-  : map_type(MAP_ARRAY),
-    bits_block_id(io::BLOCK_INVALID_ID),
-    keys_block_id(io::BLOCK_INVALID_ID),
-    max_key_id(-1),
-    next_key_id(0),
-    num_keys(0) {}
+    : map_type(MAP_ARRAY),
+      bits_block_id(io::BLOCK_INVALID_ID),
+      keys_block_id(io::BLOCK_INVALID_ID),
+      max_key_id(-1),
+      next_key_id(0),
+      num_keys(0) {}
+
+template <typename T>
+Array<T>::Array()
+    : pool_(),
+      block_info_(nullptr),
+      header_(nullptr),
+      bits_(),
+      keys_() {}
 
 template <typename T>
 Array<T>::~Array() {}
@@ -299,14 +307,6 @@ bool Array<T>::truncate() {
   return true;
 }
 
-template <typename T>
-Array<T>::Array()
-  : pool_(),
-    block_info_(nullptr),
-    header_(nullptr),
-    bits_(),
-    keys_() {}
-
 template class Array<int8_t>;
 template class Array<int16_t>;
 template class Array<int32_t>;
@@ -317,6 +317,12 @@ template class Array<uint32_t>;
 template class Array<uint64_t>;
 template class Array<double>;
 template class Array<GeoPoint>;
+
+Array<Slice>::Array()
+    : pool_(),
+      block_info_(nullptr),
+      header_(nullptr),
+      keys_() {}
 
 Array<Slice>::~Array() {}
 
@@ -526,12 +532,6 @@ bool Array<Slice>::truncate() {
   header_->num_keys = 0;
   return true;
 }
-
-Array<Slice>::Array()
-  : pool_(),
-    block_info_(nullptr),
-    header_(nullptr),
-    keys_() {}
 
 }  // namespace map
 }  // namespace alpha

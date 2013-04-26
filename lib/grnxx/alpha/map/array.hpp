@@ -40,6 +40,7 @@ struct ArrayHeader {
 template <typename T>
 class Array : public grnxx::alpha::Map<T> {
  public:
+  Array();
   ~Array();
 
   static Array *create(io::Pool pool,
@@ -75,8 +76,6 @@ class Array : public grnxx::alpha::Map<T> {
   db::Vector<uint32_t> bits_;
   db::Vector<T> keys_;
 
-  Array();
-
   bool get_bit(int64_t key_id) {
     return bits_[key_id / 32] & (1U << (key_id % 32));
   }
@@ -92,6 +91,7 @@ class Array : public grnxx::alpha::Map<T> {
 template <>
 class Array<Slice> : public grnxx::alpha::Map<Slice> {
  public:
+  Array();
   ~Array();
 
   static Array *create(io::Pool pool,
@@ -125,8 +125,6 @@ class Array<Slice> : public grnxx::alpha::Map<Slice> {
   const io::BlockInfo *block_info_;
   ArrayHeader *header_;
   db::BlobVector keys_;
-
-  Array();
 };
 
 }  // namespace map

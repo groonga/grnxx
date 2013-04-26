@@ -26,25 +26,22 @@ namespace map {
 template <typename T>
 IDCursor<T>::IDCursor(Map<T> *map, int64_t min, int64_t max,
                       const MapCursorOptions &options)
-  : MapCursor<T>(), map_(map), cur_(), end_(), step_(), count_(0),
-    options_(options), keys_() {
+    : MapCursor<T>(), map_(map), cur_(), end_(), step_(), count_(0),
+      options_(options), keys_() {
   if (min < 0) {
     min = 0;
   } else if (options_.flags & MAP_CURSOR_EXCEPT_MIN) {
     ++min;
   }
-
   if ((max < 0) || (max > map_->max_key_id())) {
     max = map_->max_key_id();
   } else if (options_.flags & MAP_CURSOR_EXCEPT_MAX) {
     --max;
   }
-
   if (min > max) {
     cur_ = end_ = 0;
     return;
   }
-
   if ((options_.flags & MAP_CURSOR_ORDER_BY_ID) ||
       (~options_.flags & MAP_CURSOR_ORDER_BY_KEY)) {
     init_order_by_id(min, max);
@@ -89,7 +86,6 @@ template <typename T>
 void IDCursor<T>::init_order_by_id(int64_t min, int64_t max) {
   options_.flags |= MAP_CURSOR_ORDER_BY_ID;
   options_.flags &= ~MAP_CURSOR_ORDER_BY_KEY;
-
   if (~options_.flags & MAP_CURSOR_REVERSE_ORDER) {
     cur_ = min - 1;
     end_ = max;
@@ -99,7 +95,6 @@ void IDCursor<T>::init_order_by_id(int64_t min, int64_t max) {
     end_ = min;
     step_ = -1;
   }
-
   uint64_t count = 0;
   while ((count < options_.offset) && (cur_ != end_)) {
     cur_ += step_;
@@ -134,8 +129,9 @@ void IDCursor<T>::init_order_by_key(int64_t min, int64_t max) {
 }
 
 template <>
-void IDCursor<GeoPoint>::init_order_by_key(int64_t, int64_t) {
-  // Not supported.
+void IDCursor<GeoPoint>::init_order_by_key(int64_t min, int64_t max) {
+  // Ignore MAP_CURSOR_ORDER_BY_KEY.
+  init_order_by_id(min, max);
 }
 
 template class IDCursor<int8_t>;
@@ -153,8 +149,8 @@ template class IDCursor<Slice>;
 template <typename T>
 ConditionalCursor<T>::ConditionalCursor(Map<T> *map,
                                         const MapCursorOptions &options)
-  : MapCursor<T>(), map_(map), cur_(), end_(), step_(), count_(0),
-    options_(options), keys_() {}
+    : MapCursor<T>(), map_(map), cur_(), end_(), step_(), count_(0),
+      options_(options), keys_() {}
 
 template <typename T>
 ConditionalCursor<T>::~ConditionalCursor() {}
@@ -209,7 +205,6 @@ template <typename T>
 void ConditionalCursor<T>::init_order_by_id() {
   options_.flags |= MAP_CURSOR_ORDER_BY_ID;
   options_.flags &= ~MAP_CURSOR_ORDER_BY_KEY;
-
   if (~options_.flags & MAP_CURSOR_REVERSE_ORDER) {
     cur_ = -1;
     end_ = map_->max_key_id();
@@ -219,7 +214,6 @@ void ConditionalCursor<T>::init_order_by_id() {
     end_ = 0;
     step_ = -1;
   }
-
   uint64_t count = 0;
   while ((count < options_.offset) && (cur_ != end_)) {
     cur_ += step_;
@@ -233,7 +227,7 @@ void ConditionalCursor<T>::init_order_by_id() {
 
 template <typename T>
 void ConditionalCursor<T>::init_order_by_key() {
-  std::int64_t max_key_id = map_->max_key_id();
+  const std::int64_t max_key_id = map_->max_key_id();
   for (std::int64_t i = 0; i <= max_key_id; ++i) {
     T key;
     if (map_->get(i, &key)) {
@@ -243,7 +237,6 @@ void ConditionalCursor<T>::init_order_by_key() {
     }
   }
   std::sort(keys_.begin(), keys_.end());
-
   if (~options_.flags & MAP_CURSOR_REVERSE_ORDER) {
     cur_ = -1;
     end_ = keys_.size() - 1;
@@ -257,7 +250,8 @@ void ConditionalCursor<T>::init_order_by_key() {
 
 template <>
 void ConditionalCursor<GeoPoint>::init_order_by_key() {
-  // Not supported.
+  // Ignore MAP_CURSOR_ORDER_BY_KEY.
+  init_order_by_id();
 }
 
 template class ConditionalCursor<int8_t>;
@@ -274,7 +268,7 @@ template class ConditionalCursor<Slice>;
 template <typename T>
 KeyCursor<T>::KeyCursor(Map<T> *map, T min, T max,
                         const MapCursorOptions &options)
-  : ConditionalCursor<T>(map, options), min_(min), max_(max) {
+    : ConditionalCursor<T>(map, options), min_(min), max_(max) {
   this->init();
 }
 
@@ -290,7 +284,6 @@ bool KeyCursor<T>::is_valid(T key) const {
   } else if (key < min_) {
     return false;
   }
-
   if (this->options_.flags & MAP_CURSOR_EXCEPT_MAX) {
     if (key >= max_) {
       return false;
@@ -298,7 +291,6 @@ bool KeyCursor<T>::is_valid(T key) const {
   } else if (key > max_) {
     return false;
   }
-
   return true;
 }
 
@@ -311,7 +303,6 @@ bool KeyCursor<Slice>::is_valid(Slice key) const {
   } else if (key < min_) {
     return false;
   }
-
   if (max_) {
     if (this->options_.flags & MAP_CURSOR_EXCEPT_MAX) {
       if (key >= max_) {
@@ -321,7 +312,6 @@ bool KeyCursor<Slice>::is_valid(Slice key) const {
       return false;
     }
   }
-
   return true;
 }
 
@@ -339,8 +329,9 @@ template class KeyCursor<Slice>;
 BitwiseCompletionCursor::BitwiseCompletionCursor(
     Map<GeoPoint> *map, GeoPoint query, size_t bit_size,
     const MapCursorOptions &options)
-  : ConditionalCursor<GeoPoint>(map, options),
-    query_(query), mask_() {
+    : ConditionalCursor<GeoPoint>(map, options),
+      query_(query),
+      mask_() {
   if (bit_size >= 64) {
     bit_size = 64;
   }
@@ -370,8 +361,8 @@ bool BitwiseCompletionCursor::is_valid(GeoPoint key) const {
 
 PrefixCursor::PrefixCursor(Map<Slice> *map, Slice query, size_t min_size,
                            const MapCursorOptions &options)
-  : ConditionalCursor<Slice>(map, options),
-    query_(query), min_size_(min_size) {
+    : ConditionalCursor<Slice>(map, options),
+      query_(query), min_size_(min_size) {
   if (this->options_.flags & MAP_CURSOR_EXCEPT_QUERY) {
     query_.remove_suffix(1);
   }
@@ -389,7 +380,7 @@ bool PrefixCursor::is_valid(Slice key) const {
 
 CompletionCursor::CompletionCursor(Map<Slice> *map, Slice query,
                                    const MapCursorOptions &options)
-  : ConditionalCursor<Slice>(map, options), query_(query) {
+    : ConditionalCursor<Slice>(map, options), query_(query) {
   this->init();
 }
 
@@ -406,7 +397,7 @@ bool CompletionCursor::is_valid(Slice key) const {
 
 ReverseCompletionCursor::ReverseCompletionCursor(
     Map<Slice> *map, Slice query, const MapCursorOptions &options)
-  : ConditionalCursor<Slice>(map, options), query_(query) {
+    : ConditionalCursor<Slice>(map, options), query_(query) {
   this->init();
 }
 
