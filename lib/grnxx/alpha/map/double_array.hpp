@@ -31,7 +31,6 @@ template <typename T> class DoubleArrayPrefixCursor;
 template <typename T> class DoubleArrayCompletionCursor;
 class DoubleArrayBitwiseCompletionCursor;
 
-// Forward declarations.
 struct DoubleArrayHeaderForOthers;
 class DoubleArrayNodeForOthers;
 class DoubleArrayChunkForOthers;
@@ -52,7 +51,6 @@ class DoubleArrayException : Exception {
   }
 };
 
-// Forward declarations.
 struct DoubleArrayHeaderForSlice;
 class DoubleArrayNodeForSlice;
 class DoubleArrayChunkForSlice;

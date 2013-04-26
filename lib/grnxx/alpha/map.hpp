@@ -24,12 +24,10 @@
 
 namespace grnxx {
 
-// Forward declaration.
 class Charset;
 
 namespace alpha {
 
-// Forward declaration.
 class MapScan;
 
 enum MapType : int32_t {
