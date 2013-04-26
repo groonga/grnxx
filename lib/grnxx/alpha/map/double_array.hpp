@@ -95,7 +95,7 @@ class DoubleArray : public Map<T> {
   bool remove(T key);
   bool update(T src_key, T dest_key, int64_t *key_id = nullptr);
 
-  void truncate();
+  bool truncate();
 
   MapCursor<T> *open_basic_cursor(
       const MapCursorOptions &options = MapCursorOptions());
@@ -192,7 +192,7 @@ class DoubleArray<Slice> : public Map<Slice> {
   bool find_longest_prefix_match(Slice query, int64_t *key_id = nullptr,
                                  Slice *key = nullptr);
 
-  void truncate();
+  bool truncate();
 
   MapCursor<Slice> *open_basic_cursor(
       const MapCursorOptions &options = MapCursorOptions());

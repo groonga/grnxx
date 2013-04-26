@@ -287,13 +287,14 @@ bool Array<T>::update(T src_key, T dest_key, int64_t *key_id) {
 }
 
 template <typename T>
-void Array<T>::truncate() {
+bool Array<T>::truncate() {
   for (int64_t i = 0; i <= header_->max_key_id; ++i) {
     set_bit(i, false);
   }
   header_->max_key_id = -1;
   header_->next_key_id = 0;
   header_->num_keys = 0;
+  return true;
 }
 
 template <typename T>
@@ -514,13 +515,14 @@ bool Array<Slice>::update(Slice src_key, Slice dest_key, int64_t *key_id) {
   return true;
 }
 
-void Array<Slice>::truncate() {
+bool Array<Slice>::truncate() {
   for (int64_t i = 0; i <= header_->max_key_id; ++i) {
     keys_[i] = nullptr;
   }
   header_->max_key_id = -1;
   header_->next_key_id = 0;
   header_->num_keys = 0;
+  return true;
 }
 
 Array<Slice>::Array()

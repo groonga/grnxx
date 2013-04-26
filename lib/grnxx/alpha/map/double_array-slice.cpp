@@ -1532,12 +1532,13 @@ bool DoubleArray<Slice>::find_longest_prefix_match(
   return found;
 }
 
-void DoubleArray<Slice>::truncate() {
+bool DoubleArray<Slice>::truncate() {
   nodes_[ROOT_NODE_ID].set_child(INVALID_LABEL);
   nodes_[ROOT_NODE_ID].set_offset(INVALID_OFFSET);
   header_->next_key_id = 0;
   header_->max_key_id = -1;
   header_->num_keys = 0;
+  return true;
 }
 
 MapCursor<Slice> *DoubleArray<Slice>::open_basic_cursor(

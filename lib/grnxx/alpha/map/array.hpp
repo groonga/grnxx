@@ -66,7 +66,7 @@ class Array : public grnxx::alpha::Map<T> {
   bool remove(T key);
   bool update(T src_key, T dest_key, int64_t *key_id = nullptr);
 
-  void truncate();
+  bool truncate();
 
  private:
   io::Pool pool_;
@@ -118,7 +118,7 @@ class Array<Slice> : public grnxx::alpha::Map<Slice> {
   bool remove(Slice key);
   bool update(Slice src_key, Slice dest_key, int64_t *key_id = nullptr);
 
-  void truncate();
+  bool truncate();
 
  private:
   io::Pool pool_;

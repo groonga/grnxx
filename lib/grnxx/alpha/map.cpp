@@ -37,13 +37,13 @@ MapCursor<T>::~MapCursor() {}
 
 template <typename T>
 bool MapCursor<T>::next() {
-  // TODO: Not supported!?
+  // Not supported.
   return false;
 }
 
 template <typename T>
 bool MapCursor<T>::remove() {
-  // TODO: Not supported.
+  // Not supported.
   return false;
 }
 
@@ -75,8 +75,15 @@ Map<T> *Map<T>::create(MapType type, io::Pool pool,
     case MAP_DOUBLE_ARRAY: {
       return map::DoubleArray<T>::create(pool, options);
     }
+    case MAP_PATRICIA: {
+      // TODO: Not supported yet.
+      return nullptr;
+    }
+    case MAP_HASH_TABLE: {
+      // TODO: Not supported yet.
+      return nullptr;
+    }
     default: {
-      // Not supported yet.
       return nullptr;
     }
   }
@@ -93,8 +100,15 @@ Map<T> *Map<T>::open(io::Pool pool, uint32_t block_id) {
     case MAP_DOUBLE_ARRAY: {
       return map::DoubleArray<T>::open(pool, block_id);
     }
+    case MAP_PATRICIA: {
+      // TODO: Not supported yet.
+      return nullptr;
+    }
+    case MAP_HASH_TABLE: {
+      // TODO: Not supported yet.
+      return nullptr;
+    }
     default: {
-      // Not supported yet.
       return nullptr;
     }
   }
@@ -108,6 +122,17 @@ bool Map<T>::unlink(io::Pool pool, uint32_t block_id) {
     case MAP_ARRAY: {
       return map::Array<T>::unlink(pool, block_id);
     }
+    case MAP_DOUBLE_ARRAY: {
+      return map::DoubleArray<T>::unlink(pool, block_id);
+    }
+    case MAP_PATRICIA: {
+      // TODO: Not supported yet.
+      return false;
+    }
+    case MAP_HASH_TABLE: {
+      // TODO: Not supported yet.
+      return false;
+    }
     default: {
       // Not supported yet.
       return false;
@@ -118,7 +143,7 @@ bool Map<T>::unlink(io::Pool pool, uint32_t block_id) {
 template <typename T>
 uint32_t Map<T>::block_id() const {
   // Not supported.
-  return 0;
+  return io::BLOCK_INVALID_ID;
 }
 
 template <typename T>
@@ -153,6 +178,7 @@ bool Map<T>::get(int64_t, T *) {
 
 template <typename T>
 bool Map<T>::get_next(int64_t, int64_t *, T *) {
+  // Not supported.
   return false;
 }
 
@@ -215,8 +241,9 @@ bool Map<Slice>::find_longest_prefix_match(Slice query, int64_t *key_id,
 }
 
 template <typename T>
-void Map<T>::truncate() {
+bool Map<T>::truncate() {
   // Not supported.
+  return false;
 }
 
 template <typename T>
@@ -271,8 +298,7 @@ MapCursor<Slice> *Map<Slice>::open_prefix_cursor(
 }
 
 template <typename T>
-MapCursor<T> *Map<T>::open_completion_cursor(
-    T, const MapCursorOptions &) {
+MapCursor<T> *Map<T>::open_completion_cursor(T, const MapCursorOptions &) {
   // Not supported.
   return nullptr;
 }
@@ -347,13 +373,13 @@ bool MapScan::next() {
 }
 
 MapScan::MapScan(Map<Slice> *map, const Slice &query, const Charset *charset)
-  : map_(map),
-    query_(query),
-    offset_(0),
-    size_(0),
-    key_id_(-1),
-    key_(),
-    charset_(charset) {}
+    : map_(map),
+      query_(query),
+      offset_(0),
+      size_(0),
+      key_id_(-1),
+      key_(),
+      charset_(charset) {}
 
 }  // namespace alpha
 }  // namespace grnxx
