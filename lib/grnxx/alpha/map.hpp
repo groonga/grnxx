@@ -50,6 +50,9 @@ struct MapHeader {
 struct MapCursorFlagsIdentifier;
 typedef FlagsImpl<MapCursorFlagsIdentifier> MapCursorFlags;
 
+// Use the default settings.
+constexpr MapCursorFlags MAP_CURSOR_DEFAULT           =
+    MapCursorFlags::define(0x000);
 // Sort keys by ID.
 constexpr MapCursorFlags MAP_CURSOR_ORDER_BY_ID       =
     MapCursorFlags::define(0x001);
@@ -57,8 +60,8 @@ constexpr MapCursorFlags MAP_CURSOR_ORDER_BY_ID       =
 constexpr MapCursorFlags MAP_CURSOR_ORDER_BY_KEY      =
     MapCursorFlags::define(0x002);
 // TODO: Sort keys by distance.
-constexpr MapCursorFlags MAP_CURSOR_ORDER_BY_DISTANCE =
-    MapCursorFlags::define(0x004);
+//constexpr MapCursorFlags MAP_CURSOR_ORDER_BY_DISTANCE =
+//    MapCursorFlags::define(0x004);
 // Access keys in reverse order.
 constexpr MapCursorFlags MAP_CURSOR_REVERSE_ORDER     =
     MapCursorFlags::define(0x010);
@@ -77,7 +80,7 @@ struct MapCursorOptions {
   uint64_t offset;
   uint64_t limit;
 
-  constexpr MapCursorOptions() : flags(), offset(0), limit(-1) {}
+  MapCursorOptions() : flags(MAP_CURSOR_DEFAULT), offset(0), limit(-1) {}
 };
 
 template <typename T>
