@@ -18,7 +18,6 @@
 #ifndef GRNXX_ALPHA_MAP_HPP
 #define GRNXX_ALPHA_MAP_HPP
 
-#include "grnxx/alpha/geo_point.hpp"
 #include "grnxx/io/pool.hpp"
 #include "grnxx/slice.hpp"
 

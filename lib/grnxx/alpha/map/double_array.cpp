@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "../config.h"
+#include "grnxx/alpha/geo_point.hpp"
 #include "grnxx/lock.hpp"
 #include "grnxx/logger.hpp"
 

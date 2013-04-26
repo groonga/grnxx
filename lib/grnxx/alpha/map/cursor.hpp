@@ -22,6 +22,8 @@
 
 #include <vector>
 
+#include "grnxx/alpha/geo_point.hpp"
+
 namespace grnxx {
 namespace alpha {
 namespace map {

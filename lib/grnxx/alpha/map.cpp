@@ -17,6 +17,7 @@
 */
 #include "grnxx/alpha/map.hpp"
 
+#include "grnxx/alpha/geo_point.hpp"
 #include "grnxx/alpha/map/array.hpp"
 #include "grnxx/alpha/map/cursor.hpp"
 #include "grnxx/alpha/map/double_array.hpp"
