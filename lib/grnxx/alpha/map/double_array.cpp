@@ -193,7 +193,7 @@ void convert_key(GeoPoint key, uint8_t *key_buf) {
 
 }  // namespace
 
-struct DoubleArrayHeaderForOthers {
+struct DoubleArrayHeader {
   MapType map_type;
   uint32_t nodes_block_id;
   uint32_t chunks_block_id;
@@ -212,35 +212,35 @@ struct DoubleArrayHeaderForOthers {
   uint32_t leaders[MAX_CHUNK_LEVEL + 1];
   Mutex inter_process_mutex;
 
-  DoubleArrayHeaderForOthers();
+  DoubleArrayHeader();
 };
 
-DoubleArrayHeaderForOthers::DoubleArrayHeaderForOthers()
-  : map_type(MAP_DOUBLE_ARRAY),
-    nodes_block_id(io::BLOCK_INVALID_ID),
-    chunks_block_id(io::BLOCK_INVALID_ID),
-    entries_block_id(io::BLOCK_INVALID_ID),
-    keys_block_id(io::BLOCK_INVALID_ID),
-    nodes_size(0),
-    chunks_size(0),
-    entries_size(0),
-    keys_size(0),
-    next_key_id(0),
-    max_key_id(-1),
-    num_keys(0),
-    num_chunks(0),
-    num_phantoms(0),
-    num_zombies(0),
-    leaders(),
-    inter_process_mutex(MUTEX_UNLOCKED) {
+DoubleArrayHeader::DoubleArrayHeader()
+    : map_type(MAP_DOUBLE_ARRAY),
+      nodes_block_id(io::BLOCK_INVALID_ID),
+      chunks_block_id(io::BLOCK_INVALID_ID),
+      entries_block_id(io::BLOCK_INVALID_ID),
+      keys_block_id(io::BLOCK_INVALID_ID),
+      nodes_size(0),
+      chunks_size(0),
+      entries_size(0),
+      keys_size(0),
+      next_key_id(0),
+      max_key_id(-1),
+      num_keys(0),
+      num_chunks(0),
+      num_phantoms(0),
+      num_zombies(0),
+      leaders(),
+      inter_process_mutex(MUTEX_UNLOCKED) {
   for (uint32_t i = 0; i <= MAX_CHUNK_LEVEL; ++i) {
     leaders[i] = INVALID_LEADER;
   }
 }
 
-class DoubleArrayNodeForOthers {
+class DoubleArrayNode {
  public:
-  DoubleArrayNodeForOthers() : qword_(IS_PHANTOM_FLAG) {}
+  DoubleArrayNode() : qword_(IS_PHANTOM_FLAG) {}
 
   // Structure overview.
   //  0- 8 ( 9): next (is_phantom).
@@ -385,9 +385,9 @@ class DoubleArrayNodeForOthers {
   static constexpr uint8_t  CHILD_SHIFT     = 50;
 };
 
-class DoubleArrayChunkForOthers {
+class DoubleArrayChunk {
  public:
-  DoubleArrayChunkForOthers() : next_(0), prev_(0), others_(0) {}
+  DoubleArrayChunk() : next_(0), prev_(0), others_(0) {}
 
   // Chunks in the same level are doubly linked.
   uint32_t next() const {
@@ -456,15 +456,15 @@ class DoubleArrayChunkForOthers {
   static constexpr uint32_t NUM_PHANTOMS_SHIFT  = 20;
 };
 
-class DoubleArrayEntryForOthers {
+class DoubleArrayEntry {
  public:
   // Create a valid entry.
-  static DoubleArrayEntryForOthers valid_entry() {
-    return DoubleArrayEntryForOthers(0);
+  static DoubleArrayEntry valid_entry() {
+    return DoubleArrayEntry(0);
   }
   // Create an invalid entry.
-  static DoubleArrayEntryForOthers invalid_entry(uint32_t next) {
-    return DoubleArrayEntryForOthers(next);
+  static DoubleArrayEntry invalid_entry(uint32_t next) {
+    return DoubleArrayEntry(next);
   }
 
   // Return true iff "*this" is valid (associated with a key).
@@ -481,7 +481,7 @@ class DoubleArrayEntryForOthers {
  private:
   uint32_t dword_;
 
-  explicit DoubleArrayEntryForOthers(uint32_t x) : dword_(x) {}
+  explicit DoubleArrayEntry(uint32_t x) : dword_(x) {}
 };
 
 template <typename T>
@@ -515,25 +515,22 @@ template <typename T>
 DoubleArrayIDCursor<T>::DoubleArrayIDCursor(
     DoubleArray<T> *double_array, int64_t min, int64_t max,
     const MapCursorOptions &options)
-  : MapCursor<T>(), double_array_(double_array), cur_(), end_(), step_(),
-    count_(0), options_(options), keys_() {
+    : MapCursor<T>(), double_array_(double_array), cur_(), end_(), step_(),
+      count_(0), options_(options), keys_() {
   if (min < 0) {
     min = 0;
   } else if (options_.flags & MAP_CURSOR_EXCEPT_MIN) {
     ++min;
   }
-
   if ((max < 0) || (max > double_array_->max_key_id())) {
     max = double_array_->max_key_id();
   } else if (options_.flags & MAP_CURSOR_EXCEPT_MAX) {
     --max;
   }
-
   if (min > max) {
     cur_ = end_ = 0;
     return;
   }
-
   if ((options_.flags & MAP_CURSOR_ORDER_BY_ID) ||
       (~options_.flags & MAP_CURSOR_ORDER_BY_KEY)) {
     init_order_by_id(min, max);
@@ -578,7 +575,6 @@ template <typename T>
 void DoubleArrayIDCursor<T>::init_order_by_id(int64_t min, int64_t max) {
   options_.flags |= MAP_CURSOR_ORDER_BY_ID;
   options_.flags &= ~MAP_CURSOR_ORDER_BY_KEY;
-
   if (~options_.flags & MAP_CURSOR_REVERSE_ORDER) {
     cur_ = min - 1;
     end_ = max;
@@ -588,7 +584,6 @@ void DoubleArrayIDCursor<T>::init_order_by_id(int64_t min, int64_t max) {
     end_ = min;
     step_ = -1;
   }
-
   uint64_t count = 0;
   while ((count < options_.offset) && (cur_ != end_)) {
     cur_ += step_;
@@ -610,7 +605,6 @@ void DoubleArrayIDCursor<T>::init_order_by_key(int64_t min, int64_t max) {
     }
   }
   std::sort(keys_.begin(), keys_.end());
-
   if (~options_.flags & MAP_CURSOR_REVERSE_ORDER) {
     cur_ = -1;
     end_ = keys_.size() - 1;
@@ -623,8 +617,10 @@ void DoubleArrayIDCursor<T>::init_order_by_key(int64_t min, int64_t max) {
 }
 
 template <>
-void DoubleArrayIDCursor<GeoPoint>::init_order_by_key(int64_t, int64_t) {
-  // Not supported.
+void DoubleArrayIDCursor<GeoPoint>::init_order_by_key(int64_t min,
+                                                      int64_t max) {
+  // Ignore MAP_CURSOR_ORDER_BY_KEY.
+  init_order_by_id(min, max);
 }
 
 template <typename T>
@@ -660,15 +656,19 @@ template <typename T>
 DoubleArrayKeyCursor<T>::DoubleArrayKeyCursor(
     DoubleArray<T> *double_array, T min, T max,
     const MapCursorOptions &options)
-  : MapCursor<T>(), double_array_(double_array), cur_(), count_(0),
-    min_(min), max_(max), options_(options), node_ids_(), keys_() {
+    : MapCursor<T>(), double_array_(double_array), cur_(), count_(0),
+      min_(min), max_(max), options_(options), node_ids_(), keys_() {
   if ((options_.flags & MAP_CURSOR_ORDER_BY_ID) &&
       (~options_.flags & MAP_CURSOR_ORDER_BY_KEY)) {
     init_order_by_id();
-  } else if (~options_.flags & MAP_CURSOR_REVERSE_ORDER) {
-    init_order_by_key();
   } else {
-    init_reverse_order_by_key();
+    options_.flags &= ~MAP_CURSOR_ORDER_BY_ID;
+    options_.flags |= MAP_CURSOR_ORDER_BY_KEY;
+    if (~options_.flags & MAP_CURSOR_REVERSE_ORDER) {
+      init_order_by_key();
+    } else {
+      init_reverse_order_by_key();
+    }
   }
 }
 
@@ -680,8 +680,7 @@ bool DoubleArrayKeyCursor<T>::next() {
   if (count_ >= options_.limit) {
     return false;
   }
-  if ((options_.flags & MAP_CURSOR_ORDER_BY_ID) &&
-      (~options_.flags & MAP_CURSOR_ORDER_BY_KEY)) {
+  if (options_.flags & MAP_CURSOR_ORDER_BY_ID) {
     return next_order_by_id();
   } else if (~options_.flags & MAP_CURSOR_REVERSE_ORDER) {
     return next_order_by_key();
@@ -698,16 +697,13 @@ bool DoubleArrayKeyCursor<T>::remove() {
 template <typename T>
 void DoubleArrayKeyCursor<T>::init_order_by_id() {
   init_order_by_key();
-
   while (!node_ids_.empty()) {
     const uint64_t node_id = node_ids_.back();
     node_ids_.pop_back();
-
-    const DoubleArrayNodeForOthers node = double_array_->nodes_[node_id];
+    const DoubleArrayNode node = double_array_->nodes_[node_id];
     if (node.sibling() != INVALID_LABEL) {
       node_ids_.push_back(node_id ^ node.label() ^ node.sibling());
     }
-
     if (node.is_leaf()) {
       const T key = double_array_->keys_[node.key_id()];
       if ((key > max_) ||
@@ -715,12 +711,10 @@ void DoubleArrayKeyCursor<T>::init_order_by_id() {
         break;
       }
       keys_.push_back(std::make_pair(node.key_id(), key));
-      ++count_;
     } else if (node.child() != INVALID_LABEL) {
       node_ids_.push_back(node.offset() ^ node.child());
     }
   }
-
   std::sort(keys_.begin(), keys_.end());
   if (options_.flags & MAP_CURSOR_REVERSE_ORDER) {
     std::reverse(keys_.begin(), keys_.end());
@@ -734,7 +728,7 @@ void DoubleArrayKeyCursor<T>::init_order_by_key() {
   convert_key(min_, min_buf);
 
   uint64_t node_id = ROOT_NODE_ID;
-  DoubleArrayNodeForOthers node;
+  DoubleArrayNode node;
   for (size_t i = 0; i < sizeof(T); ++i) {
     node = double_array_->nodes_[node_id];
     if (node.is_leaf()) {
@@ -749,7 +743,6 @@ void DoubleArrayKeyCursor<T>::init_order_by_key() {
     } else if (node.sibling() != INVALID_LABEL) {
       node_ids_.push_back(node_id ^ node.label() ^ node.sibling());
     }
-
     node_id = node.offset() ^ min_buf[i];
     if (double_array_->nodes_[node_id].label() != min_buf[i]) {
       uint16_t label = node.child();
@@ -795,7 +788,7 @@ void DoubleArrayKeyCursor<T>::init_reverse_order_by_key() {
 
   uint64_t node_id = ROOT_NODE_ID;
   for (size_t i = 0; i < sizeof(T); ++i) {
-    const DoubleArrayNodeForOthers node = double_array_->nodes_[node_id];
+    const DoubleArrayNode node = double_array_->nodes_[node_id];
     if (node.is_leaf()) {
       const T key = double_array_->keys_[node.key_id()];
       if ((key < max_) ||
@@ -804,7 +797,6 @@ void DoubleArrayKeyCursor<T>::init_reverse_order_by_key() {
       }
       return;
     }
-
     uint16_t label = double_array_->nodes_[node_id].child();
     if (label == TERMINAL_LABEL) {
       node_id = node.offset() ^ label;
@@ -827,7 +819,7 @@ void DoubleArrayKeyCursor<T>::init_reverse_order_by_key() {
     }
   }
 
-  const DoubleArrayNodeForOthers node = double_array_->nodes_[node_id];
+  const DoubleArrayNode node = double_array_->nodes_[node_id];
   if (node.is_leaf()) {
     if (~options_.flags & MAP_CURSOR_EXCEPT_MAX) {
       node_ids_.push_back(node_id | POST_ORDER_FLAG);
@@ -859,12 +851,10 @@ bool DoubleArrayKeyCursor<T>::next_order_by_key() {
   while (!node_ids_.empty()) {
     const uint64_t node_id = node_ids_.back();
     node_ids_.pop_back();
-
-    const DoubleArrayNodeForOthers node = double_array_->nodes_[node_id];
+    const DoubleArrayNode node = double_array_->nodes_[node_id];
     if (node.sibling() != INVALID_LABEL) {
       node_ids_.push_back(node_id ^ node.label() ^ node.sibling());
     }
-
     if (node.is_leaf()) {
       const T key = double_array_->keys_[node.key_id()];
       if ((key > max_) ||
@@ -892,8 +882,7 @@ bool DoubleArrayKeyCursor<T>::next_reverse_order_by_key() {
   while (!node_ids_.empty()) {
     const bool post_order = node_ids_.back() & POST_ORDER_FLAG;
     const uint64_t node_id = node_ids_.back() & ~POST_ORDER_FLAG;
-
-    const DoubleArrayNodeForOthers node = double_array_->nodes_[node_id];
+    const DoubleArrayNode node = double_array_->nodes_[node_id];
     if (post_order) {
       node_ids_.pop_back();
       if (node.is_leaf()) {
@@ -956,13 +945,15 @@ class DoubleArrayBitwiseCompletionCursor : public MapCursor<GeoPoint> {
 DoubleArrayBitwiseCompletionCursor::DoubleArrayBitwiseCompletionCursor(
     DoubleArray<GeoPoint> *double_array, GeoPoint query, size_t bit_size,
     const MapCursorOptions &options)
-  : MapCursor<GeoPoint>(), double_array_(double_array), cur_(), count_(0),
-    query_(query), bit_size_(bit_size), mask_(), options_(options),
-    node_ids_(), keys_() {
+    : MapCursor<GeoPoint>(), double_array_(double_array), cur_(), count_(0),
+      query_(query), bit_size_(bit_size), mask_(), options_(options),
+      node_ids_(), keys_() {
   if ((options_.flags & MAP_CURSOR_ORDER_BY_ID) &&
       (~options_.flags & MAP_CURSOR_ORDER_BY_KEY)) {
     init_order_by_id();
   } else {
+    options_.flags &= ~MAP_CURSOR_ORDER_BY_ID;
+    options_.flags |= MAP_CURSOR_ORDER_BY_KEY;
     init_order_by_key();
   }
 }
@@ -973,8 +964,7 @@ bool DoubleArrayBitwiseCompletionCursor::next() {
   if (count_ >= options_.limit) {
     return false;
   }
-  if ((options_.flags & MAP_CURSOR_ORDER_BY_ID) &&
-      (~options_.flags & MAP_CURSOR_ORDER_BY_KEY)) {
+  if (options_.flags & MAP_CURSOR_ORDER_BY_ID) {
     return next_order_by_id();
   } else if (~options_.flags & MAP_CURSOR_REVERSE_ORDER) {
     return next_order_by_key();
@@ -995,7 +985,7 @@ void DoubleArrayBitwiseCompletionCursor::init_order_by_id() {
     const uint64_t node_id = node_ids_.back() & ~IS_ROOT_FLAG;
     node_ids_.pop_back();
 
-    const DoubleArrayNodeForOthers node = double_array_->nodes_[node_id];
+    const DoubleArrayNode node = double_array_->nodes_[node_id];
     if (!is_root && (node.sibling() != INVALID_LABEL)) {
       node_ids_.push_back(node_id ^ node.label() ^ node.sibling());
     }
@@ -1050,7 +1040,7 @@ void DoubleArrayBitwiseCompletionCursor::init_order_by_key() {
 
   uint64_t node_id = ROOT_NODE_ID;
   for (size_t i = 0; i < min_size; ++i) {
-    const DoubleArrayNodeForOthers node = double_array_->nodes_[node_id];
+    const DoubleArrayNode node = double_array_->nodes_[node_id];
     if (node.is_leaf()) {
       const GeoPoint key = double_array_->keys_[node.key_id()];
       if (((key.value() ^ query_.value()) & mask_) == 0) {
@@ -1061,7 +1051,6 @@ void DoubleArrayBitwiseCompletionCursor::init_order_by_key() {
       }
       return;
     }
-
     node_id = node.offset() ^ query_buf[i];
     if (double_array_->nodes_[node_id].label() != query_buf[i]) {
       return;
@@ -1090,12 +1079,10 @@ bool DoubleArrayBitwiseCompletionCursor::next_order_by_key() {
     const bool is_root = node_ids_.back() & IS_ROOT_FLAG;
     const uint64_t node_id = node_ids_.back() & ~IS_ROOT_FLAG;
     node_ids_.pop_back();
-
-    const DoubleArrayNodeForOthers node = double_array_->nodes_[node_id];
+    const DoubleArrayNode node = double_array_->nodes_[node_id];
     if (!is_root && (node.sibling() != INVALID_LABEL)) {
       node_ids_.push_back(node_id ^ node.label() ^ node.sibling());
     }
-
     if (node.is_leaf()) {
       const GeoPoint key = double_array_->keys_[node.key_id()];
       if (((key.value() ^ query_.value()) & mask_) == 0) {
@@ -1119,8 +1106,7 @@ bool DoubleArrayBitwiseCompletionCursor::next_reverse_order_by_key() {
   while (!node_ids_.empty()) {
     const bool post_order = node_ids_.back() & POST_ORDER_FLAG;
     const uint64_t node_id = node_ids_.back() & ~POST_ORDER_FLAG;
-
-    const DoubleArrayNodeForOthers node = double_array_->nodes_[node_id];
+    const DoubleArrayNode node = double_array_->nodes_[node_id];
     if (post_order) {
       node_ids_.pop_back();
       if (node.is_leaf()) {
@@ -1464,14 +1450,14 @@ MapCursor<GeoPoint> *DoubleArray<GeoPoint>::open_bitwise_completion_cursor(
 
 template <typename T>
 DoubleArray<T>::DoubleArray()
-  : pool_(),
-    block_info_(nullptr),
-    header_(nullptr),
-    nodes_(nullptr),
-    chunks_(nullptr),
-    entries_(nullptr),
-    keys_(nullptr),
-    initialized_(false) {}
+    : pool_(),
+      block_info_(nullptr),
+      header_(nullptr),
+      nodes_(nullptr),
+      chunks_(nullptr),
+      entries_(nullptr),
+      keys_(nullptr),
+      initialized_(false) {}
 
 template <typename T>
 void DoubleArray<T>::create_double_array(io::Pool pool, const MapOptions &) {

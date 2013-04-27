@@ -70,10 +70,12 @@ class ConditionalCursor : public MapCursor<T> {
   std::vector<std::pair<T, int64_t>> keys_;
 
   void init();
-  void init_order_by_id();
-  void init_order_by_key();
 
   virtual bool is_valid(T key) const = 0;
+
+ private:
+  void init_order_by_id();
+  void init_order_by_key();
 };
 
 template <typename T>

@@ -256,29 +256,47 @@ void test_key_cursor(const std::unique_ptr<Map<T>> &map) {
     std::swap(min_key, max_key);
   }
 
-  std::unique_ptr<MapCursor<T>> cursor(
-      map->open_key_cursor(min_key, max_key));
+  std::unique_ptr<MapCursor<T>> cursor;
+  cursor.reset(map->open_key_cursor(min_key, max_key));
+  size_t basic_count = 0;
   while (cursor->next()) {
     assert(cursor->key() >= min_key);
     assert(cursor->key() <= max_key);
+    ++basic_count;
   }
   assert(!cursor->next());
 
   grnxx::alpha::MapCursorOptions options;
-  options.flags |= grnxx::alpha::MAP_CURSOR_EXCEPT_MIN |
-                   grnxx::alpha::MAP_CURSOR_EXCEPT_MAX;
+  options.flags = grnxx::alpha::MAP_CURSOR_EXCEPT_MIN |
+                  grnxx::alpha::MAP_CURSOR_EXCEPT_MAX;
   cursor.reset(map->open_key_cursor(min_key, max_key, options));
+  size_t count = 0;
   while (cursor->next()) {
     assert(cursor->key() > min_key);
     assert(cursor->key() < max_key);
+    ++count;
   }
   assert(!cursor->next());
+  assert(count <= basic_count);
+
+  options.flags = grnxx::alpha::MAP_CURSOR_ORDER_BY_ID;
+  cursor.reset(map->open_key_cursor(min_key, max_key, options));
+  count = 0;
+  while (cursor->next()) {
+    assert(cursor->key() >= min_key);
+    assert(cursor->key() <= max_key);
+    ++count;
+  }
+  assert(!cursor->next());
+  assert(count == basic_count);
 
   options.flags = grnxx::alpha::MAP_CURSOR_ORDER_BY_KEY;
   cursor.reset(map->open_key_cursor(min_key, max_key, options));
+  count = 0;
   if (cursor->next()) {
     assert(cursor->key() >= min_key);
     assert(cursor->key() <= max_key);
+    ++count;
   }
   T prev_key = cursor->key();
   while (cursor->next()) {
@@ -286,8 +304,10 @@ void test_key_cursor(const std::unique_ptr<Map<T>> &map) {
     assert(cursor->key() <= max_key);
     assert(prev_key < cursor->key());
     prev_key = cursor->key();
+    ++count;
   }
   assert(!cursor->next());
+  assert(count == basic_count);
 }
 
 void test_key_cursor(

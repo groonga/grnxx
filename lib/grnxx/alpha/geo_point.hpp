@@ -35,7 +35,7 @@ union GeoPoint {
   GeoPoint(const GeoPoint &x) : value_(x.value_) {}
   // Copy lat/long.
   GeoPoint(int32_t latitude, int32_t longitude)
-    : point_{ latitude, longitude } {}
+      : point_{ latitude, longitude } {}
 
   // Assign lat/long as uint64_t to force atomic assignment.
   GeoPoint &operator=(const GeoPoint &x) {

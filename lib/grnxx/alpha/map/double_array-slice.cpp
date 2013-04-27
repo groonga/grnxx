@@ -76,7 +76,7 @@ constexpr uint32_t INVALID_LEADER    = std::numeric_limits<uint32_t>::max();
 
 }  // namespace
 
-struct DoubleArrayHeaderForSlice {
+struct SliceDoubleArrayHeader {
   MapType map_type;
   uint32_t nodes_block_id;
   uint32_t chunks_block_id;
@@ -97,37 +97,37 @@ struct DoubleArrayHeaderForSlice {
   uint32_t leaders[MAX_CHUNK_LEVEL + 1];
   Mutex inter_process_mutex;
 
-  DoubleArrayHeaderForSlice();
+  SliceDoubleArrayHeader();
 };
 
-DoubleArrayHeaderForSlice::DoubleArrayHeaderForSlice()
-  : map_type(MAP_DOUBLE_ARRAY),
-    nodes_block_id(io::BLOCK_INVALID_ID),
-    chunks_block_id(io::BLOCK_INVALID_ID),
-    entries_block_id(io::BLOCK_INVALID_ID),
-    keys_block_id(io::BLOCK_INVALID_ID),
-    nodes_size(0),
-    chunks_size(0),
-    entries_size(0),
-    keys_size(0),
-    next_key_id(0),
-    next_key_pos(0),
-    max_key_id(-1),
-    total_key_length(0),
-    num_keys(0),
-    num_chunks(0),
-    num_phantoms(0),
-    num_zombies(0),
-    leaders(),
-    inter_process_mutex(MUTEX_UNLOCKED) {
+SliceDoubleArrayHeader::SliceDoubleArrayHeader()
+    : map_type(MAP_DOUBLE_ARRAY),
+      nodes_block_id(io::BLOCK_INVALID_ID),
+      chunks_block_id(io::BLOCK_INVALID_ID),
+      entries_block_id(io::BLOCK_INVALID_ID),
+      keys_block_id(io::BLOCK_INVALID_ID),
+      nodes_size(0),
+      chunks_size(0),
+      entries_size(0),
+      keys_size(0),
+      next_key_id(0),
+      next_key_pos(0),
+      max_key_id(-1),
+      total_key_length(0),
+      num_keys(0),
+      num_chunks(0),
+      num_phantoms(0),
+      num_zombies(0),
+      leaders(),
+      inter_process_mutex(MUTEX_UNLOCKED) {
   for (uint32_t i = 0; i <= MAX_CHUNK_LEVEL; ++i) {
     leaders[i] = INVALID_LEADER;
   }
 }
 
-class DoubleArrayNodeForSlice {
+class SliceDoubleArrayNode {
  public:
-  DoubleArrayNodeForSlice() : qword_(IS_PHANTOM_FLAG) {}
+  SliceDoubleArrayNode() : qword_(IS_PHANTOM_FLAG) {}
 
   // Structure overview.
   //  0- 8 ( 9): next (is_phantom).
@@ -272,9 +272,9 @@ class DoubleArrayNodeForSlice {
   static constexpr uint8_t  CHILD_SHIFT     = 50;
 };
 
-class DoubleArrayChunkForSlice {
+class SliceDoubleArrayChunk {
  public:
-  DoubleArrayChunkForSlice() : next_(0), prev_(0), others_(0) {}
+  SliceDoubleArrayChunk() : next_(0), prev_(0), others_(0) {}
 
   // Chunks in the same level are doubly linked.
   uint32_t next() const {
@@ -343,15 +343,15 @@ class DoubleArrayChunkForSlice {
   static constexpr uint32_t NUM_PHANTOMS_SHIFT  = 20;
 };
 
-class DoubleArrayEntryForSlice {
+class SliceDoubleArrayEntry {
  public:
   // Create a valid entry.
-  static DoubleArrayEntryForSlice valid_entry(uint32_t key_pos) {
-    return DoubleArrayEntryForSlice(IS_VALID_FLAG | key_pos);
+  static SliceDoubleArrayEntry valid_entry(uint32_t key_pos) {
+    return SliceDoubleArrayEntry(IS_VALID_FLAG | key_pos);
   }
   // Create an invalid entry.
-  static DoubleArrayEntryForSlice invalid_entry(uint32_t next) {
-    return DoubleArrayEntryForSlice(next);
+  static SliceDoubleArrayEntry invalid_entry(uint32_t next) {
+    return SliceDoubleArrayEntry(next);
   }
 
   // Return true iff "*this" is valid (associated with a key).
@@ -376,15 +376,15 @@ class DoubleArrayEntryForSlice {
 
   static constexpr uint32_t IS_VALID_FLAG = uint32_t(1) << 31;
 
-  explicit DoubleArrayEntryForSlice(uint32_t x) : dword_(x) {}
+  explicit SliceDoubleArrayEntry(uint32_t x) : dword_(x) {}
 };
 
-class DoubleArrayKeyForSlice {
+class SliceDoubleArrayKey {
  public:
-  DoubleArrayKeyForSlice(int32_t id, const Slice &key)
-    : id_(id),
-      size_(static_cast<uint16_t>(key.size())),
-      buf_{ '\0', '\0' } {
+  SliceDoubleArrayKey(int32_t id, const Slice &key)
+      : id_(id),
+        size_(static_cast<uint16_t>(key.size())),
+        buf_{ '\0', '\0' } {
     std::memcpy(buf_, key.ptr(), key.size());
   }
 
@@ -457,25 +457,22 @@ class DoubleArrayIDCursor<Slice> : public MapCursor<Slice> {
 DoubleArrayIDCursor<Slice>::DoubleArrayIDCursor(
     DoubleArray<Slice> *double_array, int64_t min, int64_t max,
     const MapCursorOptions &options)
-  : MapCursor<Slice>(), double_array_(double_array), cur_(), end_(), step_(),
-    count_(0), options_(options), keys_() {
+    : MapCursor<Slice>(), double_array_(double_array), cur_(), end_(), step_(),
+      count_(0), options_(options), keys_() {
   if (min < 0) {
     min = 0;
   } else if (options_.flags & MAP_CURSOR_EXCEPT_MIN) {
     ++min;
   }
-
   if ((max < 0) || (max > double_array_->max_key_id())) {
     max = double_array_->max_key_id();
   } else if (options_.flags & MAP_CURSOR_EXCEPT_MAX) {
     --max;
   }
-
   if (min > max) {
     cur_ = end_ = 0;
     return;
   }
-
   if ((options_.flags & MAP_CURSOR_ORDER_BY_ID) ||
       (~options_.flags & MAP_CURSOR_ORDER_BY_KEY)) {
     init_order_by_id(min, max);
@@ -516,7 +513,6 @@ bool DoubleArrayIDCursor<Slice>::remove() {
 void DoubleArrayIDCursor<Slice>::init_order_by_id(int64_t min, int64_t max) {
   options_.flags |= MAP_CURSOR_ORDER_BY_ID;
   options_.flags &= ~MAP_CURSOR_ORDER_BY_KEY;
-
   if (~options_.flags & MAP_CURSOR_REVERSE_ORDER) {
     cur_ = min - 1;
     end_ = max;
@@ -526,7 +522,6 @@ void DoubleArrayIDCursor<Slice>::init_order_by_id(int64_t min, int64_t max) {
     end_ = min;
     step_ = -1;
   }
-
   uint64_t count = 0;
   while ((count < options_.offset) && (cur_ != end_)) {
     cur_ += step_;
@@ -547,7 +542,6 @@ void DoubleArrayIDCursor<Slice>::init_order_by_key(int64_t min, int64_t max) {
     }
   }
   std::sort(keys_.begin(), keys_.end());
-
   if (~options_.flags & MAP_CURSOR_REVERSE_ORDER) {
     cur_ = -1;
     end_ = keys_.size() - 1;
@@ -592,15 +586,19 @@ class DoubleArrayKeyCursor<Slice> : public MapCursor<Slice> {
 DoubleArrayKeyCursor<Slice>::DoubleArrayKeyCursor(
     DoubleArray<Slice> *double_array, Slice min, Slice max,
     const MapCursorOptions &options)
-  : MapCursor<Slice>(), double_array_(double_array), cur_(), count_(0),
-    min_(min), max_(max), options_(options), node_ids_(), keys_() {
+    : MapCursor<Slice>(), double_array_(double_array), cur_(), count_(0),
+      min_(min), max_(max), options_(options), node_ids_(), keys_() {
   if ((options_.flags & MAP_CURSOR_ORDER_BY_ID) &&
       (~options_.flags & MAP_CURSOR_ORDER_BY_KEY)) {
     init_order_by_id();
-  } else if (~options_.flags & MAP_CURSOR_REVERSE_ORDER) {
-    init_order_by_key();
   } else {
-    init_reverse_order_by_key();
+    options_.flags &= ~MAP_CURSOR_ORDER_BY_ID;
+    options_.flags |= MAP_CURSOR_ORDER_BY_KEY;
+    if (~options_.flags & MAP_CURSOR_REVERSE_ORDER) {
+      init_order_by_key();
+    } else {
+      init_reverse_order_by_key();
+    }
   }
 }
 
@@ -610,8 +608,7 @@ bool DoubleArrayKeyCursor<Slice>::next() {
   if (count_ >= options_.limit) {
     return false;
   }
-  if ((options_.flags & MAP_CURSOR_ORDER_BY_ID) &&
-      (~options_.flags & MAP_CURSOR_ORDER_BY_KEY)) {
+  if (options_.flags & MAP_CURSOR_ORDER_BY_ID) {
     return next_order_by_id();
   } else if (~options_.flags & MAP_CURSOR_REVERSE_ORDER) {
     return next_order_by_key();
@@ -626,18 +623,15 @@ bool DoubleArrayKeyCursor<Slice>::remove() {
 
 void DoubleArrayKeyCursor<Slice>::init_order_by_id() {
   init_order_by_key();
-
   while (!node_ids_.empty()) {
     const uint64_t node_id = node_ids_.back();
     node_ids_.pop_back();
-
-    const DoubleArrayNodeForSlice node = double_array_->nodes_[node_id];
+    const SliceDoubleArrayNode node = double_array_->nodes_[node_id];
     if (node.sibling() != INVALID_LABEL) {
       node_ids_.push_back(node_id ^ node.label() ^ node.sibling());
     }
-
     if (node.is_leaf()) {
-      const DoubleArrayKeyForSlice &key =
+      const SliceDoubleArrayKey &key =
           double_array_->get_key(node.key_pos());
       if (max_) {
         const int result = key.slice().compare(Slice(max_.ptr(), max_.size()));
@@ -647,12 +641,10 @@ void DoubleArrayKeyCursor<Slice>::init_order_by_id() {
         }
       }
       keys_.push_back(std::make_pair(key.id(), key.slice()));
-      ++count_;
     } else if (node.child() != INVALID_LABEL) {
       node_ids_.push_back(node.offset() ^ node.child());
     }
   }
-
   std::sort(keys_.begin(), keys_.end());
   if (options_.flags & MAP_CURSOR_REVERSE_ORDER) {
     std::reverse(keys_.begin(), keys_.end());
@@ -665,13 +657,12 @@ void DoubleArrayKeyCursor<Slice>::init_order_by_key() {
     node_ids_.push_back(ROOT_NODE_ID);
     return;
   }
-
   uint64_t node_id = ROOT_NODE_ID;
-  DoubleArrayNodeForSlice node;
+  SliceDoubleArrayNode node;
   for (size_t i = 0; i < min_.size(); ++i) {
     node = double_array_->nodes_[node_id];
     if (node.is_leaf()) {
-      const DoubleArrayKeyForSlice &key =
+      const SliceDoubleArrayKey &key =
           double_array_->get_key(node.key_pos());
       const int result = key.slice().compare(min_, i);
       if ((result > 0) ||
@@ -684,7 +675,6 @@ void DoubleArrayKeyCursor<Slice>::init_order_by_key() {
     } else if (node.sibling() != INVALID_LABEL) {
       node_ids_.push_back(node_id ^ node.label() ^ node.sibling());
     }
-
     node_id = node.offset() ^ min_[i];
     if (double_array_->nodes_[node_id].label() != min_[i]) {
       uint16_t label = node.child();
@@ -704,7 +694,7 @@ void DoubleArrayKeyCursor<Slice>::init_order_by_key() {
 
   node = double_array_->nodes_[node_id];
   if (node.is_leaf()) {
-    const DoubleArrayKeyForSlice &key = double_array_->get_key(node.key_pos());
+    const SliceDoubleArrayKey &key = double_array_->get_key(node.key_pos());
     if ((key.size() != min_.size()) ||
         (~options_.flags & MAP_CURSOR_EXCEPT_MIN)) {
       node_ids_.push_back(node_id);
@@ -730,12 +720,11 @@ void DoubleArrayKeyCursor<Slice>::init_reverse_order_by_key() {
     node_ids_.push_back(ROOT_NODE_ID);
     return;
   }
-
   uint64_t node_id = ROOT_NODE_ID;
   for (size_t i = 0; i < max_.size(); ++i) {
-    const DoubleArrayNodeForSlice node = double_array_->nodes_[node_id];
+    const SliceDoubleArrayNode node = double_array_->nodes_[node_id];
     if (node.is_leaf()) {
-      const DoubleArrayKeyForSlice &key =
+      const SliceDoubleArrayKey &key =
           double_array_->get_key(node.key_pos());
       const int result = key.slice().compare(max_, i);
       if ((result < 0) ||
@@ -744,7 +733,6 @@ void DoubleArrayKeyCursor<Slice>::init_reverse_order_by_key() {
       }
       return;
     }
-
     uint16_t label = double_array_->nodes_[node_id].child();
     if (label == TERMINAL_LABEL) {
       node_id = node.offset() ^ label;
@@ -767,9 +755,9 @@ void DoubleArrayKeyCursor<Slice>::init_reverse_order_by_key() {
     }
   }
 
-  const DoubleArrayNodeForSlice node = double_array_->nodes_[node_id];
+  const SliceDoubleArrayNode node = double_array_->nodes_[node_id];
   if (node.is_leaf()) {
-    const DoubleArrayKeyForSlice &key = double_array_->get_key(node.key_pos());
+    const SliceDoubleArrayKey &key = double_array_->get_key(node.key_pos());
     if ((key.size() == max_.size()) &&
         (~options_.flags & MAP_CURSOR_EXCEPT_MAX)) {
       node_ids_.push_back(node_id | POST_ORDER_FLAG);
@@ -799,14 +787,12 @@ bool DoubleArrayKeyCursor<Slice>::next_order_by_key() {
   while (!node_ids_.empty()) {
     const uint64_t node_id = node_ids_.back();
     node_ids_.pop_back();
-
-    const DoubleArrayNodeForSlice node = double_array_->nodes_[node_id];
+    const SliceDoubleArrayNode node = double_array_->nodes_[node_id];
     if (node.sibling() != INVALID_LABEL) {
       node_ids_.push_back(node_id ^ node.label() ^ node.sibling());
     }
-
     if (node.is_leaf()) {
-      const DoubleArrayKeyForSlice &key =
+      const SliceDoubleArrayKey &key =
           double_array_->get_key(node.key_pos());
       if (max_) {
         const int result = key.slice().compare(Slice(max_.ptr(), max_.size()));
@@ -835,12 +821,11 @@ bool DoubleArrayKeyCursor<Slice>::next_reverse_order_by_key() {
   while (!node_ids_.empty()) {
     const bool post_order = node_ids_.back() & POST_ORDER_FLAG;
     const uint64_t node_id = node_ids_.back() & ~POST_ORDER_FLAG;
-
-    const DoubleArrayNodeForSlice node = double_array_->nodes_[node_id];
+    const SliceDoubleArrayNode node = double_array_->nodes_[node_id];
     if (post_order) {
       node_ids_.pop_back();
       if (node.is_leaf()) {
-        const DoubleArrayKeyForSlice &key =
+        const SliceDoubleArrayKey &key =
             double_array_->get_key(node.key_pos());
         if (min_) {
           const int result =
@@ -897,15 +882,16 @@ class DoubleArrayPrefixCursor<Slice> : public MapCursor<Slice> {
 DoubleArrayPrefixCursor<Slice>::DoubleArrayPrefixCursor(
     DoubleArray<Slice> *double_array, Slice query, size_t min_size,
     const MapCursorOptions &options)
-  : MapCursor<Slice>(), double_array_(double_array), cur_(),
-    count_(0), options_(options), keys_() {
-  if ((~options_.flags & MAP_CURSOR_ORDER_BY_ID) ||
-      (options_.flags & MAP_CURSOR_ORDER_BY_KEY)) {
-    init_order_by_key(query, min_size);
-  } else {
+    : MapCursor<Slice>(), double_array_(double_array), cur_(),
+      count_(0), options_(options), keys_() {
+  if ((options_.flags & MAP_CURSOR_ORDER_BY_ID) &&
+      (~options_.flags & MAP_CURSOR_ORDER_BY_KEY)) {
     init_order_by_id(query, min_size);
+  } else {
+    options_.flags &= ~MAP_CURSOR_ORDER_BY_ID;
+    options_.flags |= MAP_CURSOR_ORDER_BY_KEY;
+    init_order_by_key(query, min_size);
   }
-
   if (options_.flags & MAP_CURSOR_REVERSE_ORDER) {
     std::reverse(keys_.begin(), keys_.end());
   }
@@ -935,7 +921,6 @@ bool DoubleArrayPrefixCursor<Slice>::remove() {
 void DoubleArrayPrefixCursor<Slice>::init_order_by_id(
     Slice query, size_t min_size) {
   init_order_by_key(query, min_size);
-
   std::sort(keys_.begin(), keys_.end());
 }
 
@@ -944,13 +929,12 @@ void DoubleArrayPrefixCursor<Slice>::init_order_by_key(
   if ((query.size() > 0) && (options_.flags & MAP_CURSOR_EXCEPT_QUERY)) {
     query.remove_suffix(1);
   }
-
   uint64_t node_id = ROOT_NODE_ID;
   size_t i;
   for (i = 0; i < query.size(); ++i) {
-    const DoubleArrayNodeForSlice node = double_array_->nodes_[node_id];
+    const SliceDoubleArrayNode node = double_array_->nodes_[node_id];
     if (node.is_leaf()) {
-      const DoubleArrayKeyForSlice &key =
+      const SliceDoubleArrayKey &key =
           double_array_->get_key(node.key_pos());
       if ((key.size() >= min_size) && (key.size() <= query.size()) &&
           key.equals_to(query.prefix(key.size()), i)) {
@@ -958,18 +942,16 @@ void DoubleArrayPrefixCursor<Slice>::init_order_by_key(
       }
       break;
     }
-
     if ((i >= min_size) &&
         (double_array_->nodes_[node_id].child() == TERMINAL_LABEL)) {
-      const DoubleArrayNodeForSlice leaf_node =
+      const SliceDoubleArrayNode leaf_node =
           double_array_->nodes_[node.offset() ^ TERMINAL_LABEL];
       if (leaf_node.is_leaf()) {
-        const DoubleArrayKeyForSlice &key =
+        const SliceDoubleArrayKey &key =
             double_array_->get_key(leaf_node.key_pos());
         keys_.push_back(std::make_pair(key.id(), key.slice()));
       }
     }
-
     node_id = node.offset() ^ query[i];
     if (double_array_->nodes_[node_id].label() != query[i]) {
       break;
@@ -977,18 +959,18 @@ void DoubleArrayPrefixCursor<Slice>::init_order_by_key(
   }
 
   if (i == query.size()) {
-    const DoubleArrayNodeForSlice node = double_array_->nodes_[node_id];
+    const SliceDoubleArrayNode node = double_array_->nodes_[node_id];
     if (node.is_leaf()) {
-      const DoubleArrayKeyForSlice &key =
+      const SliceDoubleArrayKey &key =
           double_array_->get_key(node.key_pos());
       if ((key.size() >= min_size) && (key.size() <= query.size())) {
         keys_.push_back(std::make_pair(key.id(), key.slice()));
       }
     } else if (double_array_->nodes_[node_id].child() == TERMINAL_LABEL) {
-      const DoubleArrayNodeForSlice leaf_node =
+      const SliceDoubleArrayNode leaf_node =
           double_array_->nodes_[node.offset() ^ TERMINAL_LABEL];
       if (leaf_node.is_leaf()) {
-        const DoubleArrayKeyForSlice &key =
+        const SliceDoubleArrayKey &key =
             double_array_->get_key(leaf_node.key_pos());
         keys_.push_back(std::make_pair(key.id(), key.slice()));
       }
@@ -1028,12 +1010,14 @@ class DoubleArrayCompletionCursor<Slice> : public MapCursor<Slice> {
 DoubleArrayCompletionCursor<Slice>::DoubleArrayCompletionCursor(
     DoubleArray<Slice> *double_array, Slice query,
     const MapCursorOptions &options)
-  : MapCursor<Slice>(), double_array_(double_array), cur_(), count_(0),
-    query_(query), min_size_(), options_(options), node_ids_(), keys_() {
+    : MapCursor<Slice>(), double_array_(double_array), cur_(), count_(0),
+      query_(query), min_size_(), options_(options), node_ids_(), keys_() {
   if ((options_.flags & MAP_CURSOR_ORDER_BY_ID) &&
       (~options_.flags & MAP_CURSOR_ORDER_BY_KEY)) {
     init_order_by_id();
   } else {
+    options_.flags &= ~MAP_CURSOR_ORDER_BY_ID;
+    options_.flags |= MAP_CURSOR_ORDER_BY_KEY;
     init_order_by_key();
   }
 }
@@ -1044,8 +1028,7 @@ bool DoubleArrayCompletionCursor<Slice>::next() {
   if (count_ >= options_.limit) {
     return false;
   }
-  if ((options_.flags & MAP_CURSOR_ORDER_BY_ID) &&
-      (~options_.flags & MAP_CURSOR_ORDER_BY_KEY)) {
+  if (options_.flags & MAP_CURSOR_ORDER_BY_ID) {
     return next_order_by_id();
   } else if (~options_.flags & MAP_CURSOR_REVERSE_ORDER) {
     return next_order_by_key();
@@ -1060,19 +1043,16 @@ bool DoubleArrayCompletionCursor<Slice>::remove() {
 
 void DoubleArrayCompletionCursor<Slice>::init_order_by_id() {
   init_order_by_key();
-
   while (!node_ids_.empty()) {
     const bool is_root = node_ids_.back() & IS_ROOT_FLAG;
     const uint64_t node_id = node_ids_.back() & ~IS_ROOT_FLAG;
     node_ids_.pop_back();
-
-    const DoubleArrayNodeForSlice node = double_array_->nodes_[node_id];
+    const SliceDoubleArrayNode node = double_array_->nodes_[node_id];
     if (!is_root && (node.sibling() != INVALID_LABEL)) {
       node_ids_.push_back(node_id ^ node.label() ^ node.sibling());
     }
-
     if (node.is_leaf()) {
-      const DoubleArrayKeyForSlice &key =
+      const SliceDoubleArrayKey &key =
           double_array_->get_key(node.key_pos());
       if (key.size() >= min_size_) {
         keys_.push_back(std::make_pair(key.id(), key.slice()));
@@ -1081,7 +1061,6 @@ void DoubleArrayCompletionCursor<Slice>::init_order_by_id() {
       node_ids_.push_back(node.offset() ^ node.child());
     }
   }
-
   std::sort(keys_.begin(), keys_.end());
   if (options_.flags & MAP_CURSOR_REVERSE_ORDER) {
     std::reverse(keys_.begin(), keys_.end());
@@ -1094,12 +1073,11 @@ void DoubleArrayCompletionCursor<Slice>::init_order_by_key() {
   if (options_.flags & MAP_CURSOR_EXCEPT_QUERY) {
     ++min_size_;
   }
-
   uint64_t node_id = ROOT_NODE_ID;
   for (size_t i = 0; i < query_.size(); ++i) {
-    const DoubleArrayNodeForSlice node = double_array_->nodes_[node_id];
+    const SliceDoubleArrayNode node = double_array_->nodes_[node_id];
     if (node.is_leaf()) {
-      const DoubleArrayKeyForSlice &key =
+      const SliceDoubleArrayKey &key =
           double_array_->get_key(node.key_pos());
       if ((key.size() >= min_size_) &&
           (key.slice().subslice(i, query_.size() - i) ==
@@ -1111,13 +1089,11 @@ void DoubleArrayCompletionCursor<Slice>::init_order_by_key() {
       }
       return;
     }
-
     node_id = node.offset() ^ query_[i];
     if (double_array_->nodes_[node_id].label() != query_[i]) {
       return;
     }
   }
-
   if (~options_.flags & MAP_CURSOR_REVERSE_ORDER) {
     node_id |= IS_ROOT_FLAG;
   }
@@ -1140,14 +1116,12 @@ bool DoubleArrayCompletionCursor<Slice>::next_order_by_key() {
     const bool is_root = node_ids_.back() & IS_ROOT_FLAG;
     const uint64_t node_id = node_ids_.back() & ~IS_ROOT_FLAG;
     node_ids_.pop_back();
-
-    const DoubleArrayNodeForSlice node = double_array_->nodes_[node_id];
+    const SliceDoubleArrayNode node = double_array_->nodes_[node_id];
     if (!is_root && (node.sibling() != INVALID_LABEL)) {
       node_ids_.push_back(node_id ^ node.label() ^ node.sibling());
     }
-
     if (node.is_leaf()) {
-      const DoubleArrayKeyForSlice &key =
+      const SliceDoubleArrayKey &key =
           double_array_->get_key(node.key_pos());
       if (key.size() >= min_size_) {
         if (options_.offset > 0) {
@@ -1170,12 +1144,11 @@ bool DoubleArrayCompletionCursor<Slice>::next_reverse_order_by_key() {
   while (!node_ids_.empty()) {
     const bool post_order = node_ids_.back() & POST_ORDER_FLAG;
     const uint64_t node_id = node_ids_.back() & ~POST_ORDER_FLAG;
-
-    const DoubleArrayNodeForSlice node = double_array_->nodes_[node_id];
+    const SliceDoubleArrayNode node = double_array_->nodes_[node_id];
     if (post_order) {
       node_ids_.pop_back();
       if (node.is_leaf()) {
-        const DoubleArrayKeyForSlice &key =
+        const SliceDoubleArrayKey &key =
             double_array_->get_key(node.key_pos());
         if (key.size() >= min_size_) {
           if (options_.offset > 0) {
@@ -1577,14 +1550,14 @@ MapCursor<Slice> *DoubleArray<Slice>::open_completion_cursor(
 }
 
 DoubleArray<Slice>::DoubleArray()
-  : pool_(),
-    block_info_(nullptr),
-    header_(nullptr),
-    nodes_(nullptr),
-    chunks_(nullptr),
-    entries_(nullptr),
-    keys_(nullptr),
-    initialized_(false) {}
+    : pool_(),
+      block_info_(nullptr),
+      header_(nullptr),
+      nodes_(nullptr),
+      chunks_(nullptr),
+      entries_(nullptr),
+      keys_(nullptr),
+      initialized_(false) {}
 
 void DoubleArray<Slice>::create_double_array(io::Pool pool,
                                              const MapOptions &) {

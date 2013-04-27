@@ -31,10 +31,16 @@ template <typename T> class DoubleArrayPrefixCursor;
 template <typename T> class DoubleArrayCompletionCursor;
 class DoubleArrayBitwiseCompletionCursor;
 
-struct DoubleArrayHeaderForOthers;
-class DoubleArrayNodeForOthers;
-class DoubleArrayChunkForOthers;
-class DoubleArrayEntryForOthers;
+struct DoubleArrayHeader;
+class DoubleArrayNode;
+class DoubleArrayChunk;
+class DoubleArrayEntry;
+
+struct SliceDoubleArrayHeader;
+class SliceDoubleArrayNode;
+class SliceDoubleArrayChunk;
+class SliceDoubleArrayEntry;
+class SliceDoubleArrayKey;
 
 class DoubleArrayException : Exception {
  public:
@@ -51,12 +57,6 @@ class DoubleArrayException : Exception {
   }
 };
 
-struct DoubleArrayHeaderForSlice;
-class DoubleArrayNodeForSlice;
-class DoubleArrayChunkForSlice;
-class DoubleArrayEntryForSlice;
-class DoubleArrayKeyForSlice;
-
 template <typename T>
 class DoubleArray : public Map<T> {
   friend class DoubleArrayIDCursor<T>;
@@ -64,11 +64,6 @@ class DoubleArray : public Map<T> {
   friend class DoubleArrayBitwiseCompletionCursor;
 
  public:
-  typedef DoubleArrayHeaderForOthers DoubleArrayHeader;
-  typedef DoubleArrayNodeForOthers DoubleArrayNode;
-  typedef DoubleArrayChunkForOthers DoubleArrayChunk;
-  typedef DoubleArrayEntryForOthers DoubleArrayEntry;
-
   ~DoubleArray();
 
   static DoubleArray<T> *create(io::Pool pool,
@@ -99,9 +94,11 @@ class DoubleArray : public Map<T> {
 
   MapCursor<T> *open_basic_cursor(
       const MapCursorOptions &options = MapCursorOptions());
-  MapCursor<T> *open_id_cursor(int64_t min, int64_t max,
+  MapCursor<T> *open_id_cursor(
+      int64_t min, int64_t max,
       const MapCursorOptions &options = MapCursorOptions());
-  MapCursor<T> *open_key_cursor(T min, T max,
+  MapCursor<T> *open_key_cursor(
+      T min, T max,
       const MapCursorOptions &options = MapCursorOptions());
 
   MapCursor<T> *open_bitwise_completion_cursor(
@@ -157,11 +154,11 @@ class DoubleArray<Slice> : public Map<Slice> {
   friend class DoubleArrayCompletionCursor<Slice>;
 
  public:
-  typedef DoubleArrayHeaderForSlice DoubleArrayHeader;
-  typedef DoubleArrayNodeForSlice DoubleArrayNode;
-  typedef DoubleArrayChunkForSlice DoubleArrayChunk;
-  typedef DoubleArrayEntryForSlice DoubleArrayEntry;
-  typedef DoubleArrayKeyForSlice DoubleArrayKey;
+  typedef SliceDoubleArrayHeader DoubleArrayHeader;
+  typedef SliceDoubleArrayNode DoubleArrayNode;
+  typedef SliceDoubleArrayChunk DoubleArrayChunk;
+  typedef SliceDoubleArrayEntry DoubleArrayEntry;
+  typedef SliceDoubleArrayKey DoubleArrayKey;
 
   ~DoubleArray();
 
@@ -196,15 +193,18 @@ class DoubleArray<Slice> : public Map<Slice> {
 
   MapCursor<Slice> *open_basic_cursor(
       const MapCursorOptions &options = MapCursorOptions());
-  MapCursor<Slice> *open_id_cursor(int64_t min, int64_t max,
+  MapCursor<Slice> *open_id_cursor(
+      int64_t min, int64_t max,
       const MapCursorOptions &options = MapCursorOptions());
-  MapCursor<Slice> *open_key_cursor(Slice min, Slice max,
+  MapCursor<Slice> *open_key_cursor(
+      Slice min, Slice max,
       const MapCursorOptions &options = MapCursorOptions());
 
-  MapCursor<Slice> *open_prefix_cursor(Slice query, size_t min_size,
+  MapCursor<Slice> *open_prefix_cursor(
+      Slice query, size_t min_size,
       const MapCursorOptions &options = MapCursorOptions());
-  MapCursor<Slice> *open_completion_cursor(Slice query,
-      const MapCursorOptions &options = MapCursorOptions());
+  MapCursor<Slice> *open_completion_cursor(
+      Slice query, const MapCursorOptions &options = MapCursorOptions());
 
  private:
   io::Pool pool_;

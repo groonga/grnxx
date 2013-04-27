@@ -43,7 +43,7 @@ struct MapOptions {
 };
 
 struct MapCursorFlagsIdentifier;
-typedef FlagsImpl<MapCursorFlagsIdentifier> MapCursorFlags;
+using MapCursorFlags = FlagsImpl<MapCursorFlagsIdentifier>;
 
 // Use the default settings.
 constexpr MapCursorFlags MAP_CURSOR_DEFAULT           =
@@ -86,7 +86,6 @@ class MapCursor {
 
   // Move the cursor to the next key and return true on success.
   virtual bool next();
-
   // Remove the current key and return true on success.
   virtual bool remove();
 
@@ -107,8 +106,6 @@ class MapCursor {
 template <typename T>
 class Map {
  public:
-  using Cursor = MapCursor<T>;
-
   Map();
   virtual ~Map();
 
@@ -176,33 +173,33 @@ class Map {
   virtual bool truncate();
 
   // Create a cursor for accessing all the keys.
-  virtual Cursor *open_basic_cursor(
+  virtual MapCursor<T> *open_basic_cursor(
       const MapCursorOptions &options = MapCursorOptions());
   // Create a cursor for accessing keys in range [min, max].
-  virtual Cursor *open_id_cursor(
+  virtual MapCursor<T> *open_id_cursor(
       int64_t min, int64_t max,
       const MapCursorOptions &options = MapCursorOptions());
   // Create a cursor for accessing keys in range [min, max].
-  virtual Cursor *open_key_cursor(
+  virtual MapCursor<T> *open_key_cursor(
       T min, T max, const MapCursorOptions &options = MapCursorOptions());
 
   // Only for GeoPoint.
   // Create a cursor for accessing keys whose most significant "bit_size" bits
   // are same as the MSBs of "query".
-  virtual Cursor *open_bitwise_completion_cursor(
+  virtual MapCursor<T> *open_bitwise_completion_cursor(
       T query, size_t bit_size,
       const MapCursorOptions &options = MapCursorOptions());
 
   // Only for Slice.
   // Create a cursor for accessing keys matching a prefix of "query".
-  virtual Cursor *open_prefix_cursor(
+  virtual MapCursor<T> *open_prefix_cursor(
       T query, size_t min_size,
       const MapCursorOptions &options = MapCursorOptions());
   // Create a cursor for accessing keys starting with "query".
-  virtual Cursor *open_completion_cursor(
+  virtual MapCursor<T> *open_completion_cursor(
       T query, const MapCursorOptions &options = MapCursorOptions());
   // Create a cursor for accessing keys ending with "query".
-  virtual Cursor *open_reverse_completion_cursor(
+  virtual MapCursor<T> *open_reverse_completion_cursor(
       T query, const MapCursorOptions &options = MapCursorOptions());
 
   // Only for Slice.
