@@ -168,7 +168,7 @@ void convert_key(double key, uint8_t *key_buf) {
 #ifndef WORDS_BIGENDIAN
   x = byte_swap(static_cast<uint64_t>(x));
 #endif  // WORDS_BIGENDIAN
-  std::memcpy(key_buf, &key, sizeof(key));
+  std::memcpy(key_buf, &x, sizeof(x));
 }
 
 void convert_key(GeoPoint key, uint8_t *key_buf) {
