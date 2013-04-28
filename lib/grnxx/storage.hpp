@@ -141,9 +141,9 @@ class Storage {
                        StorageFlags flags = STORAGE_DEFAULT);
   // Open or create a storage.
   // The available flags is STORAGE_HUGE_TLB.
-  static Storage *open_or_create(const char *path,
-                                 StorageFlags flags = STORAGE_DEFAULT,
-                                 const StorageOptions &options = StorageOptions());
+  static Storage *open_or_create(
+      const char *path, StorageFlags flags = STORAGE_DEFAULT,
+      const StorageOptions &options = StorageOptions());
 
   // Return true iff "path" refers to a valid storage.
   static bool exists(const char *path);
@@ -167,6 +167,12 @@ class Storage {
   virtual const char *path() const = 0;
   // Return the activated flags.
   virtual StorageFlags flags() const = 0;
+  // Return the maximum size of each file.
+  virtual uint64_t max_file_size() const = 0;
+  // Return the maximum number of files.
+  virtual uint16_t max_num_files() const = 0;
+  // Return the total size.
+  virtual uint64_t total_size() const = 0;
 
   // TODO: Member functions to get details, such as total size, #nodes, etc.
 };

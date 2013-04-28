@@ -55,6 +55,9 @@ class StorageImpl : public Storage {
 
   const char *path() const;
   StorageFlags flags() const;
+  uint64_t max_file_size() const;
+  uint16_t max_num_files() const;
+  uint64_t total_size() const;
 
   // TODO: Member functions to get details, such as total size, #nodes, etc.
 

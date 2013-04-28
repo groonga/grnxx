@@ -574,6 +574,34 @@ void test_storage_flags() {
   assert(grnxx::Storage::unlink(FILE_PATH));
 }
 
+void test_storage_max_file_size() {
+  grnxx::StorageOptions options;
+  options.max_file_size = 1ULL << 36;
+  std::unique_ptr<grnxx::Storage> storage(
+      grnxx::Storage::create(nullptr, grnxx::STORAGE_DEFAULT, options));
+  assert(storage->max_file_size() == options.max_file_size);
+}
+
+void test_storage_max_num_files() {
+  grnxx::StorageOptions options;
+  options.max_num_files = 100;
+  std::unique_ptr<grnxx::Storage> storage(
+      grnxx::Storage::create(nullptr, grnxx::STORAGE_DEFAULT, options));
+  assert(storage->max_num_files() == options.max_num_files);
+}
+
+void test_storage_total_size() {
+  uint64_t prev_total_size = 0;
+  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
+  assert(storage->total_size() > prev_total_size);
+  prev_total_size = storage->total_size();
+  for (int i = 0; i < 16; ++i) {
+    storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 1 << 24);
+    assert(storage->total_size() > prev_total_size);
+    prev_total_size = storage->total_size();
+  }
+}
+
 void test_path() {
   test_full_path();
   test_unique_path();
@@ -611,6 +639,9 @@ void test_storage() {
   test_storage_sweep();
   test_storage_path();
   test_storage_flags();
+  test_storage_max_file_size();
+  test_storage_max_num_files();
+  test_storage_total_size();
 }
 
 }  // namespace

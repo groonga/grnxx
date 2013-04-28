@@ -54,8 +54,6 @@ static_assert(MAX_NUM_NODE_BODY_CHUNKS >= 2000,
 constexpr uint64_t NODE_BODY_MIN_CHUNK_SIZE = 1 << 21;
 constexpr double NODE_BODY_CHUNK_SIZE_RATIO = 1.0 / 64;
 
-// TODO: Define constant values.
-
 }  // namespace
 
 StorageImpl::StorageImpl()
@@ -235,6 +233,18 @@ StorageFlags StorageImpl::flags() const {
   return flags_;
 }
 
+uint64_t StorageImpl::max_file_size() const {
+  return header_->max_file_size;
+}
+
+uint16_t StorageImpl::max_num_files() const {
+  return header_->max_num_files;
+}
+
+uint64_t StorageImpl::total_size() const {
+  return header_->total_size;
+}
+
 bool StorageImpl::create_file_backed_storage(const char *path,
                                              StorageFlags flags,
                                              const StorageOptions &options) {
@@ -358,7 +368,6 @@ bool StorageImpl::open_or_create_storage(const char *path, StorageFlags flags,
   std::unique_ptr<File> header_file(File::open(path));
   if (header_file) {
     // Open an existing storage.
-    // TODO: If another thread or process is creating the storage?
     std::unique_ptr<Chunk> header_chunk(
         create_chunk(header_file.get(), 0, HEADER_CHUNK_SIZE));
     if (!header_chunk) {
@@ -864,9 +873,9 @@ File *StorageImpl::get_file(uint16_t file_id) {
 }
 
 char *StorageImpl::generate_path(uint16_t file_id) {
-  // If path_ ends with ".grn", the result also ends with ".grn".
-  // In this case, file_id is inserted before the ".grn".
-  // Otherwise, file_id is appended as a suffix.
+  // If "path_" ends with ".grn", the result also ends with ".grn".
+  // In this case, "file_id" is inserted before the ".grn".
+  // Otherwise, "file_id" is appended as a suffix.
   const Slice prefix = path_.get();
   const bool has_extension = prefix.ends_with(".grn");
   const size_t path_size = prefix.size() + 5;
