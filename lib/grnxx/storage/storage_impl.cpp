@@ -403,13 +403,7 @@ NodeHeader *StorageImpl::find_idle_node(uint64_t size) {
 }
 
 NodeHeader *StorageImpl::create_idle_node(uint64_t size) {
-  // Reserve a phantom node.
-  NodeHeader *node_header;
-  if (header_->latest_phantom_node_id != STORAGE_INVALID_NODE_ID) {
-    node_header = get_node_header(header_->latest_phantom_node_id);
-  } else {
-    node_header = create_phantom_node();
-  }
+  NodeHeader * const node_header = reserve_phantom_node();
   if (!node_header) {
     return nullptr;
   }
@@ -436,8 +430,25 @@ NodeHeader *StorageImpl::create_idle_node(uint64_t size) {
 }
 
 bool StorageImpl::divide_idle_node(NodeHeader *node_header, uint64_t size) {
-  // TODO: Divide the node into nodes of "size" bytes and the remaining.
-  return false;
+  NodeHeader * const second_node_header = reserve_phantom_node();
+  if (!second_node_header) {
+    return false;
+  }
+  second_node_header->status = STORAGE_NODE_IDLE;
+  second_node_header->chunk_id = node_header->chunk_id;
+  second_node_header->offset = node_header->offset + size;
+  second_node_header->size = node_header->size - size;
+  second_node_header->modified_time = clock_.now();
+  if (!unregister_idle_node(node_header)) {
+    return false;
+  }
+  node_header->size = size;
+  second_node_header->modified_time = clock_.now();
+  if (!register_idle_node(node_header) ||
+      !register_idle_node(second_node_header)) {
+    return false;
+  }
+  return true;
 }
 
 bool StorageImpl::activate_idle_node(NodeHeader *node_header) {
@@ -449,6 +460,14 @@ bool StorageImpl::activate_idle_node(NodeHeader *node_header) {
   node_header->sibling_node_id = STORAGE_INVALID_NODE_ID;
   node_header->modified_time = clock_.now();
   return true;
+}
+
+NodeHeader *StorageImpl::reserve_phantom_node() {
+  if (header_->latest_phantom_node_id != STORAGE_INVALID_NODE_ID) {
+    return get_node_header(header_->latest_phantom_node_id);
+  } else {
+    return create_phantom_node();
+  }
 }
 
 NodeHeader *StorageImpl::create_phantom_node() {
