@@ -193,8 +193,17 @@ bool StorageImpl::unlink_node(uint32_t node_id) {
                   << ", num_nodes = " << header_->num_nodes;
     return false;
   }
-  // TODO
-  return false;
+  NodeHeader * const node_header = get_node_header(node_id);
+  if (!node_header) {
+    return false;
+  }
+  if (node_header->status != STORAGE_NODE_ACTIVE) {
+    GRNXX_WARNING() << "invalid argument: status = " << node_header->status;
+    return false;
+  }
+  node_header->status = STORAGE_NODE_MARKED;
+  node_header->modified_time = clock_.now();
+  return true;
 }
 
 bool StorageImpl::sweep(Duration lifetime) {
