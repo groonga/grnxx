@@ -63,7 +63,7 @@ struct Header {
   Mutex inter_process_data_mutex;
   // A mutex object for exclusively update files.
   Mutex inter_process_file_mutex;
-  uint8_t reserved_[148];
+  uint8_t reserved[148];
 
   // Initialize the members except "format".
   Header();

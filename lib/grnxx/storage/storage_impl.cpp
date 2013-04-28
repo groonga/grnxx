@@ -33,7 +33,9 @@ namespace {
 
 constexpr uint64_t CHUNK_UNIT_SIZE   = 1 << 16;
 constexpr uint64_t NODE_UNIT_SIZE    = 1 << 12;
+
 constexpr uint64_t HEADER_CHUNK_SIZE = CHUNK_UNIT_SIZE;
+constexpr uint64_t HEADER_INDEX_SIZE = HEADER_CHUNK_SIZE - HEADER_SIZE;
 
 constexpr uint16_t NODE_HEADER_CHUNK_UNIT_SIZE =
     CHUNK_UNIT_SIZE / NODE_HEADER_SIZE;
@@ -43,7 +45,7 @@ constexpr uint32_t MAX_NODE_ID =
 
 constexpr uint16_t MAX_NUM_NODE_HEADER_CHUNKS = 32;
 constexpr uint16_t MAX_NUM_NODE_BODY_CHUNKS   =
-    (HEADER_CHUNK_SIZE / CHUNK_INDEX_SIZE) - MAX_NUM_NODE_HEADER_CHUNKS;
+    (HEADER_INDEX_SIZE / CHUNK_INDEX_SIZE) - MAX_NUM_NODE_HEADER_CHUNKS;
 
 static_assert(MAX_NUM_NODE_BODY_CHUNKS >= 2000,
               "MAX_NUM_NODE_BODY_CHUNKS < 2000");
@@ -132,6 +134,10 @@ StorageImpl *StorageImpl::open_or_create(const char *path, StorageFlags flags,
 }
 
 bool StorageImpl::exists(const char *path) {
+  if (!path) {
+    GRNXX_ERROR() << "invalid argument: path = nullptr";
+    return false;
+  }
   std::unique_ptr<Storage> storage(open(path, STORAGE_READ_ONLY));
   if (!storage) {
     return false;
@@ -140,12 +146,22 @@ bool StorageImpl::exists(const char *path) {
 }
 
 bool StorageImpl::unlink(const char *path) {
-  std::unique_ptr<Storage> storage(open(path, STORAGE_READ_ONLY));
+  if (!path) {
+    GRNXX_ERROR() << "invalid argument: path = nullptr";
+    return false;
+  }
+  std::unique_ptr<StorageImpl> storage(open(path, STORAGE_READ_ONLY));
   if (!storage) {
     return false;
   }
-  // TODO: Remove files.
-  return true;
+  const uint16_t max_file_id = static_cast<uint16_t>(
+      storage->header_->total_size / storage->header_->max_file_size);
+  bool result = File::unlink(path);
+  for (uint16_t i = 1; i <= max_file_id; ++i) {
+    std::unique_ptr<char[]> numbered_path(storage->generate_path(i));
+    result &= File::unlink(numbered_path.get());
+  }
+  return result;
 }
 
 StorageNode StorageImpl::create_node(uint32_t parent_node_id, uint64_t size) {
@@ -247,6 +263,9 @@ bool StorageImpl::create_file_backed_storage(const char *path,
   }
   std::unique_ptr<Chunk> header_chunk(
       create_chunk(header_file.get(), 0, HEADER_CHUNK_SIZE));
+  if (!header_chunk) {
+    return false;
+  }
   header_ = static_cast<Header *>(header_chunk->address());
   *header_ = Header();
   header_->max_file_size = options.max_file_size & ~(CHUNK_UNIT_SIZE - 1);
@@ -312,6 +331,9 @@ bool StorageImpl::open_storage(const char *path, StorageFlags flags) {
   // TODO: If another thread or process is creating the storage?
   std::unique_ptr<Chunk> header_chunk(
       create_chunk(header_file.get(), 0, HEADER_CHUNK_SIZE));
+  if (!header_chunk) {
+    return false;
+  }
   header_ = static_cast<Header *>(header_chunk->address());
   if (!header_->is_valid()) {
     return false;
@@ -447,11 +469,13 @@ bool StorageImpl::divide_idle_node(NodeHeader *node_header, uint64_t size) {
   second_node_header->chunk_id = node_header->chunk_id;
   second_node_header->offset = node_header->offset + size;
   second_node_header->size = node_header->size - size;
+  second_node_header->prev_node_id = node_header->id;
   second_node_header->modified_time = clock_.now();
   if (!unregister_idle_node(node_header)) {
     return false;
   }
   node_header->size = size;
+  node_header->next_node_id = second_node_header->id;
   second_node_header->modified_time = clock_.now();
   if (!register_idle_node(node_header) ||
       !register_idle_node(second_node_header)) {
@@ -514,8 +538,7 @@ NodeHeader *StorageImpl::create_phantom_node() {
 
 bool StorageImpl::associate_node_with_chunk(NodeHeader *node_header,
                                             ChunkIndex *chunk_index) {
-  if ((node_header->id != header_->num_nodes) ||
-      (node_header->id != header_->latest_phantom_node_id) ||
+  if ((node_header->id != header_->latest_phantom_node_id) ||
       (node_header->status != STORAGE_NODE_PHANTOM)) {
     // This error must not occur.
     GRNXX_ERROR() << "invalid argument: id = " << node_header->id
