@@ -18,6 +18,7 @@
 #include <cassert>
 #include <sstream>
 
+#include "grnxx/storage.hpp"
 #include "grnxx/storage/file.hpp"
 #include "grnxx/storage/path.hpp"
 #include "grnxx/storage/chunk.hpp"
@@ -191,6 +192,7 @@ void test_file_resize_and_size() {
 
 void test_file_path() {
   const char FILE_PATH[] = "temp.grn";
+  grnxx::storage::File::unlink(FILE_PATH);
   std::unique_ptr<grnxx::storage::File> file;
 
   file.reset(grnxx::storage::File::create(FILE_PATH));
@@ -207,6 +209,7 @@ void test_file_path() {
 
 void test_file_flags() {
   const char FILE_PATH[] = "temp.grn";
+  grnxx::storage::File::unlink(FILE_PATH);
   std::unique_ptr<grnxx::storage::File> file;
 
   file.reset(grnxx::storage::File::create(FILE_PATH));
@@ -368,6 +371,116 @@ void test_chunk_size() {
   assert(chunk->size() == (1 << 20));
 }
 
+void test_storage_create() {
+  const char FILE_PATH[] = "temp.grn";
+  grnxx::Storage::unlink(FILE_PATH);
+  std::unique_ptr<grnxx::Storage> storage;
+
+  storage.reset(grnxx::Storage::create(FILE_PATH));
+  assert(storage);
+  storage.reset(grnxx::Storage::create(FILE_PATH, grnxx::STORAGE_TEMPORARY));
+  assert(storage);
+
+  storage.reset(grnxx::Storage::create(nullptr));
+  assert(storage);
+  storage.reset(grnxx::Storage::create(nullptr, grnxx::STORAGE_TEMPORARY));
+  assert(storage);
+
+  storage.reset();
+  assert(grnxx::Storage::unlink(FILE_PATH));
+}
+
+void test_storage_open() {
+  const char FILE_PATH[] = "temp.grn";
+  grnxx::Storage::unlink(FILE_PATH);
+  std::unique_ptr<grnxx::Storage> storage;
+
+  storage.reset(grnxx::Storage::create(FILE_PATH));
+  assert(storage);
+
+  storage.reset(grnxx::Storage::open(FILE_PATH));
+  assert(storage);
+
+  storage.reset();
+  assert(grnxx::Storage::unlink(FILE_PATH));
+}
+
+void test_storage_open_or_create() {
+//  const char FILE_PATH[] = "temp.grn";
+//  grnxx::Storage::unlink(FILE_PATH);
+//  std::unique_ptr<grnxx::Storage> storage;
+
+//  storage.reset(grnxx::Storage::open_or_create(FILE_PATH));
+//  assert(storage);
+//  storage.reset(grnxx::Storage::open_or_create(FILE_PATH));
+//  assert(storage);
+
+//  file.reset();
+//  grnxx::Storage::unlink(FILE_PATH);
+}
+
+void test_storage_exists_and_unlink() {
+//  const char FILE_PATH[] = "temp.grn";
+//  std::unique_ptr<grnxx::Storage>(grnxx::Storage::open_or_create(FILE_PATH));
+
+//  assert(grnxx::Storage::exists(FILE_PATH));
+//  assert(grnxx::Storage::unlink(FILE_PATH));
+//  assert(!grnxx::Storage::unlink(FILE_PATH));
+//  assert(!grnxx::Storage::exists(FILE_PATH));
+}
+
+void test_storage_create_node() {
+  // TODO
+}
+
+void test_storage_open_node() {
+  // TODO
+}
+
+void test_storage_unlink_node() {
+  // TODO
+}
+
+void test_storage_sweep() {
+  // TODO
+}
+
+void test_storage_path() {
+  const char FILE_PATH[] = "temp.grn";
+  grnxx::Storage::unlink(FILE_PATH);
+  std::unique_ptr<grnxx::Storage> storage;
+
+  storage.reset(grnxx::Storage::create(FILE_PATH));
+  assert(storage);
+  assert(std::strcmp(storage->path(), FILE_PATH) == 0);
+
+  storage.reset(grnxx::Storage::create(FILE_PATH, grnxx::STORAGE_TEMPORARY));
+  assert(storage);
+  assert(std::strcmp(storage->path(), FILE_PATH) == 0);
+
+  assert(grnxx::Storage::unlink(FILE_PATH));
+}
+
+void test_storage_flags() {
+  const char FILE_PATH[] = "temp.grn";
+  grnxx::Storage::unlink(FILE_PATH);
+  std::unique_ptr<grnxx::Storage> storage;
+
+  storage.reset(grnxx::Storage::create(FILE_PATH));
+  assert(storage);
+  assert(storage->flags() == grnxx::STORAGE_DEFAULT);
+
+  storage.reset(grnxx::Storage::open(FILE_PATH, grnxx::STORAGE_READ_ONLY));
+  assert(storage);
+  assert(storage->flags() == grnxx::STORAGE_READ_ONLY);
+
+  storage.reset(grnxx::Storage::create(FILE_PATH, grnxx::STORAGE_TEMPORARY));
+  assert(storage);
+  assert(storage->flags() == grnxx::STORAGE_TEMPORARY);
+
+  assert(grnxx::Storage::unlink(FILE_PATH));
+}
+
 void test_path() {
   test_full_path();
   test_unique_path();
@@ -394,6 +507,19 @@ void test_chunk() {
   test_chunk_size();
 }
 
+void test_storage() {
+  test_storage_create();
+  test_storage_open();
+  test_storage_open_or_create();
+  test_storage_exists_and_unlink();
+  test_storage_create_node();
+  test_storage_open_node();
+  test_storage_unlink_node();
+  test_storage_sweep();
+  test_storage_path();
+  test_storage_flags();
+}
+
 }  // namespace
 
 int main() {
@@ -404,6 +530,7 @@ int main() {
   test_path();
   test_file();
   test_chunk();
+  test_storage();
 
   return 0;
 }
