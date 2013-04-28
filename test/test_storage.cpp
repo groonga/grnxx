@@ -406,31 +406,79 @@ void test_storage_open() {
 }
 
 void test_storage_open_or_create() {
-//  const char FILE_PATH[] = "temp.grn";
-//  grnxx::Storage::unlink(FILE_PATH);
-//  std::unique_ptr<grnxx::Storage> storage;
+  const char FILE_PATH[] = "temp.grn";
+  grnxx::Storage::unlink(FILE_PATH);
+  std::unique_ptr<grnxx::Storage> storage;
 
-//  storage.reset(grnxx::Storage::open_or_create(FILE_PATH));
-//  assert(storage);
-//  storage.reset(grnxx::Storage::open_or_create(FILE_PATH));
-//  assert(storage);
+  storage.reset(grnxx::Storage::open_or_create(FILE_PATH));
+  assert(storage);
+  storage.reset(grnxx::Storage::open_or_create(FILE_PATH));
+  assert(storage);
 
-//  file.reset();
-//  grnxx::Storage::unlink(FILE_PATH);
+  storage.reset();
+  grnxx::Storage::unlink(FILE_PATH);
 }
 
 void test_storage_exists_and_unlink() {
-//  const char FILE_PATH[] = "temp.grn";
-//  std::unique_ptr<grnxx::Storage>(grnxx::Storage::open_or_create(FILE_PATH));
+  const char FILE_PATH[] = "temp.grn";
+  grnxx::Storage::unlink(FILE_PATH);
+  std::unique_ptr<grnxx::Storage>(grnxx::Storage::create(FILE_PATH));
 
-//  assert(grnxx::Storage::exists(FILE_PATH));
-//  assert(grnxx::Storage::unlink(FILE_PATH));
-//  assert(!grnxx::Storage::unlink(FILE_PATH));
-//  assert(!grnxx::Storage::exists(FILE_PATH));
+  assert(grnxx::Storage::exists(FILE_PATH));
+  assert(grnxx::Storage::unlink(FILE_PATH));
+  assert(!grnxx::Storage::unlink(FILE_PATH));
+  assert(!grnxx::Storage::exists(FILE_PATH));
 }
 
 void test_storage_create_node() {
-  // TODO
+  const char FILE_PATH[] = "temp.grn";
+  grnxx::Storage::unlink(FILE_PATH);
+  std::unique_ptr<grnxx::Storage> storage;
+  grnxx::StorageNode node;
+
+  storage.reset(grnxx::Storage::create(FILE_PATH));
+  node = storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 1 << 20);
+  assert(node.is_valid());
+  assert(node.status() == grnxx::STORAGE_NODE_ACTIVE);
+  assert(node.size() == (1 << 20));
+  node = storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 1 << 24);
+  assert(node.is_valid());
+  assert(node.status() == grnxx::STORAGE_NODE_ACTIVE);
+  assert(node.size() == (1 << 24));
+  node = storage->create_node(-1, 1 << 16);
+  assert(!node.is_valid());
+  node = storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, -1);
+  assert(!node.is_valid());
+
+  storage.reset(grnxx::Storage::create(FILE_PATH, grnxx::STORAGE_TEMPORARY));
+  node = storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 1 << 20);
+  assert(node.is_valid());
+  assert(node.status() == grnxx::STORAGE_NODE_ACTIVE);
+  assert(node.size() == (1 << 20));
+  node = storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 1 << 24);
+  assert(node.is_valid());
+  assert(node.status() == grnxx::STORAGE_NODE_ACTIVE);
+  assert(node.size() == (1 << 24));
+  node = storage->create_node(-1, 1 << 16);
+  assert(!node.is_valid());
+  node = storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, -1);
+  assert(!node.is_valid());
+
+  storage.reset(grnxx::Storage::create(nullptr));
+  node = storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 1 << 20);
+  assert(node.is_valid());
+  assert(node.status() == grnxx::STORAGE_NODE_ACTIVE);
+  assert(node.size() == (1 << 20));
+  node = storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 1 << 24);
+  assert(node.is_valid());
+  assert(node.status() == grnxx::STORAGE_NODE_ACTIVE);
+  assert(node.size() == (1 << 24));
+  node = storage->create_node(-1, 1 << 16);
+  assert(!node.is_valid());
+  node = storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, -1);
+  assert(!node.is_valid());
+
+  assert(grnxx::Storage::unlink(FILE_PATH));
 }
 
 void test_storage_open_node() {
