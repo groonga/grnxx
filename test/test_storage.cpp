@@ -482,11 +482,56 @@ void test_storage_create_node() {
 }
 
 void test_storage_open_node() {
-  // TODO
+  const char FILE_PATH[] = "temp.grn";
+  grnxx::Storage::unlink(FILE_PATH);
+  std::unique_ptr<grnxx::Storage> storage;
+  grnxx::StorageNode node;
+  std::uint32_t node_id_1, node_id_2;
+
+  grnxx::StorageOptions options;
+  options.root_size = 1 << 16;
+  storage.reset(grnxx::Storage::create(FILE_PATH, grnxx::STORAGE_DEFAULT,
+                                       options));
+  node = storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 1 << 20);
+  assert(node.is_valid());
+  node_id_1 = node.id();
+  node = storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 1 << 24);
+  assert(node.is_valid());
+  node_id_2 = node.id();
+
+  storage.reset(grnxx::Storage::open(FILE_PATH));
+  node = storage->open_node(grnxx::STORAGE_ROOT_NODE_ID);
+  assert(node.is_valid());
+  assert(node.status() == grnxx::STORAGE_NODE_ACTIVE);
+  assert(node.size() == options.root_size);
+  node = storage->open_node(node_id_1);
+  assert(node.is_valid());
+  assert(node.status() == grnxx::STORAGE_NODE_ACTIVE);
+  assert(node.size() == (1 << 20));
+  node = storage->open_node(node_id_2);
+  assert(node.is_valid());
+  assert(node.status() == grnxx::STORAGE_NODE_ACTIVE);
+  assert(node.size() == (1 << 24));
+
+  storage.reset();
+  assert(grnxx::Storage::unlink(FILE_PATH));
 }
 
 void test_storage_unlink_node() {
-  // TODO
+  std::unique_ptr<grnxx::Storage> storage;
+  grnxx::StorageNode node_1, node_2;
+
+  storage.reset(grnxx::Storage::create(nullptr));
+  node_1 = storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 1 << 20);
+  assert(node_1.is_valid());
+  node_2 = storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 1 << 24);
+  assert(node_2.is_valid());
+
+  assert(storage->unlink_node(node_1.id()));
+  assert(node_1.status() == grnxx::STORAGE_NODE_MARKED);
+  assert(storage->unlink_node(node_2.id()));
+  assert(node_2.status() == grnxx::STORAGE_NODE_MARKED);
+  assert(!storage->unlink_node(grnxx::STORAGE_ROOT_NODE_ID));
 }
 
 void test_storage_sweep() {
