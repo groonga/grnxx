@@ -168,25 +168,25 @@ StorageNode StorageImpl::create_node(uint32_t parent_node_id, uint64_t size) {
   if (parent_node_id >= header_->num_nodes) {
     GRNXX_ERROR() << "invalid argument: parent_node_id = " << parent_node_id
                   << ", num_nodes = " << header_->num_nodes;
-    return StorageNode(nullptr, nullptr);
+    return StorageNode(nullptr);
   } else if (size > header_->max_file_size) {
     GRNXX_ERROR() << "invalid argument: size = " << size
                   << ", max_file_size = " << header_->max_file_size;
-    return StorageNode(nullptr, nullptr);
+    return StorageNode(nullptr);
   }
   NodeHeader * const parent_node_header = get_node_header(parent_node_id);
   if (!parent_node_header) {
-    return StorageNode(nullptr, nullptr);
+    return StorageNode(nullptr);
   }
   NodeHeader * const node_header = create_active_node(size);
   if (!node_header) {
-    return StorageNode(nullptr, nullptr);
+    return StorageNode(nullptr);
   }
   node_header->sibling_node_id = parent_node_header->child_node_id;
   parent_node_header->child_node_id = node_header->id;
   void * const body = get_node_body(node_header);
   if (!body) {
-    return StorageNode(nullptr, nullptr);
+    return StorageNode(nullptr);
   }
   return StorageNode(node_header, body);
 }
@@ -194,11 +194,11 @@ StorageNode StorageImpl::create_node(uint32_t parent_node_id, uint64_t size) {
 StorageNode StorageImpl::open_node(uint32_t node_id) {
   NodeHeader * const node_header = get_node_header(node_id);
   if (!node_header) {
-    return StorageNode(nullptr, nullptr);
+    return StorageNode(nullptr);
   }
   void * const body = get_node_body(node_header);
   if (!body) {
-    return StorageNode(nullptr, nullptr);
+    return StorageNode(nullptr);
   }
   return StorageNode(node_header, body);
 }
@@ -355,8 +355,55 @@ bool StorageImpl::open_or_create_storage(const char *path, StorageFlags flags,
   if (flags & STORAGE_HUGE_TLB) {
     flags_ |= STORAGE_HUGE_TLB;
   }
-  // TODO
-  return false;
+  std::unique_ptr<File> header_file(File::open(path));
+  if (header_file) {
+    // Open an existing storage.
+    // TODO: If another thread or process is creating the storage?
+    std::unique_ptr<Chunk> header_chunk(
+        create_chunk(header_file.get(), 0, HEADER_CHUNK_SIZE));
+    if (!header_chunk) {
+      return false;
+    }
+    header_ = static_cast<Header *>(header_chunk->address());
+    if (!header_->is_valid()) {
+      return false;
+    }
+    if (!prepare_pointers()) {
+      return false;
+    }
+    files_[0] = std::move(header_file);
+    header_chunk_ = std::move(header_chunk);
+  } else {
+    // Create a storage.
+    header_file.reset(File::create(path));
+    if (!header_file) {
+      return false;
+    }
+    if (!header_file->resize(HEADER_CHUNK_SIZE)) {
+      return false;
+    }
+    std::unique_ptr<Chunk> header_chunk(
+        create_chunk(header_file.get(), 0, HEADER_CHUNK_SIZE));
+    if (!header_chunk) {
+      return false;
+    }
+    header_ = static_cast<Header *>(header_chunk->address());
+    *header_ = Header();
+    header_->max_file_size = options.max_file_size & ~(CHUNK_UNIT_SIZE - 1);
+    header_->max_num_files = options.max_num_files;
+    header_->total_size = HEADER_CHUNK_SIZE;
+    if (!prepare_pointers()) {
+      return false;
+    }
+    prepare_indexes();
+    files_[0] = std::move(header_file);
+    header_chunk_ = std::move(header_chunk);
+    if (!create_active_node(options.root_size)) {
+      return false;
+    }
+    header_->validate();
+  }
+  return true;
 }
 
 bool StorageImpl::prepare_pointers() {
@@ -465,15 +512,16 @@ bool StorageImpl::divide_idle_node(NodeHeader *node_header, uint64_t size) {
   if (!second_node_header) {
     return false;
   }
+  if (!unregister_idle_node(node_header)) {
+    return false;
+  }
+  header_->latest_phantom_node_id = second_node_header->next_phantom_node_id;
   second_node_header->status = STORAGE_NODE_IDLE;
   second_node_header->chunk_id = node_header->chunk_id;
   second_node_header->offset = node_header->offset + size;
   second_node_header->size = node_header->size - size;
   second_node_header->prev_node_id = node_header->id;
   second_node_header->modified_time = clock_.now();
-  if (!unregister_idle_node(node_header)) {
-    return false;
-  }
   node_header->size = size;
   node_header->next_node_id = second_node_header->id;
   second_node_header->modified_time = clock_.now();

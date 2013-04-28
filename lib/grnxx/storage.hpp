@@ -92,10 +92,15 @@ StringBuilder &operator<<(StringBuilder &builder,
 class StorageNode {
  public:
   StorageNode() = default;
+  explicit StorageNode(std::nullptr_t) : header_(nullptr), body_(nullptr) {}
   StorageNode(StorageNodeHeader *header, void *body)
       : header_(header),
         body_(body) {}
 
+  // Return true iff "header_" != nullptr.
+  bool is_valid() const {
+    return header_ != nullptr;
+  }
   // Return the ID.
   uint32_t id() const;
   // Return the status.
