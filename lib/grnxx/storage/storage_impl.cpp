@@ -18,6 +18,7 @@
 #include "grnxx/storage/storage_impl.hpp"
 
 #include "grnxx/intrinsic.hpp"
+#include "grnxx/lock.hpp"
 #include "grnxx/logger.hpp"
 #include "grnxx/slice.hpp"
 #include "grnxx/storage/chunk.hpp"
@@ -67,6 +68,7 @@ StorageImpl::StorageImpl()
       header_chunk_(),
       node_header_chunks_(),
       node_body_chunks_(),
+      mutex_(MUTEX_UNLOCKED),
       clock_() {}
 
 StorageImpl::~StorageImpl() {}
@@ -176,6 +178,7 @@ StorageNode StorageImpl::create_node(uint32_t parent_node_id, uint64_t size) {
   if (!parent_node_header) {
     return StorageNode(nullptr);
   }
+  Lock lock(&header_->data_mutex);
   NodeHeader * const node_header = create_active_node(size);
   if (!node_header) {
     return StorageNode(nullptr);
@@ -220,9 +223,13 @@ bool StorageImpl::unlink_node(uint32_t node_id) {
   return true;
 }
 
-bool StorageImpl::sweep(Duration lifetime) {
-  // TODO
-  return false;
+bool StorageImpl::sweep(Duration lifetime, uint32_t root_node_id) {
+  Lock lock(&header_->data_mutex);
+  NodeHeader * const node_header = get_node_header(root_node_id);
+  if (!node_header) {
+    return false;
+  }
+  return sweep_subtree(clock_.now() - lifetime, node_header);
 }
 
 const char *StorageImpl::path() const {
@@ -619,6 +626,27 @@ bool StorageImpl::associate_node_with_chunk(NodeHeader *node_header,
   return true;
 }
 
+bool StorageImpl::sweep_subtree(Time threshold, NodeHeader *node_header) {
+  if (node_header->status == STORAGE_NODE_MARKED) {
+    if (node_header->modified_time <= threshold) {
+      // TODO: Unlink the node.
+      return true;
+    }
+  }
+  uint32_t node_id = node_header->child_node_id;
+  while (node_id != STORAGE_INVALID_NODE_ID) {
+    node_header = get_node_header(node_id);
+    if (!node_header) {
+      return false;
+    }
+    if (!sweep_subtree(threshold, node_header)) {
+      return false;
+    }
+    node_id = node_header->sibling_node_id;
+  }
+  return true;
+}
+
 ChunkIndex *StorageImpl::create_node_header_chunk(
     ChunkIndex **remainder_chunk_index) {
   if (header_->num_nodes > MAX_NODE_ID) {
@@ -808,8 +836,11 @@ Chunk *StorageImpl::get_node_header_chunk(uint16_t chunk_id) {
   if (!node_header_chunks_[chunk_id]) {
     const ChunkIndex &chunk_index = node_header_chunk_indexes_[chunk_id];
     if (flags_ & STORAGE_ANONYMOUS) {
-      node_header_chunks_[chunk_id].reset(
-          create_chunk(nullptr, chunk_index.offset, chunk_index.size));
+      Lock lock(&mutex_);
+      if (!node_header_chunks_[chunk_id]) {
+        node_header_chunks_[chunk_id].reset(
+            create_chunk(nullptr, chunk_index.offset, chunk_index.size));
+      }
     } else {
       File * const file = get_file(chunk_index.file_id);
       if (!file) {
@@ -817,12 +848,18 @@ Chunk *StorageImpl::get_node_header_chunk(uint16_t chunk_id) {
       }
       const int64_t required_size = chunk_index.offset + chunk_index.size;
       if (file->size() < required_size) {
-        if (!file->resize(required_size)) {
-          return nullptr;
+        Lock file_lock(&header_->file_mutex);
+        if (file->size() < required_size) {
+          if (!file->resize(required_size)) {
+            return nullptr;
+          }
         }
       }
-      node_header_chunks_[chunk_id].reset(
-          create_chunk(file, chunk_index.offset, chunk_index.size));
+      Lock lock(&mutex_);
+      if (!node_header_chunks_[chunk_id]) {
+        node_header_chunks_[chunk_id].reset(
+            create_chunk(file, chunk_index.offset, chunk_index.size));
+      }
     }
   }
   return node_header_chunks_[chunk_id].get();
@@ -832,8 +869,11 @@ Chunk *StorageImpl::get_node_body_chunk(uint16_t chunk_id) {
   if (!node_body_chunks_[chunk_id]) {
     const ChunkIndex &chunk_index = node_body_chunk_indexes_[chunk_id];
     if (flags_ & STORAGE_ANONYMOUS) {
-      node_body_chunks_[chunk_id].reset(
-          create_chunk(nullptr, chunk_index.offset, chunk_index.size));
+      Lock lock(&mutex_);
+      if (!node_body_chunks_[chunk_id]) {
+        node_body_chunks_[chunk_id].reset(
+            create_chunk(nullptr, chunk_index.offset, chunk_index.size));
+      }
     } else {
       File * const file = get_file(chunk_index.file_id);
       if (!file) {
@@ -841,12 +881,18 @@ Chunk *StorageImpl::get_node_body_chunk(uint16_t chunk_id) {
       }
       const int64_t required_size = chunk_index.offset + chunk_index.size;
       if (file->size() < required_size) {
-        if (!file->resize(required_size)) {
-          return nullptr;
+        Lock file_lock(&header_->file_mutex);
+        if (file->size() < required_size) {
+          if (!file->resize(required_size)) {
+            return nullptr;
+          }
         }
       }
-      node_body_chunks_[chunk_id].reset(
-          create_chunk(file, chunk_index.offset, chunk_index.size));
+      Lock lock(&mutex_);
+      if (!node_body_chunks_[chunk_id]) {
+        node_body_chunks_[chunk_id].reset(
+            create_chunk(file, chunk_index.offset, chunk_index.size));
+      }
     }
   }
   return node_body_chunks_[chunk_id].get();
@@ -860,12 +906,15 @@ File *StorageImpl::get_file(uint16_t file_id) {
       std::unique_ptr<char[]> path(generate_path(file_id));
       files_[file_id].reset(File::open(path.get(), file_flags));
     } else {
-      if (flags_ & STORAGE_TEMPORARY) {
-        file_flags |= FILE_TEMPORARY;
-        files_[file_id].reset(File::create(path_.get(), file_flags));
-      } else {
-        std::unique_ptr<char[]> path(generate_path(file_id));
-        files_[file_id].reset(File::open_or_create(path.get(), file_flags));
+      Lock file_lock(&header_->file_mutex);
+      if (!files_[file_id]) {
+        if (flags_ & STORAGE_TEMPORARY) {
+          file_flags |= FILE_TEMPORARY;
+          files_[file_id].reset(File::create(path_.get(), file_flags));
+        } else {
+          std::unique_ptr<char[]> path(generate_path(file_id));
+          files_[file_id].reset(File::open_or_create(path.get(), file_flags));
+        }
       }
     }
   }

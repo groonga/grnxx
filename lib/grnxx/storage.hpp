@@ -160,7 +160,8 @@ class Storage {
   virtual bool unlink_node(uint32_t node_id) = 0;
 
   // Sweep marked nodes whose last modified time < (now - lifetime).
-  virtual bool sweep(Duration lifetime) = 0;
+  virtual bool sweep(Duration lifetime,
+                     uint32_t root_node_id = STORAGE_ROOT_NODE_ID) = 0;
 
   // Return the storage path.
   // Note that an anonymous or temporary storage may return nullptr.
@@ -173,8 +174,6 @@ class Storage {
   virtual uint16_t max_num_files() const = 0;
   // Return the total size.
   virtual uint64_t total_size() const = 0;
-
-  // TODO: Member functions to get details, such as total size, #nodes, etc.
 };
 
 }  // namespace grnxx

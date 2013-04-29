@@ -60,9 +60,9 @@ struct Header {
   // The IDs of the oldest idle nodes.
   uint32_t oldest_idle_node_ids[NUM_IDLE_NODE_LISTS];
   // A mutex object for exclusively updating data.
-  Mutex inter_process_data_mutex;
+  Mutex data_mutex;
   // A mutex object for exclusively update files.
-  Mutex inter_process_file_mutex;
+  Mutex file_mutex;
   uint8_t reserved[148];
 
   // Initialize the members except "format".

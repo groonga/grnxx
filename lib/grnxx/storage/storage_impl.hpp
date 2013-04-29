@@ -18,6 +18,7 @@
 #ifndef GRNXX_STORAGE_STORAGE_IMPL_HPP
 #define GRNXX_STORAGE_STORAGE_IMPL_HPP
 
+#include "grnxx/mutex.hpp"
 #include "grnxx/storage.hpp"
 #include "grnxx/time/periodic_clock.hpp"
 
@@ -51,15 +52,13 @@ class StorageImpl : public Storage {
 
   bool unlink_node(uint32_t node_id);
 
-  bool sweep(Duration lifetime);
+  bool sweep(Duration lifetime, uint32_t root_node_id);
 
   const char *path() const;
   StorageFlags flags() const;
   uint64_t max_file_size() const;
   uint16_t max_num_files() const;
   uint64_t total_size() const;
-
-  // TODO: Member functions to get details, such as total size, #nodes, etc.
 
  private:
   std::unique_ptr<char[]> path_;
@@ -71,6 +70,7 @@ class StorageImpl : public Storage {
   std::unique_ptr<Chunk> header_chunk_;
   std::unique_ptr<std::unique_ptr<Chunk>[]> node_header_chunks_;
   std::unique_ptr<std::unique_ptr<Chunk>[]> node_body_chunks_;
+  Mutex mutex_;
   PeriodicClock clock_;
 
   bool create_file_backed_storage(const char *path, StorageFlags flags,
@@ -98,6 +98,8 @@ class StorageImpl : public Storage {
   ChunkIndex *create_node_body_chunk(uint64_t size,
                                      ChunkIndex **remainder_chunk_index);
   ChunkIndex *create_node_body_chunk(uint64_t size);
+
+  bool sweep_subtree(Time threshold, NodeHeader *node_header);
 
   bool register_idle_node(NodeHeader *node_header);
   bool unregister_idle_node(NodeHeader *node_header);
