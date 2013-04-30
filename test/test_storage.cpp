@@ -528,14 +528,31 @@ void test_storage_unlink_node() {
   assert(node_2.is_valid());
 
   assert(storage->unlink_node(node_1.id()));
-  assert(node_1.status() == grnxx::STORAGE_NODE_MARKED);
+  assert(node_1.status() == grnxx::STORAGE_NODE_UNLINKED);
   assert(storage->unlink_node(node_2.id()));
-  assert(node_2.status() == grnxx::STORAGE_NODE_MARKED);
+  assert(node_2.status() == grnxx::STORAGE_NODE_UNLINKED);
   assert(!storage->unlink_node(grnxx::STORAGE_ROOT_NODE_ID));
 }
 
 void test_storage_sweep() {
-  // TODO
+  std::unique_ptr<grnxx::Storage> storage;
+  grnxx::StorageNode node;
+
+  storage.reset(grnxx::Storage::create(nullptr));
+  node = storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 1 << 18);
+  assert(node.is_valid());
+  assert(storage->create_node(node.id(), 1 << 18).is_valid());
+  assert(storage->create_node(node.id(), 1 << 18).is_valid());
+  const uint64_t total_size = storage->total_size();
+  for (int i = 0; i < 100; ++i) {
+    assert(storage->unlink_node(node.id()));
+    assert(storage->sweep(grnxx::Duration(0)));
+    node = storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 1 << 18);
+    assert(node.is_valid());
+    assert(storage->create_node(node.id(), 1 << 18).is_valid());
+    assert(storage->create_node(node.id(), 1 << 18).is_valid());
+    assert(storage->total_size() == total_size);
+  }
 }
 
 void test_storage_path() {
