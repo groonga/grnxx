@@ -17,10 +17,22 @@
 */
 #include <cassert>
 
+#include "grnxx/lock.hpp"
 #include "grnxx/logger.hpp"
+#include "grnxx/mutex.hpp"
 #include "grnxx/thread.hpp"
 #include "grnxx/time/stopwatch.hpp"
 #include "grnxx/time/system_clock.hpp"
+
+namespace {
+
+grnxx::Mutex mutex(grnxx::MUTEX_UNLOCKED);
+
+void thread_routine() {
+  grnxx::Thread::sleep_for(grnxx::Duration::milliseconds(10));
+}
+
+}  // namespace
 
 int main() {
   grnxx::Logger::set_flags(grnxx::LOGGER_WITH_ALL |
@@ -56,6 +68,34 @@ int main() {
                              grnxx::Duration::milliseconds(10));
   elapsed = stopwatch.elapsed();
   GRNXX_NOTICE() << "sleep_until(now + 10ms): elapsed [ns] = "
+                 << (1000.0 * elapsed.count());
+
+  stopwatch.reset();
+  std::unique_ptr<grnxx::Thread> thread(grnxx::Thread::create(thread_routine));
+  assert(thread);
+  assert(thread->join());
+  elapsed = stopwatch.elapsed();
+  GRNXX_NOTICE() << "thread + join: elapsed [ns] = "
+                 << (1000.0 * elapsed.count());
+
+  stopwatch.reset();
+  thread.reset(grnxx::Thread::create([]() {
+    grnxx::Thread::sleep_for(grnxx::Duration::milliseconds(10));
+  }));
+  assert(thread);
+  assert(thread->join());
+  elapsed = stopwatch.elapsed();
+  GRNXX_NOTICE() << "thread + join: elapsed [ns] = "
+                 << (1000.0 * elapsed.count());
+
+  stopwatch.reset();
+  thread.reset(grnxx::Thread::create([]() {
+    grnxx::Thread::sleep_for(grnxx::Duration::milliseconds(10));
+  }));
+  assert(thread);
+  assert(thread->detach());
+  elapsed = stopwatch.elapsed();
+  GRNXX_NOTICE() << "thread + detach: elapsed [ns] = "
                  << (1000.0 * elapsed.count());
 
   return 0;
