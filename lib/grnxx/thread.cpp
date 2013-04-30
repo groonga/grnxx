@@ -18,7 +18,11 @@
 #include "grnxx/thread.hpp"
 
 #ifdef GRNXX_WINDOWS
+# include <errno.h>
+# include <process.h>
 # include <windows.h>
+#else  // GRNXX_WINDOWS
+# include <pthread.h>
 #endif  // GRNXX_WINDOWS
 
 #ifdef GRNXX_HAS_SCHED_YIELD
@@ -33,9 +37,162 @@
 //#include <chrono>
 //#include <thread>
 
+#include "grnxx/error.hpp"
+#include "grnxx/logger.hpp"
 #include "grnxx/time/system_clock.hpp"
 
 namespace grnxx {
+namespace {
+
+class ThreadImpl : public Thread {
+ public:
+  using Routine = Thread::Routine;
+
+  ThreadImpl();
+  ~ThreadImpl();
+
+  bool start(const Routine &routine);
+
+  bool join();
+  bool detach();
+
+ private:
+#ifdef GRNXX_WINDOWS
+  HANDLE thread_;
+#else  // GRNXX_WINDOWS
+  pthread_t thread_;
+#endif  // GRNXX_WINDOWS
+  bool joinable_;
+
+#ifdef GRNXX_WINDOWS
+  static unsigned thread_main(void *arg);
+#else  // GRNXX_WINDOWS
+  static void *thread_main(void *arg);
+#endif  // GRNXX_WINDOWS
+};
+
+ThreadImpl::ThreadImpl() : thread_(), joinable_(false) {}
+
+ThreadImpl::~ThreadImpl() {
+  // A thread must be join()ed or detach()ed.
+  if (joinable_) {
+    GRNXX_ERROR() << "running thread";
+  }
+}
+
+bool ThreadImpl::start(const Routine &routine) {
+  std::unique_ptr<Routine> routine_clone(new (std::nothrow) Routine(routine));
+  if (!routine_clone) {
+    GRNXX_ERROR() << "new std::function<void()> failed";
+    return false;
+  }
+#ifdef GRNXX_WINDOWS
+  const uintptr_t handle = ::_beginthreadex(nullptr, 0, thread_main,
+                                            routine_clone.get(), 0, nullptr);
+  if (handle == 0) {
+    GRNXX_ERROR() << "failed to create thread: '_beginthreadex' "
+                  << Error(errno);
+    return false;
+  }
+  thread_ = reinterpret_cast<HANDLE>(handle);
+#else  // GRNXX_WINDOWS
+  const int error = ::pthread_create(&thread_, nullptr, thread_main,
+                                     routine_clone.get());
+  if (error != 0) {
+    GRNXX_ERROR() << "failed to create thread: '::pthread_create' "
+                  << Error(error);
+    return false;
+  }
+#endif  // GRNXX_WINDOWS
+  routine_clone.release();
+  joinable_ = true;
+  return true;
+}
+
+bool ThreadImpl::join() {
+  if (!joinable_) {
+    GRNXX_ERROR() << "invalid operation: joinable = false";
+    return false;
+  }
+  bool result = true;
+#ifdef GRNXX_WINDOWS
+  if (::WaitForSingleObject(thread_, INFINITE) == WAIT_FAILED) {
+    GRNXX_ERROR() << "failed to join thread: '::WaitForSingleObject' "
+                  << Error(::GetLastError());
+    result = false;
+  }
+  if (::CloseHandle(thread_) != 0) {
+    GRNXX_ERROR() << "failed to close thread: '::CloseHandle' "
+                  << Error(::GetLastError());
+    result = false;
+  }
+#else  // GRNXX_WINDOWS
+  const int error = ::pthread_join(thread_, nullptr);
+  if (error != 0) {
+    GRNXX_ERROR() << "failed to join thread: '::pthread_join' "
+                  << Error(error);
+    result = false;
+  }
+#endif  // GRNXX_WINDOWS
+  joinable_ = false;
+  return result;
+}
+
+bool ThreadImpl::detach() {
+  if (!joinable_) {
+    GRNXX_ERROR() << "invalid operation: joinable = false";
+    return false;
+  }
+  bool result = true;
+#ifdef GRNXX_WINDOWS
+  if (::CloseHandle(thread_) != 0) {
+    GRNXX_ERROR() << "failed to detach thread: '::CloseHandle' "
+                  << Error(::GetLastError());
+    result = false;
+  }
+#else  // GRNXX_WINDOWS
+  const int error = ::pthread_detach(thread_);
+  if (error != 0) {
+    GRNXX_ERROR() << "failed to detach thread: '::pthread_detach' "
+                  << Error(error);
+    result = false;
+  }
+#endif  // GRNXX_WINDOWS
+  joinable_ = false;
+  return result;
+}
+
+#ifdef GRNXX_WINDOWS
+unsigned ThreadImpl::thread_main(void *arg) {
+  std::unique_ptr<Routine> routine(static_cast<Routine *>(arg));
+  (*routine)();
+  ::_endthreadex(0);
+  return 0;
+}
+#else  // GRNXX_WINDOWS
+void *ThreadImpl::thread_main(void *arg) {
+  std::unique_ptr<Routine> routine(static_cast<Routine *>(arg));
+  (*routine)();
+  return nullptr;
+}
+#endif  // GRNXX_WINDOWS
+
+}  // namespace
+
+Thread::Thread() {}
+Thread::~Thread() {}
+
+Thread *Thread::create(const Routine &routine) {
+  std::unique_ptr<ThreadImpl> thread(new (std::nothrow) ThreadImpl);
+  if (!thread) {
+    GRNXX_ERROR() << "new grnxx::ThreadImpl failed";
+    return nullptr;
+  }
+  if (!thread->start(routine)) {
+    return nullptr;
+  }
+  return thread.release();
+}
 
 void Thread::yield() {
 #ifdef GRNXX_WINDOWS

@@ -18,6 +18,8 @@
 #ifndef GRNXX_THREAD_HPP
 #define GRNXX_THREAD_HPP
 
+#include <functional>
+
 #include "grnxx/basic.hpp"
 #include "grnxx/time/time.hpp"
 
@@ -25,14 +27,26 @@ namespace grnxx {
 
 class Thread {
  public:
+  using Routine = std::function<void()>;
+
+  Thread();
+  virtual ~Thread();
+
+  // Create a thread.
+  static Thread *create(const std::function<void()> &routine);
+
+  // Yield the processor/core associated with the current thread.
   static void yield();
 
+  // Sleep for "duration".
   static void sleep_for(Duration duration);
+  // Sleep until "time".
   static void sleep_until(Time time);
 
- private:
-  Thread(const Thread &);
-  Thread &operator=(const Thread &);
+  // Wait until the thread finishes.
+  virtual bool join() = 0;
+  // Separate the thread from this object.
+  virtual bool detach() = 0;
 };
 
 }  // namespace grnxx
