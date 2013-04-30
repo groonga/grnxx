@@ -32,8 +32,8 @@ namespace grnxx {
 namespace storage {
 namespace {
 
-constexpr uint64_t CHUNK_UNIT_SIZE   = 1 << 16;
-constexpr uint64_t NODE_UNIT_SIZE    = 1 << 12;
+constexpr uint64_t CHUNK_UNIT_SIZE   = 1 << 16;  // 64KB.
+constexpr uint64_t NODE_UNIT_SIZE    = 1 << 12;  // 4KB.
 
 constexpr uint64_t HEADER_CHUNK_SIZE = CHUNK_UNIT_SIZE;
 constexpr uint64_t HEADER_INDEX_SIZE = HEADER_CHUNK_SIZE - HEADER_SIZE;
@@ -51,8 +51,8 @@ constexpr uint16_t MAX_NUM_NODE_BODY_CHUNKS   =
 static_assert(MAX_NUM_NODE_BODY_CHUNKS >= 2000,
               "MAX_NUM_NODE_BODY_CHUNKS < 2000");
 
-// A chunk for a remaining space can be smaller than this size.
-constexpr uint64_t NODE_BODY_MIN_CHUNK_SIZE = 1 << 21;
+// The size of an end-of-file chunk can be less than NODE_BODY_MIN_CHUNK_SIZE.
+constexpr uint64_t NODE_BODY_MIN_CHUNK_SIZE = 1 << 21;  // 2MB.
 constexpr double NODE_BODY_CHUNK_SIZE_RATIO = 1.0 / 64;
 
 }  // namespace
@@ -165,6 +165,7 @@ bool StorageImpl::unlink(const char *path) {
 }
 
 StorageNode StorageImpl::create_node(uint32_t parent_node_id, uint64_t size) {
+  Lock data_lock(&header_->data_mutex);
   if (parent_node_id >= header_->num_nodes) {
     GRNXX_ERROR() << "invalid argument: parent_node_id = " << parent_node_id
                   << ", num_nodes = " << header_->num_nodes;
@@ -178,13 +179,29 @@ StorageNode StorageImpl::create_node(uint32_t parent_node_id, uint64_t size) {
   if (!parent_node_header) {
     return StorageNode(nullptr);
   }
-  Lock lock(&header_->data_mutex);
+  if (parent_node_header->status != STORAGE_NODE_ACTIVE) {
+    // TODO: How about an unlinked node?
+    GRNXX_WARNING() << "invalid argument: status = "
+                    << parent_node_header->status;
+    return StorageNode(nullptr);
+  }
+  NodeHeader *child_node_header = nullptr;
+  if (parent_node_header->child_node_id != STORAGE_INVALID_NODE_ID) {
+    child_node_header = get_node_header(parent_node_header->child_node_id);
+    if (!child_node_header) {
+      return StorageNode(nullptr);
+    }
+  }
   NodeHeader * const node_header = create_active_node(size);
   if (!node_header) {
     return StorageNode(nullptr);
   }
   node_header->sibling_node_id = parent_node_header->child_node_id;
+  node_header->from_node_id = parent_node_id;
   parent_node_header->child_node_id = node_header->id;
+  if (child_node_header) {
+    child_node_header->from_node_id = node_header->id;
+  }
   void * const body = get_node_body(node_header);
   if (!body) {
     return StorageNode(nullptr);
@@ -197,6 +214,11 @@ StorageNode StorageImpl::open_node(uint32_t node_id) {
   if (!node_header) {
     return StorageNode(nullptr);
   }
+  if (node_header->status != STORAGE_NODE_ACTIVE) {
+    // TODO: How about an unlinked node?
+    GRNXX_WARNING() << "invalid argument: status = " << node_header->status;
+    return StorageNode(nullptr);
+  }
   void * const body = get_node_body(node_header);
   if (!body) {
     return StorageNode(nullptr);
@@ -205,6 +227,7 @@ StorageNode StorageImpl::open_node(uint32_t node_id) {
 }
 
 bool StorageImpl::unlink_node(uint32_t node_id) {
+  Lock data_lock(&header_->data_mutex);
   if ((node_id == STORAGE_ROOT_NODE_ID) || (node_id >= header_->num_nodes)) {
     GRNXX_ERROR() << "invalid argument: node_id = " << node_id
                   << ", num_nodes = " << header_->num_nodes;
@@ -218,18 +241,83 @@ bool StorageImpl::unlink_node(uint32_t node_id) {
     GRNXX_WARNING() << "invalid argument: status = " << node_header->status;
     return false;
   }
-  node_header->status = STORAGE_NODE_MARKED;
+  NodeHeader * const from_node_header =
+      get_node_header(node_header->from_node_id);
+  if (!from_node_header) {
+    return false;
+  }
+  NodeHeader *latest_node_header = nullptr;
+  if (header_->latest_unlinked_node_id != STORAGE_INVALID_NODE_ID) {
+    latest_node_header = get_node_header(header_->latest_unlinked_node_id);
+    if (!latest_node_header) {
+      return false;
+    }
+  }
+  if (node_id == from_node_header->child_node_id) {
+    from_node_header->child_node_id = node_header->sibling_node_id;
+  } else if (node_id == from_node_header->sibling_node_id) {
+    from_node_header->sibling_node_id = node_header->sibling_node_id;
+  } else {
+    // This error must not occur.
+    GRNXX_ERROR() << "broken link: node_id = " << node_id
+                  << ", from_node_id = " << from_node_header->id
+                  << ", child_node_id = " << from_node_header->child_node_id
+                  << ", sibling_node_id = "
+                  << from_node_header->sibling_node_id;
+    return false;
+  }
+  node_header->status = STORAGE_NODE_UNLINKED;
+  if (latest_node_header) {
+    node_header->next_unlinked_node_id =
+        latest_node_header->next_unlinked_node_id;
+    latest_node_header->next_unlinked_node_id = node_id;
+  } else {
+    node_header->next_unlinked_node_id = node_id;
+  }
+  header_->latest_unlinked_node_id = node_id;
   node_header->modified_time = clock_.now();
   return true;
 }
 
-bool StorageImpl::sweep(Duration lifetime, uint32_t root_node_id) {
-  Lock lock(&header_->data_mutex);
-  NodeHeader * const node_header = get_node_header(root_node_id);
-  if (!node_header) {
+bool StorageImpl::sweep(Duration lifetime) {
+  Lock data_lock(&header_->data_mutex);
+  if (header_->latest_unlinked_node_id == STORAGE_INVALID_NODE_ID) {
+    // Nothing to do.
+    return true;
+  }
+  NodeHeader * const latest_node_header =
+      get_node_header(header_->latest_unlinked_node_id);
+  if (!latest_node_header) {
     return false;
   }
-  return sweep_subtree(clock_.now() - lifetime, node_header);
+  const Time threshold = clock_.now() - lifetime;
+  do {
+    NodeHeader * const oldest_node_header =
+        get_node_header(latest_node_header->next_unlinked_node_id);
+    if (!oldest_node_header) {
+      return false;
+    }
+    if (oldest_node_header->status != STORAGE_NODE_UNLINKED) {
+      // This error must not occur.
+      GRNXX_ERROR() << "invalid argument: status = "
+                    << oldest_node_header->status;
+      return false;
+    }
+    if (oldest_node_header->modified_time > threshold) {
+      // Remaining unlinked nodes are too early for reuse.
+      return true;
+    }
+    const uint32_t next_node_id = oldest_node_header->next_unlinked_node_id;
+    if (!sweep_subtree(threshold, oldest_node_header)) {
+      return false;
+    }
+    if (oldest_node_header != latest_node_header) {
+      latest_node_header->next_unlinked_node_id = next_node_id;
+    } else {
+      header_->latest_unlinked_node_id = STORAGE_INVALID_NODE_ID;
+    }
+  } while (header_->latest_unlinked_node_id != STORAGE_INVALID_NODE_ID);
+  return true;
 }
 
 const char *StorageImpl::path() const {
@@ -464,7 +552,11 @@ void StorageImpl::prepare_indexes() {
 }
 
 NodeHeader *StorageImpl::create_active_node(uint64_t size) {
-  size = (size + NODE_UNIT_SIZE - 1) & ~(NODE_UNIT_SIZE - 1);
+  if (size == 0) {
+    size = NODE_UNIT_SIZE;
+  } else {
+    size = (size + NODE_UNIT_SIZE - 1) & ~(NODE_UNIT_SIZE - 1);
+  }
   NodeHeader *node_header = find_idle_node(size);
   if (!node_header) {
     node_header = create_idle_node(size);
@@ -580,8 +672,7 @@ NodeHeader *StorageImpl::create_phantom_node() {
   if (!node_header) {
     return nullptr;
   }
-  *node_header = NodeHeader();
-  node_header->id = node_id;
+  *node_header = NodeHeader(node_id);
   node_header->next_phantom_node_id = header_->latest_phantom_node_id;
   node_header->modified_time = clock_.now();
   ++header_->num_nodes;
@@ -627,22 +718,61 @@ bool StorageImpl::associate_node_with_chunk(NodeHeader *node_header,
 }
 
 bool StorageImpl::sweep_subtree(Time threshold, NodeHeader *node_header) {
-  if (node_header->status == STORAGE_NODE_MARKED) {
-    if (node_header->modified_time <= threshold) {
-      // TODO: Unlink the node.
-      return true;
+  uint32_t child_node_id = node_header->child_node_id;
+  while (child_node_id != STORAGE_INVALID_NODE_ID) {
+    NodeHeader * const child_node_header = get_node_header(child_node_id);
+    if (!child_node_header) {
+      return false;
+    }
+    child_node_id = child_node_header->sibling_node_id;
+    if (!sweep_subtree(threshold, child_node_header)) {
+      return false;
     }
   }
-  uint32_t node_id = node_header->child_node_id;
-  while (node_id != STORAGE_INVALID_NODE_ID) {
-    node_header = get_node_header(node_id);
-    if (!node_header) {
+  node_header->status = STORAGE_NODE_IDLE;
+  node_header->modified_time = clock_.now();
+  register_idle_node(node_header);
+  if (node_header->next_node_id != STORAGE_INVALID_NODE_ID) {
+    NodeHeader * const next_node_header =
+        get_node_header(node_header->next_node_id);
+    if (!next_node_header) {
       return false;
     }
-    if (!sweep_subtree(threshold, node_header)) {
+    if (next_node_header->status == STORAGE_NODE_IDLE) {
+      if (!merge_idle_nodes(node_header, next_node_header)) {
+        return false;
+      }
+    }
+  }
+  if (node_header->prev_node_id != STORAGE_INVALID_NODE_ID) {
+    NodeHeader * const prev_node_header =
+        get_node_header(node_header->prev_node_id);
+    if (!prev_node_header) {
       return false;
     }
-    node_id = node_header->sibling_node_id;
+    if (prev_node_header->status == STORAGE_NODE_IDLE) {
+      if (!merge_idle_nodes(prev_node_header, node_header)) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+bool StorageImpl::merge_idle_nodes(NodeHeader *node_header,
+                                   NodeHeader *next_node_header) {
+  if (!unregister_idle_node(node_header) ||
+      !unregister_idle_node(next_node_header)) {
+    return false;
+  }
+  node_header->size += next_node_header->size;
+  node_header->next_node_id = next_node_header->next_node_id;
+  *next_node_header = NodeHeader(next_node_header->id);
+  next_node_header->next_phantom_node_id = header_->latest_phantom_node_id;
+  next_node_header->modified_time = clock_.now();
+  header_->latest_phantom_node_id = next_node_header->id;
+  if (!register_idle_node(node_header)) {
+    return false;
   }
   return true;
 }

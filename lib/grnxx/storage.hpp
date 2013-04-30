@@ -57,12 +57,10 @@ enum StorageNodeStatus : uint8_t {
   STORAGE_NODE_PHANTOM  = 0,
   // An active node.
   STORAGE_NODE_ACTIVE   = 1,
-  // A marked node to be unlinked.
-  STORAGE_NODE_MARKED   = 2,
   // An unlinked node.
-  STORAGE_NODE_UNLINKED = 3,
+  STORAGE_NODE_UNLINKED = 2,
   // An unused node.
-  STORAGE_NODE_IDLE     = 4
+  STORAGE_NODE_IDLE     = 3
 };
 
 StringBuilder &operator<<(StringBuilder &builder, StorageNodeStatus status);
@@ -109,7 +107,7 @@ class StorageNode {
   uint64_t size() const;
   // Return the last modified time.
   Time modified_time() const;
-  // Return the address to the user data (16 bytes) in the header.
+  // Return the address to the user data (8 bytes) in the header.
   void *user_data() const;
   // Return the address to the body.
   void *body() const {
@@ -155,13 +153,12 @@ class Storage {
   // Open a node.
   virtual StorageNode open_node(uint32_t node_id) = 0;
 
-  // Mark a node to be unlinked. Note that the marked node and its descendants
-  // will be unlinked by sweep().
+  // Unlink a node and true on success.
+  // The unlinked node and its descendants will be removed by sweep().
   virtual bool unlink_node(uint32_t node_id) = 0;
 
-  // Sweep marked nodes whose last modified time < (now - lifetime).
-  virtual bool sweep(Duration lifetime,
-                     uint32_t root_node_id = STORAGE_ROOT_NODE_ID) = 0;
+  // Sweep unlinked nodes whose modified time < (now - lifetime).
+  virtual bool sweep(Duration lifetime) = 0;
 
   // Return the storage path.
   // Note that an anonymous or temporary storage may return nullptr.

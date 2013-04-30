@@ -54,10 +54,13 @@ struct Header {
   // This value is extended when a node header chunk is added.
   uint32_t max_num_nodes;
   // The ID of the latest phantom node.
+  // STORAGE_INVALID_NODE_ID indicates that there are no phantom nodes.
   uint32_t latest_phantom_node_id;
   // The ID of the latest unlinked node.
+  // STORAGE_INVALID_NODE_ID indicates that there are no unlinked nodes.
   uint32_t latest_unlinked_node_id;
   // The IDs of the oldest idle nodes.
+  // STORAGE_INVALID_NODE_ID indicates that the idle node list is empty.
   uint32_t oldest_idle_node_ids[NUM_IDLE_NODE_LISTS];
   // A mutex object for exclusively updating data.
   Mutex data_mutex;

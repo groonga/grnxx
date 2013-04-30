@@ -30,7 +30,7 @@ struct NodeHeader {
   uint32_t id;
   // The node status.
   StorageNodeStatus status;
-  uint8_t reserved_;
+  uint8_t reserved_0;
   // (Non-phantom)
   // The ID of the chunk to which the node belongs.
   uint16_t chunk_id;
@@ -48,20 +48,27 @@ struct NodeHeader {
   // The ID of the previous node in chunk.
   // STORAGE_INVALID_NODE_ID indicates that the node is the first node in chunk.
   uint32_t prev_node_id;
+  // (Active)
+  // The ID of the from node.
+  // STORAGE_INVALID_NODE_ID indicates that the node is the root node.
+  uint32_t from_node_id;
+  uint32_t reserved_1;
   union {
     // (Phantom)
     // The ID of the next phantom node.
     uint32_t next_phantom_node_id;
-    // (Active, marked, or unlinked)
+    // (Active or unlinked)
     // The ID of the latest child node.
     // STORAGE_INVALID_NODE_ID indicates that the node has no children.
     uint32_t child_node_id;
     // (Idle)
     // The ID of the next idle node.
+    // id == next_idle_node_id indicates that the node is the only member of
+    // an idle node list.
     uint32_t next_idle_node_id;
   };
   union {
-    // (Active or marked)
+    // (Active)
     // The ID of the next sibling node.
     // STORAGE_INVALID_NODE_ID indicates that the node has no elder siblings.
     uint32_t sibling_node_id;
@@ -72,15 +79,17 @@ struct NodeHeader {
     uint32_t next_unlinked_node_id;
     // (Idle)
     // The ID of the previous idle node.
+    // id == prev_idle_node_id indicates that the node is the only member of
+    // an idle node list.
     uint32_t prev_idle_node_id;
   };
   // The last modified time.
   Time modified_time;
   // User data.
-  uint8_t user_data[16];
+  uint8_t user_data[8];
 
   // Initialize the members.
-  NodeHeader();
+  explicit NodeHeader(uint32_t id);
 };
 
 static_assert(sizeof(NodeHeader) == NODE_HEADER_SIZE,

@@ -26,10 +26,14 @@ namespace storage {
 constexpr size_t CHUNK_INDEX_SIZE = 32;
 
 struct ChunkIndex {
+  // The chunk ID.
   uint32_t id;
+  // The ID of the file to which the chunk belongs.
   uint16_t file_id;
   uint16_t reserved_0;
+  // The offset in file.
   uint64_t offset;
+  // The chunk size.
   uint64_t size;
   uint64_t reserved_1;
 

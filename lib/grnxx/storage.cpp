@@ -24,11 +24,13 @@
 namespace grnxx {
 namespace {
 
-constexpr uint64_t MAX_FILE_SIZE_LOWER_LIMIT = 1ULL << 30;
-constexpr uint64_t MAX_FILE_SIZE_UPPER_LIMIT = 1ULL << 40;
+constexpr uint64_t MAX_FILE_SIZE_LOWER_LIMIT = 1ULL << 30;  // 1GB.
+constexpr uint64_t MAX_FILE_SIZE_UPPER_LIMIT = 1ULL << 63;  // 8EB.
+constexpr uint64_t MAX_FILE_SIZE_DEFAULT     = 1ULL << 40;  // 1TB.
 constexpr uint16_t MAX_NUM_FILES_LOWER_LIMIT = 1;
 constexpr uint16_t MAX_NUM_FILES_UPPER_LIMIT = 1000;
-constexpr uint64_t ROOT_SIZE_DEFAULT         = 1ULL << 12;
+constexpr uint16_t MAX_NUM_FILES_DEFAULT     = MAX_NUM_FILES_UPPER_LIMIT;
+constexpr uint64_t ROOT_SIZE_DEFAULT         = 1ULL << 12;  // 4KB.
 
 }  // namespace
 
@@ -63,7 +65,6 @@ StringBuilder &operator<<(StringBuilder &builder, StorageNodeStatus status) {
   switch (status) {
     GRNXX_STATUS_CASE(STORAGE_NODE_PHANTOM)
     GRNXX_STATUS_CASE(STORAGE_NODE_ACTIVE)
-    GRNXX_STATUS_CASE(STORAGE_NODE_MARKED)
     GRNXX_STATUS_CASE(STORAGE_NODE_UNLINKED)
     GRNXX_STATUS_CASE(STORAGE_NODE_IDLE)
     default: {
@@ -73,8 +74,8 @@ StringBuilder &operator<<(StringBuilder &builder, StorageNodeStatus status) {
 }
 
 StorageOptions::StorageOptions()
-    : max_file_size(MAX_FILE_SIZE_UPPER_LIMIT),
-      max_num_files(MAX_NUM_FILES_UPPER_LIMIT),
+    : max_file_size(MAX_FILE_SIZE_DEFAULT),
+      max_num_files(MAX_NUM_FILES_DEFAULT),
       root_size(ROOT_SIZE_DEFAULT) {}
 
 bool StorageOptions::is_valid() const {

@@ -52,7 +52,7 @@ class StorageImpl : public Storage {
 
   bool unlink_node(uint32_t node_id);
 
-  bool sweep(Duration lifetime, uint32_t root_node_id);
+  bool sweep(Duration lifetime);
 
   const char *path() const;
   StorageFlags flags() const;
@@ -100,6 +100,7 @@ class StorageImpl : public Storage {
   ChunkIndex *create_node_body_chunk(uint64_t size);
 
   bool sweep_subtree(Time threshold, NodeHeader *node_header);
+  bool merge_idle_nodes(NodeHeader *node_header, NodeHeader *next_node_header);
 
   bool register_idle_node(NodeHeader *node_header);
   bool unregister_idle_node(NodeHeader *node_header);
