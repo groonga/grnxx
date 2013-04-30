@@ -20,7 +20,6 @@
 #include "grnxx/logger.hpp"
 #include "grnxx/thread.hpp"
 #include "grnxx/time/broken_down_time.hpp"
-#include "grnxx/time/internal_clock.hpp"
 #include "grnxx/time/periodic_clock.hpp"
 #include "grnxx/time/stopwatch.hpp"
 #include "grnxx/time/system_clock.hpp"
@@ -74,42 +73,6 @@ void test_system_clock() {
   }
   grnxx::Duration elapsed = stopwatch.elapsed();
   GRNXX_NOTICE() << "grnxx::SystemClock::now: average elapsed [ns] = "
-                 << (1000.0 * elapsed.count() / LOOP_COUNT);
-}
-
-void test_internal_clock() {
-  grnxx::Time time = grnxx::InternalClock::now();
-  GRNXX_NOTICE() << "grnxx::InternalClock::now(): " << time;
-  GRNXX_NOTICE() << "grnxx::InternalClock::now().local_time(): "
-                 << time.local_time();
-
-  time = grnxx::InternalClock::now();
-  GRNXX_NOTICE() << "grnxx::InternalClock::now(): " << time;
-  GRNXX_NOTICE() << "grnxx::InternalClock::now().local_time(): "
-                 << time.local_time();
-
-  grnxx::Thread::sleep_for(grnxx::Duration::milliseconds(310));
-
-  time = grnxx::InternalClock::now();
-  GRNXX_NOTICE() << "grnxx::InternalClock::now(): " << time;
-  GRNXX_NOTICE() << "grnxx::InternalClock::now().local_time(): "
-                 << time.local_time();
-
-  grnxx::Thread::sleep_for(grnxx::Duration::milliseconds(310));
-
-  time = grnxx::InternalClock::now();
-  GRNXX_NOTICE() << "grnxx::InternalClock::now(): " << time;
-  GRNXX_NOTICE() << "grnxx::InternalClock::now().local_time(): "
-                 << time.local_time();
-
-  enum { LOOP_COUNT = 1 << 20 };
-
-  grnxx::Stopwatch stopwatch(true);
-  for (int i = 0; i < LOOP_COUNT; ++i) {
-    grnxx::InternalClock::now();
-  }
-  grnxx::Duration elapsed = stopwatch.elapsed();
-  GRNXX_NOTICE() << "grnxx::InternalClock::now: average elapsed [ns] = "
                  << (1000.0 * elapsed.count() / LOOP_COUNT);
 }
 
@@ -197,7 +160,6 @@ int main() {
   test_time();
   test_broken_down_time();
   test_system_clock();
-  test_internal_clock();
   test_periodic_clock();
   test_stopwatch();
 
