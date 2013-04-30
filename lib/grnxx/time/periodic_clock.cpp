@@ -17,8 +17,6 @@
 */
 #include "grnxx/time/periodic_clock.hpp"
 
-#include <thread>
-
 #include "grnxx/intrinsic.hpp"
 #include "grnxx/thread.hpp"
 
@@ -30,7 +28,7 @@ namespace {
 constexpr Duration UPDATE_INTERVAL = Duration::milliseconds(100);
 
 volatile uint32_t ref_count = 0;
-std::thread thread;
+grnxx::Thread *thread = nullptr;
 
 }  // namespace
 
@@ -42,11 +40,9 @@ PeriodicClock::PeriodicClock() {
     if (atomic_compare_and_swap(count, count + 1, &ref_count)) {
       if (count == 0) {
         // Start the internal thread.
-        try {
-          thread = std::thread(routine);
+        thread = grnxx::Thread::create(routine);
+        if (thread) {
           now_ = SystemClock::now();
-        } catch (...) {
-          // Do nothing on failure.
         }
       }
       break;
@@ -59,8 +55,10 @@ PeriodicClock::~PeriodicClock() {
     const uint32_t count = ref_count;
     if (atomic_compare_and_swap(count, count - 1, &ref_count)) {
       if (count == 1) {
-        // Stop the internal thread.
-        thread.join();
+        // Stop the running thread.
+        thread->join();
+        delete thread;
+        thread = nullptr;
         now_ = Time::min();
       }
       break;
