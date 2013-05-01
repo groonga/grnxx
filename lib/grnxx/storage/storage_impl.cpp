@@ -165,6 +165,10 @@ bool StorageImpl::unlink(const char *path) {
 }
 
 StorageNode StorageImpl::create_node(uint32_t parent_node_id, uint64_t size) {
+  if (flags_ & STORAGE_READ_ONLY) {
+    GRNXX_ERROR() << "invalid operation: flags = " << flags_;
+    return StorageNode(nullptr);
+  }
   Lock data_lock(&header_->data_mutex);
   if (parent_node_id >= header_->num_nodes) {
     GRNXX_ERROR() << "invalid argument: parent_node_id = " << parent_node_id
@@ -227,6 +231,10 @@ StorageNode StorageImpl::open_node(uint32_t node_id) {
 }
 
 bool StorageImpl::unlink_node(uint32_t node_id) {
+  if (flags_ & STORAGE_READ_ONLY) {
+    GRNXX_ERROR() << "invalid operation: flags = " << flags_;
+    return false;
+  }
   Lock data_lock(&header_->data_mutex);
   if ((node_id == STORAGE_ROOT_NODE_ID) || (node_id >= header_->num_nodes)) {
     GRNXX_ERROR() << "invalid argument: node_id = " << node_id
@@ -280,6 +288,10 @@ bool StorageImpl::unlink_node(uint32_t node_id) {
 }
 
 bool StorageImpl::sweep(Duration lifetime) {
+  if (flags_ & STORAGE_READ_ONLY) {
+    GRNXX_ERROR() << "invalid operation: flags = " << flags_;
+    return false;
+  }
   Lock data_lock(&header_->data_mutex);
   if (header_->latest_unlinked_node_id == STORAGE_INVALID_NODE_ID) {
     // Nothing to do.
