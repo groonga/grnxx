@@ -26,12 +26,8 @@ namespace grnxx {
 namespace storage {
 
 struct NodeHeader;
-class StorageImpl;
 
 }  // namespace storage
-
-using StorageNodeHeader = storage::NodeHeader;
-using StorageImpl = storage::StorageImpl;
 
 class Storage;
 using StorageFlags = FlagsImpl<Storage>;
@@ -91,7 +87,7 @@ class StorageNode {
  public:
   StorageNode() = default;
   explicit StorageNode(std::nullptr_t) : header_(nullptr), body_(nullptr) {}
-  StorageNode(StorageNodeHeader *header, void *body)
+  StorageNode(storage::NodeHeader *header, void *body)
       : header_(header),
         body_(body) {}
 
@@ -116,7 +112,7 @@ class StorageNode {
 
  private:
   // The address to the node header.
-  StorageNodeHeader *header_;
+  storage::NodeHeader *header_;
   // The address to the node body.
   void *body_;
 };

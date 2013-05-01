@@ -129,26 +129,26 @@ Storage::~Storage() {}
 Storage *Storage::create(const char *path,
                          StorageFlags flags,
                          const StorageOptions &options) {
-  return StorageImpl::create(path, flags, options);
+  return storage::StorageImpl::create(path, flags, options);
 }
 
 Storage *Storage::open(const char *path,
                        StorageFlags flags) {
-  return StorageImpl::open(path, flags);
+  return storage::StorageImpl::open(path, flags);
 }
 
 Storage *Storage::open_or_create(const char *path,
                                  StorageFlags flags,
                                  const StorageOptions &options) {
-  return StorageImpl::open_or_create(path, flags, options);
+  return storage::StorageImpl::open_or_create(path, flags, options);
 }
 
 bool Storage::exists(const char *path) {
-  return StorageImpl::exists(path);
+  return storage::StorageImpl::exists(path);
 }
 
 bool Storage::unlink(const char *path) {
-  return StorageImpl::unlink(path);
+  return storage::StorageImpl::unlink(path);
 }
 
 }  // namespace grnxx
