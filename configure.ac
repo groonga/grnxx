@@ -51,8 +51,6 @@ AC_CHECK_LIB([pthread], [pthread_create])
 AC_CHECK_LIB([pthread], [pthread_create],
              [AM_CXXFLAGS="${AM_CXXFLAGS} -pthread"])
 
-AC_CHECK_FUNCS([pthread_atfork])
-
 # For std::this_thread::yield() and std::this_thread::sleep_for().
 #AC_CHECK_FUNC([sched_yield],
 #              [AM_CXXFLAGS="${AM_CXXFLAGS} -D_GLIBCXX_USE_SCHED_YIELD"])
