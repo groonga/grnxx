@@ -740,6 +740,7 @@ bool StorageImpl::sweep_subtree(Time threshold, NodeHeader *node_header) {
     if (!sweep_subtree(threshold, child_node_header)) {
       return false;
     }
+    node_header->child_node_id = child_node_id;
   }
   node_header->status = STORAGE_NODE_IDLE;
   node_header->modified_time = clock_.now();
