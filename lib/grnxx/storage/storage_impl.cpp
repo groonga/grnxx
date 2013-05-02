@@ -32,27 +32,45 @@ namespace grnxx {
 namespace storage {
 namespace {
 
-constexpr uint64_t CHUNK_UNIT_SIZE   = 1 << 16;  // 64KB.
-constexpr uint64_t NODE_UNIT_SIZE    = 1 << 12;  // 4KB.
+// The size of chunk must be a multiple of CHUNK_UNIT_SIZE (64KB).
+constexpr uint64_t CHUNK_UNIT_SIZE = 1 << 16;
+// The size of node must be a multiple of NODE_UNIT_SIZE (4KB).
+constexpr uint64_t NODE_UNIT_SIZE  = 1 << 12;
 
-constexpr uint64_t HEADER_CHUNK_SIZE = CHUNK_UNIT_SIZE;
-constexpr uint64_t HEADER_INDEX_SIZE = HEADER_CHUNK_SIZE - HEADER_SIZE;
+// TODO
+//// The size of regular node must be a multiple of REGULAR_NODE_UNIT_SIZE (4KB).
+//constexpr uint64_t REGULAR_NODE_UNIT_SIZE = 1 << 12;
+//// The size of small node must be a multiple of SMALL_NODE_UNIT_SIZE (64 bytes).
+//constexpr uint64_t SMALL_NODE_UNIT_SIZE   = 1 << 6;
+//// A node larger than NODE_SIZE_THRESHOLD (2KB) is a regular node.
+//constexpr uint64_t NODE_SIZE_THRESHOLD    = 1 << 11;
 
+// The chunk size for Header and ChunkIndexes.
+constexpr uint64_t ROOT_CHUNK_SIZE = CHUNK_UNIT_SIZE;
+// The size allocated to ChunkIndexes.
+constexpr uint64_t ROOT_INDEX_SIZE = ROOT_CHUNK_SIZE - HEADER_SIZE;
+
+// The number of NodeHeaders in the initial chunk.
 constexpr uint16_t NODE_HEADER_CHUNK_UNIT_SIZE =
     CHUNK_UNIT_SIZE / NODE_HEADER_SIZE;
 
+// The maximum node ID.
 constexpr uint32_t MAX_NODE_ID =
     STORAGE_INVALID_NODE_ID - NODE_HEADER_CHUNK_UNIT_SIZE;
 
+// The maximum number of chunks for NodeHeaders.
 constexpr uint16_t MAX_NUM_NODE_HEADER_CHUNKS = 32;
+// The maximum number of chunks for node bodies.
 constexpr uint16_t MAX_NUM_NODE_BODY_CHUNKS   =
-    (HEADER_INDEX_SIZE / CHUNK_INDEX_SIZE) - MAX_NUM_NODE_HEADER_CHUNKS;
+    (ROOT_INDEX_SIZE / CHUNK_INDEX_SIZE) - MAX_NUM_NODE_HEADER_CHUNKS;
 
 static_assert(MAX_NUM_NODE_BODY_CHUNKS >= 2000,
               "MAX_NUM_NODE_BODY_CHUNKS < 2000");
 
+// The minimum size of chunk for node bodies.
 // The size of an end-of-file chunk can be less than NODE_BODY_MIN_CHUNK_SIZE.
 constexpr uint64_t NODE_BODY_MIN_CHUNK_SIZE = 1 << 21;  // 2MB.
+// The ratio of the next chunk size to the storage total size.
 constexpr double NODE_BODY_CHUNK_SIZE_RATIO = 1.0 / 64;
 
 }  // namespace
@@ -65,7 +83,7 @@ StorageImpl::StorageImpl()
       node_header_chunk_indexes_(nullptr),
       node_body_chunk_indexes_(nullptr),
       files_(),
-      header_chunk_(),
+      root_chunk_(),
       node_header_chunks_(),
       node_body_chunks_(),
       mutex_(MUTEX_UNLOCKED),
@@ -375,25 +393,25 @@ bool StorageImpl::create_file_backed_storage(const char *path,
   if (!header_file) {
     return false;
   }
-  if (!header_file->resize(HEADER_CHUNK_SIZE)) {
+  if (!header_file->resize(ROOT_CHUNK_SIZE)) {
     return false;
   }
-  std::unique_ptr<Chunk> header_chunk(
-      create_chunk(header_file.get(), 0, HEADER_CHUNK_SIZE));
-  if (!header_chunk) {
+  std::unique_ptr<Chunk> root_chunk(
+      create_chunk(header_file.get(), 0, ROOT_CHUNK_SIZE));
+  if (!root_chunk) {
     return false;
   }
-  header_ = static_cast<Header *>(header_chunk->address());
+  header_ = static_cast<Header *>(root_chunk->address());
   *header_ = Header();
   header_->max_file_size = options.max_file_size & ~(CHUNK_UNIT_SIZE - 1);
   header_->max_num_files = options.max_num_files;
-  header_->total_size = HEADER_CHUNK_SIZE;
+  header_->total_size = ROOT_CHUNK_SIZE;
   if (!prepare_pointers()) {
     return false;
   }
   prepare_indexes();
   files_[0] = std::move(header_file);
-  header_chunk_ = std::move(header_chunk);
+  root_chunk_ = std::move(root_chunk);
   if (!create_active_node(options.root_size)) {
     return false;
   }
@@ -407,18 +425,18 @@ bool StorageImpl::create_anonymous_storage(StorageFlags flags,
   if (flags & STORAGE_HUGE_TLB) {
     flags_ |= STORAGE_HUGE_TLB;
   }
-  std::unique_ptr<Chunk> header_chunk(
-      create_chunk(nullptr, 0, HEADER_CHUNK_SIZE));
-  header_ = static_cast<Header *>(header_chunk->address());
+  std::unique_ptr<Chunk> root_chunk(
+      create_chunk(nullptr, 0, ROOT_CHUNK_SIZE));
+  header_ = static_cast<Header *>(root_chunk->address());
   *header_ = Header();
   header_->max_file_size = options.max_file_size & ~(CHUNK_UNIT_SIZE - 1);
   header_->max_num_files = options.max_num_files;
-  header_->total_size = HEADER_CHUNK_SIZE;
+  header_->total_size = ROOT_CHUNK_SIZE;
   if (!prepare_pointers()) {
     return false;
   }
   prepare_indexes();
-  header_chunk_ = std::move(header_chunk);
+  root_chunk_ = std::move(root_chunk);
   if (!create_active_node(options.root_size)) {
     return false;
   }
@@ -446,12 +464,12 @@ bool StorageImpl::open_storage(const char *path, StorageFlags flags) {
     return false;
   }
   // TODO: If another thread or process is creating the storage?
-  std::unique_ptr<Chunk> header_chunk(
-      create_chunk(header_file.get(), 0, HEADER_CHUNK_SIZE));
-  if (!header_chunk) {
+  std::unique_ptr<Chunk> root_chunk(
+      create_chunk(header_file.get(), 0, ROOT_CHUNK_SIZE));
+  if (!root_chunk) {
     return false;
   }
-  header_ = static_cast<Header *>(header_chunk->address());
+  header_ = static_cast<Header *>(root_chunk->address());
   if (!header_->is_valid()) {
     return false;
   }
@@ -459,7 +477,7 @@ bool StorageImpl::open_storage(const char *path, StorageFlags flags) {
     return false;
   }
   files_[0] = std::move(header_file);
-  header_chunk_ = std::move(header_chunk);
+  root_chunk_ = std::move(root_chunk);
   return true;
 }
 
@@ -475,12 +493,12 @@ bool StorageImpl::open_or_create_storage(const char *path, StorageFlags flags,
   std::unique_ptr<File> header_file(File::open(path));
   if (header_file) {
     // Open an existing storage.
-    std::unique_ptr<Chunk> header_chunk(
-        create_chunk(header_file.get(), 0, HEADER_CHUNK_SIZE));
-    if (!header_chunk) {
+    std::unique_ptr<Chunk> root_chunk(
+        create_chunk(header_file.get(), 0, ROOT_CHUNK_SIZE));
+    if (!root_chunk) {
       return false;
     }
-    header_ = static_cast<Header *>(header_chunk->address());
+    header_ = static_cast<Header *>(root_chunk->address());
     if (!header_->is_valid()) {
       return false;
     }
@@ -488,32 +506,32 @@ bool StorageImpl::open_or_create_storage(const char *path, StorageFlags flags,
       return false;
     }
     files_[0] = std::move(header_file);
-    header_chunk_ = std::move(header_chunk);
+    root_chunk_ = std::move(root_chunk);
   } else {
     // Create a storage.
     header_file.reset(File::create(path));
     if (!header_file) {
       return false;
     }
-    if (!header_file->resize(HEADER_CHUNK_SIZE)) {
+    if (!header_file->resize(ROOT_CHUNK_SIZE)) {
       return false;
     }
-    std::unique_ptr<Chunk> header_chunk(
-        create_chunk(header_file.get(), 0, HEADER_CHUNK_SIZE));
-    if (!header_chunk) {
+    std::unique_ptr<Chunk> root_chunk(
+        create_chunk(header_file.get(), 0, ROOT_CHUNK_SIZE));
+    if (!root_chunk) {
       return false;
     }
-    header_ = static_cast<Header *>(header_chunk->address());
+    header_ = static_cast<Header *>(root_chunk->address());
     *header_ = Header();
     header_->max_file_size = options.max_file_size & ~(CHUNK_UNIT_SIZE - 1);
     header_->max_num_files = options.max_num_files;
-    header_->total_size = HEADER_CHUNK_SIZE;
+    header_->total_size = ROOT_CHUNK_SIZE;
     if (!prepare_pointers()) {
       return false;
     }
     prepare_indexes();
     files_[0] = std::move(header_file);
-    header_chunk_ = std::move(header_chunk);
+    root_chunk_ = std::move(root_chunk);
     if (!create_active_node(options.root_size)) {
       return false;
     }
@@ -588,7 +606,7 @@ NodeHeader *StorageImpl::create_active_node(uint64_t size) {
 }
 
 NodeHeader *StorageImpl::find_idle_node(uint64_t size) {
-  for (size_t i = 0; i < NUM_IDLE_NODE_LISTS; ++i) {
+  for (size_t i = bit_scan_reverse(size); i < NUM_IDLE_NODE_LISTS; ++i) {
     if (header_->oldest_idle_node_ids[i] != STORAGE_INVALID_NODE_ID) {
       NodeHeader * const node_header =
           get_node_header(header_->oldest_idle_node_ids[i]);
@@ -893,7 +911,7 @@ bool StorageImpl::register_idle_node(NodeHeader *node_header) {
     GRNXX_ERROR() << "invalid argument: status = " << node_header->status;
     return false;
   }
-  const size_t list_id = bit_scan_reverse(node_header->size / NODE_UNIT_SIZE);
+  const size_t list_id = bit_scan_reverse(node_header->size);
   if (header_->oldest_idle_node_ids[list_id] == STORAGE_INVALID_NODE_ID) {
     // The given node is appended to the empty list.
     node_header->next_idle_node_id = node_header->id;
@@ -925,7 +943,7 @@ bool StorageImpl::unregister_idle_node(NodeHeader *node_header) {
     GRNXX_ERROR() << "invalid argument: status = " << node_header->status;
     return false;
   }
-  const size_t list_id = bit_scan_reverse(node_header->size / NODE_UNIT_SIZE);
+  const size_t list_id = bit_scan_reverse(node_header->size);
   if (node_header->id == node_header->next_idle_node_id) {
     // The list becomes empty.
     header_->oldest_idle_node_ids[list_id] = STORAGE_INVALID_NODE_ID;

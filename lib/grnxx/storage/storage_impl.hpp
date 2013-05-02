@@ -67,7 +67,7 @@ class StorageImpl : public Storage {
   ChunkIndex *node_header_chunk_indexes_;
   ChunkIndex *node_body_chunk_indexes_;
   std::unique_ptr<std::unique_ptr<File>[]> files_;
-  std::unique_ptr<Chunk> header_chunk_;
+  std::unique_ptr<Chunk> root_chunk_;
   std::unique_ptr<std::unique_ptr<Chunk>[]> node_header_chunks_;
   std::unique_ptr<std::unique_ptr<Chunk>[]> node_body_chunks_;
   Mutex mutex_;
