@@ -27,9 +27,9 @@ class Charset;
 
 namespace alpha {
 
-template <typename T> class MapCursor;
-class MapScan;
 template <typename T> class Map;
+template <typename T> class MapCursor;
+template <typename T> class MapScan;
 
 enum MapType : int32_t {
   MAP_UNKNOWN      = 0,
@@ -76,31 +76,6 @@ struct MapCursorOptions {
   uint64_t limit;
 
   MapCursorOptions() : flags(MAP_CURSOR_DEFAULT), offset(0), limit(-1) {}
-};
-
-template <typename T>
-class MapCursor {
- public:
-  MapCursor();
-  virtual ~MapCursor();
-
-  // Move the cursor to the next key and return true on success.
-  virtual bool next();
-  // Remove the current key and return true on success.
-  virtual bool remove();
-
-  // Return the ID of the current key.
-  int64_t key_id() const {
-    return key_id_;
-  }
-  // Return a reference to the current key.
-  T key() const {
-    return key_;
-  }
-
- protected:
-  int64_t key_id_;
-  T key_;
 };
 
 template <typename T>
@@ -204,23 +179,44 @@ class Map {
 
   // Only for Slice.
   // Create a MapScan object to find keys in "query".
-  MapScan *open_scan(T query, const Charset *charset = nullptr);
+  virtual MapScan<T> *open_scan(T query, const Charset *charset = nullptr);
 };
 
-class MapScan {
-  friend class Map<Slice>;
-
+template <typename T>
+class MapCursor {
  public:
-  ~MapScan();
+  MapCursor();
+  virtual ~MapCursor();
+
+  // Move the cursor to the next key and return true on success.
+  virtual bool next();
+  // Remove the current key and return true on success.
+  virtual bool remove();
+
+  // Return the ID of the current key.
+  int64_t key_id() const {
+    return key_id_;
+  }
+  // Return a reference to the current key.
+  const T &key() const {
+    return key_;
+  }
+
+ protected:
+  int64_t key_id_;
+  T key_;
+};
+
+template <typename T>
+class MapScan {
+ public:
+  MapScan();
+  virtual ~MapScan();
 
   // Scan the rest of the query and return true iff a key is found (success).
   // On success, the found key is accessible via accessors.
-  bool next();
+  virtual bool next() = 0;
 
-  // Return the query.
-  const Slice &query() const {
-    return query_;
-  }
   // Return the start position of the found key.
   uint64_t offset() const {
     return offset_;
@@ -234,20 +230,15 @@ class MapScan {
     return key_id_;
   }
   // Return a reference to the found key.
-  const Slice &key() const {
+  const T &key() const {
     return key_;
   }
 
  protected:
-  Map<Slice> *map_;
-  Slice query_;
   uint64_t offset_;
   uint64_t size_;
   int64_t key_id_;
-  Slice key_;
-  const Charset *charset_;
-
-  MapScan(Map<Slice> *map, const Slice &query, const Charset *charset);
+  T key_;
 };
 
 }  // namespace alpha
