@@ -543,7 +543,7 @@ void test_storage_sweep() {
   assert(node.is_valid());
   assert(storage->create_node(node.id(), 1 << 18).is_valid());
   assert(storage->create_node(node.id(), 1 << 18).is_valid());
-  const uint64_t total_size = storage->total_size();
+  uint64_t total_size = storage->total_size();
   for (int i = 0; i < 100; ++i) {
     assert(storage->unlink_node(node.id()));
     assert(storage->sweep(grnxx::Duration(0)));
@@ -551,6 +551,21 @@ void test_storage_sweep() {
     assert(node.is_valid());
     assert(storage->create_node(node.id(), 1 << 18).is_valid());
     assert(storage->create_node(node.id(), 1 << 18).is_valid());
+    assert(storage->total_size() == total_size);
+  }
+
+  node = storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 0);
+  assert(node.is_valid());
+  assert(storage->create_node(node.id(), 0).is_valid());
+  assert(storage->create_node(node.id(), 0).is_valid());
+  total_size = storage->total_size();
+  for (int i = 0; i < 100; ++i) {
+    assert(storage->unlink_node(node.id()));
+    assert(storage->sweep(grnxx::Duration(0)));
+    node = storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 0);
+    assert(node.is_valid());
+    assert(storage->create_node(node.id(), 0).is_valid());
+    assert(storage->create_node(node.id(), 0).is_valid());
     assert(storage->total_size() == total_size);
   }
 }
