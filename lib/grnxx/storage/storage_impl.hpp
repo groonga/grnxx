@@ -64,12 +64,12 @@ class StorageImpl : public Storage {
   std::unique_ptr<char[]> path_;
   StorageFlags flags_;
   Header *header_;
-  ChunkIndex *node_header_chunk_indexes_;
-  ChunkIndex *node_body_chunk_indexes_;
+  ChunkIndex *header_chunk_indexes_;
+  ChunkIndex *body_chunk_indexes_;
   std::unique_ptr<std::unique_ptr<File>[]> files_;
   std::unique_ptr<Chunk> root_chunk_;
-  std::unique_ptr<std::unique_ptr<Chunk>[]> node_header_chunks_;
-  std::unique_ptr<std::unique_ptr<Chunk>[]> node_body_chunks_;
+  std::unique_ptr<std::unique_ptr<Chunk>[]> header_chunks_;
+  std::unique_ptr<std::unique_ptr<Chunk>[]> body_chunks_;
   Mutex mutex_;
   PeriodicClock clock_;
 
@@ -94,10 +94,10 @@ class StorageImpl : public Storage {
   bool associate_node_with_chunk(NodeHeader *node_header,
                                  ChunkIndex *chunk_index);
 
-  ChunkIndex *create_node_header_chunk(ChunkIndex **remainder_chunk_index);
-  ChunkIndex *create_node_body_chunk(uint64_t size,
-                                     ChunkIndex **remainder_chunk_index);
-  ChunkIndex *create_node_body_chunk(uint64_t size);
+  ChunkIndex *create_header_chunk(ChunkIndex **remainder_chunk_index);
+  ChunkIndex *create_body_chunk(uint64_t size,
+                                ChunkIndex **remainder_chunk_index);
+  ChunkIndex *create_body_chunk(uint64_t size);
 
   bool sweep_subtree(Time threshold, NodeHeader *node_header);
   bool merge_idle_nodes(NodeHeader *node_header, NodeHeader *next_node_header);
@@ -107,8 +107,8 @@ class StorageImpl : public Storage {
 
   NodeHeader *get_node_header(uint32_t node_id);
   void *get_node_body(const NodeHeader *node_header);
-  Chunk *get_node_header_chunk(uint16_t chunk_id);
-  Chunk *get_node_body_chunk(uint16_t chunk_id);
+  Chunk *get_header_chunk(uint16_t chunk_id);
+  Chunk *get_body_chunk(uint16_t chunk_id);
   File *get_file(uint16_t file_id);
   char *generate_path(uint16_t file_id);
 

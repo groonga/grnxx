@@ -37,7 +37,7 @@ Header::Header()
       version{},
       max_file_size(0),
       max_num_files(0),
-      num_node_body_chunks(0),
+      num_body_chunks(0),
       num_nodes(0),
       total_size(0),
       max_num_nodes(0),

@@ -51,27 +51,25 @@ constexpr uint64_t ROOT_CHUNK_SIZE = CHUNK_UNIT_SIZE;
 constexpr uint64_t ROOT_INDEX_SIZE = ROOT_CHUNK_SIZE - HEADER_SIZE;
 
 // The number of NodeHeaders in the initial chunk.
-constexpr uint16_t NODE_HEADER_CHUNK_UNIT_SIZE =
-    CHUNK_UNIT_SIZE / NODE_HEADER_SIZE;
+constexpr uint16_t HEADER_CHUNK_UNIT_SIZE = CHUNK_UNIT_SIZE / HEADER_SIZE;
 
 // The maximum node ID.
 constexpr uint32_t MAX_NODE_ID =
-    STORAGE_INVALID_NODE_ID - NODE_HEADER_CHUNK_UNIT_SIZE;
+    STORAGE_INVALID_NODE_ID - HEADER_CHUNK_UNIT_SIZE;
 
 // The maximum number of chunks for NodeHeaders.
-constexpr uint16_t MAX_NUM_NODE_HEADER_CHUNKS = 32;
+constexpr uint16_t MAX_NUM_HEADER_CHUNKS = 32;
 // The maximum number of chunks for node bodies.
-constexpr uint16_t MAX_NUM_NODE_BODY_CHUNKS   =
-    (ROOT_INDEX_SIZE / CHUNK_INDEX_SIZE) - MAX_NUM_NODE_HEADER_CHUNKS;
+constexpr uint16_t MAX_NUM_BODY_CHUNKS   =
+    (ROOT_INDEX_SIZE / CHUNK_INDEX_SIZE) - MAX_NUM_HEADER_CHUNKS;
 
-static_assert(MAX_NUM_NODE_BODY_CHUNKS >= 2000,
-              "MAX_NUM_NODE_BODY_CHUNKS < 2000");
+static_assert(MAX_NUM_BODY_CHUNKS >= 2000, "MAX_NUM_BODY_CHUNKS < 2000");
 
 // The minimum size of chunk for node bodies.
-// The size of an end-of-file chunk can be less than NODE_BODY_MIN_CHUNK_SIZE.
-constexpr uint64_t NODE_BODY_MIN_CHUNK_SIZE = 1 << 21;  // 2MB.
+// The size of an end-of-file chunk can be less than BODY_CHUNK_MIN_SiZE.
+constexpr uint64_t BODY_CHUNK_MIN_SiZE = 1 << 21;  // 2MB.
 // The ratio of the next chunk size to the storage total size.
-constexpr double NODE_BODY_CHUNK_SIZE_RATIO = 1.0 / 64;
+constexpr double BODY_CHUNK_SIZE_RATIO = 1.0 / 64;
 
 }  // namespace
 
@@ -80,12 +78,12 @@ StorageImpl::StorageImpl()
       path_(),
       flags_(STORAGE_DEFAULT),
       header_(nullptr),
-      node_header_chunk_indexes_(nullptr),
-      node_body_chunk_indexes_(nullptr),
+      header_chunk_indexes_(nullptr),
+      body_chunk_indexes_(nullptr),
       files_(),
       root_chunk_(),
-      node_header_chunks_(),
-      node_body_chunks_(),
+      header_chunks_(),
+      body_chunks_(),
       mutex_(MUTEX_UNLOCKED),
       clock_() {}
 
@@ -541,9 +539,8 @@ bool StorageImpl::open_or_create_storage(const char *path, StorageFlags flags,
 }
 
 bool StorageImpl::prepare_pointers() {
-  node_header_chunk_indexes_ = reinterpret_cast<ChunkIndex *>(header_ + 1);
-  node_body_chunk_indexes_ =
-      node_header_chunk_indexes_ + MAX_NUM_NODE_HEADER_CHUNKS;
+  header_chunk_indexes_ = reinterpret_cast<ChunkIndex *>(header_ + 1);
+  body_chunk_indexes_ = header_chunk_indexes_ + MAX_NUM_HEADER_CHUNKS;
   if (~flags_ & STORAGE_ANONYMOUS) {
     files_.reset(
         new (std::nothrow) std::unique_ptr<File>[header_->max_num_files]);
@@ -553,31 +550,31 @@ bool StorageImpl::prepare_pointers() {
       return false;
     }
   }
-  node_header_chunks_.reset(
-      new (std::nothrow) std::unique_ptr<Chunk>[MAX_NUM_NODE_HEADER_CHUNKS]);
-  if (!node_header_chunks_) {
+  header_chunks_.reset(
+      new (std::nothrow) std::unique_ptr<Chunk>[MAX_NUM_HEADER_CHUNKS]);
+  if (!header_chunks_) {
     GRNXX_ERROR() << "new std::unique_ptr<grnxx::storage::Chunk>[] failed: "
-                  << "size = " << MAX_NUM_NODE_HEADER_CHUNKS;
+                  << "size = " << MAX_NUM_HEADER_CHUNKS;
     return false;
   }
-  node_body_chunks_.reset(
-      new (std::nothrow) std::unique_ptr<Chunk>[MAX_NUM_NODE_BODY_CHUNKS]);
-  if (!node_header_chunks_) {
+  body_chunks_.reset(
+      new (std::nothrow) std::unique_ptr<Chunk>[MAX_NUM_BODY_CHUNKS]);
+  if (!header_chunks_) {
     GRNXX_ERROR() << "new std::unique_ptr<grnxx::storage::Chunk>[] failed: "
-                  << "size = " << MAX_NUM_NODE_BODY_CHUNKS;
+                  << "size = " << MAX_NUM_BODY_CHUNKS;
     return false;
   }
   return true;
 }
 
 void StorageImpl::prepare_indexes() {
-  for (uint16_t i = 0; i < MAX_NUM_NODE_HEADER_CHUNKS; ++i) {
-    node_header_chunk_indexes_[i] = ChunkIndex();
-    node_header_chunk_indexes_[i].id = i;
+  for (uint16_t i = 0; i < MAX_NUM_HEADER_CHUNKS; ++i) {
+    header_chunk_indexes_[i] = ChunkIndex();
+    header_chunk_indexes_[i].id = i;
   }
-  for (uint16_t i = 0; i < MAX_NUM_NODE_BODY_CHUNKS; ++i) {
-    node_body_chunk_indexes_[i] = ChunkIndex();
-    node_body_chunk_indexes_[i].id = i;
+  for (uint16_t i = 0; i < MAX_NUM_BODY_CHUNKS; ++i) {
+    body_chunk_indexes_[i] = ChunkIndex();
+    body_chunk_indexes_[i].id = i;
   }
 }
 
@@ -624,7 +621,7 @@ NodeHeader *StorageImpl::create_idle_node(uint64_t size) {
     return nullptr;
   }
   ChunkIndex *remainder_chunk_index = nullptr;
-  ChunkIndex * const chunk_index = create_node_body_chunk(size);
+  ChunkIndex * const chunk_index = create_body_chunk(size);
   if (!chunk_index) {
     return nullptr;
   }
@@ -693,7 +690,7 @@ NodeHeader *StorageImpl::create_phantom_node() {
   const uint32_t node_id = header_->num_nodes;
   ChunkIndex *remainder_chunk_index = nullptr;
   if (node_id == header_->max_num_nodes) {
-    if (!create_node_header_chunk(&remainder_chunk_index)) {
+    if (!create_header_chunk(&remainder_chunk_index)) {
       return nullptr;
     }
   }
@@ -808,7 +805,7 @@ bool StorageImpl::merge_idle_nodes(NodeHeader *node_header,
   return true;
 }
 
-ChunkIndex *StorageImpl::create_node_header_chunk(
+ChunkIndex *StorageImpl::create_header_chunk(
     ChunkIndex **remainder_chunk_index) {
   if (header_->num_nodes > MAX_NODE_ID) {
     GRNXX_ERROR() << "too many nodes: "
@@ -817,7 +814,7 @@ ChunkIndex *StorageImpl::create_node_header_chunk(
     return nullptr;
   }
   const uint16_t chunk_id =
-      bit_scan_reverse(header_->num_nodes + NODE_HEADER_CHUNK_UNIT_SIZE);
+      bit_scan_reverse(header_->num_nodes + HEADER_CHUNK_UNIT_SIZE);
   const uint64_t size = static_cast<uint64_t>(NODE_HEADER_SIZE) << chunk_id;
   if (size > header_->max_file_size) {
     GRNXX_ERROR() << "too large chunk: size = " << size
@@ -828,7 +825,7 @@ ChunkIndex *StorageImpl::create_node_header_chunk(
   uint64_t offset = header_->total_size % header_->max_file_size;
   uint64_t size_left = header_->max_file_size - offset;
   if (size_left < size) {
-    *remainder_chunk_index = create_node_body_chunk(size_left);
+    *remainder_chunk_index = create_body_chunk(size_left);
     file_id = header_->total_size / header_->max_file_size;
     offset = header_->total_size % header_->max_file_size;
     size_left = header_->max_file_size - offset;
@@ -844,7 +841,7 @@ ChunkIndex *StorageImpl::create_node_header_chunk(
                   << ", max_num_files = " << header_->max_num_files;
     return nullptr;
   }
-  ChunkIndex * const chunk_index = &node_header_chunk_indexes_[chunk_id];
+  ChunkIndex * const chunk_index = &header_chunk_indexes_[chunk_id];
   chunk_index->file_id = file_id;
   chunk_index->offset = offset;
   chunk_index->size = size;
@@ -853,22 +850,22 @@ ChunkIndex *StorageImpl::create_node_header_chunk(
   return chunk_index;
 }
 
-ChunkIndex *StorageImpl::create_node_body_chunk(
+ChunkIndex *StorageImpl::create_body_chunk(
     uint64_t size, ChunkIndex **remainder_chunk_index) {
   const uint64_t offset = header_->total_size % header_->max_file_size;
   const uint64_t size_left = header_->max_file_size - offset;
   if (size_left < size) {
-    *remainder_chunk_index = create_node_body_chunk(size_left);
+    *remainder_chunk_index = create_body_chunk(size_left);
   }
-  return create_node_body_chunk(size);
+  return create_body_chunk(size);
 }
 
-ChunkIndex *StorageImpl::create_node_body_chunk(uint64_t size) {
-  const uint16_t chunk_id = header_->num_node_body_chunks;
-  if (header_->num_node_body_chunks >= MAX_NUM_NODE_BODY_CHUNKS) {
+ChunkIndex *StorageImpl::create_body_chunk(uint64_t size) {
+  const uint16_t chunk_id = header_->num_body_chunks;
+  if (header_->num_body_chunks >= MAX_NUM_BODY_CHUNKS) {
     GRNXX_ERROR() << "too many chunks: "
-                  << "num_chunks = " << header_->num_node_body_chunks
-                  << ", max_num_chunks = " << MAX_NUM_NODE_BODY_CHUNKS;
+                  << "num_chunks = " << header_->num_body_chunks
+                  << ", max_num_chunks = " << MAX_NUM_BODY_CHUNKS;
     return nullptr;
   }
   const uint16_t file_id = header_->total_size / header_->max_file_size;
@@ -885,23 +882,23 @@ ChunkIndex *StorageImpl::create_node_body_chunk(uint64_t size) {
                   << ", size_left = " << size_left;
     return nullptr;
   }
-  if (size < NODE_BODY_MIN_CHUNK_SIZE) {
-    size = NODE_BODY_MIN_CHUNK_SIZE;
+  if (size < BODY_CHUNK_MIN_SiZE) {
+    size = BODY_CHUNK_MIN_SiZE;
   }
   const uint64_t expected_size = static_cast<uint64_t>(
-      header_->total_size * NODE_BODY_CHUNK_SIZE_RATIO);
+      header_->total_size * BODY_CHUNK_SIZE_RATIO);
   if (size < expected_size) {
     size = expected_size;
   }
   if (size > size_left) {
     size = size_left;
   }
-  ChunkIndex * const chunk_index = &node_body_chunk_indexes_[chunk_id];
+  ChunkIndex * const chunk_index = &body_chunk_indexes_[chunk_id];
   chunk_index->file_id = file_id;
   chunk_index->offset = offset;
   chunk_index->size = size;
   header_->total_size += size;
-  ++header_->num_node_body_chunks;
+  ++header_->num_body_chunks;
   return chunk_index;
 }
 
@@ -975,8 +972,8 @@ NodeHeader *StorageImpl::get_node_header(uint32_t node_id) {
     return nullptr;
   }
   const uint16_t chunk_id =
-      bit_scan_reverse(node_id + NODE_HEADER_CHUNK_UNIT_SIZE);
-  Chunk * const chunk = get_node_header_chunk(chunk_id);
+      bit_scan_reverse(node_id + HEADER_CHUNK_UNIT_SIZE);
+  Chunk * const chunk = get_header_chunk(chunk_id);
   if (!chunk) {
     return nullptr;
   }
@@ -986,20 +983,20 @@ NodeHeader *StorageImpl::get_node_header(uint32_t node_id) {
 }
 
 void *StorageImpl::get_node_body(const NodeHeader *node_header) {
-  Chunk * const chunk = get_node_body_chunk(node_header->chunk_id);
+  Chunk * const chunk = get_body_chunk(node_header->chunk_id);
   if (!chunk) {
     return nullptr;
   }
   return static_cast<uint8_t *>(chunk->address()) + node_header->offset;
 }
 
-Chunk *StorageImpl::get_node_header_chunk(uint16_t chunk_id) {
-  if (!node_header_chunks_[chunk_id]) {
-    const ChunkIndex &chunk_index = node_header_chunk_indexes_[chunk_id];
+Chunk *StorageImpl::get_header_chunk(uint16_t chunk_id) {
+  if (!header_chunks_[chunk_id]) {
+    const ChunkIndex &chunk_index = header_chunk_indexes_[chunk_id];
     if (flags_ & STORAGE_ANONYMOUS) {
       Lock lock(&mutex_);
-      if (!node_header_chunks_[chunk_id]) {
-        node_header_chunks_[chunk_id].reset(
+      if (!header_chunks_[chunk_id]) {
+        header_chunks_[chunk_id].reset(
             create_chunk(nullptr, chunk_index.offset, chunk_index.size));
       }
     } else {
@@ -1017,22 +1014,22 @@ Chunk *StorageImpl::get_node_header_chunk(uint16_t chunk_id) {
         }
       }
       Lock lock(&mutex_);
-      if (!node_header_chunks_[chunk_id]) {
-        node_header_chunks_[chunk_id].reset(
+      if (!header_chunks_[chunk_id]) {
+        header_chunks_[chunk_id].reset(
             create_chunk(file, chunk_index.offset, chunk_index.size));
       }
     }
   }
-  return node_header_chunks_[chunk_id].get();
+  return header_chunks_[chunk_id].get();
 }
 
-Chunk *StorageImpl::get_node_body_chunk(uint16_t chunk_id) {
-  if (!node_body_chunks_[chunk_id]) {
-    const ChunkIndex &chunk_index = node_body_chunk_indexes_[chunk_id];
+Chunk *StorageImpl::get_body_chunk(uint16_t chunk_id) {
+  if (!body_chunks_[chunk_id]) {
+    const ChunkIndex &chunk_index = body_chunk_indexes_[chunk_id];
     if (flags_ & STORAGE_ANONYMOUS) {
       Lock lock(&mutex_);
-      if (!node_body_chunks_[chunk_id]) {
-        node_body_chunks_[chunk_id].reset(
+      if (!body_chunks_[chunk_id]) {
+        body_chunks_[chunk_id].reset(
             create_chunk(nullptr, chunk_index.offset, chunk_index.size));
       }
     } else {
@@ -1050,13 +1047,13 @@ Chunk *StorageImpl::get_node_body_chunk(uint16_t chunk_id) {
         }
       }
       Lock lock(&mutex_);
-      if (!node_body_chunks_[chunk_id]) {
-        node_body_chunks_[chunk_id].reset(
+      if (!body_chunks_[chunk_id]) {
+        body_chunks_[chunk_id].reset(
             create_chunk(file, chunk_index.offset, chunk_index.size));
       }
     }
   }
-  return node_body_chunks_[chunk_id].get();
+  return body_chunks_[chunk_id].get();
 }
 
 File *StorageImpl::get_file(uint16_t file_id) {

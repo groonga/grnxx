@@ -45,7 +45,7 @@ struct Header {
   // The maximum number of files.
   uint16_t max_num_files;
   // The number of node body chunks.
-  uint16_t num_node_body_chunks;
+  uint16_t num_body_chunks;
   // The number of nodes.
   uint32_t num_nodes;
   // The total size including headers.
