@@ -25,19 +25,28 @@ namespace storage {
 
 constexpr size_t CHUNK_INDEX_SIZE = 32;
 
+enum ChunkIndexType : uint8_t {
+  HEADER_CHUNK       = 0,
+  REGULAR_BODY_CHUNK = 1,
+  SMALL_BODY_CHUNK   = 2
+};
+
 struct ChunkIndex {
   // The chunk ID.
-  uint32_t id;
+  uint16_t id;
+  // The chunk type.
+  ChunkIndexType type;
+  uint8_t reserved_0;
   // The ID of the file to which the chunk belongs.
   uint16_t file_id;
-  uint16_t reserved_0;
+  uint16_t reserved_1;
   // The offset in file.
   uint64_t offset;
   // The chunk size.
   uint64_t size;
-  uint64_t reserved_1;
+  uint64_t reserved_2;
 
-  ChunkIndex();
+  ChunkIndex(uint16_t id, ChunkIndexType type);
 };
 
 static_assert(sizeof(ChunkIndex) == CHUNK_INDEX_SIZE,

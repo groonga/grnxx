@@ -20,13 +20,15 @@
 namespace grnxx {
 namespace storage {
 
-ChunkIndex::ChunkIndex()
-    : id(0),
-      file_id(0),
+ChunkIndex::ChunkIndex(uint16_t id, ChunkIndexType type)
+    : id(id),
+      type(type),
       reserved_0(0),
+      file_id(0),
+      reserved_1(0),
       offset(0),
       size(0),
-      reserved_1(0) {}
+      reserved_2(0) {}
 
 }  // namespace storage
 }  // namespace grnxx

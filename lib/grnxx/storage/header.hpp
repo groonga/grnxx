@@ -44,15 +44,18 @@ struct Header {
   uint64_t max_file_size;
   // The maximum number of files.
   uint16_t max_num_files;
-  // The number of node body chunks.
+  // The number of body chunks.
   uint16_t num_body_chunks;
+  // The number of small body chunks.
+  uint16_t num_small_body_chunks;
+  uint16_t reserved_0;
   // The number of nodes.
   uint32_t num_nodes;
-  // The total size including headers.
-  uint64_t total_size;
   // The upper limit of the number of nodes.
   // This value is extended when a node header chunk is added.
   uint32_t max_num_nodes;
+  // The total size including headers.
+  uint64_t total_size;
   // The ID of the latest phantom node.
   // STORAGE_INVALID_NODE_ID indicates that there are no phantom nodes.
   uint32_t latest_phantom_node_id;
@@ -66,7 +69,7 @@ struct Header {
   Mutex data_mutex;
   // A mutex object for exclusively update files.
   Mutex file_mutex;
-  uint8_t reserved[148];
+  uint8_t reserved_1[144];
 
   // Initialize the members except "format".
   Header();

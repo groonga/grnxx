@@ -38,15 +38,17 @@ Header::Header()
       max_file_size(0),
       max_num_files(0),
       num_body_chunks(0),
+      num_small_body_chunks(0),
+      reserved_0(0),
       num_nodes(0),
-      total_size(0),
       max_num_nodes(0),
+      total_size(0),
       latest_phantom_node_id(STORAGE_INVALID_NODE_ID),
       latest_unlinked_node_id(STORAGE_INVALID_NODE_ID),
       oldest_idle_node_ids(),
       data_mutex(MUTEX_UNLOCKED),
       file_mutex(MUTEX_UNLOCKED),
-      reserved{} {
+      reserved_1{} {
   std::memcpy(version, GRNXX_STORAGE_HEADER_VERSION, HEADER_VERSION_SIZE);
   for (size_t i = 0; i < NUM_IDLE_NODE_LISTS; ++i) {
     oldest_idle_node_ids[i] = STORAGE_INVALID_NODE_ID;

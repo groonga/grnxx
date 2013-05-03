@@ -34,28 +34,24 @@ namespace {
 
 // The size of chunk must be a multiple of CHUNK_UNIT_SIZE (64KB).
 constexpr uint64_t CHUNK_UNIT_SIZE = 1 << 16;
-// The size of node must be a multiple of NODE_UNIT_SIZE (4KB).
-constexpr uint64_t NODE_UNIT_SIZE  = 1 << 12;
-
-// TODO
-//// The size of regular node must be a multiple of REGULAR_NODE_UNIT_SIZE (4KB).
-//constexpr uint64_t REGULAR_NODE_UNIT_SIZE = 1 << 12;
-//// The size of small node must be a multiple of SMALL_NODE_UNIT_SIZE (64 bytes).
-//constexpr uint64_t SMALL_NODE_UNIT_SIZE   = 1 << 6;
-//// A node larger than NODE_SIZE_THRESHOLD (2KB) is a regular node.
-//constexpr uint64_t NODE_SIZE_THRESHOLD    = 1 << 11;
+// The size of regular node must be a multiple of REGULAR_NODE_UNIT_SIZE (4KB).
+constexpr uint64_t REGULAR_NODE_UNIT_SIZE = 1 << 12;
+// The size of small node must be a multiple of SMALL_NODE_UNIT_SIZE (64 bytes).
+constexpr uint64_t SMALL_NODE_UNIT_SIZE   = 1 << 6;
+// A node larger than NODE_SIZE_THRESHOLD (2KB) is a regular node.
+constexpr uint64_t NODE_SIZE_THRESHOLD    = 1 << 11;
 
 // The chunk size for Header and ChunkIndexes.
 constexpr uint64_t ROOT_CHUNK_SIZE = CHUNK_UNIT_SIZE;
 // The size allocated to ChunkIndexes.
 constexpr uint64_t ROOT_INDEX_SIZE = ROOT_CHUNK_SIZE - HEADER_SIZE;
 
-// The number of NodeHeaders in the initial chunk.
-constexpr uint16_t HEADER_CHUNK_UNIT_SIZE = CHUNK_UNIT_SIZE / HEADER_SIZE;
+// The number of NodeHeaders in the minimum header chunk.
+constexpr uint32_t HEADER_CHUNK_MIN_SIZE = CHUNK_UNIT_SIZE / NODE_HEADER_SIZE;
 
 // The maximum node ID.
 constexpr uint32_t MAX_NODE_ID =
-    STORAGE_INVALID_NODE_ID - HEADER_CHUNK_UNIT_SIZE;
+    STORAGE_INVALID_NODE_ID - HEADER_CHUNK_MIN_SIZE;
 
 // The maximum number of chunks for NodeHeaders.
 constexpr uint16_t MAX_NUM_HEADER_CHUNKS = 32;
@@ -65,11 +61,12 @@ constexpr uint16_t MAX_NUM_BODY_CHUNKS   =
 
 static_assert(MAX_NUM_BODY_CHUNKS >= 2000, "MAX_NUM_BODY_CHUNKS < 2000");
 
-// The minimum size of chunk for node bodies.
-// The size of an end-of-file chunk can be less than BODY_CHUNK_MIN_SiZE.
-constexpr uint64_t BODY_CHUNK_MIN_SiZE = 1 << 21;  // 2MB.
-// The ratio of the next chunk size to the storage total size.
-constexpr double BODY_CHUNK_SIZE_RATIO = 1.0 / 64;
+// The minimum size of regular body chunks.
+constexpr uint64_t REGULAR_BODY_CHUNK_MIN_SIZE = 1 << 21;  // 2MB.
+// The ratio of the next regular body chunk size to the storage total size.
+constexpr double REGULAR_BODY_CHUNK_SIZE_RATIO = 1.0 / 64;
+// The size of the minimum small body chunk.
+constexpr uint64_t SMALL_BODY_CHUNK_MIN_SIZE = CHUNK_UNIT_SIZE;
 
 }  // namespace
 
@@ -569,20 +566,20 @@ bool StorageImpl::prepare_pointers() {
 
 void StorageImpl::prepare_indexes() {
   for (uint16_t i = 0; i < MAX_NUM_HEADER_CHUNKS; ++i) {
-    header_chunk_indexes_[i] = ChunkIndex();
-    header_chunk_indexes_[i].id = i;
+    header_chunk_indexes_[i] = ChunkIndex(i, HEADER_CHUNK);
   }
   for (uint16_t i = 0; i < MAX_NUM_BODY_CHUNKS; ++i) {
-    body_chunk_indexes_[i] = ChunkIndex();
-    body_chunk_indexes_[i].id = i;
+    body_chunk_indexes_[i] = ChunkIndex(i, REGULAR_BODY_CHUNK);
   }
 }
 
 NodeHeader *StorageImpl::create_active_node(uint64_t size) {
   if (size == 0) {
-    size = NODE_UNIT_SIZE;
+    size = SMALL_NODE_UNIT_SIZE;
+  } else if (size <= NODE_SIZE_THRESHOLD) {
+    size = (size + SMALL_NODE_UNIT_SIZE - 1) & ~(SMALL_NODE_UNIT_SIZE - 1);
   } else {
-    size = (size + NODE_UNIT_SIZE - 1) & ~(NODE_UNIT_SIZE - 1);
+    size = (size + REGULAR_NODE_UNIT_SIZE - 1) & ~(REGULAR_NODE_UNIT_SIZE - 1);
   }
   NodeHeader *node_header = find_idle_node(size);
   if (!node_header) {
@@ -603,7 +600,10 @@ NodeHeader *StorageImpl::create_active_node(uint64_t size) {
 }
 
 NodeHeader *StorageImpl::find_idle_node(uint64_t size) {
-  for (size_t i = bit_scan_reverse(size); i < NUM_IDLE_NODE_LISTS; ++i) {
+  const size_t begin = bit_scan_reverse(size);
+  const size_t end = (size <= NODE_SIZE_THRESHOLD) ?
+      bit_scan_reverse(NODE_SIZE_THRESHOLD << 1) : NUM_IDLE_NODE_LISTS;
+  for (size_t i = begin; i < end; ++i) {
     if (header_->oldest_idle_node_ids[i] != STORAGE_INVALID_NODE_ID) {
       NodeHeader * const node_header =
           get_node_header(header_->oldest_idle_node_ids[i]);
@@ -621,7 +621,8 @@ NodeHeader *StorageImpl::create_idle_node(uint64_t size) {
     return nullptr;
   }
   ChunkIndex *remainder_chunk_index = nullptr;
-  ChunkIndex * const chunk_index = create_body_chunk(size);
+  ChunkIndex * const chunk_index =
+      create_body_chunk(size, &remainder_chunk_index);
   if (!chunk_index) {
     return nullptr;
   }
@@ -814,7 +815,7 @@ ChunkIndex *StorageImpl::create_header_chunk(
     return nullptr;
   }
   const uint16_t chunk_id =
-      bit_scan_reverse(header_->num_nodes + HEADER_CHUNK_UNIT_SIZE);
+      bit_scan_reverse(header_->num_nodes + HEADER_CHUNK_MIN_SIZE);
   const uint64_t size = static_cast<uint64_t>(NODE_HEADER_SIZE) << chunk_id;
   if (size > header_->max_file_size) {
     GRNXX_ERROR() << "too large chunk: size = " << size
@@ -852,12 +853,36 @@ ChunkIndex *StorageImpl::create_header_chunk(
 
 ChunkIndex *StorageImpl::create_body_chunk(
     uint64_t size, ChunkIndex **remainder_chunk_index) {
-  const uint64_t offset = header_->total_size % header_->max_file_size;
-  const uint64_t size_left = header_->max_file_size - offset;
-  if (size_left < size) {
-    *remainder_chunk_index = create_body_chunk(size_left);
+  uint64_t chunk_size = size;
+  if (size <= NODE_SIZE_THRESHOLD) {
+    chunk_size = SMALL_BODY_CHUNK_MIN_SIZE << header_->num_small_body_chunks;
   }
-  return create_body_chunk(size);
+  uint64_t offset = header_->total_size % header_->max_file_size;
+  uint64_t size_left = header_->max_file_size - offset;
+  if (size_left < chunk_size) {
+    *remainder_chunk_index = create_body_chunk(size_left);
+    size_left = header_->max_file_size;
+  }
+  if (size > NODE_SIZE_THRESHOLD) {
+    chunk_size = static_cast<uint64_t>(
+        header_->total_size * REGULAR_BODY_CHUNK_SIZE_RATIO);
+    chunk_size &= ~(CHUNK_UNIT_SIZE - 1);
+    if (size > chunk_size) {
+      chunk_size = size;
+    }
+    if (chunk_size > size_left) {
+      chunk_size = size_left;
+    }
+    if (chunk_size < REGULAR_BODY_CHUNK_MIN_SIZE) {
+      chunk_size = REGULAR_BODY_CHUNK_MIN_SIZE;
+    }
+  }
+  ChunkIndex * const chunk_index = create_body_chunk(chunk_size);
+  if (size <= NODE_SIZE_THRESHOLD) {
+    chunk_index->type = SMALL_BODY_CHUNK;
+    ++header_->num_small_body_chunks;
+  }
+  return chunk_index;
 }
 
 ChunkIndex *StorageImpl::create_body_chunk(uint64_t size) {
@@ -882,17 +907,6 @@ ChunkIndex *StorageImpl::create_body_chunk(uint64_t size) {
                   << ", size_left = " << size_left;
     return nullptr;
   }
-  if (size < BODY_CHUNK_MIN_SiZE) {
-    size = BODY_CHUNK_MIN_SiZE;
-  }
-  const uint64_t expected_size = static_cast<uint64_t>(
-      header_->total_size * BODY_CHUNK_SIZE_RATIO);
-  if (size < expected_size) {
-    size = expected_size;
-  }
-  if (size > size_left) {
-    size = size_left;
-  }
   ChunkIndex * const chunk_index = &body_chunk_indexes_[chunk_id];
   chunk_index->file_id = file_id;
   chunk_index->offset = offset;
@@ -908,7 +922,12 @@ bool StorageImpl::register_idle_node(NodeHeader *node_header) {
     GRNXX_ERROR() << "invalid argument: status = " << node_header->status;
     return false;
   }
-  const size_t list_id = bit_scan_reverse(node_header->size);
+  size_t list_id = bit_scan_reverse(node_header->size);
+  if (body_chunk_indexes_[node_header->chunk_id].type == SMALL_BODY_CHUNK) {
+    if (list_id > bit_scan_reverse(NODE_SIZE_THRESHOLD)) {
+      list_id = bit_scan_reverse(NODE_SIZE_THRESHOLD);
+    }
+  }
   if (header_->oldest_idle_node_ids[list_id] == STORAGE_INVALID_NODE_ID) {
     // The given node is appended to the empty list.
     node_header->next_idle_node_id = node_header->id;
@@ -940,7 +959,12 @@ bool StorageImpl::unregister_idle_node(NodeHeader *node_header) {
     GRNXX_ERROR() << "invalid argument: status = " << node_header->status;
     return false;
   }
-  const size_t list_id = bit_scan_reverse(node_header->size);
+  size_t list_id = bit_scan_reverse(node_header->size);
+  if (body_chunk_indexes_[node_header->chunk_id].type == SMALL_BODY_CHUNK) {
+    if (list_id > bit_scan_reverse(NODE_SIZE_THRESHOLD)) {
+      list_id = bit_scan_reverse(NODE_SIZE_THRESHOLD);
+    }
+  }
   if (node_header->id == node_header->next_idle_node_id) {
     // The list becomes empty.
     header_->oldest_idle_node_ids[list_id] = STORAGE_INVALID_NODE_ID;
@@ -972,7 +996,7 @@ NodeHeader *StorageImpl::get_node_header(uint32_t node_id) {
     return nullptr;
   }
   const uint16_t chunk_id =
-      bit_scan_reverse(node_id + HEADER_CHUNK_UNIT_SIZE);
+      bit_scan_reverse(node_id + HEADER_CHUNK_MIN_SIZE);
   Chunk * const chunk = get_header_chunk(chunk_id);
   if (!chunk) {
     return nullptr;
