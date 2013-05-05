@@ -333,6 +333,8 @@ void test_chunk_flags() {
 }
 
 void test_chunk_address() {
+  const char FILE_PATH[] = "temp.grn";
+  grnxx::storage::File::unlink(FILE_PATH);
   std::unique_ptr<grnxx::storage::File> file;
   std::unique_ptr<grnxx::storage::Chunk> chunk;
 
@@ -346,6 +348,30 @@ void test_chunk_address() {
   chunk.reset(grnxx::storage::Chunk::create(file.get()));
   assert(chunk);
   assert(std::memcmp(chunk->address(), "0123456789", 10) == 0);
+
+  file.reset(grnxx::storage::File::create(FILE_PATH));
+  assert(file);
+  assert(file->resize(1 << 16));
+
+  chunk.reset(grnxx::storage::Chunk::create(file.get()));
+  assert(chunk);
+  for (std::int64_t i = 0; i < (1 << 16); ++i) {
+    static_cast<std::uint8_t *>(chunk->address())[i] = static_cast<uint8_t>(i);
+  }
+  chunk.reset();
+  file.reset();
+
+  file.reset(grnxx::storage::File::open(FILE_PATH));
+  assert(file);
+  chunk.reset(grnxx::storage::Chunk::create(file.get()));
+  assert(chunk);
+  for (std::int64_t i = 0; i < (1 << 16); ++i) {
+    assert(static_cast<std::uint8_t *>(chunk->address())[i] ==
+           static_cast<uint8_t>(i));
+  }
+
+  file.reset();
+  assert(grnxx::storage::File::unlink(FILE_PATH));
 }
 
 void test_chunk_size() {
