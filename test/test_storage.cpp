@@ -17,6 +17,8 @@
 */
 #include <cassert>
 #include <sstream>
+#include <random>
+#include <unordered_set>
 
 #include "grnxx/storage.hpp"
 #include "grnxx/storage/file.hpp"
@@ -660,6 +662,44 @@ void test_storage_total_size() {
   }
 }
 
+void test_storage_random_queries() {
+  std::mt19937 mt19937;
+  std::unique_ptr<grnxx::Storage> storage(
+      grnxx::Storage::create(nullptr, grnxx::STORAGE_TEMPORARY));
+  std::unordered_set<std::uint32_t> id_set;
+  for (int i = 0; i < (1 << 16); ++i) {
+    const std::uint32_t value = mt19937() % 256;
+    if (value < 1) {
+      assert(storage->sweep(grnxx::Duration(0)));
+    } else if (value < 64) {
+      if (!id_set.empty()) {
+        // Unlink a node.
+        assert(storage->unlink_node(*id_set.begin()));
+        id_set.erase(id_set.begin());
+      }
+    } else {
+      std::uint64_t size;
+      if (value < 96) {
+        // Create a small node.
+        const std::uint64_t SMALL_MAX_SIZE = std::uint64_t(1) << 11;
+        size = mt19937() % SMALL_MAX_SIZE;
+      } else if (value < 248) {
+        // Create a regular node.
+        const std::uint64_t MEDIUM_MAX_SIZE = std::uint64_t(1) << 21;
+        size = mt19937() % MEDIUM_MAX_SIZE;
+      } else {
+        // Create a large node.
+        const std::uint64_t LARGE_MAX_SIZE = std::uint64_t(1) << 28;
+        size = mt19937() % LARGE_MAX_SIZE;
+      }
+      const grnxx::StorageNode node =
+          storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, size);
+      assert(node.is_valid());
+      id_set.insert(node.id());
+    }
+  }
+}
+
 void test_path() {
   test_full_path();
   test_unique_path();
@@ -687,19 +727,20 @@ void test_chunk() {
 }
 
 void test_storage() {
-  test_storage_create();
-  test_storage_open();
-  test_storage_open_or_create();
-  test_storage_exists_and_unlink();
-  test_storage_create_node();
-  test_storage_open_node();
-  test_storage_unlink_node();
-  test_storage_sweep();
-  test_storage_path();
-  test_storage_flags();
-  test_storage_max_file_size();
-  test_storage_max_num_files();
-  test_storage_total_size();
+//  test_storage_create();
+//  test_storage_open();
+//  test_storage_open_or_create();
+//  test_storage_exists_and_unlink();
+//  test_storage_create_node();
+//  test_storage_open_node();
+//  test_storage_unlink_node();
+//  test_storage_sweep();
+//  test_storage_path();
+//  test_storage_flags();
+//  test_storage_max_file_size();
+//  test_storage_max_num_files();
+//  test_storage_total_size();
+  test_storage_random_queries();
 }
 
 }  // namespace
@@ -709,9 +750,9 @@ int main() {
                            grnxx::LOGGER_ENABLE_COUT);
   grnxx::Logger::set_max_level(grnxx::NOTICE_LOGGER);
 
-  test_path();
-  test_file();
-  test_chunk();
+//  test_path();
+//  test_file();
+//  test_chunk();
   test_storage();
 
   return 0;
