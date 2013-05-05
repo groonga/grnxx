@@ -267,13 +267,6 @@ bool StorageImpl::unlink_node(uint32_t node_id) {
   if (!from_node_header) {
     return false;
   }
-  NodeHeader *latest_node_header = nullptr;
-  if (header_->latest_unlinked_node_id != STORAGE_INVALID_NODE_ID) {
-    latest_node_header = get_node_header(header_->latest_unlinked_node_id);
-    if (!latest_node_header) {
-      return false;
-    }
-  }
   if (node_id == from_node_header->child_node_id) {
     from_node_header->child_node_id = node_header->sibling_node_id;
   } else if (node_id == from_node_header->sibling_node_id) {
@@ -286,6 +279,21 @@ bool StorageImpl::unlink_node(uint32_t node_id) {
                   << ", sibling_node_id = "
                   << from_node_header->sibling_node_id;
     return false;
+  }
+  if (node_header->sibling_node_id != STORAGE_INVALID_NODE_ID) {
+    NodeHeader * const sibling_node_header =
+        get_node_header(node_header->sibling_node_id);
+    if (!sibling_node_header) {
+      return false;
+    }
+    sibling_node_header->from_node_id = node_header->from_node_id;
+  }
+  NodeHeader *latest_node_header = nullptr;
+  if (header_->latest_unlinked_node_id != STORAGE_INVALID_NODE_ID) {
+    latest_node_header = get_node_header(header_->latest_unlinked_node_id);
+    if (!latest_node_header) {
+      return false;
+    }
   }
   node_header->status = STORAGE_NODE_UNLINKED;
   if (latest_node_header) {
