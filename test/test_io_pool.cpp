@@ -325,7 +325,7 @@ void test_random_queries() {
 
   // Create and free blocks in random.
   for (int i = 0; i < OPERATION_COUNT; ++i) {
-    const std::uint32_t value = random() & 256;
+    const std::uint32_t value = random() & 255;
     if (value < 16) {
       // Free a block.
       if (!id_set.empty()) {
