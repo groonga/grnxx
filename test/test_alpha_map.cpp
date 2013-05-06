@@ -45,8 +45,8 @@ struct Hash {
 };
 
 template <>
-struct Hash<grnxx::alpha::GeoPoint> {
-  std::size_t operator()(grnxx::alpha::GeoPoint key) const {
+struct Hash<grnxx::GeoPoint> {
+  std::size_t operator()(grnxx::GeoPoint key) const {
     return std::hash<std::int64_t>()(key.latitude()) ^
            std::hash<std::int64_t>()(key.longitude());
   }
@@ -153,10 +153,8 @@ void test_basic_cursor(const std::unique_ptr<Map<T>> &map,
 
 template <>
 void test_basic_cursor(
-    const std::unique_ptr<Map<grnxx::alpha::GeoPoint>> &map,
-    std::size_t MAP_SIZE) {
-  std::unique_ptr<MapCursor<grnxx::alpha::GeoPoint>> cursor(
-      map->open_basic_cursor());
+    const std::unique_ptr<Map<grnxx::GeoPoint>> &map, std::size_t MAP_SIZE) {
+  std::unique_ptr<MapCursor<grnxx::GeoPoint>> cursor(map->open_basic_cursor());
   for (std::size_t i = 0; i < MAP_SIZE; ++i) {
     assert(cursor->next());
   }
@@ -216,19 +214,19 @@ void test_id_cursor(const std::unique_ptr<Map<T>> &map,
 }
 
 template <>
-void test_id_cursor(const std::unique_ptr<Map<grnxx::alpha::GeoPoint>> &map,
+void test_id_cursor(const std::unique_ptr<Map<grnxx::GeoPoint>> &map,
                     std::size_t MAP_SIZE) {
   const std::int64_t MIN_ID = MAP_SIZE / 4;
   const std::int64_t MAX_ID = (MAP_SIZE * 3) / 4;
 
   grnxx::alpha::MapCursorOptions options;
   options.flags |= grnxx::alpha::MAP_CURSOR_ORDER_BY_ID;
-  std::unique_ptr<MapCursor<grnxx::alpha::GeoPoint>> cursor(
+  std::unique_ptr<MapCursor<grnxx::GeoPoint>> cursor(
       map->open_id_cursor(MIN_ID, MAX_ID, options));
   for (std::int64_t i = MIN_ID; i <= MAX_ID; ++i) {
     assert(cursor->next());
     assert(cursor->key_id() == i);
-    grnxx::alpha::GeoPoint key;
+    grnxx::GeoPoint key;
     assert(map->get(i, &key));
     assert(cursor->key() == key);
   }
@@ -240,7 +238,7 @@ void test_id_cursor(const std::unique_ptr<Map<grnxx::alpha::GeoPoint>> &map,
   for (std::int64_t i = MIN_ID + 1; i <= (MAX_ID - 1); ++i) {
     assert(cursor->next());
     assert(cursor->key_id() == i);
-    grnxx::alpha::GeoPoint key;
+    grnxx::GeoPoint key;
     assert(map->get(i, &key));
     assert(cursor->key() == key);
   }
@@ -310,8 +308,7 @@ void test_key_cursor(const std::unique_ptr<Map<T>> &map) {
   assert(count == basic_count);
 }
 
-void test_key_cursor(
-    const std::unique_ptr<Map<grnxx::alpha::GeoPoint>> &) {
+void test_key_cursor(const std::unique_ptr<Map<grnxx::GeoPoint>> &) {
   // Not supported.
 }
 
@@ -518,11 +515,11 @@ void test_bitwise_completion_cursor(grnxx::alpha::MapType map_type) {
   grnxx::io::Pool pool;
   pool.open(grnxx::io::POOL_ANONYMOUS);
 
-  std::unique_ptr<Map<grnxx::alpha::GeoPoint>> map;
+  std::unique_ptr<Map<grnxx::GeoPoint>> map;
   map.reset(map->create(map_type, pool));
 
   for (int i = 0; i < 128; ++i) {
-    grnxx::alpha::GeoPoint key;
+    grnxx::GeoPoint key;
     generate_key(&key);
 
     std::int64_t key_id;
@@ -530,7 +527,7 @@ void test_bitwise_completion_cursor(grnxx::alpha::MapType map_type) {
 
     for (std::size_t j = 0; j <= 64; ++j) {
       bool found = false;
-      std::unique_ptr<MapCursor<grnxx::alpha::GeoPoint>> cursor(
+      std::unique_ptr<MapCursor<grnxx::GeoPoint>> cursor(
           map->open_bitwise_completion_cursor(key, j));
       assert(cursor->next());
       do {
@@ -558,7 +555,7 @@ int main() {
   test_map<std::uint32_t>(grnxx::alpha::MAP_ARRAY);
   test_map<std::uint64_t>(grnxx::alpha::MAP_ARRAY);
   test_map<double>(grnxx::alpha::MAP_ARRAY);
-  test_map<grnxx::alpha::GeoPoint>(grnxx::alpha::MAP_ARRAY);
+  test_map<grnxx::GeoPoint>(grnxx::alpha::MAP_ARRAY);
   test_map<grnxx::Slice>(grnxx::alpha::MAP_ARRAY);
 
   test_map_nan(grnxx::alpha::MAP_ARRAY);
@@ -574,7 +571,7 @@ int main() {
   test_map<std::uint32_t>(grnxx::alpha::MAP_DOUBLE_ARRAY);
   test_map<std::uint64_t>(grnxx::alpha::MAP_DOUBLE_ARRAY);
   test_map<double>(grnxx::alpha::MAP_DOUBLE_ARRAY);
-  test_map<grnxx::alpha::GeoPoint>(grnxx::alpha::MAP_DOUBLE_ARRAY);
+  test_map<grnxx::GeoPoint>(grnxx::alpha::MAP_DOUBLE_ARRAY);
   test_map<grnxx::Slice>(grnxx::alpha::MAP_DOUBLE_ARRAY);
 
   test_map_nan(grnxx::alpha::MAP_DOUBLE_ARRAY);
