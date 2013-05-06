@@ -24,6 +24,7 @@ libgrnxx_la_SOURCES =			\
 	backtrace.cpp			\
 	charset.cpp			\
 	error.cpp			\
+	geo_point.cpp			\
 	grnxx.cpp			\
 	logger.cpp			\
 	map.cpp				\
@@ -45,6 +46,7 @@ libgrnxx_include_HEADERS =		\
 	exception.hpp			\
 	features.hpp			\
 	flags_impl.hpp			\
+	geo_point.hpp			\
 	grnxx.hpp			\
 	intrinsic.hpp			\
 	lock.hpp			\

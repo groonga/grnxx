@@ -15,17 +15,15 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#include "grnxx/alpha/geo_point.hpp"
+#include "grnxx/geo_point.hpp"
 
 #include "grnxx/string_builder.hpp"
 
 namespace grnxx {
-namespace alpha {
 
 StringBuilder &GeoPoint::write_to(StringBuilder &builder) const {
   return builder << "{ latitude = " << point_.latitude
                  << ", longitude = " << point_.longitude << " }";
 }
 
-}  // namespace alpha
 }  // namespace grnxx

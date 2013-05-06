@@ -22,8 +22,8 @@
 #include <vector>
 #include <unordered_map>
 
-#include "grnxx/alpha/geo_point.hpp"
 #include "grnxx/alpha/map.hpp"
+#include "grnxx/geo_point.hpp"
 #include "grnxx/logger.hpp"
 #include "grnxx/time/time.hpp"
 

@@ -20,7 +20,7 @@
 #include <cmath>
 #include <string>
 
-#include "grnxx/alpha/geo_point.hpp"
+#include "grnxx/geo_point.hpp"
 
 namespace grnxx {
 namespace alpha {

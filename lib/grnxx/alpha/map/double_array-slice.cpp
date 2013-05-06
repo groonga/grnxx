@@ -20,7 +20,6 @@
 #include <algorithm>
 #include <vector>
 
-#include "grnxx/alpha/geo_point.hpp"
 #include "grnxx/lock.hpp"
 #include "grnxx/logger.hpp"
 
