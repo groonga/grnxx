@@ -39,11 +39,7 @@ test/test_exception
 test/test_features
 test/test_grnxx
 test/test_intrinsic
-test/test_io_file
-test/test_io_file_info
-test/test_io_path
-test/test_io_pool
-test/test_io_view
+test/test_io
 test/test_logger
 test/test_map
 test/test_map_da_basic_trie

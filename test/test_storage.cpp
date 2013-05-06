@@ -727,19 +727,19 @@ void test_chunk() {
 }
 
 void test_storage() {
-//  test_storage_create();
-//  test_storage_open();
-//  test_storage_open_or_create();
-//  test_storage_exists_and_unlink();
-//  test_storage_create_node();
-//  test_storage_open_node();
-//  test_storage_unlink_node();
-//  test_storage_sweep();
-//  test_storage_path();
-//  test_storage_flags();
-//  test_storage_max_file_size();
-//  test_storage_max_num_files();
-//  test_storage_total_size();
+  test_storage_create();
+  test_storage_open();
+  test_storage_open_or_create();
+  test_storage_exists_and_unlink();
+  test_storage_create_node();
+  test_storage_open_node();
+  test_storage_unlink_node();
+  test_storage_sweep();
+  test_storage_path();
+  test_storage_flags();
+  test_storage_max_file_size();
+  test_storage_max_num_files();
+  test_storage_total_size();
   test_storage_random_queries();
 }
 
@@ -750,9 +750,9 @@ int main() {
                            grnxx::LOGGER_ENABLE_COUT);
   grnxx::Logger::set_max_level(grnxx::NOTICE_LOGGER);
 
-//  test_path();
-//  test_file();
-//  test_chunk();
+  test_path();
+  test_file();
+  test_chunk();
   test_storage();
 
   return 0;

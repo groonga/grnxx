@@ -13,11 +13,7 @@ TESTS =					\
 	test_features			\
 	test_grnxx			\
 	test_intrinsic			\
-	test_io_file			\
-	test_io_file_info		\
-	test_io_path			\
-	test_io_pool			\
-	test_io_view			\
+	test_io				\
 	test_logger			\
 	test_map			\
 	test_map_double_array		\
@@ -72,20 +68,8 @@ test_grnxx_LDADD = ../lib/grnxx/libgrnxx.la
 test_intrinsic_SOURCES = test_intrinsic.cpp
 test_intrinsic_LDADD = ../lib/grnxx/libgrnxx.la
 
-test_io_file_SOURCES = test_io_file.cpp
-test_io_file_LDADD = ../lib/grnxx/libgrnxx.la
-
-test_io_file_info_SOURCES = test_io_file_info.cpp
-test_io_file_info_LDADD = ../lib/grnxx/libgrnxx.la
-
-test_io_path_SOURCES = test_io_path.cpp
-test_io_path_LDADD = ../lib/grnxx/libgrnxx.la
-
-test_io_pool_SOURCES = test_io_pool.cpp
-test_io_pool_LDADD = ../lib/grnxx/libgrnxx.la
-
-test_io_view_SOURCES = test_io_view.cpp
-test_io_view_LDADD = ../lib/grnxx/libgrnxx.la
+test_io_SOURCES = test_io.cpp
+test_io_LDADD = ../lib/grnxx/libgrnxx.la
 
 test_logger_SOURCES = test_logger.cpp
 test_logger_LDADD = ../lib/grnxx/libgrnxx.la
