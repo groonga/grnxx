@@ -17,4 +17,5 @@ libgrnxx_alpha_include_HEADERS =	\
 	double_array.hpp		\
 	geo_point.hpp			\
 	map.hpp				\
+	map_range.hpp			\
 	sample.hpp

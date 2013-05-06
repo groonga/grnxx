@@ -324,6 +324,101 @@ MapCursor<Slice> *Map<Slice>::open_reverse_completion_cursor(
 }
 
 template <typename T>
+MapCursor<T> *Map<T>::open_cursor(const MapIDRange &range,
+                                  const MapCursorOptions &options) {
+  int64_t min = -1;
+  int64_t max = -1;
+  MapCursorOptions options_clone = options;
+  options_clone.flags &= ~(MAP_CURSOR_EXCEPT_MIN | MAP_CURSOR_EXCEPT_MAX);
+  if (range.flags & (MAP_RANGE_GREATER | MAP_RANGE_GREATER_EQUAL)) {
+    min = range.min;
+    if (range.flags & MAP_RANGE_GREATER) {
+      options_clone.flags |= MAP_CURSOR_EXCEPT_MIN;
+    }
+  }
+  if (range.flags & (MAP_RANGE_LESS | MAP_RANGE_LESS_EQUAL)) {
+    max = range.max;
+    if (range.flags & MAP_RANGE_LESS) {
+      options_clone.flags |= MAP_CURSOR_EXCEPT_MAX;
+    }
+  }
+  return new (std::nothrow) map::IDCursor<T>(this, min, max, options_clone);
+}
+
+template <typename T>
+MapCursor<T> *Map<T>::open_cursor(const MapKeyRange<T> &range,
+                                  const MapCursorOptions &options) {
+  T min = std::numeric_limits<T>::min();
+  T max = std::numeric_limits<T>::max();
+  MapCursorOptions options_clone = options;
+  options_clone.flags &= ~(MAP_CURSOR_EXCEPT_MIN | MAP_CURSOR_EXCEPT_MAX);
+  if (range.flags & (MAP_RANGE_GREATER | MAP_RANGE_GREATER_EQUAL)) {
+    min = range.min;
+    if (range.flags & MAP_RANGE_GREATER) {
+      options_clone.flags |= MAP_CURSOR_EXCEPT_MIN;
+    }
+  }
+  if (range.flags & (MAP_RANGE_LESS | MAP_RANGE_LESS_EQUAL)) {
+    max = range.max;
+    if (range.flags & MAP_RANGE_LESS) {
+      options_clone.flags |= MAP_CURSOR_EXCEPT_MAX;
+    }
+  }
+  return new (std::nothrow) map::KeyCursor<T>(this, min, max, options_clone);
+}
+
+template <>
+MapCursor<double> *Map<double>::open_cursor(
+    const MapKeyRange<double> &range, const MapCursorOptions &options) {
+  double min = -std::numeric_limits<double>::infinity();
+  double max = +std::numeric_limits<double>::infinity();
+  MapCursorOptions options_clone = options;
+  options_clone.flags &= ~(MAP_CURSOR_EXCEPT_MIN | MAP_CURSOR_EXCEPT_MAX);
+  if (range.flags & (MAP_RANGE_GREATER | MAP_RANGE_GREATER_EQUAL)) {
+    min = range.min;
+    if (range.flags & MAP_RANGE_GREATER) {
+      options_clone.flags |= MAP_CURSOR_EXCEPT_MIN;
+    }
+  }
+  if (range.flags & (MAP_RANGE_LESS | MAP_RANGE_LESS_EQUAL)) {
+    max = range.max;
+    if (range.flags & MAP_RANGE_LESS) {
+      options_clone.flags |= MAP_CURSOR_EXCEPT_MAX;
+    }
+  }
+  return new (std::nothrow) map::KeyCursor<double>(this, min, max, options_clone);
+}
+
+template <>
+MapCursor<GeoPoint> *Map<GeoPoint>::open_cursor(
+    const MapKeyRange<GeoPoint> &, const MapCursorOptions &) {
+  // Not supported.
+  return nullptr;
+}
+
+template <>
+MapCursor<Slice> *Map<Slice>::open_cursor(
+    const MapKeyRange<Slice> &range, const MapCursorOptions &options) {
+  Slice min = nullptr;
+  Slice max = nullptr;
+  MapCursorOptions options_clone = options;
+  options_clone.flags &= ~(MAP_CURSOR_EXCEPT_MIN | MAP_CURSOR_EXCEPT_MAX);
+  if (range.flags & (MAP_RANGE_GREATER | MAP_RANGE_GREATER_EQUAL)) {
+    min = range.min;
+    if (range.flags & MAP_RANGE_GREATER) {
+      options_clone.flags |= MAP_CURSOR_EXCEPT_MIN;
+    }
+  }
+  if (range.flags & (MAP_RANGE_LESS | MAP_RANGE_LESS_EQUAL)) {
+    max = range.max;
+    if (range.flags & MAP_RANGE_LESS) {
+      options_clone.flags |= MAP_CURSOR_EXCEPT_MAX;
+    }
+  }
+  return new (std::nothrow) map::KeyCursor<Slice>(this, min, max, options_clone);
+}
+
+template <typename T>
 MapScan<T> *Map<T>::open_scan(T, const Charset *) {
   // Not supported
   return nullptr;

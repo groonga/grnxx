@@ -18,6 +18,7 @@
 #ifndef GRNXX_ALPHA_MAP_HPP
 #define GRNXX_ALPHA_MAP_HPP
 
+#include "grnxx/alpha/map_range.hpp"
 #include "grnxx/io/pool.hpp"
 #include "grnxx/slice.hpp"
 
@@ -176,6 +177,20 @@ class Map {
   // Create a cursor for accessing keys ending with "query".
   virtual MapCursor<T> *open_reverse_completion_cursor(
       T query, const MapCursorOptions &options = MapCursorOptions());
+
+  MapID id() const {
+    return MapID();
+  }
+  MapKey<T> key() const {
+    return MapKey<T>();
+  }
+
+  virtual MapCursor<T> *open_cursor(
+      const MapIDRange &range,
+      const MapCursorOptions &options = MapCursorOptions());
+  virtual MapCursor<T> *open_cursor(
+      const MapKeyRange<T> &range,
+      const MapCursorOptions &options = MapCursorOptions());
 
   // Only for Slice.
   // Create a MapScan object to find keys in "query".
