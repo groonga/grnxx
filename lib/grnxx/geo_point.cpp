@@ -21,9 +21,9 @@
 
 namespace grnxx {
 
-StringBuilder &GeoPoint::write_to(StringBuilder &builder) const {
-  return builder << "{ latitude = " << point_.latitude
-                 << ", longitude = " << point_.longitude << " }";
+StringBuilder &operator<<(StringBuilder &builder, const GeoPoint &point) {
+  return builder << "{ latitude = " << point.latitude()
+                 << ", longitude = " << point.longitude() << " }";
 }
 
 }  // namespace grnxx

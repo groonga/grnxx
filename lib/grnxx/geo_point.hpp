@@ -67,8 +67,6 @@ union GeoPoint {
     value_ = x;
   }
 
-  StringBuilder &write_to(StringBuilder &builder) const;
-
  private:
   struct Point {
     int32_t latitude;
@@ -84,9 +82,7 @@ inline bool operator!=(const GeoPoint &lhs, const GeoPoint &rhs) {
   return lhs.value() != rhs.value();
 }
 
-inline StringBuilder &operator<<(StringBuilder &builder, const GeoPoint &x) {
-  return x.write_to(builder);
-}
+StringBuilder &operator<<(StringBuilder &builder, const GeoPoint &x);
 
 }  // namespace grnxx
 
