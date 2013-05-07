@@ -1090,14 +1090,14 @@ Chunk *StorageImpl::get_body_chunk(uint16_t chunk_id) {
 
 File *StorageImpl::get_file(uint16_t file_id) {
   if (!files_[file_id]) {
-    FileFlags file_flags = FILE_DEFAULT;
-    if (flags_ & STORAGE_READ_ONLY) {
-      file_flags |= FILE_READ_ONLY;
-      std::unique_ptr<char[]> path(generate_path(file_id));
-      files_[file_id].reset(File::open(path.get(), file_flags));
-    } else {
-      Lock file_lock(&header_->file_mutex);
-      if (!files_[file_id]) {
+    Lock file_lock(&header_->file_mutex);
+    if (!files_[file_id]) {
+      FileFlags file_flags = FILE_DEFAULT;
+      if (flags_ & STORAGE_READ_ONLY) {
+        file_flags |= FILE_READ_ONLY;
+        std::unique_ptr<char[]> path(generate_path(file_id));
+        files_[file_id].reset(File::open(path.get(), file_flags));
+      } else {
         if (flags_ & STORAGE_TEMPORARY) {
           file_flags |= FILE_TEMPORARY;
           files_[file_id].reset(File::create(path_.get(), file_flags));
