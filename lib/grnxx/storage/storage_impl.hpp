@@ -109,7 +109,7 @@ class StorageImpl : public Storage {
   void *get_node_body(const NodeHeader *node_header);
   Chunk *get_header_chunk(uint16_t chunk_id);
   Chunk *get_body_chunk(uint16_t chunk_id);
-  File *get_file(uint16_t file_id);
+  File *reserve_file(uint16_t file_id, uint64_t size);
   char *generate_path(uint16_t file_id);
 
   Chunk *create_chunk(File *file, int64_t offset, int64_t size);

@@ -1025,31 +1025,18 @@ void *StorageImpl::get_node_body(const NodeHeader *node_header) {
 Chunk *StorageImpl::get_header_chunk(uint16_t chunk_id) {
   if (!header_chunks_[chunk_id]) {
     const ChunkIndex &chunk_index = header_chunk_indexes_[chunk_id];
-    if (flags_ & STORAGE_ANONYMOUS) {
-      Lock lock(&mutex_);
-      if (!header_chunks_[chunk_id]) {
-        header_chunks_[chunk_id].reset(
-            create_chunk(nullptr, chunk_index.offset, chunk_index.size));
-      }
-    } else {
-      File * const file = get_file(chunk_index.file_id);
+    File *file = nullptr;
+    if (~flags_ & STORAGE_ANONYMOUS) {
+      file = reserve_file(chunk_index.file_id,
+                          chunk_index.offset + chunk_index.size);
       if (!file) {
         return nullptr;
       }
-      const int64_t required_size = chunk_index.offset + chunk_index.size;
-      if (file->size() < required_size) {
-        Lock file_lock(&header_->file_mutex);
-        if (file->size() < required_size) {
-          if (!file->resize(required_size)) {
-            return nullptr;
-          }
-        }
-      }
-      Lock lock(&mutex_);
-      if (!header_chunks_[chunk_id]) {
-        header_chunks_[chunk_id].reset(
-            create_chunk(file, chunk_index.offset, chunk_index.size));
-      }
+    }
+    Lock lock(&mutex_);
+    if (!header_chunks_[chunk_id]) {
+      header_chunks_[chunk_id].reset(
+          create_chunk(file, chunk_index.offset, chunk_index.size));
     }
   }
   return header_chunks_[chunk_id].get();
@@ -1058,38 +1045,26 @@ Chunk *StorageImpl::get_header_chunk(uint16_t chunk_id) {
 Chunk *StorageImpl::get_body_chunk(uint16_t chunk_id) {
   if (!body_chunks_[chunk_id]) {
     const ChunkIndex &chunk_index = body_chunk_indexes_[chunk_id];
-    if (flags_ & STORAGE_ANONYMOUS) {
-      Lock lock(&mutex_);
-      if (!body_chunks_[chunk_id]) {
-        body_chunks_[chunk_id].reset(
-            create_chunk(nullptr, chunk_index.offset, chunk_index.size));
-      }
-    } else {
-      File * const file = get_file(chunk_index.file_id);
+    File *file = nullptr;
+    if (~flags_ & STORAGE_ANONYMOUS) {
+      file = reserve_file(chunk_index.file_id,
+                          chunk_index.offset + chunk_index.size);
       if (!file) {
         return nullptr;
       }
-      const int64_t required_size = chunk_index.offset + chunk_index.size;
-      if (file->size() < required_size) {
-        Lock file_lock(&header_->file_mutex);
-        if (file->size() < required_size) {
-          if (!file->resize(required_size)) {
-            return nullptr;
-          }
-        }
-      }
-      Lock lock(&mutex_);
-      if (!body_chunks_[chunk_id]) {
-        body_chunks_[chunk_id].reset(
-            create_chunk(file, chunk_index.offset, chunk_index.size));
-      }
+    }
+    Lock lock(&mutex_);
+    if (!body_chunks_[chunk_id]) {
+      body_chunks_[chunk_id].reset(
+          create_chunk(file, chunk_index.offset, chunk_index.size));
     }
   }
   return body_chunks_[chunk_id].get();
 }
 
-File *StorageImpl::get_file(uint16_t file_id) {
+File *StorageImpl::reserve_file(uint16_t file_id, uint64_t size) {
   if (!files_[file_id]) {
+    // Create a file if missing.
     Lock file_lock(&header_->file_mutex);
     if (!files_[file_id]) {
       FileFlags file_flags = FILE_DEFAULT;
@@ -1105,6 +1080,15 @@ File *StorageImpl::get_file(uint16_t file_id) {
           std::unique_ptr<char[]> path(generate_path(file_id));
           files_[file_id].reset(File::open_or_create(path.get(), file_flags));
         }
+      }
+    }
+  }
+  if (files_[file_id]->size() < static_cast<int64_t>(size)) {
+    // Expand a file if its size is not enough 
+    Lock file_lock(&header_->file_mutex);
+    if (files_[file_id]->size() < static_cast<int64_t>(size)) {
+      if (!files_[file_id]->resize(size)) {
+        return nullptr;
       }
     }
   }
