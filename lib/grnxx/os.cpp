@@ -18,10 +18,10 @@
 #include "grnxx/os.hpp"
 
 #include <cstdlib>
+#include <cstring>
 #include <cerrno>
 
 #include "grnxx/error.hpp"
-#include "grnxx/exception.hpp"
 #include "grnxx/lock.hpp"
 #include "grnxx/logger.hpp"
 
@@ -36,28 +36,45 @@ uint64_t OS::get_page_size() {
   return page_size;
 }
 
-String OS::get_environment_variable(const char *name) {
+char *OS::get_environment_variable(const char *name) {
   if (!name) {
-    GRNXX_ERROR() << "invalid argument: name = " << name;
-    GRNXX_THROW();
+    GRNXX_ERROR() << "invalid argument: name = nullptr";
+    return nullptr;
   }
-
   static Mutex mutex(MUTEX_UNLOCKED);
   Lock lock(&mutex);
-
 #ifdef GRNXX_MSC
   char *value;
   size_t value_size;
   if (::_dupenv_s(&value, &value_size, name) != 0) {
     GRNXX_ERROR() << "failed to get environment variable: name = " << name
-                  << "'::_dupenv_s' " << Error(errno);
-    GRNXX_THROW();
+                  << ": '::_dupenv_s' " << Error(errno);
+    return nullptr;
   }
-  String result(value, value_size);
+  char * const result = new (std::nothrow) char[value_size + 1];
+  if (!result) {
+    GRNXX_ERROR() << "new char[] failed: size = " << (value_size + 1);
+    std::free(value);
+    return nullptr;
+  }
+  std::memcpy(result, value, value_size);
+  result[value_size] = '\0';
   std::free(value);
   return result;
 #else  // GRNXX_MSC
-  return std::getenv(name);
+  char * const value = std::getenv(name);
+  if (!value) {
+    return nullptr;
+  }
+  const size_t value_size = std::strlen(value);
+  char * const result = new (std::nothrow) char[value_size + 1];
+  if (!result) {
+    GRNXX_ERROR() << "new char[] failed: size = " << (value_size + 1);
+    return nullptr;
+  }
+  std::memcpy(result, value, value_size);
+  result[value_size] = '\0';
+  return result;
 #endif  // GRNXX_MSC
 }
 

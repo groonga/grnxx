@@ -27,10 +27,10 @@ int main() {
 
   GRNXX_NOTICE() << "page_size = " << grnxx::OS::get_page_size();
 
-  GRNXX_NOTICE() << "getenv(PATH) = "
-                 << grnxx::OS::get_environment_variable("PATH");
-  GRNXX_NOTICE() << "getenv(NO_SUCH_NAME) = "
-                 << grnxx::OS::get_environment_variable("NO_SUCH_NAME");
+  std::unique_ptr<char[]> env(grnxx::OS::get_environment_variable("PATH"));
+  GRNXX_NOTICE() << "getenv(PATH) = " << env.get();
+  env.reset(grnxx::OS::get_environment_variable("NO_SUCH_NAME"));
+  GRNXX_NOTICE() << "getenv(NO_SUCH_NAME) = " << env.get();
 
   return 0;
 }

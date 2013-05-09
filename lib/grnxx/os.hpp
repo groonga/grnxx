@@ -19,21 +19,14 @@
 #define GRNXX_OS_HPP
 
 #include "grnxx/basic.hpp"
-#include "grnxx/string.hpp"
 
 namespace grnxx {
 
 class OS {
  public:
+  // Get the page size.
   static uint64_t get_page_size();
-
-  static String get_environment_variable(const char *name);
-
- private:
-  OS();
-
-  OS(const OS &);
-  OS &operator=(const OS &);
+  static char *get_environment_variable(const char *name);
 };
 
 }  // namespace grnxx
