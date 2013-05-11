@@ -172,19 +172,7 @@ void convert_key(double key, uint8_t *key_buf) {
 }
 
 void convert_key(GeoPoint key, uint8_t *key_buf) {
-  uint64_t latitude = static_cast<uint32_t>(key.latitude());
-  uint64_t longitude = static_cast<uint32_t>(key.longitude());
-  latitude = (latitude | (latitude << 16)) & 0x0000FFFF0000FFFFULL;
-  latitude = (latitude | (latitude <<  8)) & 0x00FF00FF00FF00FFULL;
-  latitude = (latitude | (latitude <<  4)) & 0x0F0F0F0F0F0F0F0FULL;
-  latitude = (latitude | (latitude <<  2)) & 0x3333333333333333ULL;
-  latitude = (latitude | (latitude <<  1)) & 0x5555555555555555ULL;
-  longitude = (longitude | (longitude << 16)) & 0x0000FFFF0000FFFFULL;
-  longitude = (longitude | (longitude <<  8)) & 0x00FF00FF00FF00FFULL;
-  longitude = (longitude | (longitude <<  4)) & 0x0F0F0F0F0F0F0F0FULL;
-  longitude = (longitude | (longitude <<  2)) & 0x3333333333333333ULL;
-  longitude = (longitude | (longitude <<  1)) & 0x5555555555555555ULL;
-  uint64_t interleaved_key = (latitude << 1) | longitude;
+  uint64_t interleaved_key = key.interleave();
 #ifndef WORDS_BIGENDIAN
   interleaved_key = byte_swap(interleaved_key);
 #endif  // WORDS_BIGENDIAN
