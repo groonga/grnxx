@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2012  Brazil, Inc.
+  Copyright (C) 2012-2013  Brazil, Inc.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -26,6 +26,8 @@ class OS {
  public:
   // Get the page size.
   static uint64_t get_page_size();
+  // Get an environment variable. The returned string must be freed with
+  // delete[].
   static char *get_environment_variable(const char *name);
 };
 
