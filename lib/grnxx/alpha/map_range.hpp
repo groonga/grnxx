@@ -27,7 +27,6 @@ namespace alpha {
 struct MapRangeFlagsIdentifier;
 using MapRangeFlags = FlagsImpl<MapRangeFlagsIdentifier>;
 
-constexpr MapRangeFlags MAP_RANGE_DEFAULT       = MapRangeFlags::define(0x00);
 constexpr MapRangeFlags MAP_RANGE_LESS          = MapRangeFlags::define(0x01);
 constexpr MapRangeFlags MAP_RANGE_LESS_EQUAL    = MapRangeFlags::define(0x02);
 constexpr MapRangeFlags MAP_RANGE_GREATER       = MapRangeFlags::define(0x04);
