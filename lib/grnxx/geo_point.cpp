@@ -21,9 +21,25 @@
 
 namespace grnxx {
 
+uint64_t GeoPoint::interleave() const {
+  uint64_t latitude = static_cast<uint32_t>(point_.latitude);
+  uint64_t longitude = static_cast<uint32_t>(point_.longitude);
+  latitude = (latitude | (latitude << 16)) & 0x0000FFFF0000FFFFULL;
+  latitude = (latitude | (latitude <<  8)) & 0x00FF00FF00FF00FFULL;
+  latitude = (latitude | (latitude <<  4)) & 0x0F0F0F0F0F0F0F0FULL;
+  latitude = (latitude | (latitude <<  2)) & 0x3333333333333333ULL;
+  latitude = (latitude | (latitude <<  1)) & 0x5555555555555555ULL;
+  longitude = (longitude | (longitude << 16)) & 0x0000FFFF0000FFFFULL;
+  longitude = (longitude | (longitude <<  8)) & 0x00FF00FF00FF00FFULL;
+  longitude = (longitude | (longitude <<  4)) & 0x0F0F0F0F0F0F0F0FULL;
+  longitude = (longitude | (longitude <<  2)) & 0x3333333333333333ULL;
+  longitude = (longitude | (longitude <<  1)) & 0x5555555555555555ULL;
+  return (latitude << 1) | longitude;
+}
+
 StringBuilder &operator<<(StringBuilder &builder, const GeoPoint &point) {
   return builder << "{ latitude = " << point.latitude()
                  << ", longitude = " << point.longitude() << " }";
 }
 
-}  // namespace grnxx
+}  // namespace

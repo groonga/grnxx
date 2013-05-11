@@ -27,29 +27,32 @@ class StringBuilder;
 // Latitude and longitude (lat/long).
 union GeoPoint {
  public:
-  // The default constructor does not initialize lat/long.
+  // Trivial default constructor.
   GeoPoint() = default;
-  // Copy lat/long as uint64_t to force atomic copy.
+  // Copy the lat/long as uint64_t to force atomic copy.
   GeoPoint(const GeoPoint &x) : value_(x.value_) {}
-  // Copy lat/long.
+  // Copy the lat/long.
   GeoPoint(int32_t latitude, int32_t longitude)
       : point_{ latitude, longitude } {}
 
-  // Assign lat/long as uint64_t to force atomic assignment.
+  // Assign the lat/long as uint64_t to force atomic assignment.
   GeoPoint &operator=(const GeoPoint &x) {
     value_ = x.value_;
     return *this;
   }
 
-  // Get the latitude.
+  // Interleave the lat/long.
+  uint64_t interleave() const;
+
+  // Return the latitude.
   int32_t latitude() const {
     return point_.latitude;
   }
-  // Get the longitude.
+  // Return the longitude.
   int32_t longitude() const {
     return point_.longitude;
   }
-  // Get lat/long as uint64_t.
+  // Return the lat/long as uint64_t.
   uint64_t value() const {
     return value_;
   }
@@ -62,7 +65,7 @@ union GeoPoint {
   void set_longitude(int32_t x) {
     point_.longitude = x;
   }
-  // Set lat/long as uint64_t.
+  // Set the lat/long as uint64_t.
   void set_value(uint64_t x) {
     value_ = x;
   }
@@ -82,8 +85,8 @@ inline bool operator!=(const GeoPoint &lhs, const GeoPoint &rhs) {
   return lhs.value() != rhs.value();
 }
 
-StringBuilder &operator<<(StringBuilder &builder, const GeoPoint &x);
+StringBuilder &operator<<(StringBuilder &builder, const GeoPoint &point);
 
-}  // namespace grnxx
+}  // namespace
 
 #endif  // GRNXX_GEO_POINT_HPP
