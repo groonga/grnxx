@@ -546,7 +546,6 @@ class DoubleArrayImpl {
   io::Pool pool_;
   const io::BlockInfo *block_info_;
   DoubleArrayHeader *header_;
-  Recycler *recycler_;
   Vector<DoubleArrayNode> nodes_;
   Vector<uint8_t> siblings_;
   Vector<DoubleArrayChunk> chunks_;

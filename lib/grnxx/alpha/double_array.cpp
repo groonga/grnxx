@@ -262,7 +262,6 @@ DoubleArrayImpl::DoubleArrayImpl()
   : pool_(),
     block_info_(nullptr),
     header_(nullptr),
-    recycler_(nullptr),
     nodes_(),
     siblings_(),
     chunks_(),
@@ -278,8 +277,6 @@ void DoubleArrayImpl::create_double_array(io::Pool pool) {
   void * const block_address = pool_.get_block_address(*block_info_);
   header_ = static_cast<DoubleArrayHeader *>(block_address);
   *header_ = DoubleArrayHeader();
-
-  recycler_ = pool_.mutable_recycler();
 
   nodes_.create(pool);
   header_->set_nodes_block_id(nodes_.block_id());
@@ -308,8 +305,6 @@ void DoubleArrayImpl::open_double_array(io::Pool pool, uint32_t block_id) {
   header_ = static_cast<DoubleArrayHeader *>(block_address);
 
   // TODO: Check the format.
-
-  recycler_ = pool_.mutable_recycler();
 
   nodes_.open(pool_, header_->nodes_block_id());
   siblings_.open(pool_, header_->siblings_block_id());
