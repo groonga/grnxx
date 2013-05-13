@@ -131,7 +131,7 @@ bool Array2D::create_array(Storage *storage, uint32_t storage_node_id,
     storage_node_size += value_size;
   }
   storage_node_ = storage->create_node(storage_node_id, storage_node_size);
-  if (!storage_node_.is_valid()) {
+  if (!storage_node_) {
     return false;
   }
   header_ = static_cast<Array2DHeader *>(storage_node_.body());
@@ -143,7 +143,7 @@ bool Array2D::create_array(Storage *storage, uint32_t storage_node_id,
   }
   StorageNode table_node =
       storage->create_node(storage_node_.id(), sizeof(uint32_t) * table_size);
-  if (!table_node.is_valid()) {
+  if (!table_node) {
     storage->unlink_node(storage_node_.id());
     return false;
   }
@@ -169,7 +169,7 @@ bool Array2D::open_array(Storage *storage, uint32_t storage_node_id,
                          uint64_t table_size, FillPage fill_page) {
   storage_ = storage;
   storage_node_ = storage->open_node(storage_node_id);
-  if (!storage_node_.is_valid()) {
+  if (!storage_node_) {
     return false;
   }
   header_ = static_cast<Array2DHeader *>(storage_node_.body());
@@ -191,7 +191,7 @@ bool Array2D::open_array(Storage *storage, uint32_t storage_node_id,
   default_value_ = header_ + 1;
   fill_page_ = fill_page;
   StorageNode table_node = storage->open_node(header_->table_storage_node_id);
-  if (!table_node.is_valid()) {
+  if (!table_node) {
     return false;
   }
   table_ = static_cast<uint32_t *>(table_node.body());
@@ -223,7 +223,7 @@ bool Array2D::initialize_page_nothrow(uint64_t page_id) {
         page_node =
             storage_->create_node(header_->table_storage_node_id,
                                   header_->value_size * header_->page_size);
-        if (!page_node.is_valid()) {
+        if (!page_node) {
           return false;
         }
         if (default_value_) {
@@ -235,7 +235,7 @@ bool Array2D::initialize_page_nothrow(uint64_t page_id) {
       }
     }
     page_node = storage_->open_node(table_[page_id]);
-    if (!page_node.is_valid()) {
+    if (!page_node) {
       return false;
     }
     table_cache_[page_id] = page_node.body();

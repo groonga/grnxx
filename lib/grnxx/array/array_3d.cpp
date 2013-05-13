@@ -143,7 +143,7 @@ bool Array3D::create_array(Storage *storage, uint32_t storage_node_id,
     storage_node_size += value_size;
   }
   storage_node_ = storage->create_node(storage_node_id, storage_node_size);
-  if (!storage_node_.is_valid()) {
+  if (!storage_node_) {
     return false;
   }
   header_ = static_cast<Array3DHeader *>(storage_node_.body());
@@ -171,7 +171,7 @@ bool Array3D::open_array(Storage *storage, uint32_t storage_node_id,
                          FillPage fill_page) {
   storage_ = storage;
   storage_node_ = storage->open_node(storage_node_id);
-  if (!storage_node_.is_valid()) {
+  if (!storage_node_) {
     return false;
   }
   header_ = static_cast<Array3DHeader *>(storage_node_.body());
@@ -226,7 +226,7 @@ bool Array3D::initialize_page_nothrow(uint64_t table_id, uint64_t page_id) {
   Lock inter_thread_lock(&page_mutex_);
   if (!table_caches_[table_id][page_id]) {
     StorageNode table_node = storage_->open_node(secondary_table_[table_id]);
-    if (!table_node.is_valid()) {
+    if (!table_node) {
       return false;
     }
     uint32_t * const table = static_cast<uint32_t *>(table_node.body());
@@ -236,7 +236,7 @@ bool Array3D::initialize_page_nothrow(uint64_t table_id, uint64_t page_id) {
         StorageNode page_node =
             storage_->create_node(secondary_table_[table_id],
                                   header_->value_size * header_->page_size);
-        if (!page_node.is_valid()) {
+        if (!page_node) {
           return false;
         }
         if (default_value_) {
@@ -248,7 +248,7 @@ bool Array3D::initialize_page_nothrow(uint64_t table_id, uint64_t page_id) {
       }
     }
     StorageNode page_node = storage_->open_node(table[page_id]);
-    if (!page_node.is_valid()) {
+    if (!page_node) {
       return false;
     }
     table_caches_[table_id][page_id] = page_node.body();
@@ -270,7 +270,7 @@ bool Array3D::initialize_table(uint64_t table_id) {
         StorageNode table_node =
             storage_->create_node(header_->secondary_table_storage_node_id,
                                   sizeof(uint32_t) * header_->table_size);
-        if (!table_node.is_valid()) {
+        if (!table_node) {
           return false;
         }
         uint32_t * const table = static_cast<uint32_t *>(table_node.body());
@@ -303,7 +303,7 @@ bool Array3D::initialize_secondary_table() {
             sizeof(uint32_t) * header_->secondary_table_size;
         StorageNode secondary_table_node =
             storage_->create_node(storage_node_.id(), secondary_table_size);
-        if (!secondary_table_node.is_valid()) {
+        if (!secondary_table_node) {
           return false;
         }
         uint32_t * const secondary_table =
@@ -318,7 +318,7 @@ bool Array3D::initialize_secondary_table() {
     }
     StorageNode secondary_table_node =
         storage_->open_node(header_->secondary_table_storage_node_id);
-    if (!secondary_table_node.is_valid()) {
+    if (!secondary_table_node) {
       return false;
     }
     secondary_table_ = static_cast<uint32_t *>(secondary_table_node.body());

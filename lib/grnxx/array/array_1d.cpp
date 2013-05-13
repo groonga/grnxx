@@ -99,14 +99,14 @@ bool Array1D::create_array(Storage *storage, uint32_t storage_node_id,
                            uint64_t value_size, uint64_t page_size,
                            const void *default_value, FillPage fill_page) {
   storage_node_ = storage->create_node(storage_node_id, sizeof(Array1DHeader));
-  if (!storage_node_.is_valid()) {
+  if (!storage_node_) {
     return false;
   }
   header_ = static_cast<Array1DHeader *>(storage_node_.body());
   *header_ = Array1DHeader(value_size, page_size);
   StorageNode page_node =
       storage->create_node(storage_node_.id(), value_size * page_size);
-  if (!page_node.is_valid()) {
+  if (!page_node) {
     storage->unlink_node(storage_node_.id());
     return false;
   }
@@ -121,7 +121,7 @@ bool Array1D::create_array(Storage *storage, uint32_t storage_node_id,
 bool Array1D::open_array(Storage *storage, uint32_t storage_node_id,
                          uint64_t value_size, uint64_t page_size) {
   storage_node_ = storage->open_node(storage_node_id);
-  if (!storage_node_.is_valid()) {
+  if (!storage_node_) {
     return false;
   }
   header_ = static_cast<Array1DHeader *>(storage_node_.body());
@@ -136,7 +136,7 @@ bool Array1D::open_array(Storage *storage, uint32_t storage_node_id,
     return false;
   }
   StorageNode page_node = storage->open_node(header_->page_storage_node_id);
-  if (!page_node.is_valid()) {
+  if (!page_node) {
     return false;
   }
   page_ = page_node.body();
