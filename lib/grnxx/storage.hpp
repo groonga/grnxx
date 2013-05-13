@@ -91,10 +91,17 @@ class StorageNode {
       : header_(header),
         body_(body) {}
 
+  // Return true iff the node is valid.
+  explicit operator bool() const {
+    return header_ != nullptr;
+  }
+
   // Return true iff "header_" != nullptr.
+  // TODO: To be removed, use operator bool instead.
   bool is_valid() const {
     return header_ != nullptr;
   }
+
   // Return the ID.
   uint32_t id() const;
   // Return the status.
