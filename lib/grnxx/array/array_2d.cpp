@@ -60,14 +60,71 @@ Array2D::Array2D()
 
 Array2D::~Array2D() {}
 
-bool Array2D::create(Storage *storage, uint32_t storage_node_id,
-                     uint64_t value_size, uint64_t page_size,
-                     uint64_t table_size,
-                     const void *default_value, FillPage fill_page) {
+Array2D *Array2D::create(Storage *storage, uint32_t storage_node_id,
+                         uint64_t value_size, uint64_t page_size,
+                         uint64_t table_size,
+                         const void *default_value, FillPage fill_page) {
   if (!storage) {
     GRNXX_ERROR() << "invalid argument: storage = nullptr";
     return nullptr;
   }
+  std::unique_ptr<Array2D> array(new (std::nothrow) Array2D);
+  if (!array) {
+    GRNXX_ERROR() << "new grnxx::Array2D failed: "
+                  << "storage_node_id = " << storage_node_id
+                  << ", value_size = " << value_size
+                  << ", page_size = " << page_size
+                  << ", table_size = " << table_size
+                  << ", has_default_value = " << (default_value != nullptr);
+    return nullptr;
+  }
+  if (!array->create_array(storage, storage_node_id,
+                           value_size, page_size, table_size,
+                           default_value, fill_page)) {
+    return nullptr;
+  }
+  return array.release();
+}
+
+Array2D *Array2D::open(Storage *storage, uint32_t storage_node_id,
+                       uint64_t value_size, uint64_t page_size,
+                       uint64_t table_size, FillPage fill_page) {
+  if (!storage) {
+    GRNXX_ERROR() << "invalid argument: storage = nullptr";
+    return nullptr;
+  }
+  std::unique_ptr<Array2D> array(new (std::nothrow) Array2D);
+  if (!array) {
+    GRNXX_ERROR() << "new grnxx::Array2D failed: "
+                  << "storage_node_id = " << storage_node_id
+                  << ", value_size = " << value_size
+                  << ", page_size = " << page_size
+                  << ", table_size = " << table_size;
+    return nullptr;
+  }
+  if (!array->open_array(storage, storage_node_id,
+                         value_size, page_size, table_size,
+                         fill_page)) {
+    return nullptr;
+  }
+  return array.release();
+}
+
+bool Array2D::unlink(Storage *storage, uint32_t storage_node_id,
+                     uint64_t value_size, uint64_t page_size,
+                     uint64_t table_size) {
+  Array2D array;
+  if (!array.open(storage, storage_node_id,
+                  value_size, page_size, table_size, nullptr)) {
+    return false;
+  }
+  return storage->unlink_node(storage_node_id);
+}
+
+bool Array2D::create_array(Storage *storage, uint32_t storage_node_id,
+                           uint64_t value_size, uint64_t page_size,
+                           uint64_t table_size,
+                           const void *default_value, FillPage fill_page) {
   storage_ = storage;
   uint64_t storage_node_size = sizeof(Array2DHeader);
   if (default_value) {
@@ -107,13 +164,9 @@ bool Array2D::create(Storage *storage, uint32_t storage_node_id,
   return true;
 }
 
-bool Array2D::open(Storage *storage, uint32_t storage_node_id,
-                   uint64_t value_size, uint64_t page_size,
-                   uint64_t table_size, FillPage fill_page) {
-  if (!storage) {
-    GRNXX_ERROR() << "invalid argument: storage = nullptr";
-    return nullptr;
-  }
+bool Array2D::open_array(Storage *storage, uint32_t storage_node_id,
+                         uint64_t value_size, uint64_t page_size,
+                         uint64_t table_size, FillPage fill_page) {
   storage_ = storage;
   storage_node_ = storage->open_node(storage_node_id);
   if (!storage_node_.is_valid()) {
@@ -151,17 +204,6 @@ bool Array2D::open(Storage *storage, uint32_t storage_node_id,
     table_cache_[i] = nullptr;
   }
   return true;
-}
-
-bool Array2D::unlink(Storage *storage, uint32_t storage_node_id,
-                     uint64_t value_size, uint64_t page_size,
-                     uint64_t table_size) {
-  Array2D array;
-  if (!array.open(storage, storage_node_id,
-                  value_size, page_size, table_size, nullptr)) {
-    return false;
-  }
-  return storage->unlink_node(storage_node_id);
 }
 
 void Array2D::initialize_page(uint64_t page_id) {

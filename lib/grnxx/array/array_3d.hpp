@@ -33,15 +33,16 @@ class Array3D {
   Array3D();
   ~Array3D();
 
-  bool create(Storage *storage, uint32_t storage_node_id,
-              uint64_t value_size, uint64_t page_size,
-              uint64_t table_size, uint64_t secondary_table_size,
-              const void *default_value = nullptr,
-              FillPage fill_page = nullptr);
-  bool open(Storage *storage, uint32_t storage_node_id,
-            uint64_t value_size, uint64_t page_size,
-            uint64_t table_size, uint64_t secondary_table_size,
-            FillPage fill_page);
+  static Array3D *create(Storage *storage, uint32_t storage_node_id,
+                         uint64_t value_size, uint64_t page_size,
+                         uint64_t table_size, uint64_t secondary_table_size,
+                         const void *default_value = nullptr,
+                         FillPage fill_page = nullptr);
+
+  static Array3D *open(Storage *storage, uint32_t storage_node_id,
+                       uint64_t value_size, uint64_t page_size,
+                       uint64_t table_size, uint64_t secondary_table_size,
+                       FillPage fill_page);
 
   static bool unlink(Storage *storage, uint32_t storage_node_id,
                      uint64_t value_size, uint64_t page_size,
@@ -84,6 +85,15 @@ class Array3D {
   Mutex page_mutex_;
   Mutex table_mutex_;
   Mutex secondary_table_mutex_;
+
+  bool create_array(Storage *storage, uint32_t storage_node_id,
+                    uint64_t value_size, uint64_t page_size,
+                    uint64_t table_size, uint64_t secondary_table_size,
+                    const void *default_value, FillPage fill_page);
+  bool open_array(Storage *storage, uint32_t storage_node_id,
+                  uint64_t value_size, uint64_t page_size,
+                  uint64_t table_size, uint64_t secondary_table_size,
+                  FillPage fill_page);
 
   void initialize_page(uint64_t table_id, uint64_t page_id);
   bool initialize_page_nothrow(uint64_t table_id, uint64_t page_id);

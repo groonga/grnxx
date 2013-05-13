@@ -70,14 +70,73 @@ Array3D::Array3D()
 
 Array3D::~Array3D() {}
 
-bool Array3D::create(Storage *storage, uint32_t storage_node_id,
-                     uint64_t value_size, uint64_t page_size,
-                     uint64_t table_size, uint64_t secondary_table_size,
-                     const void *default_value, FillPage fill_page) {
+Array3D *Array3D::create(Storage *storage, uint32_t storage_node_id,
+                         uint64_t value_size, uint64_t page_size,
+                         uint64_t table_size, uint64_t secondary_table_size,
+                         const void *default_value, FillPage fill_page) {
   if (!storage) {
     GRNXX_ERROR() << "invalid argument: storage = nullptr";
     return nullptr;
   }
+  std::unique_ptr<Array3D> array(new (std::nothrow) Array3D);
+  if (!array) {
+    GRNXX_ERROR() << "new grnxx::Array3D failed: "
+                  << "storage_node_id = " << storage_node_id
+                  << ", value_size = " << value_size
+                  << ", page_size = " << page_size
+                  << ", table_size = " << table_size
+                  << ", secondary_table_size = " << secondary_table_size
+                  << ", has_default_value = " << (default_value != nullptr);
+    return nullptr;
+  }
+  if (!array->create_array(storage, storage_node_id, value_size, page_size,
+                           table_size, secondary_table_size,
+                           default_value, fill_page)) {
+    return nullptr;
+  }
+  return array.release();
+}
+
+Array3D *Array3D::open(Storage *storage, uint32_t storage_node_id,
+                       uint64_t value_size, uint64_t page_size,
+                       uint64_t table_size, uint64_t secondary_table_size,
+                       FillPage fill_page) {
+  if (!storage) {
+    GRNXX_ERROR() << "invalid argument: storage = nullptr";
+    return nullptr;
+  }
+  std::unique_ptr<Array3D> array(new (std::nothrow) Array3D);
+  if (!array) {
+    GRNXX_ERROR() << "new grnxx::Array3D failed: "
+                  << "storage_node_id = " << storage_node_id
+                  << ", value_size = " << value_size
+                  << ", page_size = " << page_size
+                  << ", table_size = " << table_size
+                  << ", secondary_table_size = " << secondary_table_size;
+    return nullptr;
+  }
+  if (!array->open_array(storage, storage_node_id, value_size, page_size,
+                         table_size, secondary_table_size, fill_page)) {
+    return nullptr;
+  }
+  return array.release();
+}
+
+bool Array3D::unlink(Storage *storage, uint32_t storage_node_id,
+                     uint64_t value_size, uint64_t page_size,
+                     uint64_t table_size, uint64_t secondary_table_size) {
+  Array3D array;
+  if (!array.open(storage, storage_node_id, value_size, page_size,
+                  table_size, secondary_table_size, nullptr)) {
+    return false;
+  }
+  return storage->unlink_node(storage_node_id);
+}
+
+bool Array3D::create_array(Storage *storage, uint32_t storage_node_id,
+                           uint64_t value_size, uint64_t page_size,
+                           uint64_t table_size, uint64_t secondary_table_size,
+                           const void *default_value, FillPage fill_page) {
   storage_ = storage;
   uint64_t storage_node_size = sizeof(Array3DHeader);
   if (default_value) {
@@ -106,14 +165,10 @@ bool Array3D::create(Storage *storage, uint32_t storage_node_id,
   return true;
 }
 
-bool Array3D::open(Storage *storage, uint32_t storage_node_id,
-                   uint64_t value_size, uint64_t page_size,
-                   uint64_t table_size, uint64_t secondary_table_size,
-                   FillPage fill_page) {
-  if (!storage) {
-    GRNXX_ERROR() << "invalid argument: storage = nullptr";
-    return nullptr;
-  }
+bool Array3D::open_array(Storage *storage, uint32_t storage_node_id,
+                         uint64_t value_size, uint64_t page_size,
+                         uint64_t table_size, uint64_t secondary_table_size,
+                         FillPage fill_page) {
   storage_ = storage;
   storage_node_ = storage->open_node(storage_node_id);
   if (!storage_node_.is_valid()) {
@@ -152,17 +207,6 @@ bool Array3D::open(Storage *storage, uint32_t storage_node_id,
     return false;
   }
   return true;
-}
-
-bool Array3D::unlink(Storage *storage, uint32_t storage_node_id,
-                     uint64_t value_size, uint64_t page_size,
-                     uint64_t table_size, uint64_t secondary_table_size) {
-  Array3D array;
-  if (!array.open(storage, storage_node_id, value_size, page_size,
-                  table_size, secondary_table_size, nullptr)) {
-    return false;
-  }
-  return storage->unlink_node(storage_node_id);
 }
 
 void Array3D::initialize_page(uint64_t table_id, uint64_t page_id) {

@@ -53,49 +53,47 @@ class Array<T, PAGE_SIZE, 1, 1> {
   using ValueArg = typename Traits<T>::ArgumentType;
 
  public:
+  Array() : impl_() {}
   ~Array() {}
 
+  // Return true iff the array is valid.
+  explicit operator bool() const {
+    return static_cast<bool>(impl_);
+  }
+
   // Create an array.
-  static Array *create(Storage *storage, uint32_t storage_node_id) {
-    std::unique_ptr<Array> array(new (std::nothrow) Array);
-    if (!array) {
-      GRNXX_ERROR() << "new grnxx::Array failed: PAGE_SIZE = " << PAGE_SIZE;
-      return nullptr;
+  bool create(Storage *storage, uint32_t storage_node_id) {
+    std::unique_ptr<Array1D> impl(
+        Array1D::create(storage, storage_node_id, sizeof(Value), PAGE_SIZE));
+    if (!impl) {
+      return false;
     }
-    if (!array->impl_.create(storage, storage_node_id, sizeof(Value),
-                             PAGE_SIZE)) {
-      return nullptr;
-    }
-    return array.release();
+    impl_ = std::move(impl);
+    return true;
   }
 
   // Create an array with the default value.
-  static Array *create(Storage *storage, uint32_t storage_node_id,
+  bool create(Storage *storage, uint32_t storage_node_id,
                        ValueArg default_value) {
-    std::unique_ptr<Array> array(new (std::nothrow) Array);
-    if (!array) {
-      GRNXX_ERROR() << "new grnxx::Array failed: PAGE_SIZE = " << PAGE_SIZE;
-      return nullptr;
+    std::unique_ptr<Array1D> impl(
+        Array1D::create(storage, storage_node_id, sizeof(Value), PAGE_SIZE,
+                        &default_value, fill_page));
+    if (!impl) {
+      return false;
     }
-    if (!array->impl_.create(storage, storage_node_id, sizeof(Value),
-                             PAGE_SIZE, &default_value, fill_page)) {
-      return nullptr;
-    }
-    return array.release();
+    impl_ = std::move(impl);
+    return true;
   }
 
   // Open an array.
-  static Array *open(Storage *storage, uint32_t storage_node_id) {
-    std::unique_ptr<Array> array(new (std::nothrow) Array);
-    if (!array) {
-      GRNXX_ERROR() << "new grnxx::Array failed: PAGE_SIZE = " << PAGE_SIZE;
-      return nullptr;
+  bool open(Storage *storage, uint32_t storage_node_id) {
+    std::unique_ptr<Array1D> impl(
+        Array1D::open(storage, storage_node_id, sizeof(Value), PAGE_SIZE));
+    if (!impl) {
+      return false;
     }
-    if (!array->impl_.open(storage, storage_node_id, sizeof(Value),
-                           PAGE_SIZE)) {
-      return nullptr;
-    }
-    return array.release();
+    impl_ = std::move(impl);
+    return true;
   }
 
   // Unlink an array.
@@ -122,7 +120,7 @@ class Array<T, PAGE_SIZE, 1, 1> {
 
   // Return the storage node ID.
   uint32_t storage_node_id() const {
-    return impl_.storage_node_id();
+    return impl_->storage_node_id();
   }
 
   // Get a reference to a value.
@@ -148,13 +146,11 @@ class Array<T, PAGE_SIZE, 1, 1> {
 
   // Get a page and return its starting address.
   Value *get_page(uint64_t) {
-    return impl_.get_page<Value>();
+    return impl_->get_page<Value>();
   }
 
  private:
-  Array1D impl_;
-
-  Array() : impl_() {}
+  std::unique_ptr<Array1D> impl_;
 
   // This function is used to fill a new page with the default value.
   static void fill_page(void *page, const void *value) {
@@ -176,53 +172,49 @@ class Array<T, PAGE_SIZE, TABLE_SIZE, 1> {
   using ValueArg = typename Traits<T>::ArgumentType;
 
  public:
+  Array() : impl_() {}
   ~Array() {}
 
+  // Return true iff the array is valid.
+  explicit operator bool() const {
+    return static_cast<bool>(impl_);
+  }
+
   // Create an array.
-  static Array *create(Storage *storage, uint32_t storage_node_id) {
-    std::unique_ptr<Array> array(new (std::nothrow) Array);
-    if (!array) {
-      GRNXX_ERROR() << "new grnxx::Array failed: PAGE_SIZE = " << PAGE_SIZE
-                    << ", TABLE_SIZE = " << TABLE_SIZE;
-      return nullptr;
+  bool create(Storage *storage, uint32_t storage_node_id) {
+    std::unique_ptr<Array2D> impl(
+        Array2D::create(storage, storage_node_id, sizeof(Value), PAGE_SIZE,
+                        TABLE_SIZE));
+    if (!impl) {
+      return false;
     }
-    if (!array->impl_.create(storage, storage_node_id, sizeof(Value),
-                             PAGE_SIZE, TABLE_SIZE)) {
-      return nullptr;
-    }
-    return array.release();
+    impl_ = std::move(impl);
+    return true;
   }
 
   // Create an array with the default value.
-  static Array *create(Storage *storage, uint32_t storage_node_id,
+  bool create(Storage *storage, uint32_t storage_node_id,
                        ValueArg default_value) {
-    std::unique_ptr<Array> array(new (std::nothrow) Array);
-    if (!array) {
-      GRNXX_ERROR() << "new grnxx::Array failed: PAGE_SIZE = " << PAGE_SIZE
-                    << ", TABLE_SIZE = " << TABLE_SIZE;
-      return nullptr;
+    std::unique_ptr<Array2D> impl(
+        Array2D::create(storage, storage_node_id, sizeof(Value), PAGE_SIZE,
+                        TABLE_SIZE, &default_value, fill_page));
+    if (!impl) {
+      return false;
     }
-    if (!array->impl_.create(storage, storage_node_id, sizeof(Value),
-                             PAGE_SIZE, TABLE_SIZE,
-                             &default_value, fill_page)) {
-      return nullptr;
-    }
-    return array.release();
+    impl_ = std::move(impl);
+    return true;
   }
 
   // Open an array.
-  static Array *open(Storage *storage, uint32_t storage_node_id) {
-    std::unique_ptr<Array> array(new (std::nothrow) Array);
-    if (!array) {
-      GRNXX_ERROR() << "new grnxx::Array failed: PAGE_SIZE = " << PAGE_SIZE
-                    << ", TABLE_SIZE = " << TABLE_SIZE;
-      return nullptr;
+  bool open(Storage *storage, uint32_t storage_node_id) {
+    std::unique_ptr<Array2D> impl(
+        Array2D::open(storage, storage_node_id, sizeof(Value), PAGE_SIZE,
+                      TABLE_SIZE, fill_page));
+    if (!impl) {
+      return false;
     }
-    if (!array->impl_.open(storage, storage_node_id, sizeof(Value),
-                           PAGE_SIZE, TABLE_SIZE)) {
-      return nullptr;
-    }
-    return array.release();
+    impl_ = std::move(impl);
+    return true;
   }
 
   // Unlink an array.
@@ -250,14 +242,14 @@ class Array<T, PAGE_SIZE, TABLE_SIZE, 1> {
 
   // Return the storage node ID.
   uint32_t storage_node_id() const {
-    return impl_.storage_node_id();
+    return impl_->storage_node_id();
   }
 
   // Get a reference to a value.
   // This function throws an exception on failure.
   Value &operator[](uint64_t value_id) {
     Value * const page =
-        impl_.get_page<Value, TABLE_SIZE>(value_id / PAGE_SIZE);
+        impl_->get_page<Value, TABLE_SIZE>(value_id / PAGE_SIZE);
     return page[value_id % PAGE_SIZE];
   }
 
@@ -284,13 +276,11 @@ class Array<T, PAGE_SIZE, TABLE_SIZE, 1> {
 
   // Get a page and return its starting address on success.
   Value *get_page(uint64_t page_id) {
-    return impl_.get_page_nothrow<Value, TABLE_SIZE>(page_id);
+    return impl_->get_page_nothrow<Value, TABLE_SIZE>(page_id);
   }
 
  private:
-  Array2D impl_;
-
-  Array() : impl_() {}
+  std::unique_ptr<Array2D> impl_;
 
   // This function is used to fill a new page with the default value.
   static void fill_page(void *page, const void *value) {
@@ -317,56 +307,50 @@ class Array {
   using ValueArg = typename Traits<T>::ArgumentType;
 
  public:
+  Array() : impl_() {}
   ~Array() {}
 
+  // Return true iff the array is valid.
+  explicit operator bool() const {
+    return static_cast<bool>(impl_);
+  }
+
   // Create an array.
-  static Array *create(Storage *storage, uint32_t storage_node_id) {
-    std::unique_ptr<Array> array(new (std::nothrow) Array);
-    if (!array) {
-      GRNXX_ERROR() << "new grnxx::Array failed: PAGE_SIZE = " << PAGE_SIZE
-                    << ", TABLE_SIZE = " << TABLE_SIZE
-                    << ", SECONDARY_TABLE_SIZE = " << SECONDARY_TABLE_SIZE;
-      return nullptr;
+  bool create(Storage *storage, uint32_t storage_node_id) {
+    std::unique_ptr<Array3D> impl(
+        Array3D::create(storage, storage_node_id, sizeof(Value), PAGE_SIZE,
+                        TABLE_SIZE, SECONDARY_TABLE_SIZE));
+    if (!impl) {
+      return false;
     }
-    if (!array->impl_.create(storage, storage_node_id, sizeof(Value),
-                             PAGE_SIZE, TABLE_SIZE, SECONDARY_TABLE_SIZE)) {
-      return nullptr;
-    }
-    return array.release();
+    impl_ = std::move(impl);
+    return true;
   }
 
   // Create an array with the default value.
-  static Array *create(Storage *storage, uint32_t storage_node_id,
+  bool create(Storage *storage, uint32_t storage_node_id,
                        ValueArg default_value) {
-    std::unique_ptr<Array> array(new (std::nothrow) Array);
-    if (!array) {
-      GRNXX_ERROR() << "new grnxx::Array failed: PAGE_SIZE = " << PAGE_SIZE
-                    << ", TABLE_SIZE = " << TABLE_SIZE
-                    << ", SECONDARY_TABLE_SIZE = " << SECONDARY_TABLE_SIZE;
-      return nullptr;
+    std::unique_ptr<Array3D> impl(
+        Array3D::create(storage, storage_node_id, sizeof(Value), PAGE_SIZE,
+                        TABLE_SIZE, SECONDARY_TABLE_SIZE, &default_value,
+                        fill_page));
+    if (!impl) {
+      return false;
     }
-    if (!array->impl_.create(storage, storage_node_id, sizeof(Value),
-                             PAGE_SIZE, TABLE_SIZE, SECONDARY_TABLE_SIZE,
-                             &default_value, fill_page)) {
-      return nullptr;
-    }
-    return array.release();
+    impl_ = std::move(impl);
+    return true;
   }
 
   // Open an array.
-  static Array *open(Storage *storage, uint32_t storage_node_id) {
-    std::unique_ptr<Array> array(new (std::nothrow) Array);
-    if (!array) {
-      GRNXX_ERROR() << "new grnxx::Array failed: PAGE_SIZE = " << PAGE_SIZE
-                    << ", TABLE_SIZE = " << TABLE_SIZE
-                    << ", SECONDARY_TABLE_SIZE = " << SECONDARY_TABLE_SIZE;
-      return nullptr;
+  bool open(Storage *storage, uint32_t storage_node_id) {
+    std::unique_ptr<Array3D> impl(
+        Array3D::open(storage, storage_node_id, sizeof(Value), PAGE_SIZE,
+                      TABLE_SIZE, SECONDARY_TABLE_SIZE, fill_page));
+    if (!impl) {
+      return false;
     }
-    if (!array->impl_.open(storage, storage_node_id, sizeof(Value),
-                           PAGE_SIZE, TABLE_SIZE, SECONDARY_TABLE_SIZE)) {
-      return nullptr;
-    }
-    return array.release();
+    impl_ = std::move(impl);
+    return true;
   }
 
   // Unlink an array.
@@ -394,15 +378,15 @@ class Array {
 
   // Return the storage node ID.
   uint32_t storage_node_id() const {
-    return impl_.storage_node_id();
+    return impl_->storage_node_id();
   }
 
   // Get a reference to a value.
   // This function throws an exception on failure.
   Value &operator[](uint64_t value_id) {
     Value * const page =
-        impl_.get_page<Value, TABLE_SIZE,
-                       SECONDARY_TABLE_SIZE>(value_id / PAGE_SIZE);
+        impl_->get_page<Value, TABLE_SIZE,
+                        SECONDARY_TABLE_SIZE>(value_id / PAGE_SIZE);
     return page[value_id % PAGE_SIZE];
   }
 
@@ -429,14 +413,12 @@ class Array {
 
   // Get a page and return its starting address on success.
   Value *get_page(uint64_t page_id) {
-    return impl_.get_page_nothrow<Value, TABLE_SIZE,
-                                  SECONDARY_TABLE_SIZE>(page_id);
+    return impl_->get_page_nothrow<Value, TABLE_SIZE,
+                                   SECONDARY_TABLE_SIZE>(page_id);
   }
 
  private:
-  Array3D impl_;
-
-  Array() : impl_() {}
+  std::unique_ptr<Array3D> impl_;
 
   // This function is used to fill a new page with the default value.
   static void fill_page(void *page, const void *value) {

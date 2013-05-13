@@ -33,13 +33,15 @@ class Array2D {
   Array2D();
   ~Array2D();
 
-  bool create(Storage *storage, uint32_t storage_node_id,
-              uint64_t value_size, uint64_t page_size, uint64_t table_size,
-              const void *default_value = nullptr,
-              FillPage fill_page = nullptr);
-  bool open(Storage *storage, uint32_t storage_node_id,
-            uint64_t value_size, uint64_t page_size, uint64_t table_size,
-            FillPage fill_page);
+  static Array2D *create(Storage *storage, uint32_t storage_node_id,
+                         uint64_t value_size, uint64_t page_size,
+                         uint64_t table_size,
+                         const void *default_value = nullptr,
+                         FillPage fill_page = nullptr);
+
+  static Array2D *open(Storage *storage, uint32_t storage_node_id,
+                       uint64_t value_size, uint64_t page_size,
+                       uint64_t table_size, FillPage fill_page);
 
   static bool unlink(Storage *storage, uint32_t storage_node_id,
                      uint64_t value_size, uint64_t page_size,
@@ -76,6 +78,14 @@ class Array2D {
   uint32_t *table_;
   std::unique_ptr<void *[]> table_cache_;
   Mutex mutex_;
+
+  bool create_array(Storage *storage, uint32_t storage_node_id,
+                    uint64_t value_size, uint64_t page_size,
+                    uint64_t table_size,
+                    const void *default_value, FillPage fill_page);
+  bool open_array(Storage *storage, uint32_t storage_node_id,
+                  uint64_t value_size, uint64_t page_size, uint64_t table_size,
+                  FillPage fill_page);
 
   void initialize_page(uint64_t page_id);
   bool initialize_page_nothrow(uint64_t page_id);

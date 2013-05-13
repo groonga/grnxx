@@ -29,34 +29,34 @@ void test_array1d() {
   GRNXX_NOTICE() << __PRETTY_FUNCTION__;
 
   std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
-  std::unique_ptr<grnxx::Array<int, PAGE_SIZE>> array;
+  grnxx::Array<int, PAGE_SIZE> array;
 
-  array.reset(array->create(storage.get(), grnxx::STORAGE_ROOT_NODE_ID));
+  assert(array.create(storage.get(), grnxx::STORAGE_ROOT_NODE_ID));
   assert(array);
-  assert(array->page_size() == PAGE_SIZE);
-  assert(array->table_size() == 1);
-  assert(array->secondary_table_size() == 1);
-  assert(array->size() == SIZE);
+  assert(array.page_size() == PAGE_SIZE);
+  assert(array.table_size() == 1);
+  assert(array.secondary_table_size() == 1);
+  assert(array.size() == SIZE);
   for (std::uint64_t i = 0; i < SIZE; ++i) {
-    assert(array->set(i, static_cast<int>(i)));
+    assert(array.set(i, static_cast<int>(i)));
   }
   for (std::uint64_t i = 0; i < SIZE; ++i) {
     int value;
-    assert(array->get(i, &value));
+    assert(array.get(i, &value));
     assert(value == static_cast<int>(i));
   }
   for (std::uint64_t i = 0; i < (SIZE / PAGE_SIZE); ++i) {
-    assert(array->get_page(i));
+    assert(array.get_page(i));
   }
 
-  array.reset(array->create(storage.get(), grnxx::STORAGE_ROOT_NODE_ID, 1));
+  assert(array.create(storage.get(), grnxx::STORAGE_ROOT_NODE_ID, 1));
   assert(array);
   for (std::uint64_t i = 0; i < SIZE; ++i) {
-    assert((*array)[i] == 1);
-    (*array)[i] = static_cast<int>(i);
+    assert(array[i] == 1);
+    array[i] = static_cast<int>(i);
   }
   for (std::uint64_t i = 0; i < SIZE; ++i) {
-    assert((*array)[i] == static_cast<int>(i));
+    assert(array[i] == static_cast<int>(i));
   }
 }
 
@@ -68,34 +68,34 @@ void test_array2d() {
   GRNXX_NOTICE() << __PRETTY_FUNCTION__;
 
   std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
-  std::unique_ptr<grnxx::Array<int, PAGE_SIZE, TABLE_SIZE>> array;
+  grnxx::Array<int, PAGE_SIZE, TABLE_SIZE> array;
 
-  array.reset(array->create(storage.get(), grnxx::STORAGE_ROOT_NODE_ID));
+  assert(array.create(storage.get(), grnxx::STORAGE_ROOT_NODE_ID));
   assert(array);
-  assert(array->page_size() == PAGE_SIZE);
-  assert(array->table_size() == TABLE_SIZE);
-  assert(array->secondary_table_size() == 1);
-  assert(array->size() == SIZE);
+  assert(array.page_size() == PAGE_SIZE);
+  assert(array.table_size() == TABLE_SIZE);
+  assert(array.secondary_table_size() == 1);
+  assert(array.size() == SIZE);
   for (std::uint64_t i = 0; i < SIZE; ++i) {
-    assert(array->set(i, static_cast<int>(i)));
+    assert(array.set(i, static_cast<int>(i)));
   }
   for (std::uint64_t i = 0; i < SIZE; ++i) {
     int value;
-    assert(array->get(i, &value));
+    assert(array.get(i, &value));
     assert(value == static_cast<int>(i));
   }
   for (std::uint64_t i = 0; i < (SIZE / PAGE_SIZE); ++i) {
-    assert(array->get_page(i));
+    assert(array.get_page(i));
   }
 
-  array.reset(array->create(storage.get(), grnxx::STORAGE_ROOT_NODE_ID, 1));
+  assert(array.create(storage.get(), grnxx::STORAGE_ROOT_NODE_ID, 1));
   assert(array);
   for (std::uint64_t i = 0; i < SIZE; ++i) {
-    assert((*array)[i] == 1);
-    (*array)[i] = static_cast<int>(i);
+    assert(array[i] == 1);
+    array[i] = static_cast<int>(i);
   }
   for (std::uint64_t i = 0; i < SIZE; ++i) {
-    assert((*array)[i] == static_cast<int>(i));
+    assert(array[i] == static_cast<int>(i));
   }
 }
 
@@ -109,35 +109,34 @@ void test_array3d() {
   GRNXX_NOTICE() << __PRETTY_FUNCTION__;
 
   std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
-  std::unique_ptr<grnxx::Array<int, PAGE_SIZE, TABLE_SIZE,
-                               SECONDARY_TABLE_SIZE>> array;
+  grnxx::Array<int, PAGE_SIZE, TABLE_SIZE, SECONDARY_TABLE_SIZE> array;
 
-  array.reset(array->create(storage.get(), grnxx::STORAGE_ROOT_NODE_ID));
+  assert(array.create(storage.get(), grnxx::STORAGE_ROOT_NODE_ID));
   assert(array);
-  assert(array->page_size() == PAGE_SIZE);
-  assert(array->table_size() == TABLE_SIZE);
-  assert(array->secondary_table_size() == SECONDARY_TABLE_SIZE);
-  assert(array->size() == SIZE);
+  assert(array.page_size() == PAGE_SIZE);
+  assert(array.table_size() == TABLE_SIZE);
+  assert(array.secondary_table_size() == SECONDARY_TABLE_SIZE);
+  assert(array.size() == SIZE);
   for (std::uint64_t i = 0; i < SIZE; ++i) {
-    assert(array->set(i, static_cast<int>(i)));
+    assert(array.set(i, static_cast<int>(i)));
   }
   for (std::uint64_t i = 0; i < SIZE; ++i) {
     int value;
-    assert(array->get(i, &value));
+    assert(array.get(i, &value));
     assert(value == static_cast<int>(i));
   }
   for (std::uint64_t i = 0; i < (SIZE / PAGE_SIZE); ++i) {
-    assert(array->get_page(i));
+    assert(array.get_page(i));
   }
 
-  array.reset(array->create(storage.get(), grnxx::STORAGE_ROOT_NODE_ID, 1));
+  assert(array.create(storage.get(), grnxx::STORAGE_ROOT_NODE_ID, 1));
   assert(array);
   for (std::uint64_t i = 0; i < SIZE; ++i) {
-    assert((*array)[i] == 1);
-    (*array)[i] = static_cast<int>(i);
+    assert(array[i] == 1);
+    array[i] = static_cast<int>(i);
   }
   for (std::uint64_t i = 0; i < SIZE; ++i) {
-    assert((*array)[i] == static_cast<int>(i));
+    assert(array[i] == static_cast<int>(i));
   }
 }
 

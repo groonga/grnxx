@@ -32,12 +32,13 @@ class Array1D {
   Array1D();
   ~Array1D();
 
-  bool create(Storage *storage, uint32_t storage_node_id,
-              uint64_t value_size, uint64_t page_size,
-              const void *default_value = nullptr,
-              FillPage fill_page = nullptr);
-  bool open(Storage *storage, uint32_t storage_node_id,
-            uint64_t value_size, uint64_t page_size);
+  static Array1D *create(Storage *storage, uint32_t storage_node_id,
+                         uint64_t value_size, uint64_t page_size,
+                         const void *default_value = nullptr,
+                         FillPage fill_page = nullptr);
+
+  static Array1D *open(Storage *storage, uint32_t storage_node_id,
+                       uint64_t value_size, uint64_t page_size);
 
   static bool unlink(Storage *storage, uint32_t storage_node_id,
                      uint64_t value_size, uint64_t page_size);
@@ -55,6 +56,13 @@ class Array1D {
   StorageNode storage_node_;
   Array1DHeader *header_;
   void *page_;
+
+  bool create_array(Storage *storage, uint32_t storage_node_id,
+                    uint64_t value_size, uint64_t page_size,
+                    const void *default_value, FillPage fill_page);
+  bool open_array(Storage *storage, uint32_t storage_node_id,
+                  uint64_t value_size, uint64_t page_size);
+
 };
 
 }  // namespace grnxx
