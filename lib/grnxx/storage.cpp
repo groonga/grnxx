@@ -81,7 +81,7 @@ StorageOptions::StorageOptions()
       max_num_files(MAX_NUM_FILES_DEFAULT),
       root_size(ROOT_SIZE_DEFAULT) {}
 
-bool StorageOptions::is_valid() const {
+StorageOptions::operator bool() const {
   if ((max_file_size < MAX_FILE_SIZE_LOWER_LIMIT) ||
       (max_file_size > MAX_FILE_SIZE_UPPER_LIMIT)) {
     return false;

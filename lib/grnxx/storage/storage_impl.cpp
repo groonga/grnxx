@@ -88,7 +88,7 @@ StorageImpl::~StorageImpl() {}
 
 StorageImpl *StorageImpl::create(const char *path, StorageFlags flags,
                                  const StorageOptions &options) {
-  if (!options.is_valid()) {
+  if (!options) {
     GRNXX_ERROR() << "invalid argument: options = " << options;
     return nullptr;
   }
@@ -131,7 +131,7 @@ StorageImpl *StorageImpl::open_or_create(const char *path, StorageFlags flags,
     GRNXX_ERROR() << "invalid argument: path = nullptr";
     return nullptr;
   }
-  if (!options.is_valid()) {
+  if (!options) {
     GRNXX_ERROR() << "invalid argument: options = " << options;
     return nullptr;
   }
