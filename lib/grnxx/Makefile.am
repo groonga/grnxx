@@ -1,5 +1,6 @@
 SUBDIRS =				\
 	alpha				\
+	array				\
 	charset				\
 	db				\
 	io				\
@@ -11,6 +12,7 @@ lib_LTLIBRARIES = libgrnxx.la
 
 libgrnxx_la_LIBADD =			\
 	alpha/libgrnxx_alpha.la		\
+	array/libgrnxx_array.la		\
 	charset/libgrnxx_charset.la	\
 	db/libgrnxx_db.la		\
 	io/libgrnxx_io.la		\
@@ -39,6 +41,7 @@ libgrnxx_la_SOURCES =			\
 
 libgrnxx_includedir = ${includedir}/grnxx
 libgrnxx_include_HEADERS =		\
+	array.hpp			\
 	backtrace.hpp			\
 	basic.hpp			\
 	charset.hpp			\
