@@ -29,6 +29,7 @@ stamp-h1
 temp/
 test/test_alpha_double_array
 test/test_alpha_map
+test/test_array
 test/test_backtrace
 test/test_charset
 test/test_db_blob_vector
