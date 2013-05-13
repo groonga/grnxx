@@ -22,12 +22,10 @@
 
 #include <cstring>
 #include <memory>
-#include <new>
 
 #include "grnxx/array/array_1d.hpp"
 #include "grnxx/array/array_2d.hpp"
 #include "grnxx/array/array_3d.hpp"
-#include "grnxx/logger.hpp"
 #include "grnxx/traits.hpp"
 
 namespace grnxx {
@@ -49,10 +47,10 @@ template <typename T, uint64_t PAGE_SIZE>
 class Array<T, PAGE_SIZE, 1, 1> {
   static_assert(PAGE_SIZE > 0, "PAGE_SIZE <= 0");
 
+ public:
   using Value = typename Traits<T>::Type;
   using ValueArg = typename Traits<T>::ArgumentType;
 
- public:
   Array() : impl_() {}
   ~Array() {}
 
@@ -168,10 +166,10 @@ class Array<T, PAGE_SIZE, TABLE_SIZE, 1> {
                 "PAGE_SIZE must be a power of two");
   static_assert(TABLE_SIZE > 0, "TABLE_SIZE <= 0");
 
+ public:
   using Value = typename Traits<T>::Type;
   using ValueArg = typename Traits<T>::ArgumentType;
 
- public:
   Array() : impl_() {}
   ~Array() {}
 
@@ -303,10 +301,10 @@ class Array {
                 "TABLE_SIZE must be a power of two");
   static_assert(SECONDARY_TABLE_SIZE > 0, "SECONDARY_TABLE_SIZE <= 0");
 
+ public:
   using Value = typename Traits<T>::Type;
   using ValueArg = typename Traits<T>::ArgumentType;
 
- public:
   Array() : impl_() {}
   ~Array() {}
 
