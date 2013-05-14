@@ -17,6 +17,8 @@
 */
 #include "grnxx/storage/header.hpp"
 
+#include <cstring>
+
 #include "grnxx/version.h"
 #include "grnxx/storage.hpp"
 

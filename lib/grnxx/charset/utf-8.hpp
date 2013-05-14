@@ -18,7 +18,10 @@
 #ifndef GRNXX_CHARSET_UTF_8_HPP
 #define GRNXX_CHARSET_UTF_8_HPP
 
+#include "grnxx/features.hpp"
+
 #include "grnxx/charset.hpp"
+#include "grnxx/slice.hpp"
 
 namespace grnxx {
 namespace charset {

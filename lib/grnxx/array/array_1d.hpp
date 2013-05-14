@@ -18,8 +18,9 @@
 #ifndef GRNXX_ARRAY_ARRAY_1D_HPP
 #define GRNXX_ARRAY_ARRAY_1D_HPP
 
+#include "grnxx/features.hpp"
 #include "grnxx/storage.hpp"
-#include "grnxx/traits.hpp"
+#include "grnxx/types.hpp"
 
 namespace grnxx {
 

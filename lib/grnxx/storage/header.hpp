@@ -18,8 +18,10 @@
 #ifndef GRNXX_STORAGE_HEADER_HPP
 #define GRNXX_STORAGE_HEADER_HPP
 
-#include "grnxx/basic.hpp"
+#include "grnxx/features.hpp"
+
 #include "grnxx/mutex.hpp"
+#include "grnxx/types.hpp"
 
 namespace grnxx {
 namespace storage {

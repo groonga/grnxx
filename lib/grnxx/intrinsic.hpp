@@ -18,7 +18,7 @@
 #ifndef GRNXX_INTRINSIC_HPP
 #define GRNXX_INTRINSIC_HPP
 
-#include "grnxx/basic.hpp"
+#include "grnxx/features.hpp"
 
 #ifdef GRNXX_MSC
 # include <intrin.h>
@@ -39,6 +39,10 @@
 #  pragma intrinsic(_InterlockedExchangeAdd64)
 # endif  // GRNXX_MSC64
 #endif  // GRNXX_MSC
+
+#include <type_traits>
+
+#include "grnxx/types.hpp"
 
 namespace grnxx {
 

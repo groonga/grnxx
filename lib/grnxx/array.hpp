@@ -27,6 +27,7 @@
 #include "grnxx/array/array_2d.hpp"
 #include "grnxx/array/array_3d.hpp"
 #include "grnxx/traits.hpp"
+#include "grnxx/types.hpp"
 
 namespace grnxx {
 

@@ -18,8 +18,10 @@
 #ifndef GRNXX_STORAGE_CHUNK_HPP
 #define GRNXX_STORAGE_CHUNK_HPP
 
-#include "grnxx/basic.hpp"
+#include "grnxx/features.hpp"
+
 #include "grnxx/flags_impl.hpp"
+#include "grnxx/types.hpp"
 
 namespace grnxx {
 
@@ -54,9 +56,9 @@ class Chunk {
   // create an anonymous memory mapping.
   // The available flag is CHUNK_HUGE_TLB.
   static Chunk *create(File *file,
-                      int64_t offset = 0,
-                      int64_t size = -1,
-                      ChunkFlags flags = CHUNK_DEFAULT);
+                       int64_t offset = 0,
+                       int64_t size = -1,
+                       ChunkFlags flags = CHUNK_DEFAULT);
 
   // Flush modified pages.
   virtual bool sync(int64_t offset = 0, int64_t size = -1) = 0;

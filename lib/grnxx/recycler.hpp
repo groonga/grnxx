@@ -37,8 +37,10 @@ class Recycler {
  public:
   Recycler() : count_(), stamp_pair_(), frozen_duration_(), times_() {}
   explicit Recycler(Duration frozen_duration)
-    : count_(0), stamp_pair_{ 0, 0 },
-      frozen_duration_(frozen_duration), times_() {
+      : count_(0),
+        stamp_pair_{ 0, 0 },
+        frozen_duration_(frozen_duration),
+        times_() {
     times_[0] = Time(0);
     for (uint16_t i = 1; i < RECYCLER_STAMP_BUF_SIZE; ++i) {
       times_[i] = Time(RECYCLER_FUTURE_TIME);

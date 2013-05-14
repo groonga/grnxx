@@ -24,7 +24,7 @@
 # include <windows.h>
 #endif  // GRNXX_WINDOWS
 
-#include <ostream>
+#include <memory>
 
 #include "grnxx/string_builder.hpp"
 
@@ -74,13 +74,6 @@ StringBuilder &Error::write_to(StringBuilder &builder) const {
       return builder << "(undefined)";
     }
   }
-}
-
-std::ostream &operator<<(std::ostream &stream, const Error &error) {
-  char buf[64];
-  StringBuilder builder(buf, STRING_BUILDER_AUTO_RESIZE);
-  builder << error;
-  return stream.write(builder.c_str(), builder.length());
 }
 
 }  // namespace grnxx

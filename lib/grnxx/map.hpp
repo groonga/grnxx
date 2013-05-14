@@ -121,10 +121,6 @@ inline bool operator!=(const MapKey &lhs, const Slice &rhs) {
   return lhs.slice() != rhs;
 }
 
-inline std::ostream &operator<<(std::ostream &stream, const MapKey &key) {
-  return stream << key.slice();
-}
-
 class MapCursor {
  public:
   MapCursor();

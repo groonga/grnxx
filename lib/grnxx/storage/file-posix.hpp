@@ -18,9 +18,13 @@
 #ifndef GRNXX_STORAGE_FILE_POSIX_HPP
 #define GRNXX_STORAGE_FILE_POSIX_HPP
 
-#include "grnxx/storage/file.hpp"
+#include "grnxx/features.hpp"
 
 #ifndef GRNXX_WINDOWS
+
+#include <memory>
+
+#include "grnxx/storage/file.hpp"
 
 namespace grnxx {
 namespace storage {

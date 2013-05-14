@@ -18,8 +18,10 @@
 #ifndef GRNXX_STRING_FORMAT_HPP
 #define GRNXX_STRING_FORMAT_HPP
 
-#include "grnxx/basic.hpp"
+#include "grnxx/features.hpp"
+
 #include "grnxx/string_builder.hpp"
+#include "grnxx/types.hpp"
 
 namespace grnxx {
 
@@ -34,7 +36,10 @@ class StringFormatAlignment {
  public:
   constexpr StringFormatAlignment(const T &value, size_t width, int pad,
                                   StringFormatAlignmentAttribute attribute)
-    : value_(value), width_(width), pad_(pad), attribute_(attribute) {}
+      : value_(value),
+        width_(width),
+        pad_(pad),
+        attribute_(attribute) {}
 
   constexpr const T &value() {
     return value_;

@@ -18,7 +18,8 @@
 #ifndef GRNXX_TIME_STOPWATCH_HPP
 #define GRNXX_TIME_STOPWATCH_HPP
 
-#include "grnxx/basic.hpp"
+#include "grnxx/features.hpp"
+
 #include "grnxx/time/duration.hpp"
 
 namespace grnxx {

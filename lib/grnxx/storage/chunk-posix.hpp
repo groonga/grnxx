@@ -18,9 +18,11 @@
 #ifndef GRNXX_STORAGE_CHUNK_POSIX_HPP
 #define GRNXX_STORAGE_CHUNK_POSIX_HPP
 
-#include "grnxx/storage/chunk.hpp"
+#include "grnxx/features.hpp"
 
 #ifndef GRNXX_WINDOWS
+
+#include "grnxx/storage/chunk.hpp"
 
 namespace grnxx {
 namespace storage {

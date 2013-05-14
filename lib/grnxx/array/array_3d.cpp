@@ -23,7 +23,6 @@
 #include "grnxx/exception.hpp"
 #include "grnxx/lock.hpp"
 #include "grnxx/logger.hpp"
-#include "grnxx/mutex.hpp"
 
 namespace grnxx {
 

@@ -35,12 +35,12 @@ constexpr StringBuilderFlags STRING_BUILDER_AUTO_RESIZE =
 class StringBuilder {
  public:
   explicit StringBuilder(StringBuilderFlags flags = StringBuilderFlags::none())
-    : buf_(),
-      begin_(nullptr),
-      end_(nullptr),
-      ptr_(nullptr),
-      flags_(flags),
-      failed_(false) {}
+      : buf_(),
+        begin_(nullptr),
+        end_(nullptr),
+        ptr_(nullptr),
+        flags_(flags),
+        failed_(false) {}
 
   explicit StringBuilder(size_t size,
                          StringBuilderFlags flags = StringBuilderFlags::none());
@@ -48,35 +48,35 @@ class StringBuilder {
   template <size_t T>
   explicit StringBuilder(char (&buf)[T],
                          StringBuilderFlags flags = StringBuilderFlags::none())
-    : buf_(),
-      begin_(buf),
-      end_(buf + T - 1),
-      ptr_(buf),
-      flags_(flags),
-      failed_(false) {
+      : buf_(),
+        begin_(buf),
+        end_(buf + T - 1),
+        ptr_(buf),
+        flags_(flags),
+        failed_(false) {
     *ptr_ = '\0';
   }
 
   StringBuilder(char *buf, size_t size,
                 StringBuilderFlags flags = StringBuilderFlags::none())
-    : buf_(),
-      begin_(buf),
-      end_(buf + size - 1),
-      ptr_(buf),
-      flags_(flags),
-      failed_(false) {
+      : buf_(),
+        begin_(buf),
+        end_(buf + size - 1),
+        ptr_(buf),
+        flags_(flags),
+        failed_(false) {
     *ptr_ = '\0';
   }
 
   ~StringBuilder() {}
 
   StringBuilder(StringBuilder &&rhs)
-    : buf_(std::move(rhs.buf_)),
-      begin_(std::move(rhs.begin_)),
-      end_(std::move(rhs.end_)),
-      ptr_(std::move(rhs.ptr_)),
-      flags_(std::move(rhs.flags_)),
-      failed_(std::move(rhs.failed_)) {}
+      : buf_(std::move(rhs.buf_)),
+        begin_(std::move(rhs.begin_)),
+        end_(std::move(rhs.end_)),
+        ptr_(std::move(rhs.ptr_)),
+        flags_(std::move(rhs.flags_)),
+        failed_(std::move(rhs.failed_)) {}
 
   StringBuilder &operator=(StringBuilder &&rhs) {
     buf_ = std::move(rhs.buf_);
@@ -292,8 +292,6 @@ inline StringBuilder &operator<<(StringBuilder &builder,
                                  const std::exception &exception) {
   return builder << "{ what = " << exception.what() << " }";
 }
-
-std::ostream &operator<<(std::ostream &stream, const StringBuilder &builder);
 
 }  // namespace grnxx
 

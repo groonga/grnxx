@@ -18,14 +18,14 @@
 #ifndef GRNXX_LOGGER_HPP
 #define GRNXX_LOGGER_HPP
 
-#include "grnxx/basic.hpp"
+#include "grnxx/features.hpp"
+
 #include "grnxx/string_builder.hpp"
 
 #define GRNXX_ERROR()   GRNXX_LOGGER(::grnxx::ERROR_LOGGER)
 #define GRNXX_WARNING() GRNXX_LOGGER(::grnxx::WARNING_LOGGER)
 #define GRNXX_NOTICE()  GRNXX_LOGGER(::grnxx::NOTICE_LOGGER)
 
-// TODO: This level check should be inline.
 #define GRNXX_LOGGER(level)\
   ((level) > ::grnxx::Logger::max_level()) ? (void)0 :\
   ::grnxx::Logger::Voidify() &\

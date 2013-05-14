@@ -18,10 +18,12 @@
 #ifndef GRNXX_BACKTRACE_HPP
 #define GRNXX_BACKTRACE_HPP
 
+#include "grnxx/features.hpp"
+
 #include <string>
 #include <vector>
 
-#include "grnxx/basic.hpp"
+#include "grnxx/types.hpp"
 
 namespace grnxx {
 
@@ -47,13 +49,6 @@ class Backtrace {
   // format. 'skip_count' specfies the number of function calls to be skipped.
   static bool pretty_backtrace(int skip_count,
                                std::vector<std::string> *entries);
-
- private:
-  Backtrace();
-  ~Backtrace();
-
-  Backtrace(const Backtrace &);
-  Backtrace &operator=(const Backtrace &);
 };
 
 }  // namespace grnxx

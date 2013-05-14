@@ -18,17 +18,16 @@
 #include "grnxx/string_builder.hpp"
 
 #include <cmath>
-#include <ostream>
 
 namespace grnxx {
 
 StringBuilder::StringBuilder(size_t size, StringBuilderFlags flags)
-  : buf_((size != 0) ? (new (std::nothrow) char[size]) : nullptr),
-    begin_(buf_.get()),
-    end_(buf_ ? (begin_ + size - 1) : nullptr),
-    ptr_(begin_),
-    flags_(flags),
-    failed_(!buf_) {
+    : buf_((size != 0) ? (new (std::nothrow) char[size]) : nullptr),
+      begin_(buf_.get()),
+      end_(buf_ ? (begin_ + size - 1) : nullptr),
+      ptr_(begin_),
+      flags_(flags),
+      failed_(!buf_) {
   if (buf_) {
     *ptr_ = '\0';
   }
@@ -170,10 +169,6 @@ StringBuilder &operator<<(StringBuilder &builder, const void *value) {
     address <<= 4;
   }
   return builder.append(buf, sizeof(buf));
-}
-
-std::ostream &operator<<(std::ostream &stream, const StringBuilder &builder) {
-  return stream.write(builder.c_str(), builder.length());
 }
 
 }  // namespace grnxx

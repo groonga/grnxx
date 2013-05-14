@@ -18,6 +18,8 @@
 #ifndef GRNXX_IO_FILE_HPP
 #define GRNXX_IO_FILE_HPP
 
+#include <iosfwd>
+
 #include "grnxx/flags_impl.hpp"
 #include "grnxx/string.hpp"
 #include "grnxx/time/duration.hpp"

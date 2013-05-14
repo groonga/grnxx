@@ -17,6 +17,10 @@
 */
 #include "grnxx/storage/storage_impl.hpp"
 
+#include <cstdio>
+#include <cstring>
+#include <new>
+
 #include "grnxx/intrinsic.hpp"
 #include "grnxx/lock.hpp"
 #include "grnxx/logger.hpp"

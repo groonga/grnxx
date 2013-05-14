@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013  Brazil, Inc.
+  Copyright (C) 2012-2013  Brazil, Inc.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -15,34 +15,33 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#ifndef GRNXX_TIME_BROKEN_DOWN_TIME_HPP
-#define GRNXX_TIME_BROKEN_DOWN_TIME_HPP
+#ifndef GRNXX_STDINT_HPP
+#define GRNXX_STDINT_HPP
 
 #include "grnxx/features.hpp"
 
+#include <cstddef>
+#include <cstdint>
+
 namespace grnxx {
 
-class StringBuilder;
+using std::nullptr_t;
 
-struct BrokenDownTime {
-  int usec;   // Microseconds.
-  int sec;    // Seconds.
-  int min;    // Minutes.
-  int hour;   // Hours.
-  int mday;   // Day of the month.
-  int mon;    // Month.
-  int year;   // Year.
-  int wday;   // Day of the week.
-  int yday;   // Day in the year.
-  int isdst;  // Daylight saving time.
+using std::size_t;
 
-  static constexpr BrokenDownTime invalid_value() {
-    return BrokenDownTime{};
-  }
-};
+using std::int8_t;
+using std::int16_t;
+using std::int32_t;
+using std::int64_t;
 
-StringBuilder &operator<<(StringBuilder &builder, const BrokenDownTime &time);
+using std::uint8_t;
+using std::uint16_t;
+using std::uint32_t;
+using std::uint64_t;
+
+using std::intptr_t;
+using std::uintptr_t;
 
 }  // namespace grnxx
 
-#endif  // GRNXX_TIME_BROKEN_DOWN_TIME_HPP
+#endif  // GRNXX_STDINT_HPP

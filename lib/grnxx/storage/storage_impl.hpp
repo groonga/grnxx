@@ -18,9 +18,15 @@
 #ifndef GRNXX_STORAGE_STORAGE_IMPL_HPP
 #define GRNXX_STORAGE_STORAGE_IMPL_HPP
 
+#include "grnxx/features.hpp"
+
+#include <memory>
+
 #include "grnxx/mutex.hpp"
 #include "grnxx/storage.hpp"
+#include "grnxx/time/duration.hpp"
 #include "grnxx/time/periodic_clock.hpp"
+#include "grnxx/time/time.hpp"
 
 namespace grnxx {
 namespace storage {
@@ -29,6 +35,7 @@ struct Header;
 class File;
 class Chunk;
 struct ChunkIndex;
+struct NodeHeader;
 
 class StorageImpl : public Storage {
  public:

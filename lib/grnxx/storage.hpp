@@ -18,9 +18,12 @@
 #ifndef GRNXX_STORAGE_HPP
 #define GRNXX_STORAGE_HPP
 
-#include "grnxx/basic.hpp"
+#include "grnxx/features.hpp"
+
 #include "grnxx/flags_impl.hpp"
+#include "grnxx/time/duration.hpp"
 #include "grnxx/time/time.hpp"
+#include "grnxx/types.hpp"
 
 namespace grnxx {
 namespace storage {
@@ -91,7 +94,7 @@ StringBuilder &operator<<(StringBuilder &builder,
 class StorageNode {
  public:
   StorageNode() = default;
-  explicit StorageNode(std::nullptr_t) : header_(nullptr), body_(nullptr) {}
+  explicit StorageNode(nullptr_t) : header_(nullptr), body_(nullptr) {}
   StorageNode(storage::NodeHeader *header, void *body)
       : header_(header),
         body_(body) {}

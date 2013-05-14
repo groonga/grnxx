@@ -18,7 +18,9 @@
 #ifndef GRNXX_FLAGS_IMPL_HPP
 #define GRNXX_FLAGS_IMPL_HPP
 
-#include "grnxx/basic.hpp"
+#include "grnxx/features.hpp"
+
+#include "grnxx/types.hpp"
 
 namespace grnxx {
 
@@ -67,6 +69,7 @@ class FlagsImpl {
     return *this;
   }
 
+  // TODO: To be removed.
   static constexpr FlagsImpl none() {
     return FlagsImpl(0);
   }

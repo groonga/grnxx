@@ -18,9 +18,11 @@
 #ifndef GRNXX_TIME_TIME_HPP
 #define GRNXX_TIME_TIME_HPP
 
-#include "grnxx/basic.hpp"
+#include "grnxx/features.hpp"
+
 #include "grnxx/time/broken_down_time.hpp"
 #include "grnxx/time/duration.hpp"
+#include "grnxx/types.hpp"
 
 namespace grnxx {
 
@@ -58,15 +60,11 @@ class Time {
     count_ = count;
   }
 
-  StringBuilder &write_to(StringBuilder &builder) const;
-
  private:
   int64_t count_;
 
   // Copyable.
 };
-
-GRNXX_ASSERT_POD(Time);
 
 inline Time &operator+=(Time &lhs, Duration rhs) {
   lhs.set_count(lhs.count() + rhs.count());
@@ -109,11 +107,7 @@ inline constexpr bool operator>=(Time lhs, Time rhs) {
   return lhs.count() >= rhs.count();
 }
 
-inline StringBuilder &operator<<(StringBuilder &builder, Time time) {
-  return time.write_to(builder);
-}
-
-std::ostream &operator<<(std::ostream &stream, Time time);
+StringBuilder &operator<<(StringBuilder &builder, Time time);
 
 }  // namespace grnxx
 

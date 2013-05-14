@@ -18,6 +18,7 @@
 #include "grnxx/array/array_1d.hpp"
 
 #include <memory>
+#include <new>
 
 #include "grnxx/logger.hpp"
 

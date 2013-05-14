@@ -18,7 +18,11 @@
 #ifndef GRNXX_TIME_DURATION_HPP
 #define GRNXX_TIME_DURATION_HPP
 
-#include "grnxx/basic.hpp"
+#include "grnxx/features.hpp"
+
+#include <limits>
+
+#include "grnxx/types.hpp"
 
 namespace grnxx {
 
@@ -80,15 +84,11 @@ class Duration {
     count_ = count;
   }
 
-  StringBuilder &write_to(StringBuilder &builder) const;
-
  private:
   int64_t count_;
 
   // Copyable.
 };
-
-GRNXX_ASSERT_POD(Duration);
 
 inline constexpr Duration operator+(Duration duration) {
   return duration;
@@ -165,11 +165,7 @@ inline constexpr bool operator>=(Duration lhs, Duration rhs) {
   return lhs.count() >= rhs.count();
 }
 
-inline StringBuilder &operator<<(StringBuilder &builder, Duration duration) {
-  return duration.write_to(builder);
-}
-
-std::ostream &operator<<(std::ostream &stream, Duration duration);
+StringBuilder &operator<<(StringBuilder &builder, Duration duration);
 
 }  // namespace grnxx
 

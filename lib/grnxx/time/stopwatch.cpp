@@ -30,9 +30,9 @@ int64_t now() {
 }  // namespace
 
 Stopwatch::Stopwatch(bool is_running)
-  : elapsed_(0),
-    start_count_(is_running ? now() : 0),
-    is_running_(is_running) {}
+    : elapsed_(0),
+      start_count_(is_running ? now() : 0),
+      is_running_(is_running) {}
 
 void Stopwatch::start() {
   if (!is_running_) {

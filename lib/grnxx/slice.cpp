@@ -17,12 +17,14 @@
 */
 #include "grnxx/slice.hpp"
 
-#include <iostream>
+#include "grnxx/string_builder.hpp"
 
 namespace grnxx {
 
-std::ostream &operator<<(std::ostream &stream, const Slice &s) {
-  return stream.write(static_cast<const char *>(s.address()), s.size());
+StringBuilder &operator<<(StringBuilder &builder, const Slice &slice) {
+  // TODO: StringBuilder should support const uint_8 *.
+  return builder.append(reinterpret_cast<const char *>(slice.ptr()),
+                        slice.size());
 }
 
 }  // namespace grnxx

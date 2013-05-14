@@ -17,24 +17,21 @@
 */
 #include "grnxx/time/duration.hpp"
 
-#include <ostream>
-
 #include "grnxx/string_builder.hpp"
 #include "grnxx/string_format.hpp"
 
 namespace grnxx {
 
-StringBuilder &Duration::write_to(StringBuilder &builder) const {
+StringBuilder &operator<<(StringBuilder &builder, Duration duration) {
   if (!builder) {
     return builder;
   }
-
   uint64_t count;
-  if (count_ >= 0) {
-    count = count_;
+  if (duration.count() >= 0) {
+    count = duration.count();
   } else {
     builder << '-';
-    count = -count_;
+    count = -duration.count();
   }
   builder << (count / 1000000);
   count %= 1000000;
@@ -42,13 +39,6 @@ StringBuilder &Duration::write_to(StringBuilder &builder) const {
     builder << '.' << StringFormat::align_right(count, 6, '0');
   }
   return builder;
-}
-
-std::ostream &operator<<(std::ostream &stream, Duration duration) {
-  char buf[32];
-  StringBuilder builder(buf);
-  builder << duration;
-  return stream.write(builder.c_str(), builder.length());
 }
 
 }  // namespace grnxx

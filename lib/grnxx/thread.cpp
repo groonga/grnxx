@@ -18,7 +18,6 @@
 #include "grnxx/thread.hpp"
 
 #ifdef GRNXX_WINDOWS
-# include <errno.h>
 # include <process.h>
 # include <windows.h>
 #else  // GRNXX_WINDOWS
@@ -32,6 +31,10 @@
 #ifdef GRNXX_HAS_NANOSLEEP
 # include <time.h>
 #endif  // GRNXX_HAS_NANOSLEEP
+
+#ifdef GRNXX_WINDOWS
+# include <cerrno>
+#endif  // GRNXX_WINDOWS
 
 // TODO: Use the following in future.
 //#include <chrono>

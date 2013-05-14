@@ -18,7 +18,10 @@
 #ifndef GRNXX_CHARSET_SHIFT_JIS_HPP
 #define GRNXX_CHARSET_SHIFT_JIS_HPP
 
+#include "grnxx/features.hpp"
+
 #include "grnxx/charset.hpp"
+#include "grnxx/slice.hpp"
 
 namespace grnxx {
 namespace charset {

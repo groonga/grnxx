@@ -18,9 +18,13 @@
 #ifndef GRNXX_MUTEX_HPP
 #define GRNXX_MUTEX_HPP
 
-#include "grnxx/basic.hpp"
+#include "grnxx/features.hpp"
+
+#include <utility>
+
 #include "grnxx/intrinsic.hpp"
 #include "grnxx/time/duration.hpp"
+#include "grnxx/types.hpp"
 
 namespace grnxx {
 
@@ -82,8 +86,6 @@ class Mutex {
   void lock_without_timeout();
   bool lock_with_timeout(Duration timeout);
 };
-
-GRNXX_ASSERT_POD(Mutex);
 
 inline void swap(Mutex &lhs, Mutex &rhs) {
   lhs.swap(rhs);

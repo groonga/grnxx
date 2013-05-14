@@ -18,7 +18,9 @@
 #ifndef GRNXX_OS_HPP
 #define GRNXX_OS_HPP
 
-#include "grnxx/basic.hpp"
+#include "grnxx/features.hpp"
+
+#include "grnxx/types.hpp"
 
 namespace grnxx {
 

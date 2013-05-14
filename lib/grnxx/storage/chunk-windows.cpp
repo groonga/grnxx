@@ -19,9 +19,11 @@
 
 #ifdef GRNXX_WINDOWS
 
+#include <new>
+
 #include "grnxx/error.hpp"
-#include "grnxx/storage/file.hpp"
 #include "grnxx/logger.hpp"
+#include "grnxx/storage/file.hpp"
 
 namespace grnxx {
 namespace storage {

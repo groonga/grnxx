@@ -18,8 +18,12 @@
 #ifndef GRNXX_STRING_HPP
 #define GRNXX_STRING_HPP
 
-#include "grnxx/basic.hpp"
+#include "grnxx/features.hpp"
+
+#include <utility>
+
 #include "grnxx/intrinsic.hpp"
+#include "grnxx/types.hpp"
 
 namespace grnxx {
 
@@ -208,8 +212,6 @@ inline bool operator!=(const char *lhs, const String &rhs) {
 inline void swap(String &lhs, String &rhs) {
   lhs.swap(rhs);
 }
-
-std::ostream &operator<<(std::ostream &stream, const String &str);
 
 }  // namespace grnxx
 

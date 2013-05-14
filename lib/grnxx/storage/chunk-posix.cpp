@@ -20,11 +20,14 @@
 #ifndef GRNXX_WINDOWS
 
 #include <sys/mman.h>
+
 #include <cerrno>
+#include <memory>
+#include <new>
 
 #include "grnxx/error.hpp"
-#include "grnxx/storage/file.hpp"
 #include "grnxx/logger.hpp"
+#include "grnxx/storage/file.hpp"
 
 #ifndef MAP_ANONYMOUS
 # ifdef MAP_ANON

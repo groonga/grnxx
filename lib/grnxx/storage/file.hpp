@@ -18,8 +18,10 @@
 #ifndef GRNXX_STORAGE_FILE_HPP
 #define GRNXX_STORAGE_FILE_HPP
 
-#include "grnxx/basic.hpp"
+#include "grnxx/features.hpp"
+
 #include "grnxx/flags_impl.hpp"
+#include "grnxx/types.hpp"
 
 namespace grnxx {
 

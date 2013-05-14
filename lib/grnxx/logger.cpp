@@ -23,7 +23,6 @@
 
 #include "grnxx/backtrace.hpp"
 #include "grnxx/lock.hpp"
-#include "grnxx/string_builder.hpp"
 #include "grnxx/time/system_clock.hpp"
 
 namespace grnxx {
@@ -138,13 +137,13 @@ int Logger::max_level_ = NOTICE_LOGGER;
 int Logger::backtrace_level_ = ERROR_LOGGER;
 
 Logger::Logger(const char *file, int line, const char *func, int level)
-  : buf_(),
-    builder_(buf_, (Logger::flags() & LOGGER_ENABLE_AUTO_RESIZE) ?
+    : buf_(),
+      builder_(buf_, (Logger::flags() & LOGGER_ENABLE_AUTO_RESIZE) ?
                    STRING_BUILDER_AUTO_RESIZE : StringBuilderFlags::none()),
-    file_(file),
-    line_(line),
-    func_(func),
-    level_(level) {
+      file_(file),
+      line_(line),
+      func_(func),
+      level_(level) {
   append_line_header();
 }
 

@@ -18,7 +18,11 @@
 #ifndef GRNXX_STORAGE_NODE_HEADER_HPP
 #define GRNXX_STORAGE_NODE_HEADER_HPP
 
+#include "grnxx/features.hpp"
+
 #include "grnxx/storage.hpp"
+#include "grnxx/time/time.hpp"
+#include "grnxx/types.hpp"
 
 namespace grnxx {
 namespace storage {

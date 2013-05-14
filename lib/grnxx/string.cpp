@@ -17,8 +17,6 @@
 */
 #include "grnxx/string.hpp"
 
-#include <ostream>
-
 #include "grnxx/exception.hpp"
 #include "grnxx/logger.hpp"
 
@@ -49,7 +47,7 @@ String::String(const char *str) : impl_(StringImpl::default_instance()) {
 }
 
 String::String(const char *ptr, size_t length)
-  : impl_(StringImpl::default_instance()) {
+    : impl_(StringImpl::default_instance()) {
   if (ptr) {
     if (length != 0) {
       impl_ = StringImpl::create(ptr, length);
@@ -72,10 +70,6 @@ String &String::operator=(const char *str) {
   impl_->decrement_reference_count();
   impl_ = new_impl;
   return *this;
-}
-
-std::ostream &operator<<(std::ostream &stream, const String &str) {
-  return stream.write(str.c_str(), str.length());
 }
 
 }  // namespace grnxx

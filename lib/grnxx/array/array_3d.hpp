@@ -18,9 +18,13 @@
 #ifndef GRNXX_ARRAY_ARRAY_3D_HPP
 #define GRNXX_ARRAY_ARRAY_3D_HPP
 
+#include "grnxx/features.hpp"
+
+#include <memory>
+
 #include "grnxx/mutex.hpp"
 #include "grnxx/storage.hpp"
-#include "grnxx/traits.hpp"
+#include "grnxx/types.hpp"
 
 namespace grnxx {
 

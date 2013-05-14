@@ -18,7 +18,7 @@
 #ifndef GRNXX_ERROR_HPP
 #define GRNXX_ERROR_HPP
 
-#include "grnxx/basic.hpp"
+#include "grnxx/features.hpp"
 
 namespace grnxx {
 
@@ -40,14 +40,17 @@ class Error {
  public:
   // For errno.
   explicit Error(int error_code)
-    : type_(POSIX_ERROR), posix_error_(error_code) {}
+      : type_(POSIX_ERROR),
+        posix_error_(error_code) {}
 #ifdef GRNXX_WINDOWS
   // For DWORD returned by ::GetLastError().
   explicit Error(unsigned long error_code)
-    : type_(WINDOWS_ERROR), windows_error_(error_code) {}
+      : type_(WINDOWS_ERROR),
+        windows_error_(error_code) {}
 #endif  // GRNXX_WINDOWS
   explicit Error(ErrorCode error_code)
-    : type_(GRNXX_ERROR), grnxx_error_(error_code) {}
+      : type_(GRNXX_ERROR),
+        grnxx_error_(error_code) {}
 
   ErrorType type() const {
     return type_;
@@ -82,8 +85,6 @@ class Error {
 inline StringBuilder &operator<<(StringBuilder &builder, const Error &error) {
   return error.write_to(builder);
 }
-
-std::ostream &operator<<(std::ostream &stream, const Error &error);
 
 }  // namespace grnxx
 

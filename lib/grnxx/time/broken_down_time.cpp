@@ -17,33 +17,23 @@
 */
 #include "grnxx/time/broken_down_time.hpp"
 
-#include <iostream>
-
 #include "grnxx/string_builder.hpp"
 #include "grnxx/string_format.hpp"
 
 namespace grnxx {
 
-StringBuilder &BrokenDownTime::write_to(StringBuilder &builder) const {
+StringBuilder &operator<<(StringBuilder &builder, const BrokenDownTime &time) {
   if (!builder) {
     return builder;
   }
-
-  builder << (1900 + year) << '-'
-          << StringFormat::align_right(mon + 1, 2, '0') << '-'
-          << StringFormat::align_right(mday, 2, '0') << ' '
-          << StringFormat::align_right(hour, 2, '0') << ':'
-          << StringFormat::align_right(min, 2, '0') << ':'
-          << StringFormat::align_right(sec, 2, '0') << '.'
-          << StringFormat::align_right(usec, 6, '0');
+  builder << (1900 + time.year) << '-'
+          << StringFormat::align_right(time.mon + 1, 2, '0') << '-'
+          << StringFormat::align_right(time.mday, 2, '0') << ' '
+          << StringFormat::align_right(time.hour, 2, '0') << ':'
+          << StringFormat::align_right(time.min, 2, '0') << ':'
+          << StringFormat::align_right(time.sec, 2, '0') << '.'
+          << StringFormat::align_right(time.usec, 6, '0');
   return builder;
-}
-
-std::ostream &operator<<(std::ostream &stream, const BrokenDownTime &time) {
-  char buf[32];
-  StringBuilder builder(buf);
-  builder << time;
-  return stream.write(builder.c_str(), builder.length());
 }
 
 }  // namespace grnxx

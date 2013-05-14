@@ -18,7 +18,9 @@
 #ifndef GRNXX_GEO_POINT_HPP
 #define GRNXX_GEO_POINT_HPP
 
-#include "grnxx/basic.hpp"
+#include "grnxx/features.hpp"
+
+#include "grnxx/types.hpp"
 
 namespace grnxx {
 

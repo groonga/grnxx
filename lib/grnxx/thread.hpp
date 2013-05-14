@@ -18,9 +18,11 @@
 #ifndef GRNXX_THREAD_HPP
 #define GRNXX_THREAD_HPP
 
+#include "grnxx/features.hpp"
+
 #include <functional>
 
-#include "grnxx/basic.hpp"
+#include "grnxx/time/duration.hpp"
 #include "grnxx/time/time.hpp"
 
 namespace grnxx {

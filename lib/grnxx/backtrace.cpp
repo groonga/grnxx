@@ -38,6 +38,7 @@
 #include <sstream>
 
 #include "grnxx/lock.hpp"
+#include "grnxx/mutex.hpp"
 
 namespace grnxx {
 namespace {
@@ -169,8 +170,12 @@ bool Resolver::resolve(void *address, std::ostream *stream) {
 class Detail {
  public:
   Detail(asymbol **symbols_, bfd_vma address_)
-    : symbols(symbols_), address(address_), filename(nullptr),
-      function(nullptr), line(0), found(false) {}
+      : symbols(symbols_),
+        address(address_),
+        filename(nullptr),
+        function(nullptr),
+        line(0),
+        found(false) {}
 
   asymbol **symbols;
   bfd_vma address;

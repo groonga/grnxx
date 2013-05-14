@@ -15,34 +15,16 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#ifndef GRNXX_TIME_BROKEN_DOWN_TIME_HPP
-#define GRNXX_TIME_BROKEN_DOWN_TIME_HPP
+#include "grnxx/bytes.hpp"
 
-#include "grnxx/features.hpp"
+#include "grnxx/string_builder.hpp"
 
 namespace grnxx {
 
-class StringBuilder;
+StringBuilder &operator<<(StringBuilder &builder, const Bytes &bytes) {
+  // TODO: StringBuilder should support const uint_8 *.
+  return builder.append(reinterpret_cast<const char *>(bytes.ptr()),
+                        bytes.size());
+}
 
-struct BrokenDownTime {
-  int usec;   // Microseconds.
-  int sec;    // Seconds.
-  int min;    // Minutes.
-  int hour;   // Hours.
-  int mday;   // Day of the month.
-  int mon;    // Month.
-  int year;   // Year.
-  int wday;   // Day of the week.
-  int yday;   // Day in the year.
-  int isdst;  // Daylight saving time.
-
-  static constexpr BrokenDownTime invalid_value() {
-    return BrokenDownTime{};
-  }
-};
-
-StringBuilder &operator<<(StringBuilder &builder, const BrokenDownTime &time);
-
-}  // namespace grnxx
-
-#endif  // GRNXX_TIME_BROKEN_DOWN_TIME_HPP
+}  // namespace

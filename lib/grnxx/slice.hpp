@@ -18,24 +18,30 @@
 #ifndef GRNXX_SLICE_HPP
 #define GRNXX_SLICE_HPP
 
-#include "grnxx/basic.hpp"
+#include "grnxx/features.hpp"
+
+#include <cstring>
+
+#include "grnxx/types.hpp"
 
 namespace grnxx {
+
+class StringBuilder;
 
 class Slice {
  public:
   // Create an empty (zero-size) slice.
   Slice() : ptr_(nullptr), size_(0) {}
   // Create an empty (zero-size) slice.
-  Slice(std::nullptr_t) : ptr_(nullptr), size_(0) {}
+  Slice(nullptr_t) : ptr_(nullptr), size_(0) {}
   // Create a slice that refers to a zero-terminated string.
   Slice(const char *str)
-    : ptr_(reinterpret_cast<const uint8_t *>(str)),
-      size_(std::strlen(str)) {}
+      : ptr_(reinterpret_cast<const uint8_t *>(str)),
+        size_(std::strlen(str)) {}
   // Create a slice.
   Slice(const void *ptr, size_t size)
-    : ptr_(static_cast<const uint8_t *>(ptr)),
-      size_(size) {}
+      : ptr_(static_cast<const uint8_t *>(ptr)),
+        size_(size) {}
 
   // Return true iff "*this" is not empty.
   explicit operator bool() const {
@@ -154,7 +160,7 @@ inline bool operator>=(const Slice &lhs, const Slice &rhs) {
   return rhs <= lhs;
 }
 
-std::ostream &operator<<(std::ostream &stream, const Slice &s);
+StringBuilder &operator<<(StringBuilder &builder, const Slice &slice);
 
 }  // namespace grnxx
 

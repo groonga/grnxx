@@ -18,7 +18,7 @@
 #ifndef GRNXX_GRNXX_HPP
 #define GRNXX_GRNXX_HPP
 
-#include "grnxx/basic.hpp"
+#include "grnxx/features.hpp"
 
 namespace grnxx {
 
@@ -29,13 +29,6 @@ class GRNXX_EXPORT Grnxx {
 
   // The version.
   static const char *version();
-
- private:
-  Grnxx();
-  ~Grnxx();
-
-  Grnxx(const Grnxx &);
-  Grnxx &operator=(const Grnxx &);
 };
 
 }  // namespace grnxx

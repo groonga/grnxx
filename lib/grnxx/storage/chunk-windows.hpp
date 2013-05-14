@@ -18,11 +18,13 @@
 #ifndef GRNXX_STORAGE_CHUNK_WINDOWS_HPP
 #define GRNXX_STORAGE_CHUNK_WINDOWS_HPP
 
-#include "grnxx/storage/chunk.hpp"
+#include "grnxx/features.hpp"
 
 #ifdef GRNXX_WINDOWS
 
 #include <windows.h>
+
+#include "grnxx/storage/chunk.hpp"
 
 // FILE_READ_ONLY is defined as a macro in windows.h.
 #ifdef FILE_READ_ONLY

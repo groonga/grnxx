@@ -18,8 +18,10 @@
 #ifndef GRNXX_TIME_PERIODIC_CLOCK_HPP
 #define GRNXX_TIME_PERIODIC_CLOCK_HPP
 
-#include "grnxx/basic.hpp"
+#include "grnxx/features.hpp"
+
 #include "grnxx/time/system_clock.hpp"
+#include "grnxx/time/time.hpp"
 
 namespace grnxx {
 

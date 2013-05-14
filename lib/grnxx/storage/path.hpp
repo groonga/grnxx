@@ -18,7 +18,7 @@
 #ifndef GRNXX_STORAGE_PATH_HPP
 #define GRNXX_STORAGE_PATH_HPP
 
-#include "grnxx/basic.hpp"
+#include "grnxx/features.hpp"
 
 namespace grnxx {
 namespace storage {

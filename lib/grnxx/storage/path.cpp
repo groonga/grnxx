@@ -24,7 +24,8 @@
 #endif  // GRNXX_WINDOWS
 
 #include <cerrno>
-#include <cstdlib>
+#include <cstring>
+#include <new>
 #include <random>
 
 #include "grnxx/error.hpp"

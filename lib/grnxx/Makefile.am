@@ -24,6 +24,7 @@ libgrnxx_la_LDFLAGS = @AM_LTLDFLAGS@
 
 libgrnxx_la_SOURCES =			\
 	backtrace.cpp			\
+	bytes.cpp			\
 	charset.cpp			\
 	error.cpp			\
 	geo_point.cpp			\
@@ -44,6 +45,7 @@ libgrnxx_include_HEADERS =		\
 	array.hpp			\
 	backtrace.hpp			\
 	basic.hpp			\
+	bytes.hpp			\
 	charset.hpp			\
 	error.hpp			\
 	exception.hpp			\
@@ -64,6 +66,8 @@ libgrnxx_include_HEADERS =		\
 	string_builder.hpp		\
 	string_format.hpp		\
 	thread.hpp			\
+	traits.hpp			\
+	types.hpp			\
 	version.h
 
 EXTRA_DIST = version.sh

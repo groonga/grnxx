@@ -18,9 +18,9 @@
 #include "grnxx/time/time.hpp"
 
 #include <ctime>
-#include <ostream>
 
 #include "grnxx/lock.hpp"
+#include "grnxx/mutex.hpp"
 #include "grnxx/string_builder.hpp"
 #include "grnxx/string_format.hpp"
 
@@ -95,17 +95,16 @@ BrokenDownTime Time::local_time() const {
   return create_broken_down_time(tm, count_);
 }
 
-StringBuilder &Time::write_to(StringBuilder &builder) const {
+StringBuilder &operator<<(StringBuilder &builder, Time time) {
   if (!builder) {
     return builder;
   }
-
   uint64_t count;
-  if (count_ >= 0) {
-    count = count_;
+  if (time.count() >= 0) {
+    count = time.count();
   } else {
     builder << '-';
-    count = -count_;
+    count = -time.count();
   }
   builder << (count / 1000000);
   count %= 1000000;
@@ -113,13 +112,6 @@ StringBuilder &Time::write_to(StringBuilder &builder) const {
     builder << '.' << StringFormat::align_right(count, 6, '0');
   }
   return builder;
-}
-
-std::ostream &operator<<(std::ostream &stream, Time time) {
-  char buf[32];
-  StringBuilder builder(buf);
-  builder << time;
-  return stream.write(builder.c_str(), builder.length());
 }
 
 }  // namespace grnxx

@@ -18,8 +18,10 @@
 #ifndef GRNXX_CHARSET_HPP
 #define GRNXX_CHARSET_HPP
 
-#include "grnxx/basic.hpp"
+#include "grnxx/features.hpp"
+
 #include "grnxx/slice.hpp"
+#include "grnxx/types.hpp"
 
 namespace grnxx {
 
