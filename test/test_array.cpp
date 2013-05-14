@@ -29,7 +29,7 @@ void test_array1d() {
   GRNXX_NOTICE() << __PRETTY_FUNCTION__;
 
   std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
-  grnxx::Array<int, PAGE_SIZE> array;
+  grnxx::Array<int, PAGE_SIZE, 1, 1> array;
 
   assert(array.create(storage.get(), grnxx::STORAGE_ROOT_NODE_ID));
   assert(array);
@@ -68,7 +68,7 @@ void test_array2d() {
   GRNXX_NOTICE() << __PRETTY_FUNCTION__;
 
   std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
-  grnxx::Array<int, PAGE_SIZE, TABLE_SIZE> array;
+  grnxx::Array<int, PAGE_SIZE, TABLE_SIZE, 1> array;
 
   assert(array.create(storage.get(), grnxx::STORAGE_ROOT_NODE_ID));
   assert(array);

@@ -39,14 +39,16 @@ constexpr uint64_t ARRAY_DEFAULT_SECONDARY_TABLE_SIZE = 1ULL << 12;
 
 template <typename T,
           uint64_t PAGE_SIZE = ARRAY_DEFAULT_PAGE_SIZE,
-          uint64_t TABLE_SIZE = 1,
-          uint64_t SECONDARY_TABLE_SIZE = 1>
+          uint64_t TABLE_SIZE = ARRAY_DEFAULT_TABLE_SIZE,
+          uint64_t SECONDARY_TABLE_SIZE = ARRAY_DEFAULT_SECONDARY_TABLE_SIZE>
 class Array;
 
 // 1D array.
 template <typename T, uint64_t PAGE_SIZE>
 class Array<T, PAGE_SIZE, 1, 1> {
   static_assert(PAGE_SIZE > 0, "PAGE_SIZE <= 0");
+
+  using ArrayImpl = Array1D;
 
  public:
   using Value = typename Traits<T>::Type;
@@ -62,8 +64,8 @@ class Array<T, PAGE_SIZE, 1, 1> {
 
   // Create an array.
   bool create(Storage *storage, uint32_t storage_node_id) {
-    std::unique_ptr<Array1D> impl(
-        Array1D::create(storage, storage_node_id, sizeof(Value), PAGE_SIZE));
+    std::unique_ptr<ArrayImpl> impl(
+        ArrayImpl::create(storage, storage_node_id, sizeof(Value), PAGE_SIZE));
     if (!impl) {
       return false;
     }
@@ -73,10 +75,10 @@ class Array<T, PAGE_SIZE, 1, 1> {
 
   // Create an array with the default value.
   bool create(Storage *storage, uint32_t storage_node_id,
-                       ValueArg default_value) {
-    std::unique_ptr<Array1D> impl(
-        Array1D::create(storage, storage_node_id, sizeof(Value), PAGE_SIZE,
-                        &default_value, fill_page));
+              ValueArg default_value) {
+    std::unique_ptr<ArrayImpl> impl(
+        ArrayImpl::create(storage, storage_node_id, sizeof(Value), PAGE_SIZE,
+                          &default_value, fill_page));
     if (!impl) {
       return false;
     }
@@ -86,8 +88,8 @@ class Array<T, PAGE_SIZE, 1, 1> {
 
   // Open an array.
   bool open(Storage *storage, uint32_t storage_node_id) {
-    std::unique_ptr<Array1D> impl(
-        Array1D::open(storage, storage_node_id, sizeof(Value), PAGE_SIZE));
+    std::unique_ptr<ArrayImpl> impl(
+        ArrayImpl::open(storage, storage_node_id, sizeof(Value), PAGE_SIZE));
     if (!impl) {
       return false;
     }
@@ -97,7 +99,8 @@ class Array<T, PAGE_SIZE, 1, 1> {
 
   // Unlink an array.
   static bool unlink(Storage *storage, uint32_t storage_node_id) {
-    return Array1D::unlink(storage, storage_node_id, sizeof(Value), PAGE_SIZE);
+    return ArrayImpl::unlink(storage, storage_node_id, sizeof(Value),
+                             PAGE_SIZE);
   }
 
   // Return the number of values in each page.
@@ -132,7 +135,9 @@ class Array<T, PAGE_SIZE, 1, 1> {
   // The value is assigned to "*value".
   bool get(uint64_t value_id, Value *value) {
     const Value * const page = get_page(value_id / PAGE_SIZE);
-    *value = page[value_id % PAGE_SIZE];
+    if (value) {
+      *value = page[value_id % PAGE_SIZE];
+    }
     return true;
   }
 
@@ -149,7 +154,7 @@ class Array<T, PAGE_SIZE, 1, 1> {
   }
 
  private:
-  std::unique_ptr<Array1D> impl_;
+  std::unique_ptr<ArrayImpl> impl_;
 
   // This function is used to fill a new page with the default value.
   static void fill_page(void *page, const void *value) {
@@ -167,6 +172,8 @@ class Array<T, PAGE_SIZE, TABLE_SIZE, 1> {
                 "PAGE_SIZE must be a power of two");
   static_assert(TABLE_SIZE > 0, "TABLE_SIZE <= 0");
 
+  using ArrayImpl = Array2D;
+
  public:
   using Value = typename Traits<T>::Type;
   using ValueArg = typename Traits<T>::ArgumentType;
@@ -181,9 +188,9 @@ class Array<T, PAGE_SIZE, TABLE_SIZE, 1> {
 
   // Create an array.
   bool create(Storage *storage, uint32_t storage_node_id) {
-    std::unique_ptr<Array2D> impl(
-        Array2D::create(storage, storage_node_id, sizeof(Value), PAGE_SIZE,
-                        TABLE_SIZE));
+    std::unique_ptr<ArrayImpl> impl(
+        ArrayImpl::create(storage, storage_node_id, sizeof(Value), PAGE_SIZE,
+                          TABLE_SIZE));
     if (!impl) {
       return false;
     }
@@ -193,10 +200,10 @@ class Array<T, PAGE_SIZE, TABLE_SIZE, 1> {
 
   // Create an array with the default value.
   bool create(Storage *storage, uint32_t storage_node_id,
-                       ValueArg default_value) {
-    std::unique_ptr<Array2D> impl(
-        Array2D::create(storage, storage_node_id, sizeof(Value), PAGE_SIZE,
-                        TABLE_SIZE, &default_value, fill_page));
+              ValueArg default_value) {
+    std::unique_ptr<ArrayImpl> impl(
+        ArrayImpl::create(storage, storage_node_id, sizeof(Value), PAGE_SIZE,
+                          TABLE_SIZE, &default_value, fill_page));
     if (!impl) {
       return false;
     }
@@ -206,9 +213,9 @@ class Array<T, PAGE_SIZE, TABLE_SIZE, 1> {
 
   // Open an array.
   bool open(Storage *storage, uint32_t storage_node_id) {
-    std::unique_ptr<Array2D> impl(
-        Array2D::open(storage, storage_node_id, sizeof(Value), PAGE_SIZE,
-                      TABLE_SIZE, fill_page));
+    std::unique_ptr<ArrayImpl> impl(
+        ArrayImpl::open(storage, storage_node_id, sizeof(Value), PAGE_SIZE,
+                        TABLE_SIZE, fill_page));
     if (!impl) {
       return false;
     }
@@ -218,8 +225,8 @@ class Array<T, PAGE_SIZE, TABLE_SIZE, 1> {
 
   // Unlink an array.
   static bool unlink(Storage *storage, uint32_t storage_node_id) {
-    return Array2D::unlink(storage, storage_node_id, sizeof(Value),
-                           PAGE_SIZE, TABLE_SIZE);
+    return ArrayImpl::unlink(storage, storage_node_id, sizeof(Value),
+                             PAGE_SIZE, TABLE_SIZE);
   }
 
   // Return the number of values in each page.
@@ -259,7 +266,9 @@ class Array<T, PAGE_SIZE, TABLE_SIZE, 1> {
     if (!page) {
       return false;
     }
-    *value = page[value_id % PAGE_SIZE];
+    if (value) {
+      *value = page[value_id % PAGE_SIZE];
+    }
     return true;
   }
 
@@ -279,7 +288,7 @@ class Array<T, PAGE_SIZE, TABLE_SIZE, 1> {
   }
 
  private:
-  std::unique_ptr<Array2D> impl_;
+  std::unique_ptr<ArrayImpl> impl_;
 
   // This function is used to fill a new page with the default value.
   static void fill_page(void *page, const void *value) {
@@ -302,6 +311,8 @@ class Array {
                 "TABLE_SIZE must be a power of two");
   static_assert(SECONDARY_TABLE_SIZE > 0, "SECONDARY_TABLE_SIZE <= 0");
 
+  using ArrayImpl = Array3D;
+
  public:
   using Value = typename Traits<T>::Type;
   using ValueArg = typename Traits<T>::ArgumentType;
@@ -316,9 +327,9 @@ class Array {
 
   // Create an array.
   bool create(Storage *storage, uint32_t storage_node_id) {
-    std::unique_ptr<Array3D> impl(
-        Array3D::create(storage, storage_node_id, sizeof(Value), PAGE_SIZE,
-                        TABLE_SIZE, SECONDARY_TABLE_SIZE));
+    std::unique_ptr<ArrayImpl> impl(
+        ArrayImpl::create(storage, storage_node_id, sizeof(Value), PAGE_SIZE,
+                          TABLE_SIZE, SECONDARY_TABLE_SIZE));
     if (!impl) {
       return false;
     }
@@ -328,11 +339,11 @@ class Array {
 
   // Create an array with the default value.
   bool create(Storage *storage, uint32_t storage_node_id,
-                       ValueArg default_value) {
-    std::unique_ptr<Array3D> impl(
-        Array3D::create(storage, storage_node_id, sizeof(Value), PAGE_SIZE,
-                        TABLE_SIZE, SECONDARY_TABLE_SIZE, &default_value,
-                        fill_page));
+              ValueArg default_value) {
+    std::unique_ptr<ArrayImpl> impl(
+        ArrayImpl::create(storage, storage_node_id, sizeof(Value), PAGE_SIZE,
+                          TABLE_SIZE, SECONDARY_TABLE_SIZE, &default_value,
+                          fill_page));
     if (!impl) {
       return false;
     }
@@ -342,9 +353,9 @@ class Array {
 
   // Open an array.
   bool open(Storage *storage, uint32_t storage_node_id) {
-    std::unique_ptr<Array3D> impl(
-        Array3D::open(storage, storage_node_id, sizeof(Value), PAGE_SIZE,
-                      TABLE_SIZE, SECONDARY_TABLE_SIZE, fill_page));
+    std::unique_ptr<ArrayImpl> impl(
+        ArrayImpl::open(storage, storage_node_id, sizeof(Value), PAGE_SIZE,
+                        TABLE_SIZE, SECONDARY_TABLE_SIZE, fill_page));
     if (!impl) {
       return false;
     }
@@ -354,8 +365,8 @@ class Array {
 
   // Unlink an array.
   static bool unlink(Storage *storage, uint32_t storage_node_id) {
-    return Array3D::unlink(storage, storage_node_id, sizeof(Value),
-                           PAGE_SIZE, TABLE_SIZE, SECONDARY_TABLE_SIZE);
+    return ArrayImpl::unlink(storage, storage_node_id, sizeof(Value),
+                             PAGE_SIZE, TABLE_SIZE, SECONDARY_TABLE_SIZE);
   }
 
   // Return the number of values in each page.
@@ -396,7 +407,9 @@ class Array {
     if (!page) {
       return false;
     }
-    *value = page[value_id % PAGE_SIZE];
+    if (value) {
+      *value = page[value_id % PAGE_SIZE];
+    }
     return true;
   }
 
@@ -417,7 +430,7 @@ class Array {
   }
 
  private:
-  std::unique_ptr<Array3D> impl_;
+  std::unique_ptr<ArrayImpl> impl_;
 
   // This function is used to fill a new page with the default value.
   static void fill_page(void *page, const void *value) {
