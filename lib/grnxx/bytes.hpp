@@ -53,25 +53,26 @@ class Bytes {
   Bytes extract(uint64_t n, uint64_t m) const {
     return Bytes(ptr_ + n, m);
   }
-  // Extract the first "n" bytes.
-  Bytes extract_prefix(uint64_t n) const {
-    return Bytes(ptr_, n);
-  }
-  // Extract the last "n" bytes.
-  Bytes extract_suffix(uint64_t n) const {
-    return Bytes(ptr_ + size_ - n, n);
-  }
-
   // Remove the first "n" bytes and the last "m" bytes.
   Bytes trim(uint64_t n, uint64_t m) const {
     return Bytes(ptr_ + n, size_ - n - m);
   }
+
+  // Extract the first "n" bytes.
+  Bytes prefix(uint64_t n) const {
+    return Bytes(ptr_, n);
+  }
+  // Extract the last "n" bytes.
+  Bytes suffix(uint64_t n) const {
+    return Bytes(ptr_ + size_ - n, n);
+  }
+
   // Remove the first "n" bytes.
-  Bytes trim_prefix(uint64_t n) const {
+  Bytes except_prefix(uint64_t n) const {
     return Bytes(ptr_ + n, size_ - n);
   }
   // Remove the last "n" bytes.
-  Bytes trim_suffix(uint64_t n) const {
+  Bytes except_suffix(uint64_t n) const {
     return Bytes(ptr_, size_ - n);
   }
 
@@ -116,11 +117,11 @@ class Bytes {
 
   // Return true iff "bytes" is a prefix of "*this".
   bool starts_with(const Bytes &bytes) const {
-    return (size_ >= bytes.size_) && (extract_prefix(bytes.size_) == bytes);
+    return (size_ >= bytes.size_) && (prefix(bytes.size_) == bytes);
   }
   // Return true iff "bytes" is a suffix of "*this".
   bool ends_with(const Bytes &bytes) const {
-    return (size_ >= bytes.size_) && (extract_suffix(bytes.size_) == bytes);
+    return (size_ >= bytes.size_) && (suffix(bytes.size_) == bytes);
   }
 
   // Return the "i"-th byte.
