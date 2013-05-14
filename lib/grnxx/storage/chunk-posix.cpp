@@ -134,6 +134,7 @@ bool ChunkImpl::create_file_backed_chunk(File *file, int64_t offset,
   if (address_ == MAP_FAILED) {
     GRNXX_ERROR() << "failed to map file-backed chunk: "
                   << "file_path = " << file->path()
+                  << ", file_size = " << file_size
                   << ", offset = " << offset << ", size = " << size
                   << ", flags = " << flags << ": '::mmap' " << Error(errno);
     return false;

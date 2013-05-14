@@ -123,7 +123,8 @@ bool ChunkImpl::create_file_backed_chunk(File *file, int64_t offset,
                                 nullptr);
   if (!handle_) {
     GRNXX_ERROR() << "failed to create file mapping: "
-                  << "file_path = " << file->path() << ", offset = " << offset
+                  << "file_path = " << file->path()
+                  << ", file_size = " << file_size << ", offset = " << offset
                   << ", size = " << size << ", flags = " << flags
                   << ": '::CreateFileMapping' " << Error(::GetLastError());
     return false;
@@ -134,7 +135,8 @@ bool ChunkImpl::create_file_backed_chunk(File *file, int64_t offset,
                              static_cast<SIZE_T>(size));
   if (!address_) {
     GRNXX_ERROR() << "failed to map chunk: "
-                  << "file_path = " << file->path() << ", offset = " << offset
+                  << "file_path = " << file->path()
+                  << ", file_size = " << file_size << ", offset = " << offset
                   << ", size = " << size << ", flags = " << flags
                   << ": '::MapChunkOfFile' " << Error(::GetLastError());
     return false;
