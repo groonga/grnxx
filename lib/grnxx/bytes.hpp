@@ -128,6 +128,10 @@ class Bytes {
   uint8_t operator[](uint64_t i) const {
     return ptr_[i];
   }
+  // Return the starting address.
+  const void *address() const {
+    return ptr_;
+  }
   // Return a pointer to the sequence.
   const uint8_t *ptr() const {
     return ptr_;
