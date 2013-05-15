@@ -23,10 +23,11 @@
 #include <memory>
 
 #include "grnxx/mutex.hpp"
-#include "grnxx/storage.hpp"
 #include "grnxx/types.hpp"
 
 namespace grnxx {
+
+class Storage;
 
 struct Array3DHeader;
 
@@ -53,7 +54,7 @@ class Array3D {
                      uint64_t table_size, uint64_t secondary_table_size);
 
   uint32_t storage_node_id() const {
-    return storage_node_.id();
+    return storage_node_id_;
   }
 
   template <typename T, uint64_t TABLE_SIZE, uint64_t SECONDARY_TABLE_SIZE>
@@ -80,7 +81,7 @@ class Array3D {
 
  private:
   Storage *storage_;
-  StorageNode storage_node_;
+  uint32_t storage_node_id_;
   Array3DHeader *header_;
   void *default_value_;
   FillPage fill_page_;

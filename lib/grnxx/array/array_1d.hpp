@@ -19,10 +19,11 @@
 #define GRNXX_ARRAY_ARRAY_1D_HPP
 
 #include "grnxx/features.hpp"
-#include "grnxx/storage.hpp"
 #include "grnxx/types.hpp"
 
 namespace grnxx {
+
+class Storage;
 
 struct Array1DHeader;
 
@@ -45,7 +46,7 @@ class Array1D {
                      uint64_t value_size, uint64_t page_size);
 
   uint32_t storage_node_id() const {
-    return storage_node_.id();
+    return storage_node_id_;
   }
 
   template <typename T>
@@ -54,7 +55,7 @@ class Array1D {
   }
 
  private:
-  StorageNode storage_node_;
+  uint32_t storage_node_id_;
   Array1DHeader *header_;
   void *page_;
 

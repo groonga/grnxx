@@ -23,10 +23,11 @@
 #include <memory>
 
 #include "grnxx/mutex.hpp"
-#include "grnxx/storage.hpp"
 #include "grnxx/types.hpp"
 
 namespace grnxx {
+
+class Storage;
 
 struct Array2DHeader;
 
@@ -52,7 +53,7 @@ class Array2D {
                      uint64_t table_size);
 
   uint32_t storage_node_id() const {
-    return storage_node_.id();
+    return storage_node_id_;
   }
 
   template <typename T, uint64_t TABLE_SIZE>
@@ -75,7 +76,7 @@ class Array2D {
 
  private:
   Storage *storage_;
-  StorageNode storage_node_;
+  uint32_t storage_node_id_;
   Array2DHeader *header_;
   void *default_value_;
   FillPage fill_page_;

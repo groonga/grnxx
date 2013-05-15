@@ -23,6 +23,7 @@
 #include "grnxx/exception.hpp"
 #include "grnxx/lock.hpp"
 #include "grnxx/logger.hpp"
+#include "grnxx/storage.hpp"
 
 namespace grnxx {
 
@@ -49,7 +50,7 @@ Array2DHeader::Array2DHeader(uint64_t value_size, uint64_t page_size,
 
 Array2D::Array2D()
     : storage_(nullptr),
-      storage_node_(),
+      storage_node_id_(STORAGE_INVALID_NODE_ID),
       header_(nullptr),
       default_value_(nullptr),
       fill_page_(nullptr),
@@ -129,11 +130,13 @@ bool Array2D::create_array(Storage *storage, uint32_t storage_node_id,
   if (default_value) {
     storage_node_size += value_size;
   }
-  storage_node_ = storage->create_node(storage_node_id, storage_node_size);
-  if (!storage_node_) {
+  StorageNode storage_node =
+      storage->create_node(storage_node_id, storage_node_size);
+  if (!storage_node) {
     return false;
   }
-  header_ = static_cast<Array2DHeader *>(storage_node_.body());
+  storage_node_id_ = storage_node.id();
+  header_ = static_cast<Array2DHeader *>(storage_node.body());
   *header_ = Array2DHeader(value_size, page_size, table_size, default_value);
   if (default_value) {
     default_value_ = header_ + 1;
@@ -141,9 +144,9 @@ bool Array2D::create_array(Storage *storage, uint32_t storage_node_id,
     fill_page_ = fill_page;
   }
   StorageNode table_node =
-      storage->create_node(storage_node_.id(), sizeof(uint32_t) * table_size);
+      storage->create_node(storage_node_id_, sizeof(uint32_t) * table_size);
   if (!table_node) {
-    storage->unlink_node(storage_node_.id());
+    storage->unlink_node(storage_node_id_);
     return false;
   }
   header_->table_storage_node_id = table_node.id();
@@ -154,7 +157,7 @@ bool Array2D::create_array(Storage *storage, uint32_t storage_node_id,
   table_cache_.reset(new (std::nothrow) void *[table_size]);
   if (!table_cache_) {
     GRNXX_ERROR() << "new void *[] failed: size = " << table_size;
-    storage->unlink_node(storage_node_.id());
+    storage->unlink_node(storage_node_id_);
     return false;
   }
   for (uint64_t i = 0; i < table_size; ++i) {
@@ -167,11 +170,12 @@ bool Array2D::open_array(Storage *storage, uint32_t storage_node_id,
                          uint64_t value_size, uint64_t page_size,
                          uint64_t table_size, FillPage fill_page) {
   storage_ = storage;
-  storage_node_ = storage->open_node(storage_node_id);
-  if (!storage_node_) {
+  StorageNode storage_node = storage->open_node(storage_node_id);
+  if (!storage_node) {
     return false;
   }
-  header_ = static_cast<Array2DHeader *>(storage_node_.body());
+  storage_node_id_ = storage_node.id();
+  header_ = static_cast<Array2DHeader *>(storage_node.body());
   if (header_->value_size != value_size) {
     GRNXX_ERROR() << "parameter conflict: value_size = " << value_size
                   << ", stored_value_size = " << header_->value_size;

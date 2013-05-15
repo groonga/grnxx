@@ -21,6 +21,7 @@
 #include <new>
 
 #include "grnxx/logger.hpp"
+#include "grnxx/storage.hpp"
 
 namespace grnxx {
 
@@ -38,7 +39,7 @@ Array1DHeader::Array1DHeader(uint64_t value_size, uint64_t page_size)
       page_storage_node_id(STORAGE_INVALID_NODE_ID) {}
 
 Array1D::Array1D()
-    : storage_node_(),
+    : storage_node_id_(STORAGE_INVALID_NODE_ID),
       header_(nullptr),
       page_(nullptr) {}
 
@@ -99,16 +100,18 @@ bool Array1D::unlink(Storage *storage, uint32_t storage_node_id,
 bool Array1D::create_array(Storage *storage, uint32_t storage_node_id,
                            uint64_t value_size, uint64_t page_size,
                            const void *default_value, FillPage fill_page) {
-  storage_node_ = storage->create_node(storage_node_id, sizeof(Array1DHeader));
-  if (!storage_node_) {
+  StorageNode storage_node =
+      storage->create_node(storage_node_id, sizeof(Array1DHeader));
+  if (!storage_node) {
     return false;
   }
-  header_ = static_cast<Array1DHeader *>(storage_node_.body());
+  storage_node_id_ = storage_node.id();
+  header_ = static_cast<Array1DHeader *>(storage_node.body());
   *header_ = Array1DHeader(value_size, page_size);
   StorageNode page_node =
-      storage->create_node(storage_node_.id(), value_size * page_size);
+      storage->create_node(storage_node_id_, value_size * page_size);
   if (!page_node) {
-    storage->unlink_node(storage_node_.id());
+    storage->unlink_node(storage_node_id_);
     return false;
   }
   header_->page_storage_node_id = page_node.id();
@@ -121,11 +124,12 @@ bool Array1D::create_array(Storage *storage, uint32_t storage_node_id,
 
 bool Array1D::open_array(Storage *storage, uint32_t storage_node_id,
                          uint64_t value_size, uint64_t page_size) {
-  storage_node_ = storage->open_node(storage_node_id);
-  if (!storage_node_) {
+  StorageNode storage_node = storage->open_node(storage_node_id);
+  if (!storage_node) {
     return false;
   }
-  header_ = static_cast<Array1DHeader *>(storage_node_.body());
+  storage_node_id_ = storage_node.id();
+  header_ = static_cast<Array1DHeader *>(storage_node.body());
   if (header_->value_size != value_size) {
     GRNXX_ERROR() << "parameter conflict: value_size = " << value_size
                   << ", stored_value_size = " << header_->value_size;

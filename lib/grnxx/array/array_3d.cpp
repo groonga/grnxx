@@ -23,6 +23,7 @@
 #include "grnxx/exception.hpp"
 #include "grnxx/lock.hpp"
 #include "grnxx/logger.hpp"
+#include "grnxx/storage.hpp"
 
 namespace grnxx {
 
@@ -57,7 +58,7 @@ Array3DHeader::Array3DHeader(uint64_t value_size, uint64_t page_size,
 
 Array3D::Array3D()
     : storage_(nullptr),
-      storage_node_(),
+      storage_node_id_(STORAGE_INVALID_NODE_ID),
       header_(nullptr),
       default_value_(nullptr),
       fill_page_(nullptr),
@@ -141,11 +142,13 @@ bool Array3D::create_array(Storage *storage, uint32_t storage_node_id,
   if (default_value) {
     storage_node_size += value_size;
   }
-  storage_node_ = storage->create_node(storage_node_id, storage_node_size);
-  if (!storage_node_) {
+  StorageNode storage_node =
+      storage->create_node(storage_node_id, storage_node_size);
+  if (!storage_node) {
     return false;
   }
-  header_ = static_cast<Array3DHeader *>(storage_node_.body());
+  storage_node_id_ = storage_node.id();
+  header_ = static_cast<Array3DHeader *>(storage_node.body());
   *header_ = Array3DHeader(value_size, page_size, table_size,
                            secondary_table_size, default_value);
   if (default_value) {
@@ -158,7 +161,7 @@ bool Array3D::create_array(Storage *storage, uint32_t storage_node_id,
   if (!table_caches_) {
     GRNXX_ERROR() << "new std::unique_ptr<void *[]>[] failed: size = "
                   << secondary_table_size;
-    storage->unlink_node(storage_node_.id());
+    storage->unlink_node(storage_node_id_);
     return false;
   }
   return true;
@@ -169,11 +172,12 @@ bool Array3D::open_array(Storage *storage, uint32_t storage_node_id,
                          uint64_t table_size, uint64_t secondary_table_size,
                          FillPage fill_page) {
   storage_ = storage;
-  storage_node_ = storage->open_node(storage_node_id);
-  if (!storage_node_) {
+  StorageNode storage_node = storage->open_node(storage_node_id);
+  if (!storage_node) {
     return false;
   }
-  header_ = static_cast<Array3DHeader *>(storage_node_.body());
+  storage_node_id_ = storage_node.id();
+  header_ = static_cast<Array3DHeader *>(storage_node.body());
   if (header_->value_size != value_size) {
     GRNXX_ERROR() << "parameter conflict: value_size = " << value_size
                   << ", stored_value_size = " << header_->value_size;
@@ -301,7 +305,7 @@ bool Array3D::initialize_secondary_table() {
         const uint64_t secondary_table_size =
             sizeof(uint32_t) * header_->secondary_table_size;
         StorageNode secondary_table_node =
-            storage_->create_node(storage_node_.id(), secondary_table_size);
+            storage_->create_node(storage_node_id_, secondary_table_size);
         if (!secondary_table_node) {
           return false;
         }
