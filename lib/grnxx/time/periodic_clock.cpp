@@ -17,8 +17,9 @@
 */
 #include "grnxx/time/periodic_clock.hpp"
 
-#include "grnxx/intrinsic.hpp"
 #include "grnxx/thread.hpp"
+#include "grnxx/lock.hpp"
+#include "grnxx/mutex.hpp"
 
 namespace grnxx {
 namespace {
@@ -29,40 +30,31 @@ constexpr Duration UPDATE_INTERVAL = Duration::milliseconds(100);
 
 volatile uint32_t ref_count = 0;
 grnxx::Thread *thread = nullptr;
+Mutex mutex(MUTEX_UNLOCKED);
 
 }  // namespace
 
 Time PeriodicClock::now_ = Time::min();
 
 PeriodicClock::PeriodicClock() {
-  for ( ; ; ) {
-    const uint32_t count = ref_count;
-    if (atomic_compare_and_swap(count, count + 1, &ref_count)) {
-      if (count == 0) {
-        // Start the internal thread.
-        thread = grnxx::Thread::create(routine);
-        if (thread) {
-          now_ = SystemClock::now();
-        }
-      }
-      break;
+  // Start the internal thread iff this is the first object.
+  Lock lock(&mutex);
+  if (++ref_count == 1) {
+    thread = grnxx::Thread::create(routine);
+    if (thread) {
+      now_ = SystemClock::now();
     }
   }
 }
 
 PeriodicClock::~PeriodicClock() {
-  for ( ; ; ) {
-    const uint32_t count = ref_count;
-    if (atomic_compare_and_swap(count, count - 1, &ref_count)) {
-      if (count == 1) {
-        // Stop the running thread.
-        thread->join();
-        delete thread;
-        thread = nullptr;
-        now_ = Time::min();
-      }
-      break;
-    }
+  // Stop the running thread iff this is the last object.
+  Lock lock(&mutex);
+  if (--ref_count == 0) {
+    thread->join();
+    delete thread;
+    thread = nullptr;
+    now_ = Time::min();
   }
 }
 
