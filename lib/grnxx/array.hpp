@@ -132,7 +132,7 @@ class Array<T, PAGE_SIZE, 1, 1> {
   }
 
   // Get a value and return true.
-  // The value is assigned to "*value".
+  // The value is assigned to "*value" iff "value" != nullptr.
   bool get(uint64_t value_id, Value *value) {
     const Value * const page = get_page(value_id / PAGE_SIZE);
     if (value) {
@@ -260,7 +260,7 @@ class Array<T, PAGE_SIZE, TABLE_SIZE, 1> {
   }
 
   // Get a value and return true on success.
-  // The value is assigned to "*value".
+  // The value is assigned to "*value" iff "value" != nullptr.
   bool get(uint64_t value_id, Value *value) {
     const Value * const page = get_page(value_id / PAGE_SIZE);
     if (!page) {
@@ -401,7 +401,7 @@ class Array {
   }
 
   // Get a value and return true on success.
-  // The value is assigned to "*value".
+  // The value is assigned to "*value" iff "value" != nullptr.
   bool get(uint64_t value_id, Value *value) {
     const Value * const page = get_page(value_id / PAGE_SIZE);
     if (!page) {
