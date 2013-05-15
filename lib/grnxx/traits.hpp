@@ -40,7 +40,7 @@ template <> struct PreferredArgument<GeoPoint> {
 // Check if operator<() is defined or not.
 struct HasLessHelper {
   template <typename T>
-  static auto check(T *p) -> decltype(p->operator<(), std::true_type());
+  static auto check(T *p) -> decltype(p->operator<(*p), std::true_type());
   template <typename T>
   static auto check(T *p) -> decltype(operator<(*p, *p), std::true_type());
   template <typename>
@@ -51,7 +51,7 @@ template <typename T>
 struct HasLess {
   static constexpr bool value() {
     return std::conditional<std::is_scalar<T>::value, std::true_type,
-                            decltype(HasLessHelper::check<T>(0))>::value;
+                            decltype(HasLessHelper::check<T>(0))>::type::value;
   }
 };
 
@@ -66,8 +66,7 @@ struct HasStartsWithHelper {
 template <typename T>
 struct HasStartsWith {
   static constexpr bool value() {
-    return std::conditional<std::is_scalar<T>::value, std::true_type,
-                            decltype(HasStartsWithHelper::check<T>(0))>::value;
+    return decltype(HasStartsWithHelper::check<T>(0))::value;
   }
 };
 
@@ -77,7 +76,7 @@ struct Traits {
   using Type = T;
   using ArgumentType = typename PreferredArgument<T>::Type;
 
-  static constexpr bool hass_less() {
+  static constexpr bool has_less() {
     return HasLess<T>::value();
   }
   static constexpr bool has_starts_with() {
