@@ -55,3 +55,4 @@ test/test_string_format
 test/test_thread
 test/test_time
 test/test_traits
+test/test_types

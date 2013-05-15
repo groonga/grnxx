@@ -28,7 +28,8 @@ TESTS =					\
 	test_string_format		\
 	test_thread			\
 	test_time			\
-	test_traits
+	test_traits			\
+	test_types
 
 check_PROGRAMS = $(TESTS)
 
@@ -115,3 +116,6 @@ test_time_LDADD = ../lib/grnxx/libgrnxx.la
 
 test_traits_SOURCES = test_traits.cpp
 test_traits_LDADD = ../lib/grnxx/libgrnxx.la
+
+test_types_SOURCES = test_types.cpp
+test_types_LDADD = ../lib/grnxx/libgrnxx.la
