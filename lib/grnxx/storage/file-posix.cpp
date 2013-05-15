@@ -192,13 +192,12 @@ bool FileImpl::sync() {
   return true;
 }
 
-bool FileImpl::resize(int64_t size) {
+bool FileImpl::resize(uint64_t size) {
   if (flags_ & FILE_READ_ONLY) {
     GRNXX_ERROR() << "read-only";
     return false;
   }
-  if ((size < 0) ||
-      (size > std::numeric_limits<off_t>::max())) {
+  if (size > static_cast<uint64_t>(std::numeric_limits<off_t>::max())) {
     GRNXX_ERROR() << "invalid argument: size = " << size;
     return false;
   }
@@ -211,14 +210,17 @@ bool FileImpl::resize(int64_t size) {
   return true;
 }
 
-int64_t FileImpl::size() const {
+bool FileImpl::get_size(uint64_t *size) {
   struct stat stat;
   if (::fstat(fd_, &stat) != 0) {
     GRNXX_ERROR() << "failed to stat file: path = " << path_.get()
                   << ": '::fstat' " << Error(errno);
-    return -1;
+    return false;
   }
-  return stat.st_size;
+  if (size) {
+    *size = stat.st_size;
+  }
+  return true;
 }
 
 const char *FileImpl::path() const {

@@ -53,8 +53,8 @@ class FileImpl : public File {
 
   bool sync();
 
-  bool resize(int64_t size);
-  int64_t size() const;
+  bool resize(uint64_t size);
+  bool get_size(uint64_t *size);
 
   const char *path() const;
   FileFlags flags() const;

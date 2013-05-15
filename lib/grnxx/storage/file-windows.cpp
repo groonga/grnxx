@@ -197,13 +197,12 @@ void FileImpl::sync() {
   return true;
 }
 
-bool FileImpl::resize(int64_t size) {
+bool FileImpl::resize(uint64_t size) {
   if (flags_ & FILE_READ_ONLY) {
     GRNXX_ERROR() << "read-only";
     return false;
   }
-  if ((size < 0) ||
-      (size > std::numeric_limits<off_t>::max())) {
+  if (size > static_cast<uint64_t>(std::numeric_limits<LONGLONG>::max())) {
     GRNXX_ERROR() << "invalid argument: size = " << size;
     return false;
   }
@@ -224,14 +223,17 @@ bool FileImpl::resize(int64_t size) {
   return true;
 }
 
-int64_t FileImpl::size() const {
+bool FileImpl::get_size(uint64_t *size) {
   LARGE_INTEGER file_size;
   if (!::GetFileSizeEx(handle_, &file_size)) {
     GRNXX_ERROR() << "failed to get file size: path = " << path_.get()
                   << ": '::GetFileSizeEx' " << Error(::GetLastError());
-    return -1;
+    return false;
   }
-  return file_size.QuadPart;
+  if (size) {
+    *size = file_size.QuadPart;
+  }
+  return true;
 }
 
 const char *FileImpl::path() const {

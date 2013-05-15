@@ -119,7 +119,7 @@ class StorageImpl : public Storage {
   File *reserve_file(uint16_t file_id, uint64_t size);
   char *generate_path(uint16_t file_id);
 
-  Chunk *create_chunk(File *file, int64_t offset, int64_t size);
+  Chunk *create_chunk(File *file, uint64_t offset, uint64_t size);
 };
 
 }  // namespace storage

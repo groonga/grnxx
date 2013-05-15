@@ -89,9 +89,9 @@ class File {
 
   // Extend or truncate a file to "size" bytes.
   // Note that the contents of the extended part are undefined.
-  virtual bool resize(int64_t size) = 0;
+  virtual bool resize(uint64_t size) = 0;
   // Return the file size on success, or a negative value on failure.
-  virtual int64_t size() const = 0;
+  virtual bool get_size(uint64_t *size) = 0;
 
   // Return the file path.
   virtual const char *path() const = 0;

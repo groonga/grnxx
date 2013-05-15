@@ -93,7 +93,10 @@ bool ChunkImpl::sync(uint64_t offset, uint64_t size) {
 
 bool ChunkImpl::create_file_backed_chunk(File *file, uint64_t offset,
                                          uint64_t size, ChunkFlags flags) {
-  const uint64_t file_size = file->size();
+  uint64_t file_size;
+  if (!file->get_size(&file_size)) {
+    return false;
+  }
   if ((offset >= file_size) || (size > file_size) ||
       (size > (file_size - offset))) {
     GRNXX_ERROR() << "invalid argument: offset = " << offset

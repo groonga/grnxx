@@ -24,9 +24,9 @@
 namespace grnxx {
 namespace {
 
-// 1GB-4EB (default: 1TB).
+// 1GB-8EB (default: 1TB).
 constexpr uint64_t MAX_FILE_SIZE_LOWER_LIMIT = 1ULL << 30;
-constexpr uint64_t MAX_FILE_SIZE_UPPER_LIMIT = 1ULL << 62;
+constexpr uint64_t MAX_FILE_SIZE_UPPER_LIMIT = 1ULL << 63;
 constexpr uint64_t MAX_FILE_SIZE_DEFAULT     = 1ULL << 40;
 // 1-1000 (default: 1000).
 constexpr uint16_t MAX_NUM_FILES_LOWER_LIMIT = 1;
