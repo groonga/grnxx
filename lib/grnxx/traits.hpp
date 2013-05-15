@@ -51,7 +51,23 @@ template <typename T>
 struct HasLess {
   static constexpr bool value() {
     return std::conditional<std::is_scalar<T>::value, std::true_type,
-                              decltype(HasLessHelper::check<T>(0))>::value;
+                            decltype(HasLessHelper::check<T>(0))>::value;
+  }
+};
+
+// Check if T has starts_with() or not.
+struct HasStartsWithHelper {
+  template <typename T>
+  static auto check(T *p) -> decltype(p->starts_with(*p), std::true_type());
+  template <typename>
+  static auto check(...) -> decltype(std::false_type());
+};
+// Check if T has operator<() or not.
+template <typename T>
+struct HasStartsWith {
+  static constexpr bool value() {
+    return std::conditional<std::is_scalar<T>::value, std::true_type,
+                            decltype(HasStartsWithHelper::check<T>(0))>::value;
   }
 };
 
@@ -60,8 +76,12 @@ template <typename T>
 struct Traits {
   using Type = T;
   using ArgumentType = typename PreferredArgument<T>::Type;
+
   static constexpr bool hass_less() {
     return HasLess<T>::value();
+  }
+  static constexpr bool has_starts_with() {
+    return HasStartsWith<T>::value();
   }
 };
 
