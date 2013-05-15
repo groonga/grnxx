@@ -48,7 +48,7 @@ StringBuilder &operator<<(StringBuilder &builder, ChunkFlags flags) {
 Chunk::Chunk() {}
 Chunk::~Chunk() {}
 
-Chunk *Chunk::create(File *file, int64_t offset, int64_t size,
+Chunk *Chunk::create(File *file, uint64_t offset, uint64_t size,
                      ChunkFlags flags) {
   return ChunkImpl::create(file, offset, size, flags);
 }

@@ -16,15 +16,16 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 #include <cassert>
-#include <sstream>
+#include <memory>
 #include <random>
 #include <unordered_set>
 
+#include "grnxx/logger.hpp"
 #include "grnxx/storage.hpp"
 #include "grnxx/storage/file.hpp"
 #include "grnxx/storage/path.hpp"
 #include "grnxx/storage/chunk.hpp"
-#include "grnxx/logger.hpp"
+#include "grnxx/types.hpp"
 
 namespace {
 
@@ -254,7 +255,7 @@ void test_chunk_create() {
   assert(chunk);
   chunk.reset(grnxx::storage::Chunk::create(file.get(), 0));
   assert(chunk);
-  chunk.reset(grnxx::storage::Chunk::create(file.get(), 0, -1));
+  chunk.reset(grnxx::storage::Chunk::create(file.get(), 0, 0));
   assert(chunk);
   chunk.reset(grnxx::storage::Chunk::create(file.get(), 0, file->size()));
   assert(chunk);
@@ -264,8 +265,6 @@ void test_chunk_create() {
   chunk.reset(grnxx::storage::Chunk::create(file.get(), -1));
   assert(!chunk);
   chunk.reset(grnxx::storage::Chunk::create(file.get(), file->size() + 1));
-  assert(!chunk);
-  chunk.reset(grnxx::storage::Chunk::create(file.get(), 0, 0));
   assert(!chunk);
   chunk.reset(grnxx::storage::Chunk::create(file.get(), 0, file->size() + 1));
   assert(!chunk);
@@ -294,11 +293,9 @@ void test_chunk_sync() {
   assert(chunk);
   assert(chunk->sync());
   assert(chunk->sync(0));
-  assert(chunk->sync(0, -1));
   assert(chunk->sync(0, 0));
   assert(chunk->sync(0, file->size()));
 
-  assert(!chunk->sync(-1));
   assert(!chunk->sync(file->size() + 1));
   assert(!chunk->sync(0, file->size() + 1));
   assert(!chunk->sync(file->size() / 2, file->size()));

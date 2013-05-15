@@ -22,6 +22,7 @@
 #include <sys/mman.h>
 
 #include <cerrno>
+#include <limits>
 #include <memory>
 #include <new>
 
@@ -51,7 +52,7 @@ ChunkImpl::~ChunkImpl() {
   }
 }
 
-ChunkImpl *ChunkImpl::create(File *file, int64_t offset, int64_t size,
+ChunkImpl *ChunkImpl::create(File *file, uint64_t offset, uint64_t size,
                              ChunkFlags flags) {
   std::unique_ptr<ChunkImpl> chunk(new (std::nothrow) ChunkImpl);
   if (!chunk) {
@@ -70,19 +71,22 @@ ChunkImpl *ChunkImpl::create(File *file, int64_t offset, int64_t size,
   return chunk.release();
 }
 
-bool ChunkImpl::sync(int64_t offset, int64_t size) {
+bool ChunkImpl::sync(uint64_t offset, uint64_t size) {
   if ((flags_ & CHUNK_ANONYMOUS) || (flags_ & CHUNK_READ_ONLY)) {
     GRNXX_WARNING() << "invalid operation: flags = " << flags_;
     return false;
   }
-  if ((offset < 0) || (offset > size_) || (size > size_) ||
-      ((size >= 0) && (size > (size_ - offset)))) {
+  if ((offset > size_) || (size > size_) || (size > (size_ - offset))) {
     GRNXX_ERROR() << "invalid argument: offset = " << offset
                   << ", size = " << size << ", chunk_size = " << size_;
     return false;
   }
-  if (size < 0) {
+  if (size == 0) {
     size = size_ - offset;
+  }
+  if (size > std::numeric_limits<size_t>::max()) {
+    GRNXX_ERROR() << "invalid argument: size = " << size;
+    return false;
   }
   if (size > 0) {
     if (::msync(static_cast<char *>(address_) + offset, size, MS_SYNC) != 0) {
@@ -102,22 +106,27 @@ void *ChunkImpl::address() const {
   return address_;
 }
 
-int64_t ChunkImpl::size() const {
+uint64_t ChunkImpl::size() const {
   return size_;
 }
 
-bool ChunkImpl::create_file_backed_chunk(File *file, int64_t offset,
-                                         int64_t size, ChunkFlags flags) {
-  const int64_t file_size = file->size();
-  if ((offset < 0) || (offset >= file_size) ||
-      (size == 0) || (size > file_size) ||
-      ((size > 0) && (size > (file_size - offset)))) {
+bool ChunkImpl::create_file_backed_chunk(File *file, uint64_t offset,
+                                         uint64_t size, ChunkFlags flags) {
+  const uint64_t file_size = file->size();
+  if ((offset >= file_size) || (size > file_size) ||
+      (size > (file_size - offset))) {
     GRNXX_ERROR() << "invalid argument: offset = " << offset
                   << ", size = " << size << ", file_size = " << file_size;
     return false;
   }
-  if (size < 0) {
+  if (size == 0) {
     size = file_size - offset;
+  }
+  if ((offset > static_cast<uint64_t>(std::numeric_limits<off_t>::max())) ||
+      (size > std::numeric_limits<size_t>::max())) {
+    GRNXX_ERROR() << "invalid argument: offset = " << offset
+                  << ", size = " << size;
+    return false;
   }
   if (file->flags() & FILE_READ_ONLY) {
     flags_ |= CHUNK_READ_ONLY;
@@ -142,8 +151,8 @@ bool ChunkImpl::create_file_backed_chunk(File *file, int64_t offset,
   return true;
 }
 
-bool ChunkImpl::create_anonymous_chunk(int64_t size, ChunkFlags flags) {
-  if (size <= 0) {
+bool ChunkImpl::create_anonymous_chunk(uint64_t size, ChunkFlags flags) {
+  if ((size == 0) || (size > std::numeric_limits<size_t>::max())) {
     GRNXX_ERROR() << "invalid argument: size = " << size;
     return false;
   }

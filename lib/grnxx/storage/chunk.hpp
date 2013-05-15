@@ -55,20 +55,18 @@ class Chunk {
   // Create a file-backed memory mapping on "file" if "file" != nullptr, or
   // create an anonymous memory mapping.
   // The available flag is CHUNK_HUGE_TLB.
-  static Chunk *create(File *file,
-                       int64_t offset = 0,
-                       int64_t size = -1,
+  static Chunk *create(File *file, uint64_t offset = 0, uint64_t size = 0,
                        ChunkFlags flags = CHUNK_DEFAULT);
 
   // Flush modified pages.
-  virtual bool sync(int64_t offset = 0, int64_t size = -1) = 0;
+  virtual bool sync(uint64_t offset = 0, uint64_t size = 0) = 0;
 
   // Return the enabled flags.
   virtual ChunkFlags flags() const = 0;
   // Return the starting address.
   virtual void *address() const = 0;
   // Return the size.
-  virtual int64_t size() const = 0;
+  virtual uint64_t size() const = 0;
 };
 
 }  // namespace storage

@@ -32,23 +32,23 @@ class ChunkImpl : public Chunk {
   ChunkImpl();
   ~ChunkImpl();
 
-  static ChunkImpl *create(File *file, int64_t offset, int64_t size,
+  static ChunkImpl *create(File *file, uint64_t offset, uint64_t size,
                            ChunkFlags flags);
 
-  bool sync(int64_t offset, int64_t size);
+  bool sync(uint64_t offset, uint64_t size);
 
   ChunkFlags flags() const;
   void *address() const;
-  int64_t size() const;
+  uint64_t size() const;
 
  private:
   ChunkFlags flags_;
   void *address_;
-  int64_t size_;
+  uint64_t size_;
 
-  bool create_file_backed_chunk(File *file, int64_t offset, int64_t size,
+  bool create_file_backed_chunk(File *file, uint64_t offset, uint64_t size,
                                 ChunkFlags flags);
-  bool create_anonymous_chunk(int64_t size, ChunkFlags flags);
+  bool create_anonymous_chunk(uint64_t size, ChunkFlags flags);
 };
 
 }  // namespace storage
