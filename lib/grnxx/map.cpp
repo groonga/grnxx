@@ -17,7 +17,26 @@
 */
 #include "grnxx/map.hpp"
 
+#include "grnxx/logger.hpp"
+
 namespace grnxx {
+
+template <typename T>
+MapCursor<T>::MapCursor() : key_id_(-1), key_() {}
+
+template <typename T>
+MapCursor<T>::~MapCursor() {}
+
+template <typename T>
+bool MapCursor<T>::remove() {
+  GRNXX_ERROR() << "invalid operation";
+  return false;
+}
+
+MapCursorOptions::MapCursorOptions()
+    : flags(MAP_CURSOR_DEFAULT),
+      offset(0),
+      limit(-1) {}
 
 // TODO
 

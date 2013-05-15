@@ -18,8 +18,9 @@
 #ifndef GRNXX_MAP_HPP
 #define GRNXX_MAP_HPP
 
-#include "grnxx/storage.hpp"
+#include "grnxx/flags_impl.hpp"
 #include "grnxx/traits.hpp"
+#include "grnxx/types.hpp"
 
 namespace grnxx {
 namespace map {
@@ -30,10 +31,11 @@ template <typename T> class CursorQuery;
 
 }  // namespace map
 
+class Storage;
 class Charset;
 template <typename T> class Map;
 
-enum MapType : int32_t {
+enum MapType : uint32_t {
   MAP_UNKNOWN      = 0,
   MAP_ARRAY        = 1,  // TODO: Array-based implementation.
   MAP_DOUBLE_ARRAY = 2,  // TODO: DoubleArray-based implementation.
@@ -66,7 +68,8 @@ struct MapCursorOptions {
   uint64_t offset;
   uint64_t limit;
 
-  MapCursorOptions() : flags(MAP_CURSOR_DEFAULT), offset(0), limit(-1) {}
+  // Initialize the members.
+  MapCursorOptions();
 };
 
 template <typename T>
@@ -79,12 +82,12 @@ class MapCursor {
   virtual ~MapCursor();
 
   // Move the cursor to the next key and return true on success.
-  virtual bool next();
+  virtual bool next() = 0;
   // Remove the current key and return true on success.
   virtual bool remove();
 
   // Return the ID of the current key.
-  int64_t key_id() const {
+  uint64_t key_id() const {
     return key_id_;
   }
   // Return a reference to the current key.
@@ -93,7 +96,7 @@ class MapCursor {
   }
 
  protected:
-  int64_t key_id_;
+  uint64_t key_id_;
   Key key_;
 };
 
@@ -119,7 +122,7 @@ class MapScanner {
     return size_;
   }
   // Return the ID of the found key.
-  int64_t key_id() const {
+  uint64_t key_id() const {
     return key_id_;
   }
   // Return a reference to the found key.
@@ -130,7 +133,7 @@ class MapScanner {
  protected:
   uint64_t offset_;
   uint64_t size_;
-  int64_t key_id_;
+  uint64_t key_id_;
   Key key_;
 };
 
@@ -139,6 +142,10 @@ class Map {
  public:
   using Key = typename Traits<T>::Type;
   using KeyArg = typename Traits<T>::ArgumentType;
+  using DummyKeyID = map::DummyKeyID<T>;
+  using DummyKey = map::DummyKey<T>;
+  using Cursor = MapCursor<T>;
+  using Scanner = MapScanner<T>;
 
   Map();
   virtual ~Map();
@@ -158,51 +165,51 @@ class Map {
   virtual MapType type() const;
 
   // Return the minimum key ID.
-  constexpr int64_t min_key_id() {
+  constexpr uint64_t min_key_id() {
     return 0;
   }
   // Return the maximum key ID ever used.
   // If the map is empty, the return value can be -1.
-  virtual int64_t max_key_id() const;
+  virtual uint64_t max_key_id() const;
   // Return the ID of the expected next inserted ID.
-  virtual int64_t next_key_id() const;
+  virtual uint64_t next_key_id() const;
   // Return the number of keys.
   virtual uint64_t num_keys() const;
 
   // Get a key associated with "key_id" and return true on success.
   // Assign the found key to "*key" iff "key" != nullptr.
-  virtual bool get(int64_t key_id, Key *key = nullptr);
+  virtual bool get(uint64_t key_id, Key *key = nullptr);
   // Find the next key and return true on success. The next key means the key
   // associated with the smallest valid ID that is greater than "key_id".
   // If "key_id" < 0, this finds the first key.
   // Assign the ID to "*next_key_id" iff "next_key_id" != nullptr.
   // Assign the key to "*next_key" iff "next_key" != nullptr.
-  virtual bool get_next(int64_t key_id, int64_t *next_key_id = nullptr,
+  virtual bool get_next(uint64_t key_id, uint64_t *next_key_id = nullptr,
                         Key *next_key = nullptr);
   // Remove a key associated with "key_id" and return true on success.
-  virtual bool unset(int64_t key_id);
+  virtual bool unset(uint64_t key_id);
   // Replace a key associated with "key_id" with "dest_key" and return true
   // on success.
-  virtual bool reset(int64_t key_id, KeyArg dest_key);
+  virtual bool reset(uint64_t key_id, KeyArg dest_key);
 
   // Find "key" and return true on success.
   // Assign the ID to "*key_id" iff "key_id" != nullptr.
-  virtual bool find(KeyArg key, int64_t *key_id = nullptr);
+  virtual bool find(KeyArg key, uint64_t *key_id = nullptr);
   // Insert "key" and return true on success.
   // Assign the ID to "*key_id" iff "key_id" != nullptr.
-  virtual bool insert(KeyArg key, int64_t *key_id = nullptr);
+  virtual bool insert(KeyArg key, uint64_t *key_id = nullptr);
   // Remove "key" and return true on success.
   virtual bool remove(KeyArg key);
   // Replace "src_key" with "dest_key" and return true on success.
   // Assign the ID to "*key_id" iff "key_id" != nullptr.
   virtual bool update(KeyArg src_key, KeyArg dest_key,
-                      int64_t *key_id = nullptr);
+                      uint64_t *key_id = nullptr);
 
   // Perform longest prefix matching and return true on success.
   // Assign the ID to "*key_id" iff "key_id" != nullptr.
   // Assign the key to "*key" iff "key" != nullptr.
   virtual bool find_longest_prefix_match(KeyArg query,
-                                         int64_t *key_id = nullptr,
+                                         uint64_t *key_id = nullptr,
                                          Key *key = nullptr);
 
   // Remove all the keys in "*this" and return true on success.
@@ -210,25 +217,25 @@ class Map {
 
   // TODO: Not yet fixed.
   // Return a reference to create a cursor query.
-  const map::DummyKeyID<Key> &key_id() const {
-    return *static_cast<const map::DummyKeyID<Key> *>(nullptr);
+  const DummyKeyID &key_id() const {
+    return *static_cast<const DummyKeyID *>(nullptr);
   }
   // Return a reference to create a cursor query.
-  const map::DummyKey<Key> &key() const {
-    return *static_cast<const map::DummyKey<Key> *>(nullptr);
+  const DummyKey &key() const {
+    return *static_cast<const DummyKey *>(nullptr);
   }
 
   // Create a cursor for accessing all the keys.
-  virtual MapCursor<Key> *create_cursor(
+  virtual Cursor *create_cursor(
       const MapCursorOptions &options = MapCursorOptions());
   // Create a cursor for accessing keys that satisfy "query".
-  virtual MapCursor<Key> *create_cursor(
+  virtual Cursor *create_cursor(
       const map::CursorQuery<Key> &query,
       const MapCursorOptions &options = MapCursorOptions());
 
   // Create a MapScanner object to find keys in "query".
-  virtual MapScanner<Key> *create_scanner(KeyArg query,
-                                          const Charset *charset = nullptr);
+  virtual Scanner *create_scanner(KeyArg query,
+                                  const Charset *charset = nullptr);
 };
 
 }  // namespace grnxx
