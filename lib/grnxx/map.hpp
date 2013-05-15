@@ -33,7 +33,12 @@ template <typename T> class CursorQuery;
 
 class Storage;
 class Charset;
+
 template <typename T> class Map;
+
+constexpr uint64_t MAP_MIN_KEY_ID     = 0;
+constexpr uint64_t MAP_MAX_KEY_ID     = (1ULL << 40) - 1;
+constexpr uint64_t MAP_INVALID_KEY_ID = MAP_MAX_KEY_ID + 1;
 
 enum MapType : uint32_t {
   MAP_UNKNOWN      = 0,
@@ -44,6 +49,8 @@ enum MapType : uint32_t {
 };
 
 struct MapOptions {
+  // Initialize the members.
+  MapOptions();
 };
 
 // TODO: How to implement NEAR cursor.
@@ -160,21 +167,21 @@ class Map {
   static bool unlink(Storage *storage, uint32_t storage_node_id);
 
   // Return the storage node ID.
-  virtual uint32_t storage_node_id() const;
+  virtual uint32_t storage_node_id() const = 0;
   // Return the implementation type.
-  virtual MapType type() const;
+  virtual MapType type() const = 0;
 
   // Return the minimum key ID.
   constexpr uint64_t min_key_id() {
-    return 0;
+    return MAP_MIN_KEY_ID;
   }
   // Return the maximum key ID ever used.
-  // If the map is empty, the return value can be -1.
-  virtual uint64_t max_key_id() const;
+  // If the map is empty, the return value can be MAP_INVALID_KEY_ID.
+  virtual uint64_t max_key_id() const = 0;
   // Return the ID of the expected next inserted ID.
-  virtual uint64_t next_key_id() const;
+  virtual uint64_t next_key_id() const = 0;
   // Return the number of keys.
-  virtual uint64_t num_keys() const;
+  virtual uint64_t num_keys() const = 0;
 
   // Get a key associated with "key_id" and return true on success.
   // Assign the found key to "*key" iff "key" != nullptr.
