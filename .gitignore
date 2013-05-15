@@ -44,9 +44,6 @@ test/test_intrinsic
 test/test_io
 test/test_logger
 test/test_map
-test/test_map_da_basic_trie
-test/test_map_da_large_trie
-test/test_map_double_array
 test/test_mutex
 test/test_os
 test/test_recycler

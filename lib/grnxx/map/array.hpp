@@ -15,10 +15,15 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#include "grnxx/map.hpp"
+#ifndef GRNXX_MAP_ARRAY_HPP
+#define GRNXX_MAP_ARRAY_HPP
+
+#include "grnxx/features.hpp"
 
 namespace grnxx {
+namespace map {
 
-// TODO
-
+}  // namespace map
 }  // namespace grnxx
+
+#endif  // GRNXX_MAP_ARRAY_HPP

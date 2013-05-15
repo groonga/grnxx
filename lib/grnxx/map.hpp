@@ -18,166 +18,177 @@
 #ifndef GRNXX_MAP_HPP
 #define GRNXX_MAP_HPP
 
-#include "grnxx/io/pool.hpp"
-#include "grnxx/slice.hpp"
+#include "grnxx/storage.hpp"
+#include "grnxx/traits.hpp"
 
 namespace grnxx {
 
 class Charset;
-class Map;
+
+namespace alpha {
+
+template <typename T> class Map;
+template <typename T> class MapCursor;
+template <typename T> class MapScan;
 
 enum MapType : int32_t {
   MAP_UNKNOWN      = 0,
-  MAP_DOUBLE_ARRAY = 1   // grnxx::map::DoubleArray.
+  MAP_ARRAY        = 1,  // Array-based implementation.
+  MAP_DOUBLE_ARRAY = 2,  // DoubleArray-based implementation.
+  MAP_PATRICIA     = 3,  // TODO: Patricia-based implementation.
+  MAP_HASH_TABLE   = 4   // TODO: HashTable-based implementation.
 };
 
 struct MapOptions {
-  MapType type;
-
-  MapOptions();
 };
 
-struct MapHeader {
-  MapType type;
+struct MapCursorFlagsIdentifier;
+using MapCursorFlags = FlagsImpl<MapCursorFlagsIdentifier>;
 
-  MapHeader();
+// Use the default settings.
+constexpr MapCursorFlags MAP_CURSOR_DEFAULT       =
+    MapCursorFlags::define(0x000);
+// Sort keys by ID.
+constexpr MapCursorFlags MAP_CURSOR_ORDER_BY_ID   =
+    MapCursorFlags::define(0x001);
+// Sort keys by key.
+constexpr MapCursorFlags MAP_CURSOR_ORDER_BY_KEY  =
+    MapCursorFlags::define(0x002);
+// Access keys in reverse order.
+constexpr MapCursorFlags MAP_CURSOR_REVERSE_ORDER =
+    MapCursorFlags::define(0x010);
+
+struct MapCursorOptions {
+  MapCursorFlags flags;
+  uint64_t offset;
+  uint64_t limit;
+
+  MapCursorOptions() : flags(MAP_CURSOR_DEFAULT), offset(0), limit(-1) {}
 };
 
-// TODO: Dynamic memory allocation will be supported.
-class MapKey {
+template <typename T>
+class Map {
  public:
-  // Create an empty (zero-size) key.
-  MapKey() : slice_() {}
-  // Create a key that refers to a zero-terminated string.
-  MapKey(const char *cstr) : slice_(cstr) {}
-  // Create a key.
-  MapKey(const void *ptr, size_t size) : slice_(ptr, size) {}
+  using Value = typename Traits<T>::Type;
+  using ValueArg = typename Traits<T>::ArgumentType;
 
-  // Disable copy.
-  MapKey(const MapKey &) = delete;
-  MapKey &operator=(const MapKey &) = delete;
+  Map();
+  virtual ~Map();
 
-  MapKey &operator=(const Slice &s) {
-    slice_ = s;
-    return *this;
-  }
+  // Create a map.
+  static Map *create(Storage *storage, uint32_t storage_node_id,
+                     MapType type, const MapOptions &options = MapOptions());
+  // Open a map.
+  static Map *open(Storage *storage, uint32_t storage_node_id);
 
-  // Return true iff "*this" is not empty.
-  explicit operator bool() const {
-    return static_cast<bool>(slice_);
-  }
+  // Unlink a map.
+  static bool unlink(Storage *storage, uint32_t storage_node_id);
 
-  // Make "*this" empty.
-  void clear() {
-    slice_.clear();
-  }
+  // Return the storage node ID.
+  virtual uint32_t storage_node_id() const;
+  // Return the implementation type.
+  virtual MapType type() const;
 
-  // Compare "*this" and "s" and return a negative value if "*this" < "s",
-  // zero if "*this" == "s", or a positive value otherwise (if "*this" > "s").
-  int compare(const Slice &s) const {
-    return slice_.compare(s);
+  // Return the minimum key ID.
+  constexpr int64_t min_key_id() {
+    return 0;
   }
+  // Return the maximum key ID ever used.
+  // If the map is empty, the return value can be -1.
+  virtual int64_t max_key_id() const;
+  // Return the ID of the expected next inserted ID.
+  virtual int64_t next_key_id() const;
+  // Return the number of keys.
+  virtual uint64_t num_keys() const;
 
-  // Return true iff "s" is a prefix of "*this".
-  bool starts_with(const Slice &s) const {
-    return slice_.starts_with(s);
-  }
-  // Return true iff "s" is a suffix of "*this".
-  bool ends_with(const Slice &s) const {
-    return slice_.ends_with(s);
-  }
+  // Get a key associated with "key_id" and return true on success.
+  // Assign the found key to "*key" iff "key" != nullptr.
+  virtual bool get(int64_t key_id, Value *key = nullptr);
+  // Find the next key and return true on success. The next key means the key
+  // associated with the smallest valid ID that is greater than "key_id".
+  // If "key_id" < 0, this finds the first key.
+  // Assign the ID to "*next_key_id" iff "next_key_id" != nullptr.
+  // Assign the key to "*next_key" iff "next_key" != nullptr.
+  virtual bool get_next(int64_t key_id, int64_t *next_key_id = nullptr,
+                        Value *next_key = nullptr);
+  // Remove a key associated with "key_id" and return true on success.
+  virtual bool unset(int64_t key_id);
+  // Replace a key associated with "key_id" with "dest_key" and return true
+  // on success.
+  virtual bool reset(int64_t key_id, ValueArg dest_key);
 
-  // Return the "i"-th byte of "*this".
-  uint8_t operator[](size_t i) const {
-    return slice_[i];
-  }
+  // Find "key" and return true on success.
+  // Assign the ID to "*key_id" iff "key_id" != nullptr.
+  virtual bool find(ValueArg key, int64_t *key_id = nullptr);
+  // Insert "key" and return true on success.
+  // Assign the ID to "*key_id" iff "key_id" != nullptr.
+  virtual bool insert(ValueArg key, int64_t *key_id = nullptr);
+  // Remove "key" and return true on success.
+  virtual bool remove(ValueArg key);
+  // Replace "src_key" with "dest_key" and return true on success.
+  // Assign the ID to "*key_id" iff "key_id" != nullptr.
+  virtual bool update(ValueArg src_key, ValueArg dest_key,
+                      int64_t *key_id = nullptr);
 
-  // Return the slice of "*this".
-  const Slice &slice() const {
-    return slice_;
-  }
-  // Return the starting address of "*this".
-  const void *address() const {
-    return slice_.address();
-  }
-  // Return a pointer that refers to the starting address of "*this".
-  const uint8_t *ptr() const {
-    return slice_.ptr();
-  }
-  // Return the size of "*this".
-  size_t size() const {
-    return slice_.size();
-  }
+  // Perform the longest prefix matching and return true on success.
+  // Assign the ID to "*key_id" iff "key_id" != nullptr.
+  // Assign the key to "*key" iff "key" != nullptr.
+  virtual bool find_longest_prefix_match(ValueArg query,
+                                         int64_t *key_id = nullptr,
+                                         Value *key = nullptr);
 
- private:
-  Slice slice_;
+  // Remove all the keys in "*this" and return true on success.
+  virtual bool truncate();
+
+  // TODO: Cursors.
+
+  // Only for Slice.
+  // Create a MapScan object to find keys in "query".
+  virtual MapScan<Value> *open_scan(ValueArg query,
+                                    const Charset *charset = nullptr);
 };
 
-inline bool operator==(const MapKey &lhs, const Slice &rhs) {
-  return lhs.slice() == rhs;
-}
-
-inline bool operator!=(const MapKey &lhs, const Slice &rhs) {
-  return lhs.slice() != rhs;
-}
-
+template <typename T>
 class MapCursor {
  public:
+  using Value = typename Traits<T>::Type;
+  using ValueArg = typename Traits<T>::ArgumentType;
+
   MapCursor();
   virtual ~MapCursor();
 
   // Move the cursor to the next key and return true on success.
-  virtual bool next() = 0;
-
-  // TODO
+  virtual bool next();
   // Remove the current key and return true on success.
-//  virtual bool remove() = 0;
+  virtual bool remove();
 
   // Return the ID of the current key.
   int64_t key_id() const {
     return key_id_;
   }
   // Return a reference to the current key.
-  const MapKey &key() const {
+  const Value &key() const {
     return key_;
   }
 
  protected:
   int64_t key_id_;
-  MapKey key_;
+  Value key_;
 };
 
-typedef FlagsImpl<MapCursor> MapCursorFlags;
-
-// Get keys in ascending order.
-constexpr MapCursorFlags MAP_CURSOR_ASCENDING  =
-    MapCursorFlags::define(0x01);
-// Get keys in descending order.
-constexpr MapCursorFlags MAP_CURSOR_DESCENDING =
-    MapCursorFlags::define(0x02);
-// Get keys except "min".
-constexpr MapCursorFlags MAP_CURSOR_EXCEPT_MIN =
-    MapCursorFlags::define(0x10);
-// Get keys except "max".
-constexpr MapCursorFlags MAP_CURSOR_EXCEPT_MAX =
-    MapCursorFlags::define(0x20);
-
+template <typename T>
 class MapScan {
  public:
-  ~MapScan();
+  using Value = typename Traits<T>::Type;
+  using ValueArg = typename Traits<T>::ArgumentType;
 
-  // Create an object to find keys in "query".
-  static MapScan *open(Map *map, const Slice &query,
-                       const Charset *charset = nullptr);
+  MapScan();
+  virtual ~MapScan();
 
   // Scan the rest of the query and return true iff a key is found (success).
   // On success, the found key is accessible via accessors.
-  bool next();
+  virtual bool next() = 0;
 
-  // Return the query.
-  const Slice &query() const {
-    return query_;
-  }
   // Return the start position of the found key.
   uint64_t offset() const {
     return offset_;
@@ -191,96 +202,18 @@ class MapScan {
     return key_id_;
   }
   // Return a reference to the found key.
-  const MapKey &key() const {
+  const Value &key() const {
     return key_;
   }
 
  protected:
-  Map *map_;
-  Slice query_;
   uint64_t offset_;
   uint64_t size_;
   int64_t key_id_;
-  MapKey key_;
-  const Charset *charset_;
-
-  MapScan();
+  Value key_;
 };
 
-class Map {
- public:
-  Map();
-  virtual ~Map();
-
-  // Create a map on "pool".
-  static Map *create(const MapOptions &options, io::Pool pool);
-  // Open a map.
-  static Map *open(io::Pool pool, uint32_t block_id);
-
-  // Remove blocks allocated to a map.
-  static void unlink(io::Pool pool, uint32_t block_id);
-
-  // Return the header block ID of "*this".
-  virtual uint32_t block_id() const = 0;
-
-  // Search the key associated with "key_id" and return true on success.
-  // Assign the found key to "*key" iff "key" != nullptr.
-  virtual bool search(int64_t key_id, MapKey *key = nullptr) = 0;
-  // Search "key" and return true on success.
-  // Assign the ID to "*key_id" iff "key_id" != nullptr.
-  virtual bool search(const Slice &key, int64_t *key_id = nullptr) = 0;
-
-  // Search a prefix key of "query" and return true on success.
-  // Assign the longest prefix key to "*key" iff "key" != nullptr.
-  // Assign the ID to "*key_id" iff "key_id" != nullptr.
-  virtual bool lcp_search(const Slice &query, int64_t *key_id = nullptr,
-                          MapKey *key = nullptr) = 0;
-
-  // Insert "key" and return true on success.
-  // Assign the ID to "*key_id" iff "key_id" != nullptr.
-  virtual bool insert(const Slice &key, int64_t *key_id = nullptr) = 0;
-
-  // Remove the key associated with "key_id" and return true on success.
-  virtual bool remove(int64_t key_id) = 0;
-  // Remove "key" and return true on success.
-  virtual bool remove(const Slice &key) = 0;
-
-  // Replace the key associated with "key_id" with "dest_key" and return true
-  // on success.
-  virtual bool update(int64_t key_id, const Slice &dest_key) = 0;
-  // Replace "src_key" with "dest_key" and return true on success.
-  // Assign the ID to "*key_id" iff "key_id" != nullptr.
-  virtual bool update(const Slice &src_key, const Slice &dest_key,
-                      int64_t *key_id = nullptr) = 0;
-
-  // Start scan to find keys in "query" and return an object for the scan.
-  // The object must be deleted after the scan.
-  MapScan *open_scan(const Slice &query, const Charset *charset = nullptr);
-
-  // Find keys in an ID range ["min", "max"] and return the keys in ID order.
-  // "flags" accepts MAP_CURSOR_ASCENDING, MAP_CURSOR_DESCENDING,
-  // MAP_CURSOR_EXCEPT_MIN, and MAP_CURSOR_EXCEPT_MAX.
-  virtual MapCursor *open_id_cursor(MapCursorFlags flags,
-                                    int64_t min, int64_t max,
-                                    int64_t offset, int64_t limit) = 0;
-  // Find keys in a range ["min", "max"] and return the keys in lexicographic
-  // order. "flags" accepts  MAP_CURSOR_ASCENDING, MAP_CURSOR_DESCENDING,
-  // MAP_CURSOR_EXCEPT_MIN, and MAP_CURSOR_EXCEPT_MAX.
-  virtual MapCursor *open_key_cursor(MapCursorFlags flags,
-                                     const Slice &min, const Slice &max,
-                                     int64_t offset, int64_t limit) = 0;
-  // Find keys in prefixes of "max". "flags" accepts MAP_CURSOR_ASCENDING,
-  // MAP_CURSOR_DESCENDING, MAP_CURSOR_EXCEPT_MIN, and MAP_CURSOR_EXCEPT_MAX.
-  virtual MapCursor *open_prefix_cursor(MapCursorFlags flags,
-                                        size_t min, const Slice &max,
-                                        int64_t offset, int64_t limit) = 0;
-  // Find keys starting with "min". "flags" accepts MAP_CURSOR_ASCENDING,
-  // MAP_CURSOR_DESCENDING, and MAP_CURSOR_EXCEPT_MIN.
-  virtual MapCursor *open_predictive_cursor(MapCursorFlags flags,
-                                            const Slice &min,
-                                            int64_t offset, int64_t limit) = 0;
-};
-
+}  // namespace alpha
 }  // namespace grnxx
 
 #endif  // GRNXX_MAP_HPP

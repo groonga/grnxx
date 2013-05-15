@@ -18,9 +18,6 @@ TESTS =					\
 	test_io				\
 	test_logger			\
 	test_map			\
-	test_map_double_array		\
-	test_map_da_basic_trie		\
-	test_map_da_large_trie		\
 	test_mutex			\
 	test_os				\
 	test_recycler			\
@@ -84,15 +81,6 @@ test_logger_LDADD = ../lib/grnxx/libgrnxx.la
 
 test_map_SOURCES = test_map.cpp
 test_map_LDADD = ../lib/grnxx/libgrnxx.la
-
-test_map_double_array_SOURCES = test_map_double_array.cpp
-test_map_double_array_LDADD = ../lib/grnxx/libgrnxx.la
-
-test_map_da_basic_trie_SOURCES = test_map_da_basic_trie.cpp
-test_map_da_basic_trie_LDADD = ../lib/grnxx/libgrnxx.la
-
-test_map_da_large_trie_SOURCES = test_map_da_large_trie.cpp
-test_map_da_large_trie_LDADD = ../lib/grnxx/libgrnxx.la
 
 test_mutex_SOURCES = test_mutex.cpp
 test_mutex_LDADD = ../lib/grnxx/libgrnxx.la
