@@ -19,6 +19,7 @@
 
 #include "grnxx/array.hpp"
 #include "grnxx/logger.hpp"
+#include "grnxx/storage.hpp"
 
 namespace {
 
