@@ -24,6 +24,7 @@
 #include "grnxx/logger.hpp"
 #include "grnxx/storage.hpp"
 #include "grnxx/string_builder.hpp"
+#include "grnxx/map/array_map.hpp"
 #include "grnxx/map/header.hpp"
 #include "grnxx/map/helper.hpp"
 #include "grnxx/map/scanner.hpp"
@@ -94,7 +95,7 @@ Map<T> *Map<T>::create(Storage *storage, uint32_t storage_node_id,
   }
   switch (type) {
     case MAP_ARRAY: {
-      // TODO: Not supported yet.
+      return map::ArrayMap<T>::create(storage, storage_node_id, options);
     }
     case MAP_DOUBLE_ARRAY: {
       // TODO: Not supported yet.
@@ -126,7 +127,7 @@ Map<T> *Map<T>::open(Storage *storage, uint32_t storage_node_id) {
       static_cast<const map::Header *>(storage_node.body());
   switch (header->type) {
     case MAP_ARRAY: {
-      // TODO: Not supported yet.
+      return map::ArrayMap<T>::open(storage, storage_node_id);
     }
     case MAP_DOUBLE_ARRAY: {
       // TODO: Not supported yet.
@@ -322,6 +323,7 @@ template class Map<int64_t>;
 template class Map<uint64_t>;
 template class Map<double>;
 template class Map<GeoPoint>;
-template class Map<Bytes>;
+// TODO: To be enabled
+//template class Map<Bytes>;
 
 }  // namespace grnxx
