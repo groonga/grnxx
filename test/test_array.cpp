@@ -217,6 +217,12 @@ void test_bit_array() {
     assert(array.get(i, &value));
     assert(value == expected_value);
   }
+
+  assert(array.create(storage.get(), grnxx::STORAGE_ROOT_NODE_ID, true));
+  assert(array);
+  for (std::uint64_t i = 0; i < SIZE; ++i) {
+    assert(array[i]);
+  }
 }
 
 }  // namesapce
