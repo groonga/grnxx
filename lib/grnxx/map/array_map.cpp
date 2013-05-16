@@ -15,15 +15,24 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#ifndef GRNXX_MAP_ARRAY_HPP
-#define GRNXX_MAP_ARRAY_HPP
+#include "grnxx/map/array_map.hpp"
 
-#include "grnxx/features.hpp"
+#include <cmath>
+#include <string>
+
+#include "grnxx/geo_point.hpp"
+#include "grnxx/storage.hpp"
 
 namespace grnxx {
 namespace map {
 
+ArrayMapHeader::ArrayMapHeader()
+    : map_type(MAP_ARRAY),
+      bits_storage_node_id(STORAGE_INVALID_NODE_ID),
+      keys_storage_node_id(STORAGE_INVALID_NODE_ID),
+      max_key_id(-1),
+      next_key_id(0),
+      num_keys(0) {}
+
 }  // namespace map
 }  // namespace grnxx
-
-#endif  // GRNXX_MAP_ARRAY_HPP
