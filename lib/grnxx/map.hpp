@@ -36,9 +36,9 @@ class Charset;
 
 template <typename T> class Map;
 
-constexpr uint64_t MAP_MIN_KEY_ID     = 0;
-constexpr uint64_t MAP_MAX_KEY_ID     = (1ULL << 40) - 1;
-constexpr uint64_t MAP_INVALID_KEY_ID = MAP_MAX_KEY_ID + 1;
+constexpr int64_t MAP_MIN_KEY_ID     = 0;
+constexpr int64_t MAP_MAX_KEY_ID     = (1LL << 40) - 2;
+constexpr int64_t MAP_INVALID_KEY_ID = MAP_MAX_KEY_ID + 1;
 
 enum MapType : uint32_t {
   MAP_UNKNOWN      = 0,
@@ -94,16 +94,16 @@ class MapCursor {
   virtual bool remove();
 
   // Return the ID of the current key.
-  uint64_t key_id() const {
+  int64_t key_id() const {
     return key_id_;
   }
-  // Return a reference to the current key.
+  // Return the current key.
   const Key &key() const {
     return key_;
   }
 
  protected:
-  uint64_t key_id_;
+  int64_t key_id_;
   Key key_;
 };
 
@@ -116,8 +116,7 @@ class MapScanner {
   MapScanner();
   virtual ~MapScanner();
 
-  // Scan the rest of the query and return true iff a key is found (success).
-  // On success, the found key is accessible via accessors.
+  // Find the next key from the rest of the query and return true on success.
   virtual bool next() = 0;
 
   // Return the start position of the found key.
@@ -129,10 +128,10 @@ class MapScanner {
     return size_;
   }
   // Return the ID of the found key.
-  uint64_t key_id() const {
+  int64_t key_id() const {
     return key_id_;
   }
-  // Return a reference to the found key.
+  // Return the found key.
   const Key &key() const {
     return key_;
   }
@@ -140,7 +139,7 @@ class MapScanner {
  protected:
   uint64_t offset_;
   uint64_t size_;
-  uint64_t key_id_;
+  int64_t key_id_;
   Key key_;
 };
 
@@ -172,51 +171,51 @@ class Map {
   virtual MapType type() const = 0;
 
   // Return the minimum key ID.
-  constexpr uint64_t min_key_id() {
+  constexpr int64_t min_key_id() {
     return MAP_MIN_KEY_ID;
   }
   // Return the maximum key ID ever used.
-  // If the map is empty, the return value can be MAP_INVALID_KEY_ID.
-  virtual uint64_t max_key_id() const = 0;
-  // Return the ID of the expected next inserted ID.
-  virtual uint64_t next_key_id() const = 0;
+  // The return value can be a negative value iff the map is empty.
+  virtual int64_t max_key_id() const = 0;
+  // Return the ID of the expected next added ID.
+  virtual int64_t next_key_id() const = 0;
   // Return the number of keys.
   virtual uint64_t num_keys() const = 0;
 
   // Get a key associated with "key_id" and return true on success.
   // Assign the found key to "*key" iff "key" != nullptr.
-  virtual bool get(uint64_t key_id, Key *key = nullptr);
+  virtual bool get(int64_t key_id, Key *key = nullptr);
   // Find the next key and return true on success. The next key means the key
   // associated with the smallest valid ID that is greater than "key_id".
-  // If "key_id" < 0, this finds the first key.
+  // If "key_id" > MAP_MAX_KEY_ID, this finds the first key.
   // Assign the ID to "*next_key_id" iff "next_key_id" != nullptr.
   // Assign the key to "*next_key" iff "next_key" != nullptr.
-  virtual bool get_next(uint64_t key_id, uint64_t *next_key_id = nullptr,
+  virtual bool get_next(int64_t key_id, int64_t *next_key_id = nullptr,
                         Key *next_key = nullptr);
   // Remove a key associated with "key_id" and return true on success.
-  virtual bool unset(uint64_t key_id);
+  virtual bool unset(int64_t key_id);
   // Replace a key associated with "key_id" with "dest_key" and return true
   // on success.
-  virtual bool reset(uint64_t key_id, KeyArg dest_key);
+  virtual bool reset(int64_t key_id, KeyArg dest_key);
 
   // Find "key" and return true on success.
   // Assign the ID to "*key_id" iff "key_id" != nullptr.
-  virtual bool find(KeyArg key, uint64_t *key_id = nullptr);
-  // Insert "key" and return true on success.
+  virtual bool find(KeyArg key, int64_t *key_id = nullptr);
+  // Add "key" and return true on success.
   // Assign the ID to "*key_id" iff "key_id" != nullptr.
-  virtual bool insert(KeyArg key, uint64_t *key_id = nullptr);
+  virtual bool add(KeyArg key, int64_t *key_id = nullptr);
   // Remove "key" and return true on success.
   virtual bool remove(KeyArg key);
   // Replace "src_key" with "dest_key" and return true on success.
   // Assign the ID to "*key_id" iff "key_id" != nullptr.
-  virtual bool update(KeyArg src_key, KeyArg dest_key,
-                      uint64_t *key_id = nullptr);
+  virtual bool replace(KeyArg src_key, KeyArg dest_key,
+                      int64_t *key_id = nullptr);
 
   // Perform longest prefix matching and return true on success.
   // Assign the ID to "*key_id" iff "key_id" != nullptr.
   // Assign the key to "*key" iff "key" != nullptr.
   virtual bool find_longest_prefix_match(KeyArg query,
-                                         uint64_t *key_id = nullptr,
+                                         int64_t *key_id = nullptr,
                                          Key *key = nullptr);
 
   // Remove all the keys in "*this" and return true on success.

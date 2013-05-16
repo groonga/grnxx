@@ -17,8 +17,61 @@
 */
 #include "grnxx/map/scanner.hpp"
 
+#include <memory>
+#include <new>
+
+#include "grnxx/bytes.hpp"
+#include "grnxx/charset.hpp"
+#include "grnxx/logger.hpp"
+
+// TODO: To be removed in future.
+#include "grnxx/slice.hpp"
+
 namespace grnxx {
 namespace map {
+
+template <typename T>
+Scanner<T>::Scanner() : map_(), query_(), charset_() {}
+
+template <typename T>
+Scanner<T>::~Scanner() {}
+
+template <typename T>
+Scanner<T> *Scanner<T>::create(Map<T> *map, KeyArg query,
+                               const Charset *charset) {
+  std::unique_ptr<Scanner> scanner(new (std::nothrow) Scanner);
+  if (!scanner) {
+    GRNXX_ERROR() << "new grnxx::map::Scanner failed";
+    return nullptr;
+  }
+  scanner->map_ = map;
+  scanner->query_ = query;
+  scanner->charset_ = charset;
+  return scanner.release();
+}
+
+template <typename T>
+bool Scanner<T>::next() {
+  this->offset_ += this->size_;
+  while (this->offset_ < query_.size()) {
+    const T rest = query_.except_prefix(this->offset_);
+    if (map_->find_longest_prefix_match(rest, &this->key_id_, &this->key_)) {
+      this->size_ = this->key_.size();
+      return true;
+    }
+    // Move to the next character.
+    if (charset_) {
+      // TODO: Charset should support Bytes.
+      this->offset_ += charset_->get_char_size(Slice(rest.ptr(), rest.size()));
+    } else {
+      ++this->offset_;
+    }
+  }
+  this->size_ = 0;
+  return false;
+}
+
+template class Scanner<Bytes>;
 
 }  // namespace map
 }  // namespace grnxx

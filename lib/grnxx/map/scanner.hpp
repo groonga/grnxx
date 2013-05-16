@@ -20,8 +20,32 @@
 
 #include "grnxx/features.hpp"
 
+#include "grnxx/map.hpp"
+
 namespace grnxx {
+
+class Charset;
+
 namespace map {
+
+template <typename T>
+class Scanner : public MapScanner<T> {
+ public:
+  using Key = typename MapScanner<T>::Key;
+  using KeyArg = typename MapScanner<T>::KeyArg;
+
+  Scanner();
+  ~Scanner();
+
+  static Scanner *create(Map<T> *map, KeyArg query, const Charset *charset);
+
+  bool next();
+
+ protected:
+  Map<T> *map_;
+  Key query_;
+  const Charset *charset_;
+};
 
 }  // namespace map
 }  // namespace grnxx

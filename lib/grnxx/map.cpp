@@ -20,6 +20,7 @@
 #include "grnxx/bytes.hpp"
 #include "grnxx/geo_point.hpp"
 #include "grnxx/logger.hpp"
+#include "grnxx/map/scanner.hpp"
 
 namespace grnxx {
 
@@ -78,39 +79,66 @@ bool Map<T>::unlink(Storage *storage, uint32_t storage_node_id) {
 }
 
 template <typename T>
-bool Map<T>::get(uint64_t, Key *) {
+bool Map<T>::get(int64_t, Key *) {
   GRNXX_ERROR() << "invalid operation";
   return false;
 }
 
 template <typename T>
-bool Map<T>::get_next(uint64_t, uint64_t *, Key *) {
-  // TODO: Give a naive implementation.
-  GRNXX_ERROR() << "invalid operation";
+bool Map<T>::get_next(int64_t key_id, int64_t *next_key_id, Key *next_key) {
+  // Naive implementation.
+  for (key_id = (key_id > MAP_MAX_KEY_ID) ? 0 : (key_id + 1);
+       key_id <= max_key_id(); ++key_id) {
+    if (get(key_id, next_key)) {
+      if (next_key_id) {
+        *next_key_id = key_id;
+        return true;
+      }
+    }
+  }
   return false;
 }
 
 template <typename T>
-bool Map<T>::unset(uint64_t key_id) {
-  GRNXX_ERROR() << "invalid operation";
+bool Map<T>::unset(int64_t key_id) {
+  // Naive implementation.
+  Key key;
+  if (!get(key_id, &key)) {
+    return false;
+  }
+  return remove(key);
+}
+
+template <typename T>
+bool Map<T>::reset(int64_t key_id, KeyArg dest_key) {
+  // Naive implementation.
+  Key src_key;
+  if (!get(key_id, &src_key)) {
+    return false;
+  }
+  return replace(src_key, dest_key);
+}
+
+template <typename T>
+bool Map<T>::find(KeyArg key, int64_t *key_id) {
+  // Naive implementation.
+  int64_t next_key_id = -1;
+  Key next_key;
+  while (get_next(next_key_id, &next_key_id, &next_key)) {
+    // TODO: "key" must be normalized if T is double.
+    // TODO: Also note that NaN != NaN.
+    if (key == next_key) {
+      if (key_id) {
+        *key_id = next_key_id;
+      }
+      return true;
+    }
+  }
   return false;
 }
 
 template <typename T>
-bool Map<T>::reset(uint64_t key_id, KeyArg dest_key) {
-  GRNXX_ERROR() << "invalid operation";
-  return false;
-}
-
-template <typename T>
-bool Map<T>::find(KeyArg, uint64_t *) {
-  // TODO: Give a naive implementation.
-  GRNXX_ERROR() << "invalid operation";
-  return false;
-}
-
-template <typename T>
-bool Map<T>::insert(KeyArg, uint64_t *) {
+bool Map<T>::add(KeyArg, int64_t *) {
   GRNXX_ERROR() << "invalid operation";
   return false;
 }
@@ -122,15 +150,42 @@ bool Map<T>::remove(KeyArg) {
 }
 
 template <typename T>
-bool Map<T>::update(KeyArg, KeyArg, uint64_t *) {
+bool Map<T>::replace(KeyArg, KeyArg, int64_t *) {
   GRNXX_ERROR() << "invalid operation";
   return false;
 }
 
 template <typename T>
-bool Map<T>::find_longest_prefix_match(KeyArg, uint64_t *, Key *) {
-  // TODO: Give a naive implementation.
+bool Map<T>::find_longest_prefix_match(KeyArg, int64_t *, Key *) {
   GRNXX_ERROR() << "invalid operation";
+  return false;
+}
+
+template <>
+bool Map<Bytes>::find_longest_prefix_match(KeyArg query, int64_t *key_id,
+                                           Key *key) {
+  // Naive implementation.
+  int64_t next_key_id = -1;
+  int64_t longest_prefix_key_id = -1;
+  Key next_key;
+  Key longest_prefix_key = nullptr;
+  while (get_next(next_key_id, &next_key_id, &next_key)) {
+    if (query.starts_with(next_key)) {
+      if (next_key.size() >= longest_prefix_key.size()) {
+        longest_prefix_key_id = next_key_id;
+        longest_prefix_key = next_key;
+      }
+    }
+  }
+  if (longest_prefix_key_id >= 0) {
+    if (key_id) {
+      *key_id = longest_prefix_key_id;
+    }
+    if (key) {
+      *key = longest_prefix_key;
+    }
+    return true;
+  }
   return false;
 }
 
@@ -157,9 +212,14 @@ MapCursor<T> *Map<T>::create_cursor(const map::CursorQuery<Key> &,
 
 template <typename T>
 MapScanner<T> *Map<T>::create_scanner(KeyArg, const Charset *) {
-  // TODO: Give a naive implementation.
   GRNXX_ERROR() << "invalid operation";
   return nullptr;
+}
+
+template <>
+MapScanner<Bytes> *Map<Bytes>::create_scanner(KeyArg query,
+                                              const Charset *charset) {
+  return map::Scanner<Bytes>::create(this, query, charset);
 }
 
 template class MapCursor<int8_t>;
@@ -174,16 +234,6 @@ template class MapCursor<double>;
 template class MapCursor<GeoPoint>;
 template class MapCursor<Bytes>;
 
-template class MapScanner<int8_t>;
-template class MapScanner<uint8_t>;
-template class MapScanner<int16_t>;
-template class MapScanner<uint16_t>;
-template class MapScanner<int32_t>;
-template class MapScanner<uint32_t>;
-template class MapScanner<int64_t>;
-template class MapScanner<uint64_t>;
-template class MapScanner<double>;
-template class MapScanner<GeoPoint>;
 template class MapScanner<Bytes>;
 
 template class Map<int8_t>;
