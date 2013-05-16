@@ -533,6 +533,8 @@ class Array<bool, PAGE_SIZE_IN_BITS, TABLE_SIZE, SECONDARY_TABLE_SIZE> {
   }
 
   // Set a value and return true on success.
+  // Note that if bits in the same byte are set at the same time, the result is
+  // undefined.
   bool set(uint64_t value_id, ValueArg value) {
     const uint64_t unit_id = value_id / UNIT_SIZE;
     Unit * const page = get_page(unit_id / PAGE_SIZE);
