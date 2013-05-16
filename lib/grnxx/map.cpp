@@ -17,6 +17,8 @@
 */
 #include "grnxx/map.hpp"
 
+#include <limits>
+
 #include "grnxx/bytes.hpp"
 #include "grnxx/geo_point.hpp"
 #include "grnxx/logger.hpp"
@@ -53,10 +55,10 @@ MapOptions::MapOptions() {}
 MapCursorOptions::MapCursorOptions()
     : flags(MAP_CURSOR_DEFAULT),
       offset(0),
-      limit(-1) {}
+      limit(std::numeric_limits<uint64_t>::max()) {}
 
 template <typename T>
-MapCursor<T>::MapCursor() : key_id_(-1), key_() {}
+MapCursor<T>::MapCursor() : key_id_(MAP_INVALID_KEY_ID), key_() {}
 
 template <typename T>
 MapCursor<T>::~MapCursor() {}
@@ -71,7 +73,7 @@ template <typename T>
 MapScanner<T>::MapScanner()
     : offset_(0),
       size_(0),
-      key_id_(-1),
+      key_id_(MAP_INVALID_KEY_ID),
       key_() {}
 
 template <typename T>
@@ -160,13 +162,15 @@ bool Map<T>::get(int64_t, Key *) {
 template <typename T>
 bool Map<T>::get_next(int64_t key_id, int64_t *next_key_id, Key *next_key) {
   // Naive implementation.
-  for (key_id = (key_id > MAP_MAX_KEY_ID) ? 0 : (key_id + 1);
-       key_id <= max_key_id(); ++key_id) {
+  if ((key_id < MAP_MIN_KEY_ID) || (key_id > MAP_MAX_KEY_ID)) {
+    key_id = MAP_MIN_KEY_ID - 1;
+  }
+  for (++key_id; key_id <= max_key_id(); ++key_id) {
     if (get(key_id, next_key)) {
       if (next_key_id) {
         *next_key_id = key_id;
-        return true;
       }
+      return true;
     }
   }
   return false;
@@ -196,7 +200,7 @@ template <typename T>
 bool Map<T>::find(KeyArg key, int64_t *key_id) {
   // Naive implementation.
   const Key normalized_key = map::Helper<T>::normalize(key);
-  int64_t next_key_id = -1;
+  int64_t next_key_id = MAP_INVALID_KEY_ID;
   Key next_key;
   while (get_next(next_key_id, &next_key_id, &next_key)) {
     if (map::Helper<T>::equal_to(normalized_key, next_key)) {
@@ -237,8 +241,8 @@ template <>
 bool Map<Bytes>::find_longest_prefix_match(KeyArg query, int64_t *key_id,
                                            Key *key) {
   // Naive implementation.
-  int64_t next_key_id = -1;
-  int64_t longest_prefix_key_id = -1;
+  int64_t next_key_id = MAP_INVALID_KEY_ID;
+  int64_t longest_prefix_key_id = MAP_INVALID_KEY_ID;
   Key next_key;
   Key longest_prefix_key = nullptr;
   while (get_next(next_key_id, &next_key_id, &next_key)) {
@@ -249,7 +253,7 @@ bool Map<Bytes>::find_longest_prefix_match(KeyArg query, int64_t *key_id,
       }
     }
   }
-  if (longest_prefix_key_id >= 0) {
+  if (longest_prefix_key_id != MAP_INVALID_KEY_ID) {
     if (key_id) {
       *key_id = longest_prefix_key_id;
     }
