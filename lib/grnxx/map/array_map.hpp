@@ -22,20 +22,12 @@
 #include "grnxx/array.hpp"
 
 namespace grnxx {
-namespace map {
 
 class Storage;
 
-struct ArrayMapHeader {
-  MapType map_type;
-  uint32_t bits_storage_node_id;
-  uint32_t keys_storage_node_id;
-  int64_t max_key_id;
-  int64_t next_key_id;
-  uint64_t num_keys;
+namespace map {
 
-  ArrayMapHeader();
-};
+struct ArrayMapHeader;
 
 template <typename T>
 class ArrayMap : public Map<T> {
@@ -61,16 +53,15 @@ class ArrayMap : public Map<T> {
   uint64_t num_keys() const;
 
   bool get(int64_t key_id, Key *key = nullptr);
-//  bool get_next(int64_t key_id, int64_t *next_key_id = nullptr,
-//                        Key *next_key = nullptr);
-//  bool unset(int64_t key_id);
-//  bool reset(int64_t key_id, KeyArg dest_key);
+  bool get_next(int64_t key_id, int64_t *next_key_id = nullptr,
+                Key *next_key = nullptr);
+  bool unset(int64_t key_id);
+  bool reset(int64_t key_id, KeyArg dest_key);
 
   bool find(KeyArg key, int64_t *key_id = nullptr);
   bool add(KeyArg key, int64_t *key_id = nullptr);
   bool remove(KeyArg key);
-  bool replace(KeyArg src_key, KeyArg dest_key,
-                      int64_t *key_id = nullptr);
+  bool replace(KeyArg src_key, KeyArg dest_key, int64_t *key_id = nullptr);
 
   bool truncate();
 
@@ -78,19 +69,12 @@ class ArrayMap : public Map<T> {
   Storage *storage_;
   uint32_t storage_node_id_;
   ArrayMapHeader *header_;
-  Array<uint32_t> bits_;
+  Array<bool> bitmap_;
   Array<T> keys_;
 
-  bool get_bit(int64_t key_id) {
-    return bits_[key_id / 32] & (1U << (key_id % 32));
-  }
-  void set_bit(int64_t key_id, bool bit) {
-    if (bit) {
-      bits_[key_id / 32] |= 1U << (key_id % 32);
-    } else {
-      bits_[key_id / 32] &= ~(1U << (key_id % 32));
-    }
-  }
+  bool create_map(Storage *storage, uint32_t storage_node_id,
+                  const MapOptions &options);
+  bool open_map(Storage *storage, uint32_t storage_node_id);
 };
 
 }  // namespace map
