@@ -128,6 +128,11 @@ bool Array1D::open_array(Storage *storage, uint32_t storage_node_id,
   if (!storage_node) {
     return false;
   }
+  if (storage_node.size() < sizeof(Array1DHeader)) {
+    GRNXX_ERROR() << "invalid format: node_size = " << storage_node.size()
+                  << ", header_size = " << sizeof(Array1DHeader);
+    return false;
+  }
   storage_node_id_ = storage_node.id();
   header_ = static_cast<Array1DHeader *>(storage_node.body());
   if (header_->value_size != value_size) {

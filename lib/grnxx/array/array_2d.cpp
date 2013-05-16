@@ -174,6 +174,11 @@ bool Array2D::open_array(Storage *storage, uint32_t storage_node_id,
   if (!storage_node) {
     return false;
   }
+  if (storage_node.size() < sizeof(Array2DHeader)) {
+    GRNXX_ERROR() << "invalid format: node_size = " << storage_node.size()
+                  << ", header_size = " << sizeof(Array2DHeader);
+    return false;
+  }
   storage_node_id_ = storage_node.id();
   header_ = static_cast<Array2DHeader *>(storage_node.body());
   if (header_->value_size != value_size) {
