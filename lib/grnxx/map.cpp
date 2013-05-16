@@ -87,8 +87,8 @@ template <typename T>
 Map<T>::~Map() {}
 
 template <typename T>
-Map<T> *Map<T>::create(Storage *storage, uint32_t storage_node_id,
-                       MapType type, const MapOptions &options) {
+Map<T> *Map<T>::create(MapType type, Storage *storage,
+                       uint32_t storage_node_id, const MapOptions &options) {
   if (!storage) {
     GRNXX_ERROR() << "invalid argument: storage == nullptr";
     return nullptr;

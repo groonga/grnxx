@@ -161,8 +161,8 @@ class Map {
   virtual ~Map();
 
   // Create a map.
-  static Map *create(Storage *storage, uint32_t storage_node_id,
-                     MapType type, const MapOptions &options = MapOptions());
+  static Map *create(MapType type, Storage *storage, uint32_t storage_node_id,
+                     const MapOptions &options = MapOptions());
   // Open a map.
   static Map *open(Storage *storage, uint32_t storage_node_id);
 
