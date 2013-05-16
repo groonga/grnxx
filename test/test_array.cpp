@@ -31,6 +31,7 @@ void test_array1d() {
 
   std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
   grnxx::Array<int, PAGE_SIZE, 1, 1> array;
+  uint32_t storage_node_id;
 
   assert(array.create(storage.get(), grnxx::STORAGE_ROOT_NODE_ID));
   assert(array);
@@ -38,6 +39,8 @@ void test_array1d() {
   assert(array.table_size() == 1);
   assert(array.secondary_table_size() == 1);
   assert(array.size() == SIZE);
+  storage_node_id = array.storage_node_id();
+
   for (std::uint64_t i = 0; i < SIZE; ++i) {
     assert(array.set(i, static_cast<int>(i)));
   }
@@ -48,6 +51,13 @@ void test_array1d() {
   }
   for (std::uint64_t i = 0; i < (SIZE / PAGE_SIZE); ++i) {
     assert(array.get_page(i));
+  }
+
+  assert(array.open(storage.get(), storage_node_id));
+  for (std::uint64_t i = 0; i < SIZE; ++i) {
+    int value;
+    assert(array.get(i, &value));
+    assert(value == static_cast<int>(i));
   }
 
   assert(array.create(storage.get(), grnxx::STORAGE_ROOT_NODE_ID, 1));
@@ -70,6 +80,7 @@ void test_array2d() {
 
   std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
   grnxx::Array<int, PAGE_SIZE, TABLE_SIZE, 1> array;
+  uint32_t storage_node_id;
 
   assert(array.create(storage.get(), grnxx::STORAGE_ROOT_NODE_ID));
   assert(array);
@@ -77,6 +88,8 @@ void test_array2d() {
   assert(array.table_size() == TABLE_SIZE);
   assert(array.secondary_table_size() == 1);
   assert(array.size() == SIZE);
+  storage_node_id = array.storage_node_id();
+
   for (std::uint64_t i = 0; i < SIZE; ++i) {
     assert(array.set(i, static_cast<int>(i)));
   }
@@ -87,6 +100,13 @@ void test_array2d() {
   }
   for (std::uint64_t i = 0; i < (SIZE / PAGE_SIZE); ++i) {
     assert(array.get_page(i));
+  }
+
+  assert(array.open(storage.get(), storage_node_id));
+  for (std::uint64_t i = 0; i < SIZE; ++i) {
+    int value;
+    assert(array.get(i, &value));
+    assert(value == static_cast<int>(i));
   }
 
   assert(array.create(storage.get(), grnxx::STORAGE_ROOT_NODE_ID, 1));
@@ -111,6 +131,7 @@ void test_array3d() {
 
   std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
   grnxx::Array<int, PAGE_SIZE, TABLE_SIZE, SECONDARY_TABLE_SIZE> array;
+  uint32_t storage_node_id;
 
   assert(array.create(storage.get(), grnxx::STORAGE_ROOT_NODE_ID));
   assert(array);
@@ -118,6 +139,8 @@ void test_array3d() {
   assert(array.table_size() == TABLE_SIZE);
   assert(array.secondary_table_size() == SECONDARY_TABLE_SIZE);
   assert(array.size() == SIZE);
+  storage_node_id = array.storage_node_id();
+
   for (std::uint64_t i = 0; i < SIZE; ++i) {
     assert(array.set(i, static_cast<int>(i)));
   }
@@ -128,6 +151,13 @@ void test_array3d() {
   }
   for (std::uint64_t i = 0; i < (SIZE / PAGE_SIZE); ++i) {
     assert(array.get_page(i));
+  }
+
+  assert(array.open(storage.get(), storage_node_id));
+  for (std::uint64_t i = 0; i < SIZE; ++i) {
+    int value;
+    assert(array.get(i, &value));
+    assert(value == static_cast<int>(i));
   }
 
   assert(array.create(storage.get(), grnxx::STORAGE_ROOT_NODE_ID, 1));
@@ -152,6 +182,7 @@ void test_bit_array() {
 
   std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
   grnxx::Array<bool, PAGE_SIZE, TABLE_SIZE, SECONDARY_TABLE_SIZE> array;
+  uint32_t storage_node_id;
 
   assert(array.create(storage.get(), grnxx::STORAGE_ROOT_NODE_ID));
   assert(array);
@@ -159,6 +190,8 @@ void test_bit_array() {
   assert(array.table_size() == TABLE_SIZE);
   assert(array.secondary_table_size() == SECONDARY_TABLE_SIZE);
   assert(array.size() == SIZE);
+  storage_node_id = array.storage_node_id();
+
   for (std::uint64_t i = 0; i < SIZE; ++i) {
     const bool value = (i % 3) != 0;
     assert(array.set(i, value));
@@ -175,6 +208,14 @@ void test_bit_array() {
   }
   for (std::uint64_t i = 0; i < (SIZE / PAGE_SIZE); ++i) {
     assert(array.get_page(i));
+  }
+
+  assert(array.open(storage.get(), storage_node_id));
+  for (std::uint64_t i = 0; i < SIZE; ++i) {
+    const bool expected_value = (i % 3) != 0;
+    bool value;
+    assert(array.get(i, &value));
+    assert(value == expected_value);
   }
 }
 
