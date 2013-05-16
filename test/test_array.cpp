@@ -141,6 +141,43 @@ void test_array3d() {
   }
 }
 
+void test_bit_array() {
+  constexpr std::uint64_t PAGE_SIZE            = 64;
+  constexpr std::uint64_t TABLE_SIZE           = 32;
+  constexpr std::uint64_t SECONDARY_TABLE_SIZE = 16;
+  constexpr std::uint64_t SIZE                 =
+      PAGE_SIZE * TABLE_SIZE * SECONDARY_TABLE_SIZE;
+
+  GRNXX_NOTICE() << __PRETTY_FUNCTION__;
+
+  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
+  grnxx::Array<bool, PAGE_SIZE, TABLE_SIZE, SECONDARY_TABLE_SIZE> array;
+
+  assert(array.create(storage.get(), grnxx::STORAGE_ROOT_NODE_ID));
+  assert(array);
+  assert(array.page_size() == PAGE_SIZE);
+  assert(array.table_size() == TABLE_SIZE);
+  assert(array.secondary_table_size() == SECONDARY_TABLE_SIZE);
+  assert(array.size() == SIZE);
+  for (std::uint64_t i = 0; i < SIZE; ++i) {
+    const bool value = (i % 3) != 0;
+    assert(array.set(i, value));
+  }
+  for (std::uint64_t i = 0; i < SIZE; ++i) {
+    const bool expected_value = (i % 3) != 0;
+    bool value;
+    assert(array.get(i, &value));
+    assert(value == expected_value);
+  }
+  for (std::uint64_t i = 0; i < SIZE; ++i) {
+    const bool expected_value = (i % 3) != 0;
+    assert(array[i] == expected_value);
+  }
+  for (std::uint64_t i = 0; i < (SIZE / PAGE_SIZE); ++i) {
+    assert(array.get_page(i));
+  }
+}
+
 }  // namesapce
 
 int main() {
@@ -151,6 +188,7 @@ int main() {
   test_array1d();
   test_array2d();
   test_array3d();
+  test_bit_array();
 
   return 0;
 }
