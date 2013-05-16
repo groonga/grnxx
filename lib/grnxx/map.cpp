@@ -20,9 +20,33 @@
 #include "grnxx/bytes.hpp"
 #include "grnxx/geo_point.hpp"
 #include "grnxx/logger.hpp"
+#include "grnxx/storage.hpp"
+#include "grnxx/string_builder.hpp"
+#include "grnxx/map/header.hpp"
+#include "grnxx/map/helper.hpp"
 #include "grnxx/map/scanner.hpp"
 
 namespace grnxx {
+
+StringBuilder &operator<<(StringBuilder &builder, MapType type) {
+  switch (type) {
+    case MAP_ARRAY: {
+      return builder << "MAP_ARRAY";
+    }
+    case MAP_DOUBLE_ARRAY: {
+      return builder << "MAP_DOUBLE_ARRAY";
+    }
+    case MAP_PATRICIA: {
+      return builder << "MAP_PATRICIA";
+    }
+    case MAP_HASH_TABLE: {
+      return builder << "MAP_HASH_TABLE";
+    }
+    default: {
+      return builder << "n/a";
+    }
+  }
+}
 
 MapOptions::MapOptions() {}
 
@@ -62,20 +86,69 @@ Map<T>::~Map() {}
 template <typename T>
 Map<T> *Map<T>::create(Storage *storage, uint32_t storage_node_id,
                        MapType type, const MapOptions &options) {
-  // TODO
-  return nullptr;
+  if (!storage) {
+    GRNXX_ERROR() << "invalid argument: storage == nullptr";
+    return nullptr;
+  }
+  switch (type) {
+    case MAP_ARRAY: {
+      // TODO: Not supported yet.
+    }
+    case MAP_DOUBLE_ARRAY: {
+      // TODO: Not supported yet.
+    }
+    case MAP_PATRICIA: {
+      // TODO: Not supported yet.
+    }
+    case MAP_HASH_TABLE: {
+      // TODO: Not supported yet.
+    }
+    default: {
+      GRNXX_ERROR() << "invalid argument: type = " << type;
+      return nullptr;
+    }
+  }
 }
 
 template <typename T>
 Map<T> *Map<T>::open(Storage *storage, uint32_t storage_node_id) {
-  // TODO
-  return nullptr;
+  if (!storage) {
+    GRNXX_ERROR() << "invalid argument: storage == nullptr";
+    return nullptr;
+  }
+  StorageNode storage_node = storage->open_node(storage_node_id);
+  if (!storage_node) {
+    return nullptr;
+  }
+  const map::Header * const header =
+      static_cast<const map::Header *>(storage_node.body());
+  switch (header->type) {
+    case MAP_ARRAY: {
+      // TODO: Not supported yet.
+    }
+    case MAP_DOUBLE_ARRAY: {
+      // TODO: Not supported yet.
+    }
+    case MAP_PATRICIA: {
+      // TODO: Not supported yet.
+    }
+    case MAP_HASH_TABLE: {
+      // TODO: Not supported yet.
+    }
+    default: {
+      GRNXX_ERROR() << "invalid format: type = " << header->type;
+      return nullptr;
+    }
+  }
 }
 
 template <typename T>
 bool Map<T>::unlink(Storage *storage, uint32_t storage_node_id) {
-  // TODO
-  return nullptr;
+  std::unique_ptr<Map<T>> map(open(storage, storage_node_id));
+  if (!map) {
+    return false;
+  }
+  return storage->unlink_node(storage_node_id);
 }
 
 template <typename T>
@@ -122,12 +195,11 @@ bool Map<T>::reset(int64_t key_id, KeyArg dest_key) {
 template <typename T>
 bool Map<T>::find(KeyArg key, int64_t *key_id) {
   // Naive implementation.
+  const Key normalized_key = map::Helper<T>::normalize(key);
   int64_t next_key_id = -1;
   Key next_key;
   while (get_next(next_key_id, &next_key_id, &next_key)) {
-    // TODO: "key" must be normalized if T is double.
-    // TODO: Also note that NaN != NaN.
-    if (key == next_key) {
+    if (map::Helper<T>::equal_to(normalized_key, next_key)) {
       if (key_id) {
         *key_id = next_key_id;
       }
@@ -203,7 +275,7 @@ MapCursor<T> *Map<T>::create_cursor(const MapCursorOptions &) {
 }
 
 template <typename T>
-MapCursor<T> *Map<T>::create_cursor(const map::CursorQuery<Key> &,
+MapCursor<T> *Map<T>::create_cursor(const map::CursorQuery<T> &,
                                     const MapCursorOptions &) {
   // TODO: Give a naive implementation.
   GRNXX_ERROR() << "invalid operation";

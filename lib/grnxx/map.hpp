@@ -31,6 +31,8 @@ template <typename T> class CursorQuery;
 
 }  // namespace map
 
+class StringBuilder;
+
 class Storage;
 class Charset;
 
@@ -47,6 +49,8 @@ enum MapType : uint32_t {
   MAP_PATRICIA     = 3,  // TODO: Patricia-based implementation.
   MAP_HASH_TABLE   = 4   // TODO: HashTable-based implementation.
 };
+
+StringBuilder &operator<<(StringBuilder &builder, MapType type);
 
 struct MapOptions {
   // Initialize the members.
@@ -236,7 +240,7 @@ class Map {
       const MapCursorOptions &options = MapCursorOptions());
   // Create a cursor for accessing keys that satisfy "query".
   virtual Cursor *create_cursor(
-      const map::CursorQuery<Key> &query,
+      const map::CursorQuery<T> &query,
       const MapCursorOptions &options = MapCursorOptions());
 
   // Create a MapScanner object to find keys in "query".

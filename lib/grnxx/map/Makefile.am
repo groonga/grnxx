@@ -11,4 +11,6 @@ libgrnxx_map_includedir = ${includedir}/grnxx/map
 libgrnxx_map_include_HEADERS =	\
 	array.hpp		\
 	cursor.hpp		\
+	header.hpp		\
+	helper.hpp		\
 	scanner.hpp
