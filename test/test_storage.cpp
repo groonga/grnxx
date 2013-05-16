@@ -25,6 +25,7 @@
 #include "grnxx/storage/file.hpp"
 #include "grnxx/storage/path.hpp"
 #include "grnxx/storage/chunk.hpp"
+#include "grnxx/time/periodic_clock.hpp"
 #include "grnxx/types.hpp"
 
 namespace {
@@ -753,6 +754,9 @@ int main() {
   grnxx::Logger::set_flags(grnxx::LOGGER_WITH_ALL |
                            grnxx::LOGGER_ENABLE_COUT);
   grnxx::Logger::set_max_level(grnxx::NOTICE_LOGGER);
+
+  // Increment the reference count for grnxx::PeriodicClock.
+  grnxx::PeriodicClock clock;
 
   test_path();
   test_file();
