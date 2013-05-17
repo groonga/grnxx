@@ -4,12 +4,14 @@ libgrnxx_map_la_LDFLAGS = @AM_LTLDFLAGS@
 
 libgrnxx_map_la_SOURCES =	\
 	array_map.cpp		\
+	bytes_store.cpp		\
 	cursor.cpp		\
 	scanner.cpp
 
 libgrnxx_map_includedir = ${includedir}/grnxx/map
 libgrnxx_map_include_HEADERS =	\
 	array_map.hpp		\
+	bytes_store.hpp		\
 	cursor.hpp		\
 	header.hpp		\
 	helper.hpp		\
