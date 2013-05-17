@@ -157,7 +157,7 @@ bool ArrayMap<T>::get_next(int64_t key_id, int64_t *next_key_id,
 template <typename T>
 bool ArrayMap<T>::unset(int64_t key_id) {
   if (!get(key_id)) {
-    GRNXX_ERROR() << "not found: key_id = " << key_id;
+//    GRNXX_WARNING() << "not found: key_id = " << key_id;
     return false;
   }
   if (!bitmap_.set(key_id, false)) {
@@ -171,11 +171,11 @@ bool ArrayMap<T>::unset(int64_t key_id) {
 template <typename T>
 bool ArrayMap<T>::reset(int64_t key_id, KeyArg dest_key) {
   if (!get(key_id)) {
-    GRNXX_ERROR() << "not found: key_id = " << key_id;
+//    GRNXX_WARNING() << "not found: key_id = " << key_id;
     return false;
   }
   if (find(dest_key)) {
-    GRNXX_ERROR() << "found: dest_key = " << dest_key;
+//    GRNXX_WARNING() << "found: dest_key = " << dest_key;
     return false;
   }
   if (!keys_.set(key_id, Helper<T>::normalize(dest_key))) {
@@ -227,6 +227,7 @@ bool ArrayMap<T>::add(KeyArg key, int64_t *key_id) {
         if (key_id) {
           *key_id = i;
         }
+//        GRNXX_WARNING() << "found: key = " << key;
         return false;
       }
     } else if ((i != next_key_id) &&
@@ -257,6 +258,7 @@ template <typename T>
 bool ArrayMap<T>::remove(KeyArg key) {
   int64_t key_id;
   if (!find(key, &key_id)) {
+//    GRNXX_WARNING() << "not found: key = " << key;
     return false;
   }
   if (!bitmap_.set(key_id, false)) {
@@ -286,13 +288,13 @@ bool ArrayMap<T>::replace(KeyArg src_key, KeyArg dest_key, int64_t *key_id) {
         src_key_id = i;
       }
       if (Helper<T>::equal_to(normalized_dest_key, stored_key)) {
-        GRNXX_ERROR() << "found: dest_key = " << dest_key;
+//        GRNXX_WARNING() << "found: dest_key = " << dest_key;
         return false;
       }
     }
   }
   if (src_key_id == MAP_INVALID_KEY_ID) {
-    GRNXX_ERROR() << "not found: src_key = " << src_key;
+//    GRNXX_WARNING() << "not found: src_key = " << src_key;
     return false;
   }
   if (!keys_.set(src_key_id, normalized_dest_key)) {

@@ -44,7 +44,7 @@ constexpr int64_t MAP_INVALID_KEY_ID = MAP_MAX_KEY_ID + 1;
 
 enum MapType : uint32_t {
   MAP_UNKNOWN      = 0,
-  MAP_ARRAY        = 1,  // TODO: Array-based implementation.
+  MAP_ARRAY        = 1,  // Array-based implementation.
   MAP_DOUBLE_ARRAY = 2,  // TODO: DoubleArray-based implementation.
   MAP_PATRICIA     = 3,  // TODO: Patricia-based implementation.
   MAP_HASH_TABLE   = 4   // TODO: HashTable-based implementation.
