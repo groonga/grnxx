@@ -15,36 +15,117 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
+#include <algorithm>
 #include <cassert>
 #include <memory>
+#include <random>
+#include <string>
 #include <type_traits>
+#include <unordered_set>
+#include <vector>
 
 #include "grnxx/bytes.hpp"
 #include "grnxx/geo_point.hpp"
 #include "grnxx/logger.hpp"
 #include "grnxx/map.hpp"
+#include "grnxx/map/helper.hpp"
 #include "grnxx/storage.hpp"
 #include "grnxx/time/periodic_clock.hpp"
 
 namespace {
 
+constexpr std::uint64_t MIN_KEY_SIZE = 0;
+constexpr std::uint64_t MAX_KEY_SIZE = 16;
+constexpr std::uint64_t NUM_KEYS     = 100;
+
+std::random_device random_device;
+std::mt19937_64 mersenne_twister(random_device());
+
+// For std::unordered_set.
+template <typename T>
+struct Hash {
+  uint64_t operator()(T x) const {
+    return std::hash<T>()(x);
+  }
+};
+template <>
+struct Hash<grnxx::GeoPoint> {
+  using ValueArg = typename grnxx::Traits<grnxx::GeoPoint>::ArgumentType;
+  uint64_t operator()(ValueArg x) const {
+    // TODO: To be replaced with grnxx's hash function.
+    return std::hash<std::uint64_t>()(x.value());
+  }
+};
+
+// For std::random_shuffle().
+struct RandomNumberGenerator {
+  uint64_t operator()(uint64_t upper_limit) const {
+    return mersenne_twister() % upper_limit;
+  }
+};
+
+// Generate a random key.
+template <typename T>
+T generate_random_key() {
+  const std::uint64_t random_value = mersenne_twister();
+  const T *key = reinterpret_cast<const T *>(&random_value);
+  return grnxx::map::Helper<T>::normalize(*key);
+}
+// TODO: Generate a random key and it is valid until the next call.
+template <>
+grnxx::Bytes generate_random_key() {
+  static uint8_t buf[MAX_KEY_SIZE];
+  const std::uint64_t key_size =
+      MIN_KEY_SIZE + (mersenne_twister() % (MAX_KEY_SIZE - MIN_KEY_SIZE + 1));
+  for (std::uint64_t i = 0; i < key_size; ++i) {
+    buf[i] = 'A' + (mersenne_twister() % 26);
+  }
+  return grnxx::Bytes(buf, key_size);
+}
+
+// Generate random keys.
+template <typename T>
+void generate_random_keys(std::vector<T> *keys, std::uint64_t num_keys) {
+  std::unordered_set<T, Hash<T>> keyset;
+  while (keyset.size() < num_keys) {
+    keyset.insert(generate_random_key<T>());
+  }
+  *keys = std::vector<T>(keyset.begin(), keyset.end());
+  std::random_shuffle(keys->begin(), keys->end(), RandomNumberGenerator());
+}
+// TODO: Generate random keys and those are valid until the next call.
+template <>
+void generate_random_keys(std::vector<grnxx::Bytes> *keys,
+                          std::uint64_t num_keys) {
+  static std::unordered_set<std::string> keyset;
+  keyset.clear();
+  while (keyset.size() < num_keys) {
+    const grnxx::Bytes key = generate_random_key<grnxx::Bytes>();
+    keyset.insert(std::string(reinterpret_cast<const char *>(key.ptr()),
+                              key.size()));
+  }
+  keys->clear();
+  for (auto it = keyset.begin(); it != keyset.end(); ++it) {
+    keys->push_back(grnxx::Bytes(it->data(), it->size()));
+  }
+  std::random_shuffle(keys->begin(), keys->end(), RandomNumberGenerator());
+}
+
 template <typename T>
 void test_map_create(grnxx::MapType map_type) {
   std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
-  std::unique_ptr<grnxx::Map<T>> map;
-
-  map.reset(grnxx::Map<T>::create(map_type, storage.get(),
-                                  grnxx::STORAGE_ROOT_NODE_ID));
+  std::unique_ptr<grnxx::Map<T>> map(
+      grnxx::Map<T>::create(map_type, storage.get(),
+                            grnxx::STORAGE_ROOT_NODE_ID));
   assert(map);
 }
 
 template <typename T>
 void test_map_open(grnxx::MapType map_type) {
   std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
-  std::unique_ptr<grnxx::Map<T>> map;
-
-  map.reset(grnxx::Map<T>::create(map_type, storage.get(),
-                                  grnxx::STORAGE_ROOT_NODE_ID));
+  std::unique_ptr<grnxx::Map<T>> map(
+      grnxx::Map<T>::create(map_type, storage.get(),
+                            grnxx::STORAGE_ROOT_NODE_ID));
   assert(map);
   const uint32_t storage_node_id = map->storage_node_id();
   map.reset(grnxx::Map<T>::open(storage.get(), storage_node_id));
@@ -54,10 +135,9 @@ void test_map_open(grnxx::MapType map_type) {
 template <typename T>
 void test_map_unlink(grnxx::MapType map_type) {
   std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
-  std::unique_ptr<grnxx::Map<T>> map;
-
-  map.reset(grnxx::Map<T>::create(map_type, storage.get(),
-                                  grnxx::STORAGE_ROOT_NODE_ID));
+  std::unique_ptr<grnxx::Map<T>> map(
+      grnxx::Map<T>::create(map_type, storage.get(),
+                            grnxx::STORAGE_ROOT_NODE_ID));
   assert(map);
   grnxx::StorageNode storage_node = storage->open_node(map->storage_node_id());
   assert(storage_node);
@@ -68,10 +148,9 @@ void test_map_unlink(grnxx::MapType map_type) {
 template <typename T>
 void test_map_type(grnxx::MapType map_type) {
   std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
-  std::unique_ptr<grnxx::Map<T>> map;
-
-  map.reset(grnxx::Map<T>::create(map_type, storage.get(),
-                                  grnxx::STORAGE_ROOT_NODE_ID));
+  std::unique_ptr<grnxx::Map<T>> map(
+      grnxx::Map<T>::create(map_type, storage.get(),
+                            grnxx::STORAGE_ROOT_NODE_ID));
   assert(map);
   assert(map->type() == map_type);
 }
@@ -79,10 +158,9 @@ void test_map_type(grnxx::MapType map_type) {
 template <typename T>
 void test_map_storage_node_id(grnxx::MapType map_type) {
   std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
-  std::unique_ptr<grnxx::Map<T>> map;
-
-  map.reset(grnxx::Map<T>::create(map_type, storage.get(),
-                                  grnxx::STORAGE_ROOT_NODE_ID));
+  std::unique_ptr<grnxx::Map<T>> map(
+      grnxx::Map<T>::create(map_type, storage.get(),
+                            grnxx::STORAGE_ROOT_NODE_ID));
   assert(map);
   grnxx::StorageNode storage_node = storage->open_node(map->storage_node_id());
   assert(storage_node);
@@ -92,49 +170,307 @@ void test_map_storage_node_id(grnxx::MapType map_type) {
 template <typename T>
 void test_map_min_key_id(grnxx::MapType map_type) {
   std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
-  std::unique_ptr<grnxx::Map<T>> map;
-
-  map.reset(grnxx::Map<T>::create(map_type, storage.get(),
-                                  grnxx::STORAGE_ROOT_NODE_ID));
+  std::unique_ptr<grnxx::Map<T>> map(
+      grnxx::Map<T>::create(map_type, storage.get(),
+                            grnxx::STORAGE_ROOT_NODE_ID));
   assert(map);
   assert(map->min_key_id() == grnxx::MAP_MIN_KEY_ID);
-  // TODO: Test after add and remove.
+  assert(map->add(generate_random_key<T>()));
+  assert(map->min_key_id() == grnxx::MAP_MIN_KEY_ID);
+  assert(map->unset(grnxx::MAP_MIN_KEY_ID));
+  assert(map->min_key_id() == grnxx::MAP_MIN_KEY_ID);
 }
 
 template <typename T>
 void test_map_max_key_id(grnxx::MapType map_type) {
   std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
-  std::unique_ptr<grnxx::Map<T>> map;
-
-  map.reset(grnxx::Map<T>::create(map_type, storage.get(),
-                                  grnxx::STORAGE_ROOT_NODE_ID));
+  std::unique_ptr<grnxx::Map<T>> map(
+      grnxx::Map<T>::create(map_type, storage.get(),
+                            grnxx::STORAGE_ROOT_NODE_ID));
   assert(map);
   assert(map->max_key_id() == (grnxx::MAP_MIN_KEY_ID - 1));
-  // TODO: Test after add and remove.
+  assert(map->add(generate_random_key<T>()));
+  assert(map->max_key_id() == grnxx::MAP_MIN_KEY_ID);
+  assert(map->unset(grnxx::MAP_MIN_KEY_ID));
+  assert(map->max_key_id() == grnxx::MAP_MIN_KEY_ID);
 }
 
 template <typename T>
 void test_map_next_key_id(grnxx::MapType map_type) {
   std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
-  std::unique_ptr<grnxx::Map<T>> map;
-
-  map.reset(grnxx::Map<T>::create(map_type, storage.get(),
-                                  grnxx::STORAGE_ROOT_NODE_ID));
+  std::unique_ptr<grnxx::Map<T>> map(
+      grnxx::Map<T>::create(map_type, storage.get(),
+                            grnxx::STORAGE_ROOT_NODE_ID));
   assert(map);
   assert(map->next_key_id() == grnxx::MAP_MIN_KEY_ID);
-  // TODO: Test after add and remove.
+  assert(map->add(generate_random_key<T>()));
+  assert(map->next_key_id() == (grnxx::MAP_MIN_KEY_ID + 1));
+  assert(map->unset(grnxx::MAP_MIN_KEY_ID));
+  assert(map->max_key_id() == grnxx::MAP_MIN_KEY_ID);
 }
 
 template <typename T>
 void test_map_num_keys(grnxx::MapType map_type) {
   std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
-  std::unique_ptr<grnxx::Map<T>> map;
-
-  map.reset(grnxx::Map<T>::create(map_type, storage.get(),
-                                  grnxx::STORAGE_ROOT_NODE_ID));
+  std::unique_ptr<grnxx::Map<T>> map(
+      grnxx::Map<T>::create(map_type, storage.get(),
+                            grnxx::STORAGE_ROOT_NODE_ID));
   assert(map);
   assert(map->num_keys() == 0);
-  // TODO: Test after add and remove.
+  assert(map->add(generate_random_key<T>()));
+  assert(map->num_keys() == 1);
+  assert(map->unset(grnxx::MAP_MIN_KEY_ID));
+  assert(map->num_keys() == 0);
+}
+
+template <typename T>
+void test_map_get(grnxx::MapType map_type) {
+  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
+  std::unique_ptr<grnxx::Map<T>> map(
+      grnxx::Map<T>::create(map_type, storage.get(),
+                            grnxx::STORAGE_ROOT_NODE_ID));
+  assert(map);
+  std::vector<T> keys;
+  generate_random_keys(&keys, NUM_KEYS);
+
+  for (std::uint64_t i = 0; i < NUM_KEYS; ++i) {
+    assert(!map->get(i));
+    assert(map->add(keys[i]));
+    assert(map->get(i));
+  }
+  for (std::uint64_t i = 0; i < NUM_KEYS; ++i) {
+    T key;
+    assert(map->get(i, &key));
+    assert(grnxx::map::Helper<T>::equal_to(key, keys[i]));
+  }
+}
+
+template <typename T>
+void test_map_get_next(grnxx::MapType map_type) {
+  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
+  std::unique_ptr<grnxx::Map<T>> map(
+      grnxx::Map<T>::create(map_type, storage.get(),
+                            grnxx::STORAGE_ROOT_NODE_ID));
+  assert(map);
+  std::int64_t key_id;
+  std::vector<T> keys;
+  generate_random_keys(&keys, NUM_KEYS);
+
+  assert(!map->get_next(grnxx::MAP_INVALID_KEY_ID));
+  generate_random_keys(&keys, NUM_KEYS);
+  for (std::uint64_t i = 0; i < NUM_KEYS; ++i) {
+    assert(map->add(keys[i]));
+  }
+  key_id = grnxx::MAP_INVALID_KEY_ID;
+  for (std::uint64_t i = 0; i < NUM_KEYS; ++i) {
+    T key;
+    assert(map->get_next(key_id, &key_id, &key));
+    assert(key_id == static_cast<std::int64_t>(i));
+    assert(grnxx::map::Helper<T>::equal_to(key, keys[i]));
+  }
+  assert(!map->get_next(key_id));
+  for (std::uint64_t i = 0; i < NUM_KEYS; i += 2) {
+    assert(map->unset(i));
+  }
+  key_id = grnxx::MAP_INVALID_KEY_ID;
+  for (std::uint64_t i = 1; i < NUM_KEYS; i += 2) {
+    T key;
+    assert(map->get_next(key_id, &key_id, &key));
+    assert(key_id == static_cast<std::int64_t>(i));
+    assert(grnxx::map::Helper<T>::equal_to(key, keys[i]));
+  }
+  assert(!map->get_next(key_id));
+}
+
+template <typename T>
+void test_map_unset(grnxx::MapType map_type) {
+  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
+  std::unique_ptr<grnxx::Map<T>> map(
+      grnxx::Map<T>::create(map_type, storage.get(),
+                            grnxx::STORAGE_ROOT_NODE_ID));
+  assert(map);
+  std::vector<T> keys;
+  generate_random_keys(&keys, NUM_KEYS);
+
+  for (std::uint64_t i = 0; i < NUM_KEYS; ++i) {
+    assert(!map->unset(i));
+    assert(map->add(keys[i]));
+  }
+  for (std::uint64_t i = 0; i < NUM_KEYS; ++i) {
+    assert(map->unset(i));
+    assert(!map->get(i));
+    assert(!map->unset(i));
+  }
+}
+
+template <typename T>
+void test_map_reset(grnxx::MapType map_type) {
+  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
+  std::unique_ptr<grnxx::Map<T>> map(
+      grnxx::Map<T>::create(map_type, storage.get(),
+                            grnxx::STORAGE_ROOT_NODE_ID));
+  assert(map);
+  std::vector<T> keys;
+  generate_random_keys(&keys, NUM_KEYS);
+
+  for (std::uint64_t i = 0; i < (NUM_KEYS / 2); ++i) {
+    assert(!map->reset(i, keys[i]));
+    assert(map->add(keys[i]));
+  }
+  assert(!map->reset(grnxx::MAP_MIN_KEY_ID, keys[0]));
+  for (std::uint64_t i = (NUM_KEYS / 2); i < NUM_KEYS; ++i) {
+    const std::int64_t key_id = i - (NUM_KEYS / 2);
+    T key;
+    assert(!map->reset(key_id, keys[key_id]));
+    assert(map->reset(key_id, keys[i]));
+    assert(map->get(key_id, &key));
+    assert(grnxx::map::Helper<T>::equal_to(key, keys[i]));
+  }
+}
+
+template <typename T>
+void test_map_find(grnxx::MapType map_type) {
+  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
+  std::unique_ptr<grnxx::Map<T>> map(
+      grnxx::Map<T>::create(map_type, storage.get(),
+                            grnxx::STORAGE_ROOT_NODE_ID));
+  assert(map);
+  std::vector<T> keys;
+  generate_random_keys(&keys, NUM_KEYS);
+
+  for (std::uint64_t i = 0; i < NUM_KEYS; ++i) {
+    assert(!map->find(keys[i]));
+    assert(map->add(keys[i]));
+  }
+  for (std::uint64_t i = 0; i < NUM_KEYS; ++i) {
+    std::int64_t key_id;
+    assert(map->find(keys[i], &key_id));
+    assert(key_id == static_cast<int64_t>(i));
+  }
+}
+
+template <typename T>
+void test_map_add(grnxx::MapType map_type) {
+  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
+  std::unique_ptr<grnxx::Map<T>> map(
+      grnxx::Map<T>::create(map_type, storage.get(),
+                            grnxx::STORAGE_ROOT_NODE_ID));
+  assert(map);
+  std::vector<T> keys;
+  generate_random_keys(&keys, NUM_KEYS);
+
+  for (std::uint64_t i = 0; i < NUM_KEYS; ++i) {
+    std::int64_t key_id;
+    assert(map->add(keys[i], &key_id));
+    assert(key_id == static_cast<std::int64_t>(i));
+    assert(!map->add(keys[i]));
+  }
+}
+
+template <typename T>
+void test_map_remove(grnxx::MapType map_type) {
+  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
+  std::unique_ptr<grnxx::Map<T>> map(
+      grnxx::Map<T>::create(map_type, storage.get(),
+                            grnxx::STORAGE_ROOT_NODE_ID));
+  assert(map);
+  std::vector<T> keys;
+  generate_random_keys(&keys, NUM_KEYS);
+
+  for (std::uint64_t i = 0; i < NUM_KEYS; ++i) {
+    assert(!map->remove(keys[i]));
+    assert(map->add(keys[i]));
+  }
+  for (std::uint64_t i = 0; i < NUM_KEYS; ++i) {
+    assert(map->remove(keys[i]));
+    assert(!map->find(keys[i]));
+    assert(!map->remove(keys[i]));
+  }
+}
+
+template <typename T>
+void test_map_replace(grnxx::MapType map_type) {
+  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
+  std::unique_ptr<grnxx::Map<T>> map(
+      grnxx::Map<T>::create(map_type, storage.get(),
+                            grnxx::STORAGE_ROOT_NODE_ID));
+  assert(map);
+  std::vector<T> keys;
+  generate_random_keys(&keys, NUM_KEYS);
+
+  for (std::uint64_t i = 0; i < (NUM_KEYS / 2); ++i) {
+    assert(!map->replace(keys[i], keys[i]));
+    assert(map->add(keys[i]));
+  }
+  for (std::uint64_t i = (NUM_KEYS / 2); i < NUM_KEYS; ++i) {
+    const std::int64_t key_id = i - (NUM_KEYS / 2);
+    assert(!map->replace(keys[key_id], keys[key_id]));
+    assert(map->replace(keys[key_id], keys[i]));
+    T key;
+    assert(map->get(key_id, &key));
+    assert(grnxx::map::Helper<T>::equal_to(key, keys[i]));
+  }
+}
+
+template <typename T>
+void test_map_find_longest_prefix_match(grnxx::MapType map_type) {
+  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
+  std::unique_ptr<grnxx::Map<T>> map(
+      grnxx::Map<T>::create(map_type, storage.get(),
+                            grnxx::STORAGE_ROOT_NODE_ID));
+  assert(map);
+  std::vector<T> keys;
+  generate_random_keys(&keys, NUM_KEYS);
+
+  // TODO
+}
+
+template <typename T>
+void test_map_truncate(grnxx::MapType map_type) {
+  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
+  std::unique_ptr<grnxx::Map<T>> map(
+      grnxx::Map<T>::create(map_type, storage.get(),
+                            grnxx::STORAGE_ROOT_NODE_ID));
+  assert(map);
+  std::vector<T> keys;
+  generate_random_keys(&keys, NUM_KEYS);
+
+  for (std::uint64_t i = 0; i < (NUM_KEYS / 2); ++i) {
+    assert(map->add(keys[i]));
+  }
+  assert(map->truncate());
+  assert(map->max_key_id() == (grnxx::MAP_MIN_KEY_ID - 1));
+  assert(map->next_key_id() == grnxx::MAP_MIN_KEY_ID);
+  assert(map->num_keys() == 0);
+  for (std::uint64_t i = 0; i < (NUM_KEYS / 2); ++i) {
+    assert(map->add(keys[i]));
+  }
+}
+
+template <typename T>
+void test_map_create_cursor(grnxx::MapType map_type) {
+  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
+  std::unique_ptr<grnxx::Map<T>> map(
+      grnxx::Map<T>::create(map_type, storage.get(),
+                            grnxx::STORAGE_ROOT_NODE_ID));
+  assert(map);
+  std::vector<T> keys;
+  generate_random_keys(&keys, NUM_KEYS);
+
+  // TODO
+}
+
+template <typename T>
+void test_map_create_scanner(grnxx::MapType map_type) {
+  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
+  std::unique_ptr<grnxx::Map<T>> map(
+      grnxx::Map<T>::create(map_type, storage.get(),
+                            grnxx::STORAGE_ROOT_NODE_ID));
+  assert(map);
+  std::vector<T> keys;
+  generate_random_keys(&keys, NUM_KEYS);
+
+  // TODO
 }
 
 template <typename T>
@@ -148,6 +484,18 @@ void test_map(grnxx::MapType map_type) {
   test_map_max_key_id<T>(map_type);
   test_map_next_key_id<T>(map_type);
   test_map_num_keys<T>(map_type);
+  test_map_get<T>(map_type);
+  test_map_get_next<T>(map_type);
+  test_map_unset<T>(map_type);
+  test_map_reset<T>(map_type);
+  test_map_find<T>(map_type);
+  test_map_add<T>(map_type);
+  test_map_remove<T>(map_type);
+  test_map_replace<T>(map_type);
+  test_map_find_longest_prefix_match<T>(map_type);
+  test_map_truncate<T>(map_type);
+  test_map_create_cursor<T>(map_type);
+  test_map_create_scanner<T>(map_type);
 }
 
 template <typename T>
@@ -172,10 +520,15 @@ int main() {
   // Increment the reference count for grnxx::PeriodicClock.
   grnxx::PeriodicClock clock;
 
-  test_map(grnxx::int8_t(), grnxx::uint8_t(),
-           grnxx::int16_t(), grnxx::uint16_t(),
-           grnxx::int32_t(), grnxx::uint32_t(),
-           grnxx::int64_t(), grnxx::uint64_t(),
+  test_map(std::int8_t(),
+           std::uint8_t(),
+           std::int16_t(),
+           std::uint16_t(),
+           std::int32_t(),
+           std::uint32_t(),
+           std::int64_t(),
+           std::uint64_t(),
+           double(),
            grnxx::GeoPoint());
 
   return 0;
