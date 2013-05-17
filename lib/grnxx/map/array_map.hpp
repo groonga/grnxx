@@ -18,8 +18,11 @@
 #ifndef GRNXX_MAP_ARRAY_MAP_HPP
 #define GRNXX_MAP_ARRAY_MAP_HPP
 
-#include "grnxx/map.hpp"
+#include "grnxx/features.hpp"
+
 #include "grnxx/array.hpp"
+#include "grnxx/map.hpp"
+#include "grnxx/types.hpp"
 
 namespace grnxx {
 
