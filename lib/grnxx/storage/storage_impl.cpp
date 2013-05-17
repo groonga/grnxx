@@ -752,7 +752,6 @@ bool StorageImpl::associate_node_with_chunk(NodeHeader *node_header,
     // This error may rarely occur.
     return false;
   }
-  ++header_->num_nodes;
   return true;
 }
 
