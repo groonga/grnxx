@@ -46,8 +46,6 @@ class ArrayMap : public Map<T> {
                           const MapOptions &options = MapOptions());
   static ArrayMap *open(Storage *storage, uint32_t storage_node_id);
 
-  static bool unlink(Storage *storage, uint32_t storage_node_id);
-
   uint32_t storage_node_id() const;
   MapType type() const;
 

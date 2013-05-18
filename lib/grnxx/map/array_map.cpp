@@ -86,15 +86,6 @@ ArrayMap<T> *ArrayMap<T>::open(Storage *storage, uint32_t storage_node_id) {
 }
 
 template <typename T>
-bool ArrayMap<T>::unlink(Storage *storage, uint32_t storage_node_id) {
-  std::unique_ptr<ArrayMap> map(ArrayMap::open(storage, storage_node_id));
-  if (!map) {
-    return false;
-  }
-  return storage->unlink_node(storage_node_id);
-}
-
-template <typename T>
 uint32_t ArrayMap<T>::storage_node_id() const {
   return storage_node_id_;
 }
