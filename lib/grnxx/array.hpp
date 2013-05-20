@@ -447,11 +447,13 @@ template <uint64_t PAGE_SIZE_IN_BITS,
           uint64_t SECONDARY_TABLE_SIZE>
 class Array<bool, PAGE_SIZE_IN_BITS, TABLE_SIZE, SECONDARY_TABLE_SIZE> {
  public:
+  // Internal type to store bits.
   using Unit = uint8_t;
+
+ private:
   static constexpr uint64_t UNIT_SIZE = sizeof(Unit) * 8;
   static constexpr uint64_t PAGE_SIZE = PAGE_SIZE_IN_BITS / UNIT_SIZE;
 
- private:
   static_assert((PAGE_SIZE % UNIT_SIZE) == 0, "(PAGE_SIZE % UNIT_SIZE) != 0");
   using ArrayImpl = Array<Unit, PAGE_SIZE, TABLE_SIZE, SECONDARY_TABLE_SIZE>;
 
@@ -488,6 +490,10 @@ class Array<bool, PAGE_SIZE_IN_BITS, TABLE_SIZE, SECONDARY_TABLE_SIZE> {
     return ArrayImpl::unlink(storage, storage_node_id);
   }
 
+  // Return the number of values in each unit.
+  static constexpr uint64_t unit_size() {
+    return UNIT_SIZE;
+  }
   // Return the number of values in each page.
   static constexpr uint64_t page_size() {
     return PAGE_SIZE_IN_BITS;
