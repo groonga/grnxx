@@ -148,6 +148,12 @@ class Array<T, PAGE_SIZE, 1, 1> {
     return true;
   }
 
+  // Get a value and return its address.
+  Value *get_value(uint64_t value_id) {
+    Value * const page = get_page(value_id / PAGE_SIZE);
+    return &page[value_id % PAGE_SIZE];
+  }
+
   // Get a page and return its starting address.
   Value *get_page(uint64_t) {
     return impl_->get_page<Value>();
@@ -280,6 +286,15 @@ class Array<T, PAGE_SIZE, TABLE_SIZE, 1> {
     }
     page[value_id % PAGE_SIZE] = value;
     return true;
+  }
+
+  // Get a value and return its address on success.
+  Value *get_value(uint64_t value_id) {
+    Value * const page = get_page(value_id / PAGE_SIZE);
+    if (!page) {
+      return nullptr;
+    }
+    return &page[value_id % PAGE_SIZE];
   }
 
   // Get a page and return its starting address on success.
@@ -421,6 +436,15 @@ class Array {
     }
     page[value_id % PAGE_SIZE] = value;
     return true;
+  }
+
+  // Get a value and return its address on success.
+  Value *get_value(uint64_t value_id) {
+    Value * const page = get_page(value_id / PAGE_SIZE);
+    if (!page) {
+      return nullptr;
+    }
+    return &page[value_id % PAGE_SIZE];
   }
 
   // Get a page and return its starting address on success.
