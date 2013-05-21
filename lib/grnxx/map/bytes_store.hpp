@@ -20,7 +20,9 @@
 
 #include "grnxx/features.hpp"
 
+#include "grnxx/array.hpp"
 #include "grnxx/bytes.hpp"
+#include "grnxx/time/duration.hpp"
 #include "grnxx/traits.hpp"
 #include "grnxx/types.hpp"
 
@@ -29,10 +31,6 @@ namespace grnxx {
 class Storage;
 
 namespace map {
-
-constexpr uint64_t BYTES_STORE_ID_MASK = (1ULL << 60) - 1;
-constexpr uint64_t BYTES_STORE_MIN_ID  = 0;
-constexpr uint64_t BYTES_STORE_MAX_ID  = BYTES_STORE_ID_MASK;
 
 class BytesStore {
  public:
@@ -49,13 +47,18 @@ class BytesStore {
   // Unlink a store.
   static bool unlink(Storage *storage, uint32_t storage_node_id);
 
-  // TODO: get() should be inlined?
+  // Return the storage node ID.
+  virtual uint32_t storage_node_id() const = 0;
+
   // Get a stored byte sequence.
   virtual bool get(uint64_t bytes_id, Bytes *bytes) = 0;
   // Remove a stored byte sequence.
   virtual bool unset(uint64_t bytes_id) = 0;
   // Add a byte sequence.
   virtual bool add(BytesArg bytes, uint64_t *bytes_id) = 0;
+
+  // Sweep empty pages whose modified time < (now - lifetime).
+  virtual bool sweep(Duration lifetime) = 0;
 };
 
 }  // namespace map
