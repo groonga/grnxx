@@ -800,12 +800,22 @@ bool StorageImpl::sweep_subtree(Time threshold, NodeHeader *node_header) {
 
 bool StorageImpl::merge_idle_nodes(NodeHeader *node_header,
                                    NodeHeader *next_node_header) {
+  NodeHeader *next_next_node_header = nullptr;
+  if (next_node_header->next_node_id != STORAGE_INVALID_NODE_ID) {
+    next_next_node_header = get_node_header(next_node_header->next_node_id);
+    if (!next_next_node_header) {
+      return false;
+    }
+  }
   if (!unregister_idle_node(node_header) ||
       !unregister_idle_node(next_node_header)) {
     return false;
   }
   node_header->size += next_node_header->size;
   node_header->next_node_id = next_node_header->next_node_id;
+  if (next_next_node_header) {
+    next_next_node_header->prev_node_id = node_header->id;
+  }
   *next_node_header = NodeHeader(next_node_header->id);
   next_node_header->next_phantom_node_id = header_->latest_phantom_node_id;
   next_node_header->modified_time = clock_.now();
