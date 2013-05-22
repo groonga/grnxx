@@ -114,6 +114,14 @@ StorageNodeStatus StorageNode::status() const {
   return header_->status;
 }
 
+uint16_t StorageNode::chunk_id() const {
+  return header_->chunk_id;
+}
+
+uint64_t StorageNode::offset() const {
+  return header_->offset;
+}
+
 uint64_t StorageNode::size() const {
   return header_->size;
 }

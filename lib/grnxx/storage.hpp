@@ -113,6 +113,10 @@ class StorageNode {
   uint32_t id() const;
   // Return the status.
   StorageNodeStatus status() const;
+  // Return the ID of the chunk to which the node belongs.
+  uint16_t chunk_id() const;
+  // Return the offset in chunk.
+  uint64_t offset() const;
   // Return the body size.
   uint64_t size() const;
   // Return the last modified time.
