@@ -183,6 +183,10 @@ class Storage {
   virtual uint64_t max_file_size() const = 0;
   // Return the maximum number of files.
   virtual uint16_t max_num_files() const = 0;
+  // Return the total usage of body chunks.
+  virtual uint64_t body_usage() const = 0;
+  // Return the total size of body chunks.
+  virtual uint64_t body_size() const = 0;
   // Return the total size.
   virtual uint64_t total_size() const = 0;
 };

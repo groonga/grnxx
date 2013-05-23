@@ -44,6 +44,8 @@ Header::Header()
       reserved_0(0),
       num_nodes(0),
       max_num_nodes(0),
+      body_usage(0),
+      body_size(0),
       total_size(0),
       latest_phantom_node_id(STORAGE_INVALID_NODE_ID),
       latest_unlinked_node_id(STORAGE_INVALID_NODE_ID),

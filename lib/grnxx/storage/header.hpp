@@ -56,6 +56,10 @@ struct Header {
   // The upper limit of the number of nodes.
   // This value is extended when a node header chunk is added.
   uint32_t max_num_nodes;
+  // The total usage of body chunks.
+  uint64_t body_usage;
+  // The total size of body chunks.
+  uint64_t body_size;
   // The total size including headers.
   uint64_t total_size;
   // The ID of the latest phantom node.
@@ -71,7 +75,7 @@ struct Header {
   Mutex data_mutex;
   // A mutex object for exclusively update files.
   Mutex file_mutex;
-  uint8_t reserved_1[144];
+  uint8_t reserved_1[128];
 
   // Initialize the members except "format".
   Header();

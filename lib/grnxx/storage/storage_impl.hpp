@@ -65,6 +65,8 @@ class StorageImpl : public Storage {
   StorageFlags flags() const;
   uint64_t max_file_size() const;
   uint16_t max_num_files() const;
+  uint64_t body_usage() const;
+  uint64_t body_size() const;
   uint64_t total_size() const;
 
  private:
@@ -106,7 +108,7 @@ class StorageImpl : public Storage {
                                 ChunkIndex **remainder_chunk_index);
   ChunkIndex *create_body_chunk(uint64_t size);
 
-  bool sweep_subtree(Time threshold, NodeHeader *node_header);
+  bool sweep_subtree(NodeHeader *node_header);
   bool merge_idle_nodes(NodeHeader *node_header, NodeHeader *next_node_header);
 
   bool register_idle_node(NodeHeader *node_header);

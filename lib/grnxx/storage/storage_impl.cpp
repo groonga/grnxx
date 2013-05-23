@@ -345,7 +345,7 @@ bool StorageImpl::sweep(Duration lifetime) {
       return true;
     }
     const uint32_t next_node_id = oldest_node_header->next_unlinked_node_id;
-    if (!sweep_subtree(threshold, oldest_node_header)) {
+    if (!sweep_subtree(oldest_node_header)) {
       return false;
     }
     if (oldest_node_header != latest_node_header) {
@@ -371,6 +371,14 @@ uint64_t StorageImpl::max_file_size() const {
 
 uint16_t StorageImpl::max_num_files() const {
   return header_->max_num_files;
+}
+
+uint64_t StorageImpl::body_usage() const {
+  return header_->body_usage;
+}
+
+uint64_t StorageImpl::body_size() const {
+  return header_->body_size;
 }
 
 uint64_t StorageImpl::total_size() const {
@@ -687,6 +695,7 @@ bool StorageImpl::activate_idle_node(NodeHeader *node_header) {
   node_header->child_node_id = STORAGE_INVALID_NODE_ID;
   node_header->sibling_node_id = STORAGE_INVALID_NODE_ID;
   node_header->modified_time = clock_.now();
+  header_->body_usage += node_header->size;
   return true;
 }
 
@@ -755,7 +764,7 @@ bool StorageImpl::associate_node_with_chunk(NodeHeader *node_header,
   return true;
 }
 
-bool StorageImpl::sweep_subtree(Time threshold, NodeHeader *node_header) {
+bool StorageImpl::sweep_subtree(NodeHeader *node_header) {
   uint32_t child_node_id = node_header->child_node_id;
   while (child_node_id != STORAGE_INVALID_NODE_ID) {
     NodeHeader * const child_node_header = get_node_header(child_node_id);
@@ -763,13 +772,14 @@ bool StorageImpl::sweep_subtree(Time threshold, NodeHeader *node_header) {
       return false;
     }
     child_node_id = child_node_header->sibling_node_id;
-    if (!sweep_subtree(threshold, child_node_header)) {
+    if (!sweep_subtree(child_node_header)) {
       return false;
     }
     node_header->child_node_id = child_node_id;
   }
   node_header->status = STORAGE_NODE_IDLE;
   node_header->modified_time = clock_.now();
+  header_->body_usage -= node_header->size;
   register_idle_node(node_header);
   if (node_header->next_node_id != STORAGE_INVALID_NODE_ID) {
     NodeHeader * const next_node_header =
@@ -931,6 +941,7 @@ ChunkIndex *StorageImpl::create_body_chunk(uint64_t size) {
   chunk_index->file_id = file_id;
   chunk_index->offset = offset;
   chunk_index->size = size;
+  header_->body_size += size;
   header_->total_size += size;
   ++header_->num_body_chunks;
   return chunk_index;
