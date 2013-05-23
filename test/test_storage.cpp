@@ -655,13 +655,52 @@ void test_storage_max_num_files() {
   assert(storage->max_num_files() == options.max_num_files);
 }
 
+void test_storage_body_usage() {
+  uint64_t prev_body_usage = 0;
+  grnxx::StorageNode node;
+  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
+  assert(storage->body_usage() > prev_body_usage);
+  prev_body_usage = storage->body_usage();
+  node = storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 1 << 24);
+  assert(node);
+  assert(storage->body_usage() == (prev_body_usage + node.size()));
+  assert(storage->unlink_node(node.id()));
+  assert(storage->sweep(grnxx::Duration(0)));
+  assert(storage->body_usage() == prev_body_usage);
+  for (int i = 0; i < 16; ++i) {
+    assert(storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 1 << 24));
+    assert(storage->body_usage() > prev_body_usage);
+    prev_body_usage = storage->body_usage();
+  }
+}
+
+void test_storage_body_size() {
+  uint64_t prev_body_size = 0;
+  grnxx::StorageNode node;
+  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
+  assert(storage->body_size() > prev_body_size);
+  prev_body_size = storage->body_size();
+  node = storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 1 << 23);
+  assert(node);
+  assert(storage->body_size() > prev_body_size);
+  prev_body_size = storage->body_size();
+  assert(storage->unlink_node(node.id()));
+  assert(storage->sweep(grnxx::Duration(0)));
+  assert(storage->body_size() == prev_body_size);
+  for (int i = 0; i < 16; ++i) {
+    assert(storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 1 << 24));
+    assert(storage->body_size() > prev_body_size);
+    prev_body_size = storage->body_size();
+  }
+}
+
 void test_storage_total_size() {
   uint64_t prev_total_size = 0;
   std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
   assert(storage->total_size() > prev_total_size);
   prev_total_size = storage->total_size();
   for (int i = 0; i < 16; ++i) {
-    storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 1 << 24);
+    assert(storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 1 << 24));
     assert(storage->total_size() > prev_total_size);
     prev_total_size = storage->total_size();
   }
@@ -703,6 +742,9 @@ void test_storage_random_queries() {
       id_set.insert(node.id());
     }
   }
+  GRNXX_NOTICE() << "body_usage = " << storage->body_usage()
+                 << ", body_size = " << storage->body_size()
+                 << ", total_size = " << storage->total_size();
 }
 
 void test_path() {
@@ -744,6 +786,8 @@ void test_storage() {
   test_storage_flags();
   test_storage_max_file_size();
   test_storage_max_num_files();
+  test_storage_body_usage();
+  test_storage_body_size();
   test_storage_total_size();
   test_storage_random_queries();
 }
