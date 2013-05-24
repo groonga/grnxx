@@ -13,6 +13,7 @@ TESTS =					\
 	test_error			\
 	test_exception			\
 	test_features			\
+	test_geo_point			\
 	test_grnxx			\
 	test_intrinsic			\
 	test_io				\
@@ -68,6 +69,9 @@ test_exception_LDADD = ../lib/grnxx/libgrnxx.la
 
 test_features_SOURCES = test_features.cpp
 test_features_LDADD = ../lib/grnxx/libgrnxx.la
+
+test_geo_point_SOURCES = test_geo_point.cpp
+test_geo_point_LDADD = ../lib/grnxx/libgrnxx.la
 
 test_grnxx_SOURCES = test_grnxx.cpp
 test_grnxx_LDADD = ../lib/grnxx/libgrnxx.la
