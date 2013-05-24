@@ -53,9 +53,12 @@ struct Header {
   uint16_t reserved_0;
   // The number of nodes.
   uint32_t num_nodes;
+  // The number of active or unlinked nodes.
+  uint32_t num_active_or_unlinked_nodes;
   // The upper limit of the number of nodes.
   // This value is extended when a node header chunk is added.
   uint32_t max_num_nodes;
+  uint32_t reserved_1;
   // The total usage of body chunks.
   uint64_t body_usage;
   // The total size of body chunks.
@@ -75,7 +78,7 @@ struct Header {
   Mutex data_mutex;
   // A mutex object for exclusively update files.
   Mutex file_mutex;
-  uint8_t reserved_1[128];
+  uint8_t reserved_2[120];
 
   // Initialize the members except "format".
   Header();

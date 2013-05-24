@@ -65,6 +65,7 @@ class StorageImpl : public Storage {
   StorageFlags flags() const;
   uint64_t max_file_size() const;
   uint16_t max_num_files() const;
+  uint32_t num_nodes() const;
   uint64_t body_usage() const;
   uint64_t body_size() const;
   uint64_t total_size() const;

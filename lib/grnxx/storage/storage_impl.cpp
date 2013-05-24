@@ -373,6 +373,10 @@ uint16_t StorageImpl::max_num_files() const {
   return header_->max_num_files;
 }
 
+uint32_t StorageImpl::num_nodes() const {
+  return header_->num_active_or_unlinked_nodes;
+}
+
 uint64_t StorageImpl::body_usage() const {
   return header_->body_usage;
 }
@@ -706,6 +710,7 @@ bool StorageImpl::activate_idle_node(NodeHeader *node_header) {
   node_header->child_node_id = STORAGE_INVALID_NODE_ID;
   node_header->sibling_node_id = STORAGE_INVALID_NODE_ID;
   node_header->modified_time = clock_.now();
+  ++header_->num_active_or_unlinked_nodes;
   header_->body_usage += node_header->size;
   return true;
 }
@@ -790,6 +795,7 @@ bool StorageImpl::sweep_subtree(NodeHeader *node_header) {
   }
   node_header->status = STORAGE_NODE_IDLE;
   node_header->modified_time = clock_.now();
+  --header_->num_active_or_unlinked_nodes;
   header_->body_usage -= node_header->size;
   register_idle_node(node_header);
   if (node_header->next_node_id != STORAGE_INVALID_NODE_ID) {
