@@ -23,9 +23,7 @@
 #include <cstring>
 #include <memory>
 
-#include "grnxx/array/array_1d.hpp"
-#include "grnxx/array/array_2d.hpp"
-#include "grnxx/array/array_3d.hpp"
+#include "grnxx/array_impl.hpp"
 #include "grnxx/traits.hpp"
 #include "grnxx/types.hpp"
 
