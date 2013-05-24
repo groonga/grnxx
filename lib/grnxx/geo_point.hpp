@@ -28,19 +28,19 @@ class StringBuilder;
 
 // Latitude and longitude (lat/long).
 union GeoPoint {
+ private:
+  struct Point {
+    int32_t latitude;
+    int32_t longitude;
+  };
+
  public:
   // Trivial default constructor.
   GeoPoint() = default;
-  // Copy the lat/long as uint64_t to force atomic copy.
-  GeoPoint(const GeoPoint &x) : value_(x.value_) {}
   // Copy the lat/long.
-  GeoPoint(int32_t latitude, int32_t longitude)
-      : point_{ latitude, longitude } {}
-
-  // Assign the lat/long as uint64_t to force atomic assignment.
-  GeoPoint &operator=(const GeoPoint &x) {
-    value_ = x.value_;
-    return *this;
+  GeoPoint(int32_t latitude, int32_t longitude) : value_() {
+    Point point{ latitude, longitude };
+    value_ = reinterpret_cast<const uint64_t &>(point);
   }
 
   // Interleave the lat/long.
@@ -48,11 +48,11 @@ union GeoPoint {
 
   // Return the latitude.
   int32_t latitude() const {
-    return point_.latitude;
+    return reinterpret_cast<const Point &>(value_).latitude;
   }
   // Return the longitude.
   int32_t longitude() const {
-    return point_.longitude;
+    return reinterpret_cast<const Point &>(value_).longitude;
   }
   // Return the lat/long as uint64_t.
   uint64_t value() const {
@@ -61,11 +61,11 @@ union GeoPoint {
 
   // Set the latitude.
   void set_latitude(int32_t x) {
-    point_.latitude = x;
+    reinterpret_cast<Point &>(value_).latitude = x;
   }
   // Set the longitude.
   void set_longitude(int32_t x) {
-    point_.longitude = x;
+    reinterpret_cast<Point &>(value_).longitude = x;
   }
   // Set the lat/long as uint64_t.
   void set_value(uint64_t x) {
@@ -73,10 +73,7 @@ union GeoPoint {
   }
 
  private:
-  struct Point {
-    int32_t latitude;
-    int32_t longitude;
-  } point_;
+  // Force 8-byte alignment and atomic copy/assignment.
   uint64_t value_;
 };
 

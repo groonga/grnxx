@@ -22,8 +22,9 @@
 namespace grnxx {
 
 uint64_t GeoPoint::interleave() const {
-  uint64_t latitude = static_cast<uint32_t>(point_.latitude);
-  uint64_t longitude = static_cast<uint32_t>(point_.longitude);
+  const Point point = reinterpret_cast<const Point &>(value_);
+  uint64_t latitude = static_cast<uint32_t>(point.latitude);
+  uint64_t longitude = static_cast<uint32_t>(point.longitude);
   latitude = (latitude | (latitude << 16)) & 0x0000FFFF0000FFFFULL;
   latitude = (latitude | (latitude <<  8)) & 0x00FF00FF00FF00FFULL;
   latitude = (latitude | (latitude <<  4)) & 0x0F0F0F0F0F0F0F0FULL;
