@@ -656,6 +656,23 @@ void test_storage_max_num_files() {
   assert(storage->max_num_files() == options.max_num_files);
 }
 
+void test_storage_num_nodes() {
+  grnxx::StorageNode node;
+  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
+  assert(storage->num_nodes() == 1);
+  node = storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 1 << 24);
+  assert(node);
+  assert(storage->num_nodes() == 2);
+  assert(storage->unlink_node(node.id()));
+  assert(storage->num_nodes() == 2);
+  assert(storage->sweep(grnxx::Duration(0)));
+  assert(storage->num_nodes() == 1);
+  for (int i = 0; i < 16; ++i) {
+    assert(storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 1 << 24));
+    assert(storage->num_nodes() == static_cast<std::uint32_t>(i + 2));
+  }
+}
+
 void test_storage_body_usage() {
   uint64_t prev_body_usage = 0;
   grnxx::StorageNode node;
@@ -787,6 +804,7 @@ void test_storage() {
   test_storage_flags();
   test_storage_max_file_size();
   test_storage_max_num_files();
+  test_storage_num_nodes();
   test_storage_body_usage();
   test_storage_body_size();
   test_storage_total_size();
