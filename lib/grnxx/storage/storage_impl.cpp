@@ -663,6 +663,13 @@ NodeHeader *StorageImpl::create_idle_node(uint64_t size) {
 }
 
 bool StorageImpl::divide_idle_node(NodeHeader *node_header, uint64_t size) {
+  NodeHeader *next_node_header = nullptr;
+  if (node_header->next_node_id != STORAGE_INVALID_NODE_ID) {
+    next_node_header = get_node_header(node_header->next_node_id);
+    if (!next_node_header) {
+      return false;
+    }
+  }
   NodeHeader * const second_node_header = reserve_phantom_node();
   if (!second_node_header) {
     return false;
@@ -675,8 +682,12 @@ bool StorageImpl::divide_idle_node(NodeHeader *node_header, uint64_t size) {
   second_node_header->chunk_id = node_header->chunk_id;
   second_node_header->offset = node_header->offset + size;
   second_node_header->size = node_header->size - size;
+  second_node_header->next_node_id = node_header->next_node_id;
   second_node_header->prev_node_id = node_header->id;
   second_node_header->modified_time = clock_.now();
+  if (next_node_header) {
+    next_node_header->prev_node_id = second_node_header->id;
+  }
   node_header->size = size;
   node_header->next_node_id = second_node_header->id;
   second_node_header->modified_time = clock_.now();
