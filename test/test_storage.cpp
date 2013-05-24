@@ -26,7 +26,7 @@
 #include "grnxx/storage/file.hpp"
 #include "grnxx/storage/path.hpp"
 #include "grnxx/storage/chunk.hpp"
-#include "grnxx/time/periodic_clock.hpp"
+#include "grnxx/periodic_clock.hpp"
 #include "grnxx/types.hpp"
 
 namespace {

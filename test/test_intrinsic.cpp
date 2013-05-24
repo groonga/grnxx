@@ -19,7 +19,7 @@
 
 #include "grnxx/intrinsic.hpp"
 #include "grnxx/logger.hpp"
-#include "grnxx/time/stopwatch.hpp"
+#include "grnxx/stopwatch.hpp"
 
 void test_basics() {
   assert(grnxx::bit_scan_reverse(std::uint8_t(100)) == 6);

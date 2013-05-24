@@ -22,8 +22,8 @@
 
 #include <functional>
 
-#include "grnxx/time/duration.hpp"
-#include "grnxx/time/time.hpp"
+#include "grnxx/duration.hpp"
+#include "grnxx/time.hpp"
 
 namespace grnxx {
 

@@ -23,7 +23,7 @@
 #include <utility>
 
 #include "grnxx/intrinsic.hpp"
-#include "grnxx/time/duration.hpp"
+#include "grnxx/duration.hpp"
 #include "grnxx/types.hpp"
 
 namespace grnxx {

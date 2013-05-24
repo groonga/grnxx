@@ -68,7 +68,6 @@ AC_CONFIG_FILES([Makefile
                  lib/grnxx/io/Makefile
                  lib/grnxx/map/Makefile
                  lib/grnxx/storage/Makefile
-                 lib/grnxx/time/Makefile
                  src/Makefile
                  test/Makefile])
 AC_OUTPUT

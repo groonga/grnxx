@@ -5,8 +5,7 @@ SUBDIRS =				\
 	db				\
 	io				\
 	map				\
-	storage				\
-	time
+	storage
 
 lib_LTLIBRARIES = libgrnxx.la
 
@@ -17,15 +16,16 @@ libgrnxx_la_LIBADD =			\
 	db/libgrnxx_db.la		\
 	io/libgrnxx_io.la		\
 	map/libgrnxx_map.la		\
-	storage/libgrnxx_storage.la	\
-	time/libgrnxx_time.la
+	storage/libgrnxx_storage.la
 
 libgrnxx_la_LDFLAGS = @AM_LTLDFLAGS@
 
 libgrnxx_la_SOURCES =			\
 	backtrace.cpp			\
+	broken_down_time.cpp		\
 	bytes.cpp			\
 	charset.cpp			\
+	duration.cpp			\
 	error.cpp			\
 	geo_point.cpp			\
 	grnxx.cpp			\
@@ -33,20 +33,26 @@ libgrnxx_la_SOURCES =			\
 	map.cpp				\
 	mutex.cpp			\
 	os.cpp				\
+	periodic_clock.cpp		\
 	recycler.cpp			\
 	slice.cpp			\
+	stopwatch.cpp			\
 	storage.cpp			\
 	string.cpp			\
 	string_builder.cpp		\
-	thread.cpp
+	system_clock.cpp		\
+	thread.cpp			\
+	time.cpp
 
 libgrnxx_includedir = ${includedir}/grnxx
 libgrnxx_include_HEADERS =		\
 	array.hpp			\
 	backtrace.hpp			\
 	basic.hpp			\
+	broken_down_time.hpp		\
 	bytes.hpp			\
 	charset.hpp			\
+	duration.hpp			\
 	error.hpp			\
 	exception.hpp			\
 	features.hpp			\
@@ -59,13 +65,17 @@ libgrnxx_include_HEADERS =		\
 	map.hpp				\
 	mutex.hpp			\
 	os.hpp				\
+	periodic_clock.hpp		\
 	recycler.hpp			\
 	slice.hpp			\
+	stopwatch.hpp			\
 	storage.hpp			\
 	string.hpp			\
 	string_builder.hpp		\
 	string_format.hpp		\
+	system_clock.hpp		\
 	thread.hpp			\
+	time.hpp			\
 	traits.hpp			\
 	types.hpp			\
 	version.h

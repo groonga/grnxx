@@ -18,7 +18,7 @@
 #ifndef GRNXX_IO_FILE_INFO_HPP
 #define GRNXX_IO_FILE_INFO_HPP
 
-#include "grnxx/time/time.hpp"
+#include "grnxx/time.hpp"
 
 namespace grnxx {
 

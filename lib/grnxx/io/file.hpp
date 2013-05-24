@@ -20,9 +20,9 @@
 
 #include <iosfwd>
 
+#include "grnxx/duration.hpp"
 #include "grnxx/flags_impl.hpp"
 #include "grnxx/string.hpp"
-#include "grnxx/time/duration.hpp"
 
 namespace grnxx {
 namespace io {

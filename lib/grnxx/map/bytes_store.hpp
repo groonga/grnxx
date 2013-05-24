@@ -22,7 +22,7 @@
 
 #include "grnxx/array.hpp"
 #include "grnxx/bytes.hpp"
-#include "grnxx/time/duration.hpp"
+#include "grnxx/duration.hpp"
 #include "grnxx/traits.hpp"
 #include "grnxx/types.hpp"
 

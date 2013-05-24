@@ -17,13 +17,13 @@
 */
 #include <cassert>
 
+#include "grnxx/broken_down_time.hpp"
 #include "grnxx/logger.hpp"
+#include "grnxx/periodic_clock.hpp"
+#include "grnxx/stopwatch.hpp"
+#include "grnxx/system_clock.hpp"
 #include "grnxx/thread.hpp"
-#include "grnxx/time/broken_down_time.hpp"
-#include "grnxx/time/periodic_clock.hpp"
-#include "grnxx/time/stopwatch.hpp"
-#include "grnxx/time/system_clock.hpp"
-#include "grnxx/time/time.hpp"
+#include "grnxx/time.hpp"
 
 void test_time() {
   assert(grnxx::Time::max().count() ==

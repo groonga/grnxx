@@ -23,7 +23,7 @@
 
 #include "grnxx/backtrace.hpp"
 #include "grnxx/lock.hpp"
-#include "grnxx/time/system_clock.hpp"
+#include "grnxx/system_clock.hpp"
 
 namespace grnxx {
 

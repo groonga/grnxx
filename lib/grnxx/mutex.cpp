@@ -19,7 +19,7 @@
 
 #include "grnxx/string_builder.hpp"
 #include "grnxx/thread.hpp"
-#include "grnxx/time/stopwatch.hpp"
+#include "grnxx/stopwatch.hpp"
 
 namespace grnxx {
 

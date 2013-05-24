@@ -20,9 +20,9 @@
 
 #include "grnxx/features.hpp"
 
+#include "grnxx/duration.hpp"
 #include "grnxx/flags_impl.hpp"
-#include "grnxx/time/duration.hpp"
-#include "grnxx/time/time.hpp"
+#include "grnxx/time.hpp"
 #include "grnxx/types.hpp"
 
 namespace grnxx {

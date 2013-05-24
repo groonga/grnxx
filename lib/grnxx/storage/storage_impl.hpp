@@ -22,11 +22,11 @@
 
 #include <memory>
 
+#include "grnxx/duration.hpp"
 #include "grnxx/mutex.hpp"
+#include "grnxx/periodic_clock.hpp"
 #include "grnxx/storage.hpp"
-#include "grnxx/time/duration.hpp"
-#include "grnxx/time/periodic_clock.hpp"
-#include "grnxx/time/time.hpp"
+#include "grnxx/time.hpp"
 
 namespace grnxx {
 namespace storage {

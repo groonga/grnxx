@@ -20,7 +20,7 @@
 
 #include "grnxx/features.hpp"
 
-#include "grnxx/time/duration.hpp"
+#include "grnxx/duration.hpp"
 
 namespace grnxx {
 

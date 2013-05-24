@@ -18,8 +18,8 @@
 #include <cassert>
 
 #include "grnxx/logger.hpp"
+#include "grnxx/stopwatch.hpp"
 #include "grnxx/string.hpp"
-#include "grnxx/time/stopwatch.hpp"
 
 void test_constructors() {
   assert(!grnxx::String());

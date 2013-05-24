@@ -21,9 +21,9 @@
 #include "grnxx/lock.hpp"
 #include "grnxx/logger.hpp"
 #include "grnxx/mutex.hpp"
+#include "grnxx/stopwatch.hpp"
+#include "grnxx/system_clock.hpp"
 #include "grnxx/thread.hpp"
-#include "grnxx/time/stopwatch.hpp"
-#include "grnxx/time/system_clock.hpp"
 
 namespace {
 

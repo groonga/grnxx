@@ -21,8 +21,8 @@
 #include <sstream>
 
 #include "grnxx/logger.hpp"
+#include "grnxx/stopwatch.hpp"
 #include "grnxx/string_format.hpp"
-#include "grnxx/time/stopwatch.hpp"
 
 void test_align() {
   grnxx::StringBuilder builder;

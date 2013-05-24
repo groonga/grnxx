@@ -20,8 +20,8 @@
 
 #include "grnxx/features.hpp"
 
-#include "grnxx/time/broken_down_time.hpp"
-#include "grnxx/time/duration.hpp"
+#include "grnxx/broken_down_time.hpp"
+#include "grnxx/duration.hpp"
 #include "grnxx/types.hpp"
 
 namespace grnxx {

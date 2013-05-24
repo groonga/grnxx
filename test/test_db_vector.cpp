@@ -22,7 +22,7 @@
 
 #include "grnxx/db/vector.hpp"
 #include "grnxx/logger.hpp"
-#include "grnxx/time/stopwatch.hpp"
+#include "grnxx/stopwatch.hpp"
 
 struct Point {
   double x;

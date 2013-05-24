@@ -23,7 +23,7 @@
 
 #include "grnxx/alpha/double_array.hpp"
 #include "grnxx/logger.hpp"
-#include "grnxx/time/time.hpp"
+#include "grnxx/time.hpp"
 
 void test_basics() {
   grnxx::io::Pool pool;

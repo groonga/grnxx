@@ -19,7 +19,7 @@
 
 #include "grnxx/logger.hpp"
 #include "grnxx/string_builder.hpp"
-#include "grnxx/time/time.hpp"
+#include "grnxx/time.hpp"
 
 void test_basic_operations() {
   grnxx::StringBuilder builder;

@@ -15,20 +15,18 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#ifndef GRNXX_TIME_SYSTEM_CLOCK_HPP
-#define GRNXX_TIME_SYSTEM_CLOCK_HPP
+#include "grnxx/system_clock.hpp"
 
-#include "grnxx/features.hpp"
-
-#include "grnxx/time/time.hpp"
+#include <chrono>
 
 namespace grnxx {
 
-class SystemClock {
- public:
-  static Time now();
-};
+Time SystemClock::now() {
+  // The epoch of std::chrono::system_clock is not guaranteed to be the Unix
+  // epoch. So, (now() - from_time_t(0)) is used instead of time_since_epoch().
+  return Time(std::chrono::duration_cast<std::chrono::microseconds>(
+              (std::chrono::system_clock::now() -
+               std::chrono::system_clock::from_time_t(0))).count());
+}
 
 }  // namespace grnxx
-
-#endif  // GRNXX_TIME_SYSTEM_CLOCK_HPP

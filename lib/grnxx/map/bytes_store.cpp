@@ -22,10 +22,10 @@
 #include <new>
 
 #include "grnxx/logger.hpp"
+#include "grnxx/periodic_clock.hpp"
 #include "grnxx/storage.hpp"
 #include "grnxx/string_builder.hpp"
-#include "grnxx/time/periodic_clock.hpp"
-#include "grnxx/time/time.hpp"
+#include "grnxx/time.hpp"
 
 namespace grnxx {
 namespace map {

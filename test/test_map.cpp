@@ -30,8 +30,8 @@
 #include "grnxx/map.hpp"
 #include "grnxx/map/bytes_store.hpp"
 #include "grnxx/map/helper.hpp"
+#include "grnxx/periodic_clock.hpp"
 #include "grnxx/storage.hpp"
-#include "grnxx/time/periodic_clock.hpp"
 
 namespace {
 
@@ -74,7 +74,7 @@ T generate_random_key() {
   const T *key = reinterpret_cast<const T *>(&random_value);
   return grnxx::map::Helper<T>::normalize(*key);
 }
-// TODO: Generate a random key and it is valid until the next call.
+// Generate a random key and it is valid until the next call.
 template <>
 grnxx::Bytes generate_random_key() {
   static uint8_t buf[MAX_KEY_SIZE];
@@ -96,7 +96,7 @@ void generate_random_keys(std::vector<T> *keys, std::uint64_t num_keys) {
   *keys = std::vector<T>(keyset.begin(), keyset.end());
   std::random_shuffle(keys->begin(), keys->end(), RandomNumberGenerator());
 }
-// TODO: Generate random keys and those are valid until the next call.
+// Generate random keys and those are valid until the next call.
 template <>
 void generate_random_keys(std::vector<grnxx::Bytes> *keys,
                           std::uint64_t num_keys) {
@@ -586,6 +586,49 @@ void test_map_truncate(grnxx::MapType map_type) {
   }
 }
 
+//template <typename T>
+//void test_map_key_id(grnxx::MapType map_type) {
+//  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
+//  std::unique_ptr<grnxx::Map<T>> map(
+//      grnxx::Map<T>::create(map_type, storage.get(),
+//                            grnxx::STORAGE_ROOT_NODE_ID));
+//  assert(map);
+//  const std::int64_t min = 10;
+//  const std::int64_t max = 100;
+
+//  map->key_id() > min;
+//  map->key_id() >= min;
+//  map->key_id() < max;
+//  map->key_id() <= max;
+
+//  min < map->key_id();
+//  min <= map->key_id();
+//  max > map->key_id();
+//  max >= map->key_id();
+
+//  (map->key_id() > min) && (map->key_id() < max);
+//  (map->key_id() > min) && (map->key_id() <= max);
+//  (map->key_id() >= min) && (map->key_id() < max);
+//  (map->key_id() >= min) && (map->key_id() <= max);
+
+//  (map->key_id() < max) && (map->key_id() > min);
+//  (map->key_id() <= max) && (map->key_id() > min);
+//  (map->key_id() < max) && (map->key_id() >= min);
+//  (map->key_id() <= max) && (map->key_id() >= min);
+//}
+
+//template <typename T>
+//void test_map_key(grnxx::MapType map_type) {
+//  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
+//  std::unique_ptr<grnxx::Map<T>> map(
+//      grnxx::Map<T>::create(map_type, storage.get(),
+//                            grnxx::STORAGE_ROOT_NODE_ID));
+//  assert(map);
+//  T key = generate_random_key<T>();
+
+//  map->key() > key;
+//}
+
 template <typename T>
 void test_map_create_cursor(grnxx::MapType map_type) {
   std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
@@ -633,6 +676,8 @@ void test_map(grnxx::MapType map_type) {
   test_map_replace<T>(map_type);
   test_map_find_longest_prefix_match<T>(map_type);
   test_map_truncate<T>(map_type);
+//  test_map_key_id<T>(map_type);
+//  test_map_key<T>(map_type);
   test_map_create_cursor<T>(map_type);
   test_map_create_scanner<T>(map_type);
 }
@@ -684,7 +729,7 @@ int main() {
   grnxx::PeriodicClock clock;
 
   test_bytes_store();
-//  test_map();
+  test_map();
 
   return 0;
 }

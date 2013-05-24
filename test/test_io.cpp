@@ -27,7 +27,7 @@
 #include "grnxx/io/pool.hpp"
 #include "grnxx/io/view.hpp"
 #include "grnxx/logger.hpp"
-#include "grnxx/time/stopwatch.hpp"
+#include "grnxx/stopwatch.hpp"
 
 namespace {
 

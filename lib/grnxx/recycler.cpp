@@ -18,7 +18,7 @@
 #include "grnxx/recycler.hpp"
 
 #include "grnxx/string_builder.hpp"
-#include "grnxx/time/system_clock.hpp"
+#include "grnxx/system_clock.hpp"
 
 namespace grnxx {
 

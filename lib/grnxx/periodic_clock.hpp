@@ -20,8 +20,8 @@
 
 #include "grnxx/features.hpp"
 
-#include "grnxx/time/system_clock.hpp"
-#include "grnxx/time/time.hpp"
+#include "grnxx/system_clock.hpp"
+#include "grnxx/time.hpp"
 
 namespace grnxx {
 

@@ -19,7 +19,7 @@
 
 #include "grnxx/logger.hpp"
 #include "grnxx/recycler.hpp"
-#include "grnxx/time/stopwatch.hpp"
+#include "grnxx/stopwatch.hpp"
 
 void test() {
   const grnxx::Duration FROZEN_DURATION = grnxx::Duration::minutes(10);

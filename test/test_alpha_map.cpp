@@ -25,7 +25,7 @@
 #include "grnxx/alpha/map.hpp"
 #include "grnxx/geo_point.hpp"
 #include "grnxx/logger.hpp"
-#include "grnxx/time/time.hpp"
+#include "grnxx/time.hpp"
 
 template <typename T>
 bool isNaN(T) {

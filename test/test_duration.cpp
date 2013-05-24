@@ -19,7 +19,7 @@
 #include <sstream>
 
 #include "grnxx/logger.hpp"
-#include "grnxx/time/duration.hpp"
+#include "grnxx/duration.hpp"
 
 int main() {
   grnxx::Logger::set_flags(grnxx::LOGGER_WITH_ALL |
@@ -88,30 +88,6 @@ int main() {
 
   assert(grnxx::Duration(456) >= grnxx::Duration(456));
   assert(grnxx::Duration(456) >= grnxx::Duration(123));
-
-//  std::stringstream stream;
-//  stream << grnxx::Duration(123456789);
-//  assert(stream.str() == "123.456789");
-
-//  stream.str("");
-//  stream << grnxx::Duration::seconds(123);
-//  assert(stream.str() == "123");
-
-//  stream.str("");
-//  stream << (grnxx::Duration::seconds(456) + grnxx::Duration(789));
-//  assert(stream.str() == "456.000789");
-
-//  stream.str("");
-//  stream << grnxx::Duration(-123456789);
-//  assert(stream.str() == "-123.456789");
-
-//  stream.str("");
-//  stream << grnxx::Duration::seconds(-123);
-//  assert(stream.str() == "-123");
-
-//  stream.str("");
-//  stream << -(grnxx::Duration::seconds(456) + grnxx::Duration(789));
-//  assert(stream.str() == "-456.000789");
 
   return 0;
 }

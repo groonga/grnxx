@@ -21,7 +21,7 @@
 #include "grnxx/features.hpp"
 
 #include "grnxx/storage.hpp"
-#include "grnxx/time/time.hpp"
+#include "grnxx/time.hpp"
 #include "grnxx/types.hpp"
 
 namespace grnxx {

@@ -42,7 +42,7 @@
 
 #include "grnxx/error.hpp"
 #include "grnxx/logger.hpp"
-#include "grnxx/time/system_clock.hpp"
+#include "grnxx/system_clock.hpp"
 
 namespace grnxx {
 namespace {

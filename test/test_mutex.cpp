@@ -20,7 +20,7 @@
 #include "grnxx/lock.hpp"
 #include "grnxx/logger.hpp"
 #include "grnxx/mutex.hpp"
-#include "grnxx/time/stopwatch.hpp"
+#include "grnxx/stopwatch.hpp"
 
 int main() {
   grnxx::Logger::set_flags(grnxx::LOGGER_WITH_ALL |
