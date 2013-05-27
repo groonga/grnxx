@@ -38,6 +38,9 @@ namespace {
 constexpr std::uint64_t MIN_KEY_SIZE = 0;
 constexpr std::uint64_t MAX_KEY_SIZE = 16;
 
+constexpr std::uint64_t MIN_TEXT_SIZE = 1024;
+constexpr std::uint64_t MAX_TEXT_SIZE = 2048;
+
 constexpr std::uint64_t MAP_NUM_KEYS         = 100;
 constexpr std::uint64_t BYTES_STORE_NUM_KEYS = 1 << 14;
 
@@ -78,12 +81,24 @@ T generate_random_key() {
 template <>
 grnxx::Bytes generate_random_key() {
   static uint8_t buf[MAX_KEY_SIZE];
-  const std::uint64_t key_size =
-      MIN_KEY_SIZE + (mersenne_twister() % (MAX_KEY_SIZE - MIN_KEY_SIZE + 1));
+  const std::uint64_t key_size = MIN_KEY_SIZE +
+      (mersenne_twister() % (MAX_KEY_SIZE - MIN_KEY_SIZE + 1));
   for (std::uint64_t i = 0; i < key_size; ++i) {
     buf[i] = 'A' + (mersenne_twister() % 26);
   }
   return grnxx::Bytes(buf, key_size);
+}
+
+// Generate a random text.
+template <typename T>
+T generate_random_text() {
+  static uint8_t buf[MAX_TEXT_SIZE];
+  const std::uint64_t text_size = MIN_TEXT_SIZE +
+      (mersenne_twister() % (MAX_TEXT_SIZE - MIN_TEXT_SIZE + 1));
+  for (std::uint64_t i = 0; i < text_size; ++i) {
+    buf[i] = 'A' + (mersenne_twister() % 26);
+  }
+  return T(buf, text_size);
 }
 
 // Generate random keys.
@@ -773,17 +788,28 @@ void test_map_create_key_range_cursor(grnxx::MapType map_type) {
 
 template <>
 void test_map_create_key_range_cursor<grnxx::GeoPoint>(grnxx::MapType) {
-  // This operation is not supported for grnxx::GeoPoint.
+  // grnxx::Map<grnxx::GeoPoint> does not support this operation.
 }
 
 template <typename T>
-void test_map_create_scanner(grnxx::MapType map_type) {
-  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
-  std::unique_ptr<grnxx::Map<T>> map(
-      grnxx::Map<T>::create(map_type, storage.get(),
-                            grnxx::STORAGE_ROOT_NODE_ID));
-  assert(map);
+void test_map_create_scanner(grnxx::MapType) {
+  // Only grnxx::Map<grnxx::Bytes> supports this operation.
 }
+
+// TODO
+//template <>
+//void test_map_create_scanner<grnxx::Bytes>(grnxx::MapType map_type) {
+//  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
+//  std::unique_ptr<grnxx::Map<grnxx::Bytes>> map(
+//      grnxx::Map<grnxx::Bytes>::create(map_type, storage.get(),
+//                                       grnxx::STORAGE_ROOT_NODE_ID));
+//  assert(map);
+//  const grnxx::Bytes text = generate_random_text<grnxx::Bytes>();
+
+//  std::unique_ptr<grnxx::MapScanner<grnxx::Bytes>> scanner(
+//      map->create_scanner(text));
+//  assert(scanner);
+//}
 
 template <typename T>
 void test_map(grnxx::MapType map_type) {
