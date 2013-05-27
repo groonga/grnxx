@@ -29,6 +29,31 @@ namespace grnxx {
 namespace map {
 
 template <typename T>
+class AllKeysCursor : public MapCursor<T> {
+ public:
+  using Key = typename Traits<T>::Type;
+  using KeyArg = typename Traits<T>::ArgumentType;
+
+  AllKeysCursor();
+  ~AllKeysCursor();
+
+  static AllKeysCursor *create(Map<T> *map, const MapCursorOptions &options);
+
+  bool next();
+  bool remove();
+
+ private:
+  Map<T> *map_;
+  int64_t cur_;
+  int64_t end_;
+  int64_t step_;
+  uint64_t count_;
+  MapCursorOptions options_;
+
+  bool init(Map<T> *map, const MapCursorOptions &options);
+};
+
+template <typename T>
 class KeyIDRangeCursor : public MapCursor<T> {
  public:
   using Key = typename Traits<T>::Type;

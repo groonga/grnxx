@@ -129,8 +129,8 @@ class Map {
 
   // TODO: Not yet fixed.
   // Return a reference to create a cursor query.
-  MapCursorAll<T> all() const {
-    return MapCursorAll<T>();
+  MapCursorAllKeys<T> all_keys() const {
+    return MapCursorAllKeys<T>();
   }
   // Return a reference to create a cursor query.
   MapCursorKeyID<T> key_id() const {
@@ -143,7 +143,7 @@ class Map {
 
   // Create a cursor for accessing all the keys.
   virtual Cursor *create_cursor(
-      MapCursorAll<T> query,
+      MapCursorAllKeys<T> query,
       const MapCursorOptions &options = MapCursorOptions());
   // Create a cursor for accessing keys that satisfy "query".
   virtual Cursor *create_cursor(

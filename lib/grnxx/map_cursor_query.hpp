@@ -25,9 +25,9 @@
 
 namespace grnxx {
 
-// MapCursorAll.
+// MapCursorAllKeys.
 
-template <typename T> struct MapCursorAll {};
+template <typename T> struct MapCursorAllKeys {};
 
 // MapCursorKeyID
 

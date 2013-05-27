@@ -29,6 +29,86 @@ namespace grnxx {
 namespace map {
 
 template <typename T>
+AllKeysCursor<T>::AllKeysCursor()
+    : MapCursor<T>(), map_(), cur_(), end_(), step_(), count_(0), options_() {}
+
+template <typename T>
+AllKeysCursor<T>::~AllKeysCursor() {}
+
+template <typename T>
+AllKeysCursor<T> *AllKeysCursor<T>::create(
+    Map<T> *map, const MapCursorOptions &options) {
+  std::unique_ptr<AllKeysCursor<T>> cursor(
+      new (std::nothrow) AllKeysCursor<T>);
+  if (!cursor) {
+    GRNXX_ERROR() << "new grnxx::map::AllKeysCursor<T> failed";
+    return nullptr;
+  }
+  if (!cursor->init(map, options)) {
+    return nullptr;
+  }
+  return cursor.release();
+}
+
+template <typename T>
+bool AllKeysCursor<T>::next() {
+  if (count_ >= options_.limit) {
+    return false;
+  }
+  while (cur_ != end_) {
+    cur_ += step_;
+    if (map_->get(cur_, &this->key_)) {
+      this->key_id_ = cur_;
+      ++count_;
+      return true;
+    }
+  }
+  return false;
+}
+
+template <typename T>
+bool AllKeysCursor<T>::remove() {
+  return map_->unset(this->key_id_);
+}
+
+template <typename T>
+bool AllKeysCursor<T>::init(Map<T> *map, const MapCursorOptions &options) {
+  map_ = map;
+  options_ = options;
+  options_.flags = MAP_CURSOR_ORDER_BY_ID;
+  if (options.flags & MAP_CURSOR_REVERSE_ORDER) {
+    options_.flags |= MAP_CURSOR_REVERSE_ORDER;
+  }
+
+  const int64_t min = map->min_key_id();
+  const int64_t max = map->max_key_id();
+  if (min > max) {
+    // There are no keys in the range [min, max].
+    cur_ = end_ = 0;
+    return true;
+  }
+
+  if (options_.flags & MAP_CURSOR_REVERSE_ORDER) {
+    cur_ = max + 1;
+    end_ = min;
+    step_ = -1;
+  } else {
+    cur_ = min - 1;
+    end_ = max;
+    step_ = 1;
+  }
+
+  // Skip the first "options_.offset" keys in range.
+  for (uint64_t count = 0; (count < options_.offset) && (cur_ != end_); ) {
+    cur_ += step_;
+    if (map_->get(cur_)) {
+      ++count;
+    }
+  }
+  return true;
+}
+
+template <typename T>
 KeyIDRangeCursor<T>::KeyIDRangeCursor()
     : MapCursor<T>(), map_(), cur_(), end_(), step_(), count_(0),
       query_(), options_() {}
@@ -237,6 +317,19 @@ bool KeyRangeCursor<T>::filter(KeyArg key) const {
   }
   return true;
 }
+
+template class AllKeysCursor<int8_t>;
+template class AllKeysCursor<int16_t>;
+template class AllKeysCursor<int32_t>;
+template class AllKeysCursor<int64_t>;
+template class AllKeysCursor<uint8_t>;
+template class AllKeysCursor<uint16_t>;
+template class AllKeysCursor<uint32_t>;
+template class AllKeysCursor<uint64_t>;
+template class AllKeysCursor<double>;
+template class AllKeysCursor<GeoPoint>;
+// TODO: To be enabled.
+//template class AllKeysCursor<Bytes>;
 
 template class KeyIDRangeCursor<int8_t>;
 template class KeyIDRangeCursor<int16_t>;

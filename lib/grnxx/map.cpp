@@ -247,25 +247,26 @@ bool Map<T>::truncate() {
 }
 
 template <typename T>
-MapCursor<T> *Map<T>::create_cursor(MapCursorAll<T>,
-                                    const MapCursorOptions &) {
-  // TODO: Give a naive implementation.
-  GRNXX_ERROR() << "invalid operation";
-  return nullptr;
+MapCursor<T> *Map<T>::create_cursor(MapCursorAllKeys<T>,
+                                    const MapCursorOptions &options) {
+  return map::AllKeysCursor<T>::create(this, options);
 }
 
 template <typename T>
-MapCursor<T> *Map<T>::create_cursor(const MapCursorKeyIDRange<T> &,
-                                    const MapCursorOptions &) {
-  // TODO: Give a naive implementation.
-  GRNXX_ERROR() << "invalid operation";
-  return nullptr;
+MapCursor<T> *Map<T>::create_cursor(const MapCursorKeyIDRange<T> &query,
+                                    const MapCursorOptions &options) {
+  return map::KeyIDRangeCursor<T>::create(this, query, options);
 }
 
 template <typename T>
-MapCursor<T> *Map<T>::create_cursor(const MapCursorKeyRange<T> &,
-                                    const MapCursorOptions &) {
-  // TODO: Give a naive implementation.
+MapCursor<T> *Map<T>::create_cursor(const MapCursorKeyRange<T> &query,
+                                    const MapCursorOptions &options) {
+  return map::KeyRangeCursor<T>::create(this, query, options);
+}
+
+template <>
+MapCursor<GeoPoint> *Map<GeoPoint>::create_cursor(
+    const MapCursorKeyRange<GeoPoint> &, const MapCursorOptions &) {
   GRNXX_ERROR() << "invalid operation";
   return nullptr;
 }
