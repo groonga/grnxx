@@ -20,34 +20,51 @@
 
 #include "grnxx/features.hpp"
 
-#include "grnxx/map.hpp"
+#include "grnxx/flags_impl.hpp"
+#include "grnxx/traits.hpp"
+#include "grnxx/types.hpp"
 
 namespace grnxx {
 
 class Charset;
-
-namespace map {
+class Storage;
 
 template <typename T>
-class Scanner : public MapScanner<T> {
+class MapScanner {
  public:
-  using Key = typename MapScanner<T>::Key;
-  using KeyArg = typename MapScanner<T>::KeyArg;
+  using Key = typename Traits<T>::Type;
+  using KeyArg = typename Traits<T>::ArgumentType;
 
-  Scanner();
-  ~Scanner();
+  MapScanner();
+  virtual ~MapScanner();
 
-  static Scanner *create(Map<T> *map, KeyArg query, const Charset *charset);
+  // Find the next key from the rest of the query and return true on success.
+  virtual bool next() = 0;
 
-  bool next();
+  // Return the start position of the found key.
+  uint64_t offset() const {
+    return offset_;
+  }
+  // Return the size of the found key.
+  uint64_t size() const {
+    return size_;
+  }
+  // Return the ID of the found key.
+  int64_t key_id() const {
+    return key_id_;
+  }
+  // Return the found key.
+  const Key &key() const {
+    return key_;
+  }
 
  protected:
-  Map<T> *map_;
-  Key query_;
-  const Charset *charset_;
+  uint64_t offset_;
+  uint64_t size_;
+  int64_t key_id_;
+  Key key_;
 };
 
-}  // namespace map
 }  // namespace grnxx
 
 #endif  // GRNXX_MAP_SCANNER_HPP

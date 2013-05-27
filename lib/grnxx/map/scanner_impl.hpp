@@ -15,15 +15,41 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#ifndef GRNXX_MAP_CURSOR_HPP
-#define GRNXX_MAP_CURSOR_HPP
+#ifndef GRNXX_MAP_SCANNER_IMPL_HPP
+#define GRNXX_MAP_SCANNER_IMPL_HPP
 
 #include "grnxx/features.hpp"
 
+#include "grnxx/map_scanner.hpp"
+
 namespace grnxx {
+
+class Charset;
+template <typename T> class Map;
+
 namespace map {
+
+template <typename T>
+class ScannerImpl : public MapScanner<T> {
+ public:
+  using Key = typename MapScanner<T>::Key;
+  using KeyArg = typename MapScanner<T>::KeyArg;
+
+  ScannerImpl();
+  ~ScannerImpl();
+
+  static ScannerImpl *create(Map<T> *map, KeyArg query,
+                             const Charset *charset);
+
+  bool next();
+
+ protected:
+  Map<T> *map_;
+  Key query_;
+  const Charset *charset_;
+};
 
 }  // namespace map
 }  // namespace grnxx
 
-#endif  // GRNXX_MAP_CURSOR_HPP
+#endif  // GRNXX_MAP_SCANNER_IMPL_HPP

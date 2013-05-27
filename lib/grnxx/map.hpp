@@ -18,36 +18,30 @@
 #ifndef GRNXX_MAP_HPP
 #define GRNXX_MAP_HPP
 
+#include "grnxx/features.hpp"
+
 #include "grnxx/flags_impl.hpp"
+#include "grnxx/map_cursor.hpp"
+#include "grnxx/map_cursor_query.hpp"
+#include "grnxx/map_scanner.hpp"
 #include "grnxx/traits.hpp"
 #include "grnxx/types.hpp"
 
 namespace grnxx {
-namespace map {
 
-template <typename T> class DummyKeyID;
-template <typename T> class DummyKey;
-template <typename T> class CursorQuery;
-
-}  // namespace map
-
-class StringBuilder;
-
-class Storage;
 class Charset;
-
-template <typename T> class Map;
+class Storage;
+class StringBuilder;
 
 constexpr int64_t MAP_MIN_KEY_ID     = 0;
 constexpr int64_t MAP_MAX_KEY_ID     = (1LL << 40) - 2;
 constexpr int64_t MAP_INVALID_KEY_ID = MAP_MAX_KEY_ID + 1;
 
 enum MapType : uint32_t {
-  MAP_UNKNOWN      = 0,
-  MAP_ARRAY        = 1,  // Array-based implementation.
-  MAP_DOUBLE_ARRAY = 2,  // TODO: DoubleArray-based implementation.
-  MAP_PATRICIA     = 3,  // TODO: Patricia-based implementation.
-  MAP_HASH_TABLE   = 4   // TODO: HashTable-based implementation.
+  MAP_ARRAY        = 0,  // Array-based implementation.
+  MAP_DOUBLE_ARRAY = 1,  // TODO: DoubleArray-based implementation.
+  MAP_PATRICIA     = 2,  // TODO: Patricia-based implementation.
+  MAP_HASH_TABLE   = 3   // TODO: HashTable-based implementation.
 };
 
 StringBuilder &operator<<(StringBuilder &builder, MapType type);
@@ -57,103 +51,11 @@ struct MapOptions {
   MapOptions();
 };
 
-// TODO: How to implement NEAR cursor.
-struct MapCursorFlagsIdentifier;
-using MapCursorFlags = FlagsImpl<MapCursorFlagsIdentifier>;
-
-// Use the default settings.
-constexpr MapCursorFlags MAP_CURSOR_DEFAULT       =
-    MapCursorFlags::define(0x000);
-// Sort keys by ID.
-constexpr MapCursorFlags MAP_CURSOR_ORDER_BY_ID   =
-    MapCursorFlags::define(0x001);
-// Sort keys by key.
-constexpr MapCursorFlags MAP_CURSOR_ORDER_BY_KEY  =
-    MapCursorFlags::define(0x002);
-// Access keys in reverse order.
-constexpr MapCursorFlags MAP_CURSOR_REVERSE_ORDER =
-    MapCursorFlags::define(0x010);
-
-struct MapCursorOptions {
-  MapCursorFlags flags;
-  uint64_t offset;
-  uint64_t limit;
-
-  // Initialize the members.
-  MapCursorOptions();
-};
-
-template <typename T>
-class MapCursor {
- public:
-  using Key = typename Traits<T>::Type;
-  using KeyArg = typename Traits<T>::ArgumentType;
-
-  MapCursor();
-  virtual ~MapCursor();
-
-  // Move the cursor to the next key and return true on success.
-  virtual bool next() = 0;
-  // Remove the current key and return true on success.
-  virtual bool remove();
-
-  // Return the ID of the current key.
-  int64_t key_id() const {
-    return key_id_;
-  }
-  // Return the current key.
-  const Key &key() const {
-    return key_;
-  }
-
- protected:
-  int64_t key_id_;
-  Key key_;
-};
-
-template <typename T>
-class MapScanner {
- public:
-  using Key = typename Traits<T>::Type;
-  using KeyArg = typename Traits<T>::ArgumentType;
-
-  MapScanner();
-  virtual ~MapScanner();
-
-  // Find the next key from the rest of the query and return true on success.
-  virtual bool next() = 0;
-
-  // Return the start position of the found key.
-  uint64_t offset() const {
-    return offset_;
-  }
-  // Return the size of the found key.
-  uint64_t size() const {
-    return size_;
-  }
-  // Return the ID of the found key.
-  int64_t key_id() const {
-    return key_id_;
-  }
-  // Return the found key.
-  const Key &key() const {
-    return key_;
-  }
-
- protected:
-  uint64_t offset_;
-  uint64_t size_;
-  int64_t key_id_;
-  Key key_;
-};
-
 template <typename T>
 class Map {
  public:
   using Key = typename Traits<T>::Type;
   using KeyArg = typename Traits<T>::ArgumentType;
-  using DummyKeyID = map::DummyKeyID<T>;
-  using DummyKey = map::DummyKey<T>;
   using Cursor = MapCursor<T>;
   using Scanner = MapScanner<T>;
 
@@ -227,20 +129,29 @@ class Map {
 
   // TODO: Not yet fixed.
   // Return a reference to create a cursor query.
-  const DummyKeyID &key_id() const {
-    return *static_cast<const DummyKeyID *>(nullptr);
+  MapCursorAll<T> all() const {
+    return MapCursorAll<T>();
   }
   // Return a reference to create a cursor query.
-  const DummyKey &key() const {
-    return *static_cast<const DummyKey *>(nullptr);
+  MapCursorKeyID<T> key_id() const {
+    return MapCursorKeyID<T>();
+  }
+  // Return a reference to create a cursor query.
+  MapCursorKey<T> key() const {
+    return MapCursorKey<T>();
   }
 
   // Create a cursor for accessing all the keys.
   virtual Cursor *create_cursor(
+      MapCursorAll<T> query,
       const MapCursorOptions &options = MapCursorOptions());
   // Create a cursor for accessing keys that satisfy "query".
   virtual Cursor *create_cursor(
-      const map::CursorQuery<T> &query,
+      const MapCursorKeyIDRange<T> &query,
+      const MapCursorOptions &options = MapCursorOptions());
+  // Create a cursor for accessing keys that satisfy "query".
+  virtual Cursor *create_cursor(
+      const MapCursorKeyRange<T> &query,
       const MapCursorOptions &options = MapCursorOptions());
 
   // Create a MapScanner object to find keys in "query".

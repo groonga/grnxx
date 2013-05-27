@@ -15,7 +15,7 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#include "grnxx/map/scanner.hpp"
+#include "grnxx/map/scanner_impl.hpp"
 
 #include <memory>
 #include <new>
@@ -23,6 +23,7 @@
 #include "grnxx/bytes.hpp"
 #include "grnxx/charset.hpp"
 #include "grnxx/logger.hpp"
+#include "grnxx/map.hpp"
 
 // TODO: To be removed in future.
 #include "grnxx/slice.hpp"
@@ -31,17 +32,17 @@ namespace grnxx {
 namespace map {
 
 template <typename T>
-Scanner<T>::Scanner() : map_(), query_(), charset_() {}
+ScannerImpl<T>::ScannerImpl() : map_(), query_(), charset_() {}
 
 template <typename T>
-Scanner<T>::~Scanner() {}
+ScannerImpl<T>::~ScannerImpl() {}
 
 template <typename T>
-Scanner<T> *Scanner<T>::create(Map<T> *map, KeyArg query,
-                               const Charset *charset) {
-  std::unique_ptr<Scanner> scanner(new (std::nothrow) Scanner);
+ScannerImpl<T> *ScannerImpl<T>::create(Map<T> *map, KeyArg query,
+                                       const Charset *charset) {
+  std::unique_ptr<ScannerImpl> scanner(new (std::nothrow) ScannerImpl);
   if (!scanner) {
-    GRNXX_ERROR() << "new grnxx::map::Scanner failed";
+    GRNXX_ERROR() << "new grnxx::map::ScannerImpl failed";
     return nullptr;
   }
   scanner->map_ = map;
@@ -51,7 +52,7 @@ Scanner<T> *Scanner<T>::create(Map<T> *map, KeyArg query,
 }
 
 template <typename T>
-bool Scanner<T>::next() {
+bool ScannerImpl<T>::next() {
   this->offset_ += this->size_;
   while (this->offset_ < query_.size()) {
     const T rest = query_.except_prefix(this->offset_);
@@ -71,7 +72,7 @@ bool Scanner<T>::next() {
   return false;
 }
 
-template class Scanner<Bytes>;
+template class ScannerImpl<Bytes>;
 
 }  // namespace map
 }  // namespace grnxx

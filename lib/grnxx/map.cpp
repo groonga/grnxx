@@ -25,9 +25,10 @@
 #include "grnxx/storage.hpp"
 #include "grnxx/string_builder.hpp"
 #include "grnxx/map/array_map.hpp"
+#include "grnxx/map/cursor_impl.hpp"
 #include "grnxx/map/header.hpp"
 #include "grnxx/map/helper.hpp"
-#include "grnxx/map/scanner.hpp"
+#include "grnxx/map/scanner_impl.hpp"
 
 namespace grnxx {
 
@@ -52,33 +53,6 @@ StringBuilder &operator<<(StringBuilder &builder, MapType type) {
 }
 
 MapOptions::MapOptions() {}
-
-MapCursorOptions::MapCursorOptions()
-    : flags(MAP_CURSOR_DEFAULT),
-      offset(0),
-      limit(std::numeric_limits<uint64_t>::max()) {}
-
-template <typename T>
-MapCursor<T>::MapCursor() : key_id_(MAP_INVALID_KEY_ID), key_() {}
-
-template <typename T>
-MapCursor<T>::~MapCursor() {}
-
-template <typename T>
-bool MapCursor<T>::remove() {
-  GRNXX_ERROR() << "invalid operation";
-  return false;
-}
-
-template <typename T>
-MapScanner<T>::MapScanner()
-    : offset_(0),
-      size_(0),
-      key_id_(MAP_INVALID_KEY_ID),
-      key_() {}
-
-template <typename T>
-MapScanner<T>::~MapScanner() {}
 
 template <typename T>
 Map<T>::Map() {}
@@ -273,14 +247,23 @@ bool Map<T>::truncate() {
 }
 
 template <typename T>
-MapCursor<T> *Map<T>::create_cursor(const MapCursorOptions &) {
+MapCursor<T> *Map<T>::create_cursor(MapCursorAll<T>,
+                                    const MapCursorOptions &) {
   // TODO: Give a naive implementation.
   GRNXX_ERROR() << "invalid operation";
   return nullptr;
 }
 
 template <typename T>
-MapCursor<T> *Map<T>::create_cursor(const map::CursorQuery<T> &,
+MapCursor<T> *Map<T>::create_cursor(const MapCursorKeyIDRange<T> &,
+                                    const MapCursorOptions &) {
+  // TODO: Give a naive implementation.
+  GRNXX_ERROR() << "invalid operation";
+  return nullptr;
+}
+
+template <typename T>
+MapCursor<T> *Map<T>::create_cursor(const MapCursorKeyRange<T> &,
                                     const MapCursorOptions &) {
   // TODO: Give a naive implementation.
   GRNXX_ERROR() << "invalid operation";
@@ -296,22 +279,8 @@ MapScanner<T> *Map<T>::create_scanner(KeyArg, const Charset *) {
 template <>
 MapScanner<Bytes> *Map<Bytes>::create_scanner(KeyArg query,
                                               const Charset *charset) {
-  return map::Scanner<Bytes>::create(this, query, charset);
+  return map::ScannerImpl<Bytes>::create(this, query, charset);
 }
-
-template class MapCursor<int8_t>;
-template class MapCursor<uint8_t>;
-template class MapCursor<int16_t>;
-template class MapCursor<uint16_t>;
-template class MapCursor<int32_t>;
-template class MapCursor<uint32_t>;
-template class MapCursor<int64_t>;
-template class MapCursor<uint64_t>;
-template class MapCursor<double>;
-template class MapCursor<GeoPoint>;
-template class MapCursor<Bytes>;
-
-template class MapScanner<Bytes>;
 
 template class Map<int8_t>;
 template class Map<uint8_t>;

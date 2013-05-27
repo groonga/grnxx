@@ -15,10 +15,23 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#include "grnxx/map/cursor.hpp"
+#include "grnxx/map_scanner.hpp"
+
+#include "grnxx/bytes.hpp"
+#include "grnxx/map.hpp"
 
 namespace grnxx {
-namespace map {
 
-}  // namespace map
+template <typename T>
+MapScanner<T>::MapScanner()
+    : offset_(0),
+      size_(0),
+      key_id_(MAP_INVALID_KEY_ID),
+      key_() {}
+
+template <typename T>
+MapScanner<T>::~MapScanner() {}
+
+template class MapScanner<Bytes>;
+
 }  // namespace grnxx

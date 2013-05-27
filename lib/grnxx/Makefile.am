@@ -30,6 +30,8 @@ libgrnxx_la_SOURCES =			\
 	grnxx.cpp			\
 	logger.cpp			\
 	map.cpp				\
+	map_cursor.cpp			\
+	map_scanner.cpp			\
 	mutex.cpp			\
 	os.cpp				\
 	periodic_clock.cpp		\
@@ -63,6 +65,9 @@ libgrnxx_include_HEADERS =		\
 	lock.hpp			\
 	logger.hpp			\
 	map.hpp				\
+	map_cursor.hpp			\
+	map_cursor_query.hpp		\
+	map_scanner.hpp			\
 	mutex.hpp			\
 	os.hpp				\
 	periodic_clock.hpp		\
