@@ -586,48 +586,78 @@ void test_map_truncate(grnxx::MapType map_type) {
   }
 }
 
-//template <typename T>
-//void test_map_key_id(grnxx::MapType map_type) {
-//  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
-//  std::unique_ptr<grnxx::Map<T>> map(
-//      grnxx::Map<T>::create(map_type, storage.get(),
-//                            grnxx::STORAGE_ROOT_NODE_ID));
-//  assert(map);
-//  const std::int64_t min = 10;
-//  const std::int64_t max = 100;
+template <typename T>
+void test_map_all_keys(grnxx::MapType map_type) {
+  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
+  std::unique_ptr<grnxx::Map<T>> map(
+      grnxx::Map<T>::create(map_type, storage.get(),
+                            grnxx::STORAGE_ROOT_NODE_ID));
+  assert(map);
 
-//  map->key_id() > min;
-//  map->key_id() >= min;
-//  map->key_id() < max;
-//  map->key_id() <= max;
+  map->all_keys();
+}
 
-//  min < map->key_id();
-//  min <= map->key_id();
-//  max > map->key_id();
-//  max >= map->key_id();
+template <typename T>
+void test_map_key_id(grnxx::MapType map_type) {
+  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
+  std::unique_ptr<grnxx::Map<T>> map(
+      grnxx::Map<T>::create(map_type, storage.get(),
+                            grnxx::STORAGE_ROOT_NODE_ID));
+  assert(map);
+  const std::int64_t min = 10;
+  const std::int64_t max = 100;
 
-//  (map->key_id() > min) && (map->key_id() < max);
-//  (map->key_id() > min) && (map->key_id() <= max);
-//  (map->key_id() >= min) && (map->key_id() < max);
-//  (map->key_id() >= min) && (map->key_id() <= max);
+  map->key_id() > min;
+  map->key_id() >= min;
+  map->key_id() < max;
+  map->key_id() <= max;
 
-//  (map->key_id() < max) && (map->key_id() > min);
-//  (map->key_id() <= max) && (map->key_id() > min);
-//  (map->key_id() < max) && (map->key_id() >= min);
-//  (map->key_id() <= max) && (map->key_id() >= min);
-//}
+  min < map->key_id();
+  min <= map->key_id();
+  max > map->key_id();
+  max >= map->key_id();
 
-//template <typename T>
-//void test_map_key(grnxx::MapType map_type) {
-//  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
-//  std::unique_ptr<grnxx::Map<T>> map(
-//      grnxx::Map<T>::create(map_type, storage.get(),
-//                            grnxx::STORAGE_ROOT_NODE_ID));
-//  assert(map);
-//  T key = generate_random_key<T>();
+  (map->key_id() > min) && (map->key_id() < max);
+  (map->key_id() > min) && (map->key_id() <= max);
+  (map->key_id() >= min) && (map->key_id() < max);
+  (map->key_id() >= min) && (map->key_id() <= max);
 
-//  map->key() > key;
-//}
+  (map->key_id() < max) && (map->key_id() > min);
+  (map->key_id() <= max) && (map->key_id() > min);
+  (map->key_id() < max) && (map->key_id() >= min);
+  (map->key_id() <= max) && (map->key_id() >= min);
+}
+
+template <typename T>
+void test_map_key(grnxx::MapType map_type) {
+  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
+  std::unique_ptr<grnxx::Map<T>> map(
+      grnxx::Map<T>::create(map_type, storage.get(),
+                            grnxx::STORAGE_ROOT_NODE_ID));
+  assert(map);
+  T min = generate_random_key<T>();
+  T max = generate_random_key<T>();
+
+  map->key() > min;
+  map->key() >= min;
+  map->key() < max;
+  map->key() <= max;
+
+  min < map->key();
+  min <= map->key();
+  max > map->key();
+  max >= map->key();
+
+  (map->key() > min) && (map->key() < max);
+  (map->key() > min) && (map->key() <= max);
+  (map->key() >= min) && (map->key() < max);
+  (map->key() >= min) && (map->key() <= max);
+
+  (map->key() < max) && (map->key() > min);
+  (map->key() <= max) && (map->key() > min);
+  (map->key() < max) && (map->key() >= min);
+  (map->key() <= max) && (map->key() >= min);
+}
 
 template <typename T>
 void test_map_create_cursor(grnxx::MapType map_type) {
@@ -676,8 +706,9 @@ void test_map(grnxx::MapType map_type) {
   test_map_replace<T>(map_type);
   test_map_find_longest_prefix_match<T>(map_type);
   test_map_truncate<T>(map_type);
-//  test_map_key_id<T>(map_type);
-//  test_map_key<T>(map_type);
+  test_map_all_keys<T>(map_type);
+  test_map_key_id<T>(map_type);
+  test_map_key<T>(map_type);
   test_map_create_cursor<T>(map_type);
   test_map_create_scanner<T>(map_type);
 }
@@ -706,6 +737,7 @@ void test_bytes_store() {
 }
 
 void test_map() {
+  // TODO: Add grnxx::Bytes.
   test_map(std::int8_t(),
            std::uint8_t(),
            std::int16_t(),
