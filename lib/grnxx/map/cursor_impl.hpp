@@ -93,8 +93,9 @@ class KeyRangeCursor : public KeyFilterCursor<T> {
   KeyRangeCursor();
   ~KeyRangeCursor();
 
-  KeyRangeCursor *create(Map<T> *map, const MapCursorKeyRange<T> &query,
-                         const MapCursorOptions &options);
+  static KeyRangeCursor *create(Map<T> *map,
+                                const MapCursorKeyRange<T> &query,
+                                const MapCursorOptions &options);
 
  private:
   MapCursorKeyRange<T> query_;

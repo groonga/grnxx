@@ -208,7 +208,7 @@ KeyRangeCursor<T> *KeyRangeCursor<T>::create(
     GRNXX_ERROR() << "new grnxx::map::KeyRangeCursor<T> failed";
     return nullptr;
   }
-  query_ = query;
+  cursor->query_ = query;
   if (!cursor->init(map, options)) {
     return nullptr;
   }
