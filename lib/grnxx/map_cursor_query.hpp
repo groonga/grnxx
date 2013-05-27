@@ -92,7 +92,7 @@ struct MapCursorKeyIDGreaterEqual {
     return MAP_CURSOR_KEY_ID_GREATER_EQUAL;
   }
   operator MapCursorKeyIDRange<T>() const {
-    return MapCursorKeyIDRange<T>{ flags(), min };
+    return MapCursorKeyIDRange<T>{ flags(), min, 0 };
   }
 };
 
