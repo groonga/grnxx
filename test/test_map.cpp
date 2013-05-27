@@ -675,6 +675,19 @@ void test_map_key(grnxx::MapType map_type) {
 }
 
 template <typename T>
+void test_map_create_all_keys_cursor(grnxx::MapType map_type) {
+  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
+  std::unique_ptr<grnxx::Map<T>> map(
+      grnxx::Map<T>::create(map_type, storage.get(),
+                            grnxx::STORAGE_ROOT_NODE_ID));
+  assert(map);
+  std::unique_ptr<grnxx::MapCursor<T>> cursor;
+
+  cursor.reset(map->create_cursor(map->all_keys()));
+  assert(cursor);
+}
+
+template <typename T>
 void test_map_create_key_id_range_cursor(grnxx::MapType map_type) {
   std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
   std::unique_ptr<grnxx::Map<T>> map(
@@ -805,9 +818,9 @@ void test_map_create_scanner(grnxx::MapType) {
 //                                       grnxx::STORAGE_ROOT_NODE_ID));
 //  assert(map);
 //  const grnxx::Bytes text = generate_random_text<grnxx::Bytes>();
+//  std::unique_ptr<grnxx::MapScanner<grnxx::Bytes>> scanner;
 
-//  std::unique_ptr<grnxx::MapScanner<grnxx::Bytes>> scanner(
-//      map->create_scanner(text));
+//  scanner.reset(map->create_scanner(text));
 //  assert(scanner);
 //}
 
@@ -835,6 +848,7 @@ void test_map(grnxx::MapType map_type) {
   test_map_all_keys<T>(map_type);
   test_map_key_id<T>(map_type);
   test_map_key<T>(map_type);
+  test_map_create_all_keys_cursor<T>(map_type);
   test_map_create_key_id_range_cursor<T>(map_type);
   test_map_create_key_range_cursor<T>(map_type);
   test_map_create_scanner<T>(map_type);
