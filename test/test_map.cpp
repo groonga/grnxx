@@ -604,8 +604,8 @@ void test_map_key_id(grnxx::MapType map_type) {
       grnxx::Map<T>::create(map_type, storage.get(),
                             grnxx::STORAGE_ROOT_NODE_ID));
   assert(map);
-  const std::int64_t min = 10;
-  const std::int64_t max = 100;
+  constexpr std::int64_t min = 10;
+  constexpr std::int64_t max = 100;
 
   map->key_id() > min;
   map->key_id() >= min;
@@ -635,8 +635,8 @@ void test_map_key(grnxx::MapType map_type) {
       grnxx::Map<T>::create(map_type, storage.get(),
                             grnxx::STORAGE_ROOT_NODE_ID));
   assert(map);
-  T min = generate_random_key<T>();
-  T max = generate_random_key<T>();
+  const T min = generate_random_key<T>();
+  const T max = generate_random_key<T>();
 
   map->key() > min;
   map->key() >= min;
@@ -660,16 +660,120 @@ void test_map_key(grnxx::MapType map_type) {
 }
 
 template <typename T>
-void test_map_create_cursor(grnxx::MapType map_type) {
+void test_map_create_key_id_range_cursor(grnxx::MapType map_type) {
   std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
   std::unique_ptr<grnxx::Map<T>> map(
       grnxx::Map<T>::create(map_type, storage.get(),
                             grnxx::STORAGE_ROOT_NODE_ID));
   assert(map);
-  std::vector<T> keys;
-  generate_random_keys(&keys, MAP_NUM_KEYS);
+  constexpr std::int64_t min = 10;
+  constexpr std::int64_t max = 100;
+  std::unique_ptr<grnxx::MapCursor<T>> cursor;
 
-  // TODO
+  cursor.reset(map->create_cursor(map->key_id() > min));
+  assert(cursor);
+  cursor.reset(map->create_cursor(map->key_id() >= min));
+  assert(cursor);
+  cursor.reset(map->create_cursor(map->key_id() < max));
+  assert(cursor);
+  cursor.reset(map->create_cursor(map->key_id() <= max));
+  assert(cursor);
+
+  cursor.reset(map->create_cursor(min < map->key_id()));
+  assert(cursor);
+  cursor.reset(map->create_cursor(min <= map->key_id()));
+  assert(cursor);
+  cursor.reset(map->create_cursor(max > map->key_id()));
+  assert(cursor);
+  cursor.reset(map->create_cursor(max >= map->key_id()));
+  assert(cursor);
+
+  cursor.reset(map->create_cursor(
+      (map->key_id() > min) && (map->key_id() < max)));
+  assert(cursor);
+  cursor.reset(map->create_cursor(
+      (map->key_id() > min) && (map->key_id() <= max)));
+  assert(cursor);
+  cursor.reset(map->create_cursor(
+      (map->key_id() >= min) && (map->key_id() < max)));
+  assert(cursor);
+  cursor.reset(map->create_cursor(
+      (map->key_id() >= min) && (map->key_id() <= max)));
+  assert(cursor);
+
+  cursor.reset(map->create_cursor(
+      (map->key_id() < max) && (map->key_id() > min)));
+  assert(cursor);
+  cursor.reset(map->create_cursor(
+      (map->key_id() <= max) && (map->key_id() > min)));
+  assert(cursor);
+  cursor.reset(map->create_cursor(
+      (map->key_id() < max) && (map->key_id() >= min)));
+  assert(cursor);
+  cursor.reset(map->create_cursor(
+      (map->key_id() <= max) && (map->key_id() >= min)));
+  assert(cursor);
+}
+
+template <typename T>
+void test_map_create_key_range_cursor(grnxx::MapType map_type) {
+  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
+  std::unique_ptr<grnxx::Map<T>> map(
+      grnxx::Map<T>::create(map_type, storage.get(),
+                            grnxx::STORAGE_ROOT_NODE_ID));
+  assert(map);
+  const T min = generate_random_key<T>();
+  const T max = generate_random_key<T>();
+  std::unique_ptr<grnxx::MapCursor<T>> cursor;
+
+  cursor.reset(map->create_cursor(map->key() > min));
+  assert(cursor);
+  cursor.reset(map->create_cursor(map->key() >= min));
+  assert(cursor);
+  cursor.reset(map->create_cursor(map->key() < max));
+  assert(cursor);
+  cursor.reset(map->create_cursor(map->key() <= max));
+  assert(cursor);
+
+  cursor.reset(map->create_cursor(min < map->key()));
+  assert(cursor);
+  cursor.reset(map->create_cursor(min <= map->key()));
+  assert(cursor);
+  cursor.reset(map->create_cursor(max > map->key()));
+  assert(cursor);
+  cursor.reset(map->create_cursor(max >= map->key()));
+  assert(cursor);
+
+  cursor.reset(map->create_cursor(
+      (map->key() > min) && (map->key() < max)));
+  assert(cursor);
+  cursor.reset(map->create_cursor(
+      (map->key() > min) && (map->key() <= max)));
+  assert(cursor);
+  cursor.reset(map->create_cursor(
+      (map->key() >= min) && (map->key() < max)));
+  assert(cursor);
+  cursor.reset(map->create_cursor(
+      (map->key() >= min) && (map->key() <= max)));
+  assert(cursor);
+
+  cursor.reset(map->create_cursor(
+      (map->key() < max) && (map->key() > min)));
+  assert(cursor);
+  cursor.reset(map->create_cursor(
+      (map->key() <= max) && (map->key() > min)));
+  assert(cursor);
+  cursor.reset(map->create_cursor(
+      (map->key() < max) && (map->key() >= min)));
+  assert(cursor);
+  cursor.reset(map->create_cursor(
+      (map->key() <= max) && (map->key() >= min)));
+  assert(cursor);
+}
+
+template <>
+void test_map_create_key_range_cursor<grnxx::GeoPoint>(grnxx::MapType) {
+  // This operation is not supported for grnxx::GeoPoint.
 }
 
 template <typename T>
@@ -679,10 +783,6 @@ void test_map_create_scanner(grnxx::MapType map_type) {
       grnxx::Map<T>::create(map_type, storage.get(),
                             grnxx::STORAGE_ROOT_NODE_ID));
   assert(map);
-  std::vector<T> keys;
-  generate_random_keys(&keys, MAP_NUM_KEYS);
-
-  // TODO
 }
 
 template <typename T>
@@ -709,7 +809,8 @@ void test_map(grnxx::MapType map_type) {
   test_map_all_keys<T>(map_type);
   test_map_key_id<T>(map_type);
   test_map_key<T>(map_type);
-  test_map_create_cursor<T>(map_type);
+  test_map_create_key_id_range_cursor<T>(map_type);
+  test_map_create_key_range_cursor<T>(map_type);
   test_map_create_scanner<T>(map_type);
 }
 
