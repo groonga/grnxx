@@ -54,65 +54,65 @@ struct BitmapTraits<T, 4> {
 template <typename T>
 class Bitmap {
  public:
-  using BitArray = typename BitmapTraits<T>::ArrayType;
-  using Bit = typename BitArray::Value;
-  using BitArg = typename BitArray::ValueArg;
-  using Unit = typename BitArray::Unit;
+  using ArrayImpl = typename BitmapTraits<T>::ArrayType;
+  using Bit = typename ArrayImpl::Value;
+  using BitArg = typename ArrayImpl::ValueArg;
+  using Unit = typename ArrayImpl::Unit;
 
   // Return true iff the bitmap is valid.
   explicit operator bool() const {
-    return static_cast<bool>(array_);
+    return static_cast<bool>(impl_);
   }
 
   // Create a bitmap.
   bool create(Storage *storage, uint32_t storage_node_id) {
-    return array_.create(storage, storage_node_id);
+    return impl_.create(storage, storage_node_id);
   }
   // Create a bitmap with the default bit.
   bool create(Storage *storage, uint32_t storage_node_id,
               BitArg default_bit) {
-    return array_.create(storage, storage_node_id, default_bit);
+    return impl_.create(storage, storage_node_id, default_bit);
   }
   // Open a bitmap.
   bool open(Storage *storage, uint32_t storage_node_id) {
-    return array_.open(storage, storage_node_id);
+    return impl_.open(storage, storage_node_id);
   }
 
   // Unlink a bitmap.
   static bool unlink(Storage *storage, uint32_t storage_node_id) {
-    return BitArray::unlink(storage, storage_node_id);
+    return ArrayImpl::unlink(storage, storage_node_id);
   }
 
   // Return the storage node ID.
   uint32_t storage_node_id() const {
-    return array_.storage_node_id();
+    return impl_.storage_node_id();
   }
 
   // Get a bit.
   // This function throws an exception on failure.
   Bit operator[](uint64_t bit_id) {
-    return array_[bit_id];
+    return impl_[bit_id];
   }
 
   // Get a bit and return true on success.
   // The bit is assigned to "*bit" iff "bit" != nullptr.
   bool get(uint64_t bit_id, Bit *bit) {
-    return array_.get(bit_id, bit);
+    return impl_.get(bit_id, bit);
   }
   // Set a bit and return true on success.
   // Note that if bits in the same byte are set at the same time, the result is
   // undefined.
   bool set(uint64_t bit_id, BitArg bit) {
-    return array_.set(bit_id, bit);
+    return impl_.set(bit_id, bit);
   }
 
   // Get a unit and return its address on success.
   Unit *get_unit(uint64_t unit_id) {
-    return array_.get_unit(unit_id);
+    return impl_.get_unit(unit_id);
   }
 
  private:
-  BitArray array_;
+  ArrayImpl impl_;
 };
 
 }  // namespace map
