@@ -5,6 +5,7 @@ TESTS =					\
 	test_alpha_map			\
 	test_array			\
 	test_backtrace			\
+	test_bit_array			\
 	test_bytes			\
 	test_charset			\
 	test_db_blob_vector		\
@@ -45,6 +46,9 @@ test_array_LDADD = ../lib/grnxx/libgrnxx.la
 
 test_backtrace_SOURCES = test_backtrace.cpp
 test_backtrace_LDADD = ../lib/grnxx/libgrnxx.la
+
+test_bit_array_SOURCES = test_bit_array.cpp
+test_bit_array_LDADD = ../lib/grnxx/libgrnxx.la
 
 test_bytes_SOURCES = test_bytes.cpp
 test_bytes_LDADD = ../lib/grnxx/libgrnxx.la
