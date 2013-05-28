@@ -29,24 +29,25 @@ class Storage;
 
 namespace map {
 
-// Change the settings based on the target type.
+// Change the settings based on the key type.
 template <typename T, size_t T_SIZE = sizeof(T)>
 struct BitmapTraits {
+  // Map<T> has at most 2^40 different keys.
   using ArrayType = BitArray<>;
 };
 template <typename T>
 struct BitmapTraits<T, 1> {
-  // T has 2^8 different values.
+  // Map<T> has at most 2^8 different keys.
   using ArrayType = BitArray<256, 1, 1>;
 };
 template <typename T>
 struct BitmapTraits<T, 2> {
-  // T has 2^16 different values.
+  // Map<T> has at most 2^16 different keys.
   using ArrayType = BitArray<256, 256, 1>;
 };
 template <typename T>
 struct BitmapTraits<T, 4> {
-  // T has 2^32 different values.
+  // Map<T> has at most 2^32 different keys.
   using ArrayType = BitArray<65536, 256, 256>;
 };
 
