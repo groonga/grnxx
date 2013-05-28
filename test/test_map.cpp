@@ -901,6 +901,7 @@ int main() {
   // Increment the reference count for grnxx::PeriodicClock.
   grnxx::PeriodicClock clock;
 
+  // TODO: test_bitmap();
   test_bytes_store();
   test_map();
 
