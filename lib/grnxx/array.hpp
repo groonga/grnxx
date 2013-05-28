@@ -470,7 +470,7 @@ template <uint64_t PAGE_SIZE_IN_BITS,
 class Array<bool, PAGE_SIZE_IN_BITS, TABLE_SIZE, SECONDARY_TABLE_SIZE> {
  public:
   // Internal type to store bits.
-  using Unit = uint8_t;
+  using Unit = uint64_t;
 
  private:
   static constexpr uint64_t UNIT_SIZE = sizeof(Unit) * 8;
