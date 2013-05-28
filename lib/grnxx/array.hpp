@@ -476,7 +476,8 @@ class Array<bool, PAGE_SIZE_IN_BITS, TABLE_SIZE, SECONDARY_TABLE_SIZE> {
   static constexpr uint64_t UNIT_SIZE = sizeof(Unit) * 8;
   static constexpr uint64_t PAGE_SIZE = PAGE_SIZE_IN_BITS / UNIT_SIZE;
 
-  static_assert((PAGE_SIZE % UNIT_SIZE) == 0, "(PAGE_SIZE % UNIT_SIZE) != 0");
+  static_assert((PAGE_SIZE_IN_BITS % UNIT_SIZE) == 0,
+                "(PAGE_SIZE_IN_BITS % UNIT_SIZE) != 0");
   using ArrayImpl = Array<Unit, PAGE_SIZE, TABLE_SIZE, SECONDARY_TABLE_SIZE>;
 
  public:
@@ -499,7 +500,8 @@ class Array<bool, PAGE_SIZE_IN_BITS, TABLE_SIZE, SECONDARY_TABLE_SIZE> {
   // Create an array with the default value.
   bool create(Storage *storage, uint32_t storage_node_id,
               ValueArg default_value) {
-    return impl_.create(storage, storage_node_id, default_value ? 0xFF : 0x00);
+    return impl_.create(storage, storage_node_id,
+                        default_value ? ~Unit(0) : Unit(0));
   }
 
   // Open an array.
