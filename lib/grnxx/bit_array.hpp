@@ -29,9 +29,9 @@ namespace grnxx {
 class Storage;
 
 // Bit array.
-template <uint64_t PAGE_SIZE_IN_BITS,
-          uint64_t TABLE_SIZE,
-          uint64_t SECONDARY_TABLE_SIZE>
+template <uint64_t PAGE_SIZE_IN_BITS = ARRAY_DEFAULT_PAGE_SIZE,
+          uint64_t TABLE_SIZE = ARRAY_DEFAULT_TABLE_SIZE,
+          uint64_t SECONDARY_TABLE_SIZE = ARRAY_DEFAULT_SECONDARY_TABLE_SIZE>
 class BitArray {
  public:
   // Internal type to store bits.
