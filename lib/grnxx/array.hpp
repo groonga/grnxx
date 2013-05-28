@@ -579,6 +579,11 @@ class Array<bool, PAGE_SIZE_IN_BITS, TABLE_SIZE, SECONDARY_TABLE_SIZE> {
     return true;
   }
 
+  // Get a unit and return its address on success.
+  Unit *get_unit(uint64_t unit_id) {
+    return impl_.get_value(unit_id);
+  }
+
   // Get a page and return its starting address on success.
   Unit *get_page(uint64_t page_id) {
     return impl_.get_page(page_id);
