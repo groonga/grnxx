@@ -28,7 +28,7 @@ namespace grnxx {
 namespace {
 
 // Note: std::tm does not support usec (microseconds).
-BrokenDownTime create_broken_down_time(const std::tm &tm, std::int64_t count) {
+BrokenDownTime create_broken_down_time(const std::tm &tm, int64_t count) {
   BrokenDownTime time;
   time.usec = static_cast<int>(count % 1000000);
   time.sec = tm.tm_sec;

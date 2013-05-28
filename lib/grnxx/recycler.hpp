@@ -47,7 +47,7 @@ class Recycler {
     }
   }
 
-  std::uint16_t stamp() {
+  uint16_t stamp() {
     // Update stamp_pair_ and times_, once per RECYCLER_STAMP_COUNT_PER_UPDATE.
     // Note that count_ is zero-cleared in update(), but in a multi-threaded
     // case, the zero-clear might be ignored by ++count_.
