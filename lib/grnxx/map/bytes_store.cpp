@@ -130,7 +130,8 @@ class BytesStoreImpl : public BytesStore {
                                 1>;
 
  public:
-  using BytesArg = typename Traits<Bytes>::ArgumentType;
+  using Value = Bytes;
+  using ValueArg = typename Traits<Bytes>::ArgumentType;
 
   BytesStoreImpl();
   virtual ~BytesStoreImpl();
@@ -140,9 +141,9 @@ class BytesStoreImpl : public BytesStore {
 
   uint32_t storage_node_id() const;
 
-  bool get(uint64_t bytes_id, Bytes *bytes);
+  bool get(uint64_t bytes_id, Value *bytes);
   bool unset(uint64_t bytes_id);
-  bool add(BytesArg bytes, uint64_t *bytes_id);
+  bool add(ValueArg bytes, uint64_t *bytes_id);
 
   bool sweep(Duration lifetime);
 
@@ -226,7 +227,7 @@ uint32_t BytesStoreImpl::storage_node_id() const {
   return storage_node_id_;
 }
 
-bool BytesStoreImpl::get(uint64_t bytes_id, Bytes *bytes) {
+bool BytesStoreImpl::get(uint64_t bytes_id, Value *bytes) {
   const uint64_t offset = get_offset(bytes_id);
   const uint32_t size = get_size(bytes_id);
   const uint32_t page_id = get_page_id(offset);
@@ -244,7 +245,7 @@ bool BytesStoreImpl::get(uint64_t bytes_id, Bytes *bytes) {
   }
   if (bytes) {
     const uint32_t offset_in_page = get_offset_in_page(offset);
-    *bytes = Bytes(&page[offset_in_page], size);
+    *bytes = Value(&page[offset_in_page], size);
   }
   return true;
 }
@@ -289,7 +290,7 @@ bool BytesStoreImpl::unset(uint64_t bytes_id) {
   return true;
 }
 
-bool BytesStoreImpl::add(BytesArg bytes, uint64_t *bytes_id) {
+bool BytesStoreImpl::add(ValueArg bytes, uint64_t *bytes_id) {
   if (bytes.size() > BYTES_STORE_MAX_SIZE) {
     GRNXX_ERROR() << "invalid argument: size = " << bytes.size();
     return false;

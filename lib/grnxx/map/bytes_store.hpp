@@ -34,7 +34,8 @@ namespace map {
 
 class BytesStore {
  public:
-  using BytesArg = typename Traits<Bytes>::ArgumentType;
+  using Value = Bytes;
+  using ValueArg = typename Traits<Bytes>::ArgumentType;
 
   BytesStore();
   virtual ~BytesStore();
@@ -51,11 +52,11 @@ class BytesStore {
   virtual uint32_t storage_node_id() const = 0;
 
   // Get a stored byte sequence.
-  virtual bool get(uint64_t bytes_id, Bytes *bytes) = 0;
+  virtual bool get(uint64_t bytes_id, Value *bytes) = 0;
   // Remove a stored byte sequence.
   virtual bool unset(uint64_t bytes_id) = 0;
   // Add a byte sequence.
-  virtual bool add(BytesArg bytes, uint64_t *bytes_id) = 0;
+  virtual bool add(ValueArg bytes, uint64_t *bytes_id) = 0;
 
   // Sweep empty pages whose modified time < (now - lifetime).
   virtual bool sweep(Duration lifetime) = 0;
