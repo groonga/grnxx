@@ -6,6 +6,7 @@ libgrnxx_map_la_SOURCES =	\
 	array_map.cpp		\
 	bitmap.cpp		\
 	bytes_store.cpp		\
+	key_array.cpp		\
 	cursor_impl.cpp		\
 	scanner_impl.cpp
 
@@ -17,4 +18,5 @@ libgrnxx_map_include_HEADERS =	\
 	cursor_impl.hpp		\
 	header.hpp		\
 	helper.hpp		\
+	key_array.hpp		\
 	scanner_impl.hpp
