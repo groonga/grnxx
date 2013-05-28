@@ -20,6 +20,7 @@
 #include <memory>
 #include <random>
 #include <unordered_set>
+#include <vector>
 
 #include "grnxx/logger.hpp"
 #include "grnxx/storage.hpp"
@@ -456,7 +457,9 @@ void test_storage_open_or_create() {
 void test_storage_exists_and_unlink() {
   const char FILE_PATH[] = "temp.grn";
   grnxx::Storage::unlink(FILE_PATH);
-  std::unique_ptr<grnxx::Storage>(grnxx::Storage::create(FILE_PATH));
+  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(FILE_PATH));
+  assert(storage);
+  storage.reset();
 
   assert(grnxx::Storage::exists(FILE_PATH));
   assert(grnxx::Storage::unlink(FILE_PATH));
@@ -471,6 +474,7 @@ void test_storage_create_node() {
   grnxx::StorageNode node;
 
   storage.reset(grnxx::Storage::create(FILE_PATH));
+  assert(storage);
   node = storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 1 << 20);
   assert(node.is_valid());
   assert(node.status() == grnxx::STORAGE_NODE_ACTIVE);
@@ -485,6 +489,7 @@ void test_storage_create_node() {
   assert(!node.is_valid());
 
   storage.reset(grnxx::Storage::create(FILE_PATH, grnxx::STORAGE_TEMPORARY));
+  assert(storage);
   node = storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 1 << 20);
   assert(node.is_valid());
   assert(node.status() == grnxx::STORAGE_NODE_ACTIVE);
@@ -499,6 +504,7 @@ void test_storage_create_node() {
   assert(!node.is_valid());
 
   storage.reset(grnxx::Storage::create(nullptr));
+  assert(storage);
   node = storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 1 << 20);
   assert(node.is_valid());
   assert(node.status() == grnxx::STORAGE_NODE_ACTIVE);
@@ -526,6 +532,7 @@ void test_storage_open_node() {
   options.root_size = 1 << 16;
   storage.reset(grnxx::Storage::create(FILE_PATH, grnxx::STORAGE_DEFAULT,
                                        options));
+  assert(storage);
   node = storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 1 << 20);
   assert(node.is_valid());
   node_id_1 = node.id();
@@ -534,6 +541,7 @@ void test_storage_open_node() {
   node_id_2 = node.id();
 
   storage.reset(grnxx::Storage::open(FILE_PATH));
+  assert(storage);
   node = storage->open_node(grnxx::STORAGE_ROOT_NODE_ID);
   assert(node.is_valid());
   assert(node.status() == grnxx::STORAGE_NODE_ACTIVE);
@@ -556,6 +564,7 @@ void test_storage_unlink_node() {
   grnxx::StorageNode node_1, node_2;
 
   storage.reset(grnxx::Storage::create(nullptr));
+  assert(storage);
   node_1 = storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 1 << 20);
   assert(node_1.is_valid());
   node_2 = storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 1 << 24);
@@ -573,6 +582,7 @@ void test_storage_sweep() {
   grnxx::StorageNode node;
 
   storage.reset(grnxx::Storage::create(nullptr));
+  assert(storage);
   node = storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 1 << 18);
   assert(node.is_valid());
   assert(storage->create_node(node.id(), 1 << 18).is_valid());
@@ -645,6 +655,7 @@ void test_storage_max_file_size() {
   options.max_file_size = 1ULL << 36;
   std::unique_ptr<grnxx::Storage> storage(
       grnxx::Storage::create(nullptr, grnxx::STORAGE_DEFAULT, options));
+  assert(storage);
   assert(storage->max_file_size() == options.max_file_size);
 }
 
@@ -653,13 +664,16 @@ void test_storage_max_num_files() {
   options.max_num_files = 100;
   std::unique_ptr<grnxx::Storage> storage(
       grnxx::Storage::create(nullptr, grnxx::STORAGE_DEFAULT, options));
+  assert(storage);
   assert(storage->max_num_files() == options.max_num_files);
 }
 
 void test_storage_num_nodes() {
   grnxx::StorageNode node;
   std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
+  assert(storage);
   assert(storage->num_nodes() == 1);
+
   node = storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 1 << 24);
   assert(node);
   assert(storage->num_nodes() == 2);
@@ -673,10 +687,24 @@ void test_storage_num_nodes() {
   }
 }
 
+void test_storage_num_chunks() {
+  grnxx::StorageNode node;
+  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
+  assert(storage);
+  assert(storage->num_chunks() == 1);
+
+  for (int i = 0; i < 16; ++i) {
+    assert(storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 1 << 24));
+    assert(storage->num_chunks() == static_cast<std::uint16_t>(i + 2));
+  }
+}
+
 void test_storage_body_usage() {
   uint64_t prev_body_usage = 0;
   grnxx::StorageNode node;
   std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
+  assert(storage);
+
   assert(storage->body_usage() > prev_body_usage);
   prev_body_usage = storage->body_usage();
   node = storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 1 << 24);
@@ -696,6 +724,8 @@ void test_storage_body_size() {
   uint64_t prev_body_size = 0;
   grnxx::StorageNode node;
   std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
+  assert(storage);
+
   assert(storage->body_size() > prev_body_size);
   prev_body_size = storage->body_size();
   node = storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 1 << 23);
@@ -715,6 +745,7 @@ void test_storage_body_size() {
 void test_storage_total_size() {
   uint64_t prev_total_size = 0;
   std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
+  assert(storage);
   assert(storage->total_size() > prev_total_size);
   prev_total_size = storage->total_size();
   for (int i = 0; i < 16; ++i) {
@@ -724,13 +755,18 @@ void test_storage_total_size() {
   }
 }
 
+using IDVector = std::vector<std::uint32_t>;
+using IDSet = std::unordered_set<std::uint32_t>;
+
 void test_storage_random_queries() {
-  std::mt19937 mt19937;
+  std::mt19937 mersenne_twister;
   std::unique_ptr<grnxx::Storage> storage(
       grnxx::Storage::create(nullptr, grnxx::STORAGE_TEMPORARY));
-  std::unordered_set<std::uint32_t> id_set;
+  assert(storage);
+
+  IDSet id_set;
   for (int i = 0; i < (1 << 16); ++i) {
-    const std::uint32_t value = mt19937() % 256;
+    const std::uint32_t value = mersenne_twister() % 256;
     if (value < 1) {
       assert(storage->sweep(grnxx::Duration(0)));
     } else if (value < 64) {
@@ -744,15 +780,15 @@ void test_storage_random_queries() {
       if (value < 96) {
         // Create a small node.
         const std::uint64_t SMALL_MAX_SIZE = std::uint64_t(1) << 11;
-        size = mt19937() % SMALL_MAX_SIZE;
+        size = mersenne_twister() % SMALL_MAX_SIZE;
       } else if (value < 248) {
         // Create a regular node.
         const std::uint64_t MEDIUM_MAX_SIZE = std::uint64_t(1) << 21;
-        size = mt19937() % MEDIUM_MAX_SIZE;
+        size = mersenne_twister() % MEDIUM_MAX_SIZE;
       } else {
         // Create a large node.
         const std::uint64_t LARGE_MAX_SIZE = std::uint64_t(1) << 28;
-        size = mt19937() % LARGE_MAX_SIZE;
+        size = mersenne_twister() % LARGE_MAX_SIZE;
       }
       const grnxx::StorageNode node =
           storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, size);
@@ -760,11 +796,75 @@ void test_storage_random_queries() {
       id_set.insert(node.id());
     }
   }
-  GRNXX_NOTICE() << "body_usage = " << storage->body_usage()
+  GRNXX_NOTICE() << ", num_nodes = " << storage->num_nodes()
+                 << ", num_chunks = " << storage->num_chunks()
+                 << ", body_usage = " << storage->body_usage()
                  << ", body_size = " << storage->body_size()
                  << ", total_size = " << storage->total_size();
 }
 
+void test_storage_random_queries2() {
+  constexpr int LOOP_COUNT = 10;
+  constexpr std::uint32_t NODE_COUNT = 1000;
+
+  std::mt19937 mersenne_twister;
+  std::unique_ptr<grnxx::Storage> storage(
+      grnxx::Storage::create(nullptr, grnxx::STORAGE_TEMPORARY));
+  assert(storage);
+  const std::uint32_t root_size = storage->body_usage();
+
+  for (int i = 0; i < LOOP_COUNT; ++i) {
+    assert(storage->body_usage() == root_size);
+    assert(storage->body_size() >= root_size);
+    assert(storage->num_nodes() == 1);
+    assert(storage->total_size() > storage->body_size());
+
+    const std::uint32_t node_size =
+        mersenne_twister() % (64 << (mersenne_twister() % 20));
+    IDSet id_set;
+    IDVector id_vector;
+    IDVector root_child_id_vector;
+
+    id_set.insert(grnxx::STORAGE_ROOT_NODE_ID);
+    id_vector.push_back(grnxx::STORAGE_ROOT_NODE_ID);
+    std::uint32_t max_node_id = grnxx::STORAGE_ROOT_NODE_ID;
+
+    // Create "NODE_COUNT" nodes.
+    for (std::uint32_t j = 0; j < NODE_COUNT; ++j) {
+      const std::uint32_t parent_node_id =
+          id_vector[mersenne_twister() % id_vector.size()];
+      grnxx::StorageNode node =
+          storage->create_node(parent_node_id, node_size);
+      assert(node);
+      assert(id_set.insert(node.id()).second);
+      id_vector.push_back(node.id());
+      if (parent_node_id == grnxx::STORAGE_ROOT_NODE_ID) {
+        root_child_id_vector.push_back(node.id());
+      }
+      if (node.id() > max_node_id) {
+        max_node_id = node.id();
+      }
+    }
+//    GRNXX_NOTICE() << "node_size = " << node_size
+//                   << ", max_node_id = " << max_node_id
+//                   << ", num_nodes = " << storage->num_nodes()
+//                   << ", num_chunks = " << storage->num_chunks()
+//                   << ", body_usage = " << storage->body_usage()
+//                   << ", body_size = " << storage->body_size()
+//                   << ", total_size = " << storage->total_size();
+
+    // Unlink children of the root node.
+    for (std::uint32_t root_child_id : root_child_id_vector) {
+      assert(storage->unlink_node(root_child_id));
+    }
+    assert(storage->sweep(grnxx::Duration(0)));
+  }
+  GRNXX_NOTICE() << ", num_nodes = " << storage->num_nodes()
+                 << ", num_chunks = " << storage->num_chunks()
+                 << ", body_usage = " << storage->body_usage()
+                 << ", body_size = " << storage->body_size()
+                 << ", total_size = " << storage->total_size();
+}
 void test_path() {
   test_full_path();
   test_unique_path();
@@ -805,10 +905,12 @@ void test_storage() {
   test_storage_max_file_size();
   test_storage_max_num_files();
   test_storage_num_nodes();
+  test_storage_num_chunks();
   test_storage_body_usage();
   test_storage_body_size();
   test_storage_total_size();
   test_storage_random_queries();
+  test_storage_random_queries2();
 }
 
 }  // namespace
