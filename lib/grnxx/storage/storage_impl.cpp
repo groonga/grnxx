@@ -377,6 +377,10 @@ uint32_t StorageImpl::num_nodes() const {
   return header_->num_active_or_unlinked_nodes;
 }
 
+uint16_t StorageImpl::num_chunks() const {
+  return header_->num_body_chunks;
+}
+
 uint64_t StorageImpl::body_usage() const {
   return header_->body_usage;
 }

@@ -185,6 +185,8 @@ class Storage {
   virtual uint16_t max_num_files() const = 0;
   // Return the number of active or unlinked nodes.
   virtual uint32_t num_nodes() const = 0;
+  // Return the number of chunks for node body.
+  virtual uint16_t num_chunks() const = 0;
   // Return the total usage of body chunks (including unlinked nodes).
   virtual uint64_t body_usage() const = 0;
   // Return the total size of body chunks.
