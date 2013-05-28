@@ -84,7 +84,7 @@ struct Header {
   Header();
 
   // Return true if the header seems to be correct.
-  bool is_valid() const;
+  explicit operator bool() const;
 
   // Initialize "format".
   void validate();

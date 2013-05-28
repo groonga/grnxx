@@ -61,7 +61,7 @@ Header::Header()
   }
 }
 
-bool Header::is_valid() const {
+Header::operator bool() const {
   return std::memcmp(format, HEADER_FORMAT, HEADER_FORMAT_SIZE) == 0;
 }
 

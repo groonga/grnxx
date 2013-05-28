@@ -492,7 +492,7 @@ bool StorageImpl::open_storage(const char *path, StorageFlags flags) {
     return false;
   }
   header_ = static_cast<Header *>(root_chunk->address());
-  if (!header_->is_valid()) {
+  if (!*header_) {
     return false;
   }
   if (!prepare_pointers()) {
@@ -521,7 +521,7 @@ bool StorageImpl::open_or_create_storage(const char *path, StorageFlags flags,
       return false;
     }
     header_ = static_cast<Header *>(root_chunk->address());
-    if (!header_->is_valid()) {
+    if (!*header_) {
       return false;
     }
     if (!prepare_pointers()) {
