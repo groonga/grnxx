@@ -20,9 +20,9 @@
 
 #include "grnxx/features.hpp"
 
-#include "grnxx/array.hpp"
 #include "grnxx/map.hpp"
 #include "grnxx/map/bitmap.hpp"
+#include "grnxx/map/key_array.hpp"
 #include "grnxx/types.hpp"
 
 namespace grnxx {
@@ -72,7 +72,7 @@ class ArrayMap : public Map<T> {
   uint32_t storage_node_id_;
   ArrayMapHeader *header_;
   Bitmap<T> bitmap_;
-  Array<T> keys_;
+  KeyArray<T> keys_;
 
   bool create_map(Storage *storage, uint32_t storage_node_id,
                   const MapOptions &options);
