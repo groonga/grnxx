@@ -114,6 +114,9 @@ void test_bit_array() {
     const bool expected_value = (i % 3) != 0;
     assert(array[i] == expected_value);
   }
+  for (std::uint64_t i = 0; i < (array.size() / array.unit_size()); ++i) {
+    assert(array.get_unit(i));
+  }
   for (std::uint64_t i = 0; i < (array.size() / array.page_size()); ++i) {
     assert(array.get_page(i));
   }
