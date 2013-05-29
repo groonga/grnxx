@@ -688,7 +688,6 @@ void test_storage_num_nodes() {
 }
 
 void test_storage_num_chunks() {
-  grnxx::StorageNode node;
   std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
   assert(storage);
   assert(storage->num_chunks() == 1);
@@ -920,7 +919,7 @@ int main() {
                            grnxx::LOGGER_ENABLE_COUT);
   grnxx::Logger::set_max_level(grnxx::NOTICE_LOGGER);
 
-  // Increment the reference count for grnxx::PeriodicClock.
+  // FIXME: Increment the reference count for grnxx::PeriodicClock.
   grnxx::PeriodicClock clock;
 
   test_path();

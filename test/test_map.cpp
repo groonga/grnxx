@@ -898,7 +898,7 @@ int main() {
                            grnxx::LOGGER_ENABLE_COUT);
   grnxx::Logger::set_max_level(grnxx::NOTICE_LOGGER);
 
-  // Increment the reference count for grnxx::PeriodicClock.
+  // FIXME: Increment the reference count for grnxx::PeriodicClock.
   grnxx::PeriodicClock clock;
 
   // TODO: test_bitmap();
