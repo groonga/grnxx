@@ -32,9 +32,12 @@ class Storage;
 
 namespace map {
 
+// TODO: Fix this value.
+constexpr uint64_t BYTES_STORE_INVALID_BYTES_ID = 1ULL << 62;
+
 class BytesStore {
  public:
-  using Value = Bytes;
+  using Value = typename Traits<Bytes>::Type;
   using ValueArg = typename Traits<Bytes>::ArgumentType;
 
   BytesStore();
