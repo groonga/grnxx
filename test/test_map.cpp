@@ -60,7 +60,6 @@ template <>
 struct Hash<grnxx::GeoPoint> {
   using ValueArg = typename grnxx::Traits<grnxx::GeoPoint>::ArgumentType;
   uint64_t operator()(ValueArg x) const {
-    // TODO: To be replaced with grnxx's hash function.
     return std::hash<std::uint64_t>()(x.value());
   }
 };
@@ -674,16 +673,30 @@ void test_map_replace(grnxx::MapType map_type) {
 }
 
 template <typename T>
-void test_map_find_longest_prefix_match(grnxx::MapType map_type) {
+void test_map_find_longest_prefix_match(grnxx::MapType) {
+  // Only grnxx::Map<grnxx::Bytes> supports this operation.
+}
+
+template <>
+void test_map_find_longest_prefix_match<grnxx::Bytes>(grnxx::MapType map_type) {
   std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
-  std::unique_ptr<grnxx::Map<T>> map(
-      grnxx::Map<T>::create(map_type, storage.get(),
-                            grnxx::STORAGE_ROOT_NODE_ID));
+  std::unique_ptr<grnxx::Map<grnxx::Bytes>> map(
+      grnxx::Map<grnxx::Bytes>::create(map_type, storage.get(),
+                                       grnxx::STORAGE_ROOT_NODE_ID));
   assert(map);
-  std::vector<T> keys;
+  std::vector<grnxx::Bytes> keys;
   generate_random_keys(MAP_NUM_KEYS, &keys);
 
-  // TODO
+  for (std::uint64_t i = 0; i < MAP_NUM_KEYS; ++i) {
+    assert(map->add(keys[i]));
+  }
+  for (std::uint64_t i = 0; i < MAP_NUM_KEYS; ++i) {
+    std::int64_t key_id;
+    grnxx::Bytes key;
+    assert(map->find_longest_prefix_match(keys[i], &key_id, &key));
+    assert(key_id == static_cast<std::int64_t>(i));
+    assert(key == keys[i]);
+  }
 }
 
 template <typename T>
@@ -916,20 +929,19 @@ void test_map_create_scanner(grnxx::MapType) {
   // Only grnxx::Map<grnxx::Bytes> supports this operation.
 }
 
-// TODO
-//template <>
-//void test_map_create_scanner<grnxx::Bytes>(grnxx::MapType map_type) {
-//  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
-//  std::unique_ptr<grnxx::Map<grnxx::Bytes>> map(
-//      grnxx::Map<grnxx::Bytes>::create(map_type, storage.get(),
-//                                       grnxx::STORAGE_ROOT_NODE_ID));
-//  assert(map);
-//  const grnxx::Bytes text = generate_random_text<grnxx::Bytes>();
-//  std::unique_ptr<grnxx::MapScanner<grnxx::Bytes>> scanner;
+template <>
+void test_map_create_scanner<grnxx::Bytes>(grnxx::MapType map_type) {
+  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
+  std::unique_ptr<grnxx::Map<grnxx::Bytes>> map(
+      grnxx::Map<grnxx::Bytes>::create(map_type, storage.get(),
+                                       grnxx::STORAGE_ROOT_NODE_ID));
+  assert(map);
+  const grnxx::Bytes text = generate_random_text<grnxx::Bytes>();
+  std::unique_ptr<grnxx::MapScanner<grnxx::Bytes>> scanner;
 
-//  scanner.reset(map->create_scanner(text));
-//  assert(scanner);
-//}
+  scanner.reset(map->create_scanner(text));
+  assert(scanner);
+}
 
 template <typename T>
 void test_map(grnxx::MapType map_type) {
@@ -995,7 +1007,6 @@ void test_bytes_array() {
 }
 
 void test_map() {
-  // TODO: Add grnxx::Bytes.
   test_map(std::int8_t(),
            std::uint8_t(),
            std::int16_t(),
@@ -1005,7 +1016,8 @@ void test_map() {
            std::int64_t(),
            std::uint64_t(),
            double(),
-           grnxx::GeoPoint());
+           grnxx::GeoPoint(),
+           grnxx::Bytes());
 }
 
 }  // namespace
