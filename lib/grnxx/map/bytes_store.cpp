@@ -151,8 +151,8 @@ class BytesStoreImpl : public BytesStore {
   Storage *storage_;
   uint32_t storage_node_id_;
   BytesStoreHeader *header_;
-  BytesArray pages_;
-  PageHeaderArray page_headers_;
+  std::unique_ptr<BytesArray> pages_;
+  std::unique_ptr<PageHeaderArray> page_headers_;
   PeriodicClock clock_;
 
   bool create_store(Storage *storage, uint32_t storage_node_id);
@@ -239,7 +239,7 @@ bool BytesStoreImpl::get(uint64_t bytes_id, Value *bytes) {
                   << ", max_page_id = " << header_->max_page_id;
     return false;
   }
-  const uint8_t * const page = pages_.get_page(page_id);
+  const uint8_t * const page = pages_->get_page(page_id);
   if (!page) {
     return false;
   }
@@ -262,7 +262,8 @@ bool BytesStoreImpl::unset(uint64_t bytes_id) {
                   << ", max_page_id = " << header_->max_page_id;
     return false;
   }
-  BytesStorePageHeader * const page_header = page_headers_.get_value(page_id);
+  BytesStorePageHeader * const page_header =
+       page_headers_->get_pointer(page_id);
   if (!page_header) {
     return false;
   }
@@ -298,7 +299,7 @@ bool BytesStoreImpl::add(ValueArg bytes, uint64_t *bytes_id) {
   uint64_t offset = header_->next_offset;
   uint32_t size = static_cast<uint32_t>(bytes.size());
   uint32_t page_id = get_page_id(offset);
-  BytesStorePageHeader *page_header = page_headers_.get_value(page_id);
+  BytesStorePageHeader *page_header = page_headers_->get_pointer(page_id);
   if (!page_header) {
     return false;
   }
@@ -323,7 +324,7 @@ bool BytesStoreImpl::add(ValueArg bytes, uint64_t *bytes_id) {
         page_header->modified_time = clock_.now();
       }
       // Use the new ACTIVE page.
-      header_->next_offset = next_page_id * pages_.page_size();
+      header_->next_offset = next_page_id * pages_->page_size();
       offset = header_->next_offset;
       page_id = next_page_id;
       page_header = next_page_header;
@@ -332,10 +333,10 @@ bool BytesStoreImpl::add(ValueArg bytes, uint64_t *bytes_id) {
       // Use the previous ACTIVE page.
       page_header->status = BYTES_STORE_PAGE_IN_USE;
       page_header->modified_time = clock_.now();
-      header_->next_offset = next_page_id * pages_.page_size();
+      header_->next_offset = next_page_id * pages_->page_size();
     }
   }
-  uint8_t * const page = pages_.get_page(page_id);
+  uint8_t * const page = pages_->get_page(page_id);
   if (!page) {
     return false;
   }
@@ -354,7 +355,7 @@ bool BytesStoreImpl::sweep(Duration lifetime) {
     return true;
   }
   BytesStorePageHeader * const latest_empty_page_header =
-      page_headers_.get_value(header_->latest_empty_page_id);
+      page_headers_->get_pointer(header_->latest_empty_page_id);
   if (!latest_empty_page_header) {
     return false;
   }
@@ -363,7 +364,7 @@ bool BytesStoreImpl::sweep(Duration lifetime) {
     const uint32_t oldest_empty_page_id =
         latest_empty_page_header->next_page_id;
     BytesStorePageHeader * const oldest_empty_page_header =
-        page_headers_.get_value(oldest_empty_page_id);
+        page_headers_->get_pointer(oldest_empty_page_id);
     if (!oldest_empty_page_header) {
       return false;
     }
@@ -400,13 +401,14 @@ bool BytesStoreImpl::create_store(Storage *storage, uint32_t storage_node_id) {
   storage_node_id_ = storage_node.id();
   header_ = static_cast<BytesStoreHeader *>(storage_node.body());
   *header_ = BytesStoreHeader();
-  if (!pages_.create(storage, storage_node_id_) ||
-      !page_headers_.create(storage, storage_node_id_)) {
+  pages_.reset(BytesArray::create(storage, storage_node_id_));
+  page_headers_.reset(PageHeaderArray::create(storage, storage_node_id));
+  if (!pages_ || !page_headers_) {
     storage->unlink_node(storage_node_id_);
     return false;
   }
-  header_->pages_storage_node_id = pages_.storage_node_id();
-  header_->page_headers_storage_node_id = page_headers_.storage_node_id();
+  header_->pages_storage_node_id = pages_->storage_node_id();
+  header_->page_headers_storage_node_id = page_headers_->storage_node_id();
   return true;
 }
 
@@ -418,8 +420,10 @@ bool BytesStoreImpl::open_store(Storage *storage, uint32_t storage_node_id) {
   }
   storage_node_id_ = storage_node.id();
   header_ = static_cast<BytesStoreHeader *>(storage_node.body());
-  if (!pages_.open(storage, header_->pages_storage_node_id) ||
-      !page_headers_.open(storage, header_->page_headers_storage_node_id)) {
+  pages_.reset(BytesArray::open(storage, header_->pages_storage_node_id));
+  page_headers_.reset(
+      PageHeaderArray::open(storage, header_->page_headers_storage_node_id));
+  if (!pages_ || !page_headers_) {
     return false;
   }
   return true;
@@ -432,7 +436,7 @@ bool BytesStoreImpl::reserve_active_page(uint32_t *page_id,
   if (header_->latest_idle_page_id != BYTES_STORE_INVALID_PAGE_ID) {
     // Use the oldest IDLE page.
     latest_idle_page_header =
-        page_headers_.get_value(header_->latest_idle_page_id);
+        page_headers_->get_pointer(header_->latest_idle_page_id);
     if (!latest_idle_page_header) {
       return false;
     }
@@ -442,7 +446,7 @@ bool BytesStoreImpl::reserve_active_page(uint32_t *page_id,
     next_page_id = header_->max_page_id + 1;
   }
   BytesStorePageHeader * const next_page_header =
-      page_headers_.get_value(next_page_id);
+      page_headers_->get_pointer(next_page_id);
   if (!next_page_header) {
     return false;
   }
@@ -467,7 +471,7 @@ bool BytesStoreImpl::make_page_empty(uint32_t page_id,
   BytesStorePageHeader *latest_empty_page_header = nullptr;
   if (header_->latest_empty_page_id != BYTES_STORE_INVALID_PAGE_ID) {
     latest_empty_page_header =
-        page_headers_.get_value(header_->latest_empty_page_id);
+        page_headers_->get_pointer(header_->latest_empty_page_id);
     if (!latest_empty_page_header) {
       return false;
     }
@@ -489,7 +493,7 @@ bool BytesStoreImpl::make_page_idle(uint32_t page_id,
   BytesStorePageHeader *latest_idle_page_header = nullptr;
   if (header_->latest_idle_page_id != BYTES_STORE_INVALID_PAGE_ID) {
     BytesStorePageHeader * const latest_idle_page_header =
-        page_headers_.get_value(header_->latest_idle_page_id);
+        page_headers_->get_pointer(header_->latest_idle_page_id);
     if (!latest_idle_page_header) {
       return false;
     }

@@ -20,6 +20,8 @@
 
 #include "grnxx/features.hpp"
 
+#include <memory>
+
 #include "grnxx/array.hpp"
 #include "grnxx/traits.hpp"
 #include "grnxx/types.hpp"
@@ -59,19 +61,22 @@ class BitArray {
 
   // Create an array.
   bool create(Storage *storage, uint32_t storage_node_id) {
-    return impl_.create(storage, storage_node_id);
+    impl_.reset(ArrayImpl::create(storage, storage_node_id));
+    return static_cast<bool>(impl_);
   }
 
   // Create an array with the default value.
   bool create(Storage *storage, uint32_t storage_node_id,
               ValueArg default_value) {
-    return impl_.create(storage, storage_node_id,
-                        default_value ? ~Unit(0) : Unit(0));
+    impl_.reset(ArrayImpl::create(storage, storage_node_id,
+                                  default_value ? ~Unit(0) : Unit(0)));
+    return static_cast<bool>(impl_);
   }
 
   // Open an array.
   bool open(Storage *storage, uint32_t storage_node_id) {
-    return impl_.open(storage, storage_node_id);
+    impl_.reset(ArrayImpl::open(storage, storage_node_id));
+    return static_cast<bool>(impl_);
   }
 
   // Unlink an array.
@@ -102,14 +107,7 @@ class BitArray {
 
   // Return the storage node ID.
   uint32_t storage_node_id() const {
-    return impl_.storage_node_id();
-  }
-
-  // Get a value.
-  // This function throws an exception on failure.
-  Value operator[](uint64_t value_id) {
-    return (impl_[value_id / UNIT_SIZE] &
-            (Unit(1) << (value_id % UNIT_SIZE))) != 0;
+    return impl_->storage_node_id();
   }
 
   // Get a value and return true on success.
@@ -146,16 +144,16 @@ class BitArray {
 
   // Get a unit and return its address on success.
   Unit *get_unit(uint64_t unit_id) {
-    return impl_.get_value(unit_id);
+    return impl_->get_pointer(unit_id);
   }
 
   // Get a page and return its starting address on success.
   Unit *get_page(uint64_t page_id) {
-    return impl_.get_page(page_id);
+    return impl_->get_page(page_id);
   }
 
  private:
-  ArrayImpl impl_;
+  std::unique_ptr<ArrayImpl> impl_;
 };
 
 }  // namespace grnxx

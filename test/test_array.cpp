@@ -32,50 +32,50 @@ void test_array() {
 
   // Create an anonymous Storage.
   std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
-  grnxx::Array<int, PAGE_SIZE, TABLE_SIZE, SECONDARY_TABLE_SIZE> array;
+  std::unique_ptr<grnxx::Array<int, PAGE_SIZE, TABLE_SIZE,
+                               SECONDARY_TABLE_SIZE>> array;
   uint32_t storage_node_id;
 
   // Create an Array and test its member functions.
-  assert(array.create(storage.get(), grnxx::STORAGE_ROOT_NODE_ID));
+  array.reset(array->create(storage.get(), grnxx::STORAGE_ROOT_NODE_ID));
   assert(array);
-  assert(array.page_size() == PAGE_SIZE);
-  assert(array.table_size() == TABLE_SIZE);
-  assert(array.secondary_table_size() == SECONDARY_TABLE_SIZE);
-  assert(array.size() == (PAGE_SIZE * TABLE_SIZE * SECONDARY_TABLE_SIZE));
-  storage_node_id = array.storage_node_id();
+  assert(array->page_size() == PAGE_SIZE);
+  assert(array->table_size() == TABLE_SIZE);
+  assert(array->secondary_table_size() == SECONDARY_TABLE_SIZE);
+  assert(array->size() == (PAGE_SIZE * TABLE_SIZE * SECONDARY_TABLE_SIZE));
+  storage_node_id = array->storage_node_id();
 
-  for (std::uint64_t i = 0; i < array.size(); ++i) {
-    assert(array.set(i, static_cast<int>(i)));
+  for (std::uint64_t i = 0; i < array->size(); ++i) {
+    assert(array->set(i, static_cast<int>(i)));
   }
-  for (std::uint64_t i = 0; i < array.size(); ++i) {
+  for (std::uint64_t i = 0; i < array->size(); ++i) {
     int value;
-    assert(array.get(i, &value));
+    assert(array->get(i, &value));
     assert(value == static_cast<int>(i));
   }
-  for (std::uint64_t i = 0; i < (array.size() / array.page_size()); ++i) {
-    assert(array.get_page(i));
+  for (std::uint64_t i = 0; i < (array->size() / array->page_size()); ++i) {
+    assert(array->get_page(i));
   }
 
   // Open the Array.
-  assert(array.open(storage.get(), storage_node_id));
-  for (std::uint64_t i = 0; i < array.size(); ++i) {
+  assert(array->open(storage.get(), storage_node_id));
+  for (std::uint64_t i = 0; i < array->size(); ++i) {
     int value;
-    assert(array.get(i, &value));
+    assert(array->get(i, &value));
     assert(value == static_cast<int>(i));
   }
 
   // Create an Array with default value.
-  assert(array.create(storage.get(), grnxx::STORAGE_ROOT_NODE_ID, 1));
+  array.reset(array->create(storage.get(), grnxx::STORAGE_ROOT_NODE_ID, 123));
   assert(array);
-  for (std::uint64_t i = 0; i < array.size(); ++i) {
-    assert(array[i] == 1);
-    array[i] = static_cast<int>(i);
-  }
-  for (std::uint64_t i = 0; i < array.size(); ++i) {
-    assert(array[i] == static_cast<int>(i));
-  }
-  for (std::uint64_t i = 0; i < array.size(); ++i) {
-    assert(&array[i] == array.get_value(i));
+  for (std::uint64_t i = 0; i < array->size(); ++i) {
+    int value;
+    assert(array->get(i, &value));
+    assert(value == 123);
+
+    int * const pointer = array->get_pointer(i);
+    assert(pointer);
+    assert(*pointer == 123);
   }
 }
 

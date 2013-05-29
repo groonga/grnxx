@@ -125,7 +125,7 @@ bool ArrayMap<T>::get(int64_t key_id, Key *key) {
   if (!key) {
     return true;
   }
-  return keys_.get(key_id, key);
+  return keys_->get(key_id, key);
 }
 
 template <typename T>
@@ -169,7 +169,7 @@ bool ArrayMap<T>::reset(int64_t key_id, KeyArg dest_key) {
 //    GRNXX_WARNING() << "found: dest_key = " << dest_key;
     return false;
   }
-  if (!keys_.set(key_id, Helper<T>::normalize(dest_key))) {
+  if (!keys_->set(key_id, Helper<T>::normalize(dest_key))) {
     return false;
   }
   return true;
@@ -185,7 +185,7 @@ bool ArrayMap<T>::find(KeyArg key, int64_t *key_id) {
     }
     if (bit) {
       Key stored_key;
-      if (!keys_.get(i, &stored_key)) {
+      if (!keys_->get(i, &stored_key)) {
         return false;
       }
       if (Helper<T>::equal_to(normalized_key, stored_key)) {
@@ -211,7 +211,7 @@ bool ArrayMap<T>::add(KeyArg key, int64_t *key_id) {
     }
     if (bit) {
       Key stored_key;
-      if (!keys_.get(i, &stored_key)) {
+      if (!keys_->get(i, &stored_key)) {
         return false;
       }
       if (Helper<T>::equal_to(normalized_key, stored_key)) {
@@ -226,7 +226,7 @@ bool ArrayMap<T>::add(KeyArg key, int64_t *key_id) {
       next_next_key_id = i;
     }
   }
-  if (!keys_.set(next_key_id, normalized_key) ||
+  if (!keys_->set(next_key_id, normalized_key) ||
       !bitmap_.set(next_key_id, true)) {
     return false;
   }
@@ -272,7 +272,7 @@ bool ArrayMap<T>::replace(KeyArg src_key, KeyArg dest_key, int64_t *key_id) {
     }
     if (bit) {
       Key stored_key;
-      if (!keys_.get(i, &stored_key)) {
+      if (!keys_->get(i, &stored_key)) {
         return false;
       }
       if (Helper<T>::equal_to(normalized_src_key, stored_key)) {
@@ -288,7 +288,7 @@ bool ArrayMap<T>::replace(KeyArg src_key, KeyArg dest_key, int64_t *key_id) {
 //    GRNXX_WARNING() << "not found: src_key = " << src_key;
     return false;
   }
-  if (!keys_.set(src_key_id, normalized_dest_key)) {
+  if (!keys_->set(src_key_id, normalized_dest_key)) {
     return false;
   }
   if (key_id) {
@@ -322,11 +322,12 @@ bool ArrayMap<T>::create_map(Storage *storage, uint32_t storage_node_id,
     return false;
   }
   header_->bitmap_storage_node_id = bitmap_.storage_node_id();
-  if (!keys_.create(storage, storage_node_id_)) {
+  keys_.reset(Array<T>::create(storage, storage_node_id_));
+  if (!keys_) {
     storage->unlink_node(storage_node_id_);
     return false;
   }
-  header_->keys_storage_node_id = keys_.storage_node_id();
+  header_->keys_storage_node_id = keys_->storage_node_id();
   return true;
 }
 
@@ -344,8 +345,11 @@ bool ArrayMap<T>::open_map(Storage *storage, uint32_t storage_node_id) {
   }
   storage_node_id_ = storage_node_id;
   header_ = static_cast<ArrayMapHeader *>(storage_node.body());
-  if (!bitmap_.open(storage, header_->bitmap_storage_node_id) ||
-      !keys_.open(storage, header_->keys_storage_node_id)) {
+  if (!bitmap_.open(storage, header_->bitmap_storage_node_id)) {
+    return false;
+  }
+  keys_.reset(Array<T>::open(storage, header_->keys_storage_node_id));
+  if (!keys_) {
     return false;
   }
   return true;

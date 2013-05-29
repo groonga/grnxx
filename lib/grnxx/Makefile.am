@@ -19,6 +19,7 @@ libgrnxx_la_LIBADD =			\
 libgrnxx_la_LDFLAGS = @AM_LTLDFLAGS@
 
 libgrnxx_la_SOURCES =			\
+	array.cpp			\
 	array_impl.cpp			\
 	backtrace.cpp			\
 	broken_down_time.cpp		\

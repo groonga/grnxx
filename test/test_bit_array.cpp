@@ -67,10 +67,6 @@ void test_bit_array() {
     assert(array.get(i, &stored_bit));
     assert(stored_bit == expected_bit);
   }
-  for (std::uint64_t i = 0; i < array.size(); ++i) {
-    const bool expected_bit = (units[i / 64] >> (i % 64)) & 1;
-    assert(array[i] == expected_bit);
-  }
   for (std::uint64_t i = 0; i < (array.size() / array.unit_size()); ++i) {
     const Unit * const unit = array.get_unit(i);
     assert(unit);
@@ -93,12 +89,16 @@ void test_bit_array() {
   assert(array.create(storage.get(), grnxx::STORAGE_ROOT_NODE_ID, false));
   assert(array);
   for (std::uint64_t i = 0; i < array.size(); ++i) {
-    assert(!array[i]);
+    bool bit;
+    assert(array.get(i, &bit));
+    assert(!bit);
   }
   assert(array.create(storage.get(), grnxx::STORAGE_ROOT_NODE_ID, true));
   assert(array);
   for (std::uint64_t i = 0; i < array.size(); ++i) {
-    assert(array[i]);
+    bool bit;
+    assert(array.get(i, &bit));
+    assert(bit);
   }
 }
 
