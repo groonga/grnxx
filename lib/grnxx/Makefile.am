@@ -50,7 +50,6 @@ libgrnxx_includedir = ${includedir}/grnxx
 libgrnxx_include_HEADERS =		\
 	array.hpp			\
 	array_impl.hpp			\
-	bit_array.hpp			\
 	backtrace.hpp			\
 	basic.hpp			\
 	broken_down_time.hpp		\
