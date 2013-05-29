@@ -25,6 +25,7 @@
 #include <limits>
 #include <type_traits>
 
+#include "grnxx/array.hpp"
 #include "grnxx/traits.hpp"
 
 namespace grnxx {

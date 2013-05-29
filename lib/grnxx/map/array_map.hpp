@@ -20,7 +20,6 @@
 
 #include "grnxx/features.hpp"
 
-#include "grnxx/array.hpp"
 #include "grnxx/map.hpp"
 #include "grnxx/map/helper.hpp"
 #include "grnxx/types.hpp"

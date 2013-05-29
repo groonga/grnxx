@@ -20,6 +20,8 @@
 #include <memory>
 #include <new>
 
+// TODO
+//#include "grnxx/bytes.hpp"
 #include "grnxx/geo_point.hpp"
 #include "grnxx/logger.hpp"
 #include "grnxx/storage.hpp"
@@ -359,6 +361,8 @@ template class ArrayMap<int64_t>;
 template class ArrayMap<uint64_t>;
 template class ArrayMap<double>;
 template class ArrayMap<GeoPoint>;
+// TODO
+//template class ArrayMap<Bytes>;
 
 }  // namespace map
 }  // namespace grnxx
