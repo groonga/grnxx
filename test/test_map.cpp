@@ -28,6 +28,7 @@
 #include "grnxx/geo_point.hpp"
 #include "grnxx/logger.hpp"
 #include "grnxx/map.hpp"
+#include "grnxx/map/bytes_array.hpp"
 #include "grnxx/map/bytes_store.hpp"
 #include "grnxx/map/helper.hpp"
 #include "grnxx/periodic_clock.hpp"
@@ -103,7 +104,7 @@ T generate_random_text() {
 
 // Generate random keys.
 template <typename T>
-void generate_random_keys(std::vector<T> *keys, std::uint64_t num_keys) {
+void generate_random_keys(std::uint64_t num_keys, std::vector<T> *keys) {
   std::unordered_set<T, Hash<T>> keyset;
   while (keyset.size() < num_keys) {
     keyset.insert(generate_random_key<T>());
@@ -113,8 +114,8 @@ void generate_random_keys(std::vector<T> *keys, std::uint64_t num_keys) {
 }
 // Generate random keys and those are valid until the next call.
 template <>
-void generate_random_keys(std::vector<grnxx::Bytes> *keys,
-                          std::uint64_t num_keys) {
+void generate_random_keys(std::uint64_t num_keys,
+                          std::vector<grnxx::Bytes> *keys) {
   static std::unordered_set<std::string> keyset;
   keyset.clear();
   while (keyset.size() < num_keys) {
@@ -181,7 +182,7 @@ void test_bytes_store_get() {
   assert(store);
   std::vector<grnxx::Bytes> keys;
   std::vector<std::uint64_t> key_ids;
-  generate_random_keys(&keys, BYTES_STORE_NUM_KEYS);
+  generate_random_keys(BYTES_STORE_NUM_KEYS, &keys);
 
   for (std::uint64_t i = 0; i < BYTES_STORE_NUM_KEYS; ++i) {
     std::uint64_t key_id;
@@ -206,7 +207,7 @@ void test_bytes_store_unset() {
   assert(store);
   std::vector<grnxx::Bytes> keys;
   std::vector<std::uint64_t> key_ids;
-  generate_random_keys(&keys, BYTES_STORE_NUM_KEYS);
+  generate_random_keys(BYTES_STORE_NUM_KEYS, &keys);
 
   for (std::uint64_t i = 0; i < BYTES_STORE_NUM_KEYS; ++i) {
     std::uint64_t key_id;
@@ -230,7 +231,7 @@ void test_bytes_store_add() {
                                      grnxx::STORAGE_ROOT_NODE_ID));
   assert(store);
   std::vector<grnxx::Bytes> keys;
-  generate_random_keys(&keys, BYTES_STORE_NUM_KEYS);
+  generate_random_keys(BYTES_STORE_NUM_KEYS, &keys);
 
   for (std::uint64_t i = 0; i < BYTES_STORE_NUM_KEYS; ++i) {
     std::uint64_t key_id;
@@ -246,7 +247,7 @@ void test_bytes_store_sweep() {
   assert(store);
   std::vector<grnxx::Bytes> keys;
   std::vector<std::uint64_t> key_ids;
-  generate_random_keys(&keys, BYTES_STORE_NUM_KEYS);
+  generate_random_keys(BYTES_STORE_NUM_KEYS, &keys);
 
   for (std::uint64_t i = 0; i < BYTES_STORE_NUM_KEYS; ++i) {
     std::uint64_t key_id;
@@ -263,6 +264,90 @@ void test_bytes_store_sweep() {
     assert(store->unset(key_ids[i]));
   }
   assert(store->sweep(grnxx::Duration(0)));
+}
+
+void test_bytes_array_create() {
+  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
+  std::unique_ptr<grnxx::map::BytesArray> array(
+      grnxx::map::BytesArray::create(storage.get(),
+                                     grnxx::STORAGE_ROOT_NODE_ID));
+  assert(array);
+}
+
+void test_bytes_array_create_with_default_value() {
+  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
+  std::unique_ptr<grnxx::map::BytesArray> array(
+      grnxx::map::BytesArray::create(storage.get(),
+                                     grnxx::STORAGE_ROOT_NODE_ID,
+                                     "Default"));
+  assert(array);
+}
+
+void test_bytes_array_open() {
+  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
+  std::unique_ptr<grnxx::map::BytesArray> array(
+      grnxx::map::BytesArray::create(storage.get(),
+                                     grnxx::STORAGE_ROOT_NODE_ID));
+  assert(array);
+  const std::uint32_t storage_node_id = array->storage_node_id();
+  array.reset(grnxx::map::BytesArray::open(storage.get(), storage_node_id));
+  assert(array);
+}
+
+void test_bytes_array_unlink() {
+  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
+  std::unique_ptr<grnxx::map::BytesArray> array(
+      grnxx::map::BytesArray::create(storage.get(),
+                                     grnxx::STORAGE_ROOT_NODE_ID));
+  assert(array);
+  grnxx::StorageNode storage_node =
+      storage->open_node(array->storage_node_id());
+  assert(storage_node);
+  assert(grnxx::map::BytesArray::unlink(storage.get(), storage_node.id()));
+  assert(storage_node.status() == grnxx::STORAGE_NODE_UNLINKED);
+}
+
+void test_bytes_array_storage_node_id() {
+  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
+  std::unique_ptr<grnxx::map::BytesArray> array(
+      grnxx::map::BytesArray::create(storage.get(),
+                                     grnxx::STORAGE_ROOT_NODE_ID));
+  assert(array);
+  grnxx::StorageNode storage_node =
+      storage->open_node(array->storage_node_id());
+  assert(storage_node);
+  assert(storage_node.status() == grnxx::STORAGE_NODE_ACTIVE);
+}
+
+void test_bytes_array_get() {
+  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
+  std::unique_ptr<grnxx::map::BytesArray> array(
+      grnxx::map::BytesArray::create(storage.get(),
+                                     grnxx::STORAGE_ROOT_NODE_ID));
+  assert(array);
+  std::vector<grnxx::Bytes> keys;
+  generate_random_keys(MAP_NUM_KEYS, &keys);
+  for (std::uint64_t i = 0; i < MAP_NUM_KEYS; ++i) {
+    assert(array->set(i, keys[i]));
+  }
+  for (std::uint64_t i = 0; i < MAP_NUM_KEYS; ++i) {
+    grnxx::Bytes stored_key;
+    assert(array->get(i, &stored_key));
+    assert(stored_key == keys[i]);
+  }
+}
+
+void test_bytes_array_set() {
+  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
+  std::unique_ptr<grnxx::map::BytesArray> array(
+      grnxx::map::BytesArray::create(storage.get(),
+                                     grnxx::STORAGE_ROOT_NODE_ID));
+  assert(array);
+  std::vector<grnxx::Bytes> keys;
+  generate_random_keys(MAP_NUM_KEYS, &keys);
+  for (std::uint64_t i = 0; i < MAP_NUM_KEYS; ++i) {
+    assert(array->set(i, keys[i]));
+  }
 }
 
 template <typename T>
@@ -385,7 +470,7 @@ void test_map_get(grnxx::MapType map_type) {
                             grnxx::STORAGE_ROOT_NODE_ID));
   assert(map);
   std::vector<T> keys;
-  generate_random_keys(&keys, MAP_NUM_KEYS);
+  generate_random_keys(MAP_NUM_KEYS, &keys);
 
   for (std::uint64_t i = 0; i < MAP_NUM_KEYS; ++i) {
     assert(!map->get(i));
@@ -408,10 +493,10 @@ void test_map_get_next(grnxx::MapType map_type) {
   assert(map);
   std::int64_t key_id;
   std::vector<T> keys;
-  generate_random_keys(&keys, MAP_NUM_KEYS);
+  generate_random_keys(MAP_NUM_KEYS, &keys);
 
   assert(!map->get_next(grnxx::MAP_INVALID_KEY_ID));
-  generate_random_keys(&keys, MAP_NUM_KEYS);
+  generate_random_keys(MAP_NUM_KEYS, &keys);
   for (std::uint64_t i = 0; i < MAP_NUM_KEYS; ++i) {
     assert(map->add(keys[i]));
   }
@@ -444,7 +529,7 @@ void test_map_unset(grnxx::MapType map_type) {
                             grnxx::STORAGE_ROOT_NODE_ID));
   assert(map);
   std::vector<T> keys;
-  generate_random_keys(&keys, MAP_NUM_KEYS);
+  generate_random_keys(MAP_NUM_KEYS, &keys);
 
   for (std::uint64_t i = 0; i < MAP_NUM_KEYS; ++i) {
     assert(!map->unset(i));
@@ -465,7 +550,7 @@ void test_map_reset(grnxx::MapType map_type) {
                             grnxx::STORAGE_ROOT_NODE_ID));
   assert(map);
   std::vector<T> keys;
-  generate_random_keys(&keys, MAP_NUM_KEYS);
+  generate_random_keys(MAP_NUM_KEYS, &keys);
 
   for (std::uint64_t i = 0; i < (MAP_NUM_KEYS / 2); ++i) {
     assert(!map->reset(i, keys[i]));
@@ -490,7 +575,7 @@ void test_map_find(grnxx::MapType map_type) {
                             grnxx::STORAGE_ROOT_NODE_ID));
   assert(map);
   std::vector<T> keys;
-  generate_random_keys(&keys, MAP_NUM_KEYS);
+  generate_random_keys(MAP_NUM_KEYS, &keys);
 
   for (std::uint64_t i = 0; i < MAP_NUM_KEYS; ++i) {
     assert(!map->find(keys[i]));
@@ -511,7 +596,7 @@ void test_map_add(grnxx::MapType map_type) {
                             grnxx::STORAGE_ROOT_NODE_ID));
   assert(map);
   std::vector<T> keys;
-  generate_random_keys(&keys, MAP_NUM_KEYS);
+  generate_random_keys(MAP_NUM_KEYS, &keys);
 
   for (std::uint64_t i = 0; i < MAP_NUM_KEYS; ++i) {
     std::int64_t key_id;
@@ -529,7 +614,7 @@ void test_map_remove(grnxx::MapType map_type) {
                             grnxx::STORAGE_ROOT_NODE_ID));
   assert(map);
   std::vector<T> keys;
-  generate_random_keys(&keys, MAP_NUM_KEYS);
+  generate_random_keys(MAP_NUM_KEYS, &keys);
 
   for (std::uint64_t i = 0; i < MAP_NUM_KEYS; ++i) {
     assert(!map->remove(keys[i]));
@@ -550,7 +635,7 @@ void test_map_replace(grnxx::MapType map_type) {
                             grnxx::STORAGE_ROOT_NODE_ID));
   assert(map);
   std::vector<T> keys;
-  generate_random_keys(&keys, MAP_NUM_KEYS);
+  generate_random_keys(MAP_NUM_KEYS, &keys);
 
   for (std::uint64_t i = 0; i < (MAP_NUM_KEYS / 2); ++i) {
     assert(!map->replace(keys[i], keys[i]));
@@ -574,7 +659,7 @@ void test_map_find_longest_prefix_match(grnxx::MapType map_type) {
                             grnxx::STORAGE_ROOT_NODE_ID));
   assert(map);
   std::vector<T> keys;
-  generate_random_keys(&keys, MAP_NUM_KEYS);
+  generate_random_keys(MAP_NUM_KEYS, &keys);
 
   // TODO
 }
@@ -587,7 +672,7 @@ void test_map_truncate(grnxx::MapType map_type) {
                             grnxx::STORAGE_ROOT_NODE_ID));
   assert(map);
   std::vector<T> keys;
-  generate_random_keys(&keys, MAP_NUM_KEYS);
+  generate_random_keys(MAP_NUM_KEYS, &keys);
 
   for (std::uint64_t i = 0; i < (MAP_NUM_KEYS / 2); ++i) {
     assert(map->add(keys[i]));
@@ -877,6 +962,16 @@ void test_bytes_store() {
   test_bytes_store_sweep();
 }
 
+void test_bytes_array() {
+  test_bytes_array_create();
+  test_bytes_array_create_with_default_value();
+  test_bytes_array_open();
+  test_bytes_array_unlink();
+  test_bytes_array_storage_node_id();
+  test_bytes_array_get();
+  test_bytes_array_set();
+}
+
 void test_map() {
   // TODO: Add grnxx::Bytes.
   test_map(std::int8_t(),
@@ -901,9 +996,8 @@ int main() {
   // FIXME: Increment the reference count for grnxx::PeriodicClock.
   grnxx::PeriodicClock clock;
 
-  // TODO: test_bitmap();
   test_bytes_store();
-  // TODO: test_key_array();
+  test_bytes_array();
   test_map();
 
   return 0;
