@@ -22,7 +22,7 @@
 
 #include "grnxx/array.hpp"
 #include "grnxx/map.hpp"
-#include "grnxx/map/bitmap.hpp"
+#include "grnxx/map/helper.hpp"
 #include "grnxx/types.hpp"
 
 namespace grnxx {
@@ -39,6 +39,9 @@ class ArrayMap : public Map<T> {
   using Key = typename Map<T>::Key;
   using KeyArg = typename Map<T>::KeyArg;
   using Cursor = typename Map<T>::Cursor;
+
+  using Bitmap = typename Helper<T>::Bitmap;
+  using KeyArray = typename Helper<T>::KeyArray;
 
   ArrayMap();
   ~ArrayMap();
@@ -71,8 +74,8 @@ class ArrayMap : public Map<T> {
   Storage *storage_;
   uint32_t storage_node_id_;
   ArrayMapHeader *header_;
-  Bitmap<T> bitmap_;
-  std::unique_ptr<Array<T>> keys_;
+  std::unique_ptr<Bitmap> bitmap_;
+  std::unique_ptr<KeyArray> keys_;
 
   bool create_map(Storage *storage, uint32_t storage_node_id,
                   const MapOptions &options);

@@ -22,7 +22,6 @@
 
 #include "grnxx/geo_point.hpp"
 #include "grnxx/logger.hpp"
-#include "grnxx/map/helper.hpp"
 #include "grnxx/storage.hpp"
 
 namespace grnxx {
@@ -116,7 +115,7 @@ bool ArrayMap<T>::get(int64_t key_id, Key *key) {
     return false;
   }
   bool bit;
-  if (!bitmap_.get(key_id, &bit)) {
+  if (!bitmap_->get(key_id, &bit)) {
     return false;
   }
   if (!bit) {
@@ -151,7 +150,7 @@ bool ArrayMap<T>::unset(int64_t key_id) {
 //    GRNXX_WARNING() << "not found: key_id = " << key_id;
     return false;
   }
-  if (!bitmap_.set(key_id, false)) {
+  if (!bitmap_->set(key_id, false)) {
     return false;
   }
   header_->next_key_id = key_id;
@@ -180,7 +179,7 @@ bool ArrayMap<T>::find(KeyArg key, int64_t *key_id) {
   const Key normalized_key = map::Helper<T>::normalize(key);
   for (int64_t i = MAP_MIN_KEY_ID; i <= header_->max_key_id; ++i) {
     bool bit;
-    if (!bitmap_.get(i, &bit)) {
+    if (!bitmap_->get(i, &bit)) {
       return false;
     }
     if (bit) {
@@ -206,7 +205,7 @@ bool ArrayMap<T>::add(KeyArg key, int64_t *key_id) {
   int64_t next_next_key_id = MAP_INVALID_KEY_ID;
   for (int64_t i = MAP_MIN_KEY_ID; i <= header_->max_key_id; ++i) {
     bool bit;
-    if (!bitmap_.get(i, &bit)) {
+    if (!bitmap_->get(i, &bit)) {
       return false;
     }
     if (bit) {
@@ -227,7 +226,7 @@ bool ArrayMap<T>::add(KeyArg key, int64_t *key_id) {
     }
   }
   if (!keys_->set(next_key_id, normalized_key) ||
-      !bitmap_.set(next_key_id, true)) {
+      !bitmap_->set(next_key_id, true)) {
     return false;
   }
   if (next_key_id == (header_->max_key_id + 1)) {
@@ -252,7 +251,7 @@ bool ArrayMap<T>::remove(KeyArg key) {
 //    GRNXX_WARNING() << "not found: key = " << key;
     return false;
   }
-  if (!bitmap_.set(key_id, false)) {
+  if (!bitmap_->set(key_id, false)) {
     return false;
   }
   header_->next_key_id = key_id;
@@ -267,7 +266,7 @@ bool ArrayMap<T>::replace(KeyArg src_key, KeyArg dest_key, int64_t *key_id) {
   int64_t src_key_id = MAP_INVALID_KEY_ID;
   for (int64_t i = MAP_MIN_KEY_ID; i <= header_->max_key_id; ++i) {
     bool bit;
-    if (!bitmap_.get(i, &bit)) {
+    if (!bitmap_->get(i, &bit)) {
       return false;
     }
     if (bit) {
@@ -317,16 +316,13 @@ bool ArrayMap<T>::create_map(Storage *storage, uint32_t storage_node_id,
   storage_node_id_ = storage_node.id();
   header_ = static_cast<ArrayMapHeader *>(storage_node.body());
   *header_ = ArrayMapHeader();
-  if (!bitmap_.create(storage, storage_node_id_, false)) {
+  bitmap_.reset(Bitmap::create(storage, storage_node_id_));
+  keys_.reset(KeyArray::create(storage, storage_node_id_));
+  if (!bitmap_ || !keys_) {
     storage->unlink_node(storage_node_id_);
     return false;
   }
-  header_->bitmap_storage_node_id = bitmap_.storage_node_id();
-  keys_.reset(Array<T>::create(storage, storage_node_id_));
-  if (!keys_) {
-    storage->unlink_node(storage_node_id_);
-    return false;
-  }
+  header_->bitmap_storage_node_id = bitmap_->storage_node_id();
   header_->keys_storage_node_id = keys_->storage_node_id();
   return true;
 }
@@ -345,11 +341,9 @@ bool ArrayMap<T>::open_map(Storage *storage, uint32_t storage_node_id) {
   }
   storage_node_id_ = storage_node_id;
   header_ = static_cast<ArrayMapHeader *>(storage_node.body());
-  if (!bitmap_.open(storage, header_->bitmap_storage_node_id)) {
-    return false;
-  }
-  keys_.reset(Array<T>::open(storage, header_->keys_storage_node_id));
-  if (!keys_) {
+  bitmap_.reset(Bitmap::open(storage, header_->bitmap_storage_node_id));
+  keys_.reset(KeyArray::open(storage, header_->keys_storage_node_id));
+  if (!bitmap_ || !keys_) {
     return false;
   }
   return true;
