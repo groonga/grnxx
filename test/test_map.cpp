@@ -46,7 +46,8 @@ constexpr std::uint64_t MAP_NUM_KEYS         = 100;
 constexpr std::uint64_t BYTES_STORE_NUM_KEYS = 1 << 14;
 
 std::random_device random_device;
-std::mt19937_64 mersenne_twister(random_device());
+std::uint64_t mersenne_twister_seed = random_device();
+std::mt19937_64 mersenne_twister(mersenne_twister_seed);
 
 // For std::unordered_set.
 template <typename T>
@@ -110,6 +111,27 @@ void generate_random_keys(std::uint64_t num_keys, std::vector<T> *keys) {
     keyset.insert(generate_random_key<T>());
   }
   *keys = std::vector<T>(keyset.begin(), keyset.end());
+  std::random_shuffle(keys->begin(), keys->end(), RandomNumberGenerator());
+}
+// Generate random floating point keys.
+template <>
+void generate_random_keys<double>(std::uint64_t num_keys,
+                                  std::vector<double> *keys) {
+  std::unordered_set<double, Hash<double>> keyset;
+  bool contains_nan = false;
+  while ((keyset.size() + (contains_nan ? 1 : 0)) < num_keys) {
+    const double key = generate_random_key<double>();
+    if (std::isnan(key)) {
+      contains_nan = true;
+    } else {
+      keyset.insert(key);
+    }
+  }
+  *keys = std::vector<double>(keyset.begin(), keyset.end());
+  if (contains_nan) {
+    keys->insert(keys->begin() + (mersenne_twister() % keys->size()),
+                 std::numeric_limits<double>::quiet_NaN());
+  }
   std::random_shuffle(keys->begin(), keys->end(), RandomNumberGenerator());
 }
 // Generate random keys and those are valid until the next call.
@@ -995,6 +1017,8 @@ int main() {
 
   // FIXME: Increment the reference count for grnxx::PeriodicClock.
   grnxx::PeriodicClock clock;
+
+  GRNXX_NOTICE() << "mersenne_twister_seed = " << mersenne_twister_seed;
 
   test_bytes_store();
   test_bytes_array();
