@@ -127,7 +127,6 @@ class Map {
   // Remove all the keys in "*this" and return true on success.
   virtual bool truncate();
 
-  // TODO: Not yet fixed.
   // Return a reference to create a cursor query.
   MapCursorAllKeys<T> all_keys() const {
     return MapCursorAllKeys<T>();

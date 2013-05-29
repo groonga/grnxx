@@ -328,8 +328,7 @@ template class AllKeysCursor<uint32_t>;
 template class AllKeysCursor<uint64_t>;
 template class AllKeysCursor<double>;
 template class AllKeysCursor<GeoPoint>;
-// TODO: To be enabled.
-//template class AllKeysCursor<Bytes>;
+template class AllKeysCursor<Bytes>;
 
 template class KeyIDRangeCursor<int8_t>;
 template class KeyIDRangeCursor<int16_t>;
@@ -341,8 +340,7 @@ template class KeyIDRangeCursor<uint32_t>;
 template class KeyIDRangeCursor<uint64_t>;
 template class KeyIDRangeCursor<double>;
 template class KeyIDRangeCursor<GeoPoint>;
-// TODO: To be enabled.
-//template class KeyIDRangeCursor<Bytes>;
+template class KeyIDRangeCursor<Bytes>;
 
 template class KeyRangeCursor<int8_t>;
 template class KeyRangeCursor<int16_t>;
@@ -355,8 +353,7 @@ template class KeyRangeCursor<uint64_t>;
 template class KeyRangeCursor<double>;
 // GeoPoint does not support comparison operators (<, <=, >, >=).
 //template class KeyRangeCursor<GeoPoint>;
-// TODO: To be enabled.
-//template class KeyRangeCursor<Bytes>;
+template class KeyRangeCursor<Bytes>;
 
 }  // namespace map
 }  // namespace grnxx

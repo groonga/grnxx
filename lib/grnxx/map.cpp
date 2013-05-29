@@ -293,7 +293,6 @@ template class Map<int64_t>;
 template class Map<uint64_t>;
 template class Map<double>;
 template class Map<GeoPoint>;
-// TODO: To be enabled
-//template class Map<Bytes>;
+template class Map<Bytes>;
 
 }  // namespace grnxx

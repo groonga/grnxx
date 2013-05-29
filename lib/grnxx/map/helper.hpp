@@ -26,6 +26,8 @@
 #include <type_traits>
 
 #include "grnxx/array.hpp"
+#include "grnxx/bytes.hpp"
+#include "grnxx/map/bytes_array.hpp"
 #include "grnxx/traits.hpp"
 
 namespace grnxx {
@@ -73,6 +75,11 @@ template <typename T>
 struct KeyArrayHelper<T, 4> {
   // Map<T> has at most 2^32 different keys.
   using Type = Array<T, 65536, 256, 256>;
+};
+template <>
+struct KeyArrayHelper<Bytes> {
+  // Map<T> has at most 2^40 different keys.
+  using Type = BytesArray;
 };
 
 // Normalize a key.
