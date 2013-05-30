@@ -32,8 +32,7 @@ class Storage;
 
 namespace map {
 
-// TODO: Fix this value.
-constexpr uint64_t BYTES_STORE_INVALID_BYTES_ID = 1ULL << 62;
+constexpr uint64_t BYTES_STORE_INVALID_BYTES_ID = 1ULL << 61;
 
 class BytesStore {
  public:

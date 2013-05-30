@@ -44,8 +44,10 @@ constexpr uint32_t BYTES_STORE_PAGE_SIZE            = 1U << 20;
 constexpr uint32_t BYTES_STORE_TABLE_SIZE           = 1U << 14;
 constexpr uint32_t BYTES_STORE_SECONDARY_TABLE_SIZE = 1U << 14;
 
+constexpr uint32_t BYTES_STORE_MAX_PAGE_ID          =
+    (BYTES_STORE_TABLE_SIZE * BYTES_STORE_SECONDARY_TABLE_SIZE) - 1;
 constexpr uint32_t BYTES_STORE_INVALID_PAGE_ID      =
-    BYTES_STORE_TABLE_SIZE * BYTES_STORE_SECONDARY_TABLE_SIZE;
+    BYTES_STORE_MAX_PAGE_ID + 1;
 
 enum BytesStorePageStatus : uint32_t {
   // The next byte sequence will be added to the page.
@@ -444,6 +446,11 @@ bool BytesStoreImpl::reserve_active_page(uint32_t *page_id,
   } else {
     // Create a new page.
     next_page_id = header_->max_page_id + 1;
+    if (next_page_id > BYTES_STORE_MAX_PAGE_ID) {
+      GRNXX_ERROR() << "too many pages: next_page_id = " << next_page_id
+                    << ", max_page_id = " << BYTES_STORE_MAX_PAGE_ID;
+      return false;
+    }
   }
   BytesStorePageHeader * const next_page_header =
       page_headers_->get_pointer(next_page_id);
