@@ -85,6 +85,11 @@ class BytesArray {
   // Set a value and return true on success.
   bool set(uint64_t value_id, ValueArg value);
 
+  // Sweep empty pages whose modified time < (now - lifetime).
+  bool sweep(Duration lifetime) {
+    return store_->sweep(lifetime);
+  }
+
  private:
   Storage *storage_;
   uint32_t storage_node_id_;
