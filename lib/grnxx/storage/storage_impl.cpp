@@ -235,8 +235,8 @@ StorageNode StorageImpl::open_node(uint32_t node_id) {
   if (!node_header) {
     return StorageNode(nullptr);
   }
-  if (node_header->status != STORAGE_NODE_ACTIVE) {
-    // TODO: How about an unlinked node?
+  if ((node_header->status != STORAGE_NODE_ACTIVE) &&
+      (node_header->status != STORAGE_NODE_UNLINKED)) {
     GRNXX_WARNING() << "invalid argument: status = " << node_header->status;
     return StorageNode(nullptr);
   }
