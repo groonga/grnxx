@@ -25,9 +25,6 @@
 #include "grnxx/logger.hpp"
 #include "grnxx/map.hpp"
 
-// TODO: To be removed in future.
-#include "grnxx/slice.hpp"
-
 namespace grnxx {
 namespace map {
 
@@ -62,8 +59,7 @@ bool ScannerImpl<T>::next() {
     }
     // Move to the next character.
     if (charset_) {
-      // TODO: Charset should support Bytes.
-      this->offset_ += charset_->get_char_size(Slice(rest.ptr(), rest.size()));
+      this->offset_ += charset_->get_char_size(rest);
     } else {
       ++this->offset_;
     }

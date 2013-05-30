@@ -29,29 +29,37 @@ CharsetCode Shift_JIS::code() const {
   return CHARSET_SHIFT_JIS;
 }
 
-Slice Shift_JIS::get_char(const Slice &slice) const {
-  return slice.prefix(get_char_size(slice));
+Bytes Shift_JIS::get_char(const Bytes &bytes) const {
+  return bytes.prefix(get_char_size(bytes));
 }
 
-size_t Shift_JIS::get_char_size(const Slice &slice) const {
-  if (!slice) {
+size_t Shift_JIS::get_char_size(const Bytes &bytes) const {
+  if (!bytes) {
     return 0;
   }
   // The 1st byte of a multibyte character is in [81, 9F] or [E0, FC].
   // Reference: http://www.st.rim.or.jp/~phinloda/cqa/cqa15.html#Q4
-  if (static_cast<unsigned>((slice[0] ^ 0x20) - 0xA1) < 0x3C) {
+  if (static_cast<unsigned>((bytes[0] ^ 0x20) - 0xA1) < 0x3C) {
     // Return 0 if the character is incomplete.
-    if (slice.size() < 2) {
+    if (bytes.size() < 2) {
       return 0;
     }
     // Return 0 if the 2nd byte is invalid.
-    if (static_cast<unsigned>(slice[1] - 0x40) > (0xFC - 0x40)) {
+    if (static_cast<unsigned>(bytes[1] - 0x40) > (0xFC - 0x40)) {
       return 0;
     }
     return 2;
   }
   // Return 1 for an ASCII character.
   return 1;
+}
+
+Slice Shift_JIS::get_char(const Slice &slice) const {
+  return slice.prefix(get_char_size(slice));
+}
+
+size_t Shift_JIS::get_char_size(const Slice &slice) const {
+  return get_char_size(Bytes(slice.ptr(), slice.size()));
 }
 
 }  // namespace charset

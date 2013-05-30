@@ -29,44 +29,44 @@ CharsetCode EUC_JP::code() const {
   return CHARSET_EUC_JP;
 }
 
-Slice EUC_JP::get_char(const Slice &slice) const {
-  return slice.prefix(get_char_size(slice));
+Bytes EUC_JP::get_char(const Bytes &bytes) const {
+  return bytes.prefix(get_char_size(bytes));
 }
 
-size_t EUC_JP::get_char_size(const Slice &slice) const {
-  if (!slice) {
+size_t EUC_JP::get_char_size(const Bytes &bytes) const {
+  if (!bytes) {
     return 0;
   }
   // Reference: http://ja.wikipedia.org/wiki/EUC-JP
-  if (slice[0] & 0x80) {
+  if (bytes[0] & 0x80) {
     // A 3-byte character starts with 0x8F.
-    if (slice[0] == 0x8F) {
+    if (bytes[0] == 0x8F) {
       // Return 0 if the character is incomplete.
-      if (slice.size() < 3) {
+      if (bytes.size() < 3) {
         return 0;
       }
       // Return 0 if the 2nd byte is invalid.
       // In fact, only bytes in [A1, A8], [B0, ED], and [F3, FE] are valid.
-      if (static_cast<unsigned>(slice[1] - 0xA1) > (0xFE - 0xA1)) {
+      if (static_cast<unsigned>(bytes[1] - 0xA1) > (0xFE - 0xA1)) {
         return 0;
       }
       // Return 0 if the 3rd byte is invalid.
-      if (static_cast<unsigned>(slice[2] - 0xA1) > (0xFE - 0xA1)) {
+      if (static_cast<unsigned>(bytes[2] - 0xA1) > (0xFE - 0xA1)) {
         return 0;
       }
       return 3;
     } else {
       // Return 0 if the 1st byte is invalid.
       // In fact, only bytes in [A1, A8], [AD, AD], and [B0, FE] are valid.
-      if (static_cast<unsigned>(slice[0] - 0xA1) > (0xFE - 0xA1)) {
+      if (static_cast<unsigned>(bytes[0] - 0xA1) > (0xFE - 0xA1)) {
         return 0;
       }
       // Return 0 if the character is incomplete.
-      if (slice.size() < 2) {
+      if (bytes.size() < 2) {
         return 0;
       }
       // Return 0 if the 2nd byte is invalid.
-      if (static_cast<unsigned>(slice[1] - 0xA1) > (0xFE - 0xA1)) {
+      if (static_cast<unsigned>(bytes[1] - 0xA1) > (0xFE - 0xA1)) {
         return 0;
       }
       return 2;
@@ -74,6 +74,14 @@ size_t EUC_JP::get_char_size(const Slice &slice) const {
   }
   // Return 1 for an ASCII character.
   return 1;
+}
+
+Slice EUC_JP::get_char(const Slice &slice) const {
+  return slice.prefix(get_char_size(slice));
+}
+
+size_t EUC_JP::get_char_size(const Slice &slice) const {
+  return get_char_size(Bytes(slice.ptr(), slice.size()));
 }
 
 }  // namespace charset

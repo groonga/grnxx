@@ -31,40 +31,40 @@ CharsetCode UTF_8::code() const {
   return CHARSET_UTF_8;
 }
 
-Slice UTF_8::get_char(const Slice &slice) const {
-  return slice.prefix(get_char_size(slice));
+Bytes UTF_8::get_char(const Bytes &bytes) const {
+  return bytes.prefix(get_char_size(bytes));
 }
 
-size_t UTF_8::get_char_size(const Slice &slice) const {
-  if (!slice) {
+size_t UTF_8::get_char_size(const Bytes &bytes) const {
+  if (!bytes) {
     return 0;
   }
-  if (slice[0] & 0x80) {
+  if (bytes[0] & 0x80) {
     // A multibyte character can be 2, 3, or 4 bytes long. Also, the 2nd,
     // 3rd, and 4th byte must be 10xxxxxx, the most significant 2 bits must
     // be 10.
     const size_t char_size =
-        31 - bit_scan_reverse(~(static_cast<uint32_t>(slice[0]) << 24));
+        31 - bit_scan_reverse(~(static_cast<uint32_t>(bytes[0]) << 24));
     // Return 0 if the character is incomplete.
-    if (char_size > slice.size()) {
+    if (char_size > bytes.size()) {
       return 0;
     }
     switch (char_size) {
       case 4: {
         // Return 0 if the 4th byte is invalid.
-        if ((slice[3] & 0xC0) != 0x80) {
+        if ((bytes[3] & 0xC0) != 0x80) {
           return 0;
         }
       }
       case 3: {
         // Return 0 if the 3rd byte is invalid.
-        if ((slice[2] & 0xC0) != 0x80) {
+        if ((bytes[2] & 0xC0) != 0x80) {
           return 0;
         }
       }
       case 2: {
         // Return 0 if the 2nd byte is invalid.
-        if ((slice[1] & 0xC0) != 0x80) {
+        if ((bytes[1] & 0xC0) != 0x80) {
           return 0;
         }
         return char_size;
@@ -77,6 +77,14 @@ size_t UTF_8::get_char_size(const Slice &slice) const {
   }
   // Return 1 for an ASCII character.
   return 1;
+}
+
+Slice UTF_8::get_char(const Slice &slice) const {
+  return slice.prefix(get_char_size(slice));
+}
+
+size_t UTF_8::get_char_size(const Slice &slice) const {
+  return get_char_size(Bytes(slice.ptr(), slice.size()));
 }
 
 }  // namespace charset
