@@ -200,8 +200,8 @@ StorageNode StorageImpl::create_node(uint32_t parent_node_id, uint64_t size) {
   if (!parent_node_header) {
     return StorageNode(nullptr);
   }
-  if (parent_node_header->status != STORAGE_NODE_ACTIVE) {
-    // TODO: How about an unlinked node?
+  if ((parent_node_header->status != STORAGE_NODE_ACTIVE) &&
+      (parent_node_header->status != STORAGE_NODE_UNLINKED)) {
     GRNXX_WARNING() << "invalid argument: status = "
                     << parent_node_header->status;
     return StorageNode(nullptr);
