@@ -32,7 +32,6 @@ struct ArrayMapHeader {
   uint32_t bitmap_storage_node_id;
   uint32_t keys_storage_node_id;
   int64_t max_key_id;
-  int64_t next_key_id;
   uint64_t num_keys;
 
   ArrayMapHeader();
@@ -43,7 +42,6 @@ ArrayMapHeader::ArrayMapHeader()
       bitmap_storage_node_id(STORAGE_INVALID_NODE_ID),
       keys_storage_node_id(STORAGE_INVALID_NODE_ID),
       max_key_id(MAP_MIN_KEY_ID - 1),
-      next_key_id(MAP_MIN_KEY_ID),
       num_keys(0) {}
 
 template <typename T>
@@ -148,7 +146,6 @@ bool ArrayMap<T>::unset(int64_t key_id) {
   if (!bitmap_->set(key_id, false)) {
     return false;
   }
-  header_->next_key_id = key_id;
   --header_->num_keys;
   return true;
 }
@@ -196,8 +193,7 @@ bool ArrayMap<T>::find(KeyArg key, int64_t *key_id) {
 template <typename T>
 bool ArrayMap<T>::add(KeyArg key, int64_t *key_id) {
   const Key normalized_key = Helper<T>::normalize(key);
-  int64_t next_key_id = header_->next_key_id;
-  int64_t next_next_key_id = MAP_INVALID_KEY_ID;
+  int64_t next_key_id = MAP_INVALID_KEY_ID;
   for (int64_t i = MAP_MIN_KEY_ID; i <= header_->max_key_id; ++i) {
     bool bit;
     if (!bitmap_->get(i, &bit)) {
@@ -215,9 +211,16 @@ bool ArrayMap<T>::add(KeyArg key, int64_t *key_id) {
 //        GRNXX_WARNING() << "found: key = " << key;
         return false;
       }
-    } else if ((i != next_key_id) &&
-               (next_next_key_id == MAP_INVALID_KEY_ID)) {
-      next_next_key_id = i;
+    } else if (next_key_id == MAP_INVALID_KEY_ID) {
+      next_key_id = i;
+    }
+  }
+  if (next_key_id == MAP_INVALID_KEY_ID) {
+    next_key_id = header_->max_key_id + 1;
+    if (next_key_id > MAP_MAX_KEY_ID) {
+      GRNXX_ERROR() << "too many keys: next_key_id = " << next_key_id
+                    << ", max_key_id = " << MAP_MAX_KEY_ID;
+      return false;
     }
   }
   if (!keys_->set(next_key_id, normalized_key) ||
@@ -226,11 +229,6 @@ bool ArrayMap<T>::add(KeyArg key, int64_t *key_id) {
   }
   if (next_key_id == (header_->max_key_id + 1)) {
     ++header_->max_key_id;
-  }
-  if (next_next_key_id == MAP_INVALID_KEY_ID) {
-    header_->next_key_id = header_->max_key_id + 1;
-  } else {
-    header_->next_key_id = next_next_key_id;
   }
   ++header_->num_keys;
   if (key_id) {
@@ -249,7 +247,6 @@ bool ArrayMap<T>::remove(KeyArg key) {
   if (!bitmap_->set(key_id, false)) {
     return false;
   }
-  header_->next_key_id = key_id;
   --header_->num_keys;
   return true;
 }
@@ -294,7 +291,6 @@ bool ArrayMap<T>::replace(KeyArg src_key, KeyArg dest_key, int64_t *key_id) {
 template <typename T>
 bool ArrayMap<T>::truncate() {
   header_->max_key_id = MAP_MIN_KEY_ID - 1;
-  header_->next_key_id = MAP_MIN_KEY_ID;
   header_->num_keys = 0;
   return true;
 }
