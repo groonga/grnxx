@@ -100,11 +100,6 @@ int64_t ArrayMap<T>::max_key_id() const {
 }
 
 template <typename T>
-int64_t ArrayMap<T>::next_key_id() const {
-  return header_->next_key_id;
-}
-
-template <typename T>
 uint64_t ArrayMap<T>::num_keys() const {
   return header_->num_keys;
 }

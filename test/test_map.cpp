@@ -456,20 +456,6 @@ void test_map_max_key_id(grnxx::MapType map_type) {
 }
 
 template <typename T>
-void test_map_next_key_id(grnxx::MapType map_type) {
-  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
-  std::unique_ptr<grnxx::Map<T>> map(
-      grnxx::Map<T>::create(map_type, storage.get(),
-                            grnxx::STORAGE_ROOT_NODE_ID));
-  assert(map);
-  assert(map->next_key_id() == grnxx::MAP_MIN_KEY_ID);
-  assert(map->add(generate_random_key<T>()));
-  assert(map->next_key_id() == (grnxx::MAP_MIN_KEY_ID + 1));
-  assert(map->unset(grnxx::MAP_MIN_KEY_ID));
-  assert(map->max_key_id() == grnxx::MAP_MIN_KEY_ID);
-}
-
-template <typename T>
 void test_map_num_keys(grnxx::MapType map_type) {
   std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
   std::unique_ptr<grnxx::Map<T>> map(
@@ -714,7 +700,6 @@ void test_map_truncate(grnxx::MapType map_type) {
   }
   assert(map->truncate());
   assert(map->max_key_id() == (grnxx::MAP_MIN_KEY_ID - 1));
-  assert(map->next_key_id() == grnxx::MAP_MIN_KEY_ID);
   assert(map->num_keys() == 0);
   for (std::uint64_t i = 0; i < (MAP_NUM_KEYS / 2); ++i) {
     assert(map->add(keys[i]));
@@ -952,7 +937,6 @@ void test_map(grnxx::MapType map_type) {
   test_map_type<T>(map_type);
   test_map_min_key_id<T>(map_type);
   test_map_max_key_id<T>(map_type);
-  test_map_next_key_id<T>(map_type);
   test_map_num_keys<T>(map_type);
   test_map_get<T>(map_type);
   test_map_get_next<T>(map_type);

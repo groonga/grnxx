@@ -83,8 +83,6 @@ class Map {
   // Return the maximum key ID ever used.
   // The return value can be a negative value iff the map is empty.
   virtual int64_t max_key_id() const = 0;
-  // Return the ID of the expected next added ID.
-  virtual int64_t next_key_id() const = 0;
   // Return the number of keys.
   virtual uint64_t num_keys() const = 0;
 
