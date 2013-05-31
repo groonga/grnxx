@@ -15,6 +15,7 @@ libgrnxx_map_include_HEADERS =	\
 	bytes_array.hpp		\
 	bytes_store.hpp		\
 	cursor_impl.hpp		\
+	hash.hpp		\
 	header.hpp		\
 	helper.hpp		\
 	scanner_impl.hpp
