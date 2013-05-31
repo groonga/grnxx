@@ -17,7 +17,6 @@
 */
 #include "grnxx/map/array_map.hpp"
 
-#include <memory>
 #include <new>
 
 #include "grnxx/bytes.hpp"
