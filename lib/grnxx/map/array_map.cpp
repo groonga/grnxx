@@ -121,23 +121,6 @@ bool ArrayMap<T>::get(int64_t key_id, Key *key) {
 }
 
 template <typename T>
-bool ArrayMap<T>::get_next(int64_t key_id, int64_t *next_key_id,
-                           Key *next_key) {
-  if ((key_id < MAP_MIN_KEY_ID) || (key_id > MAP_MAX_KEY_ID)) {
-    key_id = MAP_MIN_KEY_ID - 1;
-  }
-  for (++key_id; key_id <= max_key_id(); ++key_id) {
-    if (get(key_id, next_key)) {
-      if (next_key_id) {
-        *next_key_id = key_id;
-      }
-      return true;
-    }
-  }
-  return false;
-}
-
-template <typename T>
 bool ArrayMap<T>::unset(int64_t key_id) {
   if (!get(key_id)) {
 //    GRNXX_WARNING() << "not found: key_id = " << key_id;

@@ -58,8 +58,6 @@ class ArrayMap : public Map<T> {
   uint64_t num_keys() const;
 
   bool get(int64_t key_id, Key *key = nullptr);
-  bool get_next(int64_t key_id, int64_t *next_key_id = nullptr,
-                Key *next_key = nullptr);
   bool unset(int64_t key_id);
   bool reset(int64_t key_id, KeyArg dest_key);
 
