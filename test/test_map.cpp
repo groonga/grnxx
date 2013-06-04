@@ -31,6 +31,7 @@
 #include "grnxx/map/bytes_array.hpp"
 #include "grnxx/map/bytes_store.hpp"
 #include "grnxx/map/helper.hpp"
+#include "grnxx/map/hash_table/hash.hpp"
 #include "grnxx/periodic_clock.hpp"
 #include "grnxx/storage.hpp"
 
@@ -51,18 +52,7 @@ std::mt19937_64 mersenne_twister(mersenne_twister_seed);
 
 // For std::unordered_set.
 template <typename T>
-struct Hash {
-  uint64_t operator()(T x) const {
-    return std::hash<T>()(x);
-  }
-};
-template <>
-struct Hash<grnxx::GeoPoint> {
-  using ValueArg = typename grnxx::Traits<grnxx::GeoPoint>::ArgumentType;
-  uint64_t operator()(ValueArg x) const {
-    return std::hash<std::uint64_t>()(x.value());
-  }
-};
+using Hash = grnxx::map::hash_table::Hash<T>;
 
 // For std::random_shuffle().
 struct RandomNumberGenerator {
@@ -651,7 +641,9 @@ void test_map_replace(grnxx::MapType map_type) {
   for (std::uint64_t i = (MAP_NUM_KEYS / 2); i < MAP_NUM_KEYS; ++i) {
     const std::int64_t key_id = i - (MAP_NUM_KEYS / 2);
     assert(!map->replace(keys[key_id], keys[key_id]));
-    assert(map->replace(keys[key_id], keys[i]));
+    std::int64_t stored_key_id;
+    assert(map->replace(keys[key_id], keys[i], &stored_key_id));
+    assert(stored_key_id == key_id);
     T key;
     assert(map->get(key_id, &key));
     assert(grnxx::map::Helper<T>::equal_to(key, keys[i]));
@@ -961,6 +953,7 @@ template <typename T>
 void test_map(T) {
   GRNXX_NOTICE() << __PRETTY_FUNCTION__;
   test_map<T>(grnxx::MAP_ARRAY);
+  test_map<T>(grnxx::MAP_HASH_TABLE);
 }
 
 template <typename T, typename... U>

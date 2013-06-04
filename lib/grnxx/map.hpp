@@ -20,7 +20,6 @@
 
 #include "grnxx/features.hpp"
 
-#include "grnxx/flags_impl.hpp"
 #include "grnxx/map_cursor.hpp"
 #include "grnxx/map_cursor_query.hpp"
 #include "grnxx/map_scanner.hpp"

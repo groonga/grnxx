@@ -26,6 +26,7 @@
 #include "grnxx/string_builder.hpp"
 #include "grnxx/map/array_map.hpp"
 #include "grnxx/map/cursor_impl.hpp"
+#include "grnxx/map/hash_table.hpp"
 #include "grnxx/map/header.hpp"
 #include "grnxx/map/helper.hpp"
 #include "grnxx/map/scanner_impl.hpp"
@@ -78,7 +79,7 @@ Map<T> *Map<T>::create(MapType type, Storage *storage,
       // TODO: Not supported yet.
     }
     case MAP_HASH_TABLE: {
-      // TODO: Not supported yet.
+      return map::HashTable<T>::create(storage, storage_node_id, options);
     }
     default: {
       GRNXX_ERROR() << "invalid argument: type = " << type;
@@ -110,7 +111,7 @@ Map<T> *Map<T>::open(Storage *storage, uint32_t storage_node_id) {
       // TODO: Not supported yet.
     }
     case MAP_HASH_TABLE: {
-      // TODO: Not supported yet.
+      return map::HashTable<T>::open(storage, storage_node_id);
     }
     default: {
       GRNXX_ERROR() << "invalid format: type = " << header->type;

@@ -82,30 +82,6 @@ struct KeyArrayHelper<Bytes> {
   using Type = BytesArray;
 };
 
-// Change the settings based on the key type.
-template <typename T, size_t T_SIZE = sizeof(T)>
-struct HashArrayHelper {
-  // Map<T> has at most 2^40 different keys.
-  using Type = Array<uint64_t, 65536, 4096, 8192>;
-};
-template <typename T>
-struct HashArrayHelper<T, 1> {
-  // Map<T> has at most 2^8 different keys.
-  // Assume a perfect hash function.
-  using Type = Array<uint8_t, 256, 1, 1>;
-};
-template <typename T>
-struct HashArrayHelper<T, 2> {
-  // Map<T> has at most 2^16 different keys.
-  // Assume a perfect hash function.
-  using Type = Array<uint16_t, 65536, 1, 1>;
-};
-template <typename T>
-struct HashArrayHelper<T, 4> {
-  // Map<T> has at most 2^32 different keys.
-  using Type = Array<uint32_t, 65536, 256, 512>;
-};
-
 // Normalize a key.
 template <typename T,
           bool IS_FLOATING_POINT = std::is_floating_point<T>::value>
@@ -168,7 +144,6 @@ struct Helper {
 
   using Bitmap = typename BitmapHelper<T>::Type;
   using KeyArray = typename KeyArrayHelper<T>::Type;
-  using HashArray = typename HashArrayHelper<T>::Type;
 
   static Key normalize(KeyArg key) {
     return NormalizeHelper<T>::normalize(key);
