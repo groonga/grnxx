@@ -15,8 +15,8 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#ifndef GRNXX_MAP_HASH_TABLE_KEY_ARRAY_HPP
-#define GRNXX_MAP_HASH_TABLE_KEY_ARRAY_HPP
+#ifndef GRNXX_MAP_ARRAY_MAP_KEY_ARRAY_HPP
+#define GRNXX_MAP_ARRAY_MAP_KEY_ARRAY_HPP
 
 #include "grnxx/features.hpp"
 
@@ -27,7 +27,7 @@
 
 namespace grnxx {
 namespace map {
-namespace hash_table {
+namespace array_map {
 
 // Change the array size based on "T".
 template <typename T, size_t T_SIZE = sizeof(T)>
@@ -63,8 +63,8 @@ struct KeyArray<Bytes> {
   using Type = BytesArray;
 };
 
-}  // namespace hash_table
+}  // namespace array_map
 }  // namespace map
 }  // namespace grnxx
 
-#endif  // GRNXX_MAP_HASH_TABLE_KEY_ARRAY_HPP
+#endif  // GRNXX_MAP_ARRAY_MAP_KEY_ARRAY_HPP

@@ -33,55 +33,6 @@
 namespace grnxx {
 namespace map {
 
-// Change the settings based on the key type.
-template <typename T, size_t T_SIZE = sizeof(T)>
-struct BitmapHelper {
-  // Map<T> has at most 2^40 different keys.
-  using Type = Array<bool>;
-};
-template <typename T>
-struct BitmapHelper<T, 1> {
-  // Map<T> has at most 2^8 different keys.
-  using Type = Array<bool, 256, 1, 1>;
-};
-template <typename T>
-struct BitmapHelper<T, 2> {
-  // Map<T> has at most 2^16 different keys.
-  using Type = Array<bool, 256, 256, 1>;
-};
-template <typename T>
-struct BitmapHelper<T, 4> {
-  // Map<T> has at most 2^32 different keys.
-  using Type = Array<bool, 65536, 256, 256>;
-};
-
-// Change the settings based on the key type.
-template <typename T, size_t T_SIZE = sizeof(T)>
-struct KeyArrayHelper {
-  // Map<T> has at most 2^40 different keys.
-  using Type = Array<T>;
-};
-template <typename T>
-struct KeyArrayHelper<T, 1> {
-  // Map<T> has at most 2^8 different keys.
-  using Type = Array<T, 256, 1, 1>;
-};
-template <typename T>
-struct KeyArrayHelper<T, 2> {
-  // Map<T> has at most 2^16 different keys.
-  using Type = Array<T, 256, 256, 1>;
-};
-template <typename T>
-struct KeyArrayHelper<T, 4> {
-  // Map<T> has at most 2^32 different keys.
-  using Type = Array<T, 65536, 256, 256>;
-};
-template <>
-struct KeyArrayHelper<Bytes> {
-  // Map<T> has at most 2^40 different keys.
-  using Type = BytesArray;
-};
-
 // Normalize a key.
 template <typename T,
           bool IS_FLOATING_POINT = std::is_floating_point<T>::value>
@@ -141,9 +92,6 @@ template <typename T>
 struct Helper {
   using Key = typename Traits<T>::Type;
   using KeyArg = typename Traits<T>::ArgumentType;
-
-  using Bitmap = typename BitmapHelper<T>::Type;
-  using KeyArray = typename KeyArrayHelper<T>::Type;
 
   static Key normalize(KeyArg key) {
     return NormalizeHelper<T>::normalize(key);

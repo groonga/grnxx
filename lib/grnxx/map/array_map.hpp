@@ -23,7 +23,8 @@
 #include <memory>
 
 #include "grnxx/map.hpp"
-#include "grnxx/map/helper.hpp"
+#include "grnxx/map/array_map/bit_array.hpp"
+#include "grnxx/map/array_map/key_array.hpp"
 #include "grnxx/types.hpp"
 
 namespace grnxx {
@@ -36,13 +37,13 @@ struct ArrayMapHeader;
 
 template <typename T>
 class ArrayMap : public Map<T> {
+  using Bitmap = typename array_map::BitArray<T>::Type;
+  using KeyArray = typename array_map::KeyArray<T>::Type;
+
  public:
   using Key = typename Map<T>::Key;
   using KeyArg = typename Map<T>::KeyArg;
   using Cursor = typename Map<T>::Cursor;
-
-  using Bitmap = typename Helper<T>::Bitmap;
-  using KeyArray = typename Helper<T>::KeyArray;
 
   ArrayMap();
   ~ArrayMap();

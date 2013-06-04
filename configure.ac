@@ -66,6 +66,7 @@ AC_CONFIG_FILES([Makefile
                  lib/grnxx/db/Makefile
                  lib/grnxx/io/Makefile
                  lib/grnxx/map/Makefile
+                 lib/grnxx/map/array_map/Makefile
                  lib/grnxx/map/hash_table/Makefile
                  lib/grnxx/storage/Makefile
                  src/Makefile

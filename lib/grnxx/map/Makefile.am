@@ -1,9 +1,11 @@
 SUBDIRS =					\
+	array_map				\
 	hash_table
 
 noinst_LTLIBRARIES = libgrnxx_map.la
 
 libgrnxx_map_la_LIBADD =			\
+	array_map/libgrnxx_map_array_map.la	\
 	hash_table/libgrnxx_map_hash_table.la
 
 libgrnxx_map_la_LDFLAGS = @AM_LTLDFLAGS@

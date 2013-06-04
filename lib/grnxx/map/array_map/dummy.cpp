@@ -15,16 +15,13 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#include "grnxx/map/hash_table/bit_array.hpp"
-#include "grnxx/map/hash_table/hash.hpp"
-#include "grnxx/map/hash_table/key_array.hpp"
-#include "grnxx/map/hash_table/key_id_array.hpp"
-#include "grnxx/map/hash_table/link_array.hpp"
+#include "grnxx/map/array_map/bit_array.hpp"
+#include "grnxx/map/array_map/key_array.hpp"
 
 namespace grnxx {
 namespace map {
-namespace hash_table {
+namespace array_map {
 
-}  // namespace hash_table
+}  // namespace array_map
 }  // namespace map
 }  // namespace grnxx

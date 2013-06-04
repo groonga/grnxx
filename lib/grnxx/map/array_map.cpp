@@ -22,6 +22,7 @@
 #include "grnxx/bytes.hpp"
 #include "grnxx/geo_point.hpp"
 #include "grnxx/logger.hpp"
+#include "grnxx/map/helper.hpp"
 #include "grnxx/storage.hpp"
 
 namespace grnxx {
