@@ -31,9 +31,7 @@ namespace grnxx {
 
 class Storage;
 
-struct Array1DHeader;
-struct Array2DHeader;
-struct Array3DHeader;
+struct ArrayHeader;
 
 class Array1D {
   using FillPage = void (*)(void *page, const void *value);
@@ -63,7 +61,7 @@ class Array1D {
 
  private:
   uint32_t storage_node_id_;
-  Array1DHeader *header_;
+  ArrayHeader *header_;
   void *page_;
 };
 
@@ -104,7 +102,7 @@ class Array2D {
  private:
   Storage *storage_;
   uint32_t storage_node_id_;
-  Array2DHeader *header_;
+  ArrayHeader *header_;
   void *default_value_;
   FillPage fill_page_;
   uint32_t *table_;
@@ -155,7 +153,7 @@ class Array3D {
  private:
   Storage *storage_;
   uint32_t storage_node_id_;
-  Array3DHeader *header_;
+  ArrayHeader *header_;
   void *default_value_;
   FillPage fill_page_;
   uint32_t *secondary_table_;

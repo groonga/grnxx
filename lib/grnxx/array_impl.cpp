@@ -26,65 +26,33 @@
 
 namespace grnxx {
 
-struct Array1DHeader {
-  uint64_t value_size;
-  uint64_t page_size;
-  uint32_t page_storage_node_id;
-
-  Array1DHeader(uint64_t value_size, uint64_t page_size);
-};
-
-Array1DHeader::Array1DHeader(uint64_t value_size, uint64_t page_size)
-    : value_size(value_size),
-      page_size(page_size),
-      page_storage_node_id(STORAGE_INVALID_NODE_ID) {}
-
-struct Array2DHeader {
-  uint64_t value_size;
-  uint64_t page_size;
-  uint64_t table_size;
-  uint32_t has_default_value;
-  uint32_t table_storage_node_id;
-  Mutex mutex;
-
-  Array2DHeader(uint64_t value_size, uint64_t page_size,
-                uint64_t table_size, bool has_default_value);
-};
-
-Array2DHeader::Array2DHeader(uint64_t value_size, uint64_t page_size,
-                             uint64_t table_size, bool has_default_value)
-    : value_size(value_size),
-      page_size(page_size),
-      table_size(table_size),
-      has_default_value(has_default_value ? 1 : 0),
-      table_storage_node_id(STORAGE_INVALID_NODE_ID),
-      mutex(MUTEX_UNLOCKED) {}
-
-struct Array3DHeader {
+struct ArrayHeader {
   uint64_t value_size;
   uint64_t page_size;
   uint64_t table_size;
   uint64_t secondary_table_size;
   uint32_t has_default_value;
+  uint32_t page_storage_node_id;
+  uint32_t table_storage_node_id;
   uint32_t secondary_table_storage_node_id;
+  uint32_t reserved;
   Mutex page_mutex;
   Mutex table_mutex;
   Mutex secondary_table_mutex;
 
-  Array3DHeader(uint64_t value_size, uint64_t page_size,
-                uint64_t table_size, uint64_t secondary_table_size,
-                bool has_default_value);
+  ArrayHeader();
 };
 
-Array3DHeader::Array3DHeader(uint64_t value_size, uint64_t page_size,
-                             uint64_t table_size, uint64_t secondary_table_size,
-                             bool has_default_value)
-    : value_size(value_size),
-      page_size(page_size),
-      table_size(table_size),
-      secondary_table_size(secondary_table_size),
-      has_default_value(has_default_value ? 1 : 0),
+ArrayHeader::ArrayHeader()
+    : value_size(1),
+      page_size(1),
+      table_size(1),
+      secondary_table_size(1),
+      has_default_value(false),
+      page_storage_node_id(STORAGE_INVALID_NODE_ID),
+      table_storage_node_id(STORAGE_INVALID_NODE_ID),
       secondary_table_storage_node_id(STORAGE_INVALID_NODE_ID),
+      reserved(0),
       page_mutex(MUTEX_UNLOCKED),
       table_mutex(MUTEX_UNLOCKED),
       secondary_table_mutex(MUTEX_UNLOCKED) {}
@@ -104,13 +72,15 @@ bool Array1D::create(Storage *storage, uint32_t storage_node_id,
     return false;
   }
   StorageNode storage_node =
-      storage->create_node(storage_node_id, sizeof(Array1DHeader));
+      storage->create_node(storage_node_id, sizeof(ArrayHeader));
   if (!storage_node) {
     return false;
   }
   storage_node_id_ = storage_node.id();
-  header_ = static_cast<Array1DHeader *>(storage_node.body());
-  *header_ = Array1DHeader(value_size, page_size);
+  header_ = static_cast<ArrayHeader *>(storage_node.body());
+  *header_ = ArrayHeader();
+  header_->value_size = value_size;
+  header_->page_size = page_size;
   StorageNode page_node =
       storage->create_node(storage_node_id_, value_size * page_size);
   if (!page_node) {
@@ -120,6 +90,7 @@ bool Array1D::create(Storage *storage, uint32_t storage_node_id,
   header_->page_storage_node_id = page_node.id();
   page_ = page_node.body();
   if (default_value) {
+    header_->has_default_value = true;
     fill_page(page_, default_value);
   }
   return true;
@@ -135,13 +106,13 @@ bool Array1D::open(Storage *storage, uint32_t storage_node_id,
   if (!storage_node) {
     return false;
   }
-  if (storage_node.size() < sizeof(Array1DHeader)) {
+  if (storage_node.size() < sizeof(ArrayHeader)) {
     GRNXX_ERROR() << "invalid format: node_size = " << storage_node.size()
-                  << ", header_size = " << sizeof(Array1DHeader);
+                  << ", header_size = " << sizeof(ArrayHeader);
     return false;
   }
   storage_node_id_ = storage_node.id();
-  header_ = static_cast<Array1DHeader *>(storage_node.body());
+  header_ = static_cast<ArrayHeader *>(storage_node.body());
   if (header_->value_size != value_size) {
     GRNXX_ERROR() << "parameter conflict: value_size = " << value_size
                   << ", stored_value_size = " << header_->value_size;
@@ -190,7 +161,7 @@ bool Array2D::create(Storage *storage, uint32_t storage_node_id,
     return nullptr;
   }
   storage_ = storage;
-  uint64_t storage_node_size = sizeof(Array2DHeader);
+  uint64_t storage_node_size = sizeof(ArrayHeader);
   if (default_value) {
     storage_node_size += value_size;
   }
@@ -200,9 +171,13 @@ bool Array2D::create(Storage *storage, uint32_t storage_node_id,
     return false;
   }
   storage_node_id_ = storage_node.id();
-  header_ = static_cast<Array2DHeader *>(storage_node.body());
-  *header_ = Array2DHeader(value_size, page_size, table_size, default_value);
+  header_ = static_cast<ArrayHeader *>(storage_node.body());
+  *header_ = ArrayHeader();
+  header_->value_size = value_size;
+  header_->page_size = page_size;
+  header_->table_size = table_size;
   if (default_value) {
+    header_->has_default_value = true;
     default_value_ = header_ + 1;
     std::memcpy(default_value_, default_value, value_size);
     fill_page_ = fill_page;
@@ -242,13 +217,13 @@ bool Array2D::open(Storage *storage, uint32_t storage_node_id,
   if (!storage_node) {
     return false;
   }
-  if (storage_node.size() < sizeof(Array2DHeader)) {
+  if (storage_node.size() < sizeof(ArrayHeader)) {
     GRNXX_ERROR() << "invalid format: node_size = " << storage_node.size()
-                  << ", header_size = " << sizeof(Array2DHeader);
+                  << ", header_size = " << sizeof(ArrayHeader);
     return false;
   }
   storage_node_id_ = storage_node.id();
-  header_ = static_cast<Array2DHeader *>(storage_node.body());
+  header_ = static_cast<ArrayHeader *>(storage_node.body());
   if (header_->value_size != value_size) {
     GRNXX_ERROR() << "parameter conflict: value_size = " << value_size
                   << ", stored_value_size = " << header_->value_size;
@@ -298,7 +273,7 @@ bool Array2D::initialize_page(uint64_t page_id) {
   if (!table_cache_[page_id]) {
     StorageNode page_node;
     if (table_[page_id] == STORAGE_INVALID_NODE_ID) {
-      Lock inter_process_lock(&header_->mutex);
+      Lock inter_process_lock(&header_->table_mutex);
       if (table_[page_id] == STORAGE_INVALID_NODE_ID) {
         page_node =
             storage_->create_node(header_->table_storage_node_id,
@@ -346,7 +321,7 @@ bool Array3D::create(Storage *storage, uint32_t storage_node_id,
     return nullptr;
   }
   storage_ = storage;
-  uint64_t storage_node_size = sizeof(Array3DHeader);
+  uint64_t storage_node_size = sizeof(ArrayHeader);
   if (default_value) {
     storage_node_size += value_size;
   }
@@ -356,10 +331,14 @@ bool Array3D::create(Storage *storage, uint32_t storage_node_id,
     return false;
   }
   storage_node_id_ = storage_node.id();
-  header_ = static_cast<Array3DHeader *>(storage_node.body());
-  *header_ = Array3DHeader(value_size, page_size, table_size,
-                           secondary_table_size, default_value);
+  header_ = static_cast<ArrayHeader *>(storage_node.body());
+  *header_ = ArrayHeader();
+  header_->value_size = value_size;
+  header_->page_size = page_size;
+  header_->table_size = table_size;
+  header_->secondary_table_size = secondary_table_size;
   if (default_value) {
+    header_->has_default_value = true;
     default_value_ = header_ + 1;
     std::memcpy(default_value_, default_value, value_size);
     fill_page_ = fill_page;
@@ -388,13 +367,13 @@ bool Array3D::open(Storage *storage, uint32_t storage_node_id,
   if (!storage_node) {
     return false;
   }
-  if (storage_node.size() < sizeof(Array3DHeader)) {
+  if (storage_node.size() < sizeof(ArrayHeader)) {
     GRNXX_ERROR() << "invalid format: node_size = " << storage_node.size()
-                  << ", header_size = " << sizeof(Array3DHeader);
+                  << ", header_size = " << sizeof(ArrayHeader);
     return false;
   }
   storage_node_id_ = storage_node.id();
-  header_ = static_cast<Array3DHeader *>(storage_node.body());
+  header_ = static_cast<ArrayHeader *>(storage_node.body());
   if (header_->value_size != value_size) {
     GRNXX_ERROR() << "parameter conflict: value_size = " << value_size
                   << ", stored_value_size = " << header_->value_size;
