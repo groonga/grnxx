@@ -102,23 +102,22 @@ bool BytesArray::get(uint64_t value_id, Value *value) {
 }
 
 bool BytesArray::set(uint64_t value_id, ValueArg value) {
-  uint64_t src_bytes_id;
-  if (!ids_->get(value_id, &src_bytes_id)) {
+  uint64_t *src_bytes_id = ids_->get_pointer(value_id);
+  if (!src_bytes_id) {
     return false;
   }
   uint64_t dest_bytes_id;
   if (!store_->add(value, &dest_bytes_id)) {
     return false;
   }
-  if (src_bytes_id != BYTES_STORE_INVALID_BYTES_ID) {
-    if (!store_->unset(src_bytes_id)) {
+  if (*src_bytes_id != BYTES_STORE_INVALID_BYTES_ID) {
+    if (!store_->unset(*src_bytes_id)) {
       // The following unset() may not fail due to the above add().
       store_->unset(dest_bytes_id);
       return false;
     }
   }
-  // The following set() must not fail due to the above get().
-  ids_->set(value_id, dest_bytes_id);
+  *src_bytes_id = dest_bytes_id;
   return true;
 }
 
