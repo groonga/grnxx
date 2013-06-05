@@ -8,4 +8,5 @@ libgrnxx_map_array_map_la_SOURCES =		\
 libgrnxx_map_array_map_includedir = ${includedir}/grnxx/map/array_map
 libgrnxx_map_array_map_include_HEADERS =	\
 	bit_array.hpp				\
+	dummy.hpp				\
 	key_array.hpp

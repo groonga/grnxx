@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2012  Brazil, Inc.
+  Copyright (C) 2012-2013  Brazil, Inc.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -15,10 +15,17 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#include "grnxx/alpha/sample.hpp"
+#ifndef GRNXX_MAP_ARRAY_MAP_DUMMY_HPP
+#define GRNXX_MAP_ARRAY_MAP_DUMMY_HPP
+
+#include "grnxx/features.hpp"
 
 namespace grnxx {
-namespace alpha {
+namespace map {
+namespace array_map {
 
-}  // namespace alpha
+}  // namespace array_map
+}  // namespace map
 }  // namespace grnxx
+
+#endif  // GRNXX_MAP_ARRAY_MAP_DUMMY_HPP
