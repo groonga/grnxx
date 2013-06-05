@@ -55,19 +55,19 @@ void test_argument_type() {
                        typename grnxx::Traits<Point>::ArgumentType>::value));
 }
 
-void test_has_less() {
-  assert(grnxx::Traits<int>::has_less());
-  assert(!grnxx::Traits<Point>::has_less());
-  assert(grnxx::Traits<Something>::has_less());
-  assert(grnxx::Traits<Something2>::has_less());
-}
+//void test_has_less() {
+//  assert(grnxx::Traits<int>::has_less());
+//  assert(!grnxx::Traits<Point>::has_less());
+//  assert(grnxx::Traits<Something>::has_less());
+//  assert(grnxx::Traits<Something2>::has_less());
+//}
 
-void test_has_starts_with() {
-  assert(!grnxx::Traits<int>::has_starts_with());
-  assert(!grnxx::Traits<Point>::has_starts_with());
-  assert(grnxx::Traits<Something>::has_starts_with());
-  assert(!grnxx::Traits<Something2>::has_starts_with());
-}
+//void test_has_starts_with() {
+//  assert(!grnxx::Traits<int>::has_starts_with());
+//  assert(!grnxx::Traits<Point>::has_starts_with());
+//  assert(grnxx::Traits<Something>::has_starts_with());
+//  assert(!grnxx::Traits<Something2>::has_starts_with());
+//}
 
 }  // namespace
 
@@ -78,8 +78,8 @@ int main() {
 
   test_type();
   test_argument_type();
-  test_has_less();
-  test_has_starts_with();
+//  test_has_less();
+//  test_has_starts_with();
 
   return 0;
 }
