@@ -15,7 +15,6 @@ libgrnxx_alpha_la_SOURCES =		\
 libgrnxx_alpha_includedir = ${includedir}/grnxx/alpha
 libgrnxx_alpha_include_HEADERS =	\
 	double_array.hpp		\
-	geo_point.hpp			\
 	map.hpp				\
 	map_range.hpp			\
 	sample.hpp
