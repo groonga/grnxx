@@ -30,8 +30,8 @@ namespace map {
 
 struct ArrayMapHeader {
   MapType map_type;
-  uint32_t bitmap_storage_node_id;
   uint32_t keys_storage_node_id;
+  uint32_t bits_storage_node_id;
   int64_t max_key_id;
   uint64_t num_keys;
 
@@ -40,8 +40,8 @@ struct ArrayMapHeader {
 
 ArrayMapHeader::ArrayMapHeader()
     : map_type(MAP_ARRAY),
-      bitmap_storage_node_id(STORAGE_INVALID_NODE_ID),
       keys_storage_node_id(STORAGE_INVALID_NODE_ID),
+      bits_storage_node_id(STORAGE_INVALID_NODE_ID),
       max_key_id(MAP_MIN_KEY_ID - 1),
       num_keys(0) {}
 
@@ -50,8 +50,8 @@ ArrayMap<T>::ArrayMap()
     : storage_(nullptr),
       storage_node_id_(STORAGE_INVALID_NODE_ID),
       header_(nullptr),
-      bitmap_(),
-      keys_() {}
+      keys_(),
+      bits_() {}
 
 template <typename T>
 ArrayMap<T>::~ArrayMap() {}
@@ -106,17 +106,17 @@ uint64_t ArrayMap<T>::num_keys() const {
 template <typename T>
 bool ArrayMap<T>::get(int64_t key_id, Key *key) {
   if ((key_id < MAP_MIN_KEY_ID) || (key_id > header_->max_key_id)) {
+    // Out of range.
     return false;
   }
   bool bit;
-  if (!bitmap_->get(key_id, &bit)) {
+  if (!bits_->get(key_id, &bit)) {
+    // Error.
     return false;
   }
   if (!bit) {
+    // Not found.
     return false;
-  }
-  if (!key) {
-    return true;
   }
   return keys_->get(key_id, key);
 }
@@ -124,10 +124,11 @@ bool ArrayMap<T>::get(int64_t key_id, Key *key) {
 template <typename T>
 bool ArrayMap<T>::unset(int64_t key_id) {
   if (!get(key_id)) {
-//    GRNXX_WARNING() << "not found: key_id = " << key_id;
+    // Not found or error.
     return false;
   }
-  if (!bitmap_->set(key_id, false)) {
+  if (!bits_->set(key_id, false)) {
+    // Error.
     return false;
   }
   --header_->num_keys;
@@ -137,14 +138,15 @@ bool ArrayMap<T>::unset(int64_t key_id) {
 template <typename T>
 bool ArrayMap<T>::reset(int64_t key_id, KeyArg dest_key) {
   if (!get(key_id)) {
-//    GRNXX_WARNING() << "not found: key_id = " << key_id;
+    // Not found or error.
     return false;
   }
   if (find(dest_key)) {
-//    GRNXX_WARNING() << "found: dest_key = " << dest_key;
+    // Found.
     return false;
   }
   if (!keys_->set(key_id, Helper<T>::normalize(dest_key))) {
+    // Error.
     return false;
   }
   return true;
@@ -155,15 +157,18 @@ bool ArrayMap<T>::find(KeyArg key, int64_t *key_id) {
   const Key normalized_key = map::Helper<T>::normalize(key);
   for (int64_t i = MAP_MIN_KEY_ID; i <= header_->max_key_id; ++i) {
     bool bit;
-    if (!bitmap_->get(i, &bit)) {
+    if (!bits_->get(i, &bit)) {
+      // Error.
       return false;
     }
     if (bit) {
       Key stored_key;
       if (!keys_->get(i, &stored_key)) {
+        // Error.
         return false;
       }
       if (Helper<T>::equal_to(normalized_key, stored_key)) {
+        // Found.
         if (key_id) {
           *key_id = i;
         }
@@ -180,19 +185,21 @@ bool ArrayMap<T>::add(KeyArg key, int64_t *key_id) {
   int64_t next_key_id = MAP_INVALID_KEY_ID;
   for (int64_t i = MAP_MIN_KEY_ID; i <= header_->max_key_id; ++i) {
     bool bit;
-    if (!bitmap_->get(i, &bit)) {
+    if (!bits_->get(i, &bit)) {
+      // Error.
       return false;
     }
     if (bit) {
       Key stored_key;
       if (!keys_->get(i, &stored_key)) {
+        // Error.
         return false;
       }
       if (Helper<T>::equal_to(normalized_key, stored_key)) {
+        // Found.
         if (key_id) {
           *key_id = i;
         }
-//        GRNXX_WARNING() << "found: key = " << key;
         return false;
       }
     } else if (next_key_id == MAP_INVALID_KEY_ID) {
@@ -207,10 +214,18 @@ bool ArrayMap<T>::add(KeyArg key, int64_t *key_id) {
       return false;
     }
   }
-  if (!keys_->set(next_key_id, normalized_key) ||
-      !bitmap_->set(next_key_id, true)) {
+  const uint64_t unit_id = next_key_id / bits_->unit_size();
+  const uint64_t unit_bit = 1ULL << (next_key_id % bits_->unit_size());
+  BitArrayUnit * const unit = bits_->get_unit(unit_id);
+  if (!unit) {
+    // Error.
     return false;
   }
+  if (!keys_->set(next_key_id, normalized_key)) {
+    // Error.
+    return false;
+  }
+  *unit |= unit_bit;
   if (next_key_id == (header_->max_key_id + 1)) {
     ++header_->max_key_id;
   }
@@ -225,10 +240,11 @@ template <typename T>
 bool ArrayMap<T>::remove(KeyArg key) {
   int64_t key_id;
   if (!find(key, &key_id)) {
-//    GRNXX_WARNING() << "not found: key = " << key;
+    // Not found or error.
     return false;
   }
-  if (!bitmap_->set(key_id, false)) {
+  if (!bits_->set(key_id, false)) {
+    // Error.
     return false;
   }
   --header_->num_keys;
@@ -242,28 +258,32 @@ bool ArrayMap<T>::replace(KeyArg src_key, KeyArg dest_key, int64_t *key_id) {
   int64_t src_key_id = MAP_INVALID_KEY_ID;
   for (int64_t i = MAP_MIN_KEY_ID; i <= header_->max_key_id; ++i) {
     bool bit;
-    if (!bitmap_->get(i, &bit)) {
+    if (!bits_->get(i, &bit)) {
+      // Error.
       return false;
     }
     if (bit) {
       Key stored_key;
       if (!keys_->get(i, &stored_key)) {
+        // Error.
         return false;
       }
       if (Helper<T>::equal_to(normalized_src_key, stored_key)) {
+        // Found.
         src_key_id = i;
       }
       if (Helper<T>::equal_to(normalized_dest_key, stored_key)) {
-//        GRNXX_WARNING() << "found: dest_key = " << dest_key;
+        // Found.
         return false;
       }
     }
   }
   if (src_key_id == MAP_INVALID_KEY_ID) {
-//    GRNXX_WARNING() << "not found: src_key = " << src_key;
+    // Not found.
     return false;
   }
   if (!keys_->set(src_key_id, normalized_dest_key)) {
+    // Error.
     return false;
   }
   if (key_id) {
@@ -291,14 +311,14 @@ bool ArrayMap<T>::create_map(Storage *storage, uint32_t storage_node_id,
   storage_node_id_ = storage_node.id();
   header_ = static_cast<ArrayMapHeader *>(storage_node.body());
   *header_ = ArrayMapHeader();
-  bitmap_.reset(Bitmap::create(storage, storage_node_id_));
   keys_.reset(KeyArray::create(storage, storage_node_id_));
-  if (!bitmap_ || !keys_) {
+  bits_.reset(BitArray::create(storage, storage_node_id_));
+  if (!keys_ || !bits_) {
     storage->unlink_node(storage_node_id_);
     return false;
   }
-  header_->bitmap_storage_node_id = bitmap_->storage_node_id();
   header_->keys_storage_node_id = keys_->storage_node_id();
+  header_->bits_storage_node_id = bits_->storage_node_id();
   return true;
 }
 
@@ -316,9 +336,9 @@ bool ArrayMap<T>::open_map(Storage *storage, uint32_t storage_node_id) {
   }
   storage_node_id_ = storage_node_id;
   header_ = static_cast<ArrayMapHeader *>(storage_node.body());
-  bitmap_.reset(Bitmap::open(storage, header_->bitmap_storage_node_id));
   keys_.reset(KeyArray::open(storage, header_->keys_storage_node_id));
-  if (!bitmap_ || !keys_) {
+  bits_.reset(BitArray::open(storage, header_->bits_storage_node_id));
+  if (!keys_ || !bits_) {
     return false;
   }
   return true;

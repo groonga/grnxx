@@ -37,8 +37,9 @@ struct ArrayMapHeader;
 
 template <typename T>
 class ArrayMap : public Map<T> {
-  using Bitmap = typename array_map::BitArray<T>::Type;
   using KeyArray = typename array_map::KeyArray<T>::Type;
+  using BitArray = typename array_map::BitArray<T>::Type;
+  using BitArrayUnit = typename BitArray::Unit;
 
  public:
   using Key = typename Map<T>::Key;
@@ -73,8 +74,8 @@ class ArrayMap : public Map<T> {
   Storage *storage_;
   uint32_t storage_node_id_;
   ArrayMapHeader *header_;
-  std::unique_ptr<Bitmap> bitmap_;
   std::unique_ptr<KeyArray> keys_;
+  std::unique_ptr<BitArray> bits_;
 
   bool create_map(Storage *storage, uint32_t storage_node_id,
                   const MapOptions &options);
