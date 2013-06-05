@@ -19,11 +19,10 @@
 
 #include <cstring>
 
-#include "grnxx/version.h"
+#include "grnxx/grnxx.hpp"
 #include "grnxx/storage.hpp"
 
 #define GRNXX_STORAGE_HEADER_FORMAT  "grnxx::Storage"
-#define GRNXX_STORAGE_HEADER_VERSION GRNXX_VERSION
 
 namespace grnxx {
 namespace storage {
@@ -55,7 +54,7 @@ Header::Header()
       data_mutex(MUTEX_UNLOCKED),
       file_mutex(MUTEX_UNLOCKED),
       reserved_2{} {
-  std::memcpy(version, GRNXX_STORAGE_HEADER_VERSION, HEADER_VERSION_SIZE);
+  std::strcpy(version, Grnxx::version());
   for (size_t i = 0; i < NUM_IDLE_NODE_LISTS; ++i) {
     oldest_idle_node_ids[i] = STORAGE_INVALID_NODE_ID;
   }
