@@ -37,7 +37,7 @@ struct BrokenDownTime {
   int isdst;  // Daylight saving time.
 
   static constexpr BrokenDownTime invalid_value() {
-    return BrokenDownTime{};
+    return BrokenDownTime{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
   }
 };
 
