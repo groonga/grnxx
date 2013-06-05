@@ -26,9 +26,11 @@
 #include "grnxx/string_builder.hpp"
 #include "grnxx/map/array_map.hpp"
 #include "grnxx/map/cursor_impl.hpp"
+#include "grnxx/map/double_array.hpp"
 #include "grnxx/map/hash_table.hpp"
 #include "grnxx/map/header.hpp"
 #include "grnxx/map/helper.hpp"
+#include "grnxx/map/patricia.hpp"
 #include "grnxx/map/scanner_impl.hpp"
 
 namespace grnxx {
@@ -73,10 +75,10 @@ Map<T> *Map<T>::create(MapType type, Storage *storage,
       return map::ArrayMap<T>::create(storage, storage_node_id, options);
     }
     case MAP_DOUBLE_ARRAY: {
-      // TODO: Not supported yet.
+      return map::DoubleArray<T>::create(storage, storage_node_id, options);
     }
     case MAP_PATRICIA: {
-      // TODO: Not supported yet.
+      return map::Patricia<T>::create(storage, storage_node_id, options);
     }
     case MAP_HASH_TABLE: {
       return map::HashTable<T>::create(storage, storage_node_id, options);
@@ -105,10 +107,10 @@ Map<T> *Map<T>::open(Storage *storage, uint32_t storage_node_id) {
       return map::ArrayMap<T>::open(storage, storage_node_id);
     }
     case MAP_DOUBLE_ARRAY: {
-      // TODO: Not supported yet.
+      return map::DoubleArray<T>::open(storage, storage_node_id);
     }
     case MAP_PATRICIA: {
-      // TODO: Not supported yet.
+      return map::Patricia<T>::open(storage, storage_node_id);
     }
     case MAP_HASH_TABLE: {
       return map::HashTable<T>::open(storage, storage_node_id);

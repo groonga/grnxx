@@ -15,7 +15,9 @@ libgrnxx_map_la_SOURCES =			\
 	bytes_array.cpp				\
 	bytes_store.cpp				\
 	cursor_impl.cpp				\
+	double_array.cpp			\
 	hash_table.cpp				\
+	patricia.cpp				\
 	scanner_impl.cpp
 
 libgrnxx_map_includedir = ${includedir}/grnxx/map
@@ -24,7 +26,9 @@ libgrnxx_map_include_HEADERS =			\
 	bytes_array.hpp				\
 	bytes_store.hpp				\
 	cursor_impl.hpp				\
+	double_array.hpp			\
 	hash_table.hpp				\
 	header.hpp				\
 	helper.hpp				\
+	patricia.hpp				\
 	scanner_impl.hpp
