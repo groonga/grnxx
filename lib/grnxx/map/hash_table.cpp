@@ -432,18 +432,18 @@ bool HashTable<T>::create_map(Storage *storage, uint32_t storage_node_id,
   storage_node_id_ = storage_node.id();
   header_ = static_cast<HashTableHeader *>(storage_node.body());
   *header_ = HashTableHeader();
-  bits_.reset(BitArray::create(storage, storage_node_id_));
-  keys_.reset(KeyArray::create(storage, storage_node_id_));
-  links_.reset(LinkArray::create(storage, storage_node_id_));
   key_ids_.reset(KeyIDArray::create(storage, storage_node_id_,
                                     KeyIDArray::page_size() - 1));
-  if (!bits_ || !keys_ || !links_ || !key_ids_) {
+  keys_.reset(KeyArray::create(storage, storage_node_id_));
+  bits_.reset(BitArray::create(storage, storage_node_id_));
+  links_.reset(LinkArray::create(storage, storage_node_id_));
+  if (!key_ids_ || !keys_ || !bits_ || !links_) {
     storage->unlink_node(storage_node_id_);
     return false;
   }
-  header_->bits_storage_node_id = bits_->storage_node_id();
-  header_->keys_storage_node_id = keys_->storage_node_id();
   header_->key_ids_storage_node_id = key_ids_->storage_node_id();
+  header_->keys_storage_node_id = keys_->storage_node_id();
+  header_->bits_storage_node_id = bits_->storage_node_id();
   header_->links_storage_node_id = links_->storage_node_id();
   return true;
 }
@@ -462,11 +462,11 @@ bool HashTable<T>::open_map(Storage *storage, uint32_t storage_node_id) {
   }
   storage_node_id_ = storage_node_id;
   header_ = static_cast<HashTableHeader *>(storage_node.body());
-  bits_.reset(BitArray::open(storage, header_->bits_storage_node_id));
-  keys_.reset(KeyArray::open(storage, header_->keys_storage_node_id));
-  links_.reset(LinkArray::open(storage, header_->links_storage_node_id));
   key_ids_.reset(KeyIDArray::open(storage, header_->key_ids_storage_node_id));
-  if (!bits_ || !keys_ || !links_ || !key_ids_) {
+  keys_.reset(KeyArray::open(storage, header_->keys_storage_node_id));
+  bits_.reset(BitArray::open(storage, header_->bits_storage_node_id));
+  links_.reset(LinkArray::open(storage, header_->links_storage_node_id));
+  if (!key_ids_ || !keys_ || !bits_ || !links_) {
     return false;
   }
   return true;
