@@ -48,11 +48,11 @@ class Array {
                 "TABLE_SIZE must be a power of two");
   static_assert(SECONDARY_TABLE_SIZE > 0, "SECONDARY_TABLE_SIZE <= 0");
 
-  using ArrayImpl = ArrayImpl<T, PAGE_SIZE, TABLE_SIZE, SECONDARY_TABLE_SIZE>;
+  using Impl = ArrayImpl<T, PAGE_SIZE, TABLE_SIZE, SECONDARY_TABLE_SIZE>;
 
  public:
-  using Value = typename ArrayImpl::Value;
-  using ValueArg = typename ArrayImpl::ValueArg;
+  using Value = typename Impl::Value;
+  using ValueArg = typename Impl::ValueArg;
 
   ~Array() {}
 
@@ -95,24 +95,24 @@ class Array {
 
   // Unlink an array.
   static bool unlink(Storage *storage, uint32_t storage_node_id) {
-    return ArrayImpl::unlink(storage, storage_node_id);
+    return Impl::unlink(storage, storage_node_id);
   }
 
   // Return the number of values in each page.
   static constexpr uint64_t page_size() {
-    return ArrayImpl::page_size();
+    return Impl::page_size();
   }
   // Return the number of pages in each table.
   static constexpr uint64_t table_size() {
-    return ArrayImpl::table_size();
+    return Impl::table_size();
   }
   // Return the number of tables in each secondary table.
   static constexpr uint64_t secondary_table_size() {
-    return ArrayImpl::secondary_table_size();
+    return Impl::secondary_table_size();
   }
   // Return the number of values in Array.
   static constexpr uint64_t size() {
-    return ArrayImpl::size();
+    return Impl::size();
   }
 
   // Return the storage node ID.
@@ -139,7 +139,7 @@ class Array {
   }
 
  private:
-  ArrayImpl impl_;
+  Impl impl_;
 
   Array() : impl_() {}
 
@@ -171,7 +171,7 @@ class Array<bool, PAGE_SIZE_IN_BITS, TABLE_SIZE, SECONDARY_TABLE_SIZE> {
 
   static_assert((PAGE_SIZE_IN_BITS % UNIT_SIZE) == 0,
                 "(PAGE_SIZE_IN_BITS % UNIT_SIZE) != 0");
-  using ArrayImpl = ArrayImpl<Unit, PAGE_SIZE, TABLE_SIZE,
+  using UnitArray = ArrayImpl<Unit, PAGE_SIZE, TABLE_SIZE,
                               SECONDARY_TABLE_SIZE>;
 
  public:
@@ -186,7 +186,7 @@ class Array<bool, PAGE_SIZE_IN_BITS, TABLE_SIZE, SECONDARY_TABLE_SIZE> {
     if (!array) {
       return nullptr;
     }
-    if (!array->impl_.create(storage, storage_node_id)) {
+    if (!array->units_.create(storage, storage_node_id)) {
       return nullptr;
     }
     return array.release();
@@ -199,8 +199,8 @@ class Array<bool, PAGE_SIZE_IN_BITS, TABLE_SIZE, SECONDARY_TABLE_SIZE> {
     if (!array) {
       return nullptr;
     }
-    if (!array->impl_.create(storage, storage_node_id,
-                             default_value ? ~Unit(0) : Unit(0))) {
+    if (!array->units_.create(storage, storage_node_id,
+                              default_value ? ~Unit(0) : Unit(0))) {
       return nullptr;
     }
     return array.release();
@@ -212,7 +212,7 @@ class Array<bool, PAGE_SIZE_IN_BITS, TABLE_SIZE, SECONDARY_TABLE_SIZE> {
     if (!array) {
       return nullptr;
     }
-    if (!array->impl_.open(storage, storage_node_id)) {
+    if (!array->units_.open(storage, storage_node_id)) {
       return nullptr;
     }
     return array.release();
@@ -220,7 +220,7 @@ class Array<bool, PAGE_SIZE_IN_BITS, TABLE_SIZE, SECONDARY_TABLE_SIZE> {
 
   // Unlink an array.
   static bool unlink(Storage *storage, uint32_t storage_node_id) {
-    return ArrayImpl::unlink(storage, storage_node_id);
+    return UnitArray::unlink(storage, storage_node_id);
   }
 
   // Return the number of values in each unit.
@@ -246,7 +246,7 @@ class Array<bool, PAGE_SIZE_IN_BITS, TABLE_SIZE, SECONDARY_TABLE_SIZE> {
 
   // Return the storage node ID.
   uint32_t storage_node_id() const {
-    return impl_.storage_node_id();
+    return units_.storage_node_id();
   }
 
   // Get a value and return true on success.
@@ -283,17 +283,17 @@ class Array<bool, PAGE_SIZE_IN_BITS, TABLE_SIZE, SECONDARY_TABLE_SIZE> {
 
   // Get a unit and return its address on success.
   Unit *get_unit(uint64_t unit_id) {
-    return impl_.get_pointer(unit_id);
+    return units_.get_pointer(unit_id);
   }
   // Get a page and return its starting address on success.
   Unit *get_page(uint64_t page_id) {
-    return impl_.get_page(page_id);
+    return units_.get_page(page_id);
   }
 
  private:
-  ArrayImpl impl_;
+  UnitArray units_;
 
-  Array() : impl_() {}
+  Array() : units_() {}
 
   static Array *create_instance() {
     Array * const array = new (std::nothrow) Array;
