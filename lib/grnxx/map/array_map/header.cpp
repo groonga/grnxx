@@ -15,15 +15,20 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#include "grnxx/map/array_map/dummy.hpp"
-
-#include "grnxx/map/array_map/bit_array.hpp"
 #include "grnxx/map/array_map/header.hpp"
-#include "grnxx/map/array_map/key_array.hpp"
+
+#include "grnxx/storage.hpp"
 
 namespace grnxx {
 namespace map {
 namespace array_map {
+
+Header::Header()
+    : map_type(MAP_ARRAY),
+      keys_storage_node_id(STORAGE_INVALID_NODE_ID),
+      bits_storage_node_id(STORAGE_INVALID_NODE_ID),
+      max_key_id(MAP_MIN_KEY_ID - 1),
+      num_keys(0) {}
 
 }  // namespace array_map
 }  // namespace map

@@ -15,16 +15,28 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#include "grnxx/map/array_map/dummy.hpp"
+#include "grnxx/map/hash_table/header.hpp"
 
-#include "grnxx/map/array_map/bit_array.hpp"
-#include "grnxx/map/array_map/header.hpp"
-#include "grnxx/map/array_map/key_array.hpp"
+#include "grnxx/map/hash_table/link_array.hpp"
+#include "grnxx/storage.hpp"
 
 namespace grnxx {
 namespace map {
-namespace array_map {
+namespace hash_table {
 
-}  // namespace array_map
+Header::Header()
+    : map_type(MAP_HASH_TABLE),
+      key_ids_storage_node_id(STORAGE_INVALID_NODE_ID),
+      old_key_ids_storage_node_id(STORAGE_INVALID_NODE_ID),
+      keys_storage_node_id(STORAGE_INVALID_NODE_ID),
+      bits_storage_node_id(STORAGE_INVALID_NODE_ID),
+      links_storage_node_id(STORAGE_INVALID_NODE_ID),
+      max_key_id(MAP_MIN_KEY_ID - 1),
+      num_keys(0),
+      num_key_ids(0),
+      latest_link(INVALID_LINK),
+      mutex(MUTEX_UNLOCKED) {}
+
+}  // namespace hash_table
 }  // namespace map
 }  // namespace grnxx

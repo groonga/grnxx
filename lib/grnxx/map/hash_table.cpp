@@ -25,6 +25,7 @@
 #include "grnxx/lock.hpp"
 #include "grnxx/logger.hpp"
 #include "grnxx/map/hash_table/hash.hpp"
+#include "grnxx/map/hash_table/header.hpp"
 #include "grnxx/map/helper.hpp"
 #include "grnxx/mutex.hpp"
 #include "grnxx/storage.hpp"
@@ -34,37 +35,7 @@ namespace map {
 
 template <typename T>
 using Hash = hash_table::Hash<T>;
-
-constexpr uint64_t INVALID_LINK = uint64_t(-1);
-
-struct HashTableHeader {
-  MapType map_type;
-  uint32_t key_ids_storage_node_id;
-  uint32_t old_key_ids_storage_node_id;
-  uint32_t keys_storage_node_id;
-  uint32_t bits_storage_node_id;
-  uint32_t links_storage_node_id;
-  int64_t max_key_id;
-  uint64_t num_keys;
-  uint64_t num_key_ids;
-  uint64_t latest_link;
-  Mutex mutex;
-
-  HashTableHeader();
-};
-
-HashTableHeader::HashTableHeader()
-    : map_type(MAP_HASH_TABLE),
-      key_ids_storage_node_id(STORAGE_INVALID_NODE_ID),
-      old_key_ids_storage_node_id(STORAGE_INVALID_NODE_ID),
-      keys_storage_node_id(STORAGE_INVALID_NODE_ID),
-      bits_storage_node_id(STORAGE_INVALID_NODE_ID),
-      links_storage_node_id(STORAGE_INVALID_NODE_ID),
-      max_key_id(MAP_MIN_KEY_ID - 1),
-      num_keys(0),
-      num_key_ids(0),
-      latest_link(INVALID_LINK),
-      mutex(MUTEX_UNLOCKED) {}
+using hash_table::INVALID_LINK;
 
 template <typename T>
 HashTable<T>::HashTable()
@@ -425,13 +396,13 @@ bool HashTable<T>::create_map(Storage *storage, uint32_t storage_node_id,
                               const MapOptions &) {
   storage_ = storage;
   StorageNode storage_node =
-      storage->create_node(storage_node_id, sizeof(HashTableHeader));
+      storage->create_node(storage_node_id, sizeof(Header));
   if (!storage_node) {
     return false;
   }
   storage_node_id_ = storage_node.id();
-  header_ = static_cast<HashTableHeader *>(storage_node.body());
-  *header_ = HashTableHeader();
+  header_ = static_cast<Header *>(storage_node.body());
+  *header_ = Header();
   key_ids_.reset(KeyIDArray::create(storage, storage_node_id_,
                                     KeyIDArray::page_size() - 1));
   keys_.reset(KeyArray::create(storage, storage_node_id_));
@@ -455,13 +426,13 @@ bool HashTable<T>::open_map(Storage *storage, uint32_t storage_node_id) {
   if (!storage_node) {
     return false;
   }
-  if (storage_node.size() < sizeof(HashTableHeader)) {
+  if (storage_node.size() < sizeof(Header)) {
     GRNXX_ERROR() << "invalid format: size = " << storage_node.size()
-                  << ", header_size = " << sizeof(HashTableHeader);
+                  << ", header_size = " << sizeof(Header);
     return false;
   }
   storage_node_id_ = storage_node_id;
-  header_ = static_cast<HashTableHeader *>(storage_node.body());
+  header_ = static_cast<Header *>(storage_node.body());
   key_ids_.reset(KeyIDArray::open(storage, header_->key_ids_storage_node_id));
   keys_.reset(KeyArray::open(storage, header_->keys_storage_node_id));
   bits_.reset(BitArray::open(storage, header_->bits_storage_node_id));

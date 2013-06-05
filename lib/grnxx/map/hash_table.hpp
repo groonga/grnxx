@@ -30,12 +30,19 @@
 #include "grnxx/types.hpp"
 
 namespace grnxx {
-namespace map {
 
-struct HashTableHeader;
+class Storage;
+
+namespace map {
+namespace hash_table {
+
+struct Header;
+
+}  // namespace hash_table
 
 template <typename T>
 class HashTable : public Map<T> {
+  using Header = hash_table::Header;
   using KeyIDArray = typename hash_table::KeyIDArray<T>;
   using KeyArray = typename hash_table::KeyArray<T>::Type;
   using BitArray = typename hash_table::BitArray<T>::Type;
@@ -74,7 +81,7 @@ class HashTable : public Map<T> {
  private:
   Storage *storage_;
   uint32_t storage_node_id_;
-  HashTableHeader *header_;
+  Header *header_;
   std::unique_ptr<KeyIDArray> key_ids_;
   std::unique_ptr<KeyIDArray> old_key_ids_;
   std::unique_ptr<KeyArray> keys_;

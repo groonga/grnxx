@@ -22,28 +22,12 @@
 #include "grnxx/bytes.hpp"
 #include "grnxx/geo_point.hpp"
 #include "grnxx/logger.hpp"
+#include "grnxx/map/array_map/header.hpp"
 #include "grnxx/map/helper.hpp"
 #include "grnxx/storage.hpp"
 
 namespace grnxx {
 namespace map {
-
-struct ArrayMapHeader {
-  MapType map_type;
-  uint32_t keys_storage_node_id;
-  uint32_t bits_storage_node_id;
-  int64_t max_key_id;
-  uint64_t num_keys;
-
-  ArrayMapHeader();
-};
-
-ArrayMapHeader::ArrayMapHeader()
-    : map_type(MAP_ARRAY),
-      keys_storage_node_id(STORAGE_INVALID_NODE_ID),
-      bits_storage_node_id(STORAGE_INVALID_NODE_ID),
-      max_key_id(MAP_MIN_KEY_ID - 1),
-      num_keys(0) {}
 
 template <typename T>
 ArrayMap<T>::ArrayMap()
@@ -304,13 +288,13 @@ bool ArrayMap<T>::create_map(Storage *storage, uint32_t storage_node_id,
                              const MapOptions &) {
   storage_ = storage;
   StorageNode storage_node =
-      storage->create_node(storage_node_id, sizeof(ArrayMapHeader));
+      storage->create_node(storage_node_id, sizeof(Header));
   if (!storage_node) {
     return false;
   }
   storage_node_id_ = storage_node.id();
-  header_ = static_cast<ArrayMapHeader *>(storage_node.body());
-  *header_ = ArrayMapHeader();
+  header_ = static_cast<Header *>(storage_node.body());
+  *header_ = Header();
   keys_.reset(KeyArray::create(storage, storage_node_id_));
   bits_.reset(BitArray::create(storage, storage_node_id_));
   if (!keys_ || !bits_) {
@@ -329,13 +313,13 @@ bool ArrayMap<T>::open_map(Storage *storage, uint32_t storage_node_id) {
   if (!storage_node) {
     return false;
   }
-  if (storage_node.size() < sizeof(ArrayMapHeader)) {
+  if (storage_node.size() < sizeof(Header)) {
     GRNXX_ERROR() << "invalid format: size = " << storage_node.size()
-                  << ", header_size = " << sizeof(ArrayMapHeader);
+                  << ", header_size = " << sizeof(Header);
     return false;
   }
   storage_node_id_ = storage_node_id;
-  header_ = static_cast<ArrayMapHeader *>(storage_node.body());
+  header_ = static_cast<Header *>(storage_node.body());
   keys_.reset(KeyArray::open(storage, header_->keys_storage_node_id));
   bits_.reset(BitArray::open(storage, header_->bits_storage_node_id));
   if (!keys_ || !bits_) {

@@ -27,6 +27,8 @@ namespace grnxx {
 namespace map {
 namespace hash_table {
 
+constexpr uint64_t INVALID_LINK = uint64_t(-1);
+
 // Change the array size based on the size of "T".
 // Note that the size of link array is N/64 where N is the size of BitArray.
 template <typename T, size_t T_SIZE = sizeof(T)>

@@ -32,11 +32,15 @@ namespace grnxx {
 class Storage;
 
 namespace map {
+namespace array_map {
 
-struct ArrayMapHeader;
+struct Header;
+
+}  // namespace array_map
 
 template <typename T>
 class ArrayMap : public Map<T> {
+  using Header = array_map::Header;
   using KeyArray = typename array_map::KeyArray<T>::Type;
   using BitArray = typename array_map::BitArray<T>::Type;
   using BitArrayUnit = typename BitArray::Unit;
@@ -73,7 +77,7 @@ class ArrayMap : public Map<T> {
  private:
   Storage *storage_;
   uint32_t storage_node_id_;
-  ArrayMapHeader *header_;
+  Header *header_;
   std::unique_ptr<KeyArray> keys_;
   std::unique_ptr<BitArray> bits_;
 

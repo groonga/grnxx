@@ -15,16 +15,30 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#include "grnxx/map/array_map/dummy.hpp"
+#ifndef GRNXX_MAP_ARRAY_MAP_HEADER_HPP
+#define GRNXX_MAP_ARRAY_MAP_HEADER_HPP
 
-#include "grnxx/map/array_map/bit_array.hpp"
-#include "grnxx/map/array_map/header.hpp"
-#include "grnxx/map/array_map/key_array.hpp"
+#include "grnxx/features.hpp"
+
+#include "grnxx/map.hpp"
+#include "grnxx/types.hpp"
 
 namespace grnxx {
 namespace map {
 namespace array_map {
 
+struct Header {
+  MapType map_type;
+  uint32_t keys_storage_node_id;
+  uint32_t bits_storage_node_id;
+  int64_t max_key_id;
+  uint64_t num_keys;
+
+  Header();
+};
+
 }  // namespace array_map
 }  // namespace map
 }  // namespace grnxx
+
+#endif  // GRNXX_MAP_ARRAY_MAP_HEADER_HPP
