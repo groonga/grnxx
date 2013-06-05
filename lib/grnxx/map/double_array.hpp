@@ -29,9 +29,15 @@
 #include "grnxx/types.hpp"
 
 namespace grnxx {
-namespace map {
 
-struct DoubleArrayHeader;
+class Storage;
+
+namespace map {
+namespace double_array {
+
+struct Header;
+
+}  // namespace double_array
 
 template <typename T>
 class DoubleArray {
@@ -44,6 +50,7 @@ class DoubleArray {
 template <>
 class DoubleArray<Bytes> : public Map<Bytes> {
  public:
+  using Header = double_array::Header;
   using Key = typename Map<Bytes>::Key;
   using KeyArg = typename Map<Bytes>::KeyArg;
   using Cursor = typename Map<Bytes>::Cursor;
@@ -90,7 +97,7 @@ class DoubleArray<Bytes> : public Map<Bytes> {
  private:
   Storage *storage_;
   uint32_t storage_node_id_;
-  DoubleArrayHeader *header_;
+  Header *header_;
 
   bool create_map(Storage *storage, uint32_t storage_node_id,
                   const MapOptions &options);

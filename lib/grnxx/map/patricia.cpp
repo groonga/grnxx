@@ -23,22 +23,11 @@
 #include "grnxx/geo_point.hpp"
 #include "grnxx/logger.hpp"
 #include "grnxx/map/helper.hpp"
+#include "grnxx/map/patricia/header.hpp"
 #include "grnxx/storage.hpp"
 
 namespace grnxx {
 namespace map {
-
-struct PatriciaHeader {
-  // TODO
-  int64_t max_key_id;
-  uint64_t num_keys;
-
-  PatriciaHeader();
-};
-
-PatriciaHeader::PatriciaHeader()
-    : max_key_id(MAP_MIN_KEY_ID - 1),
-      num_keys(0) {}
 
 template <typename T>
 Patricia<T>::Patricia()
@@ -103,13 +92,13 @@ bool Patricia<T>::create_map(Storage *storage, uint32_t storage_node_id,
                              const MapOptions &) {
   storage_ = storage;
   StorageNode storage_node =
-      storage->create_node(storage_node_id, sizeof(PatriciaHeader));
+      storage->create_node(storage_node_id, sizeof(Header));
   if (!storage_node) {
     return false;
   }
   storage_node_id_ = storage_node.id();
-  header_ = static_cast<PatriciaHeader *>(storage_node.body());
-  *header_ = PatriciaHeader();
+  header_ = static_cast<Header *>(storage_node.body());
+  *header_ = Header();
   // TODO
   return false;
 }
@@ -121,13 +110,13 @@ bool Patricia<T>::open_map(Storage *storage, uint32_t storage_node_id) {
   if (!storage_node) {
     return false;
   }
-  if (storage_node.size() < sizeof(PatriciaHeader)) {
+  if (storage_node.size() < sizeof(Header)) {
     GRNXX_ERROR() << "invalid format: size = " << storage_node.size()
-                  << ", header_size = " << sizeof(PatriciaHeader);
+                  << ", header_size = " << sizeof(Header);
     return false;
   }
   storage_node_id_ = storage_node_id;
-  header_ = static_cast<PatriciaHeader *>(storage_node.body());
+  header_ = static_cast<Header *>(storage_node.body());
   // TODO
   return false;
 }

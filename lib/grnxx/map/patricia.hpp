@@ -26,13 +26,20 @@
 #include "grnxx/types.hpp"
 
 namespace grnxx {
-namespace map {
 
-struct PatriciaHeader;
+class Storage;
+
+namespace map {
+namespace patricia {
+
+struct Header;
+
+}  // namespace patricia
 
 template <typename T>
 class Patricia : public Map<T> {
  public:
+  using Header = patricia::Header;
   using Key = typename Map<T>::Key;
   using KeyArg = typename Map<T>::KeyArg;
   using Cursor = typename Map<T>::Cursor;
@@ -65,7 +72,7 @@ class Patricia : public Map<T> {
  private:
   Storage *storage_;
   uint32_t storage_node_id_;
-  PatriciaHeader *header_;
+  Header *header_;
 
   bool create_map(Storage *storage, uint32_t storage_node_id,
                   const MapOptions &options);

@@ -22,23 +22,12 @@
 #include "grnxx/bytes.hpp"
 #include "grnxx/geo_point.hpp"
 #include "grnxx/logger.hpp"
+#include "grnxx/map/double_array/header.hpp"
 #include "grnxx/map/helper.hpp"
 #include "grnxx/storage.hpp"
 
 namespace grnxx {
 namespace map {
-
-struct DoubleArrayHeader {
-  // TODO
-  int64_t max_key_id;
-  uint64_t num_keys;
-
-  DoubleArrayHeader();
-};
-
-DoubleArrayHeader::DoubleArrayHeader()
-    : max_key_id(MAP_MIN_KEY_ID - 1),
-      num_keys(0) {}
 
 template <typename T>
 Map<T> *DoubleArray<T>::create(Storage *, uint32_t, const MapOptions &) {
@@ -117,13 +106,13 @@ bool DoubleArray<Bytes>::create_map(Storage *storage, uint32_t storage_node_id,
                                     const MapOptions &) {
   storage_ = storage;
   StorageNode storage_node =
-      storage->create_node(storage_node_id, sizeof(DoubleArrayHeader));
+      storage->create_node(storage_node_id, sizeof(Header));
   if (!storage_node) {
     return false;
   }
   storage_node_id_ = storage_node.id();
-  header_ = static_cast<DoubleArrayHeader *>(storage_node.body());
-  *header_ = DoubleArrayHeader();
+  header_ = static_cast<Header *>(storage_node.body());
+  *header_ = Header();
   // TODO
   return false;
 }
@@ -134,13 +123,13 @@ bool DoubleArray<Bytes>::open_map(Storage *storage, uint32_t storage_node_id) {
   if (!storage_node) {
     return false;
   }
-  if (storage_node.size() < sizeof(DoubleArrayHeader)) {
+  if (storage_node.size() < sizeof(Header)) {
     GRNXX_ERROR() << "invalid format: size = " << storage_node.size()
-                  << ", header_size = " << sizeof(DoubleArrayHeader);
+                  << ", header_size = " << sizeof(Header);
     return false;
   }
   storage_node_id_ = storage_node_id;
-  header_ = static_cast<DoubleArrayHeader *>(storage_node.body());
+  header_ = static_cast<Header *>(storage_node.body());
   // TODO
   return false;
 }
