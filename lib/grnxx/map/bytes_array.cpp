@@ -21,6 +21,7 @@
 #include <new>
 
 #include "grnxx/logger.hpp"
+#include "grnxx/map/bytes_store.hpp"
 #include "grnxx/storage.hpp"
 
 namespace grnxx {
@@ -119,6 +120,10 @@ bool BytesArray::set(uint64_t value_id, ValueArg value) {
   }
   *src_bytes_id = dest_bytes_id;
   return true;
+}
+
+bool BytesArray::sweep(Duration lifetime) {
+  return store_->sweep(lifetime);
 }
 
 BytesArray::BytesArray()

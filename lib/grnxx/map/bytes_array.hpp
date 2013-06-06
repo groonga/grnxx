@@ -25,7 +25,6 @@
 #include "grnxx/array.hpp"
 #include "grnxx/bytes.hpp"
 #include "grnxx/duration.hpp"
-#include "grnxx/map/bytes_store.hpp"
 #include "grnxx/traits.hpp"
 #include "grnxx/types.hpp"
 
@@ -34,6 +33,8 @@ namespace grnxx {
 class Storage;
 
 namespace map {
+
+class BytesStore;
 
 struct BytesArrayHeader;
 
@@ -86,9 +87,7 @@ class BytesArray {
   bool set(uint64_t value_id, ValueArg value);
 
   // Sweep empty pages whose modified time < (now - lifetime).
-  bool sweep(Duration lifetime) {
-    return store_->sweep(lifetime);
-  }
+  bool sweep(Duration lifetime);
 
  private:
   Storage *storage_;
