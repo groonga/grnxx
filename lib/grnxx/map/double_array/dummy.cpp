@@ -17,7 +17,10 @@
 */
 #include "grnxx/map/double_array/dummy.hpp"
 
+#include "grnxx/map/double_array/block.hpp"
+#include "grnxx/map/double_array/entry.hpp"
 #include "grnxx/map/double_array/header.hpp"
+#include "grnxx/map/double_array/node.hpp"
 
 namespace grnxx {
 namespace map {

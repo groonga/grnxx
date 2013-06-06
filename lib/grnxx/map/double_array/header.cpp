@@ -26,7 +26,21 @@ namespace double_array {
 Header::Header()
     : map_type(MAP_ARRAY),
       max_key_id(MAP_MIN_KEY_ID - 1),
-      num_keys(0) {}
+      num_keys(0),
+      nodes_storage_node_id(STORAGE_INVALID_NODE_ID),
+      siblings_storage_node_id(STORAGE_INVALID_NODE_ID),
+      blocks_storage_node_id(STORAGE_INVALID_NODE_ID),
+      entries_storage_node_id(STORAGE_INVALID_NODE_ID),
+      store_storage_node_id(STORAGE_INVALID_NODE_ID),
+      next_key_id(MAP_INVALID_KEY_ID),
+      num_blocks(0),
+      num_phantoms(0),
+      num_zombies(0),
+      latest_blocks() {
+  for (uint64_t i = 0; i <= BLOCK_MAX_LEVEL; ++i) {
+    latest_blocks[i] = BLOCK_INVALID_ID;
+  }
+}
 
 }  // namespace double_array
 }  // namespace map

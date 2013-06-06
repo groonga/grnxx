@@ -20,6 +20,7 @@
 
 #include "grnxx/features.hpp"
 
+#include "grnxx/map/double_array/block.hpp"
 #include "grnxx/map.hpp"
 #include "grnxx/types.hpp"
 
@@ -31,6 +32,16 @@ struct Header {
   MapType map_type;
   int64_t max_key_id;
   uint64_t num_keys;
+  uint32_t nodes_storage_node_id;
+  uint32_t siblings_storage_node_id;
+  uint32_t blocks_storage_node_id;
+  uint32_t entries_storage_node_id;
+  uint32_t store_storage_node_id;
+  uint64_t next_key_id;
+  uint64_t num_blocks;
+  uint64_t num_phantoms;
+  uint64_t num_zombies;
+  uint64_t latest_blocks[BLOCK_MAX_LEVEL + 1];
 
   Header();
 };
