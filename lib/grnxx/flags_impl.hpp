@@ -32,27 +32,27 @@ class FlagsImpl {
 
   FlagsImpl() = default;
 
-  constexpr explicit operator bool() {
+  constexpr explicit operator bool() const {
     return flags_ != 0;
   }
 
-  constexpr FlagsImpl operator&(FlagsImpl rhs) {
+  constexpr FlagsImpl operator&(FlagsImpl rhs) const {
     return FlagsImpl(flags_ & rhs.flags_);
   }
-  constexpr FlagsImpl operator|(FlagsImpl rhs) {
+  constexpr FlagsImpl operator|(FlagsImpl rhs) const {
     return FlagsImpl(flags_ | rhs.flags_);
   }
-  constexpr FlagsImpl operator^(FlagsImpl rhs) {
+  constexpr FlagsImpl operator^(FlagsImpl rhs) const {
     return FlagsImpl(flags_ ^ rhs.flags_);
   }
-  constexpr FlagsImpl operator~() {
+  constexpr FlagsImpl operator~() const {
     return FlagsImpl(~flags_);
   }
 
-  constexpr bool operator==(FlagsImpl rhs) {
+  constexpr bool operator==(FlagsImpl rhs) const {
     return flags_ == rhs.flags_;
   }
-  constexpr bool operator!=(FlagsImpl rhs) {
+  constexpr bool operator!=(FlagsImpl rhs) const {
     return flags_ == rhs.flags_;
   }
 
