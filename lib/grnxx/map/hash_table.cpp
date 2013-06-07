@@ -367,10 +367,6 @@ bool HashTable<T>::truncate() {
     // Nothing to do.
     return true;
   }
-  header_->max_key_id = MAP_MIN_KEY_ID - 1;
-  header_->num_keys = 0;
-  header_->num_key_ids = 0;
-  header_->latest_link = INVALID_LINK;
   std::unique_ptr<KeyIDArray> new_key_ids(
       KeyIDArray::create(storage_, storage_node_id_,
                          KeyIDArray::page_size() - 1));
@@ -379,8 +375,16 @@ bool HashTable<T>::truncate() {
     return false;
   }
   if (header_->old_key_ids_storage_node_id != STORAGE_INVALID_NODE_ID) {
-    storage_->unlink_node(header_->old_key_ids_storage_node_id);
+    if (!KeyIDArray::unlink(storage_, header_->old_key_ids_storage_node_id)) {
+      // Error.
+      KeyIDArray::unlink(storage_, new_key_ids->storage_node_id());
+      return false;
+    }
   }
+  header_->max_key_id = MAP_MIN_KEY_ID - 1;
+  header_->num_keys = 0;
+  header_->num_key_ids = 0;
+  header_->latest_link = INVALID_LINK;
   header_->old_key_ids_storage_node_id = header_->key_ids_storage_node_id;
   header_->key_ids_storage_node_id = new_key_ids->storage_node_id();
   Lock lock(&header_->mutex);
@@ -571,10 +575,11 @@ bool HashTable<T>::rebuild() {
   }
   if (key_id <= max_key_id()) {
     // Error.
+    KeyIDArray::unlink(storage_, new_key_ids->storage_node_id());
     return false;
   }
   if (header_->old_key_ids_storage_node_id != STORAGE_INVALID_NODE_ID) {
-    storage_->unlink_node(header_->old_key_ids_storage_node_id);
+    KeyIDArray::unlink(storage_, header_->old_key_ids_storage_node_id);
   }
   header_->old_key_ids_storage_node_id = header_->key_ids_storage_node_id;
   header_->key_ids_storage_node_id = new_key_ids->storage_node_id();
