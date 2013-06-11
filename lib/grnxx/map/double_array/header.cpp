@@ -24,7 +24,7 @@ namespace map {
 namespace double_array {
 
 Header::Header()
-    : map_type(MAP_ARRAY),
+    : map_type(MAP_DOUBLE_ARRAY),
       max_key_id(MAP_MIN_KEY_ID - 1),
       num_keys(0),
       nodes_storage_node_id(STORAGE_INVALID_NODE_ID),
@@ -32,7 +32,7 @@ Header::Header()
       blocks_storage_node_id(STORAGE_INVALID_NODE_ID),
       entries_storage_node_id(STORAGE_INVALID_NODE_ID),
       store_storage_node_id(STORAGE_INVALID_NODE_ID),
-      next_key_id(MAP_INVALID_KEY_ID),
+      next_key_id(MAP_MIN_KEY_ID),
       num_blocks(0),
       num_phantoms(0),
       num_zombies(0),

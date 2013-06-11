@@ -29,6 +29,8 @@ namespace double_array {
 constexpr uint64_t BLOCK_MAX_FAILURE_COUNT  = 4;
 constexpr uint64_t BLOCK_MAX_LEVEL          = 5;
 constexpr uint64_t BLOCK_INVALID_ID         = (1ULL << 40) - 1;
+constexpr uint64_t BLOCK_SIZE               = 1ULL << 9;
+constexpr uint64_t BLOCK_MAX_COUNT          = 16;
 
 // The internal structure is as follows:
 // - values_[0]
@@ -59,6 +61,12 @@ class Block {
   static constexpr uint8_t  PREV_SHIFT          = 24;
 
  public:
+  Block() = default;
+
+  static Block empty_block() {
+    return Block(0, BLOCK_SIZE << NUM_PHANTOMS_SHIFT);
+  }
+
   // Return the first phantom node.
   uint64_t first_phantom() const {
     return (values_[0] >> FIRST_PHANTOM_SHIFT) & FIRST_PHANTOM_MASK;
@@ -113,6 +121,8 @@ class Block {
 
  private:
   uint64_t values_[2];
+
+  Block(uint64_t value_0, uint64_t value_1) : values_{ value_0, value_1 } {}
 };
 
 }  // namespace double_array

@@ -29,7 +29,6 @@ namespace double_array {
 constexpr uint64_t NODE_TERMINAL_LABEL = 0x100;
 constexpr uint64_t NODE_MAX_LABEL      = NODE_TERMINAL_LABEL;
 constexpr uint64_t NODE_INVALID_LABEL  = NODE_MAX_LABEL + 1;
-
 constexpr uint64_t NODE_INVALID_OFFSET = 0;
 
 // The internal structure is as follows:
@@ -75,6 +74,8 @@ class Node {
   static constexpr uint8_t  OFFSET_SHIFT     = 18;
 
  public:
+  Node() = default;
+
   // Create a phantom node.
   static Node phantom_node(uint64_t next, uint64_t prev) {
     return Node(IS_PHANTOM_FLAG | ((next & NEXT_MASK) << NEXT_SHIFT) |
@@ -134,8 +135,12 @@ class Node {
              (NODE_INVALID_LABEL << CHILD_SHIFT) |
              (NODE_INVALID_OFFSET << OFFSET_SHIFT);
   }
-  void set_is_origin() {
-    value_ |= IS_ORIGIN_FLAG;
+  void set_is_origin(bool is_origin) {
+    if (is_origin) {
+      value_ |= IS_ORIGIN_FLAG;
+    } else {
+      value_ &= ~IS_ORIGIN_FLAG;
+    }
   }
 
   void set_next(uint64_t next) {
@@ -172,16 +177,16 @@ class Node {
     value_ = (value_ & ~(CHILD_MASK << CHILD_SHIFT)) |
              ((child & CHILD_MASK) << CHILD_SHIFT);
   }
-  // Use unset_offset() iff "offset" == INVALID_OFFSET.
   void set_offset(uint64_t offset) {
-    value_ = (value_ & ~(OFFSET_MASK << OFFSET_SHIFT)) |
-             ((offset & OFFSET_MASK) << OFFSET_SHIFT);
-  }
-  void unset_offset() {
-    value_ = (value_ & (IS_ORIGIN_FLAG | (LABEL_MASK << LABEL_SHIFT) |
-                        IS_LEAF_FLAG)) |
-             (NODE_INVALID_LABEL << CHILD_SHIFT) |
-             (NODE_INVALID_OFFSET << OFFSET_SHIFT);
+    if (value_ & IS_LEAF_FLAG) {
+      value_ = (value_ & ~(IS_LEAF_FLAG | (OFFSET_MASK << OFFSET_SHIFT) |
+                           (CHILD_MASK << CHILD_SHIFT))) |
+               (offset << OFFSET_SHIFT) |
+               (NODE_INVALID_LABEL << CHILD_SHIFT);
+    } else {
+      value_ = (value_ & ~(OFFSET_MASK << OFFSET_SHIFT)) |
+               (offset << OFFSET_SHIFT);
+    }
   }
 
  private:

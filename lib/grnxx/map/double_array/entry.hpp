@@ -39,6 +39,8 @@ class Entry {
   static constexpr uint64_t IS_VALID_FLAG = 1ULL << 63;
 
  public:
+  Entry() = default;
+
   static Entry valid_entry(uint64_t bytes_id) {
     return Entry(IS_VALID_FLAG | bytes_id);
   }
