@@ -688,13 +688,17 @@ void test_map_truncate(grnxx::MapType map_type) {
   std::vector<T> keys;
   generate_random_keys(MAP_NUM_KEYS, &keys);
 
-  for (std::uint64_t i = 0; i < (MAP_NUM_KEYS / 2); ++i) {
+  for (std::uint64_t i = 0; i < MAP_NUM_KEYS; ++i) {
     assert(map->add(keys[i]));
   }
   assert(map->truncate());
   assert(map->max_key_id() == (grnxx::MAP_MIN_KEY_ID - 1));
   assert(map->num_keys() == 0);
-  for (std::uint64_t i = 0; i < (MAP_NUM_KEYS / 2); ++i) {
+  for (std::uint64_t i = 0; i < MAP_NUM_KEYS; ++i) {
+    assert(!map->get(i));
+    assert(!map->find(keys[i]));
+  }
+  for (std::uint64_t i = 0; i < MAP_NUM_KEYS; ++i) {
     assert(map->add(keys[i]));
   }
 }
@@ -924,6 +928,7 @@ void test_map_create_scanner<grnxx::Bytes>(grnxx::MapType map_type) {
 
 template <typename T>
 void test_map(grnxx::MapType map_type) {
+  GRNXX_NOTICE() << __PRETTY_FUNCTION__ << ": map_type = " << map_type;
   test_map_create<T>(map_type);
   test_map_open<T>(map_type);
   test_map_unlink<T>(map_type);
@@ -952,16 +957,9 @@ void test_map(grnxx::MapType map_type) {
 }
 
 template <typename T>
-void test_map(T) {
-  GRNXX_NOTICE() << __PRETTY_FUNCTION__;
+void test_map() {
   test_map<T>(grnxx::MAP_ARRAY);
   test_map<T>(grnxx::MAP_HASH_TABLE);
-}
-
-template <typename T, typename... U>
-void test_map(T, U... args) {
-  test_map(T());
-  test_map(args...);
 }
 
 void test_bytes_store() {
@@ -986,17 +984,18 @@ void test_bytes_array() {
 }
 
 void test_map() {
-  test_map(std::int8_t(),
-           std::uint8_t(),
-           std::int16_t(),
-           std::uint16_t(),
-           std::int32_t(),
-           std::uint32_t(),
-           std::int64_t(),
-           std::uint64_t(),
-           double(),
-           grnxx::GeoPoint(),
-           grnxx::Bytes());
+  test_map<std::int8_t>();
+  test_map<std::uint8_t>();
+  test_map<std::int16_t>();
+  test_map<std::uint16_t>();
+  test_map<std::int32_t>();
+  test_map<std::uint32_t>();
+  test_map<std::int64_t>();
+  test_map<std::uint64_t>();
+  test_map<double>();
+  test_map<grnxx::GeoPoint>();
+  test_map<grnxx::Bytes>();
+  test_map<grnxx::Bytes>(grnxx::MAP_DOUBLE_ARRAY);
 }
 
 }  // namespace
