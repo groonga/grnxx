@@ -35,7 +35,6 @@ namespace map {
 
 template <typename T>
 using Hash = hash_table::Hash<T>;
-using hash_table::INVALID_LINK;
 
 template <typename T>
 HashTable<T>::HashTable()
@@ -44,9 +43,7 @@ HashTable<T>::HashTable()
       header_(nullptr),
       key_ids_(),
       old_key_ids_(),
-      keys_(),
-      bits_(),
-      links_() {}
+      keys_() {}
 
 template <typename T>
 HashTable<T>::~HashTable() {}
@@ -90,22 +87,22 @@ MapType HashTable<T>::type() const {
 
 template <typename T>
 int64_t HashTable<T>::max_key_id() const {
-  return header_->max_key_id;
+  return keys_->max_key_id();
 }
 
 template <typename T>
 uint64_t HashTable<T>::num_keys() const {
-  return header_->num_keys;
+  return keys_->num_keys();
 }
 
 template <typename T>
 bool HashTable<T>::get(int64_t key_id, Key *key) {
-  if ((key_id < MAP_MIN_KEY_ID) || (key_id > header_->max_key_id)) {
+  if ((key_id < MAP_MIN_KEY_ID) || (key_id > max_key_id())) {
     // Out of range.
     return false;
   }
   bool bit;
-  if (!bits_->get(key_id, &bit)) {
+  if (!keys_->get_bit(key_id, &bit)) {
     // Error.
     return false;
   }
@@ -113,7 +110,7 @@ bool HashTable<T>::get(int64_t key_id, Key *key) {
     // Not found.
     return false;
   }
-  return keys_->get(key_id, key);
+  return keys_->get_key(key_id, key);
 }
 
 template <typename T>
@@ -127,30 +124,11 @@ bool HashTable<T>::unset(int64_t key_id) {
     // Not found or error.
     return false;
   }
-  // Prepare to update "bits_" and "links_".
-  const uint64_t unit_id = key_id / bits_->unit_size();
-  const uint64_t unit_bit = 1ULL << (key_id % bits_->unit_size());
-  BitArrayUnit * const unit = bits_->get_unit(unit_id);
-  if (!unit) {
+  if (!keys_->unset(key_id)) {
     // Error.
     return false;
   }
-  // Set "link" if this operation creates the first 0 bit in the unit.
-  uint64_t *link = nullptr;
-  if (*unit == ~BitArrayUnit(0)) {
-    link = links_->get_pointer(unit_id);
-    if (!link) {
-      // Error.
-      return false;
-    }
-  }
-  *unit &= ~unit_bit;
   *stored_key_id = -1;
-  if (link) {
-    *link = header_->latest_link;
-    header_->latest_link = *link;
-  }
-  --header_->num_keys;
   return true;
 }
 
@@ -176,7 +154,7 @@ bool HashTable<T>::reset(int64_t key_id, KeyArg dest_key) {
     // Found or error.
     return false;
   }
-  if (!keys_->set(key_id, dest_normalized_key)) {
+  if (!keys_->reset(key_id, dest_normalized_key)) {
     // Error.
     return false;
   }
@@ -232,54 +210,15 @@ bool HashTable<T>::add(KeyArg key, int64_t *key_id) {
     // Error.
     return false;
   }
-  // Find an unused key ID.
-  const bool is_new_unit = (header_->latest_link == INVALID_LINK);
-  uint64_t unit_id;
-  if (is_new_unit) {
-    unit_id = (header_->max_key_id + 1) / bits_->unit_size();
-  } else {
-    unit_id = header_->latest_link;
-  }
-  BitArrayUnit * const unit = bits_->get_unit(unit_id);
-  if (!unit) {
+  int64_t next_key_id;
+  if (!keys_->add(normalized_key, &next_key_id)) {
     // Error.
     return false;
   }
-  const uint8_t unit_bit_id = bit_scan_forward(~*unit);
-  const uint64_t unit_bit = 1ULL << unit_bit_id;
-  const int64_t next_key_id = (unit_id * bits_->unit_size()) + unit_bit_id;
-  uint64_t *link = nullptr;
-  if (is_new_unit) {
-    if (!links_->set(unit_id, INVALID_LINK)) {
-      // Error.
-      return false;
-    }
-    *unit = 0;
-    header_->latest_link = (header_->max_key_id + 1) / bits_->unit_size();
-  } else if ((*unit | unit_bit) == ~BitArrayUnit(0)) {
-    // The unit will be removed from "links_" if it becomes full.
-    link = links_->get_pointer(header_->latest_link);
-    if (!link) {
-      // Error.
-      return false;
-    }
-  }
-  if (!keys_->set(next_key_id, normalized_key)) {
-    // Error.
-    return false;
-  }
-  if (link) {
-    header_->latest_link = *link;
-  }
-  *unit |= unit_bit;
   if (*stored_key_id == MAP_INVALID_KEY_ID) {
     ++header_->num_key_ids;
   }
   *stored_key_id = next_key_id;
-  if (next_key_id > header_->max_key_id) {
-    header_->max_key_id = next_key_id;
-  }
-  ++header_->num_keys;
   if (key_id) {
     *key_id = next_key_id;
   }
@@ -298,30 +237,11 @@ bool HashTable<T>::remove(KeyArg key) {
     // Not found or error.
     return false;
   }
-  // Prepare to update "bits_" and "links_".
-  const uint64_t unit_id = *stored_key_id / bits_->unit_size();
-  const uint64_t unit_bit = 1ULL << (*stored_key_id % bits_->unit_size());
-  BitArrayUnit * const unit = bits_->get_unit(unit_id);
-  if (!unit) {
+  if (!keys_->unset(*stored_key_id)) {
     // Error.
     return false;
   }
-  // Set "link" if this operation creates the first 0 bit in the unit.
-  uint64_t *link = nullptr;
-  if (*unit == ~BitArrayUnit(0)) {
-    link = links_->get_pointer(unit_id);
-    if (!link) {
-      // Error.
-      return false;
-    }
-  }
-  *unit &= ~unit_bit;
   *stored_key_id = -1;
-  if (link) {
-    *link = header_->latest_link;
-    header_->latest_link = *link;
-  }
-  --header_->num_keys;
   return true;
 }
 
@@ -343,7 +263,7 @@ bool HashTable<T>::replace(KeyArg src_key, KeyArg dest_key, int64_t *key_id) {
     // Found or error.
     return false;
   }
-  if (!keys_->set(*src_key_id, dest_normalized_key)) {
+  if (!keys_->reset(*src_key_id, dest_normalized_key)) {
     // Error.
     return false;
   }
@@ -363,7 +283,7 @@ bool HashTable<T>::truncate() {
   if (!refresh_key_ids()) {
     return false;
   }
-  if (header_->max_key_id == MAP_MIN_KEY_ID) {
+  if (max_key_id() == MAP_MIN_KEY_ID) {
     // Nothing to do.
     return true;
   }
@@ -381,10 +301,11 @@ bool HashTable<T>::truncate() {
       return false;
     }
   }
-  header_->max_key_id = MAP_MIN_KEY_ID - 1;
-  header_->num_keys = 0;
+  if (!keys_->truncate()) {
+    // Error.
+    return false;
+  }
   header_->num_key_ids = 0;
-  header_->latest_link = INVALID_LINK;
   header_->old_key_ids_storage_node_id = header_->key_ids_storage_node_id;
   header_->key_ids_storage_node_id = new_key_ids->storage_node_id();
   Lock lock(&header_->mutex);
@@ -410,16 +331,12 @@ bool HashTable<T>::create_map(Storage *storage, uint32_t storage_node_id,
   key_ids_.reset(KeyIDArray::create(storage, storage_node_id_,
                                     KeyIDArray::page_size() - 1));
   keys_.reset(KeyArray::create(storage, storage_node_id_));
-  bits_.reset(BitArray::create(storage, storage_node_id_));
-  links_.reset(LinkArray::create(storage, storage_node_id_));
-  if (!key_ids_ || !keys_ || !bits_ || !links_) {
+  if (!key_ids_ || !keys_) {
     storage->unlink_node(storage_node_id_);
     return false;
   }
   header_->key_ids_storage_node_id = key_ids_->storage_node_id();
   header_->keys_storage_node_id = keys_->storage_node_id();
-  header_->bits_storage_node_id = bits_->storage_node_id();
-  header_->links_storage_node_id = links_->storage_node_id();
   return true;
 }
 
@@ -439,9 +356,7 @@ bool HashTable<T>::open_map(Storage *storage, uint32_t storage_node_id) {
   header_ = static_cast<Header *>(storage_node.body());
   key_ids_.reset(KeyIDArray::open(storage, header_->key_ids_storage_node_id));
   keys_.reset(KeyArray::open(storage, header_->keys_storage_node_id));
-  bits_.reset(BitArray::open(storage, header_->bits_storage_node_id));
-  links_.reset(LinkArray::open(storage, header_->links_storage_node_id));
-  if (!key_ids_ || !keys_ || !bits_ || !links_) {
+  if (!key_ids_ || !keys_) {
     return false;
   }
   return true;
@@ -499,7 +414,7 @@ bool HashTable<T>::find_key(KeyArg key, int64_t **stored_key_id) {
       }
     } else {
       Key stored_key;
-      if (!keys_->get(*key_id, &stored_key)) {
+      if (!keys_->get_key(*key_id, &stored_key)) {
         // Error.
         return false;
       }
@@ -520,7 +435,7 @@ bool HashTable<T>::find_key(KeyArg key, int64_t **stored_key_id) {
 
 template <typename T>
 bool HashTable<T>::rebuild() {
-  uint64_t new_size = header_->num_keys * 2;
+  uint64_t new_size = num_keys() * 2;
   if (new_size < key_ids_->page_size()) {
     new_size = key_ids_->page_size();
   }
@@ -543,7 +458,7 @@ bool HashTable<T>::rebuild() {
   int64_t key_id;
   for (key_id = MAP_MIN_KEY_ID; key_id <= max_key_id(); ++key_id) {
     bool bit;
-    if (!bits_->get(key_id, &bit)) {
+    if (!keys_->get_bit(key_id, &bit)) {
       // Error.
       break;
     }
@@ -551,7 +466,7 @@ bool HashTable<T>::rebuild() {
       continue;
     }
     Key stored_key;
-    if (!keys_->get(key_id, &stored_key)) {
+    if (!keys_->get_key(key_id, &stored_key)) {
       // Error.
       break;
     }

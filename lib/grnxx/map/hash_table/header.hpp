@@ -33,12 +33,7 @@ struct Header {
   uint32_t key_ids_storage_node_id;
   uint32_t old_key_ids_storage_node_id;
   uint32_t keys_storage_node_id;
-  uint32_t bits_storage_node_id;
-  uint32_t links_storage_node_id;
-  int64_t max_key_id;
-  uint64_t num_keys;
   uint64_t num_key_ids;
-  uint64_t latest_link;
   Mutex mutex;
 
   Header();

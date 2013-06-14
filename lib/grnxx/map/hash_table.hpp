@@ -23,10 +23,11 @@
 #include <memory>
 
 #include "grnxx/map.hpp"
-#include "grnxx/map/hash_table/bit_array.hpp"
-#include "grnxx/map/hash_table/key_array.hpp"
+//#include "grnxx/map/hash_table/bit_array.hpp"
+//#include "grnxx/map/hash_table/key_array.hpp"
 #include "grnxx/map/hash_table/key_id_array.hpp"
-#include "grnxx/map/hash_table/link_array.hpp"
+//#include "grnxx/map/hash_table/link_array.hpp"
+#include "grnxx/map/key_store.hpp"
 #include "grnxx/types.hpp"
 
 namespace grnxx {
@@ -44,10 +45,7 @@ template <typename T>
 class HashTable : public Map<T> {
   using Header = hash_table::Header;
   using KeyIDArray = typename hash_table::KeyIDArray<T>;
-  using KeyArray = typename hash_table::KeyArray<T>::Type;
-  using BitArray = typename hash_table::BitArray<T>::Type;
-  using BitArrayUnit = typename BitArray::Unit;
-  using LinkArray = typename hash_table::LinkArray<T>::Type;
+  using KeyArray = KeyStore<T>;
 
  public:
   using Key = typename Map<T>::Key;
@@ -85,8 +83,6 @@ class HashTable : public Map<T> {
   std::unique_ptr<KeyIDArray> key_ids_;
   std::unique_ptr<KeyIDArray> old_key_ids_;
   std::unique_ptr<KeyArray> keys_;
-  std::unique_ptr<BitArray> bits_;
-  std::unique_ptr<LinkArray> links_;
 
   bool create_map(Storage *storage, uint32_t storage_node_id,
                   const MapOptions &options);

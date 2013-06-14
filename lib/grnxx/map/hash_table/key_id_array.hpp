@@ -21,6 +21,7 @@
 #include "grnxx/features.hpp"
 
 #include "grnxx/array_impl.hpp"
+#include "grnxx/logger.hpp"
 #include "grnxx/map.hpp"
 #include "grnxx/storage.hpp"
 #include "grnxx/types.hpp"
