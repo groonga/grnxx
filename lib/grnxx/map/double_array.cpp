@@ -33,6 +33,7 @@
 
 namespace grnxx {
 namespace map {
+namespace {
 
 using double_array::BLOCK_MAX_FAILURE_COUNT;
 using double_array::BLOCK_MAX_LEVEL;
@@ -46,6 +47,8 @@ using double_array::NODE_INVALID_LABEL;
 using double_array::NODE_INVALID_OFFSET;
 
 constexpr uint64_t ROOT_NODE_ID = 0;
+
+}  // namespace
 
 template <typename T>
 Map<T> *DoubleArray<T>::create(Storage *, uint32_t, const MapOptions &) {
@@ -841,7 +844,6 @@ bool DoubleArray<Bytes>::migrate_nodes(Node *node, uint64_t dest_offset,
     // Error.
     return false;
   }
-  // TODO: Copy siblings!
   for (uint64_t i = 0; i < num_labels; ++i) {
     const uint64_t src_node_id = src_offset ^ labels[i];
     Node * const src_node = &src_node_block[src_node_id % BLOCK_SIZE];

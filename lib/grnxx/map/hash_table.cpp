@@ -32,9 +32,12 @@
 
 namespace grnxx {
 namespace map {
+namespace {
 
 template <typename T>
 using Hash = hash_table::Hash<T>;
+
+}  // namespace
 
 template <typename T>
 HashTable<T>::HashTable()
