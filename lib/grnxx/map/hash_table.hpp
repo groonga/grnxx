@@ -23,10 +23,7 @@
 #include <memory>
 
 #include "grnxx/map.hpp"
-//#include "grnxx/map/hash_table/bit_array.hpp"
-//#include "grnxx/map/hash_table/key_array.hpp"
 #include "grnxx/map/hash_table/key_id_array.hpp"
-//#include "grnxx/map/hash_table/link_array.hpp"
 #include "grnxx/map/key_store.hpp"
 #include "grnxx/types.hpp"
 
