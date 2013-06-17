@@ -42,7 +42,6 @@ template <typename T>
 class HashTable : public Map<T> {
   using Header = hash_table::Header;
   using KeyIDArray = typename hash_table::KeyIDArray<T>;
-  using KeyArray = KeyStore<T>;
 
  public:
   using Key = typename Map<T>::Key;
@@ -79,7 +78,7 @@ class HashTable : public Map<T> {
   Header *header_;
   std::unique_ptr<KeyIDArray> key_ids_;
   std::unique_ptr<KeyIDArray> old_key_ids_;
-  std::unique_ptr<KeyArray> keys_;
+  std::unique_ptr<KeyStore<T>> keys_;
 
   bool create_map(Storage *storage, uint32_t storage_node_id,
                   const MapOptions &options);

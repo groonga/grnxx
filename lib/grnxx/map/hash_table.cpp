@@ -330,7 +330,7 @@ bool HashTable<T>::create_map(Storage *storage, uint32_t storage_node_id,
   *header_ = Header();
   key_ids_.reset(KeyIDArray::create(storage, storage_node_id_,
                                     KeyIDArray::page_size() - 1));
-  keys_.reset(KeyArray::create(storage, storage_node_id_));
+  keys_.reset(KeyStore<T>::create(storage, storage_node_id_));
   if (!key_ids_ || !keys_) {
     storage->unlink_node(storage_node_id_);
     return false;
@@ -355,7 +355,7 @@ bool HashTable<T>::open_map(Storage *storage, uint32_t storage_node_id) {
   storage_node_id_ = storage_node_id;
   header_ = static_cast<Header *>(storage_node.body());
   key_ids_.reset(KeyIDArray::open(storage, header_->key_ids_storage_node_id));
-  keys_.reset(KeyArray::open(storage, header_->keys_storage_node_id));
+  keys_.reset(KeyStore<T>::open(storage, header_->keys_storage_node_id));
   if (!key_ids_ || !keys_) {
     return false;
   }
