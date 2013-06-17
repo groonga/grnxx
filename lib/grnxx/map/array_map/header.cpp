@@ -25,10 +25,7 @@ namespace array_map {
 
 Header::Header()
     : map_type(MAP_ARRAY),
-      keys_storage_node_id(STORAGE_INVALID_NODE_ID),
-      bits_storage_node_id(STORAGE_INVALID_NODE_ID),
-      max_key_id(MAP_MIN_KEY_ID - 1),
-      num_keys(0) {}
+      keys_storage_node_id(STORAGE_INVALID_NODE_ID) {}
 
 }  // namespace array_map
 }  // namespace map

@@ -30,9 +30,6 @@ namespace array_map {
 struct Header {
   MapType map_type;
   uint32_t keys_storage_node_id;
-  uint32_t bits_storage_node_id;
-  int64_t max_key_id;
-  uint64_t num_keys;
 
   Header();
 };

@@ -17,9 +17,7 @@
 */
 #include "grnxx/map/array_map/dummy.hpp"
 
-#include "grnxx/map/array_map/bit_array.hpp"
 #include "grnxx/map/array_map/header.hpp"
-#include "grnxx/map/array_map/key_array.hpp"
 
 namespace grnxx {
 namespace map {

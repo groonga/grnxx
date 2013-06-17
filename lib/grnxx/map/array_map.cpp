@@ -34,8 +34,7 @@ ArrayMap<T>::ArrayMap()
     : storage_(nullptr),
       storage_node_id_(STORAGE_INVALID_NODE_ID),
       header_(nullptr),
-      keys_(),
-      bits_() {}
+      keys_() {}
 
 template <typename T>
 ArrayMap<T>::~ArrayMap() {}
@@ -79,22 +78,22 @@ MapType ArrayMap<T>::type() const {
 
 template <typename T>
 int64_t ArrayMap<T>::max_key_id() const {
-  return header_->max_key_id;
+  return keys_->max_key_id();
 }
 
 template <typename T>
 uint64_t ArrayMap<T>::num_keys() const {
-  return header_->num_keys;
+  return keys_->num_keys();
 }
 
 template <typename T>
 bool ArrayMap<T>::get(int64_t key_id, Key *key) {
-  if ((key_id < MAP_MIN_KEY_ID) || (key_id > header_->max_key_id)) {
+  if ((key_id < MAP_MIN_KEY_ID) || (key_id > max_key_id())) {
     // Out of range.
     return false;
   }
   bool bit;
-  if (!bits_->get(key_id, &bit)) {
+  if (!keys_->get_bit(key_id, &bit)) {
     // Error.
     return false;
   }
@@ -102,20 +101,19 @@ bool ArrayMap<T>::get(int64_t key_id, Key *key) {
     // Not found.
     return false;
   }
-  return keys_->get(key_id, key);
+  if (!keys_->get_key(key_id, key)) {
+    // Error.
+    return false;
+  }
+  return true;
 }
 
 template <typename T>
 bool ArrayMap<T>::unset(int64_t key_id) {
-  if (!get(key_id)) {
+  if (!keys_->unset(key_id)) {
     // Not found or error.
     return false;
   }
-  if (!bits_->set(key_id, false)) {
-    // Error.
-    return false;
-  }
-  --header_->num_keys;
   return true;
 }
 
@@ -129,7 +127,7 @@ bool ArrayMap<T>::reset(int64_t key_id, KeyArg dest_key) {
     // Found.
     return false;
   }
-  if (!keys_->set(key_id, Helper<T>::normalize(dest_key))) {
+  if (!keys_->reset(key_id, Helper<T>::normalize(dest_key))) {
     // Error.
     return false;
   }
@@ -139,15 +137,15 @@ bool ArrayMap<T>::reset(int64_t key_id, KeyArg dest_key) {
 template <typename T>
 bool ArrayMap<T>::find(KeyArg key, int64_t *key_id) {
   const Key normalized_key = map::Helper<T>::normalize(key);
-  for (int64_t i = MAP_MIN_KEY_ID; i <= header_->max_key_id; ++i) {
+  for (int64_t i = MAP_MIN_KEY_ID; i <= max_key_id(); ++i) {
     bool bit;
-    if (!bits_->get(i, &bit)) {
+    if (!keys_->get_bit(i, &bit)) {
       // Error.
       return false;
     }
     if (bit) {
       Key stored_key;
-      if (!keys_->get(i, &stored_key)) {
+      if (!keys_->get_key(i, &stored_key)) {
         // Error.
         return false;
       }
@@ -166,16 +164,15 @@ bool ArrayMap<T>::find(KeyArg key, int64_t *key_id) {
 template <typename T>
 bool ArrayMap<T>::add(KeyArg key, int64_t *key_id) {
   const Key normalized_key = Helper<T>::normalize(key);
-  int64_t next_key_id = MAP_INVALID_KEY_ID;
-  for (int64_t i = MAP_MIN_KEY_ID; i <= header_->max_key_id; ++i) {
+  for (int64_t i = MAP_MIN_KEY_ID; i <= max_key_id(); ++i) {
     bool bit;
-    if (!bits_->get(i, &bit)) {
+    if (!keys_->get_bit(i, &bit)) {
       // Error.
       return false;
     }
     if (bit) {
       Key stored_key;
-      if (!keys_->get(i, &stored_key)) {
+      if (!keys_->get_key(i, &stored_key)) {
         // Error.
         return false;
       }
@@ -186,36 +183,11 @@ bool ArrayMap<T>::add(KeyArg key, int64_t *key_id) {
         }
         return false;
       }
-    } else if (next_key_id == MAP_INVALID_KEY_ID) {
-      next_key_id = i;
     }
   }
-  if (next_key_id == MAP_INVALID_KEY_ID) {
-    next_key_id = header_->max_key_id + 1;
-    if (next_key_id > MAP_MAX_KEY_ID) {
-      GRNXX_ERROR() << "too many keys: next_key_id = " << next_key_id
-                    << ", max_key_id = " << MAP_MAX_KEY_ID;
-      return false;
-    }
-  }
-  const uint64_t unit_id = next_key_id / bits_->unit_size();
-  const uint64_t unit_bit = 1ULL << (next_key_id % bits_->unit_size());
-  BitArrayUnit * const unit = bits_->get_unit(unit_id);
-  if (!unit) {
+  if (!keys_->add(normalized_key, key_id)) {
     // Error.
     return false;
-  }
-  if (!keys_->set(next_key_id, normalized_key)) {
-    // Error.
-    return false;
-  }
-  *unit |= unit_bit;
-  if (next_key_id == (header_->max_key_id + 1)) {
-    ++header_->max_key_id;
-  }
-  ++header_->num_keys;
-  if (key_id) {
-    *key_id = next_key_id;
   }
   return true;
 }
@@ -227,11 +199,10 @@ bool ArrayMap<T>::remove(KeyArg key) {
     // Not found or error.
     return false;
   }
-  if (!bits_->set(key_id, false)) {
+  if (!keys_->unset(key_id)) {
     // Error.
     return false;
   }
-  --header_->num_keys;
   return true;
 }
 
@@ -240,15 +211,15 @@ bool ArrayMap<T>::replace(KeyArg src_key, KeyArg dest_key, int64_t *key_id) {
   const Key normalized_src_key = Helper<T>::normalize(src_key);
   const Key normalized_dest_key = Helper<T>::normalize(dest_key);
   int64_t src_key_id = MAP_INVALID_KEY_ID;
-  for (int64_t i = MAP_MIN_KEY_ID; i <= header_->max_key_id; ++i) {
+  for (int64_t i = MAP_MIN_KEY_ID; i <= max_key_id(); ++i) {
     bool bit;
-    if (!bits_->get(i, &bit)) {
+    if (!keys_->get_bit(i, &bit)) {
       // Error.
       return false;
     }
     if (bit) {
       Key stored_key;
-      if (!keys_->get(i, &stored_key)) {
+      if (!keys_->get_key(i, &stored_key)) {
         // Error.
         return false;
       }
@@ -266,7 +237,7 @@ bool ArrayMap<T>::replace(KeyArg src_key, KeyArg dest_key, int64_t *key_id) {
     // Not found.
     return false;
   }
-  if (!keys_->set(src_key_id, normalized_dest_key)) {
+  if (!keys_->reset(src_key_id, normalized_dest_key)) {
     // Error.
     return false;
   }
@@ -278,9 +249,7 @@ bool ArrayMap<T>::replace(KeyArg src_key, KeyArg dest_key, int64_t *key_id) {
 
 template <typename T>
 bool ArrayMap<T>::truncate() {
-  header_->max_key_id = MAP_MIN_KEY_ID - 1;
-  header_->num_keys = 0;
-  return true;
+  return keys_->truncate();
 }
 
 template <typename T>
@@ -295,14 +264,12 @@ bool ArrayMap<T>::create_map(Storage *storage, uint32_t storage_node_id,
   storage_node_id_ = storage_node.id();
   header_ = static_cast<Header *>(storage_node.body());
   *header_ = Header();
-  keys_.reset(KeyArray::create(storage, storage_node_id_));
-  bits_.reset(BitArray::create(storage, storage_node_id_));
-  if (!keys_ || !bits_) {
+  keys_.reset(KeyStore<T>::create(storage, storage_node_id_));
+  if (!keys_) {
     storage->unlink_node(storage_node_id_);
     return false;
   }
   header_->keys_storage_node_id = keys_->storage_node_id();
-  header_->bits_storage_node_id = bits_->storage_node_id();
   return true;
 }
 
@@ -320,9 +287,8 @@ bool ArrayMap<T>::open_map(Storage *storage, uint32_t storage_node_id) {
   }
   storage_node_id_ = storage_node_id;
   header_ = static_cast<Header *>(storage_node.body());
-  keys_.reset(KeyArray::open(storage, header_->keys_storage_node_id));
-  bits_.reset(BitArray::open(storage, header_->bits_storage_node_id));
-  if (!keys_ || !bits_) {
+  keys_.reset(KeyStore<T>::open(storage, header_->keys_storage_node_id));
+  if (!keys_) {
     return false;
   }
   return true;
