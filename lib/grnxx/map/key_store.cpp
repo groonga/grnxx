@@ -167,6 +167,7 @@ template <typename T>
 bool KeyStore<T>::truncate() {
   header_->max_key_id = MAP_MIN_KEY_ID - 1;
   header_->num_keys = 0;
+  header_->latest_link = INVALID_LINK;
   return true;
 }
 
