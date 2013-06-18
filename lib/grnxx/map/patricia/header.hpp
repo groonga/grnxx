@@ -29,8 +29,9 @@ namespace patricia {
 
 struct Header {
   MapType map_type;
-  int64_t max_key_id;
-  uint64_t num_keys;
+  uint64_t next_node_id;
+  uint32_t nodes_storage_node_id;
+  uint32_t keys_storage_node_id;
 
   Header();
 };

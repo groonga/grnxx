@@ -24,9 +24,10 @@ namespace map {
 namespace patricia {
 
 Header::Header()
-    : map_type(MAP_ARRAY),
-      max_key_id(MAP_MIN_KEY_ID - 1),
-      num_keys(0) {}
+    : map_type(MAP_PATRICIA),
+      next_node_id(2),
+      nodes_storage_node_id(STORAGE_INVALID_NODE_ID),
+      keys_storage_node_id(STORAGE_INVALID_NODE_ID) {}
 
 }  // namespace patricia
 }  // namespace map

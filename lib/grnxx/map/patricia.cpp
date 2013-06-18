@@ -28,12 +28,26 @@
 
 namespace grnxx {
 namespace map {
+namespace {
+
+constexpr uint64_t ROOT_NODE_ID = 0;
+
+using patricia::NODE_INVALID_OFFSET;
+
+using patricia::NODE_DEAD;
+using patricia::NODE_LEAF;
+using patricia::NODE_BRANCH;
+using patricia::NODE_TERMINAL;
+
+}  // namespace
 
 template <typename T>
 Patricia<T>::Patricia()
     : storage_(nullptr),
       storage_node_id_(STORAGE_INVALID_NODE_ID),
-      header_(nullptr) {}
+      header_(nullptr),
+      nodes_(),
+      keys_() {}
 
 template <typename T>
 Patricia<T>::~Patricia() {}
@@ -74,17 +88,17 @@ uint32_t Patricia<T>::storage_node_id() const {
 
 template <typename T>
 MapType Patricia<T>::type() const {
-  return MAP_DOUBLE_ARRAY;
+  return MAP_PATRICIA;
 }
 
 template <typename T>
 int64_t Patricia<T>::max_key_id() const {
-  return header_->max_key_id;
+  return keys_->max_key_id();
 }
 
 template <typename T>
 uint64_t Patricia<T>::num_keys() const {
-  return header_->num_keys;
+  return keys_->num_keys();
 }
 
 template <typename T>
@@ -131,7 +145,498 @@ template class Patricia<int64_t>;
 template class Patricia<uint64_t>;
 template class Patricia<double>;
 template class Patricia<GeoPoint>;
-template class Patricia<Bytes>;
+
+Patricia<Bytes>::Patricia()
+    : storage_(nullptr),
+      storage_node_id_(STORAGE_INVALID_NODE_ID),
+      header_(nullptr),
+      nodes_(),
+      keys_() {}
+
+Patricia<Bytes>::~Patricia() {}
+
+Patricia<Bytes> *Patricia<Bytes>::create(Storage *storage,
+                                         uint32_t storage_node_id,
+                                         const MapOptions &options) {
+  std::unique_ptr<Patricia> map(new (std::nothrow) Patricia);
+  if (!map) {
+    GRNXX_ERROR() << "new grnxx::map::Patricia failed";
+    return nullptr;
+  }
+  if (!map->create_map(storage, storage_node_id, options)) {
+    return nullptr;
+  }
+  return map.release();
+}
+
+Patricia<Bytes> *Patricia<Bytes>::open(Storage *storage,
+                                       uint32_t storage_node_id) {
+  std::unique_ptr<Patricia> map(new (std::nothrow) Patricia);
+  if (!map) {
+    GRNXX_ERROR() << "new grnxx::map::Patricia failed";
+    return nullptr;
+  }
+  if (!map->open_map(storage, storage_node_id)) {
+    return nullptr;
+  }
+  return map.release();
+}
+
+uint32_t Patricia<Bytes>::storage_node_id() const {
+  return storage_node_id_;
+}
+
+MapType Patricia<Bytes>::type() const {
+  return MAP_PATRICIA;
+}
+
+int64_t Patricia<Bytes>::max_key_id() const {
+  return keys_->max_key_id();
+}
+
+uint64_t Patricia<Bytes>::num_keys() const {
+  return keys_->num_keys();
+}
+
+bool Patricia<Bytes>::get(int64_t key_id, Key *key) {
+  if ((key_id < MAP_MIN_KEY_ID) || (key_id > keys_->max_key_id())) {
+    // Out of range.
+    return false;
+  }
+  bool bit;
+  if (!keys_->get_bit(key_id, &bit)) {
+    // Error.
+    return false;
+  }
+  if (!bit) {
+    // Not found.
+    return false;
+  }
+  if (!keys_->get_key(key_id, key)) {
+    // Error.
+    return false;
+  }
+  return true;
+}
+
+bool Patricia<Bytes>::unset(int64_t key_id) {
+  Key key;
+  if (!get(key_id, &key)) {
+    // Not found or error.
+    return false;
+  }
+  const uint64_t bit_size = key.size() * 8;
+  uint64_t node_id = ROOT_NODE_ID;
+  Node *prev_node = nullptr;
+  for ( ; ; ) {
+    Node * const node = nodes_->get_pointer(node_id);
+    if (!node) {
+      // Error.
+      return false;
+    }
+    switch (node->status()) {
+      case NODE_DEAD: {
+        // Not found.
+        return false;
+      }
+      case NODE_LEAF: {
+        if (node->key_id() != key_id) {
+          // Not found.
+          return false;
+        }
+        keys_->unset(key_id);
+        if (prev_node) {
+          Node * const sibling_node = node + (node_id ^ 1) - node_id;
+          *prev_node = *sibling_node;
+        } else {
+          *node = Node::dead_node();
+        }
+        return true;
+      }
+      case NODE_BRANCH: {
+        if (node->bit_pos() >= bit_size) {
+          // Not found.
+          return false;
+        }
+        node_id = node->offset() +
+                  ((key[node->bit_pos() / 8] >> (node->bit_pos() % 8)) & 1);
+        break;
+      }
+      case NODE_TERMINAL: {
+        if (node->bit_size() > bit_size) {
+          // Not found.
+          return false;
+        }
+        node_id = node->offset() + (node->bit_size() < bit_size);
+        break;
+      }
+    }
+    prev_node = node;
+  }
+}
+
+//bool Patricia<Bytes>::reset(int64_t key_id, KeyArg dest_key) {
+//  // TODO
+//  return false;
+//}
+
+bool Patricia<Bytes>::find(KeyArg key, int64_t *key_id) {
+  const uint64_t bit_size = key.size() * 8;
+  uint64_t node_id = ROOT_NODE_ID;
+  for ( ; ; ) {
+    Node node;
+    if (!nodes_->get(node_id, &node)) {
+      // Error.
+      return false;
+    }
+    switch (node.status()) {
+      case NODE_DEAD: {
+        // Not found.
+        return false;
+      }
+      case NODE_LEAF: {
+        Key stored_key;
+        if (!keys_->get_key(node.key_id(), &stored_key)) {
+          // Error.
+          return false;
+        }
+        if (key != stored_key) {
+          // Not found.
+          return false;
+        }
+        if (key_id) {
+          *key_id = node.key_id();
+        }
+        return true;
+      }
+      case NODE_BRANCH: {
+        if (node.bit_pos() >= bit_size) {
+          // Not found.
+          return false;
+        }
+        node_id = node.offset() +
+                  ((key[node.bit_pos() / 8] >> (node.bit_pos() % 8)) & 1);
+        break;
+      }
+      case NODE_TERMINAL: {
+        if (node.bit_size() > bit_size) {
+          // Not found.
+          return false;
+        }
+        node_id = node.offset() + (node.bit_size() < bit_size);
+        break;
+      }
+    }
+  }
+}
+
+bool Patricia<Bytes>::add(KeyArg key, int64_t *key_id) {
+  const uint64_t bit_size = key.size() * 8;
+  uint64_t node_id = ROOT_NODE_ID;
+  Node * node;
+  for (node = nodes_->get_pointer(node_id);
+       node && (node->status() != NODE_LEAF);
+       node = nodes_->get_pointer(node_id)) {
+    switch (node->status()) {
+      case NODE_DEAD: {
+        // The patricia is empty.
+        int64_t next_key_id;
+        if (!keys_->add(key, &next_key_id)) {
+          // Error.
+          return false;
+        }
+        *node = Node::leaf_node(next_key_id);
+        if (key_id) {
+          *key_id = next_key_id;
+        }
+        return true;
+      }
+      case NODE_BRANCH: {
+        node_id = node->offset();
+        if (node->bit_pos() < bit_size) {
+          node_id += (key[node->bit_pos() / 8] >> (node->bit_pos() % 8)) & 1;
+        }
+        break;
+      }
+      case NODE_TERMINAL: {
+        node_id = node->offset() + (node->bit_size() < bit_size);
+        break;
+      }
+    }
+  }
+  if (!node) {
+    // Error.
+    return false;
+  }
+  // "node" points to a leaf node.
+  Key stored_key;
+  if (!keys_->get_key(node->key_id(), &stored_key)) {
+    // Error.
+    return false;
+  }
+  const uint64_t min_size =
+      (key.size() < stored_key.size()) ? key.size() : stored_key.size();
+  uint64_t count;
+  for (count = 0; count < min_size; ++count) {
+    if (key[count] != stored_key[count]) {
+      break;
+    }
+  }
+  if (count < min_size) {
+    const uint8_t diff = key[count] ^ stored_key[count];
+    count *= 8;
+    count += bit_scan_forward(diff);
+  } else {
+    if (key.size() == stored_key.size()) {
+      // Found.
+      if (key_id) {
+        *key_id = node->key_id();
+      }
+      return false;
+    }
+    count *= 8;
+  }
+  Node * const next_nodes = nodes_->get_pointer(header_->next_node_id);
+  node_id = ROOT_NODE_ID;
+  for (node = nodes_->get_pointer(node_id);
+       node && (node->status() != NODE_LEAF);
+       node = nodes_->get_pointer(node_id)) {
+    switch (node->status()) {
+      case NODE_BRANCH: {
+        if (count <= node->bit_pos()) {
+          int64_t next_key_id;
+          if (!keys_->add(key, &next_key_id)) {
+            // Error.
+            return false;
+          }
+          if (count == bit_size) {
+            // Create a terminal node.
+            next_nodes[0] = Node::leaf_node(next_key_id);
+            next_nodes[1] = *node;
+            *node = Node::terminal_node(count, header_->next_node_id);
+          } else {
+            // Create a branch node.
+            if (key[count / 8] & (1U << (count % 8))) {
+              next_nodes[0] = *node;
+              next_nodes[1] = Node::leaf_node(next_key_id);
+            } else {
+              next_nodes[0] = Node::leaf_node(next_key_id);
+              next_nodes[1] = *node;
+            }
+            *node = Node::branch_node(count, header_->next_node_id);
+          }
+          header_->next_node_id += 2;
+          if (key_id) {
+            *key_id = next_key_id;
+          }
+          return true;
+        }
+        node_id = node->offset();
+        if (node->bit_pos() < count) {
+          node_id += (key[node->bit_pos() / 8] >> (node->bit_pos() % 8)) & 1;
+        }
+        break;
+      }
+      case NODE_TERMINAL: {
+        if (count < node->bit_size()) {
+          int64_t next_key_id;
+          if (!keys_->add(key, &next_key_id)) {
+            // Error.
+            return false;
+          }
+          if (count == bit_size) {
+            // Create a terminal node.
+            next_nodes[0] = Node::leaf_node(next_key_id);
+            next_nodes[1] = *node;
+            *node = Node::terminal_node(count, header_->next_node_id);
+          } else {
+            // Create a branch node.
+            if (key[count / 8] & (1U << (count % 8))) {
+              next_nodes[0] = *node;
+              next_nodes[1] = Node::leaf_node(next_key_id);
+            } else {
+              next_nodes[0] = Node::leaf_node(next_key_id);
+              next_nodes[1] = *node;
+            }
+            *node = Node::branch_node(count, header_->next_node_id);
+          }
+          header_->next_node_id += 2;
+          if (key_id) {
+            *key_id = next_key_id;
+          }
+          return true;
+        }
+        node_id = node->offset() + (node->bit_size() < bit_size);
+        break;
+      }
+    }
+  }
+  if (!node) {
+    // Error.
+    return false;
+  }
+  int64_t next_key_id;
+  if (!keys_->add(key, &next_key_id)) {
+    // Error.
+    return false;
+  }
+  if (count == bit_size) {
+    // Create a terminal node.
+    next_nodes[0] = Node::leaf_node(next_key_id);
+    next_nodes[1] = *node;
+    *node = Node::terminal_node(count, header_->next_node_id);
+  } else if (count == (stored_key.size() * 8)) {
+    // Create a terminal node.
+    next_nodes[0] = *node;
+    next_nodes[1] = Node::leaf_node(next_key_id);
+    *node = Node::terminal_node(count, header_->next_node_id);
+  } else {
+    // Create a branch node.
+    if (key[count / 8] & (1U << (count % 8))) {
+      next_nodes[0] = *node;
+      next_nodes[1] = Node::leaf_node(next_key_id);
+    } else {
+      next_nodes[0] = Node::leaf_node(next_key_id);
+      next_nodes[1] = *node;
+    }
+    *node = Node::branch_node(count, header_->next_node_id);
+  }
+  header_->next_node_id += 2;
+  if (key_id) {
+    *key_id = next_key_id;
+  }
+  return true;
+}
+
+bool Patricia<Bytes>::remove(KeyArg key) {
+  const uint64_t bit_size = key.size() * 8;
+  uint64_t node_id = ROOT_NODE_ID;
+  Node * prev_node = nullptr;
+  for ( ; ; ) {
+    Node * const node = nodes_->get_pointer(node_id);
+    if (!node) {
+      // Error.
+      return false;
+    }
+    switch (node->status()) {
+      case NODE_DEAD: {
+        // Not found.
+        return false;
+      }
+      case NODE_LEAF: {
+        Key stored_key;
+        if (!keys_->get_key(node->key_id(), &stored_key)) {
+          // Error.
+          return false;
+        }
+        if (stored_key != key) {
+          // Not found.
+          return false;
+        }
+        keys_->unset(node->key_id());
+        if (prev_node) {
+          Node * const sibling_node = node + (node_id ^ 1) - node_id;
+          *prev_node = *sibling_node;
+        } else {
+          *node = Node::dead_node();
+        }
+        return true;
+      }
+      case NODE_BRANCH: {
+        if (node->bit_pos() >= bit_size) {
+          // Not found.
+          return false;
+        }
+        node_id = node->offset() +
+                  ((key[node->bit_pos() / 8] >> (node->bit_pos() % 8)) & 1);
+        break;
+      }
+      case NODE_TERMINAL: {
+        if (node->bit_size() > bit_size) {
+          // Not found.
+          return false;
+        }
+        node_id = node->offset() + (node->bit_size() < bit_size);
+        break;
+      }
+    }
+    prev_node = node;
+  }
+}
+
+//bool Patricia<Bytes>::replace(KeyArg src_key, KeyArg dest_key,
+//                              int64_t *key_id) {
+//  // TODO
+//  return false;
+//}
+
+//bool Patricia<Bytes>::find_longest_prefix_match(KeyArg query, int64_t *key_id,
+//                                                Key *key) {
+//  // TODO
+//  return false;
+//}
+
+bool Patricia<Bytes>::truncate() {
+  Node * const root_node = nodes_->get_pointer(ROOT_NODE_ID);
+  if (!root_node) {
+    return false;
+  }
+  if (!keys_->truncate()) {
+    return false;
+  }
+  *root_node = Node::dead_node();
+  return true;
+}
+
+bool Patricia<Bytes>::create_map(Storage *storage, uint32_t storage_node_id,
+                                 const MapOptions &) {
+  storage_ = storage;
+  StorageNode storage_node =
+      storage->create_node(storage_node_id, sizeof(Header));
+  if (!storage_node) {
+    return false;
+  }
+  storage_node_id_ = storage_node.id();
+  header_ = static_cast<Header *>(storage_node.body());
+  *header_ = Header();
+  nodes_.reset(NodeArray::create(storage, storage_node_id_));
+  keys_.reset(KeyStore<Bytes>::create(storage, storage_node_id_));
+  if (!nodes_ || !keys_) {
+    storage->unlink_node(storage_node_id_);
+    return false;
+  }
+  header_->nodes_storage_node_id = nodes_->storage_node_id();
+  header_->keys_storage_node_id = keys_->storage_node_id();
+  Node * const root_node = nodes_->get_pointer(ROOT_NODE_ID);
+  if (!root_node) {
+    storage->unlink_node(storage_node_id_);
+    return false;
+  }
+  *root_node = Node::dead_node();
+  return true;
+}
+
+bool Patricia<Bytes>::open_map(Storage *storage, uint32_t storage_node_id) {
+  storage_ = storage;
+  StorageNode storage_node = storage->open_node(storage_node_id);
+  if (!storage_node) {
+    return false;
+  }
+  if (storage_node.size() < sizeof(Header)) {
+    GRNXX_ERROR() << "invalid format: size = " << storage_node.size()
+                  << ", header_size = " << sizeof(Header);
+    return false;
+  }
+  storage_node_id_ = storage_node_id;
+  header_ = static_cast<Header *>(storage_node.body());
+  // TODO: Check the format.
+  nodes_.reset(NodeArray::open(storage, header_->nodes_storage_node_id));
+  keys_.reset(KeyStore<Bytes>::open(storage, header_->keys_storage_node_id));
+  if (!nodes_ || !keys_) {
+    return false;
+  }
+  return true;
+}
 
 }  // namespace map
 }  // namespace grnxx

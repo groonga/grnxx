@@ -9,4 +9,5 @@ libgrnxx_map_patricia_la_SOURCES =	\
 libgrnxx_map_patricia_includedir = ${includedir}/grnxx/map/patricia
 libgrnxx_map_patricia_include_HEADERS =	\
 	dummy.hpp			\
-	header.hpp
+	header.hpp			\
+	node.hpp
