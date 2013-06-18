@@ -570,11 +570,77 @@ bool Patricia<Bytes>::remove(KeyArg key) {
 //  return false;
 //}
 
-//bool Patricia<Bytes>::find_longest_prefix_match(KeyArg query, int64_t *key_id,
-//                                                Key *key) {
-//  // TODO
-//  return false;
-//}
+bool Patricia<Bytes>::find_longest_prefix_match(KeyArg query, int64_t *key_id,
+                                                Key *key) {
+  const uint64_t bit_size = query.size() * 8;
+  bool found = false;
+  uint64_t node_id = ROOT_NODE_ID;
+  for ( ; ; ) {
+    Node node;
+    if (!nodes_->get(node_id, &node)) {
+      // Error.
+      return false;
+    }
+    switch (node.status()) {
+      case NODE_DEAD: {
+        // Not found.
+        return found;
+      }
+      case NODE_LEAF: {
+        Key stored_key;
+        if (!keys_->get_key(node.key_id(), &stored_key)) {
+          // Error.
+          return false;
+        }
+        if (query.starts_with(stored_key)) {
+          if (key_id) {
+            *key_id = node.key_id();
+          }
+          if (key) {
+            *key = stored_key;
+          }
+          found = true;
+        }
+        return found;
+      }
+      case NODE_BRANCH: {
+        if (node.bit_pos() >= bit_size) {
+          return found;
+        }
+        node_id = node.offset() +
+                  ((query[node.bit_pos() / 8] >> (node.bit_pos() % 8)) & 1);
+        break;
+      }
+      case NODE_TERMINAL: {
+        if (node.bit_size() > bit_size) {
+          return found;
+        } else if (node.bit_size() < bit_size) {
+          Node leaf_node;
+          if (!nodes_->get(node.offset(), &leaf_node)) {
+            // Error.
+            return false;
+          }
+          Key stored_key;
+          if (!keys_->get_key(leaf_node.key_id(), &stored_key)) {
+            // Error.
+            return false;
+          }
+          if (query.starts_with(stored_key)) {
+            if (key_id) {
+              *key_id = leaf_node.key_id();
+            }
+            if (key) {
+              *key = stored_key;
+            }
+            found = true;
+          }
+        }
+        node_id = node.offset() + (node.bit_size() < bit_size);
+        break;
+      }
+    }
+  }
+}
 
 bool Patricia<Bytes>::truncate() {
   Node * const root_node = nodes_->get_pointer(ROOT_NODE_ID);
