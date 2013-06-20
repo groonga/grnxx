@@ -36,11 +36,6 @@ enum NodeStatus : uint64_t {
   NODE_TERMINAL = 3
 };
 
-//constexpr uint64_t NODE_DEAD = 0;
-//constexpr uint64_t NODE_LEAF = 1;
-//constexpr uint64_t NODE_BRANCH = 2;
-//constexpr uint64_t NODE_TERMINAL = 3;
-
 // The internal structure is as follows:
 // - Common
 //   62-63 ( 2): status (DEAD, LEAF, BRANCH, TERMINAL)
