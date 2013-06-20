@@ -43,7 +43,7 @@ struct Header;
 template <typename T>
 class Patricia : public Map<T> {
   using Node = patricia::Node;
-  using NodeArray = Array<Node, 65536, 8192, 8192>;
+  using NodeArray = Array<Node>;
 
  public:
   using Header = patricia::Header;
@@ -64,17 +64,16 @@ class Patricia : public Map<T> {
   int64_t max_key_id() const;
   uint64_t num_keys() const;
 
-  // TODO
-//  bool get(int64_t key_id, Key *key = nullptr);
-//  bool unset(int64_t key_id);
+  bool get(int64_t key_id, Key *key = nullptr);
+  bool unset(int64_t key_id);
 //  bool reset(int64_t key_id, KeyArg dest_key);
 
-//  bool find(KeyArg key, int64_t *key_id = nullptr);
-//  bool add(KeyArg key, int64_t *key_id = nullptr);
-//  bool remove(KeyArg key);
+  bool find(KeyArg key, int64_t *key_id = nullptr);
+  bool add(KeyArg key, int64_t *key_id = nullptr);
+  bool remove(KeyArg key);
 //  bool replace(KeyArg src_key, KeyArg dest_key, int64_t *key_id = nullptr);
 
-//  bool truncate();
+  bool truncate();
 
  private:
   Storage *storage_;
@@ -86,6 +85,9 @@ class Patricia : public Map<T> {
   bool create_map(Storage *storage, uint32_t storage_node_id,
                   const MapOptions &options);
   bool open_map(Storage *storage, uint32_t storage_node_id);
+
+  static uint64_t get_ith_bit(KeyArg key, uint64_t bit_pos);
+  static uint64_t count_common_prefix_bits(KeyArg lhs, KeyArg rhs);
 };
 
 template <>
@@ -136,6 +138,8 @@ class Patricia<Bytes> : public Map<Bytes> {
   bool create_map(Storage *storage, uint32_t storage_node_id,
                   const MapOptions &options);
   bool open_map(Storage *storage, uint32_t storage_node_id);
+
+  static uint64_t get_ith_bit(KeyArg key, uint64_t bit_pos);
 };
 
 }  // namespace map

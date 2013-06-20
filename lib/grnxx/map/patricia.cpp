@@ -39,14 +39,6 @@ using patricia::NODE_LEAF;
 using patricia::NODE_BRANCH;
 using patricia::NODE_TERMINAL;
 
-inline uint64_t get_ith_bit(uint8_t byte, uint64_t bit_id) {
-  return (byte >> (7 - bit_id)) & 1;
-}
-
-inline uint64_t get_ith_bit(const Bytes &key, uint64_t bit_pos) {
-  return get_ith_bit(key[bit_pos / 8], bit_pos % 8);
-}
-
 }  // namespace
 
 template <typename T>
@@ -110,6 +102,282 @@ uint64_t Patricia<T>::num_keys() const {
 }
 
 template <typename T>
+bool Patricia<T>::get(int64_t key_id, Key *key) {
+  if ((key_id < MAP_MIN_KEY_ID) || (key_id > keys_->max_key_id())) {
+    // Out of range.
+    return false;
+  }
+  bool bit;
+  if (!keys_->get_bit(key_id, &bit)) {
+    // Error.
+    return false;
+  }
+  if (!bit) {
+    // Not found.
+    return false;
+  }
+  if (!keys_->get_key(key_id, key)) {
+    // Error.
+    return false;
+  }
+  return true;
+}
+
+template <typename T>
+bool Patricia<T>::unset(int64_t key_id) {
+  Key key;
+  if (!get(key_id, &key)) {
+    // Not found or error.
+    return false;
+  }
+  uint64_t node_id = ROOT_NODE_ID;
+  Node *prev_node = nullptr;
+  for ( ; ; ) {
+    Node * const node = nodes_->get_pointer(node_id);
+    if (!node) {
+      // Error.
+      return false;
+    }
+    switch (node->status()) {
+      case NODE_DEAD: {
+        // Not found.
+        return false;
+      }
+      case NODE_LEAF: {
+        if (node->key_id() != key_id) {
+          // Not found.
+          return false;
+        }
+        keys_->unset(key_id);
+        if (prev_node) {
+          Node * const sibling_node = node + (node_id ^ 1) - node_id;
+          *prev_node = *sibling_node;
+        } else {
+          *node = Node::dead_node();
+        }
+        return true;
+      }
+      case NODE_BRANCH: {
+        node_id = node->offset() + get_ith_bit(key, node->bit_pos());
+        break;
+      }
+    }
+    prev_node = node;
+  }
+}
+
+//template <typename T>
+//bool Patricia<T>::reset(int64_t key_id, KeyArg dest_key) {
+//  // TODO
+//  return false;
+//}
+
+template <typename T>
+bool Patricia<T>::find(KeyArg key, int64_t *key_id) {
+  uint64_t node_id = ROOT_NODE_ID;
+  for ( ; ; ) {
+    Node node;
+    if (!nodes_->get(node_id, &node)) {
+      // Error.
+      return false;
+    }
+    switch (node.status()) {
+      case NODE_DEAD: {
+        // Not found.
+        return false;
+      }
+      case NODE_LEAF: {
+        Key stored_key;
+        if (!keys_->get_key(node.key_id(), &stored_key)) {
+          // Error.
+          return false;
+        }
+        if (!Helper<T>::equal_to(key, stored_key)) {
+          // Not found.
+          return false;
+        }
+        if (key_id) {
+          *key_id = node.key_id();
+        }
+        return true;
+      }
+      case NODE_BRANCH: {
+        node_id = node.offset() + get_ith_bit(key, node.bit_pos());
+        break;
+      }
+    }
+  }
+}
+
+template <typename T>
+bool Patricia<T>::add(KeyArg key, int64_t *key_id) {
+  uint64_t node_id = ROOT_NODE_ID;
+  Node * node;
+  for (node = nodes_->get_pointer(node_id);
+       node && (node->status() != NODE_LEAF);
+       node = nodes_->get_pointer(node_id)) {
+    switch (node->status()) {
+      case NODE_DEAD: {
+        // The patricia is empty.
+        int64_t next_key_id;
+        if (!keys_->add(key, &next_key_id)) {
+          // Error.
+          return false;
+        }
+        *node = Node::leaf_node(next_key_id);
+        if (key_id) {
+          *key_id = next_key_id;
+        }
+        return true;
+      }
+      case NODE_BRANCH: {
+        node_id = node->offset() + get_ith_bit(key, node->bit_pos());
+        break;
+      }
+    }
+  }
+  if (!node) {
+    // Error.
+    return false;
+  }
+  // "node" points to a leaf node.
+  Key stored_key;
+  if (!keys_->get_key(node->key_id(), &stored_key)) {
+    // Error.
+    return false;
+  }
+  const uint64_t count = count_common_prefix_bits(key, stored_key);
+  if (count == (sizeof(Key) * 8)) {
+    // Found.
+    if (key_id) {
+      *key_id = node->key_id();
+    }
+    return false;
+  }
+  Node * const next_nodes = nodes_->get_pointer(header_->next_node_id);
+  node_id = ROOT_NODE_ID;
+  for (node = nodes_->get_pointer(node_id);
+       node && (node->status() != NODE_LEAF);
+       node = nodes_->get_pointer(node_id)) {
+    switch (node->status()) {
+      case NODE_BRANCH: {
+        if (count <= node->bit_pos()) {
+          int64_t next_key_id;
+          if (!keys_->add(key, &next_key_id)) {
+            // Error.
+            return false;
+          }
+          // Create a branch node.
+          if (get_ith_bit(key, count)) {
+            next_nodes[0] = *node;
+            next_nodes[1] = Node::leaf_node(next_key_id);
+          } else {
+            next_nodes[0] = Node::leaf_node(next_key_id);
+            next_nodes[1] = *node;
+          }
+          *node = Node::branch_node(count, header_->next_node_id);
+          header_->next_node_id += 2;
+          if (key_id) {
+            *key_id = next_key_id;
+          }
+          return true;
+        }
+        node_id = node->offset();
+        if (node->bit_pos() < count) {
+          node_id += get_ith_bit(key, node->bit_pos());
+        }
+        break;
+      }
+    }
+  }
+  if (!node) {
+    // Error.
+    return false;
+  }
+  int64_t next_key_id;
+  if (!keys_->add(key, &next_key_id)) {
+    // Error.
+    return false;
+  }
+  // Create a branch node.
+  if (get_ith_bit(key, count)) {
+    next_nodes[0] = *node;
+    next_nodes[1] = Node::leaf_node(next_key_id);
+  } else {
+    next_nodes[0] = Node::leaf_node(next_key_id);
+    next_nodes[1] = *node;
+  }
+  *node = Node::branch_node(count, header_->next_node_id);
+  header_->next_node_id += 2;
+  if (key_id) {
+    *key_id = next_key_id;
+  }
+  return true;
+}
+
+template <typename T>
+bool Patricia<T>::remove(KeyArg key) {
+  uint64_t node_id = ROOT_NODE_ID;
+  Node * prev_node = nullptr;
+  for ( ; ; ) {
+    Node * const node = nodes_->get_pointer(node_id);
+    if (!node) {
+      // Error.
+      return false;
+    }
+    switch (node->status()) {
+      case NODE_DEAD: {
+        // Not found.
+        return false;
+      }
+      case NODE_LEAF: {
+        Key stored_key;
+        if (!keys_->get_key(node->key_id(), &stored_key)) {
+          // Error.
+          return false;
+        }
+        if (!Helper<T>::equal_to(key, stored_key)) {
+          // Not found.
+          return false;
+        }
+        keys_->unset(node->key_id());
+        if (prev_node) {
+          Node * const sibling_node = node + (node_id ^ 1) - node_id;
+          *prev_node = *sibling_node;
+        } else {
+          *node = Node::dead_node();
+        }
+        return true;
+      }
+      case NODE_BRANCH: {
+        node_id = node->offset() + get_ith_bit(key, node->bit_pos());
+        break;
+      }
+    }
+    prev_node = node;
+  }
+}
+
+//template <typename T>
+//bool Patricia<T>::replace(KeyArg src_key, KeyArg dest_key, int64_t *key_id) {
+//  // TODO
+//  return false;
+//}
+
+template <typename T>
+bool Patricia<T>::truncate() {
+  Node * const root_node = nodes_->get_pointer(ROOT_NODE_ID);
+  if (!root_node) {
+    return false;
+  }
+  if (!keys_->truncate()) {
+    return false;
+  }
+  *root_node = Node::dead_node();
+  return true;
+}
+
+template <typename T>
 bool Patricia<T>::create_map(Storage *storage, uint32_t storage_node_id,
                              const MapOptions &) {
   storage_ = storage;
@@ -121,8 +389,21 @@ bool Patricia<T>::create_map(Storage *storage, uint32_t storage_node_id,
   storage_node_id_ = storage_node.id();
   header_ = static_cast<Header *>(storage_node.body());
   *header_ = Header();
-  // TODO
-  return false;
+  nodes_.reset(NodeArray::create(storage, storage_node_id_));
+  keys_.reset(KeyStore<T>::create(storage, storage_node_id_));
+  if (!nodes_ || !keys_) {
+    storage->unlink_node(storage_node_id_);
+    return false;
+  }
+  header_->nodes_storage_node_id = nodes_->storage_node_id();
+  header_->keys_storage_node_id = keys_->storage_node_id();
+  Node * const root_node = nodes_->get_pointer(ROOT_NODE_ID);
+  if (!root_node) {
+    storage->unlink_node(storage_node_id_);
+    return false;
+  }
+  *root_node = Node::dead_node();
+  return true;
 }
 
 template <typename T>
@@ -139,8 +420,50 @@ bool Patricia<T>::open_map(Storage *storage, uint32_t storage_node_id) {
   }
   storage_node_id_ = storage_node_id;
   header_ = static_cast<Header *>(storage_node.body());
+  // TODO: Check the format.
+  nodes_.reset(NodeArray::open(storage, header_->nodes_storage_node_id));
+  keys_.reset(KeyStore<T>::open(storage, header_->keys_storage_node_id));
+  if (!nodes_ || !keys_) {
+    return false;
+  }
+  return true;
+}
+
+template <typename T>
+uint64_t Patricia<T>::get_ith_bit(KeyArg key, uint64_t bit_pos) {
+  return (key >> ((sizeof(Key) * 8) - 1 - bit_pos)) & 1;
+}
+
+template <>
+uint64_t Patricia<double>::get_ith_bit(KeyArg key, uint64_t bit_pos) {
   // TODO
-  return false;
+  return 0;
+}
+
+template <>
+uint64_t Patricia<GeoPoint>::get_ith_bit(KeyArg key, uint64_t bit_pos) {
+  // TODO
+  return 0;
+}
+
+template <typename T>
+uint64_t Patricia<T>::count_common_prefix_bits(KeyArg lhs, KeyArg rhs) {
+  if (lhs == rhs) {
+    return sizeof(Key) * 8;
+  }
+  return (sizeof(Key) * 8) - 1 - bit_scan_reverse(static_cast<Key>(lhs ^ rhs));
+}
+
+template <>
+uint64_t Patricia<double>::count_common_prefix_bits(KeyArg lhs, KeyArg rhs) {
+  // TODO
+  return 0;
+}
+
+template <>
+uint64_t Patricia<GeoPoint>::count_common_prefix_bits(KeyArg lhs, KeyArg rhs) {
+  // TODO
+  return 0;
 }
 
 template class Patricia<int8_t>;
@@ -706,6 +1029,10 @@ bool Patricia<Bytes>::open_map(Storage *storage, uint32_t storage_node_id) {
     return false;
   }
   return true;
+}
+
+uint64_t Patricia<Bytes>::get_ith_bit(KeyArg key, uint64_t bit_pos) {
+  return (key[bit_pos / 8] >> (7 - (bit_pos % 8))) & 1;
 }
 
 }  // namespace map
