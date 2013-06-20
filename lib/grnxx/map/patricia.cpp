@@ -39,6 +39,14 @@ using patricia::NODE_LEAF;
 using patricia::NODE_BRANCH;
 using patricia::NODE_TERMINAL;
 
+inline uint64_t get_ith_bit(uint8_t byte, uint64_t bit_id) {
+  return (byte >> (7 - bit_id)) & 1;
+}
+
+inline uint64_t get_ith_bit(const Bytes &key, uint64_t bit_pos) {
+  return get_ith_bit(key[bit_pos / 8], bit_pos % 8);
+}
+
 }  // namespace
 
 template <typename T>
@@ -258,8 +266,7 @@ bool Patricia<Bytes>::unset(int64_t key_id) {
           // Not found.
           return false;
         }
-        node_id = node->offset() +
-                  ((key[node->bit_pos() / 8] >> (node->bit_pos() % 8)) & 1);
+        node_id = node->offset() + get_ith_bit(key, node->bit_pos());
         break;
       }
       case NODE_TERMINAL: {
@@ -314,8 +321,7 @@ bool Patricia<Bytes>::find(KeyArg key, int64_t *key_id) {
           // Not found.
           return false;
         }
-        node_id = node.offset() +
-                  ((key[node.bit_pos() / 8] >> (node.bit_pos() % 8)) & 1);
+        node_id = node.offset() + get_ith_bit(key, node.bit_pos());
         break;
       }
       case NODE_TERMINAL: {
@@ -354,7 +360,7 @@ bool Patricia<Bytes>::add(KeyArg key, int64_t *key_id) {
       case NODE_BRANCH: {
         node_id = node->offset();
         if (node->bit_pos() < bit_size) {
-          node_id += (key[node->bit_pos() / 8] >> (node->bit_pos() % 8)) & 1;
+          node_id += get_ith_bit(key, node->bit_pos());
         }
         break;
       }
@@ -385,7 +391,7 @@ bool Patricia<Bytes>::add(KeyArg key, int64_t *key_id) {
   if (count < min_size) {
     const uint8_t diff = key[count] ^ stored_key[count];
     count *= 8;
-    count += bit_scan_forward(diff);
+    count += 7 - bit_scan_reverse(diff);
   } else {
     if (key.size() == stored_key.size()) {
       // Found.
@@ -416,7 +422,7 @@ bool Patricia<Bytes>::add(KeyArg key, int64_t *key_id) {
             *node = Node::terminal_node(count, header_->next_node_id);
           } else {
             // Create a branch node.
-            if (key[count / 8] & (1U << (count % 8))) {
+            if (get_ith_bit(key, count)) {
               next_nodes[0] = *node;
               next_nodes[1] = Node::leaf_node(next_key_id);
             } else {
@@ -433,7 +439,7 @@ bool Patricia<Bytes>::add(KeyArg key, int64_t *key_id) {
         }
         node_id = node->offset();
         if (node->bit_pos() < count) {
-          node_id += (key[node->bit_pos() / 8] >> (node->bit_pos() % 8)) & 1;
+          node_id += get_ith_bit(key, node->bit_pos());
         }
         break;
       }
@@ -451,7 +457,7 @@ bool Patricia<Bytes>::add(KeyArg key, int64_t *key_id) {
             *node = Node::terminal_node(count, header_->next_node_id);
           } else {
             // Create a branch node.
-            if (key[count / 8] & (1U << (count % 8))) {
+            if (get_ith_bit(key, count)) {
               next_nodes[0] = *node;
               next_nodes[1] = Node::leaf_node(next_key_id);
             } else {
@@ -492,7 +498,7 @@ bool Patricia<Bytes>::add(KeyArg key, int64_t *key_id) {
     *node = Node::terminal_node(count, header_->next_node_id);
   } else {
     // Create a branch node.
-    if (key[count / 8] & (1U << (count % 8))) {
+    if (get_ith_bit(key, count)) {
       next_nodes[0] = *node;
       next_nodes[1] = Node::leaf_node(next_key_id);
     } else {
@@ -547,8 +553,7 @@ bool Patricia<Bytes>::remove(KeyArg key) {
           // Not found.
           return false;
         }
-        node_id = node->offset() +
-                  ((key[node->bit_pos() / 8] >> (node->bit_pos() % 8)) & 1);
+        node_id = node->offset() + get_ith_bit(key, node->bit_pos());
         break;
       }
       case NODE_TERMINAL: {
@@ -607,8 +612,7 @@ bool Patricia<Bytes>::find_longest_prefix_match(KeyArg query, int64_t *key_id,
         if (node.bit_pos() >= bit_size) {
           return found;
         }
-        node_id = node.offset() +
-                  ((query[node.bit_pos() / 8] >> (node.bit_pos() % 8)) & 1);
+        node_id = node.offset() + get_ith_bit(query, node.bit_pos());
         break;
       }
       case NODE_TERMINAL: {
