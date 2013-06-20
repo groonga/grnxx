@@ -151,18 +151,18 @@ class BitScanReverse<8> {
 
 template <typename Value>
 inline uint8_t bit_scan_reverse(Value value) {
-  static_assert(std::is_integral<Value>::value &&
-                std::is_unsigned<Value>::value,
-                "bit_scan_reverse accepts only unsigned integer types");
+  static_assert(std::is_integral<Value>::value,
+                "bit_scan_reverse accepts only integer types");
+  using UValue = typename std::make_unsigned<Value>::type;
 
 #if defined(GRNXX_MSC) || defined(GRNXX_HAS_GNUC_BUILTIN_CLZ)
-  return BitScanReverse<sizeof(Value)>()(value);
+  return BitScanReverse<sizeof(Value)>()(static_cast<UValue>(value));
 #else  // defined(GRNXX_MSC) || defined(GRNXX_HAS_GNUC_BUILTIN_CLZ)
   uint8_t result = 0;
   for (uint8_t shift = static_cast<uint8_t>(sizeof(Value) * 4);
        shift != 0; shift /= 2) {
-    if ((value >> shift) != 0) {
-      value >>= shift;
+    if ((static_cast<UValue>(value) >> shift) != 0) {
+      value = static_cast<UValue>(value) >> shift;
       result += shift;
     }
   }
@@ -217,12 +217,12 @@ class BitScanForward<8> {
 
 template <typename Value>
 inline uint8_t bit_scan_forward(Value value) {
-  static_assert(std::is_integral<Value>::value &&
-                std::is_unsigned<Value>::value,
-                "bit_scan_forward accepts only unsigned integer types");
+  static_assert(std::is_integral<Value>::value,
+                "bit_scan_forward accepts only integer types");
+  using UValue = typename std::make_unsigned<Value>::type;
 
 #if defined(GRNXX_MSC) || defined(GRNXX_HAS_GNUC_BUILTIN_CLZ)
-  return BitScanForward<sizeof(Value)>()(value);
+  return BitScanForward<sizeof(Value)>()(static_cast<UValue>(value));
 #else  // defined(GRNXX_MSC) || defined(GRNXX_HAS_GNUC_BUILTIN_CLZ)
   uint8_t result = static_cast<uint8_t>(sizeof(Value) * 8) - 1;
   for (uint8_t shift = static_cast<uint8_t>(sizeof(Value) * 4);
