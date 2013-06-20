@@ -41,16 +41,16 @@ class StringFormatAlignment {
         pad_(pad),
         attribute_(attribute) {}
 
-  constexpr const T &value() {
+  constexpr const T &value() const {
     return value_;
   }
-  constexpr size_t width() {
+  constexpr size_t width() const {
     return width_;
   }
-  constexpr int pad() {
+  constexpr int pad() const {
     return pad_;
   }
-  constexpr StringFormatAlignmentAttribute attribute() {
+  constexpr StringFormatAlignmentAttribute attribute() const {
     return attribute_;
   }
 

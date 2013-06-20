@@ -42,7 +42,7 @@ struct MapIDRange {
 
 struct MapIDLess {
   int64_t max;
-  constexpr MapRangeFlags flags() {
+  constexpr MapRangeFlags flags() const {
     return MAP_RANGE_LESS;
   }
   operator MapIDRange() const {
@@ -52,7 +52,7 @@ struct MapIDLess {
 
 struct MapIDLessEqual {
   int64_t max;
-  constexpr MapRangeFlags flags() {
+  constexpr MapRangeFlags flags() const {
     return MAP_RANGE_LESS_EQUAL;
   }
   operator MapIDRange() const {
@@ -62,7 +62,7 @@ struct MapIDLessEqual {
 
 struct MapIDGreater {
   int64_t min;
-  constexpr MapRangeFlags flags() {
+  constexpr MapRangeFlags flags() const {
     return MAP_RANGE_GREATER;
   }
   operator MapIDRange() const {
@@ -72,7 +72,7 @@ struct MapIDGreater {
 
 struct MapIDGreaterEqual {
   int64_t min;
-  constexpr MapRangeFlags flags() {
+  constexpr MapRangeFlags flags() const {
     return MAP_RANGE_GREATER_EQUAL;
   }
   operator MapIDRange() const {
@@ -143,7 +143,7 @@ struct MapKeyRange {
 template <typename T>
 struct MapKeyLess {
   T max;
-  constexpr MapRangeFlags flags() {
+  constexpr MapRangeFlags flags() const {
     return MAP_RANGE_LESS;
   }
   operator MapKeyRange<T>() const {
@@ -154,7 +154,7 @@ struct MapKeyLess {
 template <typename T>
 struct MapKeyLessEqual {
   T max;
-  constexpr MapRangeFlags flags() {
+  constexpr MapRangeFlags flags() const {
     return MAP_RANGE_LESS_EQUAL;
   }
   operator MapKeyRange<T>() const {
@@ -165,7 +165,7 @@ struct MapKeyLessEqual {
 template <typename T>
 struct MapKeyGreater {
   T min;
-  constexpr MapRangeFlags flags() {
+  constexpr MapRangeFlags flags() const {
     return MAP_RANGE_GREATER;
   }
   operator MapKeyRange<T>() const {
@@ -176,7 +176,7 @@ struct MapKeyGreater {
 template <typename T>
 struct MapKeyGreaterEqual {
   T min;
-  constexpr MapRangeFlags flags() {
+  constexpr MapRangeFlags flags() const {
     return MAP_RANGE_GREATER_EQUAL;
   }
   operator MapKeyRange<T>() const {

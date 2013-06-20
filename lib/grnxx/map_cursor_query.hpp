@@ -55,7 +55,7 @@ struct MapCursorKeyIDRange {
 template <typename T>
 struct MapCursorKeyIDLess {
   int64_t max;
-  constexpr MapCursorKeyIDFlags flags() {
+  constexpr MapCursorKeyIDFlags flags() const {
     return MAP_CURSOR_KEY_ID_LESS;
   }
   operator MapCursorKeyIDRange<T>() const {
@@ -66,7 +66,7 @@ struct MapCursorKeyIDLess {
 template <typename T>
 struct MapCursorKeyIDLessEqual {
   int64_t max;
-  constexpr MapCursorKeyIDFlags flags() {
+  constexpr MapCursorKeyIDFlags flags() const {
     return MAP_CURSOR_KEY_ID_LESS_EQUAL;
   }
   operator MapCursorKeyIDRange<T>() const {
@@ -77,7 +77,7 @@ struct MapCursorKeyIDLessEqual {
 template <typename T>
 struct MapCursorKeyIDGreater {
   int64_t min;
-  constexpr MapCursorKeyIDFlags flags() {
+  constexpr MapCursorKeyIDFlags flags() const {
     return MAP_CURSOR_KEY_ID_GREATER;
   }
   operator MapCursorKeyIDRange<T>() const {
@@ -88,7 +88,7 @@ struct MapCursorKeyIDGreater {
 template <typename T>
 struct MapCursorKeyIDGreaterEqual {
   int64_t min;
-  constexpr MapCursorKeyIDFlags flags() {
+  constexpr MapCursorKeyIDFlags flags() const {
     return MAP_CURSOR_KEY_ID_GREATER_EQUAL;
   }
   operator MapCursorKeyIDRange<T>() const {
@@ -201,7 +201,7 @@ struct MapCursorKeyRange {
 template <typename T>
 struct MapCursorKeyLess {
   T max;
-  constexpr MapCursorKeyFlags flags() {
+  constexpr MapCursorKeyFlags flags() const {
     return MAP_CURSOR_KEY_LESS;
   }
   operator MapCursorKeyRange<T>() const {
@@ -212,7 +212,7 @@ struct MapCursorKeyLess {
 template <typename T>
 struct MapCursorKeyLessEqual {
   T max;
-  constexpr MapCursorKeyFlags flags() {
+  constexpr MapCursorKeyFlags flags() const {
     return MAP_CURSOR_KEY_LESS_EQUAL;
   }
   operator MapCursorKeyRange<T>() const {
@@ -223,7 +223,7 @@ struct MapCursorKeyLessEqual {
 template <typename T>
 struct MapCursorKeyGreater {
   T min;
-  constexpr MapCursorKeyFlags flags() {
+  constexpr MapCursorKeyFlags flags() const {
     return MAP_CURSOR_KEY_GREATER;
   }
   operator MapCursorKeyRange<T>() const {
@@ -234,7 +234,7 @@ struct MapCursorKeyGreater {
 template <typename T>
 struct MapCursorKeyGreaterEqual {
   T min;
-  constexpr MapCursorKeyFlags flags() {
+  constexpr MapCursorKeyFlags flags() const {
     return MAP_CURSOR_KEY_GREATER_EQUAL;
   }
   operator MapCursorKeyRange<T>() const {

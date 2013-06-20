@@ -69,7 +69,7 @@ class Mutex {
     return true;
   }
 
-  constexpr bool locked() {
+  constexpr bool locked() const {
     return status_ != MUTEX_UNLOCKED;
   }
 

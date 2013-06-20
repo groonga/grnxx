@@ -76,7 +76,7 @@ class Map {
   virtual MapType type() const = 0;
 
   // Return the minimum key ID.
-  constexpr int64_t min_key_id() {
+  constexpr int64_t min_key_id() const {
     return MAP_MIN_KEY_ID;
   }
   // Return the maximum key ID ever used.

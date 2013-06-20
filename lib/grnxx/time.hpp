@@ -52,7 +52,7 @@ class Time {
   BrokenDownTime local_time() const;
 
   // Return the tick count.
-  constexpr int64_t count() {
+  constexpr int64_t count() const {
     return count_;
   }
   // Set the tick count.

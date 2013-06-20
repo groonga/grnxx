@@ -76,7 +76,7 @@ class Duration {
   }
 
   // Return the tick count.
-  constexpr int64_t count() {
+  constexpr int64_t count() const {
     return count_;
   }
   // Set the tick count.
