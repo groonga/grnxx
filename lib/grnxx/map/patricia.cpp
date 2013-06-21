@@ -439,15 +439,16 @@ uint64_t Patricia<T>::get_ith_bit(KeyArg key, uint64_t bit_pos) {
 
 template <>
 uint64_t Patricia<double>::get_ith_bit(KeyArg key, uint64_t bit_pos) {
-  int64_t x = *reinterpret_cast<const int64_t *>(&key);
-  x ^= (x >> 63) | (1ULL << 63);
+  constexpr uint64_t MASK[2] = { 1ULL << 63, ~0ULL };
+  uint64_t x = *reinterpret_cast<const uint64_t *>(&key);
+  x ^= MASK[x >> 63];
   return (x >> ((sizeof(Key) * 8) - 1 - bit_pos)) & 1;
 }
 
 template <>
 uint64_t Patricia<GeoPoint>::get_ith_bit(KeyArg key, uint64_t bit_pos) {
-  // TODO
-  return 0;
+  const uint32_t x = reinterpret_cast<const uint32_t *>(&key)[bit_pos & 1];
+  return (x >> (31 - (bit_pos >> 1))) & 1;
 }
 
 template <typename T>
@@ -470,8 +471,14 @@ uint64_t Patricia<double>::count_common_prefix_bits(KeyArg lhs, KeyArg rhs) {
 
 template <>
 uint64_t Patricia<GeoPoint>::count_common_prefix_bits(KeyArg lhs, KeyArg rhs) {
-  // TODO
-  return 0;
+  if (lhs == rhs) {
+    return sizeof(GeoPoint) * 8;
+  }
+  const GeoPoint x = GeoPoint(lhs.value() ^ rhs.value());
+  const uint32_t latitude = x.latitude();
+  const uint32_t longitude = x.longitude();
+  const uint8_t y = bit_scan_reverse(latitude | longitude);
+  return ((31 - y) << 1) + 1 - (latitude >> y);
 }
 
 template class Patricia<int8_t>;
