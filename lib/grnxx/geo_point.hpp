@@ -37,6 +37,8 @@ union GeoPoint {
  public:
   // Trivial default constructor.
   GeoPoint() = default;
+  // Copy the lat/long as uint64_t.
+  explicit GeoPoint(uint64_t x) : value_(x) {}
   // Copy the lat/long.
   GeoPoint(int32_t latitude, int32_t longitude) : value_() {
     Point point{ latitude, longitude };
