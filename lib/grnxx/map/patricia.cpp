@@ -174,6 +174,7 @@ bool Patricia<T>::unset(int64_t key_id) {
 
 template <typename T>
 bool Patricia<T>::find(KeyArg key, int64_t *key_id) {
+  const Key normalized_key = Helper<T>::normalize(key);
   uint64_t node_id = ROOT_NODE_ID;
   for ( ; ; ) {
     Node node;
@@ -192,7 +193,7 @@ bool Patricia<T>::find(KeyArg key, int64_t *key_id) {
           // Error.
           return false;
         }
-        if (!Helper<T>::equal_to(key, stored_key)) {
+        if (!Helper<T>::equal_to(normalized_key, stored_key)) {
           // Not found.
           return false;
         }
@@ -202,7 +203,7 @@ bool Patricia<T>::find(KeyArg key, int64_t *key_id) {
         return true;
       }
       case NODE_BRANCH: {
-        node_id = node.offset() + get_ith_bit(key, node.bit_pos());
+        node_id = node.offset() + get_ith_bit(normalized_key, node.bit_pos());
         break;
       }
     }
@@ -211,6 +212,7 @@ bool Patricia<T>::find(KeyArg key, int64_t *key_id) {
 
 template <typename T>
 bool Patricia<T>::add(KeyArg key, int64_t *key_id) {
+  const Key normalized_key = Helper<T>::normalize(key);
   uint64_t node_id = ROOT_NODE_ID;
   Node * node;
   for (node = nodes_->get_pointer(node_id);
@@ -220,7 +222,7 @@ bool Patricia<T>::add(KeyArg key, int64_t *key_id) {
       case NODE_DEAD: {
         // The patricia is empty.
         int64_t next_key_id;
-        if (!keys_->add(key, &next_key_id)) {
+        if (!keys_->add(normalized_key, &next_key_id)) {
           // Error.
           return false;
         }
@@ -231,7 +233,7 @@ bool Patricia<T>::add(KeyArg key, int64_t *key_id) {
         return true;
       }
       case NODE_BRANCH: {
-        node_id = node->offset() + get_ith_bit(key, node->bit_pos());
+        node_id = node->offset() + get_ith_bit(normalized_key, node->bit_pos());
         break;
       }
     }
@@ -246,7 +248,7 @@ bool Patricia<T>::add(KeyArg key, int64_t *key_id) {
     // Error.
     return false;
   }
-  const uint64_t count = count_common_prefix_bits(key, stored_key);
+  const uint64_t count = count_common_prefix_bits(normalized_key, stored_key);
   if (count == (sizeof(Key) * 8)) {
     // Found.
     if (key_id) {
@@ -263,12 +265,12 @@ bool Patricia<T>::add(KeyArg key, int64_t *key_id) {
       case NODE_BRANCH: {
         if (count <= node->bit_pos()) {
           int64_t next_key_id;
-          if (!keys_->add(key, &next_key_id)) {
+          if (!keys_->add(normalized_key, &next_key_id)) {
             // Error.
             return false;
           }
           // Create a branch node.
-          if (get_ith_bit(key, count)) {
+          if (get_ith_bit(normalized_key, count)) {
             next_nodes[0] = *node;
             next_nodes[1] = Node::leaf_node(next_key_id);
           } else {
@@ -284,7 +286,7 @@ bool Patricia<T>::add(KeyArg key, int64_t *key_id) {
         }
         node_id = node->offset();
         if (node->bit_pos() < count) {
-          node_id += get_ith_bit(key, node->bit_pos());
+          node_id += get_ith_bit(normalized_key, node->bit_pos());
         }
         break;
       }
@@ -295,12 +297,12 @@ bool Patricia<T>::add(KeyArg key, int64_t *key_id) {
     return false;
   }
   int64_t next_key_id;
-  if (!keys_->add(key, &next_key_id)) {
+  if (!keys_->add(normalized_key, &next_key_id)) {
     // Error.
     return false;
   }
   // Create a branch node.
-  if (get_ith_bit(key, count)) {
+  if (get_ith_bit(normalized_key, count)) {
     next_nodes[0] = *node;
     next_nodes[1] = Node::leaf_node(next_key_id);
   } else {
@@ -317,6 +319,7 @@ bool Patricia<T>::add(KeyArg key, int64_t *key_id) {
 
 template <typename T>
 bool Patricia<T>::remove(KeyArg key) {
+  const Key normalized_key = Helper<T>::normalize(key);
   uint64_t node_id = ROOT_NODE_ID;
   Node * prev_node = nullptr;
   for ( ; ; ) {
@@ -336,7 +339,7 @@ bool Patricia<T>::remove(KeyArg key) {
           // Error.
           return false;
         }
-        if (!Helper<T>::equal_to(key, stored_key)) {
+        if (!Helper<T>::equal_to(normalized_key, stored_key)) {
           // Not found.
           return false;
         }
@@ -350,7 +353,7 @@ bool Patricia<T>::remove(KeyArg key) {
         return true;
       }
       case NODE_BRANCH: {
-        node_id = node->offset() + get_ith_bit(key, node->bit_pos());
+        node_id = node->offset() + get_ith_bit(normalized_key, node->bit_pos());
         break;
       }
     }
@@ -436,8 +439,9 @@ uint64_t Patricia<T>::get_ith_bit(KeyArg key, uint64_t bit_pos) {
 
 template <>
 uint64_t Patricia<double>::get_ith_bit(KeyArg key, uint64_t bit_pos) {
-  // TODO
-  return 0;
+  int64_t x = *reinterpret_cast<const int64_t *>(&key);
+  x ^= (x >> 63) | (1ULL << 63);
+  return (x >> ((sizeof(Key) * 8) - 1 - bit_pos)) & 1;
 }
 
 template <>
@@ -456,8 +460,12 @@ uint64_t Patricia<T>::count_common_prefix_bits(KeyArg lhs, KeyArg rhs) {
 
 template <>
 uint64_t Patricia<double>::count_common_prefix_bits(KeyArg lhs, KeyArg rhs) {
-  // TODO
-  return 0;
+  const uint64_t x = *reinterpret_cast<const uint64_t *>(&lhs);
+  const uint64_t y = *reinterpret_cast<const uint64_t *>(&rhs);
+  if (x == y) {
+    return sizeof(Key) * 8;
+  }
+  return (sizeof(Key) * 8) - 1 - bit_scan_reverse(x ^ y);
 }
 
 template <>
