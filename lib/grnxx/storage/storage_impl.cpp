@@ -512,7 +512,10 @@ bool StorageImpl::open_or_create_storage(const char *path, StorageFlags flags,
   if (flags & STORAGE_HUGE_TLB) {
     flags_ |= STORAGE_HUGE_TLB;
   }
-  std::unique_ptr<File> header_file(File::open(path));
+  std::unique_ptr<File> header_file;
+  if (File::exists(path)) {
+    header_file.reset(File::open(path));
+  }
   if (header_file) {
     // Open an existing storage.
     std::unique_ptr<Chunk> root_chunk(
