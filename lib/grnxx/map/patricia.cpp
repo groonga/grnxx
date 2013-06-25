@@ -214,35 +214,37 @@ template <typename T>
 bool Patricia<T>::add(KeyArg key, int64_t *key_id) {
   const Key normalized_key = Helper<T>::normalize(key);
   uint64_t node_id = ROOT_NODE_ID;
-  Node * node;
-  for (node = nodes_->get_pointer(node_id);
-       node && (node->status() != NODE_LEAF);
-       node = nodes_->get_pointer(node_id)) {
-    switch (node->status()) {
-      case NODE_DEAD: {
-        // The patricia is empty.
-        int64_t next_key_id;
-        if (!keys_->add(normalized_key, &next_key_id)) {
-          // Error.
-          return false;
-        }
-        *node = Node::leaf_node(next_key_id);
-        if (key_id) {
-          *key_id = next_key_id;
-        }
-        return true;
-      }
-      case NODE_BRANCH: {
-        node_id = node->offset() + get_ith_bit(normalized_key, node->bit_pos());
-        break;
-      }
-    }
-  }
+  Node *node = nodes_->get_pointer(node_id);
   if (!node) {
     // Error.
     return false;
   }
-  // "node" points to a leaf node.
+  if (node->status() == NODE_DEAD) {
+    // The patricia is empty.
+    int64_t next_key_id;
+    if (!keys_->add(normalized_key, &next_key_id)) {
+      // Error.
+      return false;
+    }
+    *node = Node::leaf_node(next_key_id);
+    if (key_id) {
+      *key_id = next_key_id;
+    }
+    return true;
+  }
+  Node *history[(sizeof(Key) * 8) + 1];
+  int depth = 0;
+  history[0] = node;
+  while (node->status() != NODE_LEAF) {
+    node_id = node->offset() + get_ith_bit(normalized_key, node->bit_pos());
+    node = nodes_->get_pointer(node_id);
+    if (!node) {
+      // Error.
+      return false;
+    }
+    history[++depth] = node;
+  }
+  // Count the number of the common prefix bits.
   Key stored_key;
   if (!keys_->get_key(node->key_id(), &stored_key)) {
     // Error.
@@ -256,44 +258,16 @@ bool Patricia<T>::add(KeyArg key, int64_t *key_id) {
     }
     return false;
   }
-  Node * const next_nodes = nodes_->get_pointer(header_->next_node_id);
-  node_id = ROOT_NODE_ID;
-  for (node = nodes_->get_pointer(node_id);
-       node && (node->status() != NODE_LEAF);
-       node = nodes_->get_pointer(node_id)) {
-    switch (node->status()) {
-      case NODE_BRANCH: {
-        if (count <= node->bit_pos()) {
-          int64_t next_key_id;
-          if (!keys_->add(normalized_key, &next_key_id)) {
-            // Error.
-            return false;
-          }
-          // Create a branch node.
-          if (get_ith_bit(normalized_key, count)) {
-            next_nodes[0] = *node;
-            next_nodes[1] = Node::leaf_node(next_key_id);
-          } else {
-            next_nodes[0] = Node::leaf_node(next_key_id);
-            next_nodes[1] = *node;
-          }
-          *node = Node::branch_node(count, header_->next_node_id);
-          header_->next_node_id += 2;
-          if (key_id) {
-            *key_id = next_key_id;
-          }
-          return true;
-        }
-        node_id = node->offset();
-        if (node->bit_pos() < count) {
-          node_id += get_ith_bit(normalized_key, node->bit_pos());
-        }
-        break;
-      }
+  // Find the branching point in "history".
+  while (depth > 0) {
+    if (history[depth - 1]->bit_pos() < count) {
+      break;
     }
+    --depth;
   }
-  if (!node) {
-    // Error.
+  node = history[depth];
+  Node * const next_nodes = nodes_->get_pointer(header_->next_node_id);
+  if (!next_nodes) {
     return false;
   }
   int64_t next_key_id;
@@ -301,7 +275,6 @@ bool Patricia<T>::add(KeyArg key, int64_t *key_id) {
     // Error.
     return false;
   }
-  // Create a branch node.
   if (get_ith_bit(normalized_key, count)) {
     next_nodes[0] = *node;
     next_nodes[1] = Node::leaf_node(next_key_id);
