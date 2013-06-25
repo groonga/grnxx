@@ -155,6 +155,9 @@ bool StorageImpl::exists(const char *path) {
     GRNXX_ERROR() << "invalid argument: path = nullptr";
     return false;
   }
+  if (!File::exists(path)) {
+    return false;
+  }
   std::unique_ptr<Storage> storage(open(path, STORAGE_READ_ONLY));
   if (!storage) {
     return false;
