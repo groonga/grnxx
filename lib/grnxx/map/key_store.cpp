@@ -73,7 +73,7 @@ KeyStore<T> *KeyStore<T>::open(Storage *storage, uint32_t storage_node_id) {
     GRNXX_ERROR() << "new grnxx::map::KeyStore failed";
     return nullptr;
   }
-  if (!store->create_store(storage, storage_node_id)) {
+  if (!store->open_store(storage, storage_node_id)) {
     return nullptr;
   }
   return store.release();
