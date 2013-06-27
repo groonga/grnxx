@@ -117,12 +117,12 @@ class Patricia<Bytes> : public Map<Bytes> {
 
   bool get(int64_t key_id, Key *key = nullptr);
   bool unset(int64_t key_id);
-//  bool reset(int64_t key_id, KeyArg dest_key);
+  bool reset(int64_t key_id, KeyArg dest_key);
 
   bool find(KeyArg key, int64_t *key_id = nullptr);
   bool add(KeyArg key, int64_t *key_id = nullptr);
   bool remove(KeyArg key);
-//  bool replace(KeyArg src_key, KeyArg dest_key, int64_t *key_id = nullptr);
+  bool replace(KeyArg src_key, KeyArg dest_key, int64_t *key_id = nullptr);
 
   bool find_longest_prefix_match(KeyArg query, int64_t *key_id = nullptr,
                                  Key *key = nullptr);
@@ -140,11 +140,6 @@ class Patricia<Bytes> : public Map<Bytes> {
   bool create_map(Storage *storage, uint32_t storage_node_id,
                   const MapOptions &options);
   bool open_map(Storage *storage, uint32_t storage_node_id);
-
-  bool add_key_with_terminal_node(Node *node, KeyArg key, uint64_t count,
-                                  int64_t *key_id, int64_t *cache);
-  bool add_key_with_branch_node(Node *node, KeyArg key, uint64_t bit_pos,
-                                int64_t *key_id, int64_t *cache);
 
   static uint64_t get_ith_bit(KeyArg key, uint64_t bit_pos);
 };
