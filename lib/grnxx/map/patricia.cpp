@@ -131,6 +131,7 @@ bool Patricia<T>::unset(int64_t key_id) {
     // Not found or error.
     return false;
   }
+  // The root node must be a dead node because the above get() has succeeded.
   uint64_t node_id = ROOT_NODE_ID;
   Node *prev_node = nullptr;
   for ( ; ; ) {
@@ -139,74 +140,159 @@ bool Patricia<T>::unset(int64_t key_id) {
       // Error.
       return false;
     }
-    switch (node->status()) {
-      case NODE_DEAD: {
+    if (node->status() == NODE_LEAF) {
+      if (node->key_id() != key_id) {
         // Not found.
         return false;
       }
-      case NODE_LEAF: {
-        if (node->key_id() != key_id) {
-          // Not found.
-          return false;
-        }
-        keys_->unset(key_id);
-        if (prev_node) {
-          Node * const sibling_node = node + (node_id ^ 1) - node_id;
-          *prev_node = *sibling_node;
-        } else {
-          *node = Node::dead_node();
-        }
-        return true;
+      keys_->unset(key_id);
+      if (prev_node) {
+        Node * const sibling_node = node + (node_id ^ 1) - node_id;
+        *prev_node = *sibling_node;
+      } else {
+        *node = Node::dead_node();
       }
-      case NODE_BRANCH: {
-        node_id = node->offset() + get_ith_bit(key, node->bit_pos());
-        break;
-      }
+      return true;
     }
     prev_node = node;
+    node_id = node->offset() + get_ith_bit(key, node->bit_pos());
   }
 }
 
-//template <typename T>
-//bool Patricia<T>::reset(int64_t key_id, KeyArg dest_key) {
-//  // TODO
-//  return false;
-//}
+template <typename T>
+bool Patricia<T>::reset(int64_t key_id, KeyArg dest_key) {
+  // Find the source key.
+  Key src_key;
+  if (!get(key_id, &src_key)) {
+    // Not found or error.
+    return false;
+  }
+  // The root node must be a dead node because the above get() has succeeded.
+  uint64_t node_id = ROOT_NODE_ID;
+  Node *src_node;
+  Node *src_prev_node = nullptr;
+  Node *src_sibling_node = nullptr;
+  for ( ; ; ) {
+    src_node = nodes_->get_pointer(node_id);
+    if (!src_node) {
+      // Error.
+      return false;
+    }
+    if (src_node->status() == NODE_LEAF) {
+      if (src_node->key_id() != key_id) {
+        // Not found.
+        return false;
+      }
+      if (src_prev_node) {
+        src_sibling_node = src_node + (node_id ^ 1) - node_id;
+      }
+      break;
+    }
+    src_prev_node = src_node;
+    node_id = src_node->offset() + get_ith_bit(src_key, src_node->bit_pos());
+  }
+  // Add the destination key.
+  const Key dest_normalized_key = Helper<T>::normalize(dest_key);
+  node_id = ROOT_NODE_ID;
+  Node *history[(sizeof(Key) * 8) + 1];
+  int depth = -1;
+  for ( ; ; ) {
+    Node * const node = nodes_->get_pointer(node_id);
+    if (!node) {
+      // Error.
+      return false;
+    }
+    history[++depth] = node;
+    if (node->status() == NODE_LEAF) {
+      break;
+    }
+    node_id = node->offset() +
+              get_ith_bit(dest_normalized_key, node->bit_pos());
+  }
+  // Count the number of the common prefix bits.
+  Key stored_key;
+  if (!keys_->get_key(history[depth]->key_id(), &stored_key)) {
+    // Error.
+    return false;
+  }
+  const uint64_t count =
+      count_common_prefix_bits(dest_normalized_key, stored_key);
+  if (count == (sizeof(Key) * 8)) {
+    // Found.
+    return false;
+  }
+  // Find the branching point in "history".
+  while (depth > 0) {
+    if (history[depth - 1]->bit_pos() < count) {
+      break;
+    }
+    --depth;
+  }
+  Node * const dest_prev_node = history[depth];
+  Node * const next_nodes = nodes_->get_pointer(header_->next_node_id);
+  if (!next_nodes) {
+    return false;
+  }
+  if (!keys_->reset(key_id, dest_normalized_key)) {
+    // Error.
+    return false;
+  }
+  Node *dest_node;
+  Node *dest_sibling_node;
+  if (get_ith_bit(dest_normalized_key, count)) {
+    dest_node = &next_nodes[1];
+    dest_sibling_node = &next_nodes[0];
+  } else {
+    dest_node = &next_nodes[0];
+    dest_sibling_node = &next_nodes[1];
+  }
+  if (dest_prev_node == src_prev_node) {
+    src_prev_node = dest_sibling_node;
+  } else if (dest_prev_node == src_node) {
+    src_sibling_node = dest_node;
+    src_prev_node = dest_prev_node;
+  }
+  *dest_sibling_node = *dest_prev_node;
+  *dest_node = Node::leaf_node(key_id);
+  *dest_prev_node = Node::branch_node(count, header_->next_node_id);
+  *src_prev_node = *src_sibling_node;
+  header_->next_node_id += 2;
+  return true;
+}
 
 template <typename T>
 bool Patricia<T>::find(KeyArg key, int64_t *key_id) {
   const Key normalized_key = Helper<T>::normalize(key);
   uint64_t node_id = ROOT_NODE_ID;
+  Node node;
+  if (!nodes_->get(node_id, &node)) {
+    // Error.
+    return false;
+  }
+  if (node.status() == NODE_DEAD) {
+    // Not found.
+    return false;
+  }
   for ( ; ; ) {
-    Node node;
-    if (!nodes_->get(node_id, &node)) {
-      // Error.
-      return false;
-    }
-    switch (node.status()) {
-      case NODE_DEAD: {
+    if (node.status() == NODE_LEAF) {
+      Key stored_key;
+      if (!keys_->get_key(node.key_id(), &stored_key)) {
+        // Error.
+        return false;
+      }
+      if (!Helper<T>::equal_to(normalized_key, stored_key)) {
         // Not found.
         return false;
       }
-      case NODE_LEAF: {
-        Key stored_key;
-        if (!keys_->get_key(node.key_id(), &stored_key)) {
-          // Error.
-          return false;
-        }
-        if (!Helper<T>::equal_to(normalized_key, stored_key)) {
-          // Not found.
-          return false;
-        }
-        if (key_id) {
-          *key_id = node.key_id();
-        }
-        return true;
+      if (key_id) {
+        *key_id = node.key_id();
       }
-      case NODE_BRANCH: {
-        node_id = node.offset() + get_ith_bit(normalized_key, node.bit_pos());
-        break;
-      }
+      return true;
+    }
+    node_id = node.offset() + get_ith_bit(normalized_key, node.bit_pos());
+    if (!nodes_->get(node_id, &node)) {
+      // Error.
+      return false;
     }
   }
 }
@@ -295,51 +381,159 @@ template <typename T>
 bool Patricia<T>::remove(KeyArg key) {
   const Key normalized_key = Helper<T>::normalize(key);
   uint64_t node_id = ROOT_NODE_ID;
-  Node * prev_node = nullptr;
+  Node *node = nodes_->get_pointer(node_id);
+  if (!node) {
+    // Error.
+    return false;
+  }
+  if (node->status() == NODE_DEAD) {
+    // Not found.
+    return false;
+  }
+  Node *prev_node = nullptr;
+  for ( ; ; ) {
+    if (node->status() == NODE_LEAF) {
+      Key stored_key;
+      if (!keys_->get_key(node->key_id(), &stored_key)) {
+        // Error.
+        return false;
+      }
+      if (!Helper<T>::equal_to(normalized_key, stored_key)) {
+        // Not found.
+        return false;
+      }
+      keys_->unset(node->key_id());
+      if (prev_node) {
+        Node * const sibling_node = node + (node_id ^ 1) - node_id;
+        *prev_node = *sibling_node;
+      } else {
+        *node = Node::dead_node();
+      }
+      return true;
+    }
+    prev_node = node;
+    node_id = node->offset() + get_ith_bit(normalized_key, node->bit_pos());
+    node = nodes_->get_pointer(node_id);
+    if (!node) {
+      // Error.
+      return false;
+    }
+  }
+}
+
+template <typename T>
+bool Patricia<T>::replace(KeyArg src_key, KeyArg dest_key, int64_t *key_id) {
+  const Key src_normalized_key = Helper<T>::normalize(src_key);
+  uint64_t node_id = ROOT_NODE_ID;
+  Node *src_node = nodes_->get_pointer(node_id);
+  if (!src_node) {
+    // Error.
+    return false;
+  }
+  if (src_node->status() == NODE_DEAD) {
+    // Not found.
+    return false;
+  }
+  int64_t src_key_id;
+  Node *src_prev_node = nullptr;
+  Node *src_sibling_node = nullptr;
+  for ( ; ; ) {
+    if (src_node->status() == NODE_LEAF) {
+      src_key_id = src_node->key_id();
+      Key stored_key;
+      if (!keys_->get_key(src_key_id, &stored_key)) {
+        // Error.
+        return false;
+      }
+      if (!Helper<T>::equal_to(src_normalized_key, stored_key)) {
+        // Not found.
+        return false;
+      }
+      if (src_prev_node) {
+        src_sibling_node = src_node + (node_id ^ 1) - node_id;
+      }
+      break;
+    }
+    src_prev_node = src_node;
+    node_id = src_node->offset() +
+              get_ith_bit(src_normalized_key, src_node->bit_pos());
+    src_node = nodes_->get_pointer(node_id);
+    if (!src_node) {
+      // Error.
+      return false;
+    }
+  }
+  // Add the destination key.
+  const Key dest_normalized_key = Helper<T>::normalize(dest_key);
+  node_id = ROOT_NODE_ID;
+  Node *history[(sizeof(Key) * 8) + 1];
+  int depth = -1;
   for ( ; ; ) {
     Node * const node = nodes_->get_pointer(node_id);
     if (!node) {
       // Error.
       return false;
     }
-    switch (node->status()) {
-      case NODE_DEAD: {
-        // Not found.
-        return false;
-      }
-      case NODE_LEAF: {
-        Key stored_key;
-        if (!keys_->get_key(node->key_id(), &stored_key)) {
-          // Error.
-          return false;
-        }
-        if (!Helper<T>::equal_to(normalized_key, stored_key)) {
-          // Not found.
-          return false;
-        }
-        keys_->unset(node->key_id());
-        if (prev_node) {
-          Node * const sibling_node = node + (node_id ^ 1) - node_id;
-          *prev_node = *sibling_node;
-        } else {
-          *node = Node::dead_node();
-        }
-        return true;
-      }
-      case NODE_BRANCH: {
-        node_id = node->offset() + get_ith_bit(normalized_key, node->bit_pos());
-        break;
-      }
+    history[++depth] = node;
+    if (node->status() == NODE_LEAF) {
+      break;
     }
-    prev_node = node;
+    node_id = node->offset() +
+              get_ith_bit(dest_normalized_key, node->bit_pos());
   }
+  // Count the number of the common prefix bits.
+  Key stored_key;
+  if (!keys_->get_key(history[depth]->key_id(), &stored_key)) {
+    // Error.
+    return false;
+  }
+  const uint64_t count =
+      count_common_prefix_bits(dest_normalized_key, stored_key);
+  if (count == (sizeof(Key) * 8)) {
+    // Found.
+    return false;
+  }
+  // Find the branching point in "history".
+  while (depth > 0) {
+    if (history[depth - 1]->bit_pos() < count) {
+      break;
+    }
+    --depth;
+  }
+  Node * const dest_prev_node = history[depth];
+  Node * const next_nodes = nodes_->get_pointer(header_->next_node_id);
+  if (!next_nodes) {
+    return false;
+  }
+  if (!keys_->reset(src_key_id, dest_normalized_key)) {
+    // Error.
+    return false;
+  }
+  Node *dest_node;
+  Node *dest_sibling_node;
+  if (get_ith_bit(dest_normalized_key, count)) {
+    dest_node = &next_nodes[1];
+    dest_sibling_node = &next_nodes[0];
+  } else {
+    dest_node = &next_nodes[0];
+    dest_sibling_node = &next_nodes[1];
+  }
+  if (dest_prev_node == src_prev_node) {
+    src_prev_node = dest_sibling_node;
+  } else if (dest_prev_node == src_node) {
+    src_sibling_node = dest_node;
+    src_prev_node = dest_prev_node;
+  }
+  *dest_sibling_node = *dest_prev_node;
+  *dest_node = Node::leaf_node(src_key_id);
+  *dest_prev_node = Node::branch_node(count, header_->next_node_id);
+  *src_prev_node = *src_sibling_node;
+  header_->next_node_id += 2;
+  if (key_id) {
+    *key_id = src_key_id;
+  }
+  return true;
 }
-
-//template <typename T>
-//bool Patricia<T>::replace(KeyArg src_key, KeyArg dest_key, int64_t *key_id) {
-//  // TODO
-//  return false;
-//}
 
 template <typename T>
 bool Patricia<T>::truncate() {
@@ -650,19 +844,18 @@ bool Patricia<Bytes>::find(KeyArg key, int64_t *key_id) {
 }
 
 bool Patricia<Bytes>::add(KeyArg key, int64_t *key_id) {
+  int64_t * const cache = nullptr;
 //  int64_t * const cache =
 //      cache_->get_pointer(hash_table::Hash<Key>()(key) % cache_->size());
-//  {
-//    if ((*cache >= 0) && (*cache < keys_->max_key_id())) {
-//      bool bit;
-//      if (keys_->get_bit(*cache, &bit) && bit) {
-//        Key cached_key;
-//        if (keys_->get_key(*cache, &cached_key) && (key == cached_key)) {
-//          if (key_id) {
-//            *key_id = *cache;
-//          }
-//          return false;
+//  if ((*cache >= 0) && (*cache < keys_->max_key_id())) {
+//    bool bit;
+//    if (keys_->get_bit(*cache, &bit) && bit) {
+//      Key cached_key;
+//      if (keys_->get_key(*cache, &cached_key) && (key == cached_key)) {
+//        if (key_id) {
+//          *key_id = *cache;
 //        }
+//        return false;
 //      }
 //    }
 //  }
@@ -683,9 +876,9 @@ bool Patricia<Bytes>::add(KeyArg key, int64_t *key_id) {
     if (key_id) {
       *key_id = next_key_id;
     }
-//    if (cache) {
-//      *cache = next_key_id;
-//    }
+    if (cache) {
+      *cache = next_key_id;
+    }
     return true;
   }
   const uint64_t bit_size = key.size() * 8;
@@ -740,40 +933,13 @@ bool Patricia<Bytes>::add(KeyArg key, int64_t *key_id) {
       if (key_id) {
         *key_id = node->key_id();
       }
-//      if (cache) {
-//        *cache = node->key_id();
-//      }
+      if (cache) {
+        *cache = node->key_id();
+      }
       return false;
     }
     node = history[depth % 8];
-    Node * const next_nodes = nodes_->get_pointer(header_->next_node_id);
-    if (!next_nodes) {
-      return false;
-    }
-    int64_t next_key_id;
-    if (!keys_->add(key, &next_key_id)) {
-      // Error.
-      return false;
-    }
-    if (count == key.size()) {
-      // "key" is a prefix of "stored_key".
-      next_nodes[0] = Node::leaf_node(next_key_id);
-      next_nodes[1] = *node;
-      *node = Node::terminal_node(count * 8, header_->next_node_id);
-    } else {
-      // "stored_key" is a prefix of "key".
-      next_nodes[0] = *node;
-      next_nodes[1] = Node::leaf_node(next_key_id);
-      *node = Node::terminal_node(count * 8, header_->next_node_id);
-    }
-    header_->next_node_id += 2;
-    if (key_id) {
-      *key_id = next_key_id;
-    }
-//    if (cache) {
-//      *cache = next_key_id;
-//    }
-    return true;
+    return add_key_with_terminal_node(node, key, count, key_id, cache);
   }
   count = (count * 8) + 7 - bit_scan_reverse(key[count] ^ stored_key[count]);
   // Find the branching point in "history".
@@ -791,31 +957,7 @@ bool Patricia<Bytes>::add(KeyArg key, int64_t *key_id) {
   if (depth >= min_depth) {
     // The branching point exists in "history".
     node = history[(depth + 1) % 8];
-    Node * const next_nodes = nodes_->get_pointer(header_->next_node_id);
-    if (!next_nodes) {
-      return false;
-    }
-    int64_t next_key_id;
-    if (!keys_->add(key, &next_key_id)) {
-      // Error.
-      return false;
-    }
-    if (get_ith_bit(key, count)) {
-      next_nodes[0] = *node;
-      next_nodes[1] = Node::leaf_node(next_key_id);
-    } else {
-      next_nodes[0] = Node::leaf_node(next_key_id);
-      next_nodes[1] = *node;
-    }
-    *node = Node::branch_node(count, header_->next_node_id);
-    header_->next_node_id += 2;
-    if (key_id) {
-      *key_id = next_key_id;
-    }
-//    if (cache) {
-//      *cache = next_key_id;
-//    }
-    return true;
+    return add_key_with_branch_node(node, key, count, key_id, cache);
   }
   // Find the branching point with the naive method.
   node_id = ROOT_NODE_ID;
@@ -839,33 +981,7 @@ bool Patricia<Bytes>::add(KeyArg key, int64_t *key_id) {
       node_id = node->offset() + 1;
     }
   }
-  Node * const next_nodes = nodes_->get_pointer(header_->next_node_id);
-  if (!next_nodes) {
-    // Error.
-    return false;
-  }
-  int64_t next_key_id;
-  if (!keys_->add(key, &next_key_id)) {
-    // Error.
-    return false;
-  }
-  // Create a branch node.
-  if (get_ith_bit(key, count)) {
-    next_nodes[0] = *node;
-    next_nodes[1] = Node::leaf_node(next_key_id);
-  } else {
-    next_nodes[0] = Node::leaf_node(next_key_id);
-    next_nodes[1] = *node;
-  }
-  *node = Node::branch_node(count, header_->next_node_id);
-  header_->next_node_id += 2;
-  if (key_id) {
-    *key_id = next_key_id;
-  }
-//  if (cache) {
-//    *cache = next_key_id;
-//  }
-  return true;
+  return add_key_with_branch_node(node, key, count, key_id, cache);
 }
 
 bool Patricia<Bytes>::remove(KeyArg key) {
@@ -1061,6 +1177,69 @@ bool Patricia<Bytes>::open_map(Storage *storage, uint32_t storage_node_id) {
   cache_.reset(Cache::open(storage, header_->cache_storage_node_id));
   if (!nodes_ || !keys_ || !cache_) {
     return false;
+  }
+  return true;
+}
+
+bool Patricia<Bytes>::add_key_with_terminal_node(
+    Node *node, KeyArg key, uint64_t count,
+    int64_t *key_id, int64_t *cache) {
+  Node * const next_nodes = nodes_->get_pointer(header_->next_node_id);
+  if (!next_nodes) {
+    return false;
+  }
+  int64_t next_key_id;
+  if (!keys_->add(key, &next_key_id)) {
+    // Error.
+    return false;
+  }
+  if (count == key.size()) {
+    // "key" is a prefix of "stored_key".
+    next_nodes[0] = Node::leaf_node(next_key_id);
+    next_nodes[1] = *node;
+    *node = Node::terminal_node(count * 8, header_->next_node_id);
+  } else {
+    // "stored_key" is a prefix of "key".
+    next_nodes[0] = *node;
+    next_nodes[1] = Node::leaf_node(next_key_id);
+    *node = Node::terminal_node(count * 8, header_->next_node_id);
+  }
+  header_->next_node_id += 2;
+  if (key_id) {
+    *key_id = next_key_id;
+  }
+  if (cache) {
+    *cache = next_key_id;
+  }
+  return true;
+}
+
+bool Patricia<Bytes>::add_key_with_branch_node(
+    Node *node, KeyArg key, uint64_t bit_pos,
+    int64_t *key_id, int64_t *cache) {
+  Node * const next_nodes = nodes_->get_pointer(header_->next_node_id);
+  if (!next_nodes) {
+    return false;
+  }
+  int64_t next_key_id;
+  if (!keys_->add(key, &next_key_id)) {
+    // Error.
+    return false;
+  }
+  if (get_ith_bit(key, bit_pos)) {
+    next_nodes[0] = *node;
+    next_nodes[1] = Node::leaf_node(next_key_id);
+  } else {
+    next_nodes[0] = Node::leaf_node(next_key_id);
+    next_nodes[1] = *node;
+  }
+  *node = Node::branch_node(bit_pos, header_->next_node_id);
+  header_->next_node_id += 2;
+  if (key_id) {
+    *key_id = next_key_id;
+  }
+  if (cache) {
+    *cache = next_key_id;
   }
   return true;
 }
