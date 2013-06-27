@@ -27,7 +27,8 @@ Header::Header()
     : map_type(MAP_PATRICIA),
       next_node_id(2),
       nodes_storage_node_id(STORAGE_INVALID_NODE_ID),
-      keys_storage_node_id(STORAGE_INVALID_NODE_ID) {}
+      keys_storage_node_id(STORAGE_INVALID_NODE_ID),
+      cache_storage_node_id(STORAGE_INVALID_NODE_ID) {}
 
 }  // namespace patricia
 }  // namespace map

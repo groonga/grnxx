@@ -94,6 +94,7 @@ template <>
 class Patricia<Bytes> : public Map<Bytes> {
   using Node = patricia::Node;
   using NodeArray = Array<Node>;
+  using Cache = Array<int64_t, 1 << 20, 1, 1>;
 
  public:
   using Header = patricia::Header;
@@ -134,6 +135,7 @@ class Patricia<Bytes> : public Map<Bytes> {
   Header *header_;
   std::unique_ptr<NodeArray> nodes_;
   std::unique_ptr<KeyStore<Bytes>> keys_;
+  std::unique_ptr<Cache> cache_;
 
   bool create_map(Storage *storage, uint32_t storage_node_id,
                   const MapOptions &options);

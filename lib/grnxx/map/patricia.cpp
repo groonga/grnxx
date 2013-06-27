@@ -22,6 +22,7 @@
 #include "grnxx/bytes.hpp"
 #include "grnxx/geo_point.hpp"
 #include "grnxx/logger.hpp"
+#include "grnxx/map/hash_table/hash.hpp"
 #include "grnxx/map/helper.hpp"
 #include "grnxx/map/patricia/header.hpp"
 #include "grnxx/storage.hpp"
@@ -470,7 +471,8 @@ Patricia<Bytes>::Patricia()
       storage_node_id_(STORAGE_INVALID_NODE_ID),
       header_(nullptr),
       nodes_(),
-      keys_() {}
+      keys_(),
+      cache_() {}
 
 Patricia<Bytes>::~Patricia() {}
 
@@ -648,6 +650,22 @@ bool Patricia<Bytes>::find(KeyArg key, int64_t *key_id) {
 }
 
 bool Patricia<Bytes>::add(KeyArg key, int64_t *key_id) {
+//  int64_t * const cache =
+//      cache_->get_pointer(hash_table::Hash<Key>()(key) % cache_->size());
+//  {
+//    if ((*cache >= 0) && (*cache < keys_->max_key_id())) {
+//      bool bit;
+//      if (keys_->get_bit(*cache, &bit) && bit) {
+//        Key cached_key;
+//        if (keys_->get_key(*cache, &cached_key) && (key == cached_key)) {
+//          if (key_id) {
+//            *key_id = *cache;
+//          }
+//          return false;
+//        }
+//      }
+//    }
+//  }
   uint64_t node_id = ROOT_NODE_ID;
   Node *node = nodes_->get_pointer(node_id);
   if (!node) {
@@ -665,6 +683,9 @@ bool Patricia<Bytes>::add(KeyArg key, int64_t *key_id) {
     if (key_id) {
       *key_id = next_key_id;
     }
+//    if (cache) {
+//      *cache = next_key_id;
+//    }
     return true;
   }
   const uint64_t bit_size = key.size() * 8;
@@ -719,6 +740,9 @@ bool Patricia<Bytes>::add(KeyArg key, int64_t *key_id) {
       if (key_id) {
         *key_id = node->key_id();
       }
+//      if (cache) {
+//        *cache = node->key_id();
+//      }
       return false;
     }
     node = history[depth % 8];
@@ -746,6 +770,9 @@ bool Patricia<Bytes>::add(KeyArg key, int64_t *key_id) {
     if (key_id) {
       *key_id = next_key_id;
     }
+//    if (cache) {
+//      *cache = next_key_id;
+//    }
     return true;
   }
   count = (count * 8) + 7 - bit_scan_reverse(key[count] ^ stored_key[count]);
@@ -785,6 +812,9 @@ bool Patricia<Bytes>::add(KeyArg key, int64_t *key_id) {
     if (key_id) {
       *key_id = next_key_id;
     }
+//    if (cache) {
+//      *cache = next_key_id;
+//    }
     return true;
   }
   // Find the branching point with the naive method.
@@ -832,6 +862,9 @@ bool Patricia<Bytes>::add(KeyArg key, int64_t *key_id) {
   if (key_id) {
     *key_id = next_key_id;
   }
+//  if (cache) {
+//    *cache = next_key_id;
+//  }
   return true;
 }
 
@@ -992,12 +1025,14 @@ bool Patricia<Bytes>::create_map(Storage *storage, uint32_t storage_node_id,
   *header_ = Header();
   nodes_.reset(NodeArray::create(storage, storage_node_id_));
   keys_.reset(KeyStore<Bytes>::create(storage, storage_node_id_));
-  if (!nodes_ || !keys_) {
+  cache_.reset(Cache::create(storage, storage_node_id_, -1));
+  if (!nodes_ || !keys_ || !cache_) {
     storage->unlink_node(storage_node_id_);
     return false;
   }
   header_->nodes_storage_node_id = nodes_->storage_node_id();
   header_->keys_storage_node_id = keys_->storage_node_id();
+  header_->cache_storage_node_id = cache_->storage_node_id();
   Node * const root_node = nodes_->get_pointer(ROOT_NODE_ID);
   if (!root_node) {
     storage->unlink_node(storage_node_id_);
@@ -1023,7 +1058,8 @@ bool Patricia<Bytes>::open_map(Storage *storage, uint32_t storage_node_id) {
   // TODO: Check the format.
   nodes_.reset(NodeArray::open(storage, header_->nodes_storage_node_id));
   keys_.reset(KeyStore<Bytes>::open(storage, header_->keys_storage_node_id));
-  if (!nodes_ || !keys_) {
+  cache_.reset(Cache::open(storage, header_->cache_storage_node_id));
+  if (!nodes_ || !keys_ || !cache_) {
     return false;
   }
   return true;

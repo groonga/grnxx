@@ -32,6 +32,7 @@ struct Header {
   uint64_t next_node_id;
   uint32_t nodes_storage_node_id;
   uint32_t keys_storage_node_id;
+  uint32_t cache_storage_node_id;
 
   Header();
 };
