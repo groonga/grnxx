@@ -960,6 +960,7 @@ template <typename T>
 void test_map() {
   test_map<T>(grnxx::MAP_ARRAY);
   test_map<T>(grnxx::MAP_HASH_TABLE);
+  test_map<T>(grnxx::MAP_PATRICIA);
 }
 
 void test_bytes_store() {
