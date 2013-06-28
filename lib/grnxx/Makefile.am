@@ -19,7 +19,7 @@ libgrnxx_la_SOURCES =			\
 	broken_down_time.cpp		\
 	charset.cpp			\
 	duration.cpp			\
-	error.cpp			\
+	errno.cpp			\
 	geo_point.cpp			\
 	grnxx.cpp			\
 	logger.cpp			\
@@ -45,7 +45,7 @@ libgrnxx_include_HEADERS =		\
 	bytes.hpp			\
 	charset.hpp			\
 	duration.hpp			\
-	error.hpp			\
+	errno.hpp			\
 	exception.hpp			\
 	features.hpp			\
 	flags_impl.hpp			\

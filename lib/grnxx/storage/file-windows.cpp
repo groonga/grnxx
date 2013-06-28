@@ -26,7 +26,7 @@
 #include <limits>
 #include <new>
 
-#include "grnxx/error.hpp"
+#include "grnxx/errno.hpp"
 #include "grnxx/logger.hpp"
 #include "grnxx/storage/path.hpp"
 
@@ -52,7 +52,7 @@ FileImpl::~FileImpl() {
     }
     if (!::CloseHandle(handle_)) {
       GRNXX_ERROR() << "failed to close file: file = " << *this
-                    << ": '::CloseHandle' " << Error(::GetLastError());
+                    << ": '::CloseHandle' " << Errno(::GetLastError());
     }
   }
 }
@@ -127,7 +127,7 @@ bool FileImpl::unlink(const char *path) {
   }
   if (!::DeleteFile(path)) {
     GRNXX_WARNING() << "failed to unlink file: path = " << path
-                    << ": '::DeleteFile' " << Error(::GetLastError());
+                    << ": '::DeleteFile' " << Errno(::GetLastError());
     return false;
   }
   return true;
@@ -166,7 +166,7 @@ bool FileImpl::try_lock(FileLockMode mode) {
     }
     GRNXX_ERROR() << "failed to lock file: path = " << path_.get()
                   << ", mode = " << mode
-                  << ": '::LockFileEx' " << Error(last_error);
+                  << ": '::LockFileEx' " << Errno(last_error);
     return false;
   }
   locked_ = true;
@@ -184,7 +184,7 @@ bool FileImpl::unlock() {
   overlapped.OffsetHigh = 0x80000000U;
   if (!::UnlockFileEx(handle_, 0, 0, 0x80000000U, &overlapped)) {
     GRNXX_ERROR() << "failed to unlock file: path = " << path_.get()
-                  << ": '::UnlockFileEx' " << Error(::GetLastError());
+                  << ": '::UnlockFileEx' " << Errno(::GetLastError());
     return false;
   }
   locked_ = false;
@@ -194,7 +194,7 @@ bool FileImpl::unlock() {
 void FileImpl::sync() {
   if (!::FlushFileBuffers(handle_)) {
     GRNXX_ERROR() << "failed to sync file: path = " << path_.get()
-                  << ": '::FlushFileBuffers' " << Error(::GetLastError());
+                  << ": '::FlushFileBuffers' " << Errno(::GetLastError());
     return false;
   }
   return true;
@@ -214,13 +214,13 @@ bool FileImpl::resize(uint64_t size) {
   if (!::SetFilePointerEx(handle_, request, nullptr, FILE_BEGIN)) {
     GRNXX_ERROR() << "failed to seek file: path = " << path_.get()
                   << ", offset = " << offset << ", whence = " << whence
-                  << ": '::SetFilePointerEx' " << Error(::GetLastError());
+                  << ": '::SetFilePointerEx' " << Errno(::GetLastError());
     return false;
   }
   if (!::SetEndOfFile(handle_)) {
     GRNXX_ERROR() << "failed to resize file: path = " << path_.get()
                   << ", size = " << size
-                  << ": '::SetEndOfFile' " << Error(::GetLastError());
+                  << ": '::SetEndOfFile' " << Errno(::GetLastError());
     return false;
   }
   return true;
@@ -230,7 +230,7 @@ bool FileImpl::get_size(uint64_t *size) {
   LARGE_INTEGER file_size;
   if (!::GetFileSizeEx(handle_, &file_size)) {
     GRNXX_ERROR() << "failed to get file size: path = " << path_.get()
-                  << ": '::GetFileSizeEx' " << Error(::GetLastError());
+                  << ": '::GetFileSizeEx' " << Errno(::GetLastError());
     return false;
   }
   if (size) {
@@ -270,7 +270,7 @@ bool FileImpl::create_persistent_file(const char *path, FileFlags flags) {
   if (handle_ == INVALID_HANDLE_VALUE) {
     GRNXX_ERROR() << "failed to open file: path = " << path
                   << ", flags = " << flags
-                  << ": '::CreateFileA' " << Error(::GetLastError());
+                  << ": '::CreateFileA' " << Errno(::GetLastError());
     return false;
   }
   return true;
@@ -292,7 +292,7 @@ bool FileImpl::create_temporary_file(const char *path, FileFlags flags) {
       return true;
     }
     GRNXX_WARNING() << "failed to create file: path = " << path_.get()
-                    << ": '::CreateFileA' " << Error(::GetLastError());
+                    << ": '::CreateFileA' " << Errno(::GetLastError());
   }
   GRNXX_ERROR() << "failed to create temporary file: path = " << path
                 << ", flags = " << flags;
@@ -318,7 +318,7 @@ bool FileImpl::open_file(const char *path, FileFlags flags) {
   if (handle_ == INVALID_HANDLE_VALUE) {
     GRNXX_ERROR() << "failed to open file: path = " << path
                   << ", flags = " << flags
-                  << ": '::CreateFileA' " << Error(::GetLastError());
+                  << ": '::CreateFileA' " << Errno(::GetLastError());
     return false;
   }
   return true;
@@ -339,7 +339,7 @@ bool FileImpl::open_or_create_file(const char *path, FileFlags flags) {
   if (handle_ == INVALID_HANDLE_VALUE) {
     GRNXX_ERROR() << "failed to open file: path = " << path
                   << ", flags = " << flags
-                  << ": '::CreateFileA' " << Error(::GetLastError());
+                  << ": '::CreateFileA' " << Errno(::GetLastError());
     return false;
   }
   return true;

@@ -21,7 +21,7 @@
 #include <cstring>
 #include <cerrno>
 
-#include "grnxx/error.hpp"
+#include "grnxx/errno.hpp"
 #include "grnxx/lock.hpp"
 #include "grnxx/logger.hpp"
 
@@ -48,7 +48,7 @@ char *OS::get_environment_variable(const char *name) {
   size_t value_size;
   if (::_dupenv_s(&value, &value_size, name) != 0) {
     GRNXX_ERROR() << "failed to get environment variable: name = " << name
-                  << ": '::_dupenv_s' " << Error(errno);
+                  << ": '::_dupenv_s' " << Errno(errno);
     return nullptr;
   }
   char * const result = new (std::nothrow) char[value_size + 1];

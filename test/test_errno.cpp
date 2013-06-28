@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2012  Brazil, Inc.
+  Copyright (C) 2012-2013  Brazil, Inc.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -18,7 +18,7 @@
 #include <cassert>
 #include <cerrno>
 
-#include "grnxx/error.hpp"
+#include "grnxx/errno.hpp"
 #include "grnxx/logger.hpp"
 
 int main() {
@@ -26,7 +26,12 @@ int main() {
                            grnxx::LOGGER_ENABLE_COUT);
   grnxx::Logger::set_max_level(grnxx::NOTICE_LOGGER);
 
-  GRNXX_ERROR() << "EINVAL: " << grnxx::Error(EINVAL);
-  GRNXX_ERROR() << "12345: " << grnxx::Error(12345);
+  // Errnos required by the ISO C standard.
+  GRNXX_NOTICE() << "EDOM = " << grnxx::Errno(EDOM);
+  GRNXX_NOTICE() << "EILSEQ = " << grnxx::Errno(EILSEQ);
+  GRNXX_NOTICE() << "ERANGE = " << grnxx::Errno(ERANGE);
+
+  // An undefined errno.
+  GRNXX_NOTICE() << "-123456789 = " << grnxx::Errno(-123456789);
   return 0;
 }

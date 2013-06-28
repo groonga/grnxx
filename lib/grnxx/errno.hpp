@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2012  Brazil, Inc.
+  Copyright (C) 2012-2013  Brazil, Inc.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -15,8 +15,8 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#ifndef GRNXX_ERROR_HPP
-#define GRNXX_ERROR_HPP
+#ifndef GRNXX_ERRNO_HPP
+#define GRNXX_ERRNO_HPP
 
 #include "grnxx/features.hpp"
 
@@ -24,68 +24,58 @@ namespace grnxx {
 
 class StringBuilder;
 
-enum ErrorType {
-  POSIX_ERROR,
+enum ErrnoType {
+  STANDARD_ERRNO,
 #ifdef GRNXX_WINDOWS
-  WINDOWS_ERROR,
+  WINDOWS_ERRNO
 #endif  // GRNXX_WINDOWS
-  GRNXX_ERROR
 };
 
-enum ErrorCode {
-  // TODO
-};
-
-class Error {
+class GRNXX_EXPORT Errno {
  public:
   // For errno.
-  explicit Error(int error_code)
-      : type_(POSIX_ERROR),
-        posix_error_(error_code) {}
+  explicit Errno(int error_code)
+      : type_(STANDARD_ERRNO),
+        standard_errno_(error_code) {}
 #ifdef GRNXX_WINDOWS
-  // For DWORD returned by ::GetLastError().
-  explicit Error(unsigned long error_code)
-      : type_(WINDOWS_ERROR),
-        windows_error_(error_code) {}
+  // For DWORD returned by ::GetLastErrno().
+  explicit Errno(unsigned long error_code)
+      : type_(WINDOWS_ERRNO),
+        windows_errno_(error_code) {}
 #endif  // GRNXX_WINDOWS
-  explicit Error(ErrorCode error_code)
-      : type_(GRNXX_ERROR),
-        grnxx_error_(error_code) {}
 
-  ErrorType type() const {
+  // Return the errno type.
+  ErrnoType type() const {
     return type_;
   }
-  int posix_error() const {
-    return posix_error_;
+  // Return the standard errno.
+  int standard_errno() const {
+    return standard_errno_;
   }
 #ifdef GRNXX_WINDOWS
-  unsigned long windows_error() const {
-    return windows_error_;
+  // Return the windows errno.
+  unsigned long windows_errno() const {
+    return windows_errno_;
   }
 #endif  // GRNXX_WINDOWS
-  ErrorCode grnxx_error() const {
-    return grnxx_error_;
-  }
 
+  // Write a human-readable error message to "builder".
   StringBuilder &write_to(StringBuilder &builder) const;
 
  private:
-  ErrorType type_;
+  ErrnoType type_;
   union {
-    int posix_error_;
+    int standard_errno_;
 #ifdef GRNXX_WINDOWS
-    unsigned long windows_error_;
+    unsigned long windows_errno_;
 #endif  // GRNXX_WINDOWS
-    ErrorCode grnxx_error_;
   };
-
-  // Copyable.
 };
 
-inline StringBuilder &operator<<(StringBuilder &builder, const Error &error) {
+inline StringBuilder &operator<<(StringBuilder &builder, const Errno &error) {
   return error.write_to(builder);
 }
 
 }  // namespace grnxx
 
-#endif  // GRNXX_ERROR_HPP
+#endif  // GRNXX_ERRNO_HPP

@@ -21,7 +21,7 @@
 
 #include <new>
 
-#include "grnxx/error.hpp"
+#include "grnxx/errno.hpp"
 #include "grnxx/logger.hpp"
 #include "grnxx/storage/file.hpp"
 
@@ -38,13 +38,13 @@ ChunkImpl::~ChunkImpl() {
   if (address_) {
     if (!::UnmapViewOfFile(address_)) {
       GRNXX_ERROR() << "failed to unmap chunk"
-                    << ": '::UnmapViewOfFile' " << Error(::GetLastError());
+                    << ": '::UnmapViewOfFile' " << Errno(::GetLastError());
     }
   }
   if (handle_) {
     if (!::CloseHandle(handle_)) {
       GRNXX_ERROR() << "failed to close file mapping"
-                    << ": '::CloseHandle' " << Error(::GetLastError());
+                    << ": '::CloseHandle' " << Errno(::GetLastError());
     }
   }
 }
@@ -85,7 +85,7 @@ bool ChunkImpl::sync(uint64_t offset, uint64_t size) {
   if (!::FlushViewOfFile(static_cast<char *>(address_) + offset, size)) {
     GRNXX_ERROR() << "failed to sync chunk: offset = " << offset
                   << ", size = " << size
-                  << ": '::FlushViewOfFile' " << Error(::GetLastError());
+                  << ": '::FlushViewOfFile' " << Errno(::GetLastError());
     return false;
   }
   return true;
@@ -130,7 +130,7 @@ bool ChunkImpl::create_file_backed_chunk(File *file, uint64_t offset,
                   << "file_path = " << file->path()
                   << ", file_size = " << file_size << ", offset = " << offset
                   << ", size = " << size << ", flags = " << flags
-                  << ": '::CreateFileMapping' " << Error(::GetLastError());
+                  << ": '::CreateFileMapping' " << Errno(::GetLastError());
     return false;
   }
   const DWORD offset_high = static_cast<DWORD>(offset >> 32);
@@ -142,7 +142,7 @@ bool ChunkImpl::create_file_backed_chunk(File *file, uint64_t offset,
                   << "file_path = " << file->path()
                   << ", file_size = " << file_size << ", offset = " << offset
                   << ", size = " << size << ", flags = " << flags
-                  << ": '::MapViewOfFile' " << Error(::GetLastError());
+                  << ": '::MapViewOfFile' " << Errno(::GetLastError());
     return false;
   }
   return true;
@@ -162,14 +162,14 @@ bool ChunkImpl::create_anonymous_chunk(uint64_t size, ChunkFlags flags) {
   if (!handle_) {
     GRNXX_ERROR() << "failed to create anonymous file mapping: "
                   << "size = " << size << ", flags = " << flags
-                  << ": '::CreateFileMapping' " << Error(::GetLastError());
+                  << ": '::CreateFileMapping' " << Errno(::GetLastError());
     return false;
   }
   address_ = ::MapViewOfFile(handle_, FILE_MAP_WRITE, 0, 0, 0);
   if (!address_) {
     GRNXX_ERROR() << "failed to map anonymous chunk: "
                   << "size = " << size << ", flags = " << flags
-                  << ": '::MapViewOfFile' " << Error(::GetLastError());
+                  << ": '::MapViewOfFile' " << Errno(::GetLastError());
     return false;
   }
   return true;

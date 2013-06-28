@@ -40,7 +40,7 @@
 //#include <chrono>
 //#include <thread>
 
-#include "grnxx/error.hpp"
+#include "grnxx/errno.hpp"
 #include "grnxx/logger.hpp"
 #include "grnxx/system_clock.hpp"
 
@@ -94,7 +94,7 @@ bool ThreadImpl::start(const Routine &routine) {
                                             routine_clone.get(), 0, nullptr);
   if (handle == 0) {
     GRNXX_ERROR() << "failed to create thread: '_beginthreadex' "
-                  << Error(errno);
+                  << Errno(errno);
     return false;
   }
   thread_ = reinterpret_cast<HANDLE>(handle);
@@ -103,7 +103,7 @@ bool ThreadImpl::start(const Routine &routine) {
                                      routine_clone.get());
   if (error != 0) {
     GRNXX_ERROR() << "failed to create thread: '::pthread_create' "
-                  << Error(error);
+                  << Errno(error);
     return false;
   }
 #endif  // GRNXX_WINDOWS
@@ -121,19 +121,19 @@ bool ThreadImpl::join() {
 #ifdef GRNXX_WINDOWS
   if (::WaitForSingleObject(thread_, INFINITE) == WAIT_FAILED) {
     GRNXX_ERROR() << "failed to join thread: '::WaitForSingleObject' "
-                  << Error(::GetLastError());
+                  << Errno(::GetLastError());
     result = false;
   }
   if (::CloseHandle(thread_) != 0) {
     GRNXX_ERROR() << "failed to close thread: '::CloseHandle' "
-                  << Error(::GetLastError());
+                  << Errno(::GetLastError());
     result = false;
   }
 #else  // GRNXX_WINDOWS
   const int error = ::pthread_join(thread_, nullptr);
   if (error != 0) {
     GRNXX_ERROR() << "failed to join thread: '::pthread_join' "
-                  << Error(error);
+                  << Errno(error);
     result = false;
   }
 #endif  // GRNXX_WINDOWS
@@ -150,14 +150,14 @@ bool ThreadImpl::detach() {
 #ifdef GRNXX_WINDOWS
   if (::CloseHandle(thread_) != 0) {
     GRNXX_ERROR() << "failed to detach thread: '::CloseHandle' "
-                  << Error(::GetLastError());
+                  << Errno(::GetLastError());
     result = false;
   }
 #else  // GRNXX_WINDOWS
   const int error = ::pthread_detach(thread_);
   if (error != 0) {
     GRNXX_ERROR() << "failed to detach thread: '::pthread_detach' "
-                  << Error(error);
+                  << Errno(error);
     result = false;
   }
 #endif  // GRNXX_WINDOWS

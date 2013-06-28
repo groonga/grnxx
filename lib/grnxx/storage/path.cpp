@@ -28,7 +28,7 @@
 #include <new>
 #include <random>
 
-#include "grnxx/error.hpp"
+#include "grnxx/errno.hpp"
 #include "grnxx/logger.hpp"
 #include "grnxx/string_builder.hpp"
 
@@ -49,7 +49,7 @@ char *Path::full_path(const char *path) {
 #ifdef GRNXX_WINDOWS
   if (!::_fullpath(full_path, path, sizeof(full_path))) {
     GRNXX_ERROR() << "failed to generate full path: path = " << path
-                  << ": '::_fullpath' " << Error(errno);
+                  << ": '::_fullpath' " << Errno(errno);
     return nullptr;
   }
   full_path_length = std::strlen(full_path);
@@ -57,7 +57,7 @@ char *Path::full_path(const char *path) {
   if (path[0] != '/') {
     if (!::getcwd(full_path, sizeof(full_path))) {
       GRNXX_ERROR() << "failed to get current working directory: '::getcwd' "
-                    << Error(errno);
+                    << Errno(errno);
       return nullptr;
     }
     full_path_length = std::strlen(full_path);

@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2012  Brazil, Inc.
+  Copyright (C) 2012-2013  Brazil, Inc.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -15,12 +15,11 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#include "grnxx/error.hpp"
+#include "grnxx/errno.hpp"
+
+#include <string.h>
 
 #ifdef GRNXX_WINDOWS
-# ifndef NOMINMAX
-#  define NOMINMAX
-# endif  // NOMINMAX
 # include <windows.h>
 #endif  // GRNXX_WINDOWS
 
@@ -30,6 +29,8 @@
 
 namespace grnxx {
 namespace {
+
+constexpr size_t MESSAGE_BUF_SIZE = 256;
 
 #ifdef GRNXX_WINDOWS
 class Freer {
@@ -42,36 +43,52 @@ class Freer {
 
 }  // namespace
 
-StringBuilder &Error::write_to(StringBuilder &builder) const {
+StringBuilder &Errno::write_to(StringBuilder &builder) const {
   switch (type_) {
-    case POSIX_ERROR: {
-      return builder << '(' << std::strerror(posix_error_) << ')';
+    case STANDARD_ERRNO: {
+      // Note that a string returned by ::strerror() may be modified by a
+      // subsequent call to ::perror() or ::strerror().
+      const char *message = "n/a";
+#ifdef GRNXX_MSC
+      char message_buf[MESSAGE_BUF_SIZE];
+      if (::strerror_s(message_buf, MESSAGE_BUF_SIZE, standard_errno_) == 0) {
+        message = message_buf;
+      }
+#elif defined(GRNXX_HAS_XSI_STRERROR)
+      char message_buf[MESSAGE_BUF_SIZE];
+      if (::strerror_r(standard_errno_, message_buf, MESSAGE_BUF_SIZE) == 0) {
+        message = message_buf;
+      }
+#elif defined(GRNXX_HAS_GNU_STRERROR)
+      // ::strerror_r() may not use "message_buf" when an immutable error
+      // message is available.
+      char message_buf[MESSAGE_BUF_SIZE];
+      message = ::strerror_r(standard_errno_, message_buf, MESSAGE_BUF_SIZE);
+#else  // defined(GRNXX_HAS_GNU_STRERROR)
+      message = ::strerror(standard_errno_);
+#endif  // defined(GRNXX_HAS_GNU_STRERROR)
+      return builder << standard_errno_ << " (" << message << ')';
     }
 #ifdef GRNXX_WINDOWS
-    case WINDOWS_ERROR: {
+    case WINDOWS_ERRNO: {
       char *message;
       if (::FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER |
                            FORMAT_MESSAGE_FROM_SYSTEM |
                            FORMAT_MESSAGE_IGNORE_INSERTS,
-                           nullptr, windows_error_,
+                           nullptr, windows_errno_,
                            MAKELANGID(LANG_ENGLISH, SUBLANG_DEFAULT),
                            reinterpret_cast<LPSTR>(&message),
                            0, nullptr) != 0) {
         std::unique_ptr<char[], Freer> message_freer(message);
-        builder << '(' << message << ')';
+        builder << windows_errno_ << " (" << message << ')';
       } else {
-        builder << "(n/a)";
+        builder << windows_errno << " (n/a)";
       }
       return builder;
     }
 #endif  // GRNXX_WINDOWS
-    case GRNXX_ERROR: {
-      // TODO
-      // grnxx_error_
-      return builder << "(undefined)";
-    }
     default: {
-      return builder << "(undefined)";
+      return builder << "n/a";
     }
   }
 }

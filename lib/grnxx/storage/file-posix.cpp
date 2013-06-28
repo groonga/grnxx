@@ -29,7 +29,7 @@
 #include <limits>
 #include <new>
 
-#include "grnxx/error.hpp"
+#include "grnxx/errno.hpp"
 #include "grnxx/logger.hpp"
 #include "grnxx/storage/path.hpp"
 
@@ -55,7 +55,7 @@ FileImpl::~FileImpl() {
     }
     if (::close(fd_) != 0) {
       GRNXX_ERROR() << "failed to close file: path = " << path_.get()
-                    << ": '::close' " << Error(errno);
+                    << ": '::close' " << Errno(errno);
     }
   }
 }
@@ -129,7 +129,7 @@ bool FileImpl::unlink(const char *path) {
   }
   if (::unlink(path) != 0) {
     GRNXX_WARNING() << "failed to unlink file: path = " << path
-                    << ": '::unlink' " << Error(errno);
+                    << ": '::unlink' " << Errno(errno);
     return false;
   }
   return true;
@@ -163,7 +163,7 @@ bool FileImpl::lock(FileLockFlags lock_flags) {
     }
     GRNXX_ERROR() << "failed to lock file: path = " << path_.get()
                   << ", lock_flags = " << lock_flags
-                  << ": '::flock' " << Error(errno);
+                  << ": '::flock' " << Errno(errno);
     return false;
   }
   locked_ = true;
@@ -177,7 +177,7 @@ bool FileImpl::unlock() {
   }
   if (::flock(fd_, LOCK_UN) != 0) {
     GRNXX_ERROR() << "failed to unlock file: path = " << path_.get()
-                  << ": '::flock' " << Error(errno);
+                  << ": '::flock' " << Errno(errno);
     return false;
   }
   locked_ = false;
@@ -187,7 +187,7 @@ bool FileImpl::unlock() {
 bool FileImpl::sync() {
   if (::fsync(fd_) != 0) {
     GRNXX_ERROR() << "failed to sync file: path = " << path_.get()
-                  << ": '::fsync' " << Error(errno);
+                  << ": '::fsync' " << Errno(errno);
     return false;
   }
   return true;
@@ -205,7 +205,7 @@ bool FileImpl::resize(uint64_t size) {
   if (::ftruncate(fd_, size) != 0) {
     GRNXX_ERROR() << "failed to resize file: path = " << path_.get()
                   << ", size = " << size
-                  << ": '::ftruncate' " << Error(errno);
+                  << ": '::ftruncate' " << Errno(errno);
     return false;
   }
   return true;
@@ -215,7 +215,7 @@ bool FileImpl::get_size(uint64_t *size) {
   struct stat stat;
   if (::fstat(fd_, &stat) != 0) {
     GRNXX_ERROR() << "failed to stat file: path = " << path_.get()
-                  << ": '::fstat' " << Error(errno);
+                  << ": '::fstat' " << Errno(errno);
     return false;
   }
   if (size) {
@@ -249,7 +249,7 @@ bool FileImpl::create_persistent_file(const char *path, FileFlags flags) {
   if (fd_ == -1) {
     GRNXX_ERROR() << "failed to create file: path = " << path
                   << ", flags = " << flags
-                  << ": '::open' " << Error(errno);
+                  << ": '::open' " << Errno(errno);
     return false;
   }
   return true;
@@ -272,7 +272,7 @@ bool FileImpl::create_temporary_file(const char *path, FileFlags flags) {
       return true;
     }
     GRNXX_WARNING() << "failed to create file: path = " << path_.get()
-                    << ": '::open' " << Error(errno);
+                    << ": '::open' " << Errno(errno);
   }
   GRNXX_ERROR() << "failed to create temporary file: "
                 << "path = " << path
@@ -294,7 +294,7 @@ bool FileImpl::open_file(const char *path, FileFlags flags) {
   if (fd_ == -1) {
     GRNXX_ERROR() << "failed to open file: path = " << path
                   << ", flags = " << flags
-                  << ": '::open' " << Error(errno);
+                  << ": '::open' " << Errno(errno);
     return false;
   }
   return true;
@@ -309,7 +309,7 @@ bool FileImpl::open_or_create_file(const char *path, FileFlags flags) {
   if (fd_ == -1) {
     GRNXX_ERROR() << "failed to open file: path = " << path
                   << ", flags = " << flags
-                  << ": '::open' " << Error(errno);
+                  << ": '::open' " << Errno(errno);
     return false;
   }
   return true;

@@ -6,7 +6,7 @@ TESTS =					\
 	test_bytes			\
 	test_charset			\
 	test_duration			\
-	test_error			\
+	test_errno			\
 	test_exception			\
 	test_features			\
 	test_geo_point			\
@@ -41,8 +41,8 @@ test_charset_LDADD = ../lib/grnxx/libgrnxx.la
 test_duration_SOURCES = test_duration.cpp
 test_duration_LDADD = ../lib/grnxx/libgrnxx.la
 
-test_error_SOURCES = test_error.cpp
-test_error_LDADD = ../lib/grnxx/libgrnxx.la
+test_errno_SOURCES = test_errno.cpp
+test_errno_LDADD = ../lib/grnxx/libgrnxx.la
 
 test_exception_SOURCES = test_exception.cpp
 test_exception_LDADD = ../lib/grnxx/libgrnxx.la

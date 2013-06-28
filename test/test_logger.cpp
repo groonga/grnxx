@@ -19,7 +19,7 @@
 #include <cerrno>
 #include <cstdio>
 
-#include "grnxx/error.hpp"
+#include "grnxx/errno.hpp"
 #include "grnxx/logger.hpp"
 
 //void f3() {
@@ -57,7 +57,7 @@ int main() {
   assert(std::fopen(path, "rb") == NULL);
 
   GRNXX_ERROR() << "failed to open file: <" << path << ">: 'fopen' "
-                << grnxx::Error(errno);
+                << grnxx::Errno(errno);
 
   GRNXX_LOGGER(0) << "Level: 0";
   GRNXX_LOGGER(1) << "Level: 1";

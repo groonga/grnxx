@@ -144,6 +144,12 @@
 
 // Source features.
 
+#ifdef _GNU_SOURCE
+# define GRNXX_GNU_SOURCE _GNU_SOURCE
+#else  // _GNU_SOURCE
+# define GRNXX_GNU_SOURCE 0
+#endif  // _GNU_SOURCE
+
 #ifdef _POSIX_C_SOURCE
 # define GRNXX_POSIX_C_SOURCE _POSIX_C_SOURCE
 #else  // _POSIX_C_SOURCE
@@ -181,6 +187,13 @@
 #endif  // _POSIX_SOURCE
 
 // Available functions.
+
+#if ((GRNXX_POSIX_C_SOURCE >= 20112L) || (GRNXX_XOPEN_SOURCE >= 600)) &&\
+    !GRNXX_GNU_SOURCE
+# define GRNXX_HAS_XSI_STRERROR
+#else  // ((GRNXX_POSIX_C_SOURCE >= 20112L) || ...
+# define GRNXX_HAS_GNU_STRERROR
+#endif  // ((GRNXX_POSIX_C_SOURCE >= 20112L) || ...
 
 #if GRNXX_POSIX_C_SOURCE >= 199309L
 # define GRNXX_HAS_NANOSLEEP

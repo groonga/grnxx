@@ -26,7 +26,7 @@
 #include <memory>
 #include <new>
 
-#include "grnxx/error.hpp"
+#include "grnxx/errno.hpp"
 #include "grnxx/logger.hpp"
 #include "grnxx/storage/file.hpp"
 
@@ -47,7 +47,7 @@ ChunkImpl::ChunkImpl()
 ChunkImpl::~ChunkImpl() {
   if (address_ != MAP_FAILED) {
     if (::munmap(address_, static_cast<size_t>(size_)) != 0) {
-      GRNXX_ERROR() << "failed to unmap chunk: '::munmap' " << Error(errno);
+      GRNXX_ERROR() << "failed to unmap chunk: '::munmap' " << Errno(errno);
     }
   }
 }
@@ -91,7 +91,7 @@ bool ChunkImpl::sync(uint64_t offset, uint64_t size) {
   if (size > 0) {
     if (::msync(static_cast<char *>(address_) + offset, size, MS_SYNC) != 0) {
       GRNXX_ERROR() << "failed to sync chunk: offset = " << offset
-                    << ", size = " << size << ": '::msync' " << Error(errno);
+                    << ", size = " << size << ": '::msync' " << Errno(errno);
       return false;
     }
   }
@@ -148,7 +148,7 @@ bool ChunkImpl::create_file_backed_chunk(File *file, uint64_t offset,
                   << "file_path = " << file->path()
                   << ", file_size = " << file_size
                   << ", offset = " << offset << ", size = " << size
-                  << ", flags = " << flags << ": '::mmap' " << Error(errno);
+                  << ", flags = " << flags << ": '::mmap' " << Errno(errno);
     return false;
   }
   return true;
@@ -176,7 +176,7 @@ bool ChunkImpl::create_anonymous_chunk(uint64_t size, ChunkFlags flags) {
     address_ = ::mmap(nullptr, size, protection_flags, mmap_flags, -1, 0);
     if (address_ == MAP_FAILED) {
       GRNXX_ERROR() << "failed to map anonymous chunk: size = " << size
-                    << ", flags = " << flags << ": '::mmap' " << Error(errno);
+                    << ", flags = " << flags << ": '::mmap' " << Errno(errno);
       return false;
     }
   }
