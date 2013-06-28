@@ -131,7 +131,7 @@ void generate_random_keys(std::uint64_t num_keys,
   keyset.clear();
   while (keyset.size() < num_keys) {
     const grnxx::Bytes key = generate_random_key<grnxx::Bytes>();
-    keyset.insert(std::string(reinterpret_cast<const char *>(key.ptr()),
+    keyset.insert(std::string(reinterpret_cast<const char *>(key.data()),
                               key.size()));
   }
   keys->clear();

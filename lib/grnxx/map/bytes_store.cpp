@@ -342,7 +342,7 @@ bool BytesStoreImpl::add(ValueArg bytes, uint64_t *bytes_id) {
   if (!page) {
     return false;
   }
-  std::memcpy(page + offset_in_page, bytes.ptr(), size);
+  std::memcpy(page + offset_in_page, bytes.data(), size);
   *bytes_id = get_bytes_id(offset, size);
   page_header->size_in_use += size;
   if (offset == header_->next_offset) {

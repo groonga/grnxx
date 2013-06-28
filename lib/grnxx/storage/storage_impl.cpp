@@ -1165,11 +1165,11 @@ char *StorageImpl::generate_path(uint16_t file_id) {
     return nullptr;
   }
   if (has_extension) {
-    std::memcpy(path, prefix.ptr(), prefix.size() - 4);
+    std::memcpy(path, prefix.data(), prefix.size() - 4);
     std::sprintf(path + prefix.size() - 4, "_%03d", file_id);
     std::strcpy(path + prefix.size(), ".grn");
   } else {
-    std::memcpy(path, prefix.ptr(), prefix.size());
+    std::memcpy(path, prefix.data(), prefix.size());
     std::sprintf(path + prefix.size(), "_%03d", file_id);
   }
   return path;

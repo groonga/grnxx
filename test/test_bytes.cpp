@@ -52,13 +52,13 @@ void test_extract() {
   grnxx::Bytes part = bytes.extract(5, 0);
 
   assert(!part);
-  assert(part.ptr() == (bytes.ptr() + 5));
+  assert(part.data() == (bytes.data() + 5));
   assert(part.size() == 0);
 
   part = bytes.extract(3, 5);
 
   assert(part);
-  assert(part.ptr() == (bytes.ptr() + 3));
+  assert(part.data() == (bytes.data() + 3));
   assert(part.size() == 5);
 }
 
@@ -67,13 +67,13 @@ void test_trim() {
   grnxx::Bytes part = bytes.extract(5, 0);
 
   assert(!part);
-  assert(part.ptr() == (bytes.ptr() + 5));
+  assert(part.data() == (bytes.data() + 5));
   assert(part.size() == 0);
 
   part = bytes.extract(3, 5);
 
   assert(part);
-  assert(part.ptr() == (bytes.ptr() + 3));
+  assert(part.data() == (bytes.data() + 3));
   assert(part.size() == 5);
 }
 
@@ -82,13 +82,13 @@ void test_prefix() {
   grnxx::Bytes prefix = bytes.prefix(0);
 
   assert(!prefix);
-  assert(prefix.ptr() == bytes.ptr());
+  assert(prefix.data() == bytes.data());
   assert(prefix.size() == 0);
 
   prefix = bytes.prefix(5);
 
   assert(prefix);
-  assert(prefix.ptr() == bytes.ptr());
+  assert(prefix.data() == bytes.data());
   assert(prefix.size() == 5);
 }
 
@@ -97,13 +97,13 @@ void test_suffix() {
   grnxx::Bytes suffix = bytes.suffix(0);
 
   assert(!suffix);
-  assert(suffix.ptr() == (bytes.ptr() + 10));
+  assert(suffix.data() == (bytes.data() + 10));
   assert(suffix.size() == 0);
 
   suffix = bytes.suffix(5);
 
   assert(suffix);
-  assert(suffix.ptr() == (bytes.ptr() + 5));
+  assert(suffix.data() == (bytes.data() + 5));
   assert(suffix.size() == 5);
 }
 

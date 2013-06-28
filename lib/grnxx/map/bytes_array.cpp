@@ -148,7 +148,7 @@ bool BytesArray::create_array(Storage *storage, uint32_t storage_node_id,
   header_ = static_cast<BytesArrayHeader *>(storage_node.body());
   *header_ = BytesArrayHeader();
   header_->default_value_size = default_value.size();
-  std::memcpy(header_ + 1, default_value.ptr(), default_value.size());
+  std::memcpy(header_ + 1, default_value.data(), default_value.size());
   default_value_ = Value(header_ + 1, default_value.size());
   ids_.reset(IDArray::create(storage, storage_node_id_,
                              BYTES_STORE_INVALID_BYTES_ID));

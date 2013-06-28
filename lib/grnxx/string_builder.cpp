@@ -175,7 +175,7 @@ StringBuilder &operator<<(StringBuilder &builder, const void *value) {
 
 StringBuilder &operator<<(StringBuilder &builder, const Bytes &bytes) {
   // TODO: StringBuilder should support const uint_8 *.
-  return builder.append(reinterpret_cast<const char *>(bytes.ptr()),
+  return builder.append(reinterpret_cast<const char *>(bytes.data()),
                         bytes.size());
 }
 

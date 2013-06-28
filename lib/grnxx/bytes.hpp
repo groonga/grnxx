@@ -32,14 +32,14 @@ class Bytes {
   // Trivial default constructor.
   Bytes() = default;
   // Create a reference to an empty (zero-size) sequence.
-  Bytes(nullptr_t) : ptr_(nullptr), size_(0) {}
+  Bytes(nullptr_t) : data_(nullptr), size_(0) {}
   // Create a reference to a zero-terminated string.
   Bytes(const char *str)
-      : ptr_(reinterpret_cast<const uint8_t *>(str)),
+      : data_(reinterpret_cast<const uint8_t *>(str)),
         size_(std::strlen(str)) {}
   // Create a reference to a sequence of bytes.
-  Bytes(const void *ptr, uint64_t size)
-      : ptr_(static_cast<const uint8_t *>(ptr)),
+  Bytes(const void *data, uint64_t size)
+      : data_(static_cast<const uint8_t *>(data)),
         size_(size) {}
 
   // Return true iff the sequence is not empty.
@@ -49,34 +49,34 @@ class Bytes {
 
   // Skip the first "n" bytes and extract the subsequent "m" bytes.
   Bytes extract(uint64_t n, uint64_t m) const {
-    return Bytes(ptr_ + n, m);
+    return Bytes(data_ + n, m);
   }
   // Remove the first "n" bytes and the last "m" bytes.
   Bytes trim(uint64_t n, uint64_t m) const {
-    return Bytes(ptr_ + n, size_ - n - m);
+    return Bytes(data_ + n, size_ - n - m);
   }
 
   // Extract the first "n" bytes.
   Bytes prefix(uint64_t n) const {
-    return Bytes(ptr_, n);
+    return Bytes(data_, n);
   }
   // Extract the last "n" bytes.
   Bytes suffix(uint64_t n) const {
-    return Bytes(ptr_ + size_ - n, n);
+    return Bytes(data_ + size_ - n, n);
   }
 
   // Remove the first "n" bytes.
   Bytes except_prefix(uint64_t n) const {
-    return Bytes(ptr_ + n, size_ - n);
+    return Bytes(data_ + n, size_ - n);
   }
   // Remove the last "n" bytes.
   Bytes except_suffix(uint64_t n) const {
-    return Bytes(ptr_, size_ - n);
+    return Bytes(data_, size_ - n);
   }
 
   // Return true iff "*this" == "rhs".
   bool operator==(const Bytes &rhs) const {
-    return (size_ == rhs.size_) && (std::memcmp(ptr_, rhs.ptr_, size_) == 0);
+    return (size_ == rhs.size_) && (std::memcmp(data_, rhs.data_, size_) == 0);
   }
   // Return true iff "*this" != "rhs".
   bool operator!=(const Bytes &rhs) const {
@@ -85,7 +85,7 @@ class Bytes {
   // Return true iff "*this" < "rhs".
   bool operator<(const Bytes &rhs) const {
     const uint64_t min_size = (size_ < rhs.size_) ? size_ : rhs.size_;
-    int result = std::memcmp(ptr_, rhs.ptr_, min_size);
+    int result = std::memcmp(data_, rhs.data_, min_size);
     return (result < 0) || ((result == 0) && (size_ < rhs.size_));
   }
   // Return true iff "*this" > "rhs".
@@ -106,7 +106,7 @@ class Bytes {
   // otherwise (if "*this" > "bytes").
   int compare(const Bytes &bytes) const {
     const uint64_t min_size = (size_ < bytes.size_) ? size_ : bytes.size_;
-    int result = std::memcmp(ptr_, bytes.ptr_, min_size);
+    int result = std::memcmp(data_, bytes.data_, min_size);
     if (result != 0) {
       return result;
     }
@@ -124,15 +124,15 @@ class Bytes {
 
   // Return the "i"-th byte.
   uint8_t operator[](uint64_t i) const {
-    return ptr_[i];
+    return data_[i];
   }
   // Return the starting address.
   const void *address() const {
-    return ptr_;
+    return data_;
   }
   // Return a pointer to the sequence.
-  const uint8_t *ptr() const {
-    return ptr_;
+  const uint8_t *data() const {
+    return data_;
   }
   // Return the number of bytes.
   uint64_t size() const {
@@ -140,7 +140,7 @@ class Bytes {
   }
 
  private:
-  const uint8_t *ptr_;
+  const uint8_t *data_;
   uint64_t size_;
 };
 
