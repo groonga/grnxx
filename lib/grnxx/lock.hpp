@@ -18,7 +18,9 @@
 #ifndef GRNXX_LOCK_HPP
 #define GRNXX_LOCK_HPP
 
-#include "grnxx/basic.hpp"
+#include "grnxx/features.hpp"
+
+#include "grnxx/duration.hpp"
 #include "grnxx/mutex.hpp"
 
 namespace grnxx {
@@ -28,7 +30,7 @@ class Lock {
   Lock() = delete;
   explicit Lock(Mutex *mutex) : mutex_((mutex->lock(), mutex)) {}
   Lock(Mutex *mutex, Duration timeout)
-    : mutex_(mutex->lock(timeout) ? mutex : nullptr) {}
+      : mutex_(mutex->lock(timeout) ? mutex : nullptr) {}
   ~Lock() {
     if (mutex_) {
       mutex_->unlock();

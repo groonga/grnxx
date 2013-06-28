@@ -23,9 +23,6 @@
 #include "grnxx/bytes.hpp"
 #include "grnxx/types.hpp"
 
-// TODO: To be removed in future.
-#include "grnxx/slice.hpp"
-
 namespace grnxx {
 
 class StringBuilder;
@@ -58,14 +55,6 @@ class Charset {
   // Return the size of the first character of "bytes". This function may
   // return 0 if "bytes" is empty or an invalid sequence.
   virtual size_t get_char_size(const Bytes &bytes) const = 0;
-
-  // TODO: To be removed in future.
-  // Return the first character of "slice". This function may return an empty
-  // slice if "slice" is empty or an invalid sequence.
-  virtual Slice get_char(const Slice &slice) const = 0;
-  // Return the size of the first character of "slice". This function may
-  // return 0 if "slice" is empty or an invalid sequence.
-  virtual size_t get_char_size(const Slice &slice) const = 0;
 };
 
 }  // namespace grnxx

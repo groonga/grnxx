@@ -1,18 +1,12 @@
 SUBDIRS =				\
-	alpha				\
 	charset				\
-	db				\
-	io				\
 	map				\
 	storage
 
 lib_LTLIBRARIES = libgrnxx.la
 
 libgrnxx_la_LIBADD =			\
-	alpha/libgrnxx_alpha.la		\
 	charset/libgrnxx_charset.la	\
-	db/libgrnxx_db.la		\
-	io/libgrnxx_io.la		\
 	map/libgrnxx_map.la		\
 	storage/libgrnxx_storage.la
 
@@ -23,7 +17,6 @@ libgrnxx_la_SOURCES =			\
 	array_impl.cpp			\
 	backtrace.cpp			\
 	broken_down_time.cpp		\
-	bytes.cpp			\
 	charset.cpp			\
 	duration.cpp			\
 	error.cpp			\
@@ -36,11 +29,8 @@ libgrnxx_la_SOURCES =			\
 	mutex.cpp			\
 	os.cpp				\
 	periodic_clock.cpp		\
-	recycler.cpp			\
-	slice.cpp			\
 	stopwatch.cpp			\
 	storage.cpp			\
-	string.cpp			\
 	string_builder.cpp		\
 	system_clock.cpp		\
 	thread.cpp			\
@@ -51,7 +41,6 @@ libgrnxx_include_HEADERS =		\
 	array.hpp			\
 	array_impl.hpp			\
 	backtrace.hpp			\
-	basic.hpp			\
 	broken_down_time.hpp		\
 	bytes.hpp			\
 	charset.hpp			\
@@ -72,11 +61,8 @@ libgrnxx_include_HEADERS =		\
 	mutex.hpp			\
 	os.hpp				\
 	periodic_clock.hpp		\
-	recycler.hpp			\
-	slice.hpp			\
 	stopwatch.hpp			\
 	storage.hpp			\
-	string.hpp			\
 	string_builder.hpp		\
 	string_format.hpp		\
 	system_clock.hpp		\

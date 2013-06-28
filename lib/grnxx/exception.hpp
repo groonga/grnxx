@@ -18,7 +18,9 @@
 #ifndef GRNXX_EXCEPTION_HPP
 #define GRNXX_EXCEPTION_HPP
 
-#include "grnxx/basic.hpp"
+#include "grnxx/features.hpp"
+
+#include <exception>
 
 #define GRNXX_THROW() (throw ::grnxx::Exception())
 

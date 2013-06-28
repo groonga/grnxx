@@ -26,8 +26,6 @@
 
 namespace grnxx {
 
-class StringBuilder;
-
 // A reference to a sequence of bytes.
 class Bytes {
  public:
@@ -164,8 +162,6 @@ inline bool operator<=(const char *lhs, const Bytes &rhs) {
 inline bool operator>=(const char *lhs, const Bytes &rhs) {
   return Bytes(lhs) >= rhs;
 }
-
-StringBuilder &operator<<(StringBuilder &builder, const Bytes &bytes);
 
 }  // namespace
 

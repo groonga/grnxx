@@ -18,9 +18,15 @@
 #ifndef GRNXX_STRING_BUILDER_HPP
 #define GRNXX_STRING_BUILDER_HPP
 
-#include "grnxx/basic.hpp"
+#include "grnxx/features.hpp"
+
+#include <cstring>
+#include <exception>
+#include <memory>
+
+#include "grnxx/bytes.hpp"
 #include "grnxx/flags_impl.hpp"
-#include "grnxx/string.hpp"
+#include "grnxx/types.hpp"
 
 namespace grnxx {
 
@@ -175,10 +181,6 @@ class StringBuilder {
     return *this;
   }
 
-  String str() const {
-    return String(begin_, length());
-  }
-
   const char &operator[](size_t i) const {
     return begin_[i];
   }
@@ -186,6 +188,9 @@ class StringBuilder {
     return begin_[i];
   }
 
+  Bytes bytes() const {
+    return Bytes(c_str(), length());
+  }
   const char *c_str() const {
     return begin_ ? begin_ : "";
   }
@@ -282,16 +287,11 @@ inline StringBuilder &operator<<(StringBuilder &builder, const char *value) {
   return builder.append(value, std::strlen(value));
 }
 
-// Strings.
-inline StringBuilder &operator<<(StringBuilder &builder, const String &value) {
-  return builder.append(value.c_str(), value.length());
-}
+StringBuilder &operator<<(StringBuilder &builder, const Bytes &bytes);
 
 // Exceptions.
-inline StringBuilder &operator<<(StringBuilder &builder,
-                                 const std::exception &exception) {
-  return builder << "{ what = " << exception.what() << " }";
-}
+StringBuilder &operator<<(StringBuilder &builder,
+                          const std::exception &exception);
 
 }  // namespace grnxx
 

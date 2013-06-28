@@ -60,11 +60,7 @@ AC_CHECK_LIB([pthread], [pthread_create],
 AC_CONFIG_FILES([Makefile
                  lib/Makefile
                  lib/grnxx/Makefile
-                 lib/grnxx/alpha/Makefile
-                 lib/grnxx/alpha/map/Makefile
                  lib/grnxx/charset/Makefile
-                 lib/grnxx/db/Makefile
-                 lib/grnxx/io/Makefile
                  lib/grnxx/map/Makefile
                  lib/grnxx/map/array_map/Makefile
                  lib/grnxx/map/double_array/Makefile

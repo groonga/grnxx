@@ -17,6 +17,8 @@
 */
 #include "grnxx/map_cursor.hpp"
 
+#include <limits>
+
 #include "grnxx/bytes.hpp"
 #include "grnxx/geo_point.hpp"
 #include "grnxx/logger.hpp"

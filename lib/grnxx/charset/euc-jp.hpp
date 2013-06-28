@@ -23,9 +23,6 @@
 #include "grnxx/bytes.hpp"
 #include "grnxx/charset.hpp"
 
-// TODO: To be removed in future.
-#include "grnxx/slice.hpp"
-
 namespace grnxx {
 namespace charset {
 
@@ -38,10 +35,6 @@ class EUC_JP : public Charset {
 
   Bytes get_char(const Bytes &bytes) const;
   size_t get_char_size(const Bytes &bytes) const;
-
-  // TODO: To be removed in future.
-  Slice get_char(const Slice &slice) const;
-  size_t get_char_size(const Slice &slice) const;
 };
 
 }  // namespace charset

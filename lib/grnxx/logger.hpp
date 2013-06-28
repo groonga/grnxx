@@ -20,7 +20,9 @@
 
 #include "grnxx/features.hpp"
 
+#include "grnxx/flags_impl.hpp"
 #include "grnxx/string_builder.hpp"
+#include "grnxx/types.hpp"
 
 #define GRNXX_ERROR()   GRNXX_LOGGER(::grnxx::ERROR_LOGGER)
 #define GRNXX_WARNING() GRNXX_LOGGER(::grnxx::WARNING_LOGGER)

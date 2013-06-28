@@ -17,71 +17,72 @@
 */
 #include <cassert>
 
-#include "grnxx/logger.hpp"
+#include "grnxx/bytes.hpp"
 #include "grnxx/charset.hpp"
+#include "grnxx/logger.hpp"
 
 void test_ascii() {
-  const grnxx::Slice query = "Hello, world!";
+  const grnxx::Bytes query = "Hello, world!";
 
   const grnxx::Charset *charset = grnxx::Charset::get(grnxx::CHARSET_EUC_JP);
-  grnxx::Slice query_left = query;
+  grnxx::Bytes query_left = query;
   while (query_left) {
-    const grnxx::Slice next = charset->get_char(query);
+    const grnxx::Bytes next = charset->get_char(query);
     assert(next.size() == 1);
-    query_left.remove_prefix(next.size());
+    query_left = query_left.except_prefix(next.size());
   }
 
   charset = grnxx::Charset::get(grnxx::CHARSET_SHIFT_JIS);
   query_left = query;
   while (query_left) {
-    const grnxx::Slice next = charset->get_char(query);
+    const grnxx::Bytes next = charset->get_char(query);
     assert(next.size() == 1);
-    query_left.remove_prefix(next.size());
+    query_left = query_left.except_prefix(next.size());
   }
 
   charset = grnxx::Charset::get(grnxx::CHARSET_UTF_8);
   query_left = query;
   while (query_left) {
-    const grnxx::Slice next = charset->get_char(query);
+    const grnxx::Bytes next = charset->get_char(query);
     assert(next.size() == 1);
-    query_left.remove_prefix(next.size());
+    query_left = query_left.except_prefix(next.size());
   }
 }
 
 void test_euc_jp() {
-  const grnxx::Slice query = "\xCA\xB8\xBB\xFA\xCE\xF3";
+  const grnxx::Bytes query = "\xCA\xB8\xBB\xFA\xCE\xF3";
 
   const grnxx::Charset *charset = grnxx::Charset::get(grnxx::CHARSET_EUC_JP);
-  grnxx::Slice query_left = query;
+  grnxx::Bytes query_left = query;
   while (query_left) {
-    const grnxx::Slice next = charset->get_char(query);
+    const grnxx::Bytes next = charset->get_char(query);
     assert(next.size() == 2);
-    query_left.remove_prefix(next.size());
+    query_left = query_left.except_prefix(next.size());
   }
 }
 
 void test_shift_jis() {
-  const grnxx::Slice query = "\x95\xB6\x8E\x9A\x97\xF1";
+  const grnxx::Bytes query = "\x95\xB6\x8E\x9A\x97\xF1";
 
   const grnxx::Charset *charset =
       grnxx::Charset::get(grnxx::CHARSET_SHIFT_JIS);
-  grnxx::Slice query_left = query;
+  grnxx::Bytes query_left = query;
   while (query_left) {
-    const grnxx::Slice next = charset->get_char(query);
+    const grnxx::Bytes next = charset->get_char(query);
     assert(next.size() == 2);
-    query_left.remove_prefix(next.size());
+    query_left = query_left.except_prefix(next.size());
   }
 }
 
 void test_utf_8() {
-  const grnxx::Slice query = "\xE6\x96\x87\xE5\xAD\x97\xE5\x88\x97";
+  const grnxx::Bytes query = "\xE6\x96\x87\xE5\xAD\x97\xE5\x88\x97";
 
   const grnxx::Charset *charset = grnxx::Charset::get(grnxx::CHARSET_UTF_8);
-  grnxx::Slice query_left = query;
+  grnxx::Bytes query_left = query;
   while (query_left) {
-    const grnxx::Slice next = charset->get_char(query);
+    const grnxx::Bytes next = charset->get_char(query);
     assert(next.size() == 3);
-    query_left.remove_prefix(next.size());
+    query_left = query_left.except_prefix(next.size());
   }
 }
 

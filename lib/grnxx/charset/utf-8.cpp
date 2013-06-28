@@ -17,6 +17,7 @@
 */
 #include "grnxx/charset/utf-8.hpp"
 
+#include "grnxx/bytes.hpp"
 #include "grnxx/intrinsic.hpp"
 
 namespace grnxx {
@@ -77,14 +78,6 @@ size_t UTF_8::get_char_size(const Bytes &bytes) const {
   }
   // Return 1 for an ASCII character.
   return 1;
-}
-
-Slice UTF_8::get_char(const Slice &slice) const {
-  return slice.prefix(get_char_size(slice));
-}
-
-size_t UTF_8::get_char_size(const Slice &slice) const {
-  return get_char_size(Bytes(slice.ptr(), slice.size()));
 }
 
 }  // namespace charset

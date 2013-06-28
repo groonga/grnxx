@@ -19,6 +19,8 @@
 
 #include <cmath>
 
+#include "grnxx/intrinsic.hpp"
+
 namespace grnxx {
 
 StringBuilder::StringBuilder(size_t size, StringBuilderFlags flags)
@@ -169,6 +171,17 @@ StringBuilder &operator<<(StringBuilder &builder, const void *value) {
     address <<= 4;
   }
   return builder.append(buf, sizeof(buf));
+}
+
+StringBuilder &operator<<(StringBuilder &builder, const Bytes &bytes) {
+  // TODO: StringBuilder should support const uint_8 *.
+  return builder.append(reinterpret_cast<const char *>(bytes.ptr()),
+                        bytes.size());
+}
+
+StringBuilder &operator<<(StringBuilder &builder,
+                          const std::exception &exception) {
+  return builder << "{ what = " << exception.what() << " }";
 }
 
 }  // namespace grnxx

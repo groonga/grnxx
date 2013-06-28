@@ -35,6 +35,7 @@
 #endif  // HAVE_LIBBFD
 
 #include <cstdlib>
+#include <cstring>
 #include <sstream>
 
 #include "grnxx/lock.hpp"

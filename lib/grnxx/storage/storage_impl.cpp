@@ -21,10 +21,10 @@
 #include <cstring>
 #include <new>
 
+#include "grnxx/bytes.hpp"
 #include "grnxx/intrinsic.hpp"
 #include "grnxx/lock.hpp"
 #include "grnxx/logger.hpp"
-#include "grnxx/slice.hpp"
 #include "grnxx/storage/chunk.hpp"
 #include "grnxx/storage/chunk_index.hpp"
 #include "grnxx/storage/file.hpp"
@@ -1156,7 +1156,7 @@ char *StorageImpl::generate_path(uint16_t file_id) {
   // If "path_" ends with ".grn", the result also ends with ".grn".
   // In this case, "file_id" is inserted before the ".grn".
   // Otherwise, "file_id" is appended as a suffix.
-  const Slice prefix = path_.get();
+  const Bytes prefix = path_.get();
   const bool has_extension = prefix.ends_with(".grn");
   const size_t path_size = prefix.size() + 5;
   char * const path = new (std::nothrow) char[path_size];

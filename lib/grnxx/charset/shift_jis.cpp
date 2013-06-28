@@ -54,13 +54,5 @@ size_t Shift_JIS::get_char_size(const Bytes &bytes) const {
   return 1;
 }
 
-Slice Shift_JIS::get_char(const Slice &slice) const {
-  return slice.prefix(get_char_size(slice));
-}
-
-size_t Shift_JIS::get_char_size(const Slice &slice) const {
-  return get_char_size(Bytes(slice.ptr(), slice.size()));
-}
-
 }  // namespace charset
 }  // namespace grnxx

@@ -20,6 +20,9 @@
 #include <ctime>
 #include <fstream>
 #include <iostream>
+#include <memory>
+#include <string>
+#include <vector>
 
 #include "grnxx/backtrace.hpp"
 #include "grnxx/lock.hpp"
@@ -69,7 +72,7 @@ class LoggerSingleton {
       return false;
     }
     try {
-      String path_dummy(path);
+      std::string path_dummy(path);
       std::unique_ptr<std::ofstream> file_dummy(
           new (std::nothrow) std::ofstream(path_dummy.c_str(),
               std::ios::out | std::ios::app | std::ios::binary));
@@ -88,12 +91,12 @@ class LoggerSingleton {
     Lock lock(&mutex_);
     if (instance_) {
       instance_->file_.reset();
-      instance_->path_ = String();
+      instance_->path_.clear();
     }
   }
 
  private:
-  String path_;
+  std::string path_;
   std::unique_ptr<std::ofstream> file_;
 
   // These variables may be used even after the instance termination.

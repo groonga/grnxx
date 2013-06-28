@@ -26,6 +26,7 @@
 #include <unistd.h>
 
 #include <cerrno>
+#include <limits>
 #include <new>
 
 #include "grnxx/error.hpp"

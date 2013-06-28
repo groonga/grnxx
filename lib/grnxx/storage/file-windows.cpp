@@ -23,6 +23,9 @@
 #include <sys/stat.h>
 #include <io.h>
 
+#include <limits>
+#include <new>
+
 #include "grnxx/error.hpp"
 #include "grnxx/logger.hpp"
 #include "grnxx/storage/path.hpp"
@@ -191,7 +194,7 @@ bool FileImpl::unlock() {
 void FileImpl::sync() {
   if (!::FlushFileBuffers(handle_)) {
     GRNXX_ERROR() << "failed to sync file: path = " << path_.get()
-                  << ": '::FlushFileBuffers' " << Error(errno);
+                  << ": '::FlushFileBuffers' " << Error(::GetLastError());
     return false;
   }
   return true;
