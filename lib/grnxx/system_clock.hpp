@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013  Brazil, Inc.
+  Copyright (C) 2012-2013  Brazil, Inc.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -15,8 +15,8 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#ifndef GRNXX_TIME_SYSTEM_CLOCK_HPP
-#define GRNXX_TIME_SYSTEM_CLOCK_HPP
+#ifndef GRNXX_SYSTEM_CLOCK_HPP
+#define GRNXX_SYSTEM_CLOCK_HPP
 
 #include "grnxx/features.hpp"
 
@@ -31,4 +31,4 @@ class SystemClock {
 
 }  // namespace grnxx
 
-#endif  // GRNXX_TIME_SYSTEM_CLOCK_HPP
+#endif  // GRNXX_SYSTEM_CLOCK_HPP

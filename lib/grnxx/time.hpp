@@ -15,8 +15,8 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#ifndef GRNXX_TIME_TIME_HPP
-#define GRNXX_TIME_TIME_HPP
+#ifndef GRNXX_TIME_HPP
+#define GRNXX_TIME_HPP
 
 #include "grnxx/features.hpp"
 
@@ -111,4 +111,4 @@ StringBuilder &operator<<(StringBuilder &builder, Time time);
 
 }  // namespace grnxx
 
-#endif  // GRNXX_TIME_TIME_HPP
+#endif  // GRNXX_TIME_HPP

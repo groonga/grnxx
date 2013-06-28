@@ -15,8 +15,8 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#ifndef GRNXX_TIME_STOPWATCH_HPP
-#define GRNXX_TIME_STOPWATCH_HPP
+#ifndef GRNXX_STOPWATCH_HPP
+#define GRNXX_STOPWATCH_HPP
 
 #include "grnxx/features.hpp"
 
@@ -58,4 +58,4 @@ class Stopwatch {
 
 }  // namespace grnxx
 
-#endif  // GRNXX_TIME_STOPWATCH_HPP
+#endif  // GRNXX_STOPWATCH_HPP
