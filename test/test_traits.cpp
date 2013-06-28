@@ -34,7 +34,7 @@ struct Something {
 };
 
 // An operator<() is declared for Something.
-bool operator<(const Something &, const Something &);
+//bool operator<(const Something &, const Something &);
 
 // This type's starts_with() is invalid because it does not take Something2.
 // This type has operator<().
