@@ -28,17 +28,13 @@ int main() {
   bool thrown = true;
   bool catched = false;
   try {
-    GRNXX_THROW();
+    throw grnxx::Exception();
     thrown = false;
-  } catch (const grnxx::Exception &) {
+  } catch (const grnxx::Exception &exception) {
+    GRNXX_NOTICE() << "exception.what() = " << exception.what();
     catched = true;
   }
-
-  GRNXX_NOTICE() << "thrown = " << thrown;
-  GRNXX_NOTICE() << "catched = " << catched;
-
   assert(thrown);
   assert(catched);
-
   return 0;
 }

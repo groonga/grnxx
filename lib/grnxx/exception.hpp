@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2012  Brazil, Inc.
+  Copyright (C) 2012-2013  Brazil, Inc.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -22,26 +22,50 @@
 
 #include <exception>
 
-#define GRNXX_THROW() (throw ::grnxx::Exception())
-
 namespace grnxx {
 
+// The base exception class.
 class Exception : std::exception {
  public:
   Exception() noexcept {}
   virtual ~Exception() noexcept {}
 
-  Exception(const Exception &) noexcept {}
-  Exception &operator=(const Exception &) noexcept {
-    return *this;
+  virtual const char *what() const noexcept {
+    return "grnxx::Exception";
   }
+};
+
+// This exception is thrown when a file operation fails.
+class FileError : public Exception {
+ public:
+  FileError() noexcept {}
+  virtual ~FileError() noexcept {}
 
   virtual const char *what() const noexcept {
-    return "";
+    return "grnxx::FileError";
   }
+};
 
- private:
-  // TODO.
+// This exception is thrown when memory mapping fails.
+class MmapError : public Exception {
+ public:
+  MmapError() noexcept {}
+  virtual ~MmapError() noexcept {}
+
+  virtual const char *what() const noexcept {
+    return "grnxx::MmapError";
+  }
+};
+
+// This exception is thrown when memory allocation fails.
+class MemoryError : public Exception {
+ public:
+  MemoryError() noexcept {}
+  virtual ~MemoryError() noexcept {}
+
+  virtual const char *what() const noexcept {
+    return "grnxx::MemoryError";
+  }
 };
 
 }  // namespace grnxx
