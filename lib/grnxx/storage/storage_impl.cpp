@@ -170,6 +170,11 @@ bool StorageImpl::unlink(const char *path) {
     GRNXX_ERROR() << "invalid argument: path = nullptr";
     return false;
   }
+  // TODO: open() should have an option to be quiet.
+  if (!exists(path)) {
+    GRNXX_WARNING() << "failed to unlink: path = " << path;
+    return false;
+  }
   std::unique_ptr<StorageImpl> storage(open(path, STORAGE_READ_ONLY));
   if (!storage) {
     return false;
