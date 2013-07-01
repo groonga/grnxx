@@ -35,12 +35,15 @@ constexpr size_t STRING_BUILDER_BUF_SIZE_MIN = 64;
 class StringBuilder;
 typedef FlagsImpl<StringBuilder> StringBuilderFlags;
 
+// Use the default settings.
+constexpr StringBuilderFlags STRING_BUILDER_DEFAULT     =
+    StringBuilderFlags::define(0x00);
 constexpr StringBuilderFlags STRING_BUILDER_AUTO_RESIZE =
     StringBuilderFlags::define(0x01);
 
 class StringBuilder {
  public:
-  explicit StringBuilder(StringBuilderFlags flags = StringBuilderFlags::none())
+  explicit StringBuilder(StringBuilderFlags flags = STRING_BUILDER_DEFAULT)
       : buf_(),
         begin_(nullptr),
         end_(nullptr),
@@ -49,11 +52,11 @@ class StringBuilder {
         failed_(false) {}
 
   explicit StringBuilder(size_t size,
-                         StringBuilderFlags flags = StringBuilderFlags::none());
+                         StringBuilderFlags flags = STRING_BUILDER_DEFAULT);
 
   template <size_t T>
   explicit StringBuilder(char (&buf)[T],
-                         StringBuilderFlags flags = StringBuilderFlags::none())
+                         StringBuilderFlags flags = STRING_BUILDER_DEFAULT)
       : buf_(),
         begin_(buf),
         end_(buf + T - 1),
@@ -64,7 +67,7 @@ class StringBuilder {
   }
 
   StringBuilder(char *buf, size_t size,
-                StringBuilderFlags flags = StringBuilderFlags::none())
+                StringBuilderFlags flags = STRING_BUILDER_DEFAULT)
       : buf_(),
         begin_(buf),
         end_(buf + size - 1),

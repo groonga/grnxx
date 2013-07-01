@@ -135,14 +135,14 @@ volatile bool LoggerSingleton::initialized_ = false;
 LoggerSingleton * volatile LoggerSingleton::instance_ = nullptr;
 Mutex LoggerSingleton::mutex_(MUTEX_UNLOCKED);
 
-LoggerFlags Logger::flags_ = LoggerFlags::none();
+LoggerFlags Logger::flags_ = LOGGER_DEFAULT;
 int Logger::max_level_ = NOTICE_LOGGER;
 int Logger::backtrace_level_ = ERROR_LOGGER;
 
 Logger::Logger(const char *file, int line, const char *func, int level)
     : buf_(),
       builder_(buf_, (Logger::flags() & LOGGER_ENABLE_AUTO_RESIZE) ?
-                   STRING_BUILDER_AUTO_RESIZE : StringBuilderFlags::none()),
+                     STRING_BUILDER_AUTO_RESIZE : STRING_BUILDER_DEFAULT),
       file_(file),
       line_(line),
       func_(func),

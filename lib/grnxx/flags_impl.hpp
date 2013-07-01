@@ -69,10 +69,6 @@ class FlagsImpl {
     return *this;
   }
 
-  // TODO: To be removed.
-  static constexpr FlagsImpl none() {
-    return FlagsImpl(0);
-  }
   static constexpr FlagsImpl define(Type flags) {
     return FlagsImpl(flags);
   }
