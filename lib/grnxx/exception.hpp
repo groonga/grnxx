@@ -22,6 +22,8 @@
 
 #include <exception>
 
+#include "grnxx/errno.hpp"
+
 namespace grnxx {
 
 // The base exception class.
@@ -35,29 +37,18 @@ class Exception : std::exception {
   }
 };
 
-// This exception is thrown when a file operation fails.
-class FileError : public Exception {
+// Thrown as an exception when a logical error occurs.
+class LogicError : public Exception {
  public:
-  FileError() noexcept {}
-  virtual ~FileError() noexcept {}
+  LogicError() noexcept {}
+  virtual ~LogicError() noexcept {}
 
   virtual const char *what() const noexcept {
-    return "grnxx::FileError";
+    return "grnxx::LogicError";
   }
 };
 
-// This exception is thrown when memory mapping fails.
-class MmapError : public Exception {
- public:
-  MmapError() noexcept {}
-  virtual ~MmapError() noexcept {}
-
-  virtual const char *what() const noexcept {
-    return "grnxx::MmapError";
-  }
-};
-
-// This exception is thrown when memory allocation fails.
+// Thrown as an exception when memory allocation fails.
 class MemoryError : public Exception {
  public:
   MemoryError() noexcept {}
@@ -66,6 +57,23 @@ class MemoryError : public Exception {
   virtual const char *what() const noexcept {
     return "grnxx::MemoryError";
   }
+};
+
+// Thrown as an exception when a system call fails.
+class SystemError : public Exception {
+ public:
+  SystemError(const Errno &code) noexcept : code_(code) {}
+  virtual ~SystemError() noexcept {}
+
+  const Errno &code() const noexcept {
+    return code_;
+  }
+  virtual const char *what() const noexcept {
+    return "grnxx::SystemError";
+  }
+
+ private:
+  Errno code_;
 };
 
 }  // namespace grnxx
