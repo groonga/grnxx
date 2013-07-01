@@ -20,89 +20,71 @@
 #include <iostream>
 #include <sstream>
 
+#include "grnxx/bytes.hpp"
 #include "grnxx/logger.hpp"
 #include "grnxx/stopwatch.hpp"
+#include "grnxx/string_builder.hpp"
 #include "grnxx/string_format.hpp"
 
 void test_align() {
-  grnxx::StringBuilder builder;
-
   char buf[8];
-  builder = grnxx::StringBuilder(buf);
-
+  grnxx::StringBuilder builder(buf);
   assert(builder << grnxx::StringFormat::align(
          "ABC", 6, '-', grnxx::STRING_FORMAT_ALIGNMENT_LEFT));
   assert(builder.bytes() == "ABC---");
 
-  builder = grnxx::StringBuilder(buf);
-
+  builder.clear();
   assert(builder << grnxx::StringFormat::align(
          "ABC", 6, '-', grnxx::STRING_FORMAT_ALIGNMENT_RIGHT));
   assert(builder.bytes() == "---ABC");
 
-  builder = grnxx::StringBuilder(buf);
-
+  builder.clear();
   assert(builder << grnxx::StringFormat::align(
          "ABC", 6, '-', grnxx::STRING_FORMAT_ALIGNMENT_CENTER));
   assert(builder.bytes() == "-ABC--");
 }
 
 void test_align_left() {
-  grnxx::StringBuilder builder;
-
   char buf[8];
-  builder = grnxx::StringBuilder(buf);
-
+  grnxx::StringBuilder builder(buf);
   assert(builder << grnxx::StringFormat::align_left(123, 5));
   assert(builder.bytes() == "123  ");
 
-  builder = grnxx::StringBuilder(buf);
-
+  builder.clear();
   assert(builder << grnxx::StringFormat::align_left(234, 5, 'X'));
   assert(builder.bytes() == "234XX");
 
-  builder = grnxx::StringBuilder(buf);
-
+  builder.clear();
   assert(!(builder << grnxx::StringFormat::align_left(345, 10, 'x')));
   assert(builder.bytes() == "345xxxx");
 }
 
 void test_align_right() {
-  grnxx::StringBuilder builder;
-
   char buf[8];
-  builder = grnxx::StringBuilder(buf);
-
+  grnxx::StringBuilder builder(buf);
   assert(builder << grnxx::StringFormat::align_right(456, 5));
   assert(builder.bytes() == "  456");
 
-  builder = grnxx::StringBuilder(buf);
-
+  builder.clear();
   assert(builder << grnxx::StringFormat::align_right(567, 5, 'X'));
   assert(builder.bytes() == "XX567");
 
-  builder = grnxx::StringBuilder(buf);
-
+  builder.clear();
   assert(!(builder << grnxx::StringFormat::align_right(678, 8, 'x')));
   assert(builder.bytes() == "xxxxx67");
 }
 
 void test_align_center() {
-  grnxx::StringBuilder builder;
-
   char buf[8];
-  builder = grnxx::StringBuilder(buf);
-
+  grnxx::StringBuilder builder(buf);
   assert(builder << grnxx::StringFormat::align_center(789, 5));
   assert(builder.bytes() == " 789 ");
 
-  builder = grnxx::StringBuilder(buf);
-
+  builder.clear();
   assert(builder << grnxx::StringFormat::align_center(890, 5, 'X'));
   assert(builder.bytes() == "X890X");
 
-  builder = grnxx::StringBuilder(buf);
-
+  builder.clear();
   assert(!(builder << grnxx::StringFormat::align_center(901, 8, 'x')));
   assert(builder.bytes() == "xx901xx");
 }
