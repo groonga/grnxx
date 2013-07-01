@@ -29,7 +29,7 @@ Header::Header()
       old_key_ids_storage_node_id(STORAGE_INVALID_NODE_ID),
       keys_storage_node_id(STORAGE_INVALID_NODE_ID),
       num_key_ids(0),
-      mutex(MUTEX_UNLOCKED) {}
+      mutex() {}
 
 }  // namespace hash_table
 }  // namespace map

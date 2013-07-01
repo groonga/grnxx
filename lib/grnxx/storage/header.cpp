@@ -51,8 +51,8 @@ Header::Header()
       latest_phantom_node_id(STORAGE_INVALID_NODE_ID),
       latest_unlinked_node_id(STORAGE_INVALID_NODE_ID),
       oldest_idle_node_ids(),
-      data_mutex(MUTEX_UNLOCKED),
-      file_mutex(MUTEX_UNLOCKED),
+      data_mutex(),
+      file_mutex(),
       reserved_2{} {
   std::strcpy(version, Grnxx::version());
   for (size_t i = 0; i < NUM_IDLE_NODE_LISTS; ++i) {

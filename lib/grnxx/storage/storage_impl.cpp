@@ -86,7 +86,7 @@ StorageImpl::StorageImpl()
       root_chunk_(),
       header_chunks_(),
       body_chunks_(),
-      mutex_(MUTEX_UNLOCKED),
+      mutex_(),
       clock_() {}
 
 StorageImpl::~StorageImpl() {}

@@ -307,7 +307,7 @@ bool Resolver::resolve(void *, std::ostream *) {
 }  // namespace
 
 bool Backtrace::backtrace(int skip_count, std::vector<void *> *addresses) try {
-  static Mutex mutex(MUTEX_UNLOCKED);
+  static Mutex mutex;
   Lock lock(&mutex);
 
   if ((skip_count < BACKTRACE_MIN_SKIP_COUNT) ||
@@ -341,7 +341,7 @@ bool Backtrace::backtrace(int skip_count, std::vector<void *> *addresses) try {
 }
 
 bool Backtrace::resolve(void *address, std::string *entry) try {
-  static Mutex mutex(MUTEX_UNLOCKED);
+  static Mutex mutex;
   Lock lock(&mutex);
 
   if (!address || !entry) {

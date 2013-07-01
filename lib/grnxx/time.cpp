@@ -59,7 +59,7 @@ BrokenDownTime Time::universal_time() const {
 #else  // defined(GRNXX_HAS_GMTIME_R)
   // Lock is used for exclusive access, but it is still not thread-safe
   // because other threads may call std::gmtime().
-  static Mutex mutex(MUTEX_UNLOCKED);
+  static Mutex mutex;
   Lock lock(&mutex);
   std::tm * const shared_tm = std::gmtime(&posix_time);
   if (!shared_tm) {
@@ -84,7 +84,7 @@ BrokenDownTime Time::local_time() const {
 #else  // defined(GRNXX_HAS_LOCALTIME_R)
   // Lock is used for exclusive access, but it is still not thread-safe
   // because other threads may call std::localtime().
-  static Mutex mutex(MUTEX_UNLOCKED);
+  static Mutex mutex;
   Lock lock(&mutex);
   std::tm * const shared_tm = std::localtime(&posix_time);
   if (!shared_tm) {

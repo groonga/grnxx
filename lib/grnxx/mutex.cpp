@@ -22,6 +22,13 @@
 #include "grnxx/stopwatch.hpp"
 
 namespace grnxx {
+namespace {
+
+constexpr int MUTEX_SPIN_COUNT           = 100;
+constexpr int MUTEX_CONTEXT_SWITCH_COUNT = 100;
+constexpr Duration MUTEX_SLEEP_DURATION  = Duration::milliseconds(10);
+
+}  // namespace
 
 void Mutex::lock_without_timeout() {
   for (int i = 0; i < MUTEX_SPIN_COUNT; ++i) {
@@ -29,38 +36,29 @@ void Mutex::lock_without_timeout() {
       return;
     }
   }
-
   for (int i = 0; i < MUTEX_CONTEXT_SWITCH_COUNT; ++i) {
     if (try_lock()) {
       return;
     }
     Thread::yield();
   }
-
   while (!try_lock()) {
     Thread::sleep_for(MUTEX_SLEEP_DURATION);
   }
 }
 
 bool Mutex::lock_with_timeout(Duration timeout) {
-  if (timeout == Duration(0)) {
+  if (timeout <= Duration(0)) {
     return false;
   }
-
   for (int i = 0; i < MUTEX_SPIN_COUNT; ++i) {
     if (try_lock()) {
       return true;
     }
   }
-
-  const bool has_deadline = timeout >= Duration(0);
-  Stopwatch stopwatch(false);
-  if (has_deadline) {
-    stopwatch.start();
-  }
-
+  Stopwatch stopwatch(true);
   for (int i = 0; i < MUTEX_CONTEXT_SWITCH_COUNT; ++i) {
-    if (has_deadline && (stopwatch.elapsed() >= timeout)) {
+    if (stopwatch.elapsed() >= timeout) {
       return false;
     }
     if (try_lock()) {
@@ -68,14 +66,12 @@ bool Mutex::lock_with_timeout(Duration timeout) {
     }
     Thread::yield();
   }
-
-  while (!has_deadline || (stopwatch.elapsed() < timeout)) {
+  while (stopwatch.elapsed() < timeout) {
     if (try_lock()) {
       return true;
     }
     Thread::sleep_for(MUTEX_SLEEP_DURATION);
   }
-
   return false;
 }
 

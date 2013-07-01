@@ -28,13 +28,11 @@ int main() {
   grnxx::Logger::set_max_level(grnxx::NOTICE_LOGGER);
 
 
-  assert(!grnxx::Mutex(grnxx::MUTEX_UNLOCKED).locked());
-  assert(grnxx::Mutex(grnxx::MUTEX_LOCKED).locked());
-
-  grnxx::Mutex mutex(grnxx::MUTEX_UNLOCKED);
+  grnxx::Mutex mutex;
 
   GRNXX_NOTICE() << "mutex = " << mutex;
 
+  assert(!mutex.locked());
   assert(mutex.try_lock());
   assert(mutex.locked());
 
@@ -60,7 +58,6 @@ int main() {
 
   assert(mutex.unlock());
   assert(!mutex.locked());
-
 
   enum { LOOP_COUNT = 1 << 20 };
 

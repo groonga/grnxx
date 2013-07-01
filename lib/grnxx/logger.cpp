@@ -58,7 +58,7 @@ class LoggerSingleton {
     if (!initialized_) {
       // C++11 guarantees that a static local variable is initialized once.
       // However, some compilers don't provide the guarantee.
-      static Mutex mutex(MUTEX_UNLOCKED);
+      static Mutex mutex;
       Lock lock(&mutex);
       if (!initialized_) {
         initialize();
@@ -77,7 +77,7 @@ class LoggerSingleton {
 
 volatile bool LoggerSingleton::initialized_           = false;
 LoggerSingleton * volatile LoggerSingleton::instance_ = nullptr;
-Mutex LoggerSingleton::mutex_(MUTEX_UNLOCKED);
+Mutex LoggerSingleton::mutex_;
 
 bool LoggerSingleton::write(const StringBuilder &builder) {
   initialize_once();

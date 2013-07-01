@@ -53,9 +53,9 @@ ArrayHeader::ArrayHeader()
       table_storage_node_id(STORAGE_INVALID_NODE_ID),
       secondary_table_storage_node_id(STORAGE_INVALID_NODE_ID),
       reserved(0),
-      page_mutex(MUTEX_UNLOCKED),
-      table_mutex(MUTEX_UNLOCKED),
-      secondary_table_mutex(MUTEX_UNLOCKED) {}
+      page_mutex(),
+      table_mutex(),
+      secondary_table_mutex() {}
 
 Array1D::Array1D()
     : storage_node_id_(STORAGE_INVALID_NODE_ID),
@@ -148,7 +148,7 @@ Array2D::Array2D()
       fill_page_(nullptr),
       table_(nullptr),
       table_cache_(),
-      mutex_(MUTEX_UNLOCKED) {}
+      mutex_() {}
 
 Array2D::~Array2D() {}
 
@@ -306,9 +306,9 @@ Array3D::Array3D()
       fill_page_(nullptr),
       secondary_table_(nullptr),
       table_caches_(),
-      page_mutex_(MUTEX_UNLOCKED),
-      table_mutex_(MUTEX_UNLOCKED),
-      secondary_table_mutex_(MUTEX_UNLOCKED) {}
+      page_mutex_(),
+      table_mutex_(),
+      secondary_table_mutex_() {}
 
 Array3D::~Array3D() {}
 

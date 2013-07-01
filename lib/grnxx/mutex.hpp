@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2012  Brazil, Inc.
+  Copyright (C) 2012-2013  Brazil, Inc.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -20,8 +20,6 @@
 
 #include "grnxx/features.hpp"
 
-#include <utility>
-
 #include "grnxx/intrinsic.hpp"
 #include "grnxx/duration.hpp"
 #include "grnxx/types.hpp"
@@ -35,14 +33,9 @@ enum MutexStatus : uint32_t {
   MUTEX_LOCKED   = 1
 };
 
-constexpr int MUTEX_SPIN_COUNT           = 100;
-constexpr int MUTEX_CONTEXT_SWITCH_COUNT = 100;
-constexpr Duration MUTEX_SLEEP_DURATION  = Duration::milliseconds(10);
-
 class Mutex {
  public:
-  Mutex() = default;
-  explicit constexpr Mutex(MutexStatus status) : status_(status) {}
+  constexpr Mutex() : status_(MUTEX_UNLOCKED) {}
 
   void lock() {
     if (!try_lock()) {
@@ -69,27 +62,18 @@ class Mutex {
     return true;
   }
 
-  constexpr bool locked() const {
+  bool locked() const {
     return status_ != MUTEX_UNLOCKED;
-  }
-
-  void swap(Mutex &mutex) {
-    using std::swap;
-    std::swap(status_, mutex.status_);
   }
 
   StringBuilder &write_to(StringBuilder &builder) const;
 
  private:
-  MutexStatus status_;
+  volatile MutexStatus status_;
 
   void lock_without_timeout();
   bool lock_with_timeout(Duration timeout);
 };
-
-inline void swap(Mutex &lhs, Mutex &rhs) {
-  lhs.swap(rhs);
-}
 
 inline StringBuilder &operator<<(StringBuilder &builder, const Mutex &mutex) {
   return mutex.write_to(builder);

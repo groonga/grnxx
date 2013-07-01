@@ -30,7 +30,7 @@ constexpr Duration UPDATE_INTERVAL = Duration::milliseconds(100);
 
 volatile uint32_t ref_count = 0;
 grnxx::Thread *thread = nullptr;
-Mutex mutex(MUTEX_UNLOCKED);
+Mutex mutex;
 
 }  // namespace
 

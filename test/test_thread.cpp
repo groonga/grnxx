@@ -27,7 +27,7 @@
 
 namespace {
 
-grnxx::Mutex mutex(grnxx::MUTEX_UNLOCKED);
+grnxx::Mutex mutex;
 
 void thread_routine() {
   grnxx::Thread::sleep_for(grnxx::Duration::milliseconds(10));

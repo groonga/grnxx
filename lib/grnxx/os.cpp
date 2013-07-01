@@ -41,7 +41,7 @@ char *OS::get_environment_variable(const char *name) {
     GRNXX_ERROR() << "invalid argument: name = nullptr";
     return nullptr;
   }
-  static Mutex mutex(MUTEX_UNLOCKED);
+  static Mutex mutex;
   Lock lock(&mutex);
 #ifdef GRNXX_MSC
   char *value;
