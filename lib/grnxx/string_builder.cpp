@@ -19,6 +19,8 @@
 
 #include <cmath>
 #include <cstdio>
+#include <cstring>
+#include <new>
 #include <utility>
 
 #include "grnxx/exception.hpp"
@@ -128,18 +130,24 @@ StringBuilder &StringBuilder::append(const char *ptr, size_t length) {
   return *this;
 }
 
-// TODO: To be removed if this is not used.
 StringBuilder &StringBuilder::resize(size_t length) {
-  const size_t size_left = end_ - ptr_;
-  if (length > size_left) {
+  const size_t size = end_ - ptr_;
+  if (length > size) {
     if (!resize_buf(length + 1)) {
-      length = size_left;
-      failed_ = true;
+      return *this;
     }
   }
   ptr_ = begin_ + length;
   *ptr_ = '\0';
   return *this;
+}
+
+void StringBuilder::clear() {
+  ptr_ = begin_;
+  if (ptr_) {
+    *ptr_ = '\0';
+  }
+  failed_ = false;
 }
 
 bool StringBuilder::auto_resize(size_t size) {
@@ -162,14 +170,15 @@ bool StringBuilder::resize_buf(size_t size) {
       GRNXX_ERROR() << "new char [" << size << "] failed";
       throw MemoryError();
     }
+    failed_ = true;
     return false;
   }
   const size_t length = ptr_ - begin_;
   std::memcpy(new_buf.get(), begin_, length);
-  ptr_ = new_buf.get() + length;
-  begin_ = new_buf.get();
-  end_ = new_buf.get() + size - 1;
   buf_ = std::move(new_buf);
+  begin_ = buf_.get();
+  end_ = begin_ + size - 1;
+  ptr_ = begin_ + length;
   return true;
 }
 
@@ -177,7 +186,6 @@ StringBuilder &operator<<(StringBuilder &builder, long long value) {
   if (!builder) {
     return builder;
   }
-
   char buf[32];
   char *ptr = buf;
   char *left = ptr;
@@ -189,53 +197,42 @@ StringBuilder &operator<<(StringBuilder &builder, long long value) {
   } else {
     *ptr++ = '-';
     ++left;
-
     do {
       // C++11 always rounds the result toward 0.
       *ptr++ = static_cast<char>('0' - (value % 10));
       value /= 10;
     } while (value != 0);
   }
-
   char *right = ptr - 1;
   while (left < right) {
     using std::swap;
     swap(*left++, *right--);
   }
-
   return builder.append(buf, ptr - buf);
 }
 StringBuilder &operator<<(StringBuilder &builder, unsigned long long value) {
   if (!builder) {
     return builder;
   }
-
   char buf[32];
   char *ptr = buf;
   do {
     *ptr++ = static_cast<char>('0' + (value % 10));
     value /= 10;
   } while (value != 0);
-
   char *left = buf;
   char *right = ptr - 1;
   while (left < right) {
     using std::swap;
     swap(*left++, *right--);
   }
-
   return builder.append(buf, ptr - buf);
-}
-
-StringBuilder &operator<<(StringBuilder &builder, float value) {
-  return builder << static_cast<double>(value);
 }
 
 StringBuilder &operator<<(StringBuilder &builder, double value) {
   if (!builder) {
     return builder;
   }
-
   switch (std::fpclassify(value)) {
     case FP_NORMAL:
     case FP_SUBNORMAL:
@@ -243,7 +240,7 @@ StringBuilder &operator<<(StringBuilder &builder, double value) {
       break;
     }
     case FP_INFINITE: {
-      if (value > 0) {
+      if (value > 0.0) {
         return builder.append("inf", 3);
       } else {
         return builder.append("-inf", 4);
@@ -254,7 +251,6 @@ StringBuilder &operator<<(StringBuilder &builder, double value) {
       return builder.append("nan", 3);
     }
   }
-
   // The maximum value of double-precision floating point number (IEEE754)
   // is 1.797693134862316E+308.
   char buf[512];
@@ -268,6 +264,10 @@ StringBuilder &operator<<(StringBuilder &builder, double value) {
   return builder.append(buf, length);
 }
 
+StringBuilder &operator<<(StringBuilder &builder, bool value) {
+  return value ? builder.append("true", 4) : builder.append("false", 5);
+}
+
 StringBuilder &operator<<(StringBuilder &builder, const void *value) {
   if (!builder) {
     return builder;
@@ -275,11 +275,9 @@ StringBuilder &operator<<(StringBuilder &builder, const void *value) {
   if (!value) {
     return builder.append("nullptr", 7);
   }
-
   char buf[(sizeof(value) * 2) + 2];
   buf[0] = '0';
   buf[1] = 'x';
-
   uintptr_t address = reinterpret_cast<uintptr_t>(value);
   for (size_t i = 2; i < sizeof(buf); ++i) {
     const uintptr_t digit = address >> ((sizeof(value) * 8) - 4);
@@ -288,6 +286,16 @@ StringBuilder &operator<<(StringBuilder &builder, const void *value) {
     address <<= 4;
   }
   return builder.append(buf, sizeof(buf));
+}
+
+StringBuilder &operator<<(StringBuilder &builder, const char *value) {
+  if (!builder) {
+    return builder;
+  }
+  if (!value) {
+    return builder.append("nullptr", 7);
+  }
+  return builder.append(value, std::strlen(value));
 }
 
 StringBuilder &operator<<(StringBuilder &builder, const Bytes &bytes) {

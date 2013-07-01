@@ -20,7 +20,6 @@
 
 #include "grnxx/features.hpp"
 
-#include <cstring>
 #include <exception>
 #include <memory>
 
@@ -102,9 +101,12 @@ class StringBuilder {
   // Append a sequence of length characters.
   StringBuilder &append(const char *ptr, size_t length);
 
-  // TODO: To be removed if this is not used.
-  // Resize the internal buffer.
+  // Resize the string.
+  // Note that the contents of the extended part are undefined.
   StringBuilder &resize(size_t length);
+
+  // Move the pointer to the beginning and clear the failure flag.
+  void clear();
 
   // Return the "i"-th byte.
   const char &operator[](size_t i) const {
@@ -119,7 +121,6 @@ class StringBuilder {
   Bytes bytes() const {
     return Bytes(begin_, ptr_ - begin_);
   }
-
   // Return the address of the string.
   const char *c_str() const {
     return begin_ ? begin_ : "";
@@ -127,17 +128,6 @@ class StringBuilder {
   // Return the length of the string.
   size_t length() const {
     return ptr_ - begin_;
-  }
-
-  // TODO: To be removed if this is not used.
-  void swap(StringBuilder &rhs) {
-    using std::swap;
-    swap(buf_, rhs.buf_);
-    swap(begin_, rhs.begin_);
-    swap(end_, rhs.end_);
-    swap(ptr_, rhs.ptr_);
-    swap(flags_, rhs.flags_);
-    swap(failed_, rhs.failed_);
   }
 
  private:
@@ -157,17 +147,12 @@ class StringBuilder {
   StringBuilder &operator=(const StringBuilder &) = delete;
 };
 
-// TODO: To be removed if this is not used.
-inline void swap(StringBuilder &lhs, StringBuilder &rhs) {
-  lhs.swap(rhs);
-}
-
-// Characters.
+// Append a character.
 inline StringBuilder &operator<<(StringBuilder &builder, char value) {
   return builder.append(value);
 }
 
-// Signed integers.
+// Append a signed integer.
 StringBuilder &operator<<(StringBuilder &builder, long long value);
 
 inline StringBuilder &operator<<(StringBuilder &builder, signed char value) {
@@ -183,7 +168,7 @@ inline StringBuilder &operator<<(StringBuilder &builder, long value) {
   return builder << static_cast<long long>(value);
 }
 
-// Unsigned integers.
+// Append an unsigned integer.
 StringBuilder &operator<<(StringBuilder &builder, unsigned long long value);
 
 inline StringBuilder &operator<<(StringBuilder &builder, unsigned char value) {
@@ -199,33 +184,26 @@ inline StringBuilder &operator<<(StringBuilder &builder, unsigned long value) {
   return builder << static_cast<unsigned long long>(value);
 }
 
-// Floating point numbers.
-StringBuilder &operator<<(StringBuilder &builder, float value);
+// Append a floating point number.
 StringBuilder &operator<<(StringBuilder &builder, double value);
 
-// Boolean values (true/false).
-inline StringBuilder &operator<<(StringBuilder &builder, bool value) {
-  return value ? builder.append("true", 4) : builder.append("false", 5);
+inline StringBuilder &operator<<(StringBuilder &builder, float value) {
+  return builder << static_cast<double>(value);
 }
 
-// Pointers.
+// Append a boolean value (true/false).
+StringBuilder &operator<<(StringBuilder &builder, bool value);
+
+// Append a pointer.
 StringBuilder &operator<<(StringBuilder &builder, const void *value);
 
-// Zero-terminated strings.
-inline StringBuilder &operator<<(StringBuilder &builder, const char *value) {
-  if (!builder) {
-    return builder;
-  }
-  if (!value) {
-    return builder.append("nullptr", 7);
-  }
-  return builder.append(value, std::strlen(value));
-}
+// Append a zero-terminated string.
+StringBuilder &operator<<(StringBuilder &builder, const char *value);
 
-// A sequence of bytes.
+// Append a sequence of bytes.
 StringBuilder &operator<<(StringBuilder &builder, const Bytes &bytes);
 
-// Exceptions.
+// Append an exception.
 StringBuilder &operator<<(StringBuilder &builder,
                           const std::exception &exception);
 
