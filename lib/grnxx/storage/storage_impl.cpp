@@ -20,6 +20,7 @@
 #include <cstdio>
 #include <cstring>
 #include <new>
+#include <utility>
 
 #include "grnxx/bytes.hpp"
 #include "grnxx/intrinsic.hpp"
