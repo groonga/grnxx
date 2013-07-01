@@ -52,11 +52,11 @@ StringBuilder::StringBuilder(size_t size, StringBuilderFlags flags)
   if (size != 0) {
     buf_.reset(new (std::nothrow) char[size]);
     if (!buf_) {
+      failed_ = true;
       if (~flags_ & STRING_BUILDER_NOEXCEPT) {
         GRNXX_ERROR() << "new char[" << size << "] failed";
         throw MemoryError();
       }
-      failed_ = true;
     } else {
       begin_ = buf_.get();
       end_ = begin_ + size - 1;
@@ -166,11 +166,11 @@ bool StringBuilder::resize_buf(size_t size) {
   }
   std::unique_ptr<char[]> new_buf(new (std::nothrow) char[size]);
   if (!new_buf) {
+    failed_ = true;
     if (~flags_ & STRING_BUILDER_NOEXCEPT) {
       GRNXX_ERROR() << "new char [" << size << "] failed";
       throw MemoryError();
     }
-    failed_ = true;
     return false;
   }
   const size_t length = ptr_ - begin_;
