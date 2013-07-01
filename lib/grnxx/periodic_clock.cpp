@@ -19,6 +19,7 @@
 
 #include "grnxx/thread.hpp"
 #include "grnxx/lock.hpp"
+#include "grnxx/logger.hpp"
 #include "grnxx/mutex.hpp"
 
 namespace grnxx {
@@ -39,11 +40,11 @@ Time PeriodicClock::now_ = Time::min();
 PeriodicClock::PeriodicClock() {
   // Start the internal thread iff this is the first object.
   Lock lock(&mutex);
-  if (++ref_count == 1) {
+  if (++ref_count == 1) try {
     thread = grnxx::Thread::create(routine);
-    if (thread) {
-      now_ = SystemClock::now();
-    }
+    now_ = SystemClock::now();
+  } catch (...) {
+    GRNXX_WARNING() << "failed to create thread for PeriodicClock";
   }
 }
 
@@ -51,7 +52,11 @@ PeriodicClock::~PeriodicClock() {
   // Stop the running thread iff this is the last object.
   Lock lock(&mutex);
   if (--ref_count == 0) {
-    thread->join();
+    try {
+      thread->detach();
+    } catch (...) {
+      GRNXX_WARNING() << "failed to detach thread for PeriodicClock";
+    }
     delete thread;
     thread = nullptr;
     now_ = Time::min();

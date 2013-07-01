@@ -35,7 +35,7 @@ class Thread {
   virtual ~Thread();
 
   // Create a thread.
-  static Thread *create(const std::function<void()> &routine);
+  static Thread *create(const Routine &routine);
 
   // Yield the processor/core associated with the current thread.
   static void yield();
@@ -46,9 +46,9 @@ class Thread {
   static void sleep_until(Time time);
 
   // Wait until the thread finishes.
-  virtual bool join() = 0;
+  virtual void join() = 0;
   // Separate the thread from this object.
-  virtual bool detach() = 0;
+  virtual void detach() = 0;
 };
 
 }  // namespace grnxx

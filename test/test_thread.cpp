@@ -74,7 +74,7 @@ int main() {
   stopwatch.reset();
   std::unique_ptr<grnxx::Thread> thread(grnxx::Thread::create(thread_routine));
   assert(thread);
-  assert(thread->join());
+  thread->join();
   elapsed = stopwatch.elapsed();
   GRNXX_NOTICE() << "thread + join: elapsed [ns] = "
                  << (1000.0 * elapsed.count());
@@ -84,7 +84,7 @@ int main() {
     grnxx::Thread::sleep_for(grnxx::Duration::milliseconds(10));
   }));
   assert(thread);
-  assert(thread->join());
+  thread->join();
   elapsed = stopwatch.elapsed();
   GRNXX_NOTICE() << "thread + join: elapsed [ns] = "
                  << (1000.0 * elapsed.count());
@@ -94,7 +94,7 @@ int main() {
     grnxx::Thread::sleep_for(grnxx::Duration::milliseconds(10));
   }));
   assert(thread);
-  assert(thread->detach());
+  thread->detach();
   elapsed = stopwatch.elapsed();
   GRNXX_NOTICE() << "thread + detach: elapsed [ns] = "
                  << (1000.0 * elapsed.count());

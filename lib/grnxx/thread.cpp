@@ -36,16 +36,49 @@
 # include <cerrno>
 #endif  // GRNXX_WINDOWS
 
+#include <memory>
+#include <new>
+
 // TODO: Use the following in future.
 //#include <chrono>
 //#include <thread>
 
 #include "grnxx/errno.hpp"
+#include "grnxx/exception.hpp"
 #include "grnxx/logger.hpp"
+#include "grnxx/string_builder.hpp"
 #include "grnxx/system_clock.hpp"
+#include "grnxx/types.hpp"
 
 namespace grnxx {
 namespace {
+
+enum ThreadStatus : uint32_t {
+  THREAD_INITIAL  = 0,
+  THREAD_JOINABLE = 1,
+  THREAD_JOINED   = 2,
+  THREAD_DETACHED = 3
+};
+
+StringBuilder &operator<<(StringBuilder &builder, ThreadStatus status) {
+  switch (status) {
+    case THREAD_INITIAL: {
+      return builder << "THREAD_INITIAL";
+    }
+    case THREAD_JOINABLE: {
+      return builder << "THREAD_JOINABLE";
+    }
+    case THREAD_JOINED: {
+      return builder << "THREAD_JOINED";
+    }
+    case THREAD_DETACHED: {
+      return builder << "THREAD_DETACHED";
+    }
+    default: {
+      return builder << "n/a";
+    }
+  }
+}
 
 class ThreadImpl : public Thread {
  public:
@@ -54,10 +87,10 @@ class ThreadImpl : public Thread {
   ThreadImpl();
   ~ThreadImpl();
 
-  bool start(const Routine &routine);
+  void start(const Routine &routine);
 
-  bool join();
-  bool detach();
+  void join();
+  void detach();
 
  private:
 #ifdef GRNXX_WINDOWS
@@ -65,7 +98,7 @@ class ThreadImpl : public Thread {
 #else  // GRNXX_WINDOWS
   pthread_t thread_;
 #endif  // GRNXX_WINDOWS
-  bool joinable_;
+  ThreadStatus status_;
 
 #ifdef GRNXX_WINDOWS
   static unsigned thread_main(void *arg);
@@ -74,95 +107,97 @@ class ThreadImpl : public Thread {
 #endif  // GRNXX_WINDOWS
 };
 
-ThreadImpl::ThreadImpl() : thread_(), joinable_(false) {}
+ThreadImpl::ThreadImpl() : thread_(), status_(THREAD_INITIAL) {}
 
 ThreadImpl::~ThreadImpl() {
-  // A thread must be join()ed or detach()ed.
-  if (joinable_) {
-    GRNXX_ERROR() << "running thread";
+  // A thread must be joined or detached before destruction.
+  if (status_ == THREAD_JOINABLE) {
+    GRNXX_WARNING() << "Bad thread destruction: status = " << status_;
   }
 }
 
-bool ThreadImpl::start(const Routine &routine) {
+void ThreadImpl::start(const Routine &routine) {
   std::unique_ptr<Routine> routine_clone(new (std::nothrow) Routine(routine));
   if (!routine_clone) {
-    GRNXX_ERROR() << "new std::function<void()> failed";
-    return false;
+    GRNXX_ERROR() << "new grnxx::Thread::Routine failed";
+    throw MemoryError();
   }
 #ifdef GRNXX_WINDOWS
   const uintptr_t handle = ::_beginthreadex(nullptr, 0, thread_main,
                                             routine_clone.get(), 0, nullptr);
   if (handle == 0) {
-    GRNXX_ERROR() << "failed to create thread: '_beginthreadex' "
-                  << Errno(errno);
-    return false;
+    const Errno error_code(errno);
+    GRNXX_ERROR() << "failed to create thread: call = _beginthreadex"
+                  << ", errno = " << error_code;
+    throw SystemError(error_code);
   }
   thread_ = reinterpret_cast<HANDLE>(handle);
 #else  // GRNXX_WINDOWS
   const int error = ::pthread_create(&thread_, nullptr, thread_main,
                                      routine_clone.get());
   if (error != 0) {
-    GRNXX_ERROR() << "failed to create thread: '::pthread_create' "
-                  << Errno(error);
-    return false;
+    const Errno error_code(error);
+    GRNXX_ERROR() << "failed to create thread: call = ::pthread_create"
+                  << ", errno = " << error_code;
+    throw SystemError(error_code);
   }
 #endif  // GRNXX_WINDOWS
   routine_clone.release();
-  joinable_ = true;
-  return true;
+  status_ = THREAD_JOINABLE;
 }
 
-bool ThreadImpl::join() {
-  if (!joinable_) {
-    GRNXX_ERROR() << "invalid operation: joinable = false";
-    return false;
+void ThreadImpl::join() {
+  if (status_ != THREAD_JOINABLE) {
+    GRNXX_ERROR() << "invalid operation: status = " << status_;
+    throw LogicError();
   }
-  bool result = true;
+  status_ = THREAD_JOINED;
 #ifdef GRNXX_WINDOWS
   if (::WaitForSingleObject(thread_, INFINITE) == WAIT_FAILED) {
-    GRNXX_ERROR() << "failed to join thread: '::WaitForSingleObject' "
-                  << Errno(::GetLastError());
-    result = false;
+    const Errno error_code(::GetLastError());
+    GRNXX_ERROR() << "failed to join thread: call = ::WaitForSingleObject"
+                  << ", errno = " << error_code;
+    throw SystemError(error_code);
   }
   if (::CloseHandle(thread_) != 0) {
-    GRNXX_ERROR() << "failed to close thread: '::CloseHandle' "
-                  << Errno(::GetLastError());
-    result = false;
+    const Errno error_code(::GetLastError());
+    GRNXX_ERROR() << "failed to close thread: call = ::CloseHandle"
+                  << ", errno = " << error_code;
+    throw SystemError(error_code);
   }
 #else  // GRNXX_WINDOWS
   const int error = ::pthread_join(thread_, nullptr);
   if (error != 0) {
-    GRNXX_ERROR() << "failed to join thread: '::pthread_join' "
-                  << Errno(error);
-    result = false;
+    const Errno error_code(error);
+    GRNXX_ERROR() << "failed to join thread: call = ::pthread_join"
+                  << ", errno = " << error_code;
+    throw SystemError(error_code);
   }
 #endif  // GRNXX_WINDOWS
-  joinable_ = false;
-  return result;
 }
 
-bool ThreadImpl::detach() {
-  if (!joinable_) {
-    GRNXX_ERROR() << "invalid operation: joinable = false";
-    return false;
+void ThreadImpl::detach() {
+  if (status_ != THREAD_JOINABLE) {
+    GRNXX_ERROR() << "invalid operation: status = " << status_;
+    throw LogicError();
   }
-  bool result = true;
+  status_ = THREAD_DETACHED;
 #ifdef GRNXX_WINDOWS
   if (::CloseHandle(thread_) != 0) {
-    GRNXX_ERROR() << "failed to detach thread: '::CloseHandle' "
-                  << Errno(::GetLastError());
-    result = false;
+    const Errno error_code(::GetLastError());
+    GRNXX_ERROR() << "failed to detach thread: call = ::CloseHandle"
+                  << ", errno = " << error_code;
+    throw SystemError(error_code);
   }
 #else  // GRNXX_WINDOWS
   const int error = ::pthread_detach(thread_);
   if (error != 0) {
-    GRNXX_ERROR() << "failed to detach thread: '::pthread_detach' "
-                  << Errno(error);
-    result = false;
+    const Errno error_code(error);
+    GRNXX_ERROR() << "failed to detach thread: call = ::pthread_detach"
+                  << ", errno = " << error_code;
+    throw SystemError(error_code);
   }
 #endif  // GRNXX_WINDOWS
-  joinable_ = false;
-  return result;
 }
 
 #ifdef GRNXX_WINDOWS
@@ -189,11 +224,9 @@ Thread *Thread::create(const Routine &routine) {
   std::unique_ptr<ThreadImpl> thread(new (std::nothrow) ThreadImpl);
   if (!thread) {
     GRNXX_ERROR() << "new grnxx::ThreadImpl failed";
-    return nullptr;
+    throw MemoryError();
   }
-  if (!thread->start(routine)) {
-    return nullptr;
-  }
+  thread->start(routine);
   return thread.release();
 }
 
