@@ -29,6 +29,7 @@
 #include <random>
 
 #include "grnxx/errno.hpp"
+#include "grnxx/exception.hpp"
 #include "grnxx/logger.hpp"
 #include "grnxx/string_builder.hpp"
 
@@ -48,17 +49,19 @@ char *Path::full_path(const char *path) {
   size_t full_path_length = 0;
 #ifdef GRNXX_WINDOWS
   if (!::_fullpath(full_path, path, sizeof(full_path))) {
+    const Errno error_code(errno);
     GRNXX_ERROR() << "failed to generate full path: path = " << path
-                  << ": '::_fullpath' " << Errno(errno);
-    return nullptr;
+                  << ", call = ::_fullpath, errno = " << error_code;
+    throw SystemError(error_code);
   }
   full_path_length = std::strlen(full_path);
 #else  // GRNXX_WINDOWS
   if (path[0] != '/') {
     if (!::getcwd(full_path, sizeof(full_path))) {
-      GRNXX_ERROR() << "failed to get current working directory: '::getcwd' "
-                    << Errno(errno);
-      return nullptr;
+      const Errno error_code(errno);
+      GRNXX_ERROR() << "failed to get current working directory: "
+                    << "call = ::getcwd, errno = " << error_code;
+      throw SystemError(error_code);
     }
     full_path_length = std::strlen(full_path);
     full_path[full_path_length++] = '/';
@@ -68,7 +71,7 @@ char *Path::full_path(const char *path) {
   if ((full_path_length + path_length) >= sizeof(full_path)) {
     GRNXX_ERROR() << "failed to generate full path: path = " << path
                   << ": too long";
-    return nullptr;
+    throw LogicError();
   }
   std::memcpy(full_path + full_path_length, path, path_length);
   full_path_length += path_length;
@@ -111,6 +114,10 @@ char *Path::full_path(const char *path) {
   }
 #endif  // GRNXX_WINDOWS
   char * const buf = new (std::nothrow) char[full_path_length + 1];
+  if (!buf) {
+    GRNXX_ERROR() << "new char[" << (full_path_length + 1) << "] failed";
+    throw MemoryError();
+  }
   std::memcpy(buf, full_path, full_path_length);
   buf[full_path_length] = '\0';
   return buf;
@@ -126,7 +133,7 @@ char *Path::unique_path(const char *prefix) {
   char * const path(new (std::nothrow) char[path_size]);
   if (!path) {
     GRNXX_ERROR() << "new char[] failed: path_size = " << path_size;
-    return nullptr;
+    throw MemoryError();
   }
   std::memcpy(path, prefix, prefix_length);
   path[prefix_length] = '_';
@@ -148,7 +155,7 @@ char *Path::clone_path(const char *path) {
   char * const path_clone = new (std::nothrow) char[size];
   if (!path_clone) {
     GRNXX_ERROR() << "new char[] failed: size = " << size;
-    return nullptr;
+    throw MemoryError();
   }
   std::memcpy(path_clone, path, size);
   return path_clone;
