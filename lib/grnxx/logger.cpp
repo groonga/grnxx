@@ -17,11 +17,13 @@
 */
 #include "grnxx/logger.hpp"
 
-#include <ctime>
+#include <cstring>
 #include <fstream>
 #include <iostream>
 #include <memory>
+#include <new>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "grnxx/backtrace.hpp"
@@ -32,71 +34,13 @@ namespace grnxx {
 
 class LoggerSingleton {
  public:
-  static bool write(const StringBuilder &builder) {
-    initialize_once();
-    Lock lock(&mutex_);
-    if (!instance_) {
-      return false;
-    }
-    static constexpr LoggerFlags OUTPUT_FLAGS =
-        LOGGER_ENABLE_COUT | LOGGER_ENABLE_CERR | LOGGER_ENABLE_CLOG;
-    const LoggerFlags flags = Logger::flags();
-    if (!(flags & OUTPUT_FLAGS)) {
-      if (!instance_->file_ || !*instance_->file_) {
-        return false;
-      }
-    }
+  static bool write(const StringBuilder &builder);
 
-    if (instance_->file_ && *instance_->file_) {
-      instance_->file_->write(builder.c_str(), builder.length()) << std::endl;
-    }
-    if (flags & LOGGER_ENABLE_COUT) {
-      std::cout.write(builder.c_str(), builder.length()) << '\n';
-    }
-    if (flags & LOGGER_ENABLE_CERR) {
-      std::cerr.write(builder.c_str(), builder.length()) << '\n';
-    }
-    if (flags & LOGGER_ENABLE_CLOG) {
-      std::clog.write(builder.c_str(), builder.length()) << '\n';
-    }
-    return true;
-  }
-
-  static bool open(const char *path) {
-    if (!path) {
-      return false;
-    }
-    initialize_once();
-    Lock lock(&mutex_);
-    if (!instance_) {
-      return false;
-    }
-    try {
-      std::string path_dummy(path);
-      std::unique_ptr<std::ofstream> file_dummy(
-          new (std::nothrow) std::ofstream(path_dummy.c_str(),
-              std::ios::out | std::ios::app | std::ios::binary));
-      if (!file_dummy || !*file_dummy) {
-        return false;
-      }
-      instance_->path_.swap(path_dummy);
-      instance_->file_.swap(file_dummy);
-      return true;
-    } catch (...) {
-      return false;
-    }
-  }
-  static void close() {
-    initialize_once();
-    Lock lock(&mutex_);
-    if (instance_) {
-      instance_->file_.reset();
-      instance_->path_.clear();
-    }
-  }
+  static bool open(const char *path);
+  static void close();
 
  private:
-  std::string path_;
+  std::unique_ptr<char[]> path_;
   std::unique_ptr<std::ofstream> file_;
 
   // These variables may be used even after the instance termination.
@@ -127,23 +71,89 @@ class LoggerSingleton {
     initialized_ = true;
   }
 
-  LoggerSingleton(const LoggerSingleton &);
-  LoggerSingleton &operator=(const LoggerSingleton &);
+  LoggerSingleton(const LoggerSingleton &) = delete;
+  LoggerSingleton &operator=(const LoggerSingleton &) = delete;
 };
 
-volatile bool LoggerSingleton::initialized_ = false;
+volatile bool LoggerSingleton::initialized_           = false;
 LoggerSingleton * volatile LoggerSingleton::instance_ = nullptr;
 Mutex LoggerSingleton::mutex_(MUTEX_UNLOCKED);
 
-LoggerFlags Logger::flags_ = LOGGER_DEFAULT;
-int Logger::max_level_ = NOTICE_LOGGER;
+bool LoggerSingleton::write(const StringBuilder &builder) {
+  initialize_once();
+  Lock lock(&mutex_);
+  if (!instance_) {
+    return false;
+  }
+  static constexpr LoggerFlags OUTPUT_FLAGS =
+      LOGGER_ENABLE_COUT | LOGGER_ENABLE_CERR | LOGGER_ENABLE_CLOG;
+  const LoggerFlags flags = Logger::flags();
+  if (!(flags & OUTPUT_FLAGS)) {
+    if (!instance_->file_ || !*instance_->file_) {
+      return false;
+    }
+  }
+  if (instance_->file_ && *instance_->file_) {
+    instance_->file_->write(builder.c_str(), builder.length()) << std::endl;
+  }
+  if (flags & LOGGER_ENABLE_COUT) {
+    std::cout.write(builder.c_str(), builder.length()) << '\n';
+  }
+  if (flags & LOGGER_ENABLE_CERR) {
+    std::cerr.write(builder.c_str(), builder.length()) << '\n';
+  }
+  if (flags & LOGGER_ENABLE_CLOG) {
+    std::clog.write(builder.c_str(), builder.length()) << '\n';
+  }
+  return true;
+}
+
+bool LoggerSingleton::open(const char *path) {
+  if (!path) {
+    return false;
+  }
+  initialize_once();
+  Lock lock(&mutex_);
+  if (!instance_) {
+    return false;
+  }
+  try {
+    const size_t buf_size = std::strlen(path) + 1;
+    std::unique_ptr<char[]> path_clone(new (std::nothrow) char[buf_size]);
+    if (!path_clone) {
+      return false;
+    }
+    std::memcpy(path_clone.get(), path, buf_size);
+    std::unique_ptr<std::ofstream> file_dummy(
+        new (std::nothrow) std::ofstream(path_clone.get(),
+            std::ios::out | std::ios::app | std::ios::binary));
+    if (!file_dummy || !*file_dummy) {
+      return false;
+    }
+    instance_->path_ = std::move(path_clone);
+    instance_->file_.swap(file_dummy);
+    return true;
+  } catch (...) {
+    return false;
+  }
+}
+
+void LoggerSingleton::close() {
+  initialize_once();
+  Lock lock(&mutex_);
+  if (instance_) {
+    instance_->file_.reset();
+    instance_->path_.reset();
+  }
+}
+
+LoggerFlags Logger::flags_   = LOGGER_DEFAULT;
+int Logger::max_level_       = NOTICE_LOGGER;
 int Logger::backtrace_level_ = ERROR_LOGGER;
 
 Logger::Logger(const char *file, int line, const char *func, int level)
     : buf_(),
-      builder_(buf_, ((Logger::flags() & LOGGER_ENABLE_AUTO_RESIZE) ?
-                      STRING_BUILDER_AUTO_RESIZE : STRING_BUILDER_DEFAULT) |
-                     STRING_BUILDER_NOEXCEPT),
+      builder_(buf_, string_builder_flags()),
       file_(file),
       line_(line),
       func_(func),
@@ -153,13 +163,7 @@ Logger::Logger(const char *file, int line, const char *func, int level)
 
 Logger::~Logger() {
   if (level_ <= backtrace_level()) {
-    std::vector<std::string> backtrace;
-    if (grnxx::Backtrace::pretty_backtrace(1, &backtrace)) {
-      builder_ << new_line() << backtrace[0].c_str();
-      for (size_t i = 1; i < backtrace.size(); ++i) {
-        builder_ << ", " << backtrace[i].c_str();
-      }
-    }
+    builder_ << backtrace();
   }
   LoggerSingleton::write(builder_);
 }
@@ -176,7 +180,6 @@ void Logger::append_line_header() {
   if (!builder_) {
     return;
   }
-
   const LoggerFlags flags = Logger::flags();
   if (flags & LOGGER_WITH_DATE_TIME) {
     builder_ << SystemClock::now().local_time() << ": ";
@@ -199,16 +202,26 @@ void Logger::append_line_header() {
         break;
       }
       default: {
-        builder_ << "unknown (" << level_ << "): ";
+        builder_ << "n/a (" << level_ << "): ";
         break;
       }
     }
   }
 }
 
-StringBuilder &operator<<(StringBuilder &builder, const Logger::NewLine &) {
-  builder << '\n';
+StringBuilderFlags Logger::string_builder_flags() {
+  StringBuilderFlags flags = STRING_BUILDER_NOEXCEPT;
+  if (Logger::flags() & LOGGER_ENABLE_AUTO_RESIZE) {
+    flags |= STRING_BUILDER_AUTO_RESIZE;
+  }
+  return flags;
+}
 
+StringBuilder &operator<<(StringBuilder &builder, const Logger::NewLine &) {
+  if (!builder) {
+    return builder;
+  }
+  builder << '\n';
   Logger * const logger = reinterpret_cast<Logger *>(
       (reinterpret_cast<char *>(&builder) - LOGGER_BUF_SIZE));
   logger->append_line_header();
@@ -216,11 +229,13 @@ StringBuilder &operator<<(StringBuilder &builder, const Logger::NewLine &) {
 }
 
 StringBuilder &operator<<(StringBuilder &builder, const Logger::Backtrace &) {
+  if (!builder) {
+    return builder;
+  }
   std::vector<std::string> backtrace;
   if (Backtrace::pretty_backtrace(1, &backtrace)) {
-    builder << backtrace[0].c_str();
-    for (size_t i = 1; i < backtrace.size(); ++i) {
-      builder << ", " << backtrace[i].c_str();
+    for (size_t i = 0; i < backtrace.size(); ++i) {
+      builder << Logger::new_line() << backtrace[i].c_str();
     }
   }
   return builder;
