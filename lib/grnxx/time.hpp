@@ -20,6 +20,8 @@
 
 #include "grnxx/features.hpp"
 
+#include <limits>
+
 #include "grnxx/broken_down_time.hpp"
 #include "grnxx/duration.hpp"
 #include "grnxx/types.hpp"
