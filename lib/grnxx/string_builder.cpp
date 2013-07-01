@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2012  Brazil, Inc.
+  Copyright (C) 2012-2013  Brazil, Inc.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -21,34 +21,149 @@
 #include <cstdio>
 #include <utility>
 
+#include "grnxx/exception.hpp"
 #include "grnxx/intrinsic.hpp"
+#include "grnxx/logger.hpp"
 
 namespace grnxx {
+namespace {
+
+constexpr size_t STRING_BUILDER_MIN_BUF_SIZE = 64;
+
+}  // namespace
+
+StringBuilder::StringBuilder(StringBuilderFlags flags)
+    : buf_(),
+      begin_(nullptr),
+      end_(nullptr),
+      ptr_(nullptr),
+      flags_(flags),
+      failed_(false) {}
 
 StringBuilder::StringBuilder(size_t size, StringBuilderFlags flags)
-    : buf_((size != 0) ? (new (std::nothrow) char[size]) : nullptr),
-      begin_(buf_.get()),
-      end_(buf_ ? (begin_ + size - 1) : nullptr),
-      ptr_(begin_),
+    : buf_(),
+      begin_(nullptr),
+      end_(nullptr),
+      ptr_(nullptr),
       flags_(flags),
-      failed_(!buf_) {
-  if (buf_) {
-    *ptr_ = '\0';
+      failed_(false) {
+  if (size != 0) {
+    buf_.reset(new (std::nothrow) char[size]);
+    if (!buf_) {
+      if (~flags_ & STRING_BUILDER_NOEXCEPT) {
+        GRNXX_ERROR() << "new char[" << size << "] failed";
+        throw MemoryError();
+      }
+      failed_ = true;
+    } else {
+      begin_ = buf_.get();
+      end_ = begin_ + size - 1;
+      ptr_ = begin_;
+      *ptr_ = '\0';
+    }
   }
 }
 
-bool StringBuilder::resize_buf(size_t size) {
-  if (size < STRING_BUILDER_BUF_SIZE_MIN) {
-    size = STRING_BUILDER_BUF_SIZE_MIN;
-  } else {
-    size = size_t(1) << (bit_scan_reverse(size - 1) + 1);
-  }
+StringBuilder::StringBuilder(char *buf, size_t size, StringBuilderFlags flags)
+    : buf_(),
+      begin_(buf),
+      end_(buf + size - 1),
+      ptr_(buf),
+      flags_(flags),
+      failed_(false) {
+  *ptr_ = '\0';
+}
 
-  std::unique_ptr<char[]> new_buf(new (std::nothrow) char[size]);
-  if (!new_buf) {
+StringBuilder::~StringBuilder() {}
+
+StringBuilder &StringBuilder::append(int byte) {
+  if (failed_) {
+    return *this;
+  }
+  if (ptr_ == end_) {
+    if (!auto_resize(length() + 2)) {
+      return *this;
+    }
+  }
+  *ptr_ = static_cast<char>(byte);
+  *++ptr_ = '\0';
+  return *this;
+}
+
+StringBuilder &StringBuilder::append(int byte, size_t length) {
+  if (failed_ || (length == 0)) {
+    return *this;
+  }
+  const size_t size_left = end_ - ptr_;
+  if (length > size_left) {
+    if (!auto_resize(this->length() + length + 1)) {
+      length = size_left;
+      if (length == 0) {
+        return *this;
+      }
+    }
+  }
+  std::memset(ptr_, byte, length);
+  ptr_ += length;
+  *ptr_ = '\0';
+  return *this;
+}
+
+StringBuilder &StringBuilder::append(const char *ptr, size_t length) {
+  if (failed_ || !ptr || (length == 0)) {
+    return *this;
+  }
+  const size_t size_left = end_ - ptr_;
+  if (length > size_left) {
+    if (!auto_resize(this->length() + length + 1)) {
+      length = size_left;
+      if (length == 0) {
+        return *this;
+      }
+    }
+  }
+  std::memcpy(ptr_, ptr, length);
+  ptr_ += length;
+  *ptr_ = '\0';
+  return *this;
+}
+
+// TODO: To be removed if this is not used.
+StringBuilder &StringBuilder::resize(size_t length) {
+  const size_t size_left = end_ - ptr_;
+  if (length > size_left) {
+    if (!resize_buf(length + 1)) {
+      length = size_left;
+      failed_ = true;
+    }
+  }
+  ptr_ = begin_ + length;
+  *ptr_ = '\0';
+  return *this;
+}
+
+bool StringBuilder::auto_resize(size_t size) {
+  if (~flags_ & STRING_BUILDER_AUTO_RESIZE) {
+    failed_ = true;
     return false;
   }
+  return resize_buf(size);
+}
 
+bool StringBuilder::resize_buf(size_t size) {
+  if (size < STRING_BUILDER_MIN_BUF_SIZE) {
+    size = STRING_BUILDER_MIN_BUF_SIZE;
+  } else {
+    size = size_t(2) << bit_scan_reverse(size - 1);
+  }
+  std::unique_ptr<char[]> new_buf(new (std::nothrow) char[size]);
+  if (!new_buf) {
+    if (~flags_ & STRING_BUILDER_NOEXCEPT) {
+      GRNXX_ERROR() << "new char [" << size << "] failed";
+      throw MemoryError();
+    }
+    return false;
+  }
   const size_t length = ptr_ - begin_;
   std::memcpy(new_buf.get(), begin_, length);
   ptr_ = new_buf.get() + length;
@@ -176,7 +291,6 @@ StringBuilder &operator<<(StringBuilder &builder, const void *value) {
 }
 
 StringBuilder &operator<<(StringBuilder &builder, const Bytes &bytes) {
-  // TODO: StringBuilder should support const uint_8 *.
   return builder.append(reinterpret_cast<const char *>(bytes.data()),
                         bytes.size());
 }

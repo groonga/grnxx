@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2012  Brazil, Inc.
+  Copyright (C) 2012-2013  Brazil, Inc.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -24,6 +24,8 @@
 #include "grnxx/types.hpp"
 
 namespace grnxx {
+
+constexpr size_t STRING_FORMAT_LOCAL_BUF_SIZE = 64;
 
 enum StringFormatAlignmentAttribute {
   STRING_FORMAT_ALIGNMENT_LEFT,
@@ -96,7 +98,7 @@ class StringFormat {
 template <typename T>
 StringBuilder &operator<<(StringBuilder &builder,
                           const StringFormatAlignment<T> &alignment) {
-  char local_buf[STRING_BUILDER_BUF_SIZE_MIN];
+  char local_buf[STRING_FORMAT_LOCAL_BUF_SIZE];
   const StringBuilderFlags local_flags =
       (alignment.width() >= sizeof(local_buf)) ?
       STRING_BUILDER_AUTO_RESIZE : STRING_BUILDER_DEFAULT;

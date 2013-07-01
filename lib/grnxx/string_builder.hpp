@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2012  Brazil, Inc.
+  Copyright (C) 2012-2013  Brazil, Inc.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -30,8 +30,6 @@
 
 namespace grnxx {
 
-constexpr size_t STRING_BUILDER_BUF_SIZE_MIN = 64;
-
 class StringBuilder;
 typedef FlagsImpl<StringBuilder> StringBuilderFlags;
 
@@ -41,20 +39,14 @@ constexpr StringBuilderFlags STRING_BUILDER_DEFAULT     =
 // Automatically resize the buffer.
 constexpr StringBuilderFlags STRING_BUILDER_AUTO_RESIZE =
     StringBuilderFlags::define(0x01);
-// Don't throw on failure.
+// Don't throw even if memory allocation fails.
 constexpr StringBuilderFlags STRING_BUILDER_NOEXCEPT    =
     StringBuilderFlags::define(0x02);
 
 class StringBuilder {
  public:
   // Create an empty StringBuilder.
-  explicit StringBuilder(StringBuilderFlags flags = STRING_BUILDER_DEFAULT)
-      : buf_(),
-        begin_(nullptr),
-        end_(nullptr),
-        ptr_(nullptr),
-        flags_(flags),
-        failed_(false) {}
+  explicit StringBuilder(StringBuilderFlags flags = STRING_BUILDER_DEFAULT);
   // Allocate "size" bytes to the internal buffer.
   explicit StringBuilder(size_t size,
                          StringBuilderFlags flags = STRING_BUILDER_DEFAULT);
@@ -72,16 +64,8 @@ class StringBuilder {
   }
   // Use "buf" ("size" bytes) as the internal buffer.
   StringBuilder(char *buf, size_t size,
-                StringBuilderFlags flags = STRING_BUILDER_DEFAULT)
-      : buf_(),
-        begin_(buf),
-        end_(buf + size - 1),
-        ptr_(buf),
-        flags_(flags),
-        failed_(false) {
-    *ptr_ = '\0';
-  }
-  ~StringBuilder() {}
+                StringBuilderFlags flags = STRING_BUILDER_DEFAULT);
+  ~StringBuilder();
 
   // TODO: To be removed if these are not used.
   StringBuilder(StringBuilder &&rhs)
@@ -112,77 +96,15 @@ class StringBuilder {
   }
 
   // Append a character.
-  StringBuilder &append(int byte) {
-    if (failed_) {
-      return *this;
-    }
-    if (ptr_ == end_) {
-      if ((~flags_ & STRING_BUILDER_AUTO_RESIZE) ||
-          !resize_buf(this->length() + 2)) {
-        failed_ = true;
-        return *this;
-      }
-    }
-    *ptr_ = static_cast<char>(byte);
-    *++ptr_ = '\0';
-    return *this;
-  }
-
+  StringBuilder &append(int byte);
   // Append a sequence of the same character.
-  StringBuilder &append(int byte, size_t length) {
-    if (failed_ || (length == 0)) {
-      return *this;
-    }
-    const size_t size_left = end_ - ptr_;
-    if (length > size_left) {
-      if ((~flags_ & STRING_BUILDER_AUTO_RESIZE) ||
-          !resize_buf(this->length() + length + 1)) {
-        length = size_left;
-        failed_ = true;
-        if (length == 0) {
-          return *this;
-        }
-      }
-    }
-    std::memset(ptr_, byte, length);
-    ptr_ += length;
-    *ptr_ = '\0';
-    return *this;
-  }
-
+  StringBuilder &append(int byte, size_t length);
   // Append a sequence of length characters.
-  StringBuilder &append(const char *ptr, size_t length) {
-    if (failed_ || !ptr || (length == 0)) {
-      return *this;
-    }
-    const size_t size_left = end_ - ptr_;
-    if (length > size_left) {
-      if ((~flags_ & STRING_BUILDER_AUTO_RESIZE) ||
-          !resize_buf(this->length() + length + 1)) {
-        length = size_left;
-        failed_ = true;
-      }
-    }
-    std::memcpy(ptr_, ptr, length);
-    ptr_ += length;
-    *ptr_ = '\0';
-    return *this;
-  }
+  StringBuilder &append(const char *ptr, size_t length);
 
+  // TODO: To be removed if this is not used.
   // Resize the internal buffer.
-  StringBuilder &resize(size_t length) {
-    const size_t size_left = end_ - ptr_;
-    if (length > size_left) {
-      if ((~flags_ & STRING_BUILDER_AUTO_RESIZE) ||
-          !resize_buf(length + 1)) {
-        length = size_left;
-        failed_ = true;
-      }
-    }
-    ptr_ = begin_ + length;
-    *ptr_ = '\0';
-    return *this;
-  }
+  StringBuilder &resize(size_t length);
 
   // Return the "i"-th byte.
   const char &operator[](size_t i) const {
@@ -226,6 +148,8 @@ class StringBuilder {
   StringBuilderFlags flags_;
   bool failed_;
 
+  // Resize the internal buffer.
+  bool auto_resize(size_t size);
   // Resize the internal buffer to greater than or equal to "size" bytes.
   bool resize_buf(size_t size);
 
