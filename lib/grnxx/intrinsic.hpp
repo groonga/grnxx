@@ -24,19 +24,19 @@
 # include <intrin.h>
 # pragma intrinsic(_BitScanReverse)
 # pragma intrinsic(_BitScanForward)
+# pragma intrinsic(_InterlockedCompareExchange)
+# pragma intrinsic(_InterlockedCompareExchange64)
 # pragma intrinsic(_InterlockedExchangeAdd)
 # pragma intrinsic(_InterlockedOr)
 # pragma intrinsic(_InterlockedAnd)
 # pragma intrinsic(_InterlockedXor)
-# pragma intrinsic(_InterlockedCompareExchange)
-# pragma intrinsic(_InterlockedCompareExchange64)
 # ifdef GRNXX_MSC64
 #  pragma intrinsic(_BitScanReverse64)
 #  pragma intrinsic(_BitScanForward64)
+#  pragma intrinsic(_InterlockedExchangeAdd64)
 #  pragma intrinsic(_InterlockedOr64)
 #  pragma intrinsic(_InterlockedAnd64)
 #  pragma intrinsic(_InterlockedXor64)
-#  pragma intrinsic(_InterlockedExchangeAdd64)
 # endif  // GRNXX_MSC64
 #endif  // GRNXX_MSC
 
@@ -136,7 +136,7 @@ class BitScanReverse<8> {
     return static_cast<uint8_t>(index);
 #  else  // GRNXX_MSC64
     if ((value >> 32) != 0) {
-      return static_cast<uint8_t>(BitScanReverse<4>((value >> 32) + 32));
+      return static_cast<uint8_t>(BitScanReverse<4>(value >> 32) + 32);
     }
     return BitScanReverse<4>(value);
 #  endif  // GRNXX_MSC64
@@ -202,7 +202,7 @@ class BitScanForward<8> {
     return static_cast<uint8_t>(index);
 #  else  // GRNXX_MSC64
     if ((value & 0xFFFFFFFFU) == 0) {
-      return static_cast<uint8_t>(BitScanForward<4>((value >> 32) + 32));
+      return static_cast<uint8_t>(BitScanForward<4>(value >> 32) + 32);
     }
     return BitScanForward<4>(value);
 #  endif  // GRNXX_MSC64
