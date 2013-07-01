@@ -27,7 +27,7 @@ namespace grnxx {
 class StringBuilder;
 
 // Latitude and longitude (lat/long).
-union GeoPoint {
+class GeoPoint {
  private:
   struct Point {
     int32_t latitude;

@@ -24,7 +24,7 @@
 
 namespace grnxx {
 
-union GeoPoint;
+class GeoPoint;
 
 // A simple/complex type should use pass by value/reference.
 template <typename T>
