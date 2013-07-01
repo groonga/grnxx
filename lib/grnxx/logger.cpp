@@ -124,14 +124,14 @@ bool LoggerSingleton::open(const char *path) {
       return false;
     }
     std::memcpy(path_clone.get(), path, buf_size);
-    std::unique_ptr<std::ofstream> file_dummy(
+    std::unique_ptr<std::ofstream> new_file(
         new (std::nothrow) std::ofstream(path_clone.get(),
             std::ios::out | std::ios::app | std::ios::binary));
-    if (!file_dummy || !*file_dummy) {
+    if (!new_file || !*new_file) {
       return false;
     }
     instance_->path_ = std::move(path_clone);
-    instance_->file_.swap(file_dummy);
+    instance_->file_.swap(new_file);
     return true;
   } catch (...) {
     return false;
