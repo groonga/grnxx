@@ -66,24 +66,6 @@ class StringBuilder {
                 StringBuilderFlags flags = STRING_BUILDER_DEFAULT);
   ~StringBuilder();
 
-  // TODO: To be removed if these are not used.
-  StringBuilder(StringBuilder &&rhs)
-      : buf_(std::move(rhs.buf_)),
-        begin_(std::move(rhs.begin_)),
-        end_(std::move(rhs.end_)),
-        ptr_(std::move(rhs.ptr_)),
-        flags_(std::move(rhs.flags_)),
-        failed_(std::move(rhs.failed_)) {}
-  StringBuilder &operator=(StringBuilder &&rhs) {
-    buf_ = std::move(rhs.buf_);
-    begin_ = std::move(rhs.begin_);
-    end_ = std::move(rhs.end_);
-    ptr_ = std::move(rhs.ptr_);
-    flags_ = std::move(rhs.flags_);
-    failed_ = std::move(rhs.failed_);
-    return *this;
-  }
-
   // Return true iff the builder is appendable.
   explicit operator bool() const {
     return !failed_;
