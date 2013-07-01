@@ -38,11 +38,16 @@ typedef FlagsImpl<StringBuilder> StringBuilderFlags;
 // Use the default settings.
 constexpr StringBuilderFlags STRING_BUILDER_DEFAULT     =
     StringBuilderFlags::define(0x00);
+// Automatically resize the buffer.
 constexpr StringBuilderFlags STRING_BUILDER_AUTO_RESIZE =
     StringBuilderFlags::define(0x01);
+// Don't throw on failure.
+constexpr StringBuilderFlags STRING_BUILDER_NOEXCEPT    =
+    StringBuilderFlags::define(0x02);
 
 class StringBuilder {
  public:
+  // Create an empty StringBuilder.
   explicit StringBuilder(StringBuilderFlags flags = STRING_BUILDER_DEFAULT)
       : buf_(),
         begin_(nullptr),
@@ -50,10 +55,10 @@ class StringBuilder {
         ptr_(nullptr),
         flags_(flags),
         failed_(false) {}
-
+  // Allocate "size" bytes to the internal buffer.
   explicit StringBuilder(size_t size,
                          StringBuilderFlags flags = STRING_BUILDER_DEFAULT);
-
+  // Use "buf" ("T" bytes) as the internal buffer.
   template <size_t T>
   explicit StringBuilder(char (&buf)[T],
                          StringBuilderFlags flags = STRING_BUILDER_DEFAULT)
@@ -65,7 +70,7 @@ class StringBuilder {
         failed_(false) {
     *ptr_ = '\0';
   }
-
+  // Use "buf" ("size" bytes) as the internal buffer.
   StringBuilder(char *buf, size_t size,
                 StringBuilderFlags flags = STRING_BUILDER_DEFAULT)
       : buf_(),
@@ -76,9 +81,9 @@ class StringBuilder {
         failed_(false) {
     *ptr_ = '\0';
   }
-
   ~StringBuilder() {}
 
+  // TODO: To be removed if these are not used.
   StringBuilder(StringBuilder &&rhs)
       : buf_(std::move(rhs.buf_)),
         begin_(std::move(rhs.begin_)),
@@ -86,7 +91,6 @@ class StringBuilder {
         ptr_(std::move(rhs.ptr_)),
         flags_(std::move(rhs.flags_)),
         failed_(std::move(rhs.failed_)) {}
-
   StringBuilder &operator=(StringBuilder &&rhs) {
     buf_ = std::move(rhs.buf_);
     begin_ = std::move(rhs.begin_);
@@ -97,11 +101,12 @@ class StringBuilder {
     return *this;
   }
 
+  // Return true iff the builder is appendable.
   explicit operator bool() const {
     return !failed_;
   }
 
-  // For one-liners.
+  // Return "*this" for one-liners.
   StringBuilder &builder() {
     return *this;
   }
@@ -111,7 +116,6 @@ class StringBuilder {
     if (failed_) {
       return *this;
     }
-
     if (ptr_ == end_) {
       if ((~flags_ & STRING_BUILDER_AUTO_RESIZE) ||
           !resize_buf(this->length() + 2)) {
@@ -119,7 +123,6 @@ class StringBuilder {
         return *this;
       }
     }
-
     *ptr_ = static_cast<char>(byte);
     *++ptr_ = '\0';
     return *this;
@@ -130,7 +133,6 @@ class StringBuilder {
     if (failed_ || (length == 0)) {
       return *this;
     }
-
     const size_t size_left = end_ - ptr_;
     if (length > size_left) {
       if ((~flags_ & STRING_BUILDER_AUTO_RESIZE) ||
@@ -142,7 +144,6 @@ class StringBuilder {
         }
       }
     }
-
     std::memset(ptr_, byte, length);
     ptr_ += length;
     *ptr_ = '\0';
@@ -154,7 +155,6 @@ class StringBuilder {
     if (failed_ || !ptr || (length == 0)) {
       return *this;
     }
-
     const size_t size_left = end_ - ptr_;
     if (length > size_left) {
       if ((~flags_ & STRING_BUILDER_AUTO_RESIZE) ||
@@ -163,13 +163,13 @@ class StringBuilder {
         failed_ = true;
       }
     }
-
     std::memcpy(ptr_, ptr, length);
     ptr_ += length;
     *ptr_ = '\0';
     return *this;
   }
 
+  // Resize the internal buffer.
   StringBuilder &resize(size_t length) {
     const size_t size_left = end_ - ptr_;
     if (length > size_left) {
@@ -184,23 +184,30 @@ class StringBuilder {
     return *this;
   }
 
+  // Return the "i"-th byte.
   const char &operator[](size_t i) const {
     return begin_[i];
   }
+  // Return the "i"-th byte.
   char &operator[](size_t i) {
     return begin_[i];
   }
 
+  // Return the string as a sequence of bytes.
   Bytes bytes() const {
-    return Bytes(c_str(), length());
+    return Bytes(begin_, ptr_ - begin_);
   }
+
+  // Return the address of the string.
   const char *c_str() const {
     return begin_ ? begin_ : "";
   }
+  // Return the length of the string.
   size_t length() const {
     return ptr_ - begin_;
   }
 
+  // TODO: To be removed if this is not used.
   void swap(StringBuilder &rhs) {
     using std::swap;
     swap(buf_, rhs.buf_);
@@ -219,13 +226,14 @@ class StringBuilder {
   StringBuilderFlags flags_;
   bool failed_;
 
-  // Resize buf_ to greater than or equal to size bytes.
+  // Resize the internal buffer to greater than or equal to "size" bytes.
   bool resize_buf(size_t size);
 
-  StringBuilder(const StringBuilder &);
-  StringBuilder &operator=(const StringBuilder &);
+  StringBuilder(const StringBuilder &) = delete;
+  StringBuilder &operator=(const StringBuilder &) = delete;
 };
 
+// TODO: To be removed if this is not used.
 inline void swap(StringBuilder &lhs, StringBuilder &rhs) {
   lhs.swap(rhs);
 }
@@ -290,6 +298,7 @@ inline StringBuilder &operator<<(StringBuilder &builder, const char *value) {
   return builder.append(value, std::strlen(value));
 }
 
+// A sequence of bytes.
 StringBuilder &operator<<(StringBuilder &builder, const Bytes &bytes);
 
 // Exceptions.

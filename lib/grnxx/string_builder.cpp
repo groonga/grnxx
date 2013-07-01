@@ -18,6 +18,8 @@
 #include "grnxx/string_builder.hpp"
 
 #include <cmath>
+#include <cstdio>
+#include <utility>
 
 #include "grnxx/intrinsic.hpp"
 
