@@ -389,47 +389,47 @@ void test_storage_create_node() {
   storage.reset(grnxx::Storage::create(FILE_PATH));
   assert(storage);
   node = storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 1 << 20);
-  assert(node.is_valid());
+  assert(node);
   assert(node.status() == grnxx::STORAGE_NODE_ACTIVE);
   assert(node.size() == (1 << 20));
   node = storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 1 << 24);
-  assert(node.is_valid());
+  assert(node);
   assert(node.status() == grnxx::STORAGE_NODE_ACTIVE);
   assert(node.size() == (1 << 24));
   node = storage->create_node(-1, 1 << 16);
-  assert(!node.is_valid());
+  assert(!node);
   node = storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, -1);
-  assert(!node.is_valid());
+  assert(!node);
 
   storage.reset(grnxx::Storage::create(FILE_PATH, grnxx::STORAGE_TEMPORARY));
   assert(storage);
   node = storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 1 << 20);
-  assert(node.is_valid());
+  assert(node);
   assert(node.status() == grnxx::STORAGE_NODE_ACTIVE);
   assert(node.size() == (1 << 20));
   node = storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 1 << 24);
-  assert(node.is_valid());
+  assert(node);
   assert(node.status() == grnxx::STORAGE_NODE_ACTIVE);
   assert(node.size() == (1 << 24));
   node = storage->create_node(-1, 1 << 16);
-  assert(!node.is_valid());
+  assert(!node);
   node = storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, -1);
-  assert(!node.is_valid());
+  assert(!node);
 
   storage.reset(grnxx::Storage::create(nullptr));
   assert(storage);
   node = storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 1 << 20);
-  assert(node.is_valid());
+  assert(node);
   assert(node.status() == grnxx::STORAGE_NODE_ACTIVE);
   assert(node.size() == (1 << 20));
   node = storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 1 << 24);
-  assert(node.is_valid());
+  assert(node);
   assert(node.status() == grnxx::STORAGE_NODE_ACTIVE);
   assert(node.size() == (1 << 24));
   node = storage->create_node(-1, 1 << 16);
-  assert(!node.is_valid());
+  assert(!node);
   node = storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, -1);
-  assert(!node.is_valid());
+  assert(!node);
 
   assert(grnxx::Storage::unlink(FILE_PATH));
 }
@@ -447,24 +447,24 @@ void test_storage_open_node() {
                                        options));
   assert(storage);
   node = storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 1 << 20);
-  assert(node.is_valid());
+  assert(node);
   node_id_1 = node.id();
   node = storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 1 << 24);
-  assert(node.is_valid());
+  assert(node);
   node_id_2 = node.id();
 
   storage.reset(grnxx::Storage::open(FILE_PATH));
   assert(storage);
   node = storage->open_node(grnxx::STORAGE_ROOT_NODE_ID);
-  assert(node.is_valid());
+  assert(node);
   assert(node.status() == grnxx::STORAGE_NODE_ACTIVE);
   assert(node.size() == options.root_size);
   node = storage->open_node(node_id_1);
-  assert(node.is_valid());
+  assert(node);
   assert(node.status() == grnxx::STORAGE_NODE_ACTIVE);
   assert(node.size() == (1 << 20));
   node = storage->open_node(node_id_2);
-  assert(node.is_valid());
+  assert(node);
   assert(node.status() == grnxx::STORAGE_NODE_ACTIVE);
   assert(node.size() == (1 << 24));
 
@@ -479,9 +479,9 @@ void test_storage_unlink_node() {
   storage.reset(grnxx::Storage::create(nullptr));
   assert(storage);
   node_1 = storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 1 << 20);
-  assert(node_1.is_valid());
+  assert(node_1);
   node_2 = storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 1 << 24);
-  assert(node_2.is_valid());
+  assert(node_2);
 
   assert(storage->unlink_node(node_1.id()));
   assert(node_1.status() == grnxx::STORAGE_NODE_UNLINKED);
@@ -497,32 +497,32 @@ void test_storage_sweep() {
   storage.reset(grnxx::Storage::create(nullptr));
   assert(storage);
   node = storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 1 << 18);
-  assert(node.is_valid());
-  assert(storage->create_node(node.id(), 1 << 18).is_valid());
-  assert(storage->create_node(node.id(), 1 << 18).is_valid());
+  assert(node);
+  assert(storage->create_node(node.id(), 1 << 18));
+  assert(storage->create_node(node.id(), 1 << 18));
   uint64_t total_size = storage->total_size();
   for (int i = 0; i < 100; ++i) {
     assert(storage->unlink_node(node.id()));
     assert(storage->sweep(grnxx::Duration(0)));
     node = storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 1 << 18);
-    assert(node.is_valid());
-    assert(storage->create_node(node.id(), 1 << 18).is_valid());
-    assert(storage->create_node(node.id(), 1 << 18).is_valid());
+    assert(node);
+    assert(storage->create_node(node.id(), 1 << 18));
+    assert(storage->create_node(node.id(), 1 << 18));
     assert(storage->total_size() == total_size);
   }
 
   node = storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 0);
-  assert(node.is_valid());
-  assert(storage->create_node(node.id(), 0).is_valid());
-  assert(storage->create_node(node.id(), 0).is_valid());
+  assert(node);
+  assert(storage->create_node(node.id(), 0));
+  assert(storage->create_node(node.id(), 0));
   total_size = storage->total_size();
   for (int i = 0; i < 100; ++i) {
     assert(storage->unlink_node(node.id()));
     assert(storage->sweep(grnxx::Duration(0)));
     node = storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 0);
-    assert(node.is_valid());
-    assert(storage->create_node(node.id(), 0).is_valid());
-    assert(storage->create_node(node.id(), 0).is_valid());
+    assert(node);
+    assert(storage->create_node(node.id(), 0));
+    assert(storage->create_node(node.id(), 0));
     assert(storage->total_size() == total_size);
   }
 }
@@ -704,7 +704,7 @@ void test_storage_random_queries() {
       }
       const grnxx::StorageNode node =
           storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, size);
-      assert(node.is_valid());
+      assert(node);
       id_set.insert(node.id());
     }
   }

@@ -81,11 +81,6 @@ struct StorageOptions {
 
   // Return true iff the options are valid.
   explicit operator bool() const;
-  // TODO: Obsolete. Use operator bool() instead.
-  // Return true if the parameters are valid.
-  bool is_valid() const {
-    return static_cast<bool>(*this);
-  }
 };
 
 StringBuilder &operator<<(StringBuilder &builder,
@@ -102,11 +97,6 @@ class StorageNode {
   // Return true iff the node is valid.
   explicit operator bool() const {
     return header_ != nullptr;
-  }
-  // TODO: Obsolete. Use operator bool() instead.
-  // Return true iff "header_" != nullptr.
-  bool is_valid() const {
-    return static_cast<bool>(*this);
   }
 
   // Return the ID.
