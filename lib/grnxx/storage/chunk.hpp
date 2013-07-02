@@ -59,7 +59,7 @@ class Chunk {
                        ChunkFlags flags = CHUNK_DEFAULT);
 
   // Flush modified pages.
-  virtual bool sync(uint64_t offset = 0, uint64_t size = 0) = 0;
+  virtual void sync(uint64_t offset = 0, uint64_t size = 0) = 0;
 
   // Return the enabled flags.
   virtual ChunkFlags flags() const = 0;

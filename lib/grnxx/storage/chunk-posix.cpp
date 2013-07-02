@@ -27,6 +27,7 @@
 #include <new>
 
 #include "grnxx/errno.hpp"
+#include "grnxx/exception.hpp"
 #include "grnxx/logger.hpp"
 #include "grnxx/storage/file.hpp"
 
@@ -47,7 +48,9 @@ ChunkImpl::ChunkImpl()
 ChunkImpl::~ChunkImpl() {
   if (address_ != MAP_FAILED) {
     if (::munmap(address_, static_cast<size_t>(size_)) != 0) {
-      GRNXX_ERROR() << "failed to unmap chunk: '::munmap' " << Errno(errno);
+      Errno errno_copy(errno);
+      GRNXX_WARNING() << "failed to unmap chunk: "
+                      << "call = ::munmap, errno = " << errno_copy;
     }
   }
 }
@@ -57,45 +60,42 @@ ChunkImpl *ChunkImpl::create(File *file, uint64_t offset, uint64_t size,
   std::unique_ptr<ChunkImpl> chunk(new (std::nothrow) ChunkImpl);
   if (!chunk) {
     GRNXX_ERROR() << "new grnxx::storage::FileImpl failed";
-    return nullptr;
+    throw MemoryError();
   }
   if (file) {
-    if (!chunk->create_file_backed_chunk(file, offset, size, flags)) {
-      return nullptr;
-    }
+    chunk->create_file_backed_chunk(file, offset, size, flags);
   } else {
-    if (!chunk->create_anonymous_chunk(size, flags)) {
-      return nullptr;
-    }
+    chunk->create_anonymous_chunk(size, flags);
   }
   return chunk.release();
 }
 
-bool ChunkImpl::sync(uint64_t offset, uint64_t size) {
+void ChunkImpl::sync(uint64_t offset, uint64_t size) {
   if ((flags_ & CHUNK_ANONYMOUS) || (flags_ & CHUNK_READ_ONLY)) {
-    GRNXX_WARNING() << "invalid operation: flags = " << flags_;
-    return false;
+    GRNXX_ERROR() << "invalid operation: flags = " << flags_;
+    throw LogicError();
   }
   if ((offset > size_) || (size > size_) || (size > (size_ - offset))) {
     GRNXX_ERROR() << "invalid argument: offset = " << offset
                   << ", size = " << size << ", chunk_size = " << size_;
-    return false;
+    throw LogicError();
   }
   if (size == 0) {
     size = size_ - offset;
   }
   if (size > std::numeric_limits<size_t>::max()) {
     GRNXX_ERROR() << "invalid argument: size = " << size;
-    return false;
+    throw LogicError();
   }
   if (size > 0) {
     if (::msync(static_cast<char *>(address_) + offset, size, MS_SYNC) != 0) {
+      Errno errno_copy(errno);
       GRNXX_ERROR() << "failed to sync chunk: offset = " << offset
-                    << ", size = " << size << ": '::msync' " << Errno(errno);
-      return false;
+                    << ", size = " << size
+                    << ", call = ::msync, errno = " << errno_copy;
+      throw SystemError(errno_copy);
     }
   }
-  return true;
 }
 
 ChunkFlags ChunkImpl::flags() const {
@@ -110,15 +110,14 @@ uint64_t ChunkImpl::size() const {
   return size_;
 }
 
-bool ChunkImpl::create_file_backed_chunk(File *file, uint64_t offset,
+void ChunkImpl::create_file_backed_chunk(File *file, uint64_t offset,
                                          uint64_t size, ChunkFlags flags) {
-  // TODO: This may throw.
   const uint64_t file_size = file->get_size();
   if ((offset >= file_size) || (size > file_size) ||
       (size > (file_size - offset))) {
     GRNXX_ERROR() << "invalid argument: offset = " << offset
                   << ", size = " << size << ", file_size = " << file_size;
-    return false;
+    throw LogicError();
   }
   if (size == 0) {
     size = file_size - offset;
@@ -127,7 +126,7 @@ bool ChunkImpl::create_file_backed_chunk(File *file, uint64_t offset,
       (size > std::numeric_limits<size_t>::max())) {
     GRNXX_ERROR() << "invalid argument: offset = " << offset
                   << ", size = " << size;
-    return false;
+    throw LogicError();
   }
   if (file->flags() & FILE_READ_ONLY) {
     flags_ |= CHUNK_READ_ONLY;
@@ -142,20 +141,21 @@ bool ChunkImpl::create_file_backed_chunk(File *file, uint64_t offset,
   address_ = ::mmap(nullptr, size, protection_flags, mmap_flags,
                     *static_cast<const int *>(file->handle()), offset);
   if (address_ == MAP_FAILED) {
+    Errno errno_copy(errno);
     GRNXX_ERROR() << "failed to map file-backed chunk: "
                   << "file_path = " << file->path()
                   << ", file_size = " << file_size
                   << ", offset = " << offset << ", size = " << size
-                  << ", flags = " << flags << ": '::mmap' " << Errno(errno);
-    return false;
+                  << ", flags = " << flags
+                  << ", call = ::mmap, errno = " << errno_copy;
+    throw SystemError(errno_copy);
   }
-  return true;
 }
 
-bool ChunkImpl::create_anonymous_chunk(uint64_t size, ChunkFlags flags) {
+void ChunkImpl::create_anonymous_chunk(uint64_t size, ChunkFlags flags) {
   if ((size == 0) || (size > std::numeric_limits<size_t>::max())) {
     GRNXX_ERROR() << "invalid argument: size = " << size;
-    return false;
+    throw LogicError();
   }
   flags_ = CHUNK_ANONYMOUS;
   size_ = size;
@@ -173,12 +173,13 @@ bool ChunkImpl::create_anonymous_chunk(uint64_t size, ChunkFlags flags) {
   if (address_ == MAP_FAILED) {
     address_ = ::mmap(nullptr, size, protection_flags, mmap_flags, -1, 0);
     if (address_ == MAP_FAILED) {
+      Errno errno_copy(errno);
       GRNXX_ERROR() << "failed to map anonymous chunk: size = " << size
-                    << ", flags = " << flags << ": '::mmap' " << Errno(errno);
-      return false;
+                    << ", flags = " << flags
+                    << ", call = ::mmap, errno = " << errno_copy;
+      throw SystemError(errno_copy);
     }
   }
-  return true;
 }
 
 }  // namespace storage

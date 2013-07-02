@@ -35,7 +35,7 @@ class ChunkImpl : public Chunk {
   static ChunkImpl *create(File *file, uint64_t offset, uint64_t size,
                            ChunkFlags flags);
 
-  bool sync(uint64_t offset, uint64_t size);
+  void sync(uint64_t offset, uint64_t size);
 
   ChunkFlags flags() const;
   void *address() const;
@@ -46,9 +46,9 @@ class ChunkImpl : public Chunk {
   void *address_;
   uint64_t size_;
 
-  bool create_file_backed_chunk(File *file, uint64_t offset, uint64_t size,
+  void create_file_backed_chunk(File *file, uint64_t offset, uint64_t size,
                                 ChunkFlags flags);
-  bool create_anonymous_chunk(uint64_t size, ChunkFlags flags);
+  void create_anonymous_chunk(uint64_t size, ChunkFlags flags);
 };
 
 }  // namespace storage
