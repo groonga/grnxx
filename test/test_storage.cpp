@@ -34,17 +34,14 @@ namespace {
 
 void test_full_path(const char *path, const char *answer) {
   std::unique_ptr<char[]> full_path(grnxx::storage::Path::full_path(path));
-  assert(full_path);
   assert(std::strcmp(full_path.get(), answer) == 0);
 }
 
 void test_full_path() {
   std::unique_ptr<char[]> full_path(grnxx::storage::Path::full_path(nullptr));
-  assert(full_path);
   GRNXX_NOTICE() << "full_path = " << full_path.get();
 
   full_path.reset(grnxx::storage::Path::full_path("temp.grn"));
-  assert(full_path);
   GRNXX_NOTICE() << "full_path = " << full_path.get();
 
   test_full_path("/", "/");
@@ -62,7 +59,6 @@ void test_full_path() {
 void test_unique_path() {
   std::unique_ptr<char[]> unique_path(
       grnxx::storage::Path::unique_path(nullptr));
-  assert(unique_path);
   GRNXX_NOTICE() << "unique_path = " << unique_path.get();
 
   unique_path.reset(grnxx::storage::Path::unique_path("temp.grn"));
@@ -75,21 +71,14 @@ void test_file_create() {
   std::unique_ptr<grnxx::storage::File> file;
 
   file.reset(grnxx::storage::File::create(FILE_PATH));
-  assert(file);
-  file.reset(grnxx::storage::File::create(FILE_PATH));
-  assert(!file);
 
   file.reset(grnxx::storage::File::create(FILE_PATH,
                                           grnxx::storage::FILE_TEMPORARY));
-  assert(file);
   file.reset(grnxx::storage::File::create(FILE_PATH,
                                           grnxx::storage::FILE_TEMPORARY));
-  assert(file);
 
   file.reset(grnxx::storage::File::create(nullptr));
-  assert(file);
   file.reset(grnxx::storage::File::create(nullptr));
-  assert(file);
 
   grnxx::storage::File::unlink(FILE_PATH);
 }
@@ -99,12 +88,8 @@ void test_file_open() {
   grnxx::storage::File::unlink(FILE_PATH);
   std::unique_ptr<grnxx::storage::File> file;
 
-  file.reset(grnxx::storage::File::open(FILE_PATH));
-  assert(!file);
-
   file.reset(grnxx::storage::File::create(FILE_PATH));
   file.reset(grnxx::storage::File::open(FILE_PATH));
-  assert(file);
 
   file.reset();
   grnxx::storage::File::unlink(FILE_PATH);
@@ -116,9 +101,7 @@ void test_file_open_or_create() {
   std::unique_ptr<grnxx::storage::File> file;
 
   file.reset(grnxx::storage::File::open_or_create(FILE_PATH));
-  assert(file);
   file.reset(grnxx::storage::File::open_or_create(FILE_PATH));
-  assert(file);
 
   file.reset();
   grnxx::storage::File::unlink(FILE_PATH);
@@ -131,25 +114,20 @@ void test_file_exists_and_unlink() {
 
   assert(grnxx::storage::File::exists(FILE_PATH));
   assert(grnxx::storage::File::unlink(FILE_PATH));
-  assert(!grnxx::storage::File::unlink(FILE_PATH));
   assert(!grnxx::storage::File::exists(FILE_PATH));
+  assert(!grnxx::storage::File::unlink(FILE_PATH));
 }
 
 void test_file_lock_and_unlock() {
   const char FILE_PATH[] = "temp.grn";
   std::unique_ptr<grnxx::storage::File> file_1;
   file_1.reset(grnxx::storage::File::open_or_create(FILE_PATH));
-  assert(file_1);
 
   assert(file_1->lock(grnxx::storage::FILE_LOCK_SHARED));
-  assert(!file_1->lock(grnxx::storage::FILE_LOCK_SHARED));
-  assert(file_1->unlock());
-  assert(!file_1->unlock());
+  file_1->unlock();
 
   assert(file_1->lock(grnxx::storage::FILE_LOCK_EXCLUSIVE));
-  assert(!file_1->lock(grnxx::storage::FILE_LOCK_EXCLUSIVE));
-  assert(file_1->unlock());
-  assert(!file_1->unlock());
+  file_1->unlock();
 
   std::unique_ptr<grnxx::storage::File> file_2;
   file_2.reset(grnxx::storage::File::open(FILE_PATH));
@@ -158,17 +136,17 @@ void test_file_lock_and_unlock() {
   assert(file_1->lock(grnxx::storage::FILE_LOCK_SHARED));
   assert(file_2->lock(grnxx::storage::FILE_LOCK_SHARED |
                       grnxx::storage::FILE_LOCK_NONBLOCKING));
-  assert(file_2->unlock());
+  file_2->unlock();
   assert(!file_2->lock(grnxx::storage::FILE_LOCK_EXCLUSIVE |
                        grnxx::storage::FILE_LOCK_NONBLOCKING));
-  assert(file_1->unlock());
+  file_1->unlock();
 
   assert(file_1->lock(grnxx::storage::FILE_LOCK_EXCLUSIVE));
   assert(!file_2->lock(grnxx::storage::FILE_LOCK_SHARED |
                        grnxx::storage::FILE_LOCK_NONBLOCKING));
   assert(!file_2->lock(grnxx::storage::FILE_LOCK_EXCLUSIVE |
                        grnxx::storage::FILE_LOCK_NONBLOCKING));
-  assert(file_1->unlock());
+  file_1->unlock();
 
   file_1.reset();
   file_2.reset();
@@ -180,24 +158,19 @@ void test_file_sync() {
       grnxx::storage::File::create(nullptr));
   assert(file);
 
-  assert(file->sync());
+  file->sync();
 }
 
 void test_file_resize_and_size() {
   std::unique_ptr<grnxx::storage::File> file(
       grnxx::storage::File::create(nullptr));
-  std::uint64_t file_size;
   assert(file);
 
-  assert(file->get_size(&file_size));
-  assert(file_size == 0);
-  assert(file->resize(65536));
-  assert(file->get_size(&file_size));
-  assert(file_size == 65536);
-  assert(file->resize(1024));
-  assert(file->get_size(&file_size));
-  assert(file_size == 1024);
-  assert(!file->resize(-1));
+  assert(file->get_size() == 0);
+  file->resize(65536);
+  assert(file->get_size() == 65536);
+  file->resize(1024);
+  assert(file->get_size() == 1024);
 }
 
 void test_file_path() {
@@ -257,7 +230,7 @@ void test_chunk_create() {
   chunk.reset(grnxx::storage::Chunk::create(file.get()));
   assert(!chunk);
 
-  assert(file->resize(FILE_SIZE));
+  file->resize(FILE_SIZE);
 
   chunk.reset(grnxx::storage::Chunk::create(file.get()));
   assert(chunk);
@@ -296,7 +269,7 @@ void test_chunk_sync() {
 
   file.reset(grnxx::storage::File::create(nullptr));
   assert(file);
-  assert(file->resize(FILE_SIZE));
+  file->resize(FILE_SIZE);
 
   chunk.reset(grnxx::storage::Chunk::create(file.get()));
   assert(chunk);
@@ -322,7 +295,7 @@ void test_chunk_flags() {
 
   file.reset(grnxx::storage::File::create(FILE_PATH));
   assert(file);
-  assert(file->resize(1 << 20));
+  file->resize(1 << 20);
 
   chunk.reset(grnxx::storage::Chunk::create(file.get()));
   assert(chunk);
@@ -348,7 +321,7 @@ void test_chunk_address() {
 
   file.reset(grnxx::storage::File::create(nullptr));
   assert(file);
-  assert(file->resize(10));
+  file->resize(10);
 
   chunk.reset(grnxx::storage::Chunk::create(file.get()));
   assert(chunk);
@@ -359,7 +332,7 @@ void test_chunk_address() {
 
   file.reset(grnxx::storage::File::create(FILE_PATH));
   assert(file);
-  assert(file->resize(1 << 16));
+  file->resize(1 << 16);
 
   chunk.reset(grnxx::storage::Chunk::create(file.get()));
   assert(chunk);
@@ -389,7 +362,7 @@ void test_chunk_size() {
 
   file.reset(grnxx::storage::File::create(nullptr));
   assert(file);
-  assert(file->resize(FILE_SIZE));
+  file->resize(FILE_SIZE);
 
   chunk.reset(grnxx::storage::Chunk::create(file.get()));
   assert(chunk);

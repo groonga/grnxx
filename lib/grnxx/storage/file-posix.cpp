@@ -30,6 +30,7 @@
 #include <new>
 
 #include "grnxx/errno.hpp"
+#include "grnxx/exception.hpp"
 #include "grnxx/logger.hpp"
 #include "grnxx/storage/path.hpp"
 
@@ -54,8 +55,9 @@ FileImpl::~FileImpl() {
       unlock();
     }
     if (::close(fd_) != 0) {
-      GRNXX_ERROR() << "failed to close file: path = " << path_.get()
-                    << ": '::close' " << Errno(errno);
+      Errno errno_copy(errno);
+      GRNXX_WARNING() << "failed to close file: path = " << path_.get()
+                      << ", call = ::close, errno = " << errno_copy;
     }
   }
 }
@@ -64,16 +66,12 @@ FileImpl *FileImpl::create(const char *path, FileFlags flags) {
   std::unique_ptr<FileImpl> file(new (std::nothrow) FileImpl);
   if (!file) {
     GRNXX_ERROR() << "new grnxx::storage::FileImpl failed";
-    return nullptr;
+    throw MemoryError();
   }
   if (path && (~flags & FILE_TEMPORARY)) {
-    if (!file->create_persistent_file(path, flags)) {
-      return nullptr;
-    }
+    file->create_persistent_file(path, flags);
   } else {
-    if (!file->create_temporary_file(path, flags)) {
-      return nullptr;
-    }
+    file->create_temporary_file(path, flags);
   }
   return file.release();
 }
@@ -81,42 +79,43 @@ FileImpl *FileImpl::create(const char *path, FileFlags flags) {
 FileImpl *FileImpl::open(const char *path, FileFlags flags) {
   if (!path) {
     GRNXX_ERROR() << "invalid argument: path = nullptr";
-    return nullptr;
+    throw LogicError();
   }
   std::unique_ptr<FileImpl> file(new (std::nothrow) FileImpl);
   if (!file) {
     GRNXX_ERROR() << "new grnxx::storage::FileImpl failed";
-    return nullptr;
+    throw MemoryError();
   }
-  if (!file->open_file(path, flags)) {
-    return nullptr;
-  }
+  file->open_file(path, flags);
   return file.release();
 }
 
 FileImpl *FileImpl::open_or_create(const char *path, FileFlags flags) {
   if (!path) {
     GRNXX_ERROR() << "invalid argument: path = nullptr";
-    return nullptr;
+    throw LogicError();
   }
   std::unique_ptr<FileImpl> file(new (std::nothrow) FileImpl);
   if (!file) {
     GRNXX_ERROR() << "new grnxx::storage::FileImpl failed";
-    return nullptr;
+    throw MemoryError();
   }
-  if (!file->open_or_create_file(path, flags)) {
-    return nullptr;
-  }
+  file->open_or_create_file(path, flags);
   return file.release();
 }
 
 bool FileImpl::exists(const char *path) {
   if (!path) {
     GRNXX_ERROR() << "invalid argument: path = nullptr";
-    return false;
+    throw LogicError();
   }
   struct stat stat;
   if (::stat(path, &stat) != 0) {
+    if (errno != ENOENT) {
+      Errno errno_copy(errno);
+      GRNXX_WARNING() << "failed to get file information: "
+                      << "call = ::stat, errno = " << errno_copy;
+    }
     return false;
   }
   return S_ISREG(stat.st_mode);
@@ -125,11 +124,15 @@ bool FileImpl::exists(const char *path) {
 bool FileImpl::unlink(const char *path) {
   if (!path) {
     GRNXX_ERROR() << "invalid argument: path = nullptr";
+    throw LogicError();
+  }
+  if (!exists(path)) {
     return false;
   }
   if (::unlink(path) != 0) {
+    Errno errno_copy(errno);
     GRNXX_WARNING() << "failed to unlink file: path = " << path
-                    << ": '::unlink' " << Errno(errno);
+                    << ", call = ::unlink, errno = " << errno_copy;
     return false;
   }
   return true;
@@ -138,13 +141,13 @@ bool FileImpl::unlink(const char *path) {
 bool FileImpl::lock(FileLockFlags lock_flags) {
   if (locked_) {
     GRNXX_ERROR() << "already locked: path = " << path_.get();
-    return false;
+    throw LogicError();
   }
   FileLockFlags lock_type =
       lock_flags & (FILE_LOCK_SHARED | FILE_LOCK_EXCLUSIVE);
   if (!lock_type || (lock_type == (FILE_LOCK_SHARED | FILE_LOCK_EXCLUSIVE))) {
     GRNXX_ERROR() << "invalid argument: lock_flags == " << lock_flags;
-    return false;
+    throw LogicError();
   }
   int operation = 0;
   if (lock_flags & FILE_LOCK_SHARED) {
@@ -158,70 +161,68 @@ bool FileImpl::lock(FileLockFlags lock_flags) {
   }
   if (::flock(fd_, operation) != 0) {
     if (errno == EWOULDBLOCK) {
-      // The file is locked by others.
       return false;
     }
+    Errno errno_copy(errno);
     GRNXX_ERROR() << "failed to lock file: path = " << path_.get()
                   << ", lock_flags = " << lock_flags
-                  << ": '::flock' " << Errno(errno);
-    return false;
+                  << ", call = ::flock, errno = " << Errno(errno_copy);
+    throw SystemError(errno_copy);
   }
   locked_ = true;
   return true;
 }
 
-bool FileImpl::unlock() {
+void FileImpl::unlock() {
   if (!locked_) {
     GRNXX_WARNING() << "unlocked: path = " << path_.get();
-    return false;
+    throw LogicError();
   }
   if (::flock(fd_, LOCK_UN) != 0) {
+    Errno errno_copy(errno);
     GRNXX_ERROR() << "failed to unlock file: path = " << path_.get()
-                  << ": '::flock' " << Errno(errno);
-    return false;
+                  << ", call = ::flock, errno = " << errno_copy;
+    throw SystemError(errno_copy);
   }
   locked_ = false;
-  return true;
 }
 
-bool FileImpl::sync() {
+void FileImpl::sync() {
   if (::fsync(fd_) != 0) {
+    Errno errno_copy(errno);
     GRNXX_ERROR() << "failed to sync file: path = " << path_.get()
-                  << ": '::fsync' " << Errno(errno);
-    return false;
+                  << ", call = ::fsync, errno = " << errno_copy;
+    throw SystemError(errno_copy);
   }
-  return true;
 }
 
-bool FileImpl::resize(uint64_t size) {
+void FileImpl::resize(uint64_t size) {
   if (flags_ & FILE_READ_ONLY) {
-    GRNXX_ERROR() << "read-only";
-    return false;
+    GRNXX_ERROR() << "invalid operation: flags = " << flags_;
+    throw LogicError();
   }
   if (size > static_cast<uint64_t>(std::numeric_limits<off_t>::max())) {
     GRNXX_ERROR() << "invalid argument: size = " << size;
-    return false;
+    throw LogicError();
   }
   if (::ftruncate(fd_, size) != 0) {
+    Errno errno_copy(errno);
     GRNXX_ERROR() << "failed to resize file: path = " << path_.get()
                   << ", size = " << size
-                  << ": '::ftruncate' " << Errno(errno);
-    return false;
+                  << ", call = ::ftruncate, errno = " << errno_copy;
+    throw SystemError(errno_copy);
   }
-  return true;
 }
 
-bool FileImpl::get_size(uint64_t *size) {
+uint64_t FileImpl::get_size() {
   struct stat stat;
   if (::fstat(fd_, &stat) != 0) {
+    Errno errno_copy(errno);
     GRNXX_ERROR() << "failed to stat file: path = " << path_.get()
-                  << ": '::fstat' " << Errno(errno);
-    return false;
+                  << ", call = ::fstat, errno = " << errno_copy;
+    throw SystemError(errno_copy);
   }
-  if (size) {
-    *size = stat.st_size;
-  }
-  return true;
+  return stat.st_size;
 }
 
 const char *FileImpl::path() const {
@@ -236,26 +237,23 @@ const void *FileImpl::handle() const {
   return &fd_;
 }
 
-bool FileImpl::create_persistent_file(const char *path, FileFlags flags) {
+void FileImpl::create_persistent_file(const char *path, FileFlags flags) {
   if (!path) {
     GRNXX_ERROR() << "invalid argument: path = nullptr";
-    return false;
+    throw LogicError();
   }
   path_.reset(Path::clone_path(path));
-  if (!path_) {
-    return false;
-  }
   fd_ = ::open(path, O_RDWR | O_CREAT | O_EXCL, 0644);
   if (fd_ == -1) {
+    Errno errno_copy(errno);
     GRNXX_ERROR() << "failed to create file: path = " << path
                   << ", flags = " << flags
-                  << ": '::open' " << Errno(errno);
-    return false;
+                  << ", call = ::open, errno = " << errno_copy;
+    throw SystemError(errno_copy);
   }
-  return true;
 }
 
-bool FileImpl::create_temporary_file(const char *path, FileFlags flags) {
+void FileImpl::create_temporary_file(const char *path, FileFlags flags) {
   flags_ = FILE_TEMPORARY;
   int posix_flags = O_RDWR | O_CREAT | O_EXCL | O_NOCTTY;
 #ifdef O_NOATIME
@@ -264,27 +262,25 @@ bool FileImpl::create_temporary_file(const char *path, FileFlags flags) {
 #ifdef O_NOFOLLOW
   posix_flags |= O_NOFOLLOW;
 #endif  // O_NOFOLLOW
+  Errno errno_copy;
   for (int i = 0; i < UNIQUE_PATH_GENERATION_TRIAL_COUNT; ++i) {
     path_.reset(Path::unique_path(path));
     fd_ = ::open(path_.get(), posix_flags, 0600);
     if (fd_ != -1) {
       unlink(path_.get());
-      return true;
+      return;
     }
+    errno_copy = Errno(errno);
     GRNXX_WARNING() << "failed to create file: path = " << path_.get()
-                    << ": '::open' " << Errno(errno);
+                    << ", call = ::open, errno = " << errno_copy;
   }
   GRNXX_ERROR() << "failed to create temporary file: "
-                << "path = " << path
-                << ", flags = " << flags;
-  return false;
+                << "path = " << path << ", flags = " << flags;
+  throw SystemError(errno_copy);
 }
 
-bool FileImpl::open_file(const char *path, FileFlags flags) {
+void FileImpl::open_file(const char *path, FileFlags flags) {
   path_.reset(Path::clone_path(path));
-  if (!path_) {
-    return false;
-  }
   int posix_flags = O_RDWR;
   if (flags & FILE_READ_ONLY) {
     posix_flags = O_RDONLY;
@@ -292,27 +288,24 @@ bool FileImpl::open_file(const char *path, FileFlags flags) {
   }
   fd_ = ::open(path, posix_flags);
   if (fd_ == -1) {
+    Errno errno_copy(errno);
     GRNXX_ERROR() << "failed to open file: path = " << path
                   << ", flags = " << flags
-                  << ": '::open' " << Errno(errno);
-    return false;
+                  << ", call = ::open, errno = " << errno_copy;
+    throw SystemError(errno_copy);
   }
-  return true;
 }
 
-bool FileImpl::open_or_create_file(const char *path, FileFlags flags) {
+void FileImpl::open_or_create_file(const char *path, FileFlags flags) {
   path_.reset(Path::clone_path(path));
-  if (!path_) {
-    return false;
-  }
   fd_ = ::open(path, O_RDWR | O_CREAT, 0644);
   if (fd_ == -1) {
+    Errno errno_copy(errno);
     GRNXX_ERROR() << "failed to open file: path = " << path
                   << ", flags = " << flags
-                  << ": '::open' " << Errno(errno);
-    return false;
+                  << ", call = ::open, errno = " << errno_copy;
+    throw SystemError(errno_copy);
   }
-  return true;
 }
 
 }  // namespace storage

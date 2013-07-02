@@ -42,12 +42,12 @@ class FileImpl : public File {
   static bool unlink(const char *path);
 
   bool lock(FileLockFlags lock_flags);
-  bool unlock();
+  void unlock();
 
-  bool sync();
+  void sync();
 
-  bool resize(uint64_t size);
-  bool get_size(uint64_t *size);
+  void resize(uint64_t size);
+  uint64_t get_size();
 
   const char *path() const;
   FileFlags flags() const;
@@ -59,10 +59,10 @@ class FileImpl : public File {
   int fd_;
   bool locked_;
 
-  bool create_persistent_file(const char *path, FileFlags flags);
-  bool create_temporary_file(const char *path_prefix, FileFlags flags);
-  bool open_file(const char *path, FileFlags flags);
-  bool open_or_create_file(const char *path, FileFlags flags);
+  void create_persistent_file(const char *path, FileFlags flags);
+  void create_temporary_file(const char *path_prefix, FileFlags flags);
+  void open_file(const char *path, FileFlags flags);
+  void open_or_create_file(const char *path, FileFlags flags);
 };
 
 }  // namespace storage

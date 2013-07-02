@@ -23,10 +23,12 @@
 #include <sys/stat.h>
 #include <io.h>
 
+#include <cerrno>
 #include <limits>
 #include <new>
 
 #include "grnxx/errno.hpp"
+#include "grnxx/exception.hpp"
 #include "grnxx/logger.hpp"
 #include "grnxx/storage/path.hpp"
 
@@ -51,8 +53,9 @@ FileImpl::~FileImpl() {
       unlock();
     }
     if (!::CloseHandle(handle_)) {
-      GRNXX_ERROR() << "failed to close file: file = " << *this
-                    << ": '::CloseHandle' " << Errno(::GetLastError());
+      Errno errno_copy(::GetLastError());
+      GRNXX_WARNING() << "failed to close file: file = " << *this
+                      << ", call = ::CloseHandle, errno = " << errno_copy;
     }
   }
 }
@@ -62,16 +65,12 @@ FileImpl *FileImpl::create(const char *path, FileFlags flags) {
   std::unique_ptr<FileImpl> file(new (std::nothrow) FileImpl);
   if (!file) {
     GRNXX_ERROR() << "new grnxx::storage::FileImpl failed";
-    return nullptr;
+    throw MemoryError();
   }
   if (path && (~flags & FILE_TEMPORARY)) {
-    if (!file->create_persistent_file(path, flags)) {
-      return nullptr;
-    }
+    file->create_persistent_file(path, flags);
   } else {
-    if (!file->create_temporary_file(path, flags)) {
-      return nullptr;
-    }
+    file->create_temporary_file(path, flags);
   }
   return file.release();
 }
@@ -79,42 +78,43 @@ FileImpl *FileImpl::create(const char *path, FileFlags flags) {
 FileImpl *FileImpl::open(const char *path, FileFlags flags) {
   if (!path) {
     GRNXX_ERROR() << "invalid argument: path = nullptr";
-    return nullptr;
+    throw LogicError();
   }
   std::unique_ptr<FileImpl> file(new (std::nothrow) FileImpl);
   if (!file) {
     GRNXX_ERROR() << "new grnxx::storage::FileImpl failed";
-    return nullptr;
+    throw MemoryError();
   }
-  if (!file->open_file(path, flags)) {
-    return nullptr;
-  }
+  file->open_file(path, flags);
   return file.release();
 }
 
 FileImpl *FileImpl::open_or_create(const char *path, FileFlags flags) {
   if (!path) {
     GRNXX_ERROR() << "invalid argument: path = nullptr";
-    return nullptr;
+    throw LogicError();
   }
   std::unique_ptr<FileImpl> file(new (std::nothrow) FileImpl);
   if (!file) {
     GRNXX_ERROR() << "new grnxx::storage::FileImpl failed";
-    return nullptr;
+    throw MemoryError();
   }
-  if (!file->open_or_create_file(path, flags)) {
-    return nullptr;
-  }
+  file->open_or_create_file(path, flags);
   return file.release();
 }
 
 bool FileImpl::exists(const char *path) {
   if (!path) {
     GRNXX_ERROR() << "invalid argument: path = nullptr";
-    return false;
+    throw LogicError();
   }
   struct _stat stat;
   if (::_stat(path, &stat) != 0) {
+    if (errno != ENOENT) {
+      Errno errno_copy(errno);
+      GRNXX_WARNING() << "failed to get file information: "
+                      << "call = ::_stat, errno = " << errno_copy;
+    }
     return false;
   }
   return stat.st_mode & _S_IFREG;
@@ -123,26 +123,30 @@ bool FileImpl::exists(const char *path) {
 bool FileImpl::unlink(const char *path) {
   if (!path) {
     GRNXX_ERROR() << "invalid argument: path = nullptr";
+    throw LogicError();
+  }
+  if (!exists(path)) {
     return false;
   }
   if (!::DeleteFile(path)) {
+    Errno errno_copy(::GetLastError());
     GRNXX_WARNING() << "failed to unlink file: path = " << path
-                    << ": '::DeleteFile' " << Errno(::GetLastError());
+                    << ", call = ::DeleteFile, errno = " << errno_copy;
     return false;
   }
   return true;
 }
 
-bool FileImpl::try_lock(FileLockMode mode) {
+bool FileImpl::lock(FileLockMode mode) {
   if (locked_) {
     GRNXX_ERROR() << "already locked: path = " << path_.get();
-    return false;
+    throw LogicError();
   }
   FileLockFlags lock_type =
       lock_flags & (FILE_LOCK_SHARED | FILE_LOCK_EXCLUSIVE);
   if (!lock_type || (lock_type == (FILE_LOCK_SHARED | FILE_LOCK_EXCLUSIVE))) {
     GRNXX_ERROR() << "invalid argument: lock_flags == " << lock_flags;
-    return false;
+    throw LogicError();
   }
   DWORD flags = LOCKFILE_FAIL_IMMEDIATELY;
   if (lock_flags & FILE_LOCK_SHARED) {
@@ -164,79 +168,78 @@ bool FileImpl::try_lock(FileLockMode mode) {
       // The file is locked by others.
       return false;
     }
+    Errno errno_copy(last_error);
     GRNXX_ERROR() << "failed to lock file: path = " << path_.get()
                   << ", mode = " << mode
-                  << ": '::LockFileEx' " << Errno(last_error);
-    return false;
+                  << ", call = ::LockFileEx, errno = " << errno_copy;
+    throw SystemError(errno_copy);
   }
   locked_ = true;
   return true;
 }
 
-bool FileImpl::unlock() {
+void FileImpl::unlock() {
   if (!locked_) {
     GRNXX_WARNING() << "unlocked: path = " << path_.get();
-    return false;
+    throw LogicError();
   }
-
   OVERLAPPED overlapped;
   overlapped.Offset = 0;
   overlapped.OffsetHigh = 0x80000000U;
   if (!::UnlockFileEx(handle_, 0, 0, 0x80000000U, &overlapped)) {
+    Errno errno_copy(::GetLastError());
     GRNXX_ERROR() << "failed to unlock file: path = " << path_.get()
-                  << ": '::UnlockFileEx' " << Errno(::GetLastError());
-    return false;
+                  << ", call = ::UnlockFileEx, errno = " << errno_copy;
+    throw SystemError(errno_copy);
   }
   locked_ = false;
-  return true;
 }
 
 void FileImpl::sync() {
   if (!::FlushFileBuffers(handle_)) {
+    Errno errno_copy(::GetLastError());
     GRNXX_ERROR() << "failed to sync file: path = " << path_.get()
-                  << ": '::FlushFileBuffers' " << Errno(::GetLastError());
-    return false;
+                  << ", call = ::FlushFileBuffers, errno = " << errno_copy;
+    throw SystemError(errno_copy);
   }
-  return true;
 }
 
-bool FileImpl::resize(uint64_t size) {
+void FileImpl::resize(uint64_t size) {
   if (flags_ & FILE_READ_ONLY) {
-    GRNXX_ERROR() << "read-only";
-    return false;
+    GRNXX_ERROR() << "invalid operation: flags = " << flags_;
+    throw LogicError();
   }
   if (size > static_cast<uint64_t>(std::numeric_limits<LONGLONG>::max())) {
     GRNXX_ERROR() << "invalid argument: size = " << size;
-    return false;
+    throw LogicError();
   }
   LARGE_INTEGER request;
   request.QuadPart = size;
   if (!::SetFilePointerEx(handle_, request, nullptr, FILE_BEGIN)) {
+    Errno errno_copy(::GetLastError());
     GRNXX_ERROR() << "failed to seek file: path = " << path_.get()
                   << ", offset = " << offset << ", whence = " << whence
-                  << ": '::SetFilePointerEx' " << Errno(::GetLastError());
-    return false;
+                  << ", call = ::SetFilePointerEx, errno = " << errno_copy;
+    throw SystemError(errno_copy);
   }
   if (!::SetEndOfFile(handle_)) {
+    Errno errno_copy(::GetLastError());
     GRNXX_ERROR() << "failed to resize file: path = " << path_.get()
                   << ", size = " << size
-                  << ": '::SetEndOfFile' " << Errno(::GetLastError());
-    return false;
+                  << ", call = ::SetEndOfFile, errno = " << errno_copy;
+    throw SystemError(errno_copy);
   }
-  return true;
 }
 
-bool FileImpl::get_size(uint64_t *size) {
+uint64_t FileImpl::get_size() {
   LARGE_INTEGER file_size;
   if (!::GetFileSizeEx(handle_, &file_size)) {
+    Errno errno_copy(::GetLastError());
     GRNXX_ERROR() << "failed to get file size: path = " << path_.get()
                   << ": '::GetFileSizeEx' " << Errno(::GetLastError());
-    return false;
+    throw SystemError(errno_copy);
   }
-  if (size) {
-    *size = file_size.QuadPart;
-  }
-  return true;
+  return file_size.QuadPart;
 }
 
 const char *FileImpl::path() const {
@@ -251,15 +254,12 @@ const void *FileImpl::handle() const {
   return &handle_;
 }
 
-bool FileImpl::create_persistent_file(const char *path, FileFlags flags) {
+void FileImpl::create_persistent_file(const char *path, FileFlags flags) {
   if (!path) {
     GRNXX_ERROR() << "invalid argument: path = nullptr";
-    return false;
+    throw LogicError();
   }
   path_.reset(Path::clone_path(path));
-  if (!path_) {
-    return false;
-  }
   const DWORD desired_access = GENERIC_READ | GENERIC_WRITE;
   const DWORD share_mode =
       FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE;
@@ -268,42 +268,41 @@ bool FileImpl::create_persistent_file(const char *path, FileFlags flags) {
   handle_ = ::CreateFileA(path, desired_access, share_mode, nullptr,
                           creation_disposition, flags_and_attributes, nullptr);
   if (handle_ == INVALID_HANDLE_VALUE) {
+    Errno errno_copy(::GetLastError());
     GRNXX_ERROR() << "failed to open file: path = " << path
                   << ", flags = " << flags
-                  << ": '::CreateFileA' " << Errno(::GetLastError());
-    return false;
+                  << ", call = ::CreateFileA, errno = " << errno_copy;
+    throw SystemError(errno_copy);
   }
-  return true;
 }
 
-bool FileImpl::create_temporary_file(const char *path, FileFlags flags) {
+void FileImpl::create_temporary_file(const char *path, FileFlags flags) {
   flags_ = FILE_TEMPORARY;
   const DWORD desired_access = GENERIC_READ | GENERIC_WRITE;
   const DWORD share_mode = FILE_SHARE_DELETE;
   const DWORD creation_disposition = CREATE_NEW;
   const DWORD flags_and_attributes = FILE_ATTRIBUTE_TEMPORARY |
                                      FILE_FLAG_DELETE_ON_CLOSE;
+  Errno errno_copy;
   for (int i = 0; i < UNIQUE_PATH_GENERATION_TRIAL_COUNT; ++i) {
     path_.reset(Path::unique_path(path));
     handle_ = ::CreateFileA(path_.get(), desired_access,
                             share_mode, nullptr, creation_disposition,
                             flags_and_attributes, nullptr);
     if (handle_ != INVALID_HANDLE_VALUE) {
-      return true;
+      return;
     }
+    errno_copy = Errno(::GetLastError());
     GRNXX_WARNING() << "failed to create file: path = " << path_.get()
-                    << ": '::CreateFileA' " << Errno(::GetLastError());
+                    << ", call = ::CreateFileA, errno = " << errno_copy;
   }
-  GRNXX_ERROR() << "failed to create temporary file: path = " << path
-                << ", flags = " << flags;
-  return false;
+  GRNXX_ERROR() << "failed to create temporary file: "
+                << "path = " << path << ", flags = " << flags;
+  throw SystemError(errno_copy);
 }
 
-bool FileImpl::open_file(const char *path, FileFlags flags) {
+void FileImpl::open_file(const char *path, FileFlags flags) {
   path_.reset(Path::clone_path(path));
-  if (!path_) {
-    return false;
-  }
   DWORD desired_access = GENERIC_READ | GENERIC_WRITE;
   if (flags_ & FILE_READ_ONLY) {
     flags_ |= FILE_READ_ONLY;
@@ -316,19 +315,16 @@ bool FileImpl::open_file(const char *path, FileFlags flags) {
   handle_ = ::CreateFileA(path, desired_access, share_mode, nullptr,
                           creation_disposition, flags_and_attributes, nullptr);
   if (handle_ == INVALID_HANDLE_VALUE) {
+    Errno errno_copy(::GetLastError());
     GRNXX_ERROR() << "failed to open file: path = " << path
                   << ", flags = " << flags
-                  << ": '::CreateFileA' " << Errno(::GetLastError());
-    return false;
+                  << ", call = ::CreateFileA, errno = " << errno_copy;
+    throw SystemError(errno_copy);
   }
-  return true;
 }
 
-bool FileImpl::open_or_create_file(const char *path, FileFlags flags) {
+void FileImpl::open_or_create_file(const char *path, FileFlags flags) {
   path_.reset(Path::clone_path(path));
-  if (!path_) {
-    return false;
-  }
   const DWORD desired_access = GENERIC_READ | GENERIC_WRITE;
   const DWORD share_mode =
       FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE;
@@ -337,12 +333,12 @@ bool FileImpl::open_or_create_file(const char *path, FileFlags flags) {
   handle_ = ::CreateFileA(path, desired_access, share_mode, nullptr,
                           creation_disposition, flags_and_attributes, nullptr);
   if (handle_ == INVALID_HANDLE_VALUE) {
+    Errno errno_copy(::GetLastError());
     GRNXX_ERROR() << "failed to open file: path = " << path
                   << ", flags = " << flags
-                  << ": '::CreateFileA' " << Errno(::GetLastError());
-    return false;
+                  << ", call = ::CreateFileA, errno = " << errno_copy;
+    throw SystemError(errno_copy);
   }
-  return true;
 }
 
 }  // namespace storage

@@ -81,17 +81,17 @@ class File {
   // Try to lock a file and return true on success.
   // Note that the file is accessible even if it is locked (advisory).
   virtual bool lock(FileLockFlags lock_flags) = 0;
-  // Unlock a file and return true on success.
-  virtual bool unlock() = 0;
+  // Unlock a file.
+  virtual void unlock() = 0;
 
   // Flush modified pages and return true on success.
-  virtual bool sync() = 0;
+  virtual void sync() = 0;
 
   // Extend or truncate a file to "size" bytes.
   // Note that the contents of the extended part are undefined.
-  virtual bool resize(uint64_t size) = 0;
+  virtual void resize(uint64_t size) = 0;
   // Return the file size on success, or a negative value on failure.
-  virtual bool get_size(uint64_t *size) = 0;
+  virtual uint64_t get_size() = 0;
 
   // Return the file path.
   virtual const char *path() const = 0;

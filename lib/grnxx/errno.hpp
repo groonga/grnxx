@@ -33,6 +33,7 @@ enum ErrnoType {
 
 class GRNXX_EXPORT Errno {
  public:
+  Errno() = default;
   // For errno.
   explicit Errno(int error_code)
       : type_(STANDARD_ERRNO),

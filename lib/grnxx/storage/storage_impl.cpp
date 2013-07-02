@@ -425,9 +425,8 @@ bool StorageImpl::create_file_backed_storage(const char *path,
   if (!header_file) {
     return false;
   }
-  if (!header_file->resize(ROOT_CHUNK_SIZE)) {
-    return false;
-  }
+  // TODO: This may throw.
+  header_file->resize(ROOT_CHUNK_SIZE);
   std::unique_ptr<Chunk> root_chunk(
       create_chunk(header_file.get(), 0, ROOT_CHUNK_SIZE));
   if (!root_chunk) {
@@ -547,9 +546,8 @@ bool StorageImpl::open_or_create_storage(const char *path, StorageFlags flags,
     if (!header_file) {
       return false;
     }
-    if (!header_file->resize(ROOT_CHUNK_SIZE)) {
-      return false;
-    }
+    // TODO: This may throw.
+    header_file->resize(ROOT_CHUNK_SIZE);
     std::unique_ptr<Chunk> root_chunk(
         create_chunk(header_file.get(), 0, ROOT_CHUNK_SIZE));
     if (!root_chunk) {
@@ -1140,19 +1138,15 @@ File *StorageImpl::reserve_file(uint16_t file_id, uint64_t size) {
     }
   }
   // Expand the file if its size is not enough 
-  uint64_t file_size;
-  if (!files_[file_id]->get_size(&file_size)) {
-    return nullptr;
-  }
+  // TODO: This may throw.
+  uint64_t file_size = files_[file_id]->get_size();
   if (file_size < size) {
     Lock file_lock(&header_->file_mutex);
-    if (!files_[file_id]->get_size(&file_size)) {
-      return nullptr;
-    }
+    // TODO: This may throw.
+    file_size = files_[file_id]->get_size();
     if (file_size < size) {
-      if (!files_[file_id]->resize(size)) {
-        return nullptr;
-      }
+      // TODO: This may throw.
+      files_[file_id]->resize(size);
     }
   }
   return files_[file_id].get();
