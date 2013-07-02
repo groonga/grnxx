@@ -20,6 +20,8 @@
 #include "grnxx/charset/euc-jp.hpp"
 #include "grnxx/charset/shift_jis.hpp"
 #include "grnxx/charset/utf-8.hpp"
+#include "grnxx/exception.hpp"
+#include "grnxx/logger.hpp"
 #include "grnxx/string_builder.hpp"
 
 namespace grnxx {
@@ -56,12 +58,11 @@ const Charset *Charset::get(CharsetCode code) {
     case CHARSET_UTF_8: {
       return charset::UTF_8::get();
     }
-    case CHARSET_UNKNOWN: {
-      break;
+    default: {
+      GRNXX_ERROR() << "invalid argument: code = " << code;
+      throw LogicError();
     }
   }
-  // TODO: Error handling.
-  return nullptr;
 }
 
 }  // namespace grnxx
