@@ -40,11 +40,11 @@ class Array1D {
   Array1D();
   ~Array1D();
 
-  bool create(Storage *storage, uint32_t storage_node_id,
+  void create(Storage *storage, uint32_t storage_node_id,
               uint64_t value_size, uint64_t page_size,
               const void *default_value = nullptr,
               FillPage fill_page = nullptr);
-  bool open(Storage *storage, uint32_t storage_node_id,
+  void open(Storage *storage, uint32_t storage_node_id,
             uint64_t value_size, uint64_t page_size);
 
   static bool unlink(Storage *storage, uint32_t storage_node_id,
@@ -55,7 +55,7 @@ class Array1D {
   }
 
   template <typename T>
-  T *get_page() {
+  T *get_page(uint64_t) {
     return static_cast<T *>(page_);
   }
 
@@ -72,12 +72,12 @@ class Array2D {
   Array2D();
   ~Array2D();
 
-  bool create(Storage *storage, uint32_t storage_node_id,
+  void create(Storage *storage, uint32_t storage_node_id,
               uint64_t value_size, uint64_t page_size,
               uint64_t table_size,
               const void *default_value = nullptr,
               FillPage fill_page = nullptr);
-  bool open(Storage *storage, uint32_t storage_node_id,
+  void open(Storage *storage, uint32_t storage_node_id,
             uint64_t value_size, uint64_t page_size,
             uint64_t table_size, FillPage fill_page);
 
@@ -92,9 +92,7 @@ class Array2D {
   template <typename T, uint64_t TABLE_SIZE>
   T *get_page(uint64_t page_id) {
     if (!table_cache_[page_id]) {
-      if (!initialize_page(page_id)) {
-        return nullptr;
-      }
+      initialize_page(page_id);
     }
     return static_cast<T *>(table_cache_[page_id]);
   }
@@ -109,7 +107,7 @@ class Array2D {
   std::unique_ptr<void *[]> table_cache_;
   Mutex mutex_;
 
-  bool initialize_page(uint64_t page_id);
+  void initialize_page(uint64_t page_id);
 };
 
 class Array3D {
@@ -119,13 +117,13 @@ class Array3D {
   Array3D();
   ~Array3D();
 
-  bool create(Storage *storage, uint32_t storage_node_id,
+  void create(Storage *storage, uint32_t storage_node_id,
                uint64_t value_size, uint64_t page_size,
                uint64_t table_size, uint64_t secondary_table_size,
                const void *default_value = nullptr,
                FillPage fill_page = nullptr);
 
-  bool open(Storage *storage, uint32_t storage_node_id,
+  void open(Storage *storage, uint32_t storage_node_id,
             uint64_t value_size, uint64_t page_size,
             uint64_t table_size, uint64_t secondary_table_size,
             FillPage fill_page);
@@ -143,9 +141,7 @@ class Array3D {
     const uint64_t table_id = page_id / TABLE_SIZE;
     page_id %= TABLE_SIZE;
     if (!table_caches_[table_id] || !table_caches_[table_id][page_id]) {
-      if (!initialize_page(table_id, page_id)) {
-        return nullptr;
-      }
+      initialize_page(table_id, page_id);
     }
     return static_cast<T *>(table_caches_[table_id][page_id]);
   }
@@ -162,9 +158,9 @@ class Array3D {
   Mutex table_mutex_;
   Mutex secondary_table_mutex_;
 
-  bool initialize_page(uint64_t table_id, uint64_t page_id);
-  bool initialize_table(uint64_t table_id);
-  bool initialize_secondary_table();
+  void initialize_page(uint64_t table_id, uint64_t page_id);
+  void initialize_table(uint64_t table_id);
+  void initialize_secondary_table();
 };
 
 template <typename T,
@@ -191,18 +187,18 @@ class ArrayImpl<T, PAGE_SIZE, 1, 1> {
   }
 
   // Create an array.
-  bool create(Storage *storage, uint32_t storage_node_id) {
-    return impl_.create(storage, storage_node_id, sizeof(Value), PAGE_SIZE);
+  void create(Storage *storage, uint32_t storage_node_id) {
+    impl_.create(storage, storage_node_id, sizeof(Value), PAGE_SIZE);
   }
   // Create an array with the default value.
-  bool create(Storage *storage, uint32_t storage_node_id,
+  void create(Storage *storage, uint32_t storage_node_id,
               ValueArg default_value) {
-    return impl_.create(storage, storage_node_id, sizeof(Value), PAGE_SIZE,
-                        &default_value, fill_page);
+    impl_.create(storage, storage_node_id, sizeof(Value), PAGE_SIZE,
+                 &default_value, fill_page);
   }
   // Open an array.
-  bool open(Storage *storage, uint32_t storage_node_id) {
-    return impl_.open(storage, storage_node_id, sizeof(Value), PAGE_SIZE);
+  void open(Storage *storage, uint32_t storage_node_id) {
+    impl_.open(storage, storage_node_id, sizeof(Value), PAGE_SIZE);
   }
 
   // Unlink an array.
@@ -237,7 +233,8 @@ class ArrayImpl<T, PAGE_SIZE, 1, 1> {
   bool get(uint64_t value_id, Value *value) {
     const Value * const page = get_page(value_id / PAGE_SIZE);
     if (value) {
-      *value = page[value_id % PAGE_SIZE];
+      *value = page[value_id];
+//      *value = page[value_id % PAGE_SIZE];
     }
     return true;
   }
@@ -245,19 +242,21 @@ class ArrayImpl<T, PAGE_SIZE, 1, 1> {
   // Set a value and return true.
   bool set(uint64_t value_id, ValueArg value) {
     Value * const page = get_page(value_id / PAGE_SIZE);
-    page[value_id % PAGE_SIZE] = value;
+    page[value_id] = value;
+//    page[value_id % PAGE_SIZE] = value;
     return true;
   }
 
   // Get a value and return its address.
   Value *get_pointer(uint64_t value_id) {
     Value * const page = get_page(value_id / PAGE_SIZE);
-    return &page[value_id % PAGE_SIZE];
+    return &page[value_id];
+//    return &page[value_id % PAGE_SIZE];
   }
 
   // Get a page and return its starting address.
-  Value *get_page(uint64_t) {
-    return impl_.get_page<Value>();
+  Value *get_page(uint64_t page_id) {
+    return impl_.get_page<Value>(page_id);
   }
 
  private:
@@ -292,20 +291,20 @@ class ArrayImpl<T, PAGE_SIZE, TABLE_SIZE, 1> {
   }
 
   // Create an array.
-  bool create(Storage *storage, uint32_t storage_node_id) {
-    return impl_.create(storage, storage_node_id, sizeof(Value), PAGE_SIZE,
-                        TABLE_SIZE);
+  void create(Storage *storage, uint32_t storage_node_id) {
+    impl_.create(storage, storage_node_id, sizeof(Value), PAGE_SIZE,
+                 TABLE_SIZE);
   }
   // Create an array with the default value.
-  bool create(Storage *storage, uint32_t storage_node_id,
+  void create(Storage *storage, uint32_t storage_node_id,
               ValueArg default_value) {
-    return impl_.create(storage, storage_node_id, sizeof(Value), PAGE_SIZE,
-                        TABLE_SIZE, &default_value, fill_page);
+    impl_.create(storage, storage_node_id, sizeof(Value), PAGE_SIZE,
+                 TABLE_SIZE, &default_value, fill_page);
   }
   // Open an array.
-  bool open(Storage *storage, uint32_t storage_node_id) {
-    return impl_.open(storage, storage_node_id, sizeof(Value), PAGE_SIZE,
-                      TABLE_SIZE, fill_page);
+  void open(Storage *storage, uint32_t storage_node_id) {
+    impl_.open(storage, storage_node_id, sizeof(Value), PAGE_SIZE,
+               TABLE_SIZE, fill_page);
   }
 
   // Unlink an array.
@@ -340,9 +339,6 @@ class ArrayImpl<T, PAGE_SIZE, TABLE_SIZE, 1> {
   // The value is assigned to "*value" iff "value" != nullptr.
   bool get(uint64_t value_id, Value *value) {
     const Value * const page = get_page(value_id / PAGE_SIZE);
-    if (!page) {
-      return false;
-    }
     if (value) {
       *value = page[value_id % PAGE_SIZE];
     }
@@ -352,9 +348,6 @@ class ArrayImpl<T, PAGE_SIZE, TABLE_SIZE, 1> {
   // Set a value and return true on success.
   bool set(uint64_t value_id, ValueArg value) {
     Value * const page = get_page(value_id / PAGE_SIZE);
-    if (!page) {
-      return false;
-    }
     page[value_id % PAGE_SIZE] = value;
     return true;
   }
@@ -362,9 +355,6 @@ class ArrayImpl<T, PAGE_SIZE, TABLE_SIZE, 1> {
   // Get a value and return its address on success.
   Value *get_pointer(uint64_t value_id) {
     Value * const page = get_page(value_id / PAGE_SIZE);
-    if (!page) {
-      return nullptr;
-    }
     return &page[value_id % PAGE_SIZE];
   }
 
@@ -410,21 +400,20 @@ class ArrayImpl {
   }
 
   // Create an array.
-  bool create(Storage *storage, uint32_t storage_node_id) {
-    return impl_.create(storage, storage_node_id, sizeof(Value), PAGE_SIZE,
-                        TABLE_SIZE, SECONDARY_TABLE_SIZE);
+  void create(Storage *storage, uint32_t storage_node_id) {
+    impl_.create(storage, storage_node_id, sizeof(Value), PAGE_SIZE,
+                 TABLE_SIZE, SECONDARY_TABLE_SIZE);
   }
   // Create an array with the default value.
-  bool create(Storage *storage, uint32_t storage_node_id,
+  void create(Storage *storage, uint32_t storage_node_id,
               ValueArg default_value) {
-    return impl_.create(storage, storage_node_id, sizeof(Value), PAGE_SIZE,
-                        TABLE_SIZE, SECONDARY_TABLE_SIZE, &default_value,
-                        fill_page);
+    impl_.create(storage, storage_node_id, sizeof(Value), PAGE_SIZE,
+                 TABLE_SIZE, SECONDARY_TABLE_SIZE, &default_value, fill_page);
   }
   // Open an array.
-  bool open(Storage *storage, uint32_t storage_node_id) {
-    return impl_.open(storage, storage_node_id, sizeof(Value), PAGE_SIZE,
-                      TABLE_SIZE, SECONDARY_TABLE_SIZE, fill_page);
+  void open(Storage *storage, uint32_t storage_node_id) {
+    impl_.open(storage, storage_node_id, sizeof(Value), PAGE_SIZE,
+               TABLE_SIZE, SECONDARY_TABLE_SIZE, fill_page);
   }
 
   // Unlink an array.
@@ -459,9 +448,6 @@ class ArrayImpl {
   // The value is assigned to "*value" iff "value" != nullptr.
   bool get(uint64_t value_id, Value *value) {
     const Value * const page = get_page(value_id / PAGE_SIZE);
-    if (!page) {
-      return false;
-    }
     if (value) {
       *value = page[value_id % PAGE_SIZE];
     }
@@ -471,9 +457,6 @@ class ArrayImpl {
   // Set a value and return true on success.
   bool set(uint64_t value_id, ValueArg value) {
     Value * const page = get_page(value_id / PAGE_SIZE);
-    if (!page) {
-      return false;
-    }
     page[value_id % PAGE_SIZE] = value;
     return true;
   }
@@ -481,9 +464,6 @@ class ArrayImpl {
   // Get a value and return its address on success.
   Value *get_pointer(uint64_t value_id) {
     Value * const page = get_page(value_id / PAGE_SIZE);
-    if (!page) {
-      return nullptr;
-    }
     return &page[value_id % PAGE_SIZE];
   }
 

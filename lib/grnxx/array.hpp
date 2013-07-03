@@ -62,9 +62,7 @@ class Array {
   // Create an array.
   static Array *create(Storage *storage, uint32_t storage_node_id) {
     std::unique_ptr<Array> array(create_instance());
-    if (!array->impl_.create(storage, storage_node_id)) {
-      return nullptr;
-    }
+    array->impl_.create(storage, storage_node_id);
     return array.release();
   }
 
@@ -72,18 +70,14 @@ class Array {
   static Array *create(Storage *storage, uint32_t storage_node_id,
                        ValueArg default_value) {
     std::unique_ptr<Array> array(create_instance());
-    if (!array->impl_.create(storage, storage_node_id, default_value)) {
-      return nullptr;
-    }
+    array->impl_.create(storage, storage_node_id, default_value);
     return array.release();
   }
 
   // Open an array.
   static Array *open(Storage *storage, uint32_t storage_node_id) {
     std::unique_ptr<Array> array(create_instance());
-    if (!array->impl_.open(storage, storage_node_id)) {
-      return nullptr;
-    }
+    array->impl_.open(storage, storage_node_id);
     return array.release();
   }
 
@@ -173,9 +167,7 @@ class Array<bool, PAGE_SIZE_IN_BITS, TABLE_SIZE, SECONDARY_TABLE_SIZE> {
   // Create an array.
   static Array *create(Storage *storage, uint32_t storage_node_id) {
     std::unique_ptr<Array> array(create_instance());
-    if (!array->units_.create(storage, storage_node_id)) {
-      return nullptr;
-    }
+    array->units_.create(storage, storage_node_id);
     return array.release();
   }
 
@@ -183,19 +175,15 @@ class Array<bool, PAGE_SIZE_IN_BITS, TABLE_SIZE, SECONDARY_TABLE_SIZE> {
   static Array *create(Storage *storage, uint32_t storage_node_id,
                        ValueArg default_value) {
     std::unique_ptr<Array> array(create_instance());
-    if (!array->units_.create(storage, storage_node_id,
-                              default_value ? ~Unit(0) : Unit(0))) {
-      return nullptr;
-    }
+    array->units_.create(storage, storage_node_id,
+                         default_value ? ~Unit(0) : Unit(0));
     return array.release();
   }
 
   // Open an array.
   static Array *open(Storage *storage, uint32_t storage_node_id) {
     std::unique_ptr<Array> array(create_instance());
-    if (!array->units_.open(storage, storage_node_id)) {
-      return nullptr;
-    }
+    array->units_.open(storage, storage_node_id);
     return array.release();
   }
 
@@ -235,9 +223,6 @@ class Array<bool, PAGE_SIZE_IN_BITS, TABLE_SIZE, SECONDARY_TABLE_SIZE> {
   bool get(uint64_t value_id, Value *value) {
     const uint64_t unit_id = value_id / UNIT_SIZE;
     const Unit * const page = get_page(unit_id / PAGE_SIZE);
-    if (!page) {
-      return false;
-    }
     if (value) {
       *value = (page[unit_id % PAGE_SIZE] &
                 (Unit(1) << (value_id % UNIT_SIZE))) != 0;
@@ -251,9 +236,6 @@ class Array<bool, PAGE_SIZE_IN_BITS, TABLE_SIZE, SECONDARY_TABLE_SIZE> {
   bool set(uint64_t value_id, ValueArg value) {
     const uint64_t unit_id = value_id / UNIT_SIZE;
     Unit * const page = get_page(unit_id / PAGE_SIZE);
-    if (!page) {
-      return false;
-    }
     if (value) {
       page[unit_id % PAGE_SIZE] |= Unit(1) << (value_id % UNIT_SIZE);
     } else {

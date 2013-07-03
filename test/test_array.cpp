@@ -104,7 +104,6 @@ void test_array() {
 
   // Create an Array and test its member functions.
   array.reset(array->create(storage.get(), grnxx::STORAGE_ROOT_NODE_ID));
-  assert(array);
   assert(array->page_size() == PAGE_SIZE);
   assert(array->table_size() == TABLE_SIZE);
   assert(array->secondary_table_size() == SECONDARY_TABLE_SIZE);
@@ -139,7 +138,6 @@ void test_array() {
   // Create an Array with default value.
   array.reset(array->create(storage.get(), grnxx::STORAGE_ROOT_NODE_ID,
                             values[0]));
-  assert(array);
   for (std::uint64_t i = 0; i < array->size(); ++i) {
     T value;
     assert(array->get(i, &value));
@@ -164,7 +162,6 @@ void test_bit_array() {
 
   // Create an Array and test its member functions.
   array.reset(array->create(storage.get(), grnxx::STORAGE_ROOT_NODE_ID));
-  assert(array);
   assert(array->unit_size() == (sizeof(Unit) * 8));
   assert(array->page_size() == PAGE_SIZE);
   assert(array->table_size() == TABLE_SIZE);
@@ -198,7 +195,6 @@ void test_bit_array() {
 
   // Open the Array and get values.
   array.reset(array->open(storage.get(), storage_node_id));
-  assert(array);
   for (std::uint64_t i = 0; i < array->size(); ++i) {
     const bool expected_bit = (units[i / 64] >> (i % 64)) & 1;
     bool stored_bit;
@@ -208,14 +204,12 @@ void test_bit_array() {
 
   // Create Arrays with default value.
   array.reset(array->create(storage.get(), grnxx::STORAGE_ROOT_NODE_ID, false));
-  assert(array);
   for (std::uint64_t i = 0; i < array->size(); ++i) {
     bool bit;
     assert(array->get(i, &bit));
     assert(!bit);
   }
   array.reset(array->create(storage.get(), grnxx::STORAGE_ROOT_NODE_ID, true));
-  assert(array);
   for (std::uint64_t i = 0; i < array->size(); ++i) {
     bool bit;
     assert(array->get(i, &bit));

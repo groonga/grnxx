@@ -21,6 +21,7 @@
 #include "grnxx/features.hpp"
 
 #include "grnxx/array_impl.hpp"
+#include "grnxx/exception.hpp"
 #include "grnxx/logger.hpp"
 #include "grnxx/map.hpp"
 #include "grnxx/storage.hpp"
@@ -174,11 +175,8 @@ class KeyIDArray {
   static KeyIDArray *create_instance() {
     KeyIDArray * const array = new (std::nothrow) KeyIDArray;
     if (!array) {
-      GRNXX_ERROR() << "new grnxx::Array failed: "
-                    << "value_size = " << sizeof(Value)
-                    << ", page_size = " << page_size()
-                    << ", table_size = " << table_size()
-                    << ", secondary_table_size = " << secondary_table_size();
+      GRNXX_ERROR() << "new grnxx::map::hash_table::KeyIDArray failed";
+      throw MemoryError();
     }
     return array;
   }
@@ -192,15 +190,17 @@ class KeyIDArray {
       return false;
     }
     storage_node_id_ = storage_node.id();
-    header_ = static_cast<KeyIDArrayHeader *>(storage_node.body());
-    *header_ = KeyIDArrayHeader();
-    if (!impl_.create(storage, storage_node_id_, MAP_INVALID_KEY_ID)) {
+    try {
+      header_ = static_cast<KeyIDArrayHeader *>(storage_node.body());
+      *header_ = KeyIDArrayHeader();
+      impl_.create(storage, storage_node_id_, MAP_INVALID_KEY_ID);
+      mask_ = mask;
+      header_->impl_storage_node_id = impl_.storage_node_id();
+      header_->mask = mask_;
+    } catch (...) {
       storage_->unlink_node(storage_node_id_);
-      return false;
+      throw;
     }
-    mask_ = mask;
-    header_->impl_storage_node_id = impl_.storage_node_id();
-    header_->mask = mask_;
     return true;
   }
 
@@ -212,9 +212,7 @@ class KeyIDArray {
     }
     storage_node_id_ = storage_node.id();
     header_ = static_cast<KeyIDArrayHeader *>(storage_node.body());
-    if (!impl_.open(storage, header_->impl_storage_node_id)) {
-      return false;
-    }
+    impl_.open(storage, header_->impl_storage_node_id);
     mask_ = header_->mask;
     return true;
   }
