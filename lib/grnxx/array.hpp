@@ -20,12 +20,10 @@
 
 #include "grnxx/features.hpp"
 
-#include <cstring>
 #include <memory>
 #include <new>
 
 #include "grnxx/array_impl.hpp"
-#include "grnxx/logger.hpp"
 #include "grnxx/traits.hpp"
 #include "grnxx/types.hpp"
 
@@ -36,6 +34,11 @@ class Storage;
 constexpr uint64_t ARRAY_DEFAULT_PAGE_SIZE            = 1ULL << 16;
 constexpr uint64_t ARRAY_DEFAULT_TABLE_SIZE           = 1ULL << 12;
 constexpr uint64_t ARRAY_DEFAULT_SECONDARY_TABLE_SIZE = 1ULL << 12;
+
+class ArrayErrorHandler {
+ public:
+  static void throw_memory_error();
+};
 
 template <typename T,
           uint64_t PAGE_SIZE = ARRAY_DEFAULT_PAGE_SIZE,
@@ -59,9 +62,6 @@ class Array {
   // Create an array.
   static Array *create(Storage *storage, uint32_t storage_node_id) {
     std::unique_ptr<Array> array(create_instance());
-    if (!array) {
-      return nullptr;
-    }
     if (!array->impl_.create(storage, storage_node_id)) {
       return nullptr;
     }
@@ -72,9 +72,6 @@ class Array {
   static Array *create(Storage *storage, uint32_t storage_node_id,
                        ValueArg default_value) {
     std::unique_ptr<Array> array(create_instance());
-    if (!array) {
-      return nullptr;
-    }
     if (!array->impl_.create(storage, storage_node_id, default_value)) {
       return nullptr;
     }
@@ -84,9 +81,6 @@ class Array {
   // Open an array.
   static Array *open(Storage *storage, uint32_t storage_node_id) {
     std::unique_ptr<Array> array(create_instance());
-    if (!array) {
-      return nullptr;
-    }
     if (!array->impl_.open(storage, storage_node_id)) {
       return nullptr;
     }
@@ -146,11 +140,7 @@ class Array {
   static Array *create_instance() {
     Array * const array = new (std::nothrow) Array;
     if (!array) {
-      GRNXX_ERROR() << "new grnxx::Array failed: "
-                    << "value_size = " << sizeof(Value)
-                    << ", page_size = " << PAGE_SIZE
-                    << ", table_size = " << TABLE_SIZE
-                    << ", secondary_table_size = " << SECONDARY_TABLE_SIZE;
+      ArrayErrorHandler::throw_memory_error();
     }
     return array;
   }
@@ -183,9 +173,6 @@ class Array<bool, PAGE_SIZE_IN_BITS, TABLE_SIZE, SECONDARY_TABLE_SIZE> {
   // Create an array.
   static Array *create(Storage *storage, uint32_t storage_node_id) {
     std::unique_ptr<Array> array(create_instance());
-    if (!array) {
-      return nullptr;
-    }
     if (!array->units_.create(storage, storage_node_id)) {
       return nullptr;
     }
@@ -196,9 +183,6 @@ class Array<bool, PAGE_SIZE_IN_BITS, TABLE_SIZE, SECONDARY_TABLE_SIZE> {
   static Array *create(Storage *storage, uint32_t storage_node_id,
                        ValueArg default_value) {
     std::unique_ptr<Array> array(create_instance());
-    if (!array) {
-      return nullptr;
-    }
     if (!array->units_.create(storage, storage_node_id,
                               default_value ? ~Unit(0) : Unit(0))) {
       return nullptr;
@@ -209,9 +193,6 @@ class Array<bool, PAGE_SIZE_IN_BITS, TABLE_SIZE, SECONDARY_TABLE_SIZE> {
   // Open an array.
   static Array *open(Storage *storage, uint32_t storage_node_id) {
     std::unique_ptr<Array> array(create_instance());
-    if (!array) {
-      return nullptr;
-    }
     if (!array->units_.open(storage, storage_node_id)) {
       return nullptr;
     }
@@ -298,11 +279,7 @@ class Array<bool, PAGE_SIZE_IN_BITS, TABLE_SIZE, SECONDARY_TABLE_SIZE> {
   static Array *create_instance() {
     Array * const array = new (std::nothrow) Array;
     if (!array) {
-      GRNXX_ERROR() << "new grnxx::Array failed: "
-                    << "value_size = " << sizeof(Value)
-                    << ", page_size = " << PAGE_SIZE
-                    << ", table_size = " << TABLE_SIZE
-                    << ", secondary_table_size = " << SECONDARY_TABLE_SIZE;
+      ArrayErrorHandler::throw_memory_error();
     }
     return array;
   }

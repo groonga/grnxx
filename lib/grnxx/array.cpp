@@ -17,8 +17,14 @@
 */
 #include "grnxx/array.hpp"
 
+#include "grnxx/exception.hpp"
+#include "grnxx/logger.hpp"
+
 namespace grnxx {
 
-// Nothing to do.
+void ArrayErrorHandler::throw_memory_error() {
+  GRNXX_ERROR() << "new grnxx::Array failed";
+  throw MemoryError();
+}
 
 }  // namespace grnxx
