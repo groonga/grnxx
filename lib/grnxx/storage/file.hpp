@@ -84,13 +84,13 @@ class File {
   // Unlock a file.
   virtual void unlock() = 0;
 
-  // Flush modified pages and return true on success.
+  // Flush modified pages.
   virtual void sync() = 0;
 
   // Extend or truncate a file to "size" bytes.
   // Note that the contents of the extended part are undefined.
   virtual void resize(uint64_t size) = 0;
-  // Return the file size on success, or a negative value on failure.
+  // Return the file size.
   virtual uint64_t get_size() = 0;
 
   // Return the file path.

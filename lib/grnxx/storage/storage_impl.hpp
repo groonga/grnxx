@@ -59,7 +59,7 @@ class StorageImpl : public Storage {
 
   bool unlink_node(uint32_t node_id);
 
-  bool sweep(Duration lifetime);
+  void sweep(Duration lifetime);
 
   const char *path() const;
   StorageFlags flags() const;
@@ -84,37 +84,38 @@ class StorageImpl : public Storage {
   Mutex mutex_;
   PeriodicClock clock_;
 
-  bool create_file_backed_storage(const char *path, StorageFlags flags,
+  void create_file_backed_storage(const char *path, StorageFlags flags,
                                   const StorageOptions &options);
-  bool create_anonymous_storage(StorageFlags flags,
+  void create_anonymous_storage(StorageFlags flags,
                                 const StorageOptions &options);
-  bool open_storage(const char *path, StorageFlags flags);
-  bool open_or_create_storage(const char *path, StorageFlags flags,
+  void open_storage(const char *path, StorageFlags flags);
+  void open_or_create_storage(const char *path, StorageFlags flags,
                               const StorageOptions &options);
+  bool unlink_storage();
 
-  bool prepare_pointers();
+  void prepare_pointers();
   void prepare_indexes();
 
   NodeHeader *create_active_node(uint64_t size);
   NodeHeader *find_idle_node(uint64_t size);
   NodeHeader *create_idle_node(uint64_t size);
-  bool divide_idle_node(NodeHeader *node_header, uint64_t size);
-  bool activate_idle_node(NodeHeader *node_header);
+  void divide_idle_node(NodeHeader *node_header, uint64_t size);
+  void activate_idle_node(NodeHeader *node_header);
   NodeHeader *reserve_phantom_node();
   NodeHeader *create_phantom_node();
-  bool associate_node_with_chunk(NodeHeader *node_header,
+  void associate_node_with_chunk(NodeHeader *node_header,
                                  ChunkIndex *chunk_index);
+
+  void sweep_subtree(NodeHeader *node_header);
+  void merge_idle_nodes(NodeHeader *node_header, NodeHeader *next_node_header);
 
   ChunkIndex *create_header_chunk(ChunkIndex **remainder_chunk_index);
   ChunkIndex *create_body_chunk(uint64_t size,
                                 ChunkIndex **remainder_chunk_index);
   ChunkIndex *create_body_chunk(uint64_t size);
 
-  bool sweep_subtree(NodeHeader *node_header);
-  bool merge_idle_nodes(NodeHeader *node_header, NodeHeader *next_node_header);
-
-  bool register_idle_node(NodeHeader *node_header);
-  bool unregister_idle_node(NodeHeader *node_header);
+  void register_idle_node(NodeHeader *node_header);
+  void unregister_idle_node(NodeHeader *node_header);
 
   NodeHeader *get_node_header(uint32_t node_id);
   void *get_node_body(const NodeHeader *node_header);
