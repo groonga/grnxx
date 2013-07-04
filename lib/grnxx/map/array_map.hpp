@@ -76,9 +76,9 @@ class ArrayMap : public Map<T> {
   Header *header_;
   std::unique_ptr<KeyStore<T>> keys_;
 
-  bool create_map(Storage *storage, uint32_t storage_node_id,
+  void create_map(Storage *storage, uint32_t storage_node_id,
                   const MapOptions &options);
-  bool open_map(Storage *storage, uint32_t storage_node_id);
+  void open_map(Storage *storage, uint32_t storage_node_id);
 };
 
 }  // namespace map

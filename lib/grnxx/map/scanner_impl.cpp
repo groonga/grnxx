@@ -22,6 +22,7 @@
 
 #include "grnxx/bytes.hpp"
 #include "grnxx/charset.hpp"
+#include "grnxx/exception.hpp"
 #include "grnxx/logger.hpp"
 #include "grnxx/map.hpp"
 
@@ -40,7 +41,7 @@ ScannerImpl<T> *ScannerImpl<T>::create(Map<T> *map, KeyArg query,
   std::unique_ptr<ScannerImpl> scanner(new (std::nothrow) ScannerImpl);
   if (!scanner) {
     GRNXX_ERROR() << "new grnxx::map::ScannerImpl failed";
-    return nullptr;
+    throw MemoryError();
   }
   scanner->map_ = map;
   scanner->query_ = query;

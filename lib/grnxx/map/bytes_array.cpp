@@ -20,6 +20,7 @@
 #include <cstring>
 #include <new>
 
+#include "grnxx/exception.hpp"
 #include "grnxx/logger.hpp"
 #include "grnxx/map/bytes_store.hpp"
 #include "grnxx/storage.hpp"
@@ -50,40 +51,33 @@ BytesArray *BytesArray::create(Storage *storage, uint32_t storage_node_id,
                                ValueArg default_value) {
   if (!storage) {
     GRNXX_ERROR() << "invalid argument: storage = nullptr";
-    return nullptr;
+    throw LogicError();
   }
   std::unique_ptr<BytesArray> array(new (std::nothrow) BytesArray);
   if (!array) {
     GRNXX_ERROR() << "new grnxx::map::BytesArray failed";
-    return nullptr;
+    throw MemoryError();
   }
-  if (!array->create_array(storage, storage_node_id, default_value)) {
-    return nullptr;
-  }
+  array->create_array(storage, storage_node_id, default_value);
   return array.release();
 }
 
 BytesArray *BytesArray::open(Storage *storage, uint32_t storage_node_id) {
   if (!storage) {
     GRNXX_ERROR() << "invalid argument: storage = nullptr";
-    return nullptr;
+    throw LogicError();
   }
   std::unique_ptr<BytesArray> array(new (std::nothrow) BytesArray);
   if (!array) {
     GRNXX_ERROR() << "new grnxx::map::BytesArray failed";
-    return nullptr;
+    throw MemoryError();
   }
-  if (!array->open_array(storage, storage_node_id)) {
-    return nullptr;
-  }
+  array->open_array(storage, storage_node_id);
   return array.release();
 }
 
 bool BytesArray::unlink(Storage *storage, uint32_t storage_node_id) {
   std::unique_ptr<BytesArray> array(open(storage, storage_node_id));
-  if (!array) {
-    return false;
-  }
   return storage->unlink_node(storage_node_id);
 }
 
@@ -134,50 +128,38 @@ BytesArray::BytesArray()
       ids_(),
       store_() {}
 
-// Create an array with the default value.
-bool BytesArray::create_array(Storage *storage, uint32_t storage_node_id,
+void BytesArray::create_array(Storage *storage, uint32_t storage_node_id,
                               ValueArg default_value) {
   storage_ = storage;
   uint64_t storage_node_size = sizeof(BytesArrayHeader) + default_value.size();
   StorageNode storage_node =
       storage->create_node(storage_node_id, storage_node_size);
-  if (!storage_node) {
-    return false;
-  }
   storage_node_id_ = storage_node.id();
-  header_ = static_cast<BytesArrayHeader *>(storage_node.body());
-  *header_ = BytesArrayHeader();
-  header_->default_value_size = default_value.size();
-  std::memcpy(header_ + 1, default_value.data(), default_value.size());
-  default_value_ = Value(header_ + 1, default_value.size());
-  ids_.reset(IDArray::create(storage, storage_node_id_,
-                             BYTES_STORE_INVALID_BYTES_ID));
-  store_.reset(BytesStore::create(storage, storage_node_id_));
-  if (!ids_ || !store_) {
+  try {
+    header_ = static_cast<BytesArrayHeader *>(storage_node.body());
+    *header_ = BytesArrayHeader();
+    header_->default_value_size = default_value.size();
+    std::memcpy(header_ + 1, default_value.data(), default_value.size());
+    default_value_ = Value(header_ + 1, default_value.size());
+    ids_.reset(IDArray::create(storage, storage_node_id_,
+                               BYTES_STORE_INVALID_BYTES_ID));
+    store_.reset(BytesStore::create(storage, storage_node_id_));
+    header_->ids_storage_node_id = ids_->storage_node_id();
+    header_->store_storage_node_id = store_->storage_node_id();
+  } catch (...) {
     storage->unlink_node(storage_node_id_);
-    return false;
+    throw;
   }
-  header_->ids_storage_node_id = ids_->storage_node_id();
-  header_->store_storage_node_id = store_->storage_node_id();
-  return true;
 }
 
-// Open an array.
-bool BytesArray::open_array(Storage *storage, uint32_t storage_node_id) {
+void BytesArray::open_array(Storage *storage, uint32_t storage_node_id) {
   storage_ = storage;
   StorageNode storage_node = storage->open_node(storage_node_id);
-  if (!storage_node) {
-    return false;
-  }
   storage_node_id_ = storage_node.id();
   header_ = static_cast<BytesArrayHeader *>(storage_node.body());
   default_value_ = Value(header_ + 1, header_->default_value_size);
   ids_.reset(IDArray::open(storage, header_->ids_storage_node_id));
   store_.reset(BytesStore::open(storage, header_->store_storage_node_id));
-  if (!ids_ || !store_) {
-    return false;
-  }
-  return true;
 }
 
 }  // namespace map

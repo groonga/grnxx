@@ -82,9 +82,9 @@ class Patricia : public Map<T> {
   std::unique_ptr<NodeArray> nodes_;
   std::unique_ptr<KeyStore<T>> keys_;
 
-  bool create_map(Storage *storage, uint32_t storage_node_id,
+  void create_map(Storage *storage, uint32_t storage_node_id,
                   const MapOptions &options);
-  bool open_map(Storage *storage, uint32_t storage_node_id);
+  void open_map(Storage *storage, uint32_t storage_node_id);
 
   static uint64_t get_ith_bit(KeyArg key, uint64_t bit_pos);
   static uint64_t count_common_prefix_bits(KeyArg lhs, KeyArg rhs);
@@ -137,9 +137,9 @@ class Patricia<Bytes> : public Map<Bytes> {
   std::unique_ptr<KeyStore<Bytes>> keys_;
   std::unique_ptr<Cache> cache_;
 
-  bool create_map(Storage *storage, uint32_t storage_node_id,
+  void create_map(Storage *storage, uint32_t storage_node_id,
                   const MapOptions &options);
-  bool open_map(Storage *storage, uint32_t storage_node_id);
+  void open_map(Storage *storage, uint32_t storage_node_id);
 
   static uint64_t get_ith_bit(KeyArg key, uint64_t bit_pos);
 };

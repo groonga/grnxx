@@ -20,6 +20,7 @@
 #include <limits>
 
 #include "grnxx/bytes.hpp"
+#include "grnxx/exception.hpp"
 #include "grnxx/geo_point.hpp"
 #include "grnxx/logger.hpp"
 #include "grnxx/map.hpp"
@@ -62,7 +63,7 @@ MapCursor<T>::~MapCursor() {}
 template <typename T>
 bool MapCursor<T>::remove() {
   GRNXX_ERROR() << "invalid operation";
-  return false;
+  throw LogicError();
 }
 
 template class MapCursor<int8_t>;

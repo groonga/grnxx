@@ -20,6 +20,7 @@
 #include <new>
 
 #include "grnxx/bytes.hpp"
+#include "grnxx/exception.hpp"
 #include "grnxx/geo_point.hpp"
 #include "grnxx/intrinsic.hpp"
 #include "grnxx/lock.hpp"
@@ -57,11 +58,9 @@ HashTable<T> *HashTable<T>::create(Storage *storage, uint32_t storage_node_id,
   std::unique_ptr<HashTable> map(new (std::nothrow) HashTable);
   if (!map) {
     GRNXX_ERROR() << "new grnxx::map::HashTable failed";
-    return nullptr;
+    throw MemoryError();
   }
-  if (!map->create_map(storage, storage_node_id, options)) {
-    return nullptr;
-  }
+  map->create_map(storage, storage_node_id, options);
   return map.release();
 }
 
@@ -70,11 +69,9 @@ HashTable<T> *HashTable<T>::open(Storage *storage, uint32_t storage_node_id) {
   std::unique_ptr<HashTable> map(new (std::nothrow) HashTable);
   if (!map) {
     GRNXX_ERROR() << "new grnxx::map::HashTable failed";
-    return nullptr;
+    throw MemoryError();
   }
-  if (!map->open_map(storage, storage_node_id)) {
-    return nullptr;
-  }
+  map->open_map(storage, storage_node_id);
   return map.release();
 }
 
@@ -320,49 +317,39 @@ bool HashTable<T>::truncate() {
 }
 
 template <typename T>
-bool HashTable<T>::create_map(Storage *storage, uint32_t storage_node_id,
+void HashTable<T>::create_map(Storage *storage, uint32_t storage_node_id,
                               const MapOptions &) {
   storage_ = storage;
   StorageNode storage_node =
       storage->create_node(storage_node_id, sizeof(Header));
-  if (!storage_node) {
-    return false;
-  }
   storage_node_id_ = storage_node.id();
-  header_ = static_cast<Header *>(storage_node.body());
-  *header_ = Header();
-  key_ids_.reset(KeyIDArray::create(storage, storage_node_id_,
-                                    KeyIDArray::page_size() - 1));
-  keys_.reset(KeyStore<T>::create(storage, storage_node_id_));
-  if (!key_ids_ || !keys_) {
+  try {
+    header_ = static_cast<Header *>(storage_node.body());
+    *header_ = Header();
+    key_ids_.reset(KeyIDArray::create(storage, storage_node_id_,
+                                      KeyIDArray::page_size() - 1));
+    keys_.reset(KeyStore<T>::create(storage, storage_node_id_));
+    header_->key_ids_storage_node_id = key_ids_->storage_node_id();
+    header_->keys_storage_node_id = keys_->storage_node_id();
+  } catch (...) {
     storage->unlink_node(storage_node_id_);
-    return false;
+    throw;
   }
-  header_->key_ids_storage_node_id = key_ids_->storage_node_id();
-  header_->keys_storage_node_id = keys_->storage_node_id();
-  return true;
 }
 
 template <typename T>
-bool HashTable<T>::open_map(Storage *storage, uint32_t storage_node_id) {
+void HashTable<T>::open_map(Storage *storage, uint32_t storage_node_id) {
   storage_ = storage;
   StorageNode storage_node = storage->open_node(storage_node_id);
-  if (!storage_node) {
-    return false;
-  }
   if (storage_node.size() < sizeof(Header)) {
     GRNXX_ERROR() << "invalid format: size = " << storage_node.size()
                   << ", header_size = " << sizeof(Header);
-    return false;
+    throw LogicError();
   }
   storage_node_id_ = storage_node_id;
   header_ = static_cast<Header *>(storage_node.body());
   key_ids_.reset(KeyIDArray::open(storage, header_->key_ids_storage_node_id));
   keys_.reset(KeyStore<T>::open(storage, header_->keys_storage_node_id));
-  if (!key_ids_ || !keys_) {
-    return false;
-  }
-  return true;
 }
 
 template <typename T>

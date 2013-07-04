@@ -446,9 +446,7 @@ void test_storage_unlink_node() {
 
   storage.reset(grnxx::Storage::create(nullptr));
   node_1 = storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 1 << 20);
-  assert(node_1);
   node_2 = storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 1 << 24);
-  assert(node_2);
 
   assert(storage->unlink_node(node_1.id()));
   assert(node_1.status() == grnxx::STORAGE_NODE_UNLINKED);

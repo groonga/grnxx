@@ -100,10 +100,10 @@ class BytesArray {
   BytesArray();
 
   // Create an array with the default value.
-  bool create_array(Storage *storage, uint32_t storage_node_id,
+  void create_array(Storage *storage, uint32_t storage_node_id,
                     ValueArg default_value);
   // Open an array.
-  bool open_array(Storage *storage, uint32_t storage_node_id);
+  void open_array(Storage *storage, uint32_t storage_node_id);
 };
 
 }  // namespace map

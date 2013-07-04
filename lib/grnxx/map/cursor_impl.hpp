@@ -50,7 +50,7 @@ class AllKeysCursor : public MapCursor<T> {
   uint64_t count_;
   MapCursorOptions options_;
 
-  bool init(Map<T> *map, const MapCursorOptions &options);
+  void init(Map<T> *map, const MapCursorOptions &options);
 };
 
 template <typename T>
@@ -78,7 +78,7 @@ class KeyIDRangeCursor : public MapCursor<T> {
   MapCursorKeyIDRange<T> query_;
   MapCursorOptions options_;
 
-  bool init(Map<T> *map,
+  void init(Map<T> *map,
             const MapCursorKeyIDRange<T> &query,
             const MapCursorOptions &options);
 };
@@ -103,7 +103,7 @@ class KeyFilterCursor : public MapCursor<T> {
   uint64_t count_;
   MapCursorOptions options_;
 
-  bool init(Map<T> *map, const MapCursorOptions &options);
+  void init(Map<T> *map, const MapCursorOptions &options);
 
   // Return true if "key" satisfies the query.
   virtual bool filter(KeyArg key) const = 0;

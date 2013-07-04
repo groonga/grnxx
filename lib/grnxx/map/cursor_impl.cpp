@@ -21,6 +21,7 @@
 #include <new>
 
 #include "grnxx/bytes.hpp"
+#include "grnxx/exception.hpp"
 #include "grnxx/geo_point.hpp"
 #include "grnxx/logger.hpp"
 #include "grnxx/map.hpp"
@@ -42,11 +43,9 @@ AllKeysCursor<T> *AllKeysCursor<T>::create(
       new (std::nothrow) AllKeysCursor<T>);
   if (!cursor) {
     GRNXX_ERROR() << "new grnxx::map::AllKeysCursor<T> failed";
-    return nullptr;
+    throw MemoryError();
   }
-  if (!cursor->init(map, options)) {
-    return nullptr;
-  }
+  cursor->init(map, options);
   return cursor.release();
 }
 
@@ -72,7 +71,7 @@ bool AllKeysCursor<T>::remove() {
 }
 
 template <typename T>
-bool AllKeysCursor<T>::init(Map<T> *map, const MapCursorOptions &options) {
+void AllKeysCursor<T>::init(Map<T> *map, const MapCursorOptions &options) {
   map_ = map;
   options_ = options;
   options_.flags = MAP_CURSOR_ORDER_BY_ID;
@@ -85,7 +84,7 @@ bool AllKeysCursor<T>::init(Map<T> *map, const MapCursorOptions &options) {
   if (min > max) {
     // There are no keys in the range [min, max].
     cur_ = end_ = 0;
-    return true;
+    return;
   }
 
   if (options_.flags & MAP_CURSOR_REVERSE_ORDER) {
@@ -105,7 +104,6 @@ bool AllKeysCursor<T>::init(Map<T> *map, const MapCursorOptions &options) {
       ++count;
     }
   }
-  return true;
 }
 
 template <typename T>
@@ -125,11 +123,9 @@ KeyIDRangeCursor<T> *KeyIDRangeCursor<T>::create(
       new (std::nothrow) KeyIDRangeCursor<T>);
   if (!cursor) {
     GRNXX_ERROR() << "new grnxx::map::KeyIDRangeCursor<T> failed";
-    return nullptr;
+    throw MemoryError();
   }
-  if (!cursor->init(map, query, options)) {
-    return nullptr;
-  }
+  cursor->init(map, query, options);
   return cursor.release();
 }
 
@@ -155,7 +151,7 @@ bool KeyIDRangeCursor<T>::remove() {
 }
 
 template <typename T>
-bool KeyIDRangeCursor<T>::init(Map<T> *map,
+void KeyIDRangeCursor<T>::init(Map<T> *map,
                                const MapCursorKeyIDRange<T> &query,
                                const MapCursorOptions &options) {
   map_ = map;
@@ -187,7 +183,7 @@ bool KeyIDRangeCursor<T>::init(Map<T> *map,
   if (min > max) {
     // There are no keys in the range [min, max].
     cur_ = end_ = 0;
-    return true;
+    return;
   }
 
   if (options_.flags & MAP_CURSOR_REVERSE_ORDER) {
@@ -207,7 +203,6 @@ bool KeyIDRangeCursor<T>::init(Map<T> *map,
       ++count;
     }
   }
-  return true;
 }
 
 template <typename T>
@@ -241,7 +236,7 @@ bool KeyFilterCursor<T>::remove() {
 }
 
 template <typename T>
-bool KeyFilterCursor<T>::init(Map<T> *map, const MapCursorOptions &options) {
+void KeyFilterCursor<T>::init(Map<T> *map, const MapCursorOptions &options) {
   map_ = map;
   options_ = options;
   options_.flags = MAP_CURSOR_ORDER_BY_ID;
@@ -268,7 +263,6 @@ bool KeyFilterCursor<T>::init(Map<T> *map, const MapCursorOptions &options) {
       }
     }
   }
-  return true;
 }
 
 template <typename T>
@@ -286,12 +280,10 @@ KeyRangeCursor<T> *KeyRangeCursor<T>::create(
       new (std::nothrow) KeyRangeCursor<T>);
   if (!cursor) {
     GRNXX_ERROR() << "new grnxx::map::KeyRangeCursor<T> failed";
-    return nullptr;
+    throw MemoryError();
   }
   cursor->query_ = query;
-  if (!cursor->init(map, options)) {
-    return nullptr;
-  }
+  cursor->init(map, options);
   return cursor.release();
 }
 

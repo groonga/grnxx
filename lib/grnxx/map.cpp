@@ -20,6 +20,7 @@
 #include <limits>
 
 #include "grnxx/bytes.hpp"
+#include "grnxx/exception.hpp"
 #include "grnxx/geo_point.hpp"
 #include "grnxx/logger.hpp"
 #include "grnxx/storage.hpp"
@@ -68,7 +69,7 @@ Map<T> *Map<T>::create(Storage *storage, uint32_t storage_node_id,
                        MapType type, const MapOptions &options) {
   if (!storage) {
     GRNXX_ERROR() << "invalid argument: storage == nullptr";
-    return nullptr;
+    throw LogicError();
   }
   switch (type) {
     case MAP_ARRAY: {
@@ -85,7 +86,7 @@ Map<T> *Map<T>::create(Storage *storage, uint32_t storage_node_id,
     }
     default: {
       GRNXX_ERROR() << "invalid argument: type = " << type;
-      return nullptr;
+      throw LogicError();
     }
   }
 }
@@ -94,12 +95,9 @@ template <typename T>
 Map<T> *Map<T>::open(Storage *storage, uint32_t storage_node_id) {
   if (!storage) {
     GRNXX_ERROR() << "invalid argument: storage == nullptr";
-    return nullptr;
+    throw LogicError();
   }
   StorageNode storage_node = storage->open_node(storage_node_id);
-  if (!storage_node) {
-    return nullptr;
-  }
   const map::Header * const header =
       static_cast<const map::Header *>(storage_node.body());
   switch (header->type) {
@@ -117,7 +115,7 @@ Map<T> *Map<T>::open(Storage *storage, uint32_t storage_node_id) {
     }
     default: {
       GRNXX_ERROR() << "invalid format: type = " << header->type;
-      return nullptr;
+      throw LogicError();
     }
   }
 }
@@ -125,16 +123,13 @@ Map<T> *Map<T>::open(Storage *storage, uint32_t storage_node_id) {
 template <typename T>
 bool Map<T>::unlink(Storage *storage, uint32_t storage_node_id) {
   std::unique_ptr<Map<T>> map(open(storage, storage_node_id));
-  if (!map) {
-    return false;
-  }
   return storage->unlink_node(storage_node_id);
 }
 
 template <typename T>
 bool Map<T>::get(int64_t, Key *) {
   GRNXX_ERROR() << "invalid operation";
-  return false;
+  throw LogicError();
 }
 
 template <typename T>
@@ -194,25 +189,25 @@ bool Map<T>::find(KeyArg key, int64_t *key_id) {
 template <typename T>
 bool Map<T>::add(KeyArg, int64_t *) {
   GRNXX_ERROR() << "invalid operation";
-  return false;
+  throw LogicError();
 }
 
 template <typename T>
 bool Map<T>::remove(KeyArg) {
   GRNXX_ERROR() << "invalid operation";
-  return false;
+  throw LogicError();
 }
 
 template <typename T>
 bool Map<T>::replace(KeyArg, KeyArg, int64_t *) {
   GRNXX_ERROR() << "invalid operation";
-  return false;
+  throw LogicError();
 }
 
 template <typename T>
 bool Map<T>::find_longest_prefix_match(KeyArg, int64_t *, Key *) {
   GRNXX_ERROR() << "invalid operation";
-  return false;
+  throw LogicError();
 }
 
 template <>
@@ -246,7 +241,7 @@ bool Map<Bytes>::find_longest_prefix_match(KeyArg query, int64_t *key_id,
 template <typename T>
 bool Map<T>::truncate() {
   GRNXX_ERROR() << "invalid operation";
-  return false;
+  throw LogicError();
 }
 
 template <typename T>
@@ -271,13 +266,13 @@ template <>
 MapCursor<GeoPoint> *Map<GeoPoint>::create_cursor(
     const MapCursorKeyRange<GeoPoint> &, const MapCursorOptions &) {
   GRNXX_ERROR() << "invalid operation";
-  return nullptr;
+  throw LogicError();
 }
 
 template <typename T>
 MapScanner<T> *Map<T>::create_scanner(KeyArg, const Charset *) {
   GRNXX_ERROR() << "invalid operation";
-  return nullptr;
+  throw LogicError();
 }
 
 template <>

@@ -20,6 +20,7 @@
 #include <new>
 
 #include "grnxx/bytes.hpp"
+#include "grnxx/exception.hpp"
 #include "grnxx/geo_point.hpp"
 #include "grnxx/logger.hpp"
 #include "grnxx/map/hash_table/hash.hpp"
@@ -62,9 +63,7 @@ Patricia<T> *Patricia<T>::create(Storage *storage,
     GRNXX_ERROR() << "new grnxx::map::Patricia failed";
     return nullptr;
   }
-  if (!map->create_map(storage, storage_node_id, options)) {
-    return nullptr;
-  }
+  map->create_map(storage, storage_node_id, options);
   return map.release();
 }
 
@@ -76,9 +75,7 @@ Patricia<T> *Patricia<T>::open(Storage *storage,
     GRNXX_ERROR() << "new grnxx::map::Patricia failed";
     return nullptr;
   }
-  if (!map->open_map(storage, storage_node_id)) {
-    return nullptr;
-  }
+  map->open_map(storage, storage_node_id);
   return map.release();
 }
 
@@ -549,55 +546,45 @@ bool Patricia<T>::truncate() {
 }
 
 template <typename T>
-bool Patricia<T>::create_map(Storage *storage, uint32_t storage_node_id,
+void Patricia<T>::create_map(Storage *storage, uint32_t storage_node_id,
                              const MapOptions &) {
   storage_ = storage;
   StorageNode storage_node =
       storage->create_node(storage_node_id, sizeof(Header));
-  if (!storage_node) {
-    return false;
-  }
   storage_node_id_ = storage_node.id();
-  header_ = static_cast<Header *>(storage_node.body());
-  *header_ = Header();
-  nodes_.reset(NodeArray::create(storage, storage_node_id_));
-  keys_.reset(KeyStore<T>::create(storage, storage_node_id_));
-  if (!nodes_ || !keys_) {
+  try {
+    header_ = static_cast<Header *>(storage_node.body());
+    *header_ = Header();
+    nodes_.reset(NodeArray::create(storage, storage_node_id_));
+    keys_.reset(KeyStore<T>::create(storage, storage_node_id_));
+    header_->nodes_storage_node_id = nodes_->storage_node_id();
+    header_->keys_storage_node_id = keys_->storage_node_id();
+    Node * const root_node = nodes_->get_pointer(ROOT_NODE_ID);
+    if (!root_node) {
+      // TODO
+      throw LogicError();
+    }
+    *root_node = Node::dead_node();
+  } catch (...) {
     storage->unlink_node(storage_node_id_);
-    return false;
+    throw;
   }
-  header_->nodes_storage_node_id = nodes_->storage_node_id();
-  header_->keys_storage_node_id = keys_->storage_node_id();
-  Node * const root_node = nodes_->get_pointer(ROOT_NODE_ID);
-  if (!root_node) {
-    storage->unlink_node(storage_node_id_);
-    return false;
-  }
-  *root_node = Node::dead_node();
-  return true;
 }
 
 template <typename T>
-bool Patricia<T>::open_map(Storage *storage, uint32_t storage_node_id) {
+void Patricia<T>::open_map(Storage *storage, uint32_t storage_node_id) {
   storage_ = storage;
   StorageNode storage_node = storage->open_node(storage_node_id);
-  if (!storage_node) {
-    return false;
-  }
   if (storage_node.size() < sizeof(Header)) {
     GRNXX_ERROR() << "invalid format: size = " << storage_node.size()
                   << ", header_size = " << sizeof(Header);
-    return false;
+    throw LogicError();
   }
   storage_node_id_ = storage_node_id;
   header_ = static_cast<Header *>(storage_node.body());
   // TODO: Check the format.
   nodes_.reset(NodeArray::open(storage, header_->nodes_storage_node_id));
   keys_.reset(KeyStore<T>::open(storage, header_->keys_storage_node_id));
-  if (!nodes_ || !keys_) {
-    return false;
-  }
-  return true;
 }
 
 template <typename T>
@@ -678,9 +665,7 @@ Patricia<Bytes> *Patricia<Bytes>::create(Storage *storage,
     GRNXX_ERROR() << "new grnxx::map::Patricia failed";
     return nullptr;
   }
-  if (!map->create_map(storage, storage_node_id, options)) {
-    return nullptr;
-  }
+  map->create_map(storage, storage_node_id, options);
   return map.release();
 }
 
@@ -691,9 +676,7 @@ Patricia<Bytes> *Patricia<Bytes>::open(Storage *storage,
     GRNXX_ERROR() << "new grnxx::map::Patricia failed";
     return nullptr;
   }
-  if (!map->open_map(storage, storage_node_id)) {
-    return nullptr;
-  }
+  map->open_map(storage, storage_node_id);
   return map.release();
 }
 
@@ -1600,46 +1583,40 @@ bool Patricia<Bytes>::truncate() {
   return true;
 }
 
-bool Patricia<Bytes>::create_map(Storage *storage, uint32_t storage_node_id,
+void Patricia<Bytes>::create_map(Storage *storage, uint32_t storage_node_id,
                                  const MapOptions &) {
   storage_ = storage;
   StorageNode storage_node =
       storage->create_node(storage_node_id, sizeof(Header));
-  if (!storage_node) {
-    return false;
-  }
   storage_node_id_ = storage_node.id();
-  header_ = static_cast<Header *>(storage_node.body());
-  *header_ = Header();
-  nodes_.reset(NodeArray::create(storage, storage_node_id_));
-  keys_.reset(KeyStore<Bytes>::create(storage, storage_node_id_));
-  cache_.reset(Cache::create(storage, storage_node_id_, -1));
-  if (!nodes_ || !keys_ || !cache_) {
+  try {
+    header_ = static_cast<Header *>(storage_node.body());
+    *header_ = Header();
+    nodes_.reset(NodeArray::create(storage, storage_node_id_));
+    keys_.reset(KeyStore<Bytes>::create(storage, storage_node_id_));
+    cache_.reset(Cache::create(storage, storage_node_id_, -1));
+    header_->nodes_storage_node_id = nodes_->storage_node_id();
+    header_->keys_storage_node_id = keys_->storage_node_id();
+    header_->cache_storage_node_id = cache_->storage_node_id();
+    Node * const root_node = nodes_->get_pointer(ROOT_NODE_ID);
+    if (!root_node) {
+      // TODO
+      throw LogicError();
+    }
+    *root_node = Node::dead_node();
+  } catch (...) {
     storage->unlink_node(storage_node_id_);
-    return false;
+    throw;
   }
-  header_->nodes_storage_node_id = nodes_->storage_node_id();
-  header_->keys_storage_node_id = keys_->storage_node_id();
-  header_->cache_storage_node_id = cache_->storage_node_id();
-  Node * const root_node = nodes_->get_pointer(ROOT_NODE_ID);
-  if (!root_node) {
-    storage->unlink_node(storage_node_id_);
-    return false;
-  }
-  *root_node = Node::dead_node();
-  return true;
 }
 
-bool Patricia<Bytes>::open_map(Storage *storage, uint32_t storage_node_id) {
+void Patricia<Bytes>::open_map(Storage *storage, uint32_t storage_node_id) {
   storage_ = storage;
   StorageNode storage_node = storage->open_node(storage_node_id);
-  if (!storage_node) {
-    return false;
-  }
   if (storage_node.size() < sizeof(Header)) {
     GRNXX_ERROR() << "invalid format: size = " << storage_node.size()
                   << ", header_size = " << sizeof(Header);
-    return false;
+    throw LogicError();
   }
   storage_node_id_ = storage_node_id;
   header_ = static_cast<Header *>(storage_node.body());
@@ -1647,10 +1624,6 @@ bool Patricia<Bytes>::open_map(Storage *storage, uint32_t storage_node_id) {
   nodes_.reset(NodeArray::open(storage, header_->nodes_storage_node_id));
   keys_.reset(KeyStore<Bytes>::open(storage, header_->keys_storage_node_id));
   cache_.reset(Cache::open(storage, header_->cache_storage_node_id));
-  if (!nodes_ || !keys_ || !cache_) {
-    return false;
-  }
-  return true;
 }
 
 uint64_t Patricia<Bytes>::get_ith_bit(KeyArg key, uint64_t bit_pos) {

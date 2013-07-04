@@ -80,9 +80,9 @@ class HashTable : public Map<T> {
   std::unique_ptr<KeyIDArray> old_key_ids_;
   std::unique_ptr<KeyStore<T>> keys_;
 
-  bool create_map(Storage *storage, uint32_t storage_node_id,
+  void create_map(Storage *storage, uint32_t storage_node_id,
                   const MapOptions &options);
-  bool open_map(Storage *storage, uint32_t storage_node_id);
+  void open_map(Storage *storage, uint32_t storage_node_id);
 
   // Find a key ID in the hash table.
   // Return true on success and assign the address to "*stored_key_id".

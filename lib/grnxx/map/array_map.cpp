@@ -20,6 +20,7 @@
 #include <new>
 
 #include "grnxx/bytes.hpp"
+#include "grnxx/exception.hpp"
 #include "grnxx/geo_point.hpp"
 #include "grnxx/logger.hpp"
 #include "grnxx/map/array_map/header.hpp"
@@ -45,11 +46,9 @@ ArrayMap<T> *ArrayMap<T>::create(Storage *storage, uint32_t storage_node_id,
   std::unique_ptr<ArrayMap> map(new (std::nothrow) ArrayMap);
   if (!map) {
     GRNXX_ERROR() << "new grnxx::map::ArrayMap failed";
-    return nullptr;
+    throw MemoryError();
   }
-  if (!map->create_map(storage, storage_node_id, options)) {
-    return nullptr;
-  }
+  map->create_map(storage, storage_node_id, options);
   return map.release();
 }
 
@@ -58,11 +57,9 @@ ArrayMap<T> *ArrayMap<T>::open(Storage *storage, uint32_t storage_node_id) {
   std::unique_ptr<ArrayMap> map(new (std::nothrow) ArrayMap);
   if (!map) {
     GRNXX_ERROR() << "new grnxx::map::ArrayMap failed";
-    return nullptr;
+    throw MemoryError();
   }
-  if (!map->open_map(storage, storage_node_id)) {
-    return nullptr;
-  }
+  map->open_map(storage, storage_node_id);
   return map.release();
 }
 
@@ -253,45 +250,35 @@ bool ArrayMap<T>::truncate() {
 }
 
 template <typename T>
-bool ArrayMap<T>::create_map(Storage *storage, uint32_t storage_node_id,
+void ArrayMap<T>::create_map(Storage *storage, uint32_t storage_node_id,
                              const MapOptions &) {
   storage_ = storage;
   StorageNode storage_node =
       storage->create_node(storage_node_id, sizeof(Header));
-  if (!storage_node) {
-    return false;
-  }
   storage_node_id_ = storage_node.id();
-  header_ = static_cast<Header *>(storage_node.body());
-  *header_ = Header();
-  keys_.reset(KeyStore<T>::create(storage, storage_node_id_));
-  if (!keys_) {
+  try {
+    header_ = static_cast<Header *>(storage_node.body());
+    *header_ = Header();
+    keys_.reset(KeyStore<T>::create(storage, storage_node_id_));
+    header_->keys_storage_node_id = keys_->storage_node_id();
+  } catch (...) {
     storage->unlink_node(storage_node_id_);
-    return false;
+    throw;
   }
-  header_->keys_storage_node_id = keys_->storage_node_id();
-  return true;
 }
 
 template <typename T>
-bool ArrayMap<T>::open_map(Storage *storage, uint32_t storage_node_id) {
+void ArrayMap<T>::open_map(Storage *storage, uint32_t storage_node_id) {
   storage_ = storage;
   StorageNode storage_node = storage->open_node(storage_node_id);
-  if (!storage_node) {
-    return false;
-  }
   if (storage_node.size() < sizeof(Header)) {
     GRNXX_ERROR() << "invalid format: size = " << storage_node.size()
                   << ", header_size = " << sizeof(Header);
-    return false;
+    throw LogicError();
   }
   storage_node_id_ = storage_node_id;
   header_ = static_cast<Header *>(storage_node.body());
   keys_.reset(KeyStore<T>::open(storage, header_->keys_storage_node_id));
-  if (!keys_) {
-    return false;
-  }
-  return true;
 }
 
 template class ArrayMap<int8_t>;

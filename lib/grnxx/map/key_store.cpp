@@ -17,6 +17,7 @@
 */
 #include "grnxx/map/key_store.hpp"
 
+#include "grnxx/exception.hpp"
 #include "grnxx/geo_point.hpp"
 #include "grnxx/intrinsic.hpp"
 #include "grnxx/logger.hpp"
@@ -49,16 +50,14 @@ template <typename T>
 KeyStore<T> *KeyStore<T>::create(Storage *storage, uint32_t storage_node_id) {
   if (!storage) {
     GRNXX_ERROR() << "invalid argument: storage == nullptr";
-    return nullptr;
+    throw LogicError();
   }
   std::unique_ptr<KeyStore> store(new (std::nothrow) KeyStore);
   if (!store) {
     GRNXX_ERROR() << "new grnxx::map::KeyStore failed";
-    return nullptr;
+    throw MemoryError();
   }
-  if (!store->create_store(storage, storage_node_id)) {
-    return nullptr;
-  }
+  store->create_store(storage, storage_node_id);
   return store.release();
 }
 
@@ -66,16 +65,14 @@ template <typename T>
 KeyStore<T> *KeyStore<T>::open(Storage *storage, uint32_t storage_node_id) {
   if (!storage) {
     GRNXX_ERROR() << "invalid argument: storage == nullptr";
-    return nullptr;
+    throw LogicError();
   }
   std::unique_ptr<KeyStore> store(new (std::nothrow) KeyStore);
   if (!store) {
     GRNXX_ERROR() << "new grnxx::map::KeyStore failed";
-    return nullptr;
+    throw MemoryError();
   }
-  if (!store->open_store(storage, storage_node_id)) {
-    return nullptr;
-  }
+  store->open_store(storage, storage_node_id);
   return store.release();
 }
 
@@ -172,46 +169,36 @@ bool KeyStore<T>::truncate() {
 }
 
 template <typename T>
-bool KeyStore<T>::create_store(Storage *storage, uint32_t storage_node_id) {
+void KeyStore<T>::create_store(Storage *storage, uint32_t storage_node_id) {
   storage_ = storage;
   StorageNode storage_node =
       storage->create_node(storage_node_id, sizeof(Header));
-  if (!storage_node) {
-    return false;
-  }
   storage_node_id_ = storage_node.id();
-  header_ = static_cast<Header *>(storage_node.body());
-  *header_ = Header();
-  keys_.reset(KeyArray::create(storage, storage_node_id_));
-  bits_.reset(BitArray::create(storage, storage_node_id_));
-  links_.reset(LinkArray::create(storage, storage_node_id_));
-  if (!keys_ || !bits_ || !links_) {
+  try {
+    header_ = static_cast<Header *>(storage_node.body());
+    *header_ = Header();
+    keys_.reset(KeyArray::create(storage, storage_node_id_));
+    bits_.reset(BitArray::create(storage, storage_node_id_));
+    links_.reset(LinkArray::create(storage, storage_node_id_));
+    header_->keys_storage_node_id = keys_->storage_node_id();
+    header_->bits_storage_node_id = bits_->storage_node_id();
+    header_->links_storage_node_id = links_->storage_node_id();
+  } catch (...) {
     storage->unlink_node(storage_node_id_);
-    return false;
+    throw;
   }
-  header_->keys_storage_node_id = keys_->storage_node_id();
-  header_->bits_storage_node_id = bits_->storage_node_id();
-  header_->links_storage_node_id = links_->storage_node_id();
-  return true;
 }
 
 template <typename T>
-bool KeyStore<T>::open_store(Storage *storage, uint32_t storage_node_id) {
+void KeyStore<T>::open_store(Storage *storage, uint32_t storage_node_id) {
   storage_ = storage;
   StorageNode storage_node = storage->open_node(storage_node_id);
-  if (!storage_node) {
-    return false;
-  }
   storage_node_id_ = storage_node.id();
   header_ = static_cast<Header *>(storage_node.body());
   // TODO: Check the format.
   keys_.reset(KeyArray::open(storage, header_->keys_storage_node_id));
   bits_.reset(BitArray::open(storage, header_->bits_storage_node_id));
   links_.reset(LinkArray::open(storage, header_->links_storage_node_id));
-  if (!keys_ || !bits_ || !links_) {
-    return false;
-  }
-  return true;
 }
 
 template class KeyStore<int8_t>;

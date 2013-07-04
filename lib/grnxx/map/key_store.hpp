@@ -142,8 +142,8 @@ class KeyStore {
   std::unique_ptr<BitArray> bits_;
   std::unique_ptr<LinkArray> links_;
 
-  bool create_store(Storage *storage, uint32_t storage_node_id);
-  bool open_store(Storage *storage, uint32_t storage_node_id);
+  void create_store(Storage *storage, uint32_t storage_node_id);
+  void open_store(Storage *storage, uint32_t storage_node_id);
 };
 
 }  // namespace map

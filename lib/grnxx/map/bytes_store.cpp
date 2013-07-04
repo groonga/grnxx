@@ -21,6 +21,7 @@
 #include <memory>
 #include <new>
 
+#include "grnxx/exception.hpp"
 #include "grnxx/logger.hpp"
 #include "grnxx/periodic_clock.hpp"
 #include "grnxx/storage.hpp"
@@ -157,8 +158,8 @@ class BytesStoreImpl : public BytesStore {
   std::unique_ptr<PageHeaderArray> page_headers_;
   PeriodicClock clock_;
 
-  bool create_store(Storage *storage, uint32_t storage_node_id);
-  bool open_store(Storage *storage, uint32_t storage_node_id);
+  void create_store(Storage *storage, uint32_t storage_node_id);
+  void open_store(Storage *storage, uint32_t storage_node_id);
 
   bool reserve_active_page(uint32_t *page_id,
                            BytesStorePageHeader **page_header);
@@ -195,16 +196,14 @@ BytesStoreImpl *BytesStoreImpl::create(Storage *storage,
                                        uint32_t storage_node_id) {
   if (!storage) {
     GRNXX_ERROR() << "invalid argument: storage == nullptr";
-    return nullptr;
+    throw LogicError();
   }
   std::unique_ptr<BytesStoreImpl> store(new (std::nothrow) BytesStoreImpl);
   if (!store) {
     GRNXX_ERROR() << "new grnxx::map::BytesStoreImpl failed";
-    return nullptr;
+    throw MemoryError();
   }
-  if (!store->create_store(storage, storage_node_id)) {
-    return nullptr;
-  }
+  store->create_store(storage, storage_node_id);
   return store.release();
 }
 
@@ -212,16 +211,14 @@ BytesStoreImpl *BytesStoreImpl::open(Storage *storage,
                                      uint32_t storage_node_id) {
   if (!storage) {
     GRNXX_ERROR() << "invalid argument: storage == nullptr";
-    return nullptr;
+    throw LogicError();
   }
   std::unique_ptr<BytesStoreImpl> store(new (std::nothrow) BytesStoreImpl);
   if (!store) {
     GRNXX_ERROR() << "new grnxx::map::BytesStoreImpl failed";
-    return nullptr;
+    throw MemoryError();
   }
-  if (!store->open_store(storage, storage_node_id)) {
-    return nullptr;
-  }
+  store->open_store(storage, storage_node_id);
   return store.release();
 }
 
@@ -393,42 +390,32 @@ bool BytesStoreImpl::sweep(Duration lifetime) {
   return true;
 }
 
-bool BytesStoreImpl::create_store(Storage *storage, uint32_t storage_node_id) {
+void BytesStoreImpl::create_store(Storage *storage, uint32_t storage_node_id) {
   storage_ = storage;
   StorageNode storage_node =
       storage->create_node(storage_node_id, sizeof(BytesStoreHeader));
-  if (!storage_node) {
-    return false;
-  }
   storage_node_id_ = storage_node.id();
-  header_ = static_cast<BytesStoreHeader *>(storage_node.body());
-  *header_ = BytesStoreHeader();
-  pages_.reset(BytesArray::create(storage, storage_node_id_));
-  page_headers_.reset(PageHeaderArray::create(storage, storage_node_id));
-  if (!pages_ || !page_headers_) {
+  try {
+    header_ = static_cast<BytesStoreHeader *>(storage_node.body());
+    *header_ = BytesStoreHeader();
+    pages_.reset(BytesArray::create(storage, storage_node_id_));
+    page_headers_.reset(PageHeaderArray::create(storage, storage_node_id));
+    header_->pages_storage_node_id = pages_->storage_node_id();
+    header_->page_headers_storage_node_id = page_headers_->storage_node_id();
+  } catch (...) {
     storage->unlink_node(storage_node_id_);
-    return false;
+    throw;
   }
-  header_->pages_storage_node_id = pages_->storage_node_id();
-  header_->page_headers_storage_node_id = page_headers_->storage_node_id();
-  return true;
 }
 
-bool BytesStoreImpl::open_store(Storage *storage, uint32_t storage_node_id) {
+void BytesStoreImpl::open_store(Storage *storage, uint32_t storage_node_id) {
   storage_ = storage;
   StorageNode storage_node = storage->open_node(storage_node_id);
-  if (!storage_node) {
-    return false;
-  }
   storage_node_id_ = storage_node.id();
   header_ = static_cast<BytesStoreHeader *>(storage_node.body());
   pages_.reset(BytesArray::open(storage, header_->pages_storage_node_id));
   page_headers_.reset(
       PageHeaderArray::open(storage, header_->page_headers_storage_node_id));
-  if (!pages_ || !page_headers_) {
-    return false;
-  }
-  return true;
 }
 
 bool BytesStoreImpl::reserve_active_page(uint32_t *page_id,

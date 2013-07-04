@@ -126,9 +126,9 @@ class DoubleArray<Bytes> : public Map<Bytes> {
   std::unique_ptr<EntryArray> entries_;
   std::unique_ptr<BytesStore> store_;
 
-  bool create_map(Storage *storage, uint32_t storage_node_id,
+  void create_map(Storage *storage, uint32_t storage_node_id,
                   const MapOptions &options);
-  bool open_map(Storage *storage, uint32_t storage_node_id);
+  void open_map(Storage *storage, uint32_t storage_node_id);
 
   DoubleArrayResult get_key(int64_t key_id, Key *key);
 

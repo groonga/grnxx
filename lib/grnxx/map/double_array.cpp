@@ -20,6 +20,7 @@
 #include <new>
 
 #include "grnxx/bytes.hpp"
+#include "grnxx/exception.hpp"
 #include "grnxx/geo_point.hpp"
 #include "grnxx/intrinsic.hpp"
 #include "grnxx/logger.hpp"
@@ -91,11 +92,9 @@ DoubleArray<Bytes> *DoubleArray<Bytes>::create(Storage *storage,
   std::unique_ptr<DoubleArray> map(new (std::nothrow) DoubleArray);
   if (!map) {
     GRNXX_ERROR() << "new grnxx::map::DoubleArray failed";
-    return nullptr;
+    throw MemoryError();
   }
-  if (!map->create_map(storage, storage_node_id, options)) {
-    return nullptr;
-  }
+  map->create_map(storage, storage_node_id, options);
   return map.release();
 }
 
@@ -104,11 +103,10 @@ DoubleArray<Bytes> *DoubleArray<Bytes>::open(Storage *storage,
   std::unique_ptr<DoubleArray> map(new (std::nothrow) DoubleArray);
   if (!map) {
     GRNXX_ERROR() << "new grnxx::map::DoubleArray failed";
+    throw MemoryError();
     return nullptr;
   }
-  if (!map->open_map(storage, storage_node_id)) {
-    return nullptr;
-  }
+  map->open_map(storage, storage_node_id);
   return map.release();
 }
 
@@ -461,51 +459,46 @@ bool DoubleArray<Bytes>::find_longest_prefix_match(KeyArg query,
 //  return nullptr;
 //}
 
-bool DoubleArray<Bytes>::create_map(Storage *storage, uint32_t storage_node_id,
+void DoubleArray<Bytes>::create_map(Storage *storage, uint32_t storage_node_id,
                                     const MapOptions &) {
   storage_ = storage;
   StorageNode storage_node =
       storage->create_node(storage_node_id, sizeof(Header));
-  if (!storage_node) {
-    return false;
-  }
   storage_node_id_ = storage_node.id();
-  header_ = static_cast<Header *>(storage_node.body());
-  *header_ = Header();
-  nodes_.reset(NodeArray::create(storage, storage_node_id_));
-  siblings_.reset(SiblingArray::create(storage, storage_node_id_));
-  blocks_.reset(BlockArray::create(storage, storage_node_id_));
-  entries_.reset(EntryArray::create(storage, storage_node_id_));
-  store_.reset(BytesStore::create(storage, storage_node_id_));
-  if (!nodes_ || !siblings_ || !blocks_ || !entries_ || !store_) {
+  try {
+    header_ = static_cast<Header *>(storage_node.body());
+    *header_ = Header();
+    nodes_.reset(NodeArray::create(storage, storage_node_id_));
+    siblings_.reset(SiblingArray::create(storage, storage_node_id_));
+    blocks_.reset(BlockArray::create(storage, storage_node_id_));
+    entries_.reset(EntryArray::create(storage, storage_node_id_));
+    store_.reset(BytesStore::create(storage, storage_node_id_));
+    header_->nodes_storage_node_id = nodes_->storage_node_id();
+    header_->siblings_storage_node_id = siblings_->storage_node_id();
+    header_->blocks_storage_node_id = blocks_->storage_node_id();
+    header_->entries_storage_node_id = entries_->storage_node_id();
+    header_->store_storage_node_id = store_->storage_node_id();
+    Node * const root_node = reserve_node(ROOT_NODE_ID);
+    if (!root_node) {
+      // TODO
+      storage->unlink_node(storage_node_id_);
+      throw LogicError();
+    }
+    root_node[NODE_INVALID_OFFSET - ROOT_NODE_ID].set_is_origin(true);
+  } catch (...) {
     storage->unlink_node(storage_node_id_);
-    return false;
+    throw;
   }
-  header_->nodes_storage_node_id = nodes_->storage_node_id();
-  header_->siblings_storage_node_id = siblings_->storage_node_id();
-  header_->blocks_storage_node_id = blocks_->storage_node_id();
-  header_->entries_storage_node_id = entries_->storage_node_id();
-  header_->store_storage_node_id = store_->storage_node_id();
-  Node * const root_node = reserve_node(ROOT_NODE_ID);
-  if (!root_node) {
-    storage->unlink_node(storage_node_id_);
-    return false;
-  }
-  root_node[NODE_INVALID_OFFSET - ROOT_NODE_ID].set_is_origin(true);
-  return true;
 }
 
-bool DoubleArray<Bytes>::open_map(Storage *storage, uint32_t storage_node_id) {
+void DoubleArray<Bytes>::open_map(Storage *storage, uint32_t storage_node_id) {
   storage_ = storage;
   storage_node_id_ = storage_node_id;
   StorageNode storage_node = storage->open_node(storage_node_id_);
-  if (!storage_node) {
-    return false;
-  }
   if (storage_node.size() < sizeof(Header)) {
     GRNXX_ERROR() << "invalid format: size = " << storage_node.size()
                   << ", header_size = " << sizeof(Header);
-    return false;
+    throw LogicError();
   }
   header_ = static_cast<Header *>(storage_node.body());
   nodes_.reset(NodeArray::open(storage, header_->nodes_storage_node_id));
@@ -514,10 +507,6 @@ bool DoubleArray<Bytes>::open_map(Storage *storage, uint32_t storage_node_id) {
   blocks_.reset(BlockArray::open(storage, header_->blocks_storage_node_id));
   entries_.reset(EntryArray::open(storage, header_->entries_storage_node_id));
   store_.reset(BytesStore::open(storage, header_->store_storage_node_id));
-  if (!nodes_ || !siblings_ || !blocks_ || !entries_ || !store_) {
-    return false;
-  }
-  return true;
 }
 
 DoubleArrayResult DoubleArray<Bytes>::get_key(int64_t key_id, Key *key) {
