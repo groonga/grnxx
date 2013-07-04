@@ -82,10 +82,6 @@ bool KeyStore<T>::unset(int64_t key_id) {
   const uint64_t unit_id = key_id / bits_->unit_size();
   const uint64_t unit_bit = 1ULL << (key_id % bits_->unit_size());
   BitArrayUnit * const unit = bits_->get_unit(unit_id);
-  if (!unit) {
-    // Error.
-    return false;
-  }
   if ((*unit & unit_bit) == 0) {
     // Not found.
     return false;
@@ -94,10 +90,6 @@ bool KeyStore<T>::unset(int64_t key_id) {
   uint64_t *link = nullptr;
   if (*unit == ~BitArrayUnit(0)) {
     link = links_->get_pointer(unit_id);
-    if (!link) {
-      // Error.
-      return false;
-    }
   }
   *unit &= ~unit_bit;
   if (link) {
@@ -119,33 +111,19 @@ bool KeyStore<T>::add(KeyArg key, int64_t *key_id) {
     unit_id = header_->latest_link;
   }
   BitArrayUnit * const unit = bits_->get_unit(unit_id);
-  if (!unit) {
-    // Error.
-    return false;
-  }
   const uint8_t unit_bit_id = bit_scan_forward(~*unit);
   const uint64_t unit_bit = 1ULL << unit_bit_id;
   const int64_t next_key_id = (unit_id * bits_->unit_size()) + unit_bit_id;
   uint64_t *link = nullptr;
   if (is_new_unit) {
-    if (!links_->set(unit_id, INVALID_LINK)) {
-      // Error.
-      return false;
-    }
+    links_->set(unit_id, INVALID_LINK);
     *unit = 0;
     header_->latest_link = (header_->max_key_id + 1) / bits_->unit_size();
   } else if ((*unit | unit_bit) == ~BitArrayUnit(0)) {
     // The unit will be removed from "links_" if it becomes full.
     link = links_->get_pointer(header_->latest_link);
-    if (!link) {
-      // Error.
-      return false;
-    }
   }
-  if (!keys_->set(next_key_id, key)) {
-    // Error.
-    return false;
-  }
+  keys_->set(next_key_id, key);
   if (link) {
     header_->latest_link = *link;
   }

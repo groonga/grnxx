@@ -83,14 +83,12 @@ bool BytesArray::unlink(Storage *storage, uint32_t storage_node_id) {
 
 bool BytesArray::get(uint64_t value_id, Value *value) {
   uint64_t bytes_id;
-  if (!ids_->get(value_id, &bytes_id)) {
-    return false;
-  }
+  ids_->get(value_id, &bytes_id);
   if (value) {
     if (bytes_id == BYTES_STORE_INVALID_BYTES_ID) {
       *value = default_value_;
     } else {
-      return store_->get(bytes_id, value);
+      store_->get(bytes_id, value);
     }
   }
   return true;
@@ -98,18 +96,14 @@ bool BytesArray::get(uint64_t value_id, Value *value) {
 
 bool BytesArray::set(uint64_t value_id, ValueArg value) {
   uint64_t *src_bytes_id = ids_->get_pointer(value_id);
-  if (!src_bytes_id) {
-    return false;
-  }
   uint64_t dest_bytes_id;
-  if (!store_->add(value, &dest_bytes_id)) {
-    return false;
-  }
+  store_->add(value, &dest_bytes_id);
   if (*src_bytes_id != BYTES_STORE_INVALID_BYTES_ID) {
-    if (!store_->unset(*src_bytes_id)) {
-      // The following unset() may not fail due to the above add().
+    try {
+      store_->unset(*src_bytes_id);
+    } catch (...) {
       store_->unset(dest_bytes_id);
-      return false;
+      throw;
     }
   }
   *src_bytes_id = dest_bytes_id;

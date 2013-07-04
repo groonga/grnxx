@@ -102,31 +102,26 @@ bool HashTable<T>::get(int64_t key_id, Key *key) {
     return false;
   }
   bool bit;
-  if (!keys_->get_bit(key_id, &bit)) {
-    // Error.
-    return false;
-  }
+  keys_->get_bit(key_id, &bit);
   if (!bit) {
     // Not found.
     return false;
   }
-  return keys_->get_key(key_id, key);
+  keys_->get_key(key_id, key);
+  return true;
 }
 
 template <typename T>
 bool HashTable<T>::unset(int64_t key_id) {
-  if (!refresh_key_ids()) {
-    // Error.
-    return false;
-  }
+  refresh_key_ids();
   int64_t *stored_key_id;
   if (!find_key_id(key_id, &stored_key_id)) {
-    // Not found or error.
+    // Not found.
     return false;
   }
   if (!keys_->unset(key_id)) {
-    // Error.
-    return false;
+    GRNXX_ERROR() << "failed to unset: key_id = " << key_id;
+    throw LogicError();
   }
   *stored_key_id = -1;
   return true;
@@ -134,30 +129,24 @@ bool HashTable<T>::unset(int64_t key_id) {
 
 template <typename T>
 bool HashTable<T>::reset(int64_t key_id, KeyArg dest_key) {
-  if (!refresh_key_ids()) {
-    // Error.
-    return false;
-  }
+  refresh_key_ids();
   Key src_key;
   if (!get(key_id, &src_key)) {
-    // Not found or error.
+    // Not found.
     return false;
   }
   int64_t *src_key_id;
   if (!find_key_id(key_id, &src_key_id)) {
-    // Not found or error.
+    // Not found.
     return false;
   }
   const Key dest_normalized_key = Helper<T>::normalize(dest_key);
   int64_t *dest_key_id;
   if (find_key(dest_normalized_key, &dest_key_id)) {
-    // Found or error.
+    // Found.
     return false;
   }
-  if (!keys_->reset(key_id, dest_normalized_key)) {
-    // Error.
-    return false;
-  }
+  keys_->reset(key_id, dest_normalized_key);
   if (*dest_key_id == MAP_INVALID_KEY_ID) {
     ++header_->num_key_ids;
   }
@@ -168,14 +157,11 @@ bool HashTable<T>::reset(int64_t key_id, KeyArg dest_key) {
 
 template <typename T>
 bool HashTable<T>::find(KeyArg key, int64_t *key_id) {
-  if (!refresh_key_ids()) {
-    // Error.
-    return false;
-  }
+  refresh_key_ids();
   const Key normalized_key = Helper<T>::normalize(key);
   int64_t *stored_key_id;
   if (!find_key(normalized_key, &stored_key_id)) {
-    // Not found or error.
+    // Not found.
     return false;
   }
   if (key_id) {
@@ -186,17 +172,11 @@ bool HashTable<T>::find(KeyArg key, int64_t *key_id) {
 
 template <typename T>
 bool HashTable<T>::add(KeyArg key, int64_t *key_id) {
-  if (!refresh_key_ids()) {
-    // Error.
-    return false;
-  }
+  refresh_key_ids();
   // Rebuild the hash table if the filling rate is greater than 62.5%.
   const uint64_t key_ids_size = key_ids_->mask() + 1;
   if (header_->num_key_ids > ((key_ids_size + (key_ids_size / 4)) / 2)) {
-    if (!rebuild()) {
-      // Error.
-      return false;
-    }
+    rebuild();
   }
   const Key normalized_key = Helper<T>::normalize(key);
   int64_t *stored_key_id;
@@ -211,10 +191,7 @@ bool HashTable<T>::add(KeyArg key, int64_t *key_id) {
     return false;
   }
   int64_t next_key_id;
-  if (!keys_->add(normalized_key, &next_key_id)) {
-    // Error.
-    return false;
-  }
+  keys_->add(normalized_key, &next_key_id);
   if (*stored_key_id == MAP_INVALID_KEY_ID) {
     ++header_->num_key_ids;
   }
@@ -227,19 +204,17 @@ bool HashTable<T>::add(KeyArg key, int64_t *key_id) {
 
 template <typename T>
 bool HashTable<T>::remove(KeyArg key) {
-  if (!refresh_key_ids()) {
-    // Error.
-    return false;
-  }
+  refresh_key_ids();
   const Key normalized_key = Helper<T>::normalize(key);
   int64_t *stored_key_id;
   if (!find_key(normalized_key, &stored_key_id)) {
-    // Not found or error.
+    // Not found.
     return false;
   }
   if (!keys_->unset(*stored_key_id)) {
-    // Error.
-    return false;
+    GRNXX_ERROR() << "failed to remove: key = " << key
+                  << ", key_id = " << *stored_key_id;
+    throw LogicError();
   }
   *stored_key_id = -1;
   return true;
@@ -247,26 +222,20 @@ bool HashTable<T>::remove(KeyArg key) {
 
 template <typename T>
 bool HashTable<T>::replace(KeyArg src_key, KeyArg dest_key, int64_t *key_id) {
-  if (!refresh_key_ids()) {
-    // Error.
-    return false;
-  }
+  refresh_key_ids();
   const Key src_normalized_key = Helper<T>::normalize(src_key);
   int64_t *src_key_id;
   if (!find_key(src_normalized_key, &src_key_id)) {
-    // Not found or error.
+    // Not found.
     return false;
   }
   const Key dest_normalized_key = Helper<T>::normalize(dest_key);
   int64_t *dest_key_id;
   if (find_key(dest_normalized_key, &dest_key_id)) {
-    // Found or error.
+    // Found.
     return false;
   }
-  if (!keys_->reset(*src_key_id, dest_normalized_key)) {
-    // Error.
-    return false;
-  }
+  keys_->reset(*src_key_id, dest_normalized_key);
   if (*dest_key_id == MAP_INVALID_KEY_ID) {
     ++header_->num_key_ids;
   }
@@ -280,9 +249,7 @@ bool HashTable<T>::replace(KeyArg src_key, KeyArg dest_key, int64_t *key_id) {
 
 template <typename T>
 bool HashTable<T>::truncate() {
-  if (!refresh_key_ids()) {
-    return false;
-  }
+  refresh_key_ids();
   if (max_key_id() == MAP_MIN_KEY_ID) {
     // Nothing to do.
     return true;
@@ -290,21 +257,15 @@ bool HashTable<T>::truncate() {
   std::unique_ptr<KeyIDArray> new_key_ids(
       KeyIDArray::create(storage_, storage_node_id_,
                          KeyIDArray::page_size() - 1));
-  if (!new_key_ids) {
-    // Error.
-    return false;
-  }
-  if (header_->old_key_ids_storage_node_id != STORAGE_INVALID_NODE_ID) {
+  if (header_->old_key_ids_storage_node_id != STORAGE_INVALID_NODE_ID) try {
     if (!KeyIDArray::unlink(storage_, header_->old_key_ids_storage_node_id)) {
-      // Error.
-      KeyIDArray::unlink(storage_, new_key_ids->storage_node_id());
-      return false;
+      throw LogicError();
     }
+  } catch (...) {
+    KeyIDArray::unlink(storage_, new_key_ids->storage_node_id());
+    throw;
   }
-  if (!keys_->truncate()) {
-    // Error.
-    return false;
-  }
+  keys_->truncate();
   header_->num_key_ids = 0;
   header_->old_key_ids_storage_node_id = header_->key_ids_storage_node_id;
   header_->key_ids_storage_node_id = new_key_ids->storage_node_id();
@@ -357,16 +318,12 @@ bool HashTable<T>::find_key_id(int64_t key_id, int64_t **stored_key_id) {
   KeyIDArray * const key_ids = key_ids_.get();
   Key stored_key;
   if (!get(key_id, &stored_key)) {
-    // Not found or error.
+    // Not found.
     return false;
   }
   const uint64_t first_hash = Hash<T>()(stored_key);
   for (uint64_t hash = first_hash; ; ) {
     *stored_key_id = key_ids->get_pointer(hash);
-    if (!*stored_key_id) {
-      // Error.
-      return false;
-    }
     if (**stored_key_id == key_id) {
       // Found.
       return true;
@@ -375,7 +332,7 @@ bool HashTable<T>::find_key_id(int64_t key_id, int64_t **stored_key_id) {
     if (hash == first_hash) {
       // Critical error.
       GRNXX_ERROR() << "endless loop";
-      return false;
+      throw LogicError();
     }
   }
 }
@@ -387,10 +344,6 @@ bool HashTable<T>::find_key(KeyArg key, int64_t **stored_key_id) {
   const uint64_t first_hash = Hash<T>()(key);
   for (uint64_t hash = first_hash; ; ) {
     int64_t * const key_id = key_ids->get_pointer(hash);
-    if (!key_id) {
-      // Error.
-      return false;
-    }
     if (*key_id == MAP_INVALID_KEY_ID) {
       // Not found.
       if (!*stored_key_id) {
@@ -404,10 +357,7 @@ bool HashTable<T>::find_key(KeyArg key, int64_t **stored_key_id) {
       }
     } else {
       Key stored_key;
-      if (!keys_->get_key(*key_id, &stored_key)) {
-        // Error.
-        return false;
-      }
+      keys_->get_key(*key_id, &stored_key);
       if (Helper<T>::equal_to(stored_key, key)) {
         // Found.
         *stored_key_id = key_id;
@@ -418,13 +368,13 @@ bool HashTable<T>::find_key(KeyArg key, int64_t **stored_key_id) {
     if (hash == first_hash) {
       // Critical error.
       GRNXX_ERROR() << "endless loop";
-      return false;
+      throw LogicError();
     }
   }
 }
 
 template <typename T>
-bool HashTable<T>::rebuild() {
+void HashTable<T>::rebuild() {
   uint64_t new_size = num_keys() * 2;
   if (new_size < key_ids_->page_size()) {
     new_size = key_ids_->page_size();
@@ -434,54 +384,36 @@ bool HashTable<T>::rebuild() {
     // Critical error.
     GRNXX_ERROR() << "too large table: size = " << new_size
                   << ", max_size = " << key_ids_->size();
-    return false;
+    throw LogicError();
   }
   const uint64_t new_mask = new_size - 1;
   // Create a new hash table.
   std::unique_ptr<KeyIDArray> new_key_ids(
       KeyIDArray::create(storage_, storage_node_id_, new_mask));
-  if (!new_key_ids) {
-    // Error.
-    return false;
-  }
-  // Copy keys from the current hash table to the new one.
-  int64_t key_id;
-  for (key_id = MAP_MIN_KEY_ID; key_id <= max_key_id(); ++key_id) {
-    bool bit;
-    if (!keys_->get_bit(key_id, &bit)) {
-      // Error.
-      break;
-    }
-    if (!bit) {
-      continue;
-    }
-    Key stored_key;
-    if (!keys_->get_key(key_id, &stored_key)) {
-      // Error.
-      break;
-    }
-    const uint64_t first_hash = Hash<T>()(stored_key);
-    int64_t *stored_key_id;
-    for (uint64_t hash = first_hash; ; hash = rehash(hash)) {
-      stored_key_id = new_key_ids->get_pointer(hash);
-      if (!stored_key_id) {
-        // Error.
-        break;
+  try {
+    // Copy keys from the current hash table to the new one.
+    int64_t key_id;
+    for (key_id = MAP_MIN_KEY_ID; key_id <= max_key_id(); ++key_id) {
+      bool bit;
+      keys_->get_bit(key_id, &bit);
+      if (!bit) {
+        continue;
       }
-      if (*stored_key_id == MAP_INVALID_KEY_ID) {
-        *stored_key_id = key_id;
-        break;
+      Key stored_key;
+      keys_->get_key(key_id, &stored_key);
+      const uint64_t first_hash = Hash<T>()(stored_key);
+      int64_t *stored_key_id;
+      for (uint64_t hash = first_hash; ; hash = rehash(hash)) {
+        stored_key_id = new_key_ids->get_pointer(hash);
+        if (*stored_key_id == MAP_INVALID_KEY_ID) {
+          *stored_key_id = key_id;
+          break;
+        }
       }
     }
-    if (!stored_key_id) {
-      // Error.
-      break;
-    }
-  }
-  if (key_id <= max_key_id()) {
-    // Error.
+  } catch (...) {
     KeyIDArray::unlink(storage_, new_key_ids->storage_node_id());
-    return false;
+    throw;
   }
   if (header_->old_key_ids_storage_node_id != STORAGE_INVALID_NODE_ID) {
     KeyIDArray::unlink(storage_, header_->old_key_ids_storage_node_id);
@@ -493,7 +425,6 @@ bool HashTable<T>::rebuild() {
     old_key_ids_.swap(new_key_ids);
     key_ids_.swap(old_key_ids_);
   }
-  return true;
 }
 
 template <typename T>
@@ -502,21 +433,16 @@ uint64_t HashTable<T>::rehash(uint64_t hash) const {
 }
 
 template <typename T>
-bool HashTable<T>::refresh_key_ids() {
+void HashTable<T>::refresh_key_ids() {
   if (key_ids_->storage_node_id() != header_->key_ids_storage_node_id) {
     Lock lock(&header_->mutex);
     if (key_ids_->storage_node_id() != header_->key_ids_storage_node_id) {
       std::unique_ptr<KeyIDArray> new_key_ids(
           KeyIDArray::open(storage_, header_->key_ids_storage_node_id));
-      if (!new_key_ids) {
-        // Error.
-        return false;
-      }
       old_key_ids_.swap(new_key_ids);
       key_ids_.swap(old_key_ids_);
     }
   }
-  return true;
 }
 
 template class HashTable<int8_t>;

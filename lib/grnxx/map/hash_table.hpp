@@ -95,12 +95,12 @@ class HashTable : public Map<T> {
   bool find_key(KeyArg key, int64_t **stored_key_id);
 
   // Rebuild the hash table.
-  bool rebuild();
+  void rebuild();
   // Move to the next entry.
   uint64_t rehash(uint64_t hash) const;
 
   // Refresh "key_ids_" if it is old.
-  bool refresh_key_ids();
+  void refresh_key_ids();
 };
 
 }  // namespace map

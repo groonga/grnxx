@@ -91,33 +91,20 @@ class KeyIDArray {
   static KeyIDArray *create(Storage *storage, uint32_t storage_node_id,
                             uint64_t mask) {
     std::unique_ptr<KeyIDArray> array(create_instance());
-    if (!array) {
-      return nullptr;
-    }
-    if (!array->create_array(storage, storage_node_id, mask)) {
-      return nullptr;
-    }
+    array->create_array(storage, storage_node_id, mask);
     return array.release();
   }
 
   // Open an array.
   static KeyIDArray *open(Storage *storage, uint32_t storage_node_id) {
     std::unique_ptr<KeyIDArray> array(create_instance());
-    if (!array) {
-      return nullptr;
-    }
-    if (!array->open_array(storage, storage_node_id)) {
-      return nullptr;
-    }
+    array->open_array(storage, storage_node_id);
     return array.release();
   }
 
   // Unlink an array.
   static bool unlink(Storage *storage, uint32_t storage_node_id) {
     std::unique_ptr<KeyIDArray> array(open(storage, storage_node_id));
-    if (!array) {
-      return false;
-    }
     return storage->unlink_node(storage_node_id);
   }
 
@@ -181,14 +168,11 @@ class KeyIDArray {
     return array;
   }
 
-  bool create_array(Storage *storage, uint32_t storage_node_id,
+  void create_array(Storage *storage, uint32_t storage_node_id,
                     uint64_t mask) {
     storage_ = storage;
     StorageNode storage_node =
         storage_->create_node(storage_node_id, sizeof(KeyIDArrayHeader));
-    if (!storage_node) {
-      return false;
-    }
     storage_node_id_ = storage_node.id();
     try {
       header_ = static_cast<KeyIDArrayHeader *>(storage_node.body());
@@ -201,20 +185,15 @@ class KeyIDArray {
       storage_->unlink_node(storage_node_id_);
       throw;
     }
-    return true;
   }
 
-  bool open_array(Storage *storage, uint32_t storage_node_id) {
+  void open_array(Storage *storage, uint32_t storage_node_id) {
     storage_ = storage;
     StorageNode storage_node = storage_->open_node(storage_node_id);
-    if (!storage_node) {
-      return false;
-    }
     storage_node_id_ = storage_node.id();
     header_ = static_cast<KeyIDArrayHeader *>(storage_node.body());
     impl_.open(storage, header_->impl_storage_node_id);
     mask_ = header_->mask;
-    return true;
   }
 };
 

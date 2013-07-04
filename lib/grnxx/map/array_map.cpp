@@ -90,25 +90,19 @@ bool ArrayMap<T>::get(int64_t key_id, Key *key) {
     return false;
   }
   bool bit;
-  if (!keys_->get_bit(key_id, &bit)) {
-    // Error.
-    return false;
-  }
+  keys_->get_bit(key_id, &bit);
   if (!bit) {
     // Not found.
     return false;
   }
-  if (!keys_->get_key(key_id, key)) {
-    // Error.
-    return false;
-  }
+  keys_->get_key(key_id, key);
   return true;
 }
 
 template <typename T>
 bool ArrayMap<T>::unset(int64_t key_id) {
   if (!keys_->unset(key_id)) {
-    // Not found or error.
+    // Not found.
     return false;
   }
   return true;
@@ -117,17 +111,14 @@ bool ArrayMap<T>::unset(int64_t key_id) {
 template <typename T>
 bool ArrayMap<T>::reset(int64_t key_id, KeyArg dest_key) {
   if (!get(key_id)) {
-    // Not found or error.
+    // Not found.
     return false;
   }
   if (find(dest_key)) {
     // Found.
     return false;
   }
-  if (!keys_->reset(key_id, Helper<T>::normalize(dest_key))) {
-    // Error.
-    return false;
-  }
+  keys_->reset(key_id, Helper<T>::normalize(dest_key));
   return true;
 }
 
@@ -136,16 +127,10 @@ bool ArrayMap<T>::find(KeyArg key, int64_t *key_id) {
   const Key normalized_key = map::Helper<T>::normalize(key);
   for (int64_t i = MAP_MIN_KEY_ID; i <= max_key_id(); ++i) {
     bool bit;
-    if (!keys_->get_bit(i, &bit)) {
-      // Error.
-      return false;
-    }
+    keys_->get_bit(i, &bit);
     if (bit) {
       Key stored_key;
-      if (!keys_->get_key(i, &stored_key)) {
-        // Error.
-        return false;
-      }
+      keys_->get_key(i, &stored_key);
       if (Helper<T>::equal_to(normalized_key, stored_key)) {
         // Found.
         if (key_id) {
@@ -163,16 +148,10 @@ bool ArrayMap<T>::add(KeyArg key, int64_t *key_id) {
   const Key normalized_key = Helper<T>::normalize(key);
   for (int64_t i = MAP_MIN_KEY_ID; i <= max_key_id(); ++i) {
     bool bit;
-    if (!keys_->get_bit(i, &bit)) {
-      // Error.
-      return false;
-    }
+    keys_->get_bit(i, &bit);
     if (bit) {
       Key stored_key;
-      if (!keys_->get_key(i, &stored_key)) {
-        // Error.
-        return false;
-      }
+      keys_->get_key(i, &stored_key);
       if (Helper<T>::equal_to(normalized_key, stored_key)) {
         // Found.
         if (key_id) {
@@ -182,10 +161,7 @@ bool ArrayMap<T>::add(KeyArg key, int64_t *key_id) {
       }
     }
   }
-  if (!keys_->add(normalized_key, key_id)) {
-    // Error.
-    return false;
-  }
+  keys_->add(normalized_key, key_id);
   return true;
 }
 
@@ -193,12 +169,13 @@ template <typename T>
 bool ArrayMap<T>::remove(KeyArg key) {
   int64_t key_id;
   if (!find(key, &key_id)) {
-    // Not found or error.
+    // Not found.
     return false;
   }
   if (!keys_->unset(key_id)) {
-    // Error.
-    return false;
+    GRNXX_ERROR() << "failed to remove: key = " << key
+                  << ", key_id = " << key_id;
+    throw LogicError();
   }
   return true;
 }
@@ -210,22 +187,16 @@ bool ArrayMap<T>::replace(KeyArg src_key, KeyArg dest_key, int64_t *key_id) {
   int64_t src_key_id = MAP_INVALID_KEY_ID;
   for (int64_t i = MAP_MIN_KEY_ID; i <= max_key_id(); ++i) {
     bool bit;
-    if (!keys_->get_bit(i, &bit)) {
-      // Error.
-      return false;
-    }
+    keys_->get_bit(i, &bit);
     if (bit) {
       Key stored_key;
-      if (!keys_->get_key(i, &stored_key)) {
-        // Error.
-        return false;
-      }
+      keys_->get_key(i, &stored_key);
       if (Helper<T>::equal_to(normalized_src_key, stored_key)) {
-        // Found.
+        // Source key found.
         src_key_id = i;
       }
       if (Helper<T>::equal_to(normalized_dest_key, stored_key)) {
-        // Found.
+        // Destination key found.
         return false;
       }
     }
@@ -234,10 +205,7 @@ bool ArrayMap<T>::replace(KeyArg src_key, KeyArg dest_key, int64_t *key_id) {
     // Not found.
     return false;
   }
-  if (!keys_->reset(src_key_id, normalized_dest_key)) {
-    // Error.
-    return false;
-  }
+  keys_->reset(src_key_id, normalized_dest_key);
   if (key_id) {
     *key_id = src_key_id;
   }
@@ -246,7 +214,8 @@ bool ArrayMap<T>::replace(KeyArg src_key, KeyArg dest_key, int64_t *key_id) {
 
 template <typename T>
 bool ArrayMap<T>::truncate() {
-  return keys_->truncate();
+  keys_->truncate();
+  return true;
 }
 
 template <typename T>
