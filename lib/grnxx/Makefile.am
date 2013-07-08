@@ -18,6 +18,7 @@ libgrnxx_la_SOURCES =			\
 	backtrace.cpp			\
 	broken_down_time.cpp		\
 	charset.cpp			\
+	common_header.cpp		\
 	duration.cpp			\
 	errno.cpp			\
 	geo_point.cpp			\
@@ -44,6 +45,7 @@ libgrnxx_include_HEADERS =		\
 	broken_down_time.hpp		\
 	bytes.hpp			\
 	charset.hpp			\
+	common_header.hpp		\
 	duration.hpp			\
 	errno.hpp			\
 	exception.hpp			\
