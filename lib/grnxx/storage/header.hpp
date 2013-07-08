@@ -20,6 +20,7 @@
 
 #include "grnxx/features.hpp"
 
+#include "grnxx/common_header.hpp"
 #include "grnxx/mutex.hpp"
 #include "grnxx/types.hpp"
 
@@ -30,18 +31,11 @@ namespace storage {
 // sizeof(Header) must not be greater than this value.
 constexpr size_t HEADER_SIZE         = 512;
 
-// The buffer size allocated for the format identifier.
-constexpr size_t HEADER_FORMAT_SIZE  = 32;
-// The buffer size allocated for the version string.
-constexpr size_t HEADER_VERSION_SIZE = 32;
-
 constexpr size_t NUM_IDLE_NODE_LISTS = 64;
 
 struct Header {
-  // The identifier for checking the file format.
-  char format[HEADER_FORMAT_SIZE];
-  // The grnxx version.
-  char version[HEADER_VERSION_SIZE];
+  // The file format and the grnxx version.
+  CommonHeader common_header;
   // The maximum size of each file.
   uint64_t max_file_size;
   // The maximum number of files.
@@ -78,7 +72,7 @@ struct Header {
   Mutex data_mutex;
   // A mutex object for exclusively update files.
   Mutex file_mutex;
-  uint8_t reserved_2[120];
+  uint8_t reserved_2[88];
 
   // Initialize the members except "format".
   Header();

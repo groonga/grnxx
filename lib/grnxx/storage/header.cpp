@@ -22,20 +22,18 @@
 #include "grnxx/grnxx.hpp"
 #include "grnxx/storage.hpp"
 
-#define GRNXX_STORAGE_HEADER_FORMAT  "grnxx::Storage"
-
 namespace grnxx {
 namespace storage {
 namespace {
 
-// For comparison.
-constexpr char HEADER_FORMAT[HEADER_FORMAT_SIZE] = GRNXX_STORAGE_HEADER_FORMAT;
+// The format string.
+constexpr char STORAGE_FORMAT[CommonHeader::FORMAT_SIZE] =
+    "grnxx::Storage";
 
 }  // namespace
 
 Header::Header()
-    : format{},
-      version{},
+    : common_header(),
       max_file_size(0),
       max_num_files(0),
       num_body_chunks(0),
@@ -54,18 +52,18 @@ Header::Header()
       data_mutex(),
       file_mutex(),
       reserved_2{} {
-  std::strcpy(version, Grnxx::version());
   for (size_t i = 0; i < NUM_IDLE_NODE_LISTS; ++i) {
     oldest_idle_node_ids[i] = STORAGE_INVALID_NODE_ID;
   }
 }
 
 Header::operator bool() const {
-  return std::memcmp(format, HEADER_FORMAT, HEADER_FORMAT_SIZE) == 0;
+  return common_header.format() ==
+         Bytes(STORAGE_FORMAT, CommonHeader::FORMAT_SIZE);
 }
 
 void Header::validate() {
-  std::memcpy(format, HEADER_FORMAT, HEADER_FORMAT_SIZE);
+  common_header = CommonHeader(STORAGE_FORMAT);
 }
 
 }  // namespace storage
