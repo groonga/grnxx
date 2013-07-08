@@ -37,13 +37,9 @@ class CommonHeader {
   explicit CommonHeader(const char *format);
 
   // Return the format string.
-  Bytes format() const {
-    return Bytes(format_, FORMAT_SIZE);
-  }
+  Bytes format() const;
   // Return the version string.
-  Bytes version() const {
-    return Bytes(version_, VERSION_SIZE);
-  }
+  Bytes version() const;
 
  private:
   char format_[FORMAT_SIZE];

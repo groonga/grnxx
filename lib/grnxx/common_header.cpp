@@ -52,4 +52,18 @@ CommonHeader::CommonHeader(const char *format) : format_{}, version_{} {
   std::memcpy(version_, current_version, current_version_length);
 }
 
+Bytes CommonHeader::format() const {
+  if (format_[FORMAT_SIZE - 1] == '\0') {
+    return Bytes(format_);
+  }
+  return Bytes(format_, FORMAT_SIZE);
+}
+
+Bytes CommonHeader::version() const {
+  if (version_[VERSION_SIZE - 1] == '\0') {
+    return Bytes(version_);
+  }
+  return Bytes(version_, VERSION_SIZE);
+}
+
 }  // namespace grnxx

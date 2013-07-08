@@ -26,9 +26,7 @@ namespace grnxx {
 namespace storage {
 namespace {
 
-// The format string.
-constexpr char STORAGE_FORMAT[CommonHeader::FORMAT_SIZE] =
-    "grnxx::Storage";
+constexpr char FORMAT_STRING[] = "grnxx::Storage";
 
 }  // namespace
 
@@ -58,12 +56,11 @@ Header::Header()
 }
 
 Header::operator bool() const {
-  return common_header.format() ==
-         Bytes(STORAGE_FORMAT, CommonHeader::FORMAT_SIZE);
+  return common_header.format() == FORMAT_STRING;
 }
 
 void Header::validate() {
-  common_header = CommonHeader(STORAGE_FORMAT);
+  common_header = CommonHeader(FORMAT_STRING);
 }
 
 }  // namespace storage

@@ -74,13 +74,13 @@ struct Header {
   Mutex file_mutex;
   uint8_t reserved_2[88];
 
-  // Initialize the members except "format".
+  // Initialize the members except "common_header".
   Header();
 
-  // Return true if the header seems to be correct.
+  // Return true iff the header seems to be correct.
   explicit operator bool() const;
 
-  // Initialize "format".
+  // Initialize "common_header".
   void validate();
 };
 
