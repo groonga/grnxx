@@ -993,7 +993,7 @@ bool Patricia<Bytes>::add(KeyArg key, int64_t *key_id) {
       if (node->bit_pos() < count) {
         break;
       }
-    } else if (node->bit_size() < count) {
+    } else if (node->bit_size() <= count) {
       break;
     }
   }
