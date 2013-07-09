@@ -88,8 +88,7 @@ StringBuilder &operator<<(StringBuilder &builder,
 
 class StorageNode {
  public:
-  StorageNode() = default;
-  explicit StorageNode(nullptr_t) : header_(nullptr), body_(nullptr) {}
+  StorageNode() : header_(nullptr), body_(nullptr) {}
   StorageNode(storage::NodeHeader *header, void *body)
       : header_(header),
         body_(body) {}
