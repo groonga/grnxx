@@ -265,6 +265,7 @@ bool Array2D::unlink(Storage *storage, uint32_t storage_node_id,
 }
 
 void Array2D::reserve_pages() {
+  // Create a table cache.
   pages_.reset(new (std::nothrow) void *[header_->table_size]);
   if (!pages_) {
     GRNXX_ERROR() << "new void *[] failed: size = " << header_->table_size;
@@ -308,15 +309,18 @@ Array3D::Array3D()
       header_(nullptr),
       fill_page_(nullptr),
       secondary_table_(nullptr),
+      dummy_table_(),
       page_mutex_(),
       table_mutex_() {}
 
 Array3D::~Array3D() {
   if (tables_) {
+    uint64_t offset = 0;
     for (uint64_t i = 0; i < header_->secondary_table_size; ++i) {
-      if (tables_[i] != invalid_table_address()) {
-        delete [] (tables_[i] + (header_->table_size * i));
+      if (tables_[i] != (dummy_table_.get() - offset)) {
+        delete [] (tables_[i] + offset);
       }
+      offset += header_->table_size;
     }
   }
 }
@@ -430,20 +434,34 @@ bool Array3D::unlink(Storage *storage, uint32_t storage_node_id,
 }
 
 void Array3D::reserve_tables() {
+  // Create a dummy table cache.
+  dummy_table_.reset(new (std::nothrow) void *[header_->table_size]);
+  if (!dummy_table_) {
+    GRNXX_ERROR() << "new void *[] failed: size = " << header_->table_size;
+    throw MemoryError();
+  }
+  for (uint64_t i = 0; i < header_->table_size; ++i) {
+    dummy_table_[i] = invalid_page_address();
+  }
+  // Create a secondary table cache.
   tables_.reset(new (std::nothrow) void **[header_->secondary_table_size]);
   if (!tables_) {
     GRNXX_ERROR() << "new void **[] failed: size = "
                   << header_->secondary_table_size;
     throw MemoryError();
   }
+  // Fill the secondary table cache with the dummy table cache.
+  uint64_t offset = 0;
   for (uint64_t i = 0; i < header_->secondary_table_size; ++i) {
-    tables_[i] = invalid_table_address();
+    tables_[i] = dummy_table_.get() - offset;
+    offset += header_->table_size;
   }
 }
 
 void Array3D::reserve_page(uint64_t page_id) {
   const uint64_t table_id = page_id / header_->table_size;
-  if (tables_[table_id] == invalid_table_address()) {
+  if (tables_[table_id] ==
+      (dummy_table_.get() - (header_->table_size * table_id))) {
     reserve_table(table_id);
   }
   Lock inter_thread_lock(&page_mutex_);
@@ -475,7 +493,8 @@ void Array3D::reserve_page(uint64_t page_id) {
 
 void Array3D::reserve_table(uint64_t table_id) {
   Lock inter_thread_lock(&table_mutex_);
-  if (tables_[table_id] == invalid_table_address()) {
+  if (tables_[table_id] ==
+      (dummy_table_.get() - (header_->table_size * table_id))) {
     if (secondary_table_[table_id] == STORAGE_INVALID_NODE_ID) {
       Lock inter_process_lock(&header_->table_mutex);
       if (secondary_table_[table_id] == STORAGE_INVALID_NODE_ID) {

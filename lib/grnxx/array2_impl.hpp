@@ -172,8 +172,7 @@ class Array3D {
   T *get_value(uint64_t value_id) {
     const uint64_t table_id = value_id / (PAGE_SIZE * TABLE_SIZE);
     const uint64_t page_id = value_id / PAGE_SIZE;
-    if ((tables_[table_id] == invalid_page_address()) ||
-        (tables_[table_id][page_id] == invalid_page_address())) {
+    if (tables_[table_id][page_id] == invalid_page_address()) {
       reserve_page(page_id);
     }
     return &static_cast<T *>(tables_[table_id][page_id])[value_id];
@@ -187,6 +186,7 @@ class Array3D {
   ArrayHeader *header_;
   ArrayFillPage fill_page_;
   uint32_t *secondary_table_;
+  std::unique_ptr<void *[]> dummy_table_;
   Mutex page_mutex_;
   Mutex table_mutex_;
 
@@ -194,9 +194,6 @@ class Array3D {
   void reserve_page(uint64_t page_id);
   void reserve_table(uint64_t table_id);
 
-  static void **invalid_table_address() {
-    return reinterpret_cast<void **>(static_cast<char *>(nullptr) + 1);
-  }
   static void *invalid_page_address() {
     return static_cast<char *>(nullptr) + 1;
   }
