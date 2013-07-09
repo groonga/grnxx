@@ -163,6 +163,6 @@ inline bool operator>=(const char *lhs, const Bytes &rhs) {
   return Bytes(lhs) >= rhs;
 }
 
-}  // namespace
+}  // namespace grnxx
 
 #endif  // GRNXX_BYTES_HPP
