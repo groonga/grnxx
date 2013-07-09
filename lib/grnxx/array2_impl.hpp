@@ -1,0 +1,295 @@
+/*
+  Copyright (C) 2012-2013  Brazil, Inc.
+
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 2.1 of the License, or (at your option) any later version.
+
+  This library is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
+
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+*/
+#ifndef GRNXX_ARRAY2_IMPL_HPP
+#define GRNXX_ARRAY2_IMPL_HPP
+
+#include "grnxx/features.hpp"
+
+#include <memory>
+
+#include "grnxx/mutex.hpp"
+#include "grnxx/traits.hpp"
+#include "grnxx/types.hpp"
+
+namespace grnxx {
+
+class Storage;
+
+namespace alpha {
+
+struct ArrayHeader;
+
+// Fill "page" with "value".
+using ArrayFillPage = void (*)(void *page, uint64_t page_size,
+                               const void *value);
+
+class Array1D {
+ public:
+  Array1D();
+  ~Array1D();
+
+  // Create an array.
+  void create(Storage *storage, uint32_t storage_node_id,
+              uint64_t value_size, uint64_t page_size,
+              uint64_t table_size, uint64_t size,
+              const void *default_value, ArrayFillPage fill_page);
+  // Open an array.
+  void open(Storage *storage, uint32_t storage_node_id,
+            uint64_t value_size, uint64_t page_size,
+            uint64_t table_size, ArrayFillPage fill_page);
+
+  // Unlink an array.
+  static bool unlink(Storage *storage, uint32_t storage_node_id,
+                     uint64_t value_size, uint64_t page_size,
+                     uint64_t table_size);
+
+  // Return the storage node ID.
+  uint32_t storage_node_id() const {
+    return storage_node_id_;
+  }
+  // Return the number of values.
+  uint64_t size() const {
+    return size_;
+  }
+
+  // Return a pointer to a value.
+  template <typename T, uint64_t, uint64_t>
+  T *get_value(uint64_t value_id) {
+    return &static_cast<T *>(page_)[value_id];
+  }
+
+ private:
+  void *page_;
+  uint64_t size_;
+  uint32_t storage_node_id_;
+};
+
+class Array2D {
+ public:
+  Array2D();
+  ~Array2D();
+
+  // Create an array.
+  void create(Storage *storage, uint32_t storage_node_id,
+              uint64_t value_size, uint64_t page_size,
+              uint64_t table_size, uint64_t size,
+              const void *default_value, ArrayFillPage fill_page);
+  // Open an array.
+  void open(Storage *storage, uint32_t storage_node_id,
+            uint64_t value_size, uint64_t page_size,
+            uint64_t table_size, ArrayFillPage fill_page);
+
+  // Unlink an array.
+  static bool unlink(Storage *storage, uint32_t storage_node_id,
+                     uint64_t value_size, uint64_t page_size,
+                     uint64_t table_size);
+
+  // Return the storage node ID.
+  uint32_t storage_node_id() const {
+    return storage_node_id_;
+  }
+  // Return the number of values.
+  uint64_t size() const {
+    return size_;
+  }
+
+  // Return a pointer to a value.
+  template <typename T, uint64_t PAGE_SIZE, uint64_t TABLE_SIZE>
+  T *get_value(uint64_t value_id) {
+    const uint64_t page_id = value_id / PAGE_SIZE;
+    if (pages_[page_id] == invalid_page_address()) {
+      reserve_page(page_id);
+    }
+    return &static_cast<T *>(pages_[page_id])[value_id];
+  }
+
+ private:
+  std::unique_ptr<void *[]> pages_;
+  uint64_t size_;
+  Storage *storage_;
+  uint32_t storage_node_id_;
+  ArrayHeader *header_;
+  ArrayFillPage fill_page_;
+  uint32_t *table_;
+  Mutex mutex_;
+
+  void reserve_pages();
+  void reserve_page(uint64_t page_id);
+
+  static void *invalid_page_address() {
+    return static_cast<char *>(nullptr) - 1;
+  }
+};
+
+class Array3D {
+  using ArrayPageFiller = void (*)(void *page, const void *value);
+
+ public:
+  Array3D();
+  ~Array3D();
+
+  // Create an array.
+  void create(Storage *storage, uint32_t storage_node_id,
+              uint64_t value_size, uint64_t page_size,
+              uint64_t table_size, uint64_t size,
+              const void *default_value, ArrayFillPage fill_page);
+  // Open an array.
+  void open(Storage *storage, uint32_t storage_node_id,
+            uint64_t value_size, uint64_t page_size,
+            uint64_t table_size, ArrayFillPage fill_page);
+
+  // Unlink an array.
+  static bool unlink(Storage *storage, uint32_t storage_node_id,
+                     uint64_t value_size, uint64_t page_size,
+                     uint64_t table_size);
+
+  // Return the storage node ID.
+  uint32_t storage_node_id() const {
+    return storage_node_id_;
+  }
+  // Return the number of values.
+  uint64_t size() const {
+    return size_;
+  }
+
+  // Return a pointer to a value.
+  template <typename T, uint64_t PAGE_SIZE, uint64_t TABLE_SIZE>
+  T *get_value(uint64_t value_id) {
+    const uint64_t table_id = value_id / (PAGE_SIZE * TABLE_SIZE);
+    const uint64_t page_id = value_id / PAGE_SIZE;
+    if ((tables_[table_id] == invalid_page_address()) ||
+        (tables_[table_id][page_id] == invalid_page_address())) {
+      reserve_page(page_id);
+    }
+    return &static_cast<T *>(tables_[table_id][page_id])[value_id];
+  }
+
+ private:
+  std::unique_ptr<void **[]> tables_;
+  uint64_t size_;
+  Storage *storage_;
+  uint32_t storage_node_id_;
+  ArrayHeader *header_;
+  ArrayFillPage fill_page_;
+  uint32_t *secondary_table_;
+  Mutex page_mutex_;
+  Mutex table_mutex_;
+
+  void reserve_tables();
+  void reserve_page(uint64_t page_id);
+  void reserve_table(uint64_t table_id);
+
+  static void **invalid_table_address() {
+    return reinterpret_cast<void **>(static_cast<char *>(nullptr) + 1);
+  }
+  static void *invalid_page_address() {
+    return static_cast<char *>(nullptr) + 1;
+  }
+};
+
+template <uint64_t PAGE_SIZE, uint64_t TABLE_SIZE>
+struct ArrayImplSelector;
+
+// Use Array1D.
+template <>
+struct ArrayImplSelector<0, 0> {
+  using Type = Array1D;
+};
+
+// Use Array2D.
+template <uint64_t PAGE_SIZE>
+struct ArrayImplSelector<PAGE_SIZE, 0> {
+  using Type = Array2D;
+};
+
+// Use Array3D.
+template <uint64_t PAGE_SIZE, uint64_t TABLE_SIZE>
+struct ArrayImplSelector {
+  using Type = Array3D;
+};
+
+template <typename T>
+struct ArrayPageFiller {
+  // Fill "page" with "value".
+  // This function is used to initialize a page.
+  static void fill_page(void *page, uint64_t page_size, const void *value) {
+    for (uint64_t i = 0; i < page_size; ++i) {
+      static_cast<T *>(page)[i] = *static_cast<const T *>(value);
+    }
+  }
+};
+
+template <typename T, uint64_t PAGE_SIZE, uint64_t TABLE_SIZE>
+class ArrayImpl {
+  using Impl = typename ArrayImplSelector<PAGE_SIZE, TABLE_SIZE>::Type;
+
+ public:
+  using Value = typename Traits<T>::Type;
+  using ValueArg = typename Traits<T>::ArgumentType;
+
+  ArrayImpl() : impl_() {}
+  ~ArrayImpl() {}
+
+  // Create an array.
+  void create(Storage *storage, uint32_t storage_node_id, uint64_t size) {
+    impl_.create(storage, storage_node_id,
+                 sizeof(Value), PAGE_SIZE, TABLE_SIZE, size,
+                 nullptr, ArrayPageFiller<Value>::fill_page);
+  }
+  // Create an array with the default value.
+  void create(Storage *storage, uint32_t storage_node_id, uint64_t size,
+              ValueArg default_value) {
+    impl_.create(storage, storage_node_id,
+                 sizeof(Value), PAGE_SIZE, TABLE_SIZE, size,
+                 &default_value, ArrayPageFiller<Value>::fill_page);
+  }
+  // Open an array.
+  void open(Storage *storage, uint32_t storage_node_id) {
+    impl_.open(storage, storage_node_id,
+               sizeof(Value), PAGE_SIZE, TABLE_SIZE,
+               ArrayPageFiller<Value>::fill_page);
+  }
+
+  // Unlink an array.
+  static bool unlink(Storage *storage, uint32_t storage_node_id) {
+    return Impl::unlink(storage, storage_node_id,
+                        sizeof(Value), PAGE_SIZE, TABLE_SIZE);
+  }
+
+  // Return the storage node ID.
+  uint32_t storage_node_id() const {
+    return impl_.storage_node_id();
+  }
+  // Return the number of values.
+  uint64_t size() const {
+    return impl_.size();
+  }
+
+  // Return a pointer to a value.
+  Value *get_value(uint64_t value_id) {
+    return impl_. template get_value<Value, PAGE_SIZE, TABLE_SIZE>(value_id);
+  }
+
+ private:
+  Impl impl_;
+};
+
+}  // namespace alpha
+}  // namespace grnxx
+
+#endif  // GRNXX_ARRAY2_IMPL_HPP

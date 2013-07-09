@@ -15,6 +15,8 @@ libgrnxx_la_LDFLAGS = @AM_LTLDFLAGS@
 libgrnxx_la_SOURCES =			\
 	array.cpp			\
 	array_impl.cpp			\
+	array2.cpp			\
+	array2_impl.cpp			\
 	backtrace.cpp			\
 	broken_down_time.cpp		\
 	charset.cpp			\
@@ -41,6 +43,8 @@ libgrnxx_includedir = ${includedir}/grnxx
 libgrnxx_include_HEADERS =		\
 	array.hpp			\
 	array_impl.hpp			\
+	array2.hpp			\
+	array2_impl.hpp			\
 	backtrace.hpp			\
 	broken_down_time.hpp		\
 	bytes.hpp			\
