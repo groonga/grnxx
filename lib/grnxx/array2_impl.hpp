@@ -112,7 +112,7 @@ class Array2D {
   template <typename T, uint64_t PAGE_SIZE, uint64_t TABLE_SIZE>
   T *get_value(uint64_t value_id) {
     const uint64_t page_id = value_id / PAGE_SIZE;
-    if (pages_[page_id] == invalid_page_address()) {
+    if (pages_[page_id] == invalid_page()) {
       reserve_page(page_id);
     }
     return &static_cast<T *>(pages_[page_id])[value_id];
@@ -128,10 +128,13 @@ class Array2D {
   uint32_t *table_;
   Mutex mutex_;
 
+  // Initialize "pages_".
   void reserve_pages();
+  // Open or create a page.
   void reserve_page(uint64_t page_id);
 
-  static void *invalid_page_address() {
+  // Return a pointer to an invalid page.
+  static void *invalid_page() {
     return static_cast<char *>(nullptr) - 1;
   }
 };
@@ -172,10 +175,15 @@ class Array3D {
   T *get_value(uint64_t value_id) {
     const uint64_t table_id = value_id / (PAGE_SIZE * TABLE_SIZE);
     const uint64_t page_id = value_id / PAGE_SIZE;
-    if (tables_[table_id][page_id] == invalid_page_address()) {
+    if (tables_[table_id][page_id] == invalid_page()) {
       reserve_page(page_id);
     }
     return &static_cast<T *>(tables_[table_id][page_id])[value_id];
+  }
+
+  // Return a pointer to an invalid page.
+  static void *invalid_page() {
+    return static_cast<char *>(nullptr) + 1;
   }
 
  private:
@@ -186,17 +194,16 @@ class Array3D {
   ArrayHeader *header_;
   ArrayFillPage fill_page_;
   uint32_t *secondary_table_;
-  std::unique_ptr<void *[]> dummy_table_;
+  void **dummy_table_;
   Mutex page_mutex_;
   Mutex table_mutex_;
 
+  // Initialize "tables_".
   void reserve_tables();
+  // Open or create a page.
   void reserve_page(uint64_t page_id);
+  // Open or create a table.
   void reserve_table(uint64_t table_id);
-
-  static void *invalid_page_address() {
-    return static_cast<char *>(nullptr) + 1;
-  }
 };
 
 template <uint64_t PAGE_SIZE, uint64_t TABLE_SIZE>

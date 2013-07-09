@@ -22,6 +22,7 @@
 #include "grnxx/bytes.hpp"
 #include "grnxx/common_header.hpp"
 #include "grnxx/exception.hpp"
+#include "grnxx/intrinsic.hpp"
 #include "grnxx/lock.hpp"
 #include "grnxx/logger.hpp"
 #include "grnxx/storage.hpp"
@@ -31,6 +32,80 @@ namespace alpha {
 namespace {
 
 constexpr char FORMAT_STRING[] = "grnxx::Array";
+
+struct DummyTable {
+  void **pages;
+  uint32_t reference_count;
+  Mutex mutex;
+
+  DummyTable() : pages(nullptr), reference_count(0), mutex() {}
+};
+
+class DummyTableManager {
+ public:
+  // Get a singleton.
+  static DummyTableManager &get();
+
+  // Get a dummy table.
+  void **get_dummy_table(uint64_t table_size);
+  // Free a dummy table.
+  void free_dummy_table(uint64_t table_size);
+
+ private:
+  DummyTable dummy_tables_[64];
+
+  DummyTableManager() : dummy_tables_() {}
+
+  const DummyTableManager(const DummyTableManager &) = delete;
+  DummyTableManager &operator=(const DummyTableManager &) = delete;
+};
+
+DummyTableManager &DummyTableManager::get() {
+  static DummyTableManager singleton;
+  return singleton;
+}
+
+void **DummyTableManager::get_dummy_table(uint64_t table_size) {
+  const uint64_t table_id = bit_scan_reverse(table_size);
+  DummyTable &dummy_table = dummy_tables_[table_id];
+  Lock lock(&dummy_table.mutex);
+  if (dummy_table.reference_count == 0) {
+    if (dummy_table.pages) {
+      GRNXX_ERROR() << "already exists: table_size = " << table_size;
+      throw LogicError();
+    }
+    // Create a dummy table.
+    dummy_table.pages = new (std::nothrow) void *[table_size];
+    if (!dummy_table.pages) {
+      GRNXX_ERROR() << "new void *[] failed: size = " << table_size;
+      throw MemoryError();
+    }
+    for (uint64_t i = 0; i < table_size; ++i) {
+      dummy_table.pages[i] = Array3D::invalid_page();
+    }
+  } else if (!dummy_table.pages) {
+    GRNXX_ERROR() << "invalid pages: table_size = " << table_size;
+    throw LogicError();
+  }
+  ++dummy_table.reference_count;
+  return dummy_table.pages;
+}
+
+void DummyTableManager::free_dummy_table(uint64_t table_size) {
+  const uint64_t table_id = bit_scan_reverse(table_size);
+  DummyTable &dummy_table = dummy_tables_[table_id];
+  Lock lock(&dummy_table.mutex);
+  if (!dummy_table.pages || (dummy_table.reference_count == 0)) {
+    GRNXX_ERROR() << "already freed: table_size = " << table_size;
+    throw LogicError();
+  }
+  if (dummy_table.reference_count == 1) {
+    // Free a dummy table.
+    delete [] dummy_table.pages;
+    dummy_table.pages = nullptr;
+  }
+  --dummy_table.reference_count;
+}
 
 }  // namespace
 
@@ -272,13 +347,13 @@ void Array2D::reserve_pages() {
     throw MemoryError();
   }
   for (uint64_t i = 0; i < header_->table_size; ++i) {
-    pages_[i] = invalid_page_address();
+    pages_[i] = invalid_page();
   }
 }
 
 void Array2D::reserve_page(uint64_t page_id) {
   Lock inter_thread_lock(&mutex_);
-  if (pages_[page_id] == invalid_page_address()) {
+  if (pages_[page_id] == invalid_page()) {
     StorageNode page_node;
     if (table_[page_id] == STORAGE_INVALID_NODE_ID) {
       Lock inter_process_lock(&header_->table_mutex);
@@ -309,7 +384,7 @@ Array3D::Array3D()
       header_(nullptr),
       fill_page_(nullptr),
       secondary_table_(nullptr),
-      dummy_table_(),
+      dummy_table_(nullptr),
       page_mutex_(),
       table_mutex_() {}
 
@@ -317,11 +392,14 @@ Array3D::~Array3D() {
   if (tables_) {
     uint64_t offset = 0;
     for (uint64_t i = 0; i < header_->secondary_table_size; ++i) {
-      if (tables_[i] != (dummy_table_.get() - offset)) {
+      if (tables_[i] != (dummy_table_ - offset)) {
         delete [] (tables_[i] + offset);
       }
       offset += header_->table_size;
     }
+  }
+  if (dummy_table_) {
+    DummyTableManager::get().free_dummy_table(header_->table_size);
   }
 }
 
@@ -434,15 +512,7 @@ bool Array3D::unlink(Storage *storage, uint32_t storage_node_id,
 }
 
 void Array3D::reserve_tables() {
-  // Create a dummy table cache.
-  dummy_table_.reset(new (std::nothrow) void *[header_->table_size]);
-  if (!dummy_table_) {
-    GRNXX_ERROR() << "new void *[] failed: size = " << header_->table_size;
-    throw MemoryError();
-  }
-  for (uint64_t i = 0; i < header_->table_size; ++i) {
-    dummy_table_[i] = invalid_page_address();
-  }
+  dummy_table_ = DummyTableManager::get().get_dummy_table(header_->table_size);
   // Create a secondary table cache.
   tables_.reset(new (std::nothrow) void **[header_->secondary_table_size]);
   if (!tables_) {
@@ -453,19 +523,18 @@ void Array3D::reserve_tables() {
   // Fill the secondary table cache with the dummy table cache.
   uint64_t offset = 0;
   for (uint64_t i = 0; i < header_->secondary_table_size; ++i) {
-    tables_[i] = dummy_table_.get() - offset;
+    tables_[i] = dummy_table_ - offset;
     offset += header_->table_size;
   }
 }
 
 void Array3D::reserve_page(uint64_t page_id) {
   const uint64_t table_id = page_id / header_->table_size;
-  if (tables_[table_id] ==
-      (dummy_table_.get() - (header_->table_size * table_id))) {
+  if (tables_[table_id] == (dummy_table_ - (header_->table_size * table_id))) {
     reserve_table(table_id);
   }
   Lock inter_thread_lock(&page_mutex_);
-  if (tables_[table_id][page_id] == invalid_page_address()) {
+  if (tables_[table_id][page_id] == invalid_page()) {
     StorageNode page_node;
     StorageNode table_node = storage_->open_node(secondary_table_[table_id]);
     uint32_t * const table = static_cast<uint32_t *>(table_node.body())
@@ -493,8 +562,7 @@ void Array3D::reserve_page(uint64_t page_id) {
 
 void Array3D::reserve_table(uint64_t table_id) {
   Lock inter_thread_lock(&table_mutex_);
-  if (tables_[table_id] ==
-      (dummy_table_.get() - (header_->table_size * table_id))) {
+  if (tables_[table_id] == (dummy_table_ - (header_->table_size * table_id))) {
     if (secondary_table_[table_id] == STORAGE_INVALID_NODE_ID) {
       Lock inter_process_lock(&header_->table_mutex);
       if (secondary_table_[table_id] == STORAGE_INVALID_NODE_ID) {
@@ -516,7 +584,7 @@ void Array3D::reserve_table(uint64_t table_id) {
       throw MemoryError();
     }
     for (uint64_t i = 0; i < header_->table_size; ++i) {
-      pages[i] = invalid_page_address();
+      pages[i] = invalid_page();
     }
     tables_[table_id] = pages - (header_->table_size * table_id);
   }
