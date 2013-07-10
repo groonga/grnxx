@@ -52,7 +52,7 @@ class StorageImpl : public Storage {
                                      const StorageOptions &options);
 
   static bool exists(const char *path);
-  static bool unlink(const char *path);
+  static void unlink(const char *path);
 
   StorageNode create_node(uint32_t parent_node_id, uint64_t size);
   StorageNode open_node(uint32_t node_id);
@@ -91,7 +91,7 @@ class StorageImpl : public Storage {
   void open_storage(const char *path, StorageFlags flags);
   void open_or_create_storage(const char *path, StorageFlags flags,
                               const StorageOptions &options);
-  bool unlink_storage();
+  void unlink_storage();
 
   void prepare_pointers();
   void prepare_indexes();

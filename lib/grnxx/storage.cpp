@@ -158,8 +158,8 @@ bool Storage::exists(const char *path) {
   return storage::StorageImpl::exists(path);
 }
 
-bool Storage::unlink(const char *path) {
-  return storage::StorageImpl::unlink(path);
+void Storage::unlink(const char *path) {
+  storage::StorageImpl::unlink(path);
 }
 
 }  // namespace grnxx

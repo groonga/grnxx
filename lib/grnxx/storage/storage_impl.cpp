@@ -156,16 +156,13 @@ bool StorageImpl::exists(const char *path) {
   return true;
 }
 
-bool StorageImpl::unlink(const char *path) {
+void StorageImpl::unlink(const char *path) {
   if (!path) {
     GRNXX_ERROR() << "invalid argument: path = nullptr";
     throw LogicError();
   }
-  if (!File::exists(path)) {
-    return false;
-  }
   std::unique_ptr<StorageImpl> storage(open(path, STORAGE_READ_ONLY));
-  return storage->unlink_storage();
+  storage->unlink_storage();
 }
 
 StorageNode StorageImpl::create_node(uint32_t parent_node_id, uint64_t size) {
@@ -474,11 +471,7 @@ void StorageImpl::open_or_create_storage(const char *path, StorageFlags flags,
   }
 }
 
-bool StorageImpl::unlink_storage() {
-  if (flags_ & (STORAGE_ANONYMOUS | STORAGE_TEMPORARY)) {
-    // Nothing to do.
-    return false;
-  }
+void StorageImpl::unlink_storage() {
   const uint16_t max_file_id = static_cast<uint16_t>(
       header_->total_size / header_->max_file_size);
   File::unlink(path_.get());
@@ -487,7 +480,6 @@ bool StorageImpl::unlink_storage() {
     std::unique_ptr<char[]> numbered_path(generate_path(i));
     File::unlink(numbered_path.get());
   }
-  return true;
 }
 
 void StorageImpl::prepare_pointers() {

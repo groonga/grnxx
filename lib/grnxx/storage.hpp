@@ -148,8 +148,8 @@ class Storage {
 
   // Return true iff "path" refers to a valid storage.
   static bool exists(const char *path);
-  // Remove a storage and return true on success.
-  static bool unlink(const char *path);
+  // Remove a storage.
+  static void unlink(const char *path);
 
   // Create a node of at least "size" bytes under the specified parent node.
   virtual StorageNode create_node(uint32_t parent_node_id, uint64_t size) = 0;
