@@ -375,7 +375,11 @@ void StorageImpl::create_file_backed_storage(const char *path,
     create_active_node(options.root_size);
     header_->validate();
   } catch (...) {
-    unlink_storage();
+    try {
+      unlink_storage();
+    } catch (...) {
+      // Ignore an exception.
+    }
     throw;
   }
 }
@@ -465,18 +469,28 @@ void StorageImpl::open_or_create_storage(const char *path, StorageFlags flags,
       create_active_node(options.root_size);
       header_->validate();
     } catch (...) {
-      unlink_storage();
+      try {
+        unlink_storage();
+      } catch (...) {
+        // Ignore an exception.
+      }
       throw;
     }
   }
 }
 
 void StorageImpl::unlink_storage() {
-  const uint16_t max_file_id = static_cast<uint16_t>(
-      header_->total_size / header_->max_file_size);
+  if (flags_ & STORAGE_TEMPORARY) {
+    // Nothing to do.
+    return;
+  }
+  uint16_t max_file_id = 0;
+  if (header_) {
+    max_file_id = header_->total_size / header_->max_file_size;
+  }
   File::unlink(path_.get());
   for (uint16_t i = 1; i <= max_file_id; ++i) {
-    // Component files may be left if path generation fails.
+    // Component files may be left if an error occurs.
     std::unique_ptr<char[]> numbered_path(generate_path(i));
     File::unlink(numbered_path.get());
   }
