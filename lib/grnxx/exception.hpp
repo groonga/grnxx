@@ -62,7 +62,7 @@ class MemoryError : public Exception {
 // Thrown as an exception when a system call fails.
 class SystemError : public Exception {
  public:
-  SystemError(const Errno &code) noexcept : code_(code) {}
+  explicit SystemError(const Errno &code) noexcept : code_(code) {}
   virtual ~SystemError() noexcept {}
 
   const Errno &code() const noexcept {
