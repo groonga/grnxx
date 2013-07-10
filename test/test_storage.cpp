@@ -65,9 +65,15 @@ void test_unique_path() {
   GRNXX_NOTICE() << "unique_path = " << unique_path.get();
 }
 
+void unlink_file_if_exists(const char *path) {
+  if (grnxx::storage::File::exists(path)) {
+    grnxx::storage::File::unlink(path);
+  }
+}
+
 void test_file_create() {
   const char FILE_PATH[] = "temp.grn";
-  grnxx::storage::File::unlink(FILE_PATH);
+  unlink_file_if_exists(FILE_PATH);
   std::unique_ptr<grnxx::storage::File> file;
 
   file.reset(grnxx::storage::File::create(FILE_PATH));
@@ -85,7 +91,7 @@ void test_file_create() {
 
 void test_file_open() {
   const char FILE_PATH[] = "temp.grn";
-  grnxx::storage::File::unlink(FILE_PATH);
+  unlink_file_if_exists(FILE_PATH);
   std::unique_ptr<grnxx::storage::File> file;
 
   file.reset(grnxx::storage::File::create(FILE_PATH));
@@ -97,7 +103,7 @@ void test_file_open() {
 
 void test_file_open_or_create() {
   const char FILE_PATH[] = "temp.grn";
-  grnxx::storage::File::unlink(FILE_PATH);
+  unlink_file_if_exists(FILE_PATH);
   std::unique_ptr<grnxx::storage::File> file;
 
   file.reset(grnxx::storage::File::open_or_create(FILE_PATH));
@@ -113,9 +119,8 @@ void test_file_exists_and_unlink() {
       grnxx::storage::File::open_or_create(FILE_PATH));
 
   assert(grnxx::storage::File::exists(FILE_PATH));
-  assert(grnxx::storage::File::unlink(FILE_PATH));
+  grnxx::storage::File::unlink(FILE_PATH);
   assert(!grnxx::storage::File::exists(FILE_PATH));
-  assert(!grnxx::storage::File::unlink(FILE_PATH));
 }
 
 void test_file_lock_and_unlock() {
@@ -172,7 +177,7 @@ void test_file_resize_and_size() {
 
 void test_file_path() {
   const char FILE_PATH[] = "temp.grn";
-  grnxx::storage::File::unlink(FILE_PATH);
+  unlink_file_if_exists(FILE_PATH);
   std::unique_ptr<grnxx::storage::File> file;
 
   file.reset(grnxx::storage::File::create(FILE_PATH));
@@ -182,12 +187,12 @@ void test_file_path() {
                                           grnxx::storage::FILE_TEMPORARY));
   assert(std::strcmp(file->path(), FILE_PATH) != 0);
 
-  assert(grnxx::storage::File::unlink(FILE_PATH));
+  grnxx::storage::File::unlink(FILE_PATH);
 }
 
 void test_file_flags() {
   const char FILE_PATH[] = "temp.grn";
-  grnxx::storage::File::unlink(FILE_PATH);
+  unlink_file_if_exists(FILE_PATH);
   std::unique_ptr<grnxx::storage::File> file;
 
   file.reset(grnxx::storage::File::create(FILE_PATH));
@@ -201,7 +206,7 @@ void test_file_flags() {
                                           grnxx::storage::FILE_TEMPORARY));
   assert(file->flags() == grnxx::storage::FILE_TEMPORARY);
 
-  assert(grnxx::storage::File::unlink(FILE_PATH));
+  grnxx::storage::File::unlink(FILE_PATH);
 }
 
 void test_file_handle() {
@@ -245,7 +250,7 @@ void test_chunk_sync() {
 
 void test_chunk_flags() {
   const char FILE_PATH[] = "temp.grn";
-  grnxx::storage::File::unlink(FILE_PATH);
+  unlink_file_if_exists(FILE_PATH);
   std::unique_ptr<grnxx::storage::File> file;
   std::unique_ptr<grnxx::storage::Chunk> chunk;
 
@@ -262,12 +267,12 @@ void test_chunk_flags() {
   assert(chunk->flags() == grnxx::storage::CHUNK_READ_ONLY);
 
   file.reset();
-  assert(grnxx::storage::File::unlink(FILE_PATH));
+  grnxx::storage::File::unlink(FILE_PATH);
 }
 
 void test_chunk_address() {
   const char FILE_PATH[] = "temp.grn";
-  grnxx::storage::File::unlink(FILE_PATH);
+  unlink_file_if_exists(FILE_PATH);
   std::unique_ptr<grnxx::storage::File> file;
   std::unique_ptr<grnxx::storage::Chunk> chunk;
 
@@ -297,7 +302,7 @@ void test_chunk_address() {
   }
 
   file.reset();
-  assert(grnxx::storage::File::unlink(FILE_PATH));
+  grnxx::storage::File::unlink(FILE_PATH);
 }
 
 void test_chunk_size() {

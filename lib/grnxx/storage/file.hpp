@@ -75,8 +75,8 @@ class File {
 
   // Return true iff "path" refers to a regular file.
   static bool exists(const char *path);
-  // Unlink a file and return true on success.
-  static bool unlink(const char *path);
+  // Unlink a file.
+  static void unlink(const char *path);
 
   // Try to lock a file and return true on success.
   // Note that the file is accessible even if it is locked (advisory).

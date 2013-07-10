@@ -120,21 +120,17 @@ bool FileImpl::exists(const char *path) {
   return stat.st_mode & _S_IFREG;
 }
 
-bool FileImpl::unlink(const char *path) {
+void FileImpl::unlink(const char *path) {
   if (!path) {
     GRNXX_ERROR() << "invalid argument: path = nullptr";
     throw LogicError();
   }
-  if (!exists(path)) {
-    return false;
-  }
   if (!::DeleteFile(path)) {
     Errno errno_copy(::GetLastError());
-    GRNXX_WARNING() << "failed to unlink file: path = " << path
-                    << ", call = ::DeleteFile, errno = " << errno_copy;
-    return false;
+    GRNXX_ERROR() << "failed to unlink file: path = " << path
+                  << ", call = ::DeleteFile, errno = " << errno_copy;
+    throw SystemError(errno_copy);
   }
-  return true;
 }
 
 bool FileImpl::lock(FileLockMode mode) {

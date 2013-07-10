@@ -74,8 +74,8 @@ bool File::exists(const char *path) {
   return FileImpl::exists(path);
 }
 
-bool File::unlink(const char *path) {
-  return FileImpl::unlink(path);
+void File::unlink(const char *path) {
+  FileImpl::unlink(path);
 }
 
 }  // namespace storage

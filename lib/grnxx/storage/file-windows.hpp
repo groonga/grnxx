@@ -46,7 +46,7 @@ class FileImpl : public File {
   static FileImpl *open_or_create(const char *path, FileFlags flags);
 
   static bool exists(const char *path);
-  static bool unlink(const char *path);
+  static void unlink(const char *path);
 
   bool lock(FileLockFlags lock_flags);
   void unlock();

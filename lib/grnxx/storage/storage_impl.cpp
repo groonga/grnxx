@@ -481,13 +481,13 @@ bool StorageImpl::unlink_storage() {
   }
   const uint16_t max_file_id = static_cast<uint16_t>(
       header_->total_size / header_->max_file_size);
-  bool result = File::unlink(path_.get());
+  File::unlink(path_.get());
   for (uint16_t i = 1; i <= max_file_id; ++i) {
     // Component files may be left if path generation fails.
     std::unique_ptr<char[]> numbered_path(generate_path(i));
-    result &= File::unlink(numbered_path.get());
+    File::unlink(numbered_path.get());
   }
-  return result;
+  return true;
 }
 
 void StorageImpl::prepare_pointers() {
