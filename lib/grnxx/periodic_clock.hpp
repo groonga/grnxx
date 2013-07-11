@@ -27,9 +27,14 @@ namespace grnxx {
 
 class PeriodicClock {
  public:
+  // Increment an internal reference count.
+  // Start a thread for updating "now_" when the reference count becomes 1.
   PeriodicClock();
+  // Decrement an internal reference count.
+  // Stop a thread for updating "now_" when the reference count becomes 0.
   ~PeriodicClock();
 
+  // Return the current time.
   static Time now() {
     return (now_ == Time::min()) ? SystemClock::now() : now_;
   }

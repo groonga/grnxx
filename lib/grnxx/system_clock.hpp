@@ -26,6 +26,7 @@ namespace grnxx {
 
 class SystemClock {
  public:
+  // Return the current time.
   static Time now();
 };
 
