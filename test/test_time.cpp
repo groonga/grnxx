@@ -26,6 +26,9 @@
 #include "grnxx/time.hpp"
 
 void test_time() {
+  GRNXX_NOTICE() << "grnxx::SystemClock::now() = "
+                 << grnxx::SystemClock::now();
+
   assert(grnxx::Time::max().count() ==
          std::numeric_limits<std::int64_t>::max());
   assert(grnxx::Time::min().count() ==
@@ -33,9 +36,9 @@ void test_time() {
 }
 
 void test_broken_down_time() {
-  GRNXX_NOTICE() << "grnxx::SystemClock::now().universal_time(): "
+  GRNXX_NOTICE() << "grnxx::SystemClock::now().universal_time() = "
                  << grnxx::SystemClock::now().universal_time();
-  GRNXX_NOTICE() << "grnxx::SystemClock::now().local_time(): "
+  GRNXX_NOTICE() << "grnxx::SystemClock::now().local_time() = "
                  << grnxx::SystemClock::now().local_time();
 
   enum { LOOP_COUNT = 1 << 16 };
@@ -61,8 +64,7 @@ void test_broken_down_time() {
 
 void test_system_clock() {
   grnxx::Time time = grnxx::SystemClock::now();
-  GRNXX_NOTICE() << "grnxx::SystemClock::now(): " << time;
-  GRNXX_NOTICE() << "grnxx::SystemClock::now().local_time(): "
+  GRNXX_NOTICE() << "grnxx::SystemClock::now().local_time() = "
                  << time.local_time();
 
   enum { LOOP_COUNT = 1 << 16 };
@@ -80,27 +82,23 @@ void test_periodic_clock() {
   grnxx::PeriodicClock clock;
 
   grnxx::Time time = grnxx::PeriodicClock::now();
-  GRNXX_NOTICE() << "grnxx::PeriodicClock::now(): " << time;
-  GRNXX_NOTICE() << "grnxx::PeriodicClock::now().local_time(): "
+  GRNXX_NOTICE() << "grnxx::PeriodicClock::now().local_time() = "
                  << time.local_time();
 
   time = grnxx::PeriodicClock::now();
-  GRNXX_NOTICE() << "grnxx::PeriodicClock::now(): " << time;
-  GRNXX_NOTICE() << "grnxx::PeriodicClock::now().local_time(): "
+  GRNXX_NOTICE() << "grnxx::PeriodicClock::now().local_time() = "
                  << time.local_time();
 
-  grnxx::Thread::sleep_for(grnxx::Duration::milliseconds(310));
+  grnxx::Thread::sleep_for(grnxx::Duration::milliseconds(110));
 
   time = grnxx::PeriodicClock::now();
-  GRNXX_NOTICE() << "grnxx::PeriodicClock::now(): " << time;
-  GRNXX_NOTICE() << "grnxx::PeriodicClock::now().local_time(): "
+  GRNXX_NOTICE() << "grnxx::PeriodicClock::now().local_time() = "
                  << time.local_time();
 
-  grnxx::Thread::sleep_for(grnxx::Duration::milliseconds(310));
+  grnxx::Thread::sleep_for(grnxx::Duration::milliseconds(110));
 
   time = grnxx::PeriodicClock::now();
-  GRNXX_NOTICE() << "grnxx::PeriodicClock::now(): " << time;
-  GRNXX_NOTICE() << "grnxx::PeriodicClock::now().local_time(): "
+  GRNXX_NOTICE() << "grnxx::PeriodicClock::now().local_time() = "
                  << time.local_time();
 
   enum { LOOP_COUNT = 1 << 20 };

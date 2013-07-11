@@ -42,6 +42,7 @@ class PeriodicClock {
  private:
   static Time now_;
 
+  // Update "now_" periodically.
   static void routine();
 };
 

@@ -17,10 +17,13 @@
 */
 #include "grnxx/periodic_clock.hpp"
 
-#include "grnxx/thread.hpp"
+#include <memory>
+
+#include "grnxx/intrinsic.hpp"
 #include "grnxx/lock.hpp"
 #include "grnxx/logger.hpp"
 #include "grnxx/mutex.hpp"
+#include "grnxx/thread.hpp"
 
 namespace grnxx {
 namespace {
@@ -29,8 +32,10 @@ namespace {
 // busy-wait loop, which exhausts CPU resources.
 constexpr Duration UPDATE_INTERVAL = Duration::milliseconds(100);
 
+// The number of PeriodicClock objects.
 volatile uint32_t ref_count = 0;
-grnxx::Thread *thread = nullptr;
+// The current thread ID.
+volatile uint32_t thread_id = 0;
 Mutex mutex;
 
 }  // namespace
@@ -38,10 +43,12 @@ Mutex mutex;
 Time PeriodicClock::now_ = Time::min();
 
 PeriodicClock::PeriodicClock() {
-  // Start the internal thread iff this is the first object.
   Lock lock(&mutex);
   if (++ref_count == 1) try {
-    thread = grnxx::Thread::create(routine);
+    // Start an internal thread that updates "now_" periodically.
+    std::unique_ptr<grnxx::Thread> thread(grnxx::Thread::create(routine));
+    thread->detach();
+    // Immediately update "now_".
     now_ = SystemClock::now();
   } catch (...) {
     GRNXX_WARNING() << "failed to create thread for PeriodicClock";
@@ -49,25 +56,25 @@ PeriodicClock::PeriodicClock() {
 }
 
 PeriodicClock::~PeriodicClock() {
-  // Stop the running thread iff this is the last object.
   Lock lock(&mutex);
   if (--ref_count == 0) {
-    try {
-      thread->detach();
-    } catch (...) {
-      GRNXX_WARNING() << "failed to detach thread for PeriodicClock";
-    }
-    delete thread;
-    thread = nullptr;
     now_ = Time::min();
+    // Increment "thread_id" so that an internal thread will stop.
+    atomic_fetch_and_add(1, &thread_id);
   }
 }
 
-// Periodically update the internal time variable.
 void PeriodicClock::routine() {
-  while (ref_count != 0) {
+  // Increment "thread_id" to generate the ID of this thread.
+  const uint64_t this_thread_id = atomic_fetch_and_add(1, &thread_id) + 1;
+  // This thread terminates if there are no PeriodicClock objects or another
+  // thread is running.
+  while ((ref_count != 0) && (this_thread_id == thread_id)) {
     Thread::sleep_for(UPDATE_INTERVAL);
-    now_ = SystemClock::now();
+    Lock lock(&mutex);
+    if ((ref_count != 0) && (this_thread_id == thread_id)) {
+      now_ = SystemClock::now();
+    }
   }
 }
 
