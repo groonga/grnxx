@@ -82,8 +82,8 @@ class Array {
   }
 
   // Unlink an array.
-  static bool unlink(Storage *storage, uint32_t storage_node_id) {
-    return Impl::unlink(storage, storage_node_id);
+  static void unlink(Storage *storage, uint32_t storage_node_id) {
+    Impl::unlink(storage, storage_node_id);
   }
 
   // Return the number of values in each page.
@@ -188,8 +188,8 @@ class Array<bool, PAGE_SIZE_IN_BITS, TABLE_SIZE, SECONDARY_TABLE_SIZE> {
   }
 
   // Unlink an array.
-  static bool unlink(Storage *storage, uint32_t storage_node_id) {
-    return UnitArray::unlink(storage, storage_node_id);
+  static void unlink(Storage *storage, uint32_t storage_node_id) {
+    UnitArray::unlink(storage, storage_node_id);
   }
 
   // Return the number of values in each unit.

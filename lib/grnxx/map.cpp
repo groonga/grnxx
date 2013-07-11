@@ -121,9 +121,9 @@ Map<T> *Map<T>::open(Storage *storage, uint32_t storage_node_id) {
 }
 
 template <typename T>
-bool Map<T>::unlink(Storage *storage, uint32_t storage_node_id) {
+void Map<T>::unlink(Storage *storage, uint32_t storage_node_id) {
   std::unique_ptr<Map<T>> map(open(storage, storage_node_id));
-  return storage->unlink_node(storage_node_id);
+  storage->unlink_node(storage_node_id);
 }
 
 template <typename T>

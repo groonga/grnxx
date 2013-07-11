@@ -77,8 +77,8 @@ class Array {
   }
 
   // Unlink an array.
-  static bool unlink(Storage *storage, uint32_t storage_node_id) {
-    return Impl::unlink(storage, storage_node_id);
+  static void unlink(Storage *storage, uint32_t storage_node_id) {
+    Impl::unlink(storage, storage_node_id);
   }
 
   // Return the storage node ID.

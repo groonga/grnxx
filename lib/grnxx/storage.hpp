@@ -158,7 +158,7 @@ class Storage {
 
   // Unlink a node and return true on success.
   // The unlinked node and its descendants will be removed by sweep().
-  virtual bool unlink_node(uint32_t node_id) = 0;
+  virtual void unlink_node(uint32_t node_id) = 0;
 
   // Sweep unlinked nodes whose modified time < (now - lifetime).
   virtual void sweep(Duration lifetime) = 0;

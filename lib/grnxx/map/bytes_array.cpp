@@ -76,9 +76,9 @@ BytesArray *BytesArray::open(Storage *storage, uint32_t storage_node_id) {
   return array.release();
 }
 
-bool BytesArray::unlink(Storage *storage, uint32_t storage_node_id) {
+void BytesArray::unlink(Storage *storage, uint32_t storage_node_id) {
   std::unique_ptr<BytesArray> array(open(storage, storage_node_id));
-  return storage->unlink_node(storage_node_id);
+  storage->unlink_node(storage_node_id);
 }
 
 bool BytesArray::get(uint64_t value_id, Value *value) {

@@ -258,9 +258,7 @@ bool HashTable<T>::truncate() {
       KeyIDArray::create(storage_, storage_node_id_,
                          KeyIDArray::page_size() - 1));
   if (header_->old_key_ids_storage_node_id != STORAGE_INVALID_NODE_ID) try {
-    if (!KeyIDArray::unlink(storage_, header_->old_key_ids_storage_node_id)) {
-      throw LogicError();
-    }
+    KeyIDArray::unlink(storage_, header_->old_key_ids_storage_node_id);
   } catch (...) {
     KeyIDArray::unlink(storage_, new_key_ids->storage_node_id());
     throw;

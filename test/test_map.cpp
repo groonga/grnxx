@@ -164,7 +164,7 @@ void test_bytes_store_unlink() {
                                      grnxx::STORAGE_ROOT_NODE_ID));
   grnxx::StorageNode storage_node =
       storage->open_node(store->storage_node_id());
-  assert(grnxx::map::BytesStore::unlink(storage.get(), storage_node.id()));
+  grnxx::map::BytesStore::unlink(storage.get(), storage_node.id());
   assert(storage_node.status() == grnxx::STORAGE_NODE_UNLINKED);
 }
 
@@ -297,7 +297,7 @@ void test_bytes_array_unlink() {
                                      grnxx::STORAGE_ROOT_NODE_ID));
   grnxx::StorageNode storage_node =
       storage->open_node(array->storage_node_id());
-  assert(grnxx::map::BytesArray::unlink(storage.get(), storage_node.id()));
+  grnxx::map::BytesArray::unlink(storage.get(), storage_node.id());
   assert(storage_node.status() == grnxx::STORAGE_NODE_UNLINKED);
 }
 
@@ -365,7 +365,7 @@ void test_map_unlink(grnxx::MapType map_type) {
       grnxx::Map<T>::create(storage.get(), grnxx::STORAGE_ROOT_NODE_ID,
                             map_type));
   grnxx::StorageNode storage_node = storage->open_node(map->storage_node_id());
-  assert(grnxx::Map<T>::unlink(storage.get(), storage_node.id()));
+  grnxx::Map<T>::unlink(storage.get(), storage_node.id());
   assert(storage_node.status() == grnxx::STORAGE_NODE_UNLINKED);
 }
 

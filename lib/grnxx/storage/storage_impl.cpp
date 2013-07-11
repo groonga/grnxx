@@ -213,7 +213,7 @@ StorageNode StorageImpl::open_node(uint32_t node_id) {
   return StorageNode(node_header, body);
 }
 
-bool StorageImpl::unlink_node(uint32_t node_id) {
+void StorageImpl::unlink_node(uint32_t node_id) {
   if (flags_ & STORAGE_READ_ONLY) {
     GRNXX_ERROR() << "invalid operation: flags = " << flags_;
     throw LogicError();
@@ -225,12 +225,9 @@ bool StorageImpl::unlink_node(uint32_t node_id) {
     throw LogicError();
   }
   NodeHeader * const node_header = get_node_header(node_id);
-  if (node_header->status == STORAGE_NODE_UNLINKED) {
-    // Already unlinked
-    return false;
-  }
   if (node_header->status != STORAGE_NODE_ACTIVE) {
-    GRNXX_ERROR() << "invalid argument: status = " << node_header->status;
+    GRNXX_ERROR() << "invalid status: expected = " << STORAGE_NODE_ACTIVE
+                  << ", actual = " << node_header->status;
     throw LogicError();
   }
   NodeHeader * const from_node_header =
@@ -267,7 +264,6 @@ bool StorageImpl::unlink_node(uint32_t node_id) {
   }
   header_->latest_unlinked_node_id = node_id;
   node_header->modified_time = clock_.now();
-  return true;
 }
 
 void StorageImpl::sweep(Duration lifetime) {
@@ -375,11 +371,7 @@ void StorageImpl::create_file_backed_storage(const char *path,
     create_active_node(options.root_size);
     header_->validate();
   } catch (...) {
-    try {
-      unlink_storage();
-    } catch (...) {
-      // Ignore an exception.
-    }
+    unlink_storage();
     throw;
   }
 }
@@ -469,11 +461,7 @@ void StorageImpl::open_or_create_storage(const char *path, StorageFlags flags,
       create_active_node(options.root_size);
       header_->validate();
     } catch (...) {
-      try {
-        unlink_storage();
-      } catch (...) {
-        // Ignore an exception.
-      }
+      unlink_storage();
       throw;
     }
   }

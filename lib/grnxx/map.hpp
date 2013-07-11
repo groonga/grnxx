@@ -68,7 +68,7 @@ class Map {
   static Map *open(Storage *storage, uint32_t storage_node_id);
 
   // Unlink a map.
-  static bool unlink(Storage *storage, uint32_t storage_node_id);
+  static void unlink(Storage *storage, uint32_t storage_node_id);
 
   // Return the storage node ID.
   virtual uint32_t storage_node_id() const = 0;

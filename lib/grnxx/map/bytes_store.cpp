@@ -476,14 +476,14 @@ BytesStore *BytesStore::open(Storage *storage, uint32_t storage_node_id) {
   return BytesStoreImpl::open(storage, storage_node_id);
 }
 
-bool BytesStore::unlink(Storage *storage, uint32_t storage_node_id) {
+void BytesStore::unlink(Storage *storage, uint32_t storage_node_id) {
   if (!storage) {
     GRNXX_ERROR() << "invalid argument: storage == nullptr";
     throw LogicError();
   }
   std::unique_ptr<BytesStore> store(
       BytesStore::open(storage, storage_node_id));
-  return storage->unlink_node(storage_node_id);
+  storage->unlink_node(storage_node_id);
 }
 
 }  // namespace map

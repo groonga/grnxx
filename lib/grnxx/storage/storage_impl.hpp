@@ -57,7 +57,7 @@ class StorageImpl : public Storage {
   StorageNode create_node(uint32_t parent_node_id, uint64_t size);
   StorageNode open_node(uint32_t node_id);
 
-  bool unlink_node(uint32_t node_id);
+  void unlink_node(uint32_t node_id);
 
   void sweep(Duration lifetime);
 

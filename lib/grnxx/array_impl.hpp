@@ -47,7 +47,7 @@ class Array1D {
   void open(Storage *storage, uint32_t storage_node_id,
             uint64_t value_size, uint64_t page_size);
 
-  static bool unlink(Storage *storage, uint32_t storage_node_id,
+  static void unlink(Storage *storage, uint32_t storage_node_id,
                      uint64_t value_size, uint64_t page_size);
 
   uint32_t storage_node_id() const {
@@ -81,7 +81,7 @@ class Array2D {
             uint64_t value_size, uint64_t page_size,
             uint64_t table_size, FillPage fill_page);
 
-  static bool unlink(Storage *storage, uint32_t storage_node_id,
+  static void unlink(Storage *storage, uint32_t storage_node_id,
                      uint64_t value_size, uint64_t page_size,
                      uint64_t table_size);
 
@@ -128,7 +128,7 @@ class Array3D {
             uint64_t table_size, uint64_t secondary_table_size,
             FillPage fill_page);
 
-  static bool unlink(Storage *storage, uint32_t storage_node_id,
+  static void unlink(Storage *storage, uint32_t storage_node_id,
                      uint64_t value_size, uint64_t page_size,
                      uint64_t table_size, uint64_t secondary_table_size);
 
@@ -202,8 +202,8 @@ class ArrayImpl<T, PAGE_SIZE, 1, 1> {
   }
 
   // Unlink an array.
-  static bool unlink(Storage *storage, uint32_t storage_node_id) {
-    return Array1D::unlink(storage, storage_node_id, sizeof(Value), PAGE_SIZE);
+  static void unlink(Storage *storage, uint32_t storage_node_id) {
+    Array1D::unlink(storage, storage_node_id, sizeof(Value), PAGE_SIZE);
   }
 
   // Return the number of values in each page.
@@ -308,9 +308,9 @@ class ArrayImpl<T, PAGE_SIZE, TABLE_SIZE, 1> {
   }
 
   // Unlink an array.
-  static bool unlink(Storage *storage, uint32_t storage_node_id) {
-    return Array2D::unlink(storage, storage_node_id, sizeof(Value),
-                           PAGE_SIZE, TABLE_SIZE);
+  static void unlink(Storage *storage, uint32_t storage_node_id) {
+    Array2D::unlink(storage, storage_node_id, sizeof(Value),
+                    PAGE_SIZE, TABLE_SIZE);
   }
 
   // Return the number of values in each page.
@@ -417,9 +417,9 @@ class ArrayImpl {
   }
 
   // Unlink an array.
-  static bool unlink(Storage *storage, uint32_t storage_node_id) {
-    return Array3D::unlink(storage, storage_node_id, sizeof(Value),
-                           PAGE_SIZE, TABLE_SIZE, SECONDARY_TABLE_SIZE);
+  static void unlink(Storage *storage, uint32_t storage_node_id) {
+    Array3D::unlink(storage, storage_node_id, sizeof(Value),
+                    PAGE_SIZE, TABLE_SIZE, SECONDARY_TABLE_SIZE);
   }
 
   // Return the number of values in each page.

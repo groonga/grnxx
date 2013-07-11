@@ -54,7 +54,7 @@ class Array1D {
             uint64_t table_size, ArrayFillPage fill_page);
 
   // Unlink an array.
-  static bool unlink(Storage *storage, uint32_t storage_node_id,
+  static void unlink(Storage *storage, uint32_t storage_node_id,
                      uint64_t value_size, uint64_t page_size,
                      uint64_t table_size);
 
@@ -95,7 +95,7 @@ class Array2D {
             uint64_t table_size, ArrayFillPage fill_page);
 
   // Unlink an array.
-  static bool unlink(Storage *storage, uint32_t storage_node_id,
+  static void unlink(Storage *storage, uint32_t storage_node_id,
                      uint64_t value_size, uint64_t page_size,
                      uint64_t table_size);
 
@@ -157,7 +157,7 @@ class Array3D {
             uint64_t table_size, ArrayFillPage fill_page);
 
   // Unlink an array.
-  static bool unlink(Storage *storage, uint32_t storage_node_id,
+  static void unlink(Storage *storage, uint32_t storage_node_id,
                      uint64_t value_size, uint64_t page_size,
                      uint64_t table_size);
 
@@ -270,9 +270,9 @@ class ArrayImpl {
   }
 
   // Unlink an array.
-  static bool unlink(Storage *storage, uint32_t storage_node_id) {
-    return Impl::unlink(storage, storage_node_id,
-                        sizeof(Value), PAGE_SIZE, TABLE_SIZE);
+  static void unlink(Storage *storage, uint32_t storage_node_id) {
+    Impl::unlink(storage, storage_node_id,
+                 sizeof(Value), PAGE_SIZE, TABLE_SIZE);
   }
 
   // Return the storage node ID.

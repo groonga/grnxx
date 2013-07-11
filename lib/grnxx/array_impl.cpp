@@ -121,11 +121,11 @@ void Array1D::open(Storage *storage, uint32_t storage_node_id,
   page_ = page_node.body();
 }
 
-bool Array1D::unlink(Storage *storage, uint32_t storage_node_id,
+void Array1D::unlink(Storage *storage, uint32_t storage_node_id,
                      uint64_t value_size, uint64_t page_size) {
   Array1D array;
   array.open(storage, storage_node_id, value_size, page_size);
-  return storage->unlink_node(storage_node_id);
+  storage->unlink_node(storage_node_id);
 }
 
 Array2D::Array2D()
@@ -234,13 +234,13 @@ void Array2D::open(Storage *storage, uint32_t storage_node_id,
   }
 }
 
-bool Array2D::unlink(Storage *storage, uint32_t storage_node_id,
+void Array2D::unlink(Storage *storage, uint32_t storage_node_id,
                      uint64_t value_size, uint64_t page_size,
                      uint64_t table_size) {
   Array2D array;
   array.open(storage, storage_node_id,
              value_size, page_size, table_size, nullptr);
-  return storage->unlink_node(storage_node_id);
+  storage->unlink_node(storage_node_id);
 }
 
 void Array2D::initialize_page(uint64_t page_id) {
@@ -372,13 +372,13 @@ void Array3D::open(Storage *storage, uint32_t storage_node_id,
   }
 }
 
-bool Array3D::unlink(Storage *storage, uint32_t storage_node_id,
+void Array3D::unlink(Storage *storage, uint32_t storage_node_id,
                      uint64_t value_size, uint64_t page_size,
                      uint64_t table_size, uint64_t secondary_table_size) {
   Array3D array;
   array.open(storage, storage_node_id, value_size, page_size,
              table_size, secondary_table_size, nullptr);
-  return storage->unlink_node(storage_node_id);
+  storage->unlink_node(storage_node_id);
 }
 
 void Array3D::initialize_page(uint64_t table_id, uint64_t page_id) {

@@ -458,11 +458,10 @@ void test_storage_unlink_node() {
   node_1 = storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 1 << 20);
   node_2 = storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 1 << 24);
 
-  assert(storage->unlink_node(node_1.id()));
+  storage->unlink_node(node_1.id());
   assert(node_1.status() == grnxx::STORAGE_NODE_UNLINKED);
-  assert(storage->unlink_node(node_2.id()));
+  storage->unlink_node(node_2.id());
   assert(node_2.status() == grnxx::STORAGE_NODE_UNLINKED);
-//  assert(!storage->unlink_node(grnxx::STORAGE_ROOT_NODE_ID));
 }
 
 void test_storage_sweep() {
@@ -475,7 +474,7 @@ void test_storage_sweep() {
   assert(storage->create_node(node.id(), 1 << 18));
   uint64_t total_size = storage->total_size();
   for (int i = 0; i < 100; ++i) {
-    assert(storage->unlink_node(node.id()));
+    storage->unlink_node(node.id());
     storage->sweep(grnxx::Duration(0));
     node = storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 1 << 18);
     assert(storage->create_node(node.id(), 1 << 18));
@@ -488,7 +487,7 @@ void test_storage_sweep() {
   assert(storage->create_node(node.id(), 0));
   total_size = storage->total_size();
   for (int i = 0; i < 100; ++i) {
-    assert(storage->unlink_node(node.id()));
+    storage->unlink_node(node.id());
     storage->sweep(grnxx::Duration(0));
     node = storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 0);
     assert(storage->create_node(node.id(), 0));
@@ -551,7 +550,7 @@ void test_storage_num_nodes() {
 
   node = storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 1 << 24);
   assert(storage->num_nodes() == 2);
-  assert(storage->unlink_node(node.id()));
+  storage->unlink_node(node.id());
   assert(storage->num_nodes() == 2);
   storage->sweep(grnxx::Duration(0));
   assert(storage->num_nodes() == 1);
@@ -580,7 +579,7 @@ void test_storage_body_usage() {
   prev_body_usage = storage->body_usage();
   node = storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 1 << 24);
   assert(storage->body_usage() == (prev_body_usage + node.size()));
-  assert(storage->unlink_node(node.id()));
+  storage->unlink_node(node.id());
   storage->sweep(grnxx::Duration(0));
   assert(storage->body_usage() == prev_body_usage);
   for (int i = 0; i < 16; ++i) {
@@ -600,7 +599,7 @@ void test_storage_body_size() {
   node = storage->create_node(grnxx::STORAGE_ROOT_NODE_ID, 1 << 23);
   assert(storage->body_size() > prev_body_size);
   prev_body_size = storage->body_size();
-  assert(storage->unlink_node(node.id()));
+  storage->unlink_node(node.id());
   storage->sweep(grnxx::Duration(0));
   assert(storage->body_size() == prev_body_size);
   for (int i = 0; i < 16; ++i) {
@@ -638,7 +637,7 @@ void test_storage_random_queries() {
     } else if (value < 64) {
       if (!id_set.empty()) {
         // Unlink a node.
-        assert(storage->unlink_node(*id_set.begin()));
+        storage->unlink_node(*id_set.begin());
         id_set.erase(id_set.begin());
       }
     } else {
@@ -718,7 +717,7 @@ void test_storage_random_queries2() {
 
     // Unlink children of the root node.
     for (std::uint32_t root_child_id : root_child_id_vector) {
-      assert(storage->unlink_node(root_child_id));
+      storage->unlink_node(root_child_id);
     }
     storage->sweep(grnxx::Duration(0));
   }

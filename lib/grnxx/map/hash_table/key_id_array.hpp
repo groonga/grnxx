@@ -103,9 +103,9 @@ class KeyIDArray {
   }
 
   // Unlink an array.
-  static bool unlink(Storage *storage, uint32_t storage_node_id) {
+  static void unlink(Storage *storage, uint32_t storage_node_id) {
     std::unique_ptr<KeyIDArray> array(open(storage, storage_node_id));
-    return storage->unlink_node(storage_node_id);
+    storage->unlink_node(storage_node_id);
   }
 
   // Return the number of values in each page.
