@@ -89,13 +89,13 @@ bool ArrayMap<T>::get(int64_t key_id, Key *key) {
     // Out of range.
     return false;
   }
-  bool bit;
-  keys_->get_bit(key_id, &bit);
-  if (!bit) {
+  if (!keys_->get_bit(key_id)) {
     // Not found.
     return false;
   }
-  keys_->get_key(key_id, key);
+  if (key) {
+    *key = keys_->get_key(key_id);
+  }
   return true;
 }
 
@@ -126,11 +126,8 @@ template <typename T>
 bool ArrayMap<T>::find(KeyArg key, int64_t *key_id) {
   const Key normalized_key = map::Helper<T>::normalize(key);
   for (int64_t i = MAP_MIN_KEY_ID; i <= max_key_id(); ++i) {
-    bool bit;
-    keys_->get_bit(i, &bit);
-    if (bit) {
-      Key stored_key;
-      keys_->get_key(i, &stored_key);
+    if (keys_->get_bit(i)) {
+      Key stored_key = keys_->get_key(i);
       if (Helper<T>::equal_to(normalized_key, stored_key)) {
         // Found.
         if (key_id) {
@@ -147,11 +144,8 @@ template <typename T>
 bool ArrayMap<T>::add(KeyArg key, int64_t *key_id) {
   const Key normalized_key = Helper<T>::normalize(key);
   for (int64_t i = MAP_MIN_KEY_ID; i <= max_key_id(); ++i) {
-    bool bit;
-    keys_->get_bit(i, &bit);
-    if (bit) {
-      Key stored_key;
-      keys_->get_key(i, &stored_key);
+    if (keys_->get_bit(i)) {
+      Key stored_key = keys_->get_key(i);
       if (Helper<T>::equal_to(normalized_key, stored_key)) {
         // Found.
         if (key_id) {
@@ -161,7 +155,11 @@ bool ArrayMap<T>::add(KeyArg key, int64_t *key_id) {
       }
     }
   }
-  keys_->add(normalized_key, key_id);
+  if (key_id) {
+    *key_id = keys_->add(normalized_key);
+  } else {
+    keys_->add(normalized_key);
+  }
   return true;
 }
 
@@ -186,11 +184,8 @@ bool ArrayMap<T>::replace(KeyArg src_key, KeyArg dest_key, int64_t *key_id) {
   const Key normalized_dest_key = Helper<T>::normalize(dest_key);
   int64_t src_key_id = MAP_INVALID_KEY_ID;
   for (int64_t i = MAP_MIN_KEY_ID; i <= max_key_id(); ++i) {
-    bool bit;
-    keys_->get_bit(i, &bit);
-    if (bit) {
-      Key stored_key;
-      keys_->get_key(i, &stored_key);
+    if (keys_->get_bit(i)) {
+      Key stored_key = keys_->get_key(i);
       if (Helper<T>::equal_to(normalized_src_key, stored_key)) {
         // Source key found.
         src_key_id = i;

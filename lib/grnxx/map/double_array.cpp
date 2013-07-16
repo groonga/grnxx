@@ -154,11 +154,7 @@ bool DoubleArray<Bytes>::reset(int64_t key_id, KeyArg dest_key) {
 
 bool DoubleArray<Bytes>::find(KeyArg key, int64_t *key_id) {
   uint64_t node_id = ROOT_NODE_ID;
-  Node node;
-  if (!nodes_->get(node_id, &node)) {
-    // Error.
-    return false;
-  }
+  Node node = nodes_->get(node_id);
   uint64_t key_pos;
   for (key_pos = 0; key_pos < key.size(); ++key_pos) {
     if (node.is_leaf()) {
@@ -166,10 +162,7 @@ bool DoubleArray<Bytes>::find(KeyArg key, int64_t *key_id) {
       break;
     }
     node_id = node.offset() ^ key[key_pos];
-    if (!nodes_->get(node_id, &node)) {
-      // Error.
-      return false;
-    }
+    node = nodes_->get(node_id);
     if (node.label() != key[key_pos]) {
       // Not found.
       return false;
@@ -181,10 +174,7 @@ bool DoubleArray<Bytes>::find(KeyArg key, int64_t *key_id) {
       return false;
     }
     node_id = node.offset() ^ NODE_TERMINAL_LABEL;
-    if (!nodes_->get(node_id, &node)) {
-      // Error.
-      return false;
-    }
+    node = nodes_->get(node_id);
     if (!node.is_leaf()) {
       // Not found.
       return false;
@@ -234,16 +224,8 @@ bool DoubleArray<Bytes>::add(KeyArg key, int64_t *key_id) {
                    << ", max_key_id = " << MAP_MAX_KEY_ID;
     return false;
   }
-  Entry * const entry = entries_->get_pointer(next_key_id);
-  if (!entry) {
-    // Error.
-    return false;
-  }
-  uint64_t bytes_id;
-  if (!store_->add(key, &bytes_id)) {
-    // Error.
-    return false;
-  }
+  Entry * const entry = &entries_->get_value(next_key_id);
+  uint64_t bytes_id = store_->add(key);
   ++header_->num_keys;
   if (next_key_id > header_->max_key_id) {
     header_->max_key_id = next_key_id;
@@ -266,20 +248,12 @@ bool DoubleArray<Bytes>::remove(KeyArg key) {
     // Not found or error.
     return false;
   }
-  Entry * const entry = entries_->get_pointer(node->key_id());
-  if (!entry) {
-    // Error.
-    return false;
-  }
+  Entry * const entry = &entries_->get_value(node->key_id());
   if (!*entry) {
     // Not found.
     return false;
   }
-  Key stored_key;
-  if (!store_->get(entry->bytes_id(), &stored_key)) {
-    // Error.
-    return false;
-  }
+  Key stored_key = store_->get(entry->bytes_id());
   if (key.except_prefix(key_pos) != stored_key.except_prefix(key_pos)) {
     // Not found.
     return false;
@@ -309,11 +283,7 @@ bool DoubleArray<Bytes>::replace(KeyArg src_key, KeyArg dest_key,
 }
 
 bool DoubleArray<Bytes>::truncate() {
-  Node * const node = nodes_->get_pointer(ROOT_NODE_ID);
-  if (!node) {
-    // Error.
-    return false;
-  }
+  Node * const node = &nodes_->get_value(ROOT_NODE_ID);
   node->set_child(NODE_INVALID_LABEL);
   node->set_offset(NODE_INVALID_OFFSET);
   header_->max_key_id = MAP_MIN_KEY_ID - 1;
@@ -327,11 +297,7 @@ bool DoubleArray<Bytes>::find_longest_prefix_match(KeyArg query,
                                                    Key *key) {
   bool found = false;
   uint64_t node_id = ROOT_NODE_ID;
-  Node node;
-  if (!nodes_->get(node_id, &node)) {
-    // Error.
-    return false;
-  }
+  Node node = nodes_->get(node_id);
   uint64_t query_pos;
   for (query_pos = 0; query_pos < query.size(); ++query_pos) {
     if (node.is_leaf()) {
@@ -363,11 +329,7 @@ bool DoubleArray<Bytes>::find_longest_prefix_match(KeyArg query,
     }
 
     if (node.child() == NODE_TERMINAL_LABEL) {
-      Node leaf_node;
-      if (!nodes_->get(node.offset() ^ NODE_TERMINAL_LABEL, &leaf_node)) {
-        // Error.
-        return false;
-      }
+      Node leaf_node = nodes_->get(node.offset() ^ NODE_TERMINAL_LABEL);
       if (leaf_node.is_leaf()) {
         switch (get_key(leaf_node.key_id(), key)) {
           case DOUBLE_ARRAY_FOUND: {
@@ -388,10 +350,7 @@ bool DoubleArray<Bytes>::find_longest_prefix_match(KeyArg query,
     }
 
     node_id = node.offset() ^ query[query_pos];
-    if (!nodes_->get(node_id, &node)) {
-      // Error.
-      return false;
-    }
+    node = nodes_->get(node_id);
     if (node.label() != query[query_pos]) {
       return found;
     }
@@ -420,21 +379,20 @@ bool DoubleArray<Bytes>::find_longest_prefix_match(KeyArg query,
       }
     }
   } else if (node.child() == NODE_TERMINAL_LABEL) {
-    if (nodes_->get(node.offset() ^ NODE_TERMINAL_LABEL, &node)) {
-      switch (get_key(node.key_id(), key)) {
-        case DOUBLE_ARRAY_FOUND: {
-          if (key_id) {
-            *key_id = node.key_id();
-          }
-          found = true;
-          break;
+    node = nodes_->get(node.offset() ^ NODE_TERMINAL_LABEL);
+    switch (get_key(node.key_id(), key)) {
+      case DOUBLE_ARRAY_FOUND: {
+        if (key_id) {
+          *key_id = node.key_id();
         }
-        case DOUBLE_ARRAY_NOT_FOUND: {
-          break;
-        }
-        default: {
-          return false;
-        }
+        found = true;
+        break;
+      }
+      case DOUBLE_ARRAY_NOT_FOUND: {
+        break;
+      }
+      default: {
+        return false;
       }
     }
   }
@@ -468,10 +426,14 @@ void DoubleArray<Bytes>::create_map(Storage *storage, uint32_t storage_node_id,
   try {
     header_ = static_cast<Header *>(storage_node.body());
     *header_ = Header();
-    nodes_.reset(NodeArray::create(storage, storage_node_id_));
-    siblings_.reset(SiblingArray::create(storage, storage_node_id_));
-    blocks_.reset(BlockArray::create(storage, storage_node_id_));
-    entries_.reset(EntryArray::create(storage, storage_node_id_));
+    nodes_.reset(NodeArray::create(storage, storage_node_id_,
+                                   NODE_ARRAY_SIZE));
+    siblings_.reset(SiblingArray::create(storage, storage_node_id_,
+                                         SIBLING_ARRAY_SIZE));
+    blocks_.reset(BlockArray::create(storage, storage_node_id_,
+                                     BLOCK_ARRAY_SIZE));
+    entries_.reset(EntryArray::create(storage, storage_node_id_,
+                                      ENTRY_ARRAY_SIZE));
     store_.reset(BytesStore::create(storage, storage_node_id_));
     header_->nodes_storage_node_id = nodes_->storage_node_id();
     header_->siblings_storage_node_id = siblings_->storage_node_id();
@@ -510,15 +472,12 @@ void DoubleArray<Bytes>::open_map(Storage *storage, uint32_t storage_node_id) {
 }
 
 DoubleArrayResult DoubleArray<Bytes>::get_key(int64_t key_id, Key *key) {
-  Entry entry;
-  if (!entries_->get(key_id, &entry)) {
-    return DOUBLE_ARRAY_FAILED;
-  }
+  Entry entry = entries_->get(key_id);
   if (!entry) {
     return DOUBLE_ARRAY_NOT_FOUND;
   }
-  if (!store_->get(entry.bytes_id(), key)) {
-    return DOUBLE_ARRAY_FAILED;
+  if (key) {
+    *key = store_->get(entry.bytes_id());
   }
   return DOUBLE_ARRAY_FOUND;
 }
@@ -542,21 +501,13 @@ bool DoubleArray<Bytes>::replace_key(int64_t key_id, KeyArg src_key,
       return false;
     }
   }
-  Entry * const entry = entries_->get_pointer(key_id);
-  if (!entry) {
-    // Error.
-    return false;
-  }
+  Entry * const entry = &entries_->get_value(key_id);
   Node *src_node;
   if (find_leaf(src_key, &src_node, &key_pos) != DOUBLE_ARRAY_FOUND) {
     // Critical error.
     return false;
   }
-  uint64_t bytes_id;
-  if (!store_->add(dest_key, &bytes_id)) {
-    // Error.
-    return false;
-  }
+  uint64_t bytes_id = store_->add(dest_key);
   dest_node->set_key_id(key_id);
   *entry = Entry::valid_entry(bytes_id);
   src_node->set_offset(NODE_INVALID_OFFSET);
@@ -565,10 +516,7 @@ bool DoubleArray<Bytes>::replace_key(int64_t key_id, KeyArg src_key,
 
 DoubleArrayResult DoubleArray<Bytes>::find_leaf(KeyArg key, Node **leaf_node,
                                                 uint64_t *leaf_key_pos) {
-  Node *node = nodes_->get_pointer(ROOT_NODE_ID);
-  if (!node) {
-    return DOUBLE_ARRAY_FAILED;
-  }
+  Node *node = &nodes_->get_value(ROOT_NODE_ID);
   uint64_t key_pos;
   for (key_pos = 0; key_pos < key.size(); ++key_pos) {
     if (node->is_leaf()) {
@@ -577,10 +525,7 @@ DoubleArrayResult DoubleArray<Bytes>::find_leaf(KeyArg key, Node **leaf_node,
       return DOUBLE_ARRAY_FOUND;
     }
     const uint64_t child_node_id = node->offset() ^ key[key_pos];
-    Node * const child_node = nodes_->get_pointer(child_node_id);
-    if (!child_node) {
-      return DOUBLE_ARRAY_FAILED;
-    }
+    Node * const child_node = &nodes_->get_value(child_node_id);
     if (child_node->label() != key[key_pos]) {
       *leaf_node = node;
       *leaf_key_pos = key_pos;
@@ -597,10 +542,7 @@ DoubleArrayResult DoubleArray<Bytes>::find_leaf(KeyArg key, Node **leaf_node,
     return DOUBLE_ARRAY_NOT_FOUND;
   }
   const uint64_t node_id = node->offset() ^ NODE_TERMINAL_LABEL;
-  node = nodes_->get_pointer(node_id);
-  if (!node) {
-    return DOUBLE_ARRAY_FAILED;
-  }
+  node = &nodes_->get_value(node_id);
   *leaf_node = node;
   return node->is_leaf() ? DOUBLE_ARRAY_FOUND : DOUBLE_ARRAY_NOT_FOUND;
 }
@@ -665,11 +607,7 @@ bool DoubleArray<Bytes>::insert_node(Node *node, uint64_t label,
     }
   }
   const uint64_t next_node_id = offset ^ label;
-  uint8_t *next_sibling = siblings_->get_pointer(next_node_id);
-  if (!next_sibling) {
-    // Error.
-    return false;
-  }
+  uint8_t *next_sibling = &siblings_->get_value(next_node_id);
   Node * const next_node = reserve_node(next_node_id);
   if (!next_node) {
     // Error.
@@ -736,11 +674,7 @@ bool DoubleArray<Bytes>::separate(Node *node, uint64_t labels[2],
     return false;
   }
   uint8_t * const sibling_block =
-      siblings_->get_pointer(offset & ~(BLOCK_SIZE - 1));
-  if (!sibling_block) {
-    // Error.
-    return false;
-  }
+      &siblings_->get_value(offset & ~(BLOCK_SIZE - 1));
   nodes[0]->set_label(labels[0]);
   nodes[0]->set_key_id(node->key_id());
   nodes[1]->set_label(labels[1]);
@@ -766,21 +700,13 @@ bool DoubleArray<Bytes>::resolve(Node *node, uint64_t label) {
     return true;
   }
   uint64_t dest_node_id = offset ^ label;
-  Node * const dest_node = nodes_->get_pointer(dest_node_id);
-  if (!dest_node) {
-    // Error.
-    return false;
-  }
+  Node * const dest_node = &nodes_->get_value(dest_node_id);
   if (dest_node->is_phantom()) {
     return true;
   }
   Node * const node_block = dest_node - (dest_node_id % BLOCK_SIZE);
   uint8_t * const sibling_block =
-      siblings_->get_pointer(dest_node_id & ~(BLOCK_SIZE - 1));
-  if (!sibling_block) {
-    // Error.
-    return false;
-  }
+      &siblings_->get_value(dest_node_id & ~(BLOCK_SIZE - 1));
   uint64_t labels[NODE_MAX_LABEL + 1];
   uint64_t num_labels = 0;
   uint64_t child_label = node->child();
@@ -810,29 +736,13 @@ bool DoubleArray<Bytes>::migrate_nodes(Node *node, uint64_t dest_offset,
                                        uint64_t num_labels) {
   const uint64_t src_offset = node->offset();
   Node * const src_node_block =
-      nodes_->get_pointer(src_offset & ~(BLOCK_SIZE - 1));
-  if (!src_node_block) {
-    // Error.
-    return false;
-  }
+      &nodes_->get_value(src_offset & ~(BLOCK_SIZE - 1));
   uint8_t * const src_sibling_block =
-      siblings_->get_pointer(src_offset & ~(BLOCK_SIZE - 1));
-  if (!src_sibling_block) {
-    // Error.
-    return false;
-  }
+      &siblings_->get_value(src_offset & ~(BLOCK_SIZE - 1));
   Node * const dest_node_block =
-      nodes_->get_pointer(dest_offset & ~(BLOCK_SIZE - 1));
-  if (!dest_node_block) {
-    // Error.
-    return false;
-  }
+      &nodes_->get_value(dest_offset & ~(BLOCK_SIZE - 1));
   uint8_t * const dest_sibling_block =
-      siblings_->get_pointer(dest_offset & ~(BLOCK_SIZE - 1));
-  if (!dest_sibling_block) {
-    // Error.
-    return false;
-  }
+      &siblings_->get_value(dest_offset & ~(BLOCK_SIZE - 1));
   for (uint64_t i = 0; i < num_labels; ++i) {
     const uint64_t src_node_id = src_offset ^ labels[i];
     Node * const src_node = &src_node_block[src_node_id % BLOCK_SIZE];
@@ -872,16 +782,8 @@ bool DoubleArray<Bytes>::find_offset(const uint64_t *labels,
     }
     uint64_t block_id = latest_block_id;
     do {
-      Block * const block = blocks_->get_pointer(block_id);
-      if (!block) {
-        // Error.
-        return false;
-      }
-      Node * const node_block = nodes_->get_pointer(block_id * BLOCK_SIZE);
-      if (!node_block) {
-        // Error.
-        return false;
-      }
+      Block * const block = &blocks_->get_value(block_id);
+      Node * const node_block = &nodes_->get_value(block_id * BLOCK_SIZE);
       const uint64_t first_phantom_node_id = block->first_phantom();
       uint64_t node_id = first_phantom_node_id;
       do {
@@ -933,17 +835,13 @@ auto DoubleArray<Bytes>::reserve_node(uint64_t node_id) -> Node * {
   if (node_id >= (header_->num_blocks * BLOCK_SIZE)) {
     block = reserve_block(block_id);
   } else {
-    block = blocks_->get_pointer(block_id);
+    block = &blocks_->get_value(block_id);
   }
   if (!block) {
     // Error.
     return nullptr;
   }
-  Node * const node = nodes_->get_pointer(node_id);
-  if (!node) {
-    // Error.
-    return nullptr;
-  }
+  Node * const node = &nodes_->get_value(node_id);
   Node * const node_block = node - (node_id % BLOCK_SIZE);
   Node * const next_node = &node_block[node->next()];
   Node * const prev_node = &node_block[node->prev()];
@@ -971,16 +869,8 @@ auto DoubleArray<Bytes>::reserve_block(uint64_t block_id) -> Block * {
                   << ", blocks_size = " << blocks_->size();
     return nullptr;
   }
-  Block * const block = blocks_->get_pointer(block_id);
-  if (!block) {
-    // Error.
-    return nullptr;
-  }
-  Node * const node = nodes_->get_pointer(block_id * BLOCK_SIZE);
-  if (!node) {
-    // Error.
-    return nullptr;
-  }
+  Block * const block = &blocks_->get_value(block_id);
+  Node * const node = &nodes_->get_value(block_id * BLOCK_SIZE);
   *block = Block::empty_block();
   for (uint64_t i = 0; i < BLOCK_SIZE; ++i) {
     node[i] = Node::phantom_node(i + 1, i - 1);
@@ -1013,17 +903,9 @@ bool DoubleArray<Bytes>::set_block_level(uint64_t block_id, Block *block,
   } else {
     // The block is appended to the level group.
     const uint64_t next_block_id = header_->latest_blocks[level];
-    Block * const next_block = blocks_->get_pointer(next_block_id);
-    if (!next_block) {
-      // Error.
-      return false;
-    }
+    Block * const next_block = &blocks_->get_value(next_block_id);
     const uint64_t prev_block_id = next_block->prev();
-    Block * const prev_block = blocks_->get_pointer(prev_block_id);
-    if (!prev_block) {
-      // Error.
-      return false;
-    }
+    Block * const prev_block = &blocks_->get_value(prev_block_id);
     block->set_next(next_block_id);
     block->set_prev(prev_block_id);
     prev_block->set_next(block_id);
@@ -1042,16 +924,8 @@ bool DoubleArray<Bytes>::unset_block_level(uint64_t block_id, Block *block) {
     // The level group becomes empty.
     header_->latest_blocks[level] = BLOCK_INVALID_ID;
   } else {
-    Block * const next_block = blocks_->get_pointer(next_block_id);
-    if (!next_block) {
-      // Error.
-      return false;
-    }
-    Block * const prev_block = blocks_->get_pointer(prev_block_id);
-    if (!prev_block) {
-      // Error.
-      return false;
-    }
+    Block * const next_block = &blocks_->get_value(next_block_id);
+    Block * const prev_block = &blocks_->get_value(prev_block_id);
     prev_block->set_next(next_block_id);
     next_block->set_prev(prev_block_id);
     if (block_id == header_->latest_blocks[level]) {

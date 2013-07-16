@@ -43,7 +43,7 @@ struct Header;
 template <typename T>
 class Patricia : public Map<T> {
   using Node = patricia::Node;
-  using NodeArray = Array<Node>;
+  using NodeArray = Array<Node, 65536, 8192>;
 
  public:
   using Header = patricia::Header;
@@ -93,8 +93,8 @@ class Patricia : public Map<T> {
 template <>
 class Patricia<Bytes> : public Map<Bytes> {
   using Node = patricia::Node;
-  using NodeArray = Array<Node>;
-  using Cache = Array<int64_t, 1 << 20, 1, 1>;
+  using NodeArray = Array<Node, 65536, 8192>;
+  using Cache = Array<int64_t>;
 
  public:
   using Header = patricia::Header;

@@ -39,25 +39,33 @@ struct KeyIDArrayHelper;
 // Map<T> has at most 2^40 different keys.
 template <typename T, size_t T_SIZE>
 struct KeyIDArrayHelper {
-  using ImplType = ArrayImpl<int64_t, 65536, 8192, 4096>;
+  using ImplType = ArrayImpl<int64_t, 65536, 8192>;
+  static constexpr uint64_t SIZE      = 1ULL << 41;
+  static constexpr uint64_t PAGE_SIZE = 1ULL << 16;
 };
 
 // Map<T> has at most 2^8 different keys.
 template <typename T>
 struct KeyIDArrayHelper<T, 1> {
-  using ImplType = ArrayImpl<int64_t, 512, 1, 1>;
+  using ImplType = ArrayImpl<int64_t, 0, 0>;
+  static constexpr uint64_t SIZE      = 1ULL << 9;
+  static constexpr uint64_t PAGE_SIZE = SIZE;
 };
 
 // Map<T> has at most 2^16 different keys.
 template <typename T>
 struct KeyIDArrayHelper<T, 2> {
-  using ImplType = ArrayImpl<int64_t, 512, 256, 1>;
+  using ImplType = ArrayImpl<int64_t, 512, 0>;
+  static constexpr uint64_t SIZE      = 1ULL << 17;
+  static constexpr uint64_t PAGE_SIZE = 1ULL << 9;
 };
 
 // Map<T> has at most 2^32 different keys.
 template <typename T>
 struct KeyIDArrayHelper<T, 4> {
-  using ImplType = ArrayImpl<int64_t, 65536, 512, 256>;
+  using ImplType = ArrayImpl<int64_t, 65536, 512>;
+  static constexpr uint64_t SIZE      = 1ULL << 33;
+  static constexpr uint64_t PAGE_SIZE = 1ULL << 16;
 };
 
 struct KeyIDArrayHeader {
@@ -110,19 +118,11 @@ class KeyIDArray {
 
   // Return the number of values in each page.
   static constexpr uint64_t page_size() {
-    return ArrayImpl::page_size();
-  }
-  // Return the number of pages in each table.
-  static constexpr uint64_t table_size() {
-    return ArrayImpl::table_size();
-  }
-  // Return the number of tables in each secondary table.
-  static constexpr uint64_t secondary_table_size() {
-    return ArrayImpl::secondary_table_size();
+    return KeyIDArrayHelper<T>::PAGE_SIZE;
   }
   // Return the number of values in Array.
-  static constexpr uint64_t size() {
-    return ArrayImpl::size();
+  uint64_t size() const {
+    return impl_.size();
   }
 
   // Return the storage node ID.
@@ -134,22 +134,9 @@ class KeyIDArray {
     return mask_;
   }
 
-  // Get a value and return true on success.
-  // The value is assigned to "*value" iff "value" != nullptr.
-  bool get(uint64_t value_id, Value *value) {
-    return impl_.get(value_id & mask_, value);
-  }
-  // Set a value and return true on success.
-  bool set(uint64_t value_id, ValueArg value) {
-    return impl_.set(value_id & mask_, value);
-  }
   // Get a value and return its address on success.
   Value *get_pointer(uint64_t value_id) {
-    return impl_.get_pointer(value_id & mask_);
-  }
-  // Get a page and return its starting address on success.
-  Value *get_page(uint64_t page_id) {
-    return impl_.get_page(page_id & (mask_ / page_size()));
+    return &impl_.get_value(value_id & mask_);
   }
 
  private:
@@ -177,7 +164,8 @@ class KeyIDArray {
     try {
       header_ = static_cast<KeyIDArrayHeader *>(storage_node.body());
       *header_ = KeyIDArrayHeader();
-      impl_.create(storage, storage_node_id_, MAP_INVALID_KEY_ID);
+      impl_.create(storage, storage_node_id_, KeyIDArrayHelper<T>::SIZE,
+                   MAP_INVALID_KEY_ID);
       mask_ = mask;
       header_->impl_storage_node_id = impl_.storage_node_id();
       header_->mask = mask_;

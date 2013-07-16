@@ -43,36 +43,27 @@ class BytesArray {
   using Value = typename Traits<Bytes>::Type;
   using ValueArg = typename Traits<Bytes>::ArgumentType;
 
-  using IDArray = Array<uint64_t>;
+  using IDArray = Array<uint64_t, 65536, 4096>;
+
+  static constexpr uint64_t ID_ARRAY_SIZE = 1ULL << 40;
 
   ~BytesArray();
 
   // Create an array.
-  static BytesArray *create(Storage *storage, uint32_t storage_node_id);
-  // Create an array with the default value.
   static BytesArray *create(Storage *storage, uint32_t storage_node_id,
-                            ValueArg default_value);
+                            uint64_t dummy);
+  // Create an array with default value.
+  static BytesArray *create(Storage *storage, uint32_t storage_node_id,
+                            uint64_t dummy, ValueArg default_value);
   // Open an array.
   static BytesArray *open(Storage *storage, uint32_t storage_node_id);
 
   // Unlink an array.
   static void unlink(Storage *storage, uint32_t storage_node_id);
 
-  // Return the number of values in each page.
-  static constexpr uint64_t page_size() {
-    return IDArray::page_size();
-  }
-  // Return the number of pages in each table.
-  static constexpr uint64_t table_size() {
-    return IDArray::table_size();
-  }
-  // Return the number of tables in each secondary table.
-  static constexpr uint64_t secondary_table_size() {
-    return IDArray::secondary_table_size();
-  }
   // Return the number of values in Array.
-  static constexpr uint64_t size() {
-    return IDArray::size();
+  uint64_t size() const {
+    return ids_->size();
   }
 
   // Return the storage node ID.
@@ -80,11 +71,10 @@ class BytesArray {
     return storage_node_id_;
   }
 
-  // Get a value and return true on success.
-  // The value is assigned to "*value" iff "value" != nullptr.
-  bool get(uint64_t value_id, Value *value);
-  // Set a value and return true on success.
-  bool set(uint64_t value_id, ValueArg value);
+  // Get a value.
+  Value get(uint64_t value_id);
+  // Set a value.
+  void set(uint64_t value_id, ValueArg value);
 
   // Sweep empty pages whose modified time < (now - lifetime).
   bool sweep(Duration lifetime);

@@ -105,13 +105,13 @@ bool Patricia<T>::get(int64_t key_id, Key *key) {
     // Out of range.
     return false;
   }
-  bool bit;
-  keys_->get_bit(key_id, &bit);
-  if (!bit) {
+  if (!keys_->get_bit(key_id)) {
     // Not found.
     return false;
   }
-  keys_->get_key(key_id, key);
+  if (key) {
+    *key = keys_->get_key(key_id);
+  }
   return true;
 }
 
@@ -126,7 +126,7 @@ bool Patricia<T>::unset(int64_t key_id) {
   uint64_t node_id = ROOT_NODE_ID;
   Node *prev_node = nullptr;
   for ( ; ; ) {
-    Node * const node = nodes_->get_pointer(node_id);
+    Node * const node = &nodes_->get_value(node_id);
     if (node->status() == NODE_LEAF) {
       if (node->key_id() != key_id) {
         // Not found.
@@ -160,7 +160,7 @@ bool Patricia<T>::reset(int64_t key_id, KeyArg dest_key) {
   Node *src_prev_node = nullptr;
   Node *src_sibling_node = nullptr;
   for ( ; ; ) {
-    src_node = nodes_->get_pointer(node_id);
+    src_node = &nodes_->get_value(node_id);
     if (src_node->status() == NODE_LEAF) {
       if (src_node->key_id() != key_id) {
         // Not found.
@@ -180,7 +180,7 @@ bool Patricia<T>::reset(int64_t key_id, KeyArg dest_key) {
   Node *history[(sizeof(Key) * 8) + 1];
   int depth = -1;
   for ( ; ; ) {
-    Node * const node = nodes_->get_pointer(node_id);
+    Node * const node = &nodes_->get_value(node_id);
     history[++depth] = node;
     if (node->status() == NODE_LEAF) {
       break;
@@ -189,8 +189,7 @@ bool Patricia<T>::reset(int64_t key_id, KeyArg dest_key) {
               get_ith_bit(dest_normalized_key, node->bit_pos());
   }
   // Count the number of the common prefix bits.
-  Key stored_key;
-  keys_->get_key(history[depth]->key_id(), &stored_key);
+  Key stored_key = keys_->get_key(history[depth]->key_id());
   const uint64_t count =
       count_common_prefix_bits(dest_normalized_key, stored_key);
   if (count == (sizeof(Key) * 8)) {
@@ -205,7 +204,7 @@ bool Patricia<T>::reset(int64_t key_id, KeyArg dest_key) {
     --depth;
   }
   Node * const dest_prev_node = history[depth];
-  Node * const next_nodes = nodes_->get_pointer(header_->next_node_id);
+  Node * const next_nodes = &nodes_->get_value(header_->next_node_id);
   keys_->reset(key_id, dest_normalized_key);
   Node *dest_node;
   Node *dest_sibling_node;
@@ -234,16 +233,14 @@ template <typename T>
 bool Patricia<T>::find(KeyArg key, int64_t *key_id) {
   const Key normalized_key = Helper<T>::normalize(key);
   uint64_t node_id = ROOT_NODE_ID;
-  Node node;
-  nodes_->get(node_id, &node);
+  Node node = nodes_->get(node_id);
   if (node.status() == NODE_DEAD) {
     // Not found.
     return false;
   }
   for ( ; ; ) {
     if (node.status() == NODE_LEAF) {
-      Key stored_key;
-      keys_->get_key(node.key_id(), &stored_key);
+      Key stored_key = keys_->get_key(node.key_id());
       if (!Helper<T>::equal_to(normalized_key, stored_key)) {
         // Not found.
         return false;
@@ -254,7 +251,7 @@ bool Patricia<T>::find(KeyArg key, int64_t *key_id) {
       return true;
     }
     node_id = node.offset() + get_ith_bit(normalized_key, node.bit_pos());
-    nodes_->get(node_id, &node);
+    node = nodes_->get(node_id);
   }
 }
 
@@ -262,11 +259,10 @@ template <typename T>
 bool Patricia<T>::add(KeyArg key, int64_t *key_id) {
   const Key normalized_key = Helper<T>::normalize(key);
   uint64_t node_id = ROOT_NODE_ID;
-  Node *node = nodes_->get_pointer(node_id);
+  Node *node = &nodes_->get_value(node_id);
   if (node->status() == NODE_DEAD) {
     // The patricia is empty.
-    int64_t next_key_id;
-    keys_->add(normalized_key, &next_key_id);
+    int64_t next_key_id = keys_->add(normalized_key);
     *node = Node::leaf_node(next_key_id);
     if (key_id) {
       *key_id = next_key_id;
@@ -278,12 +274,11 @@ bool Patricia<T>::add(KeyArg key, int64_t *key_id) {
   history[0] = node;
   while (node->status() != NODE_LEAF) {
     node_id = node->offset() + get_ith_bit(normalized_key, node->bit_pos());
-    node = nodes_->get_pointer(node_id);
+    node = &nodes_->get_value(node_id);
     history[++depth] = node;
   }
   // Count the number of the common prefix bits.
-  Key stored_key;
-  keys_->get_key(node->key_id(), &stored_key);
+  Key stored_key = keys_->get_key(node->key_id());
   const uint64_t count = count_common_prefix_bits(normalized_key, stored_key);
   if (count == (sizeof(Key) * 8)) {
     // Found.
@@ -300,9 +295,8 @@ bool Patricia<T>::add(KeyArg key, int64_t *key_id) {
     --depth;
   }
   node = history[depth];
-  Node * const next_nodes = nodes_->get_pointer(header_->next_node_id);
-  int64_t next_key_id;
-  keys_->add(normalized_key, &next_key_id);
+  Node * const next_nodes = &nodes_->get_value(header_->next_node_id);
+  int64_t next_key_id = keys_->add(normalized_key);
   if (get_ith_bit(normalized_key, count)) {
     next_nodes[0] = *node;
     next_nodes[1] = Node::leaf_node(next_key_id);
@@ -322,7 +316,7 @@ template <typename T>
 bool Patricia<T>::remove(KeyArg key) {
   const Key normalized_key = Helper<T>::normalize(key);
   uint64_t node_id = ROOT_NODE_ID;
-  Node *node = nodes_->get_pointer(node_id);
+  Node *node = &nodes_->get_value(node_id);
   if (node->status() == NODE_DEAD) {
     // Not found.
     return false;
@@ -330,8 +324,7 @@ bool Patricia<T>::remove(KeyArg key) {
   Node *prev_node = nullptr;
   for ( ; ; ) {
     if (node->status() == NODE_LEAF) {
-      Key stored_key;
-      keys_->get_key(node->key_id(), &stored_key);
+      Key stored_key = keys_->get_key(node->key_id());
       if (!Helper<T>::equal_to(normalized_key, stored_key)) {
         // Not found.
         return false;
@@ -347,7 +340,7 @@ bool Patricia<T>::remove(KeyArg key) {
     }
     prev_node = node;
     node_id = node->offset() + get_ith_bit(normalized_key, node->bit_pos());
-    node = nodes_->get_pointer(node_id);
+    node = &nodes_->get_value(node_id);
   }
 }
 
@@ -355,7 +348,7 @@ template <typename T>
 bool Patricia<T>::replace(KeyArg src_key, KeyArg dest_key, int64_t *key_id) {
   const Key src_normalized_key = Helper<T>::normalize(src_key);
   uint64_t node_id = ROOT_NODE_ID;
-  Node *src_node = nodes_->get_pointer(node_id);
+  Node *src_node = &nodes_->get_value(node_id);
   if (src_node->status() == NODE_DEAD) {
     // Not found.
     return false;
@@ -366,8 +359,7 @@ bool Patricia<T>::replace(KeyArg src_key, KeyArg dest_key, int64_t *key_id) {
   for ( ; ; ) {
     if (src_node->status() == NODE_LEAF) {
       src_key_id = src_node->key_id();
-      Key stored_key;
-      keys_->get_key(src_key_id, &stored_key);
+      Key stored_key = keys_->get_key(src_key_id);
       if (!Helper<T>::equal_to(src_normalized_key, stored_key)) {
         // Not found.
         return false;
@@ -380,7 +372,7 @@ bool Patricia<T>::replace(KeyArg src_key, KeyArg dest_key, int64_t *key_id) {
     src_prev_node = src_node;
     node_id = src_node->offset() +
               get_ith_bit(src_normalized_key, src_node->bit_pos());
-    src_node = nodes_->get_pointer(node_id);
+    src_node = &nodes_->get_value(node_id);
   }
   // Add the destination key.
   const Key dest_normalized_key = Helper<T>::normalize(dest_key);
@@ -388,7 +380,7 @@ bool Patricia<T>::replace(KeyArg src_key, KeyArg dest_key, int64_t *key_id) {
   Node *history[(sizeof(Key) * 8) + 1];
   int depth = -1;
   for ( ; ; ) {
-    Node * const node = nodes_->get_pointer(node_id);
+    Node * const node = &nodes_->get_value(node_id);
     history[++depth] = node;
     if (node->status() == NODE_LEAF) {
       break;
@@ -397,8 +389,7 @@ bool Patricia<T>::replace(KeyArg src_key, KeyArg dest_key, int64_t *key_id) {
               get_ith_bit(dest_normalized_key, node->bit_pos());
   }
   // Count the number of the common prefix bits.
-  Key stored_key;
-  keys_->get_key(history[depth]->key_id(), &stored_key);
+  Key stored_key = keys_->get_key(history[depth]->key_id());
   const uint64_t count =
       count_common_prefix_bits(dest_normalized_key, stored_key);
   if (count == (sizeof(Key) * 8)) {
@@ -413,7 +404,7 @@ bool Patricia<T>::replace(KeyArg src_key, KeyArg dest_key, int64_t *key_id) {
     --depth;
   }
   Node * const dest_prev_node = history[depth];
-  Node * const next_nodes = nodes_->get_pointer(header_->next_node_id);
+  Node * const next_nodes = &nodes_->get_value(header_->next_node_id);
   keys_->reset(src_key_id, dest_normalized_key);
   Node *dest_node;
   Node *dest_sibling_node;
@@ -443,7 +434,7 @@ bool Patricia<T>::replace(KeyArg src_key, KeyArg dest_key, int64_t *key_id) {
 
 template <typename T>
 bool Patricia<T>::truncate() {
-  Node * const root_node = nodes_->get_pointer(ROOT_NODE_ID);
+  Node * const root_node = &nodes_->get_value(ROOT_NODE_ID);
   if (!root_node) {
     return false;
   }
@@ -464,11 +455,12 @@ void Patricia<T>::create_map(Storage *storage, uint32_t storage_node_id,
   try {
     header_ = static_cast<Header *>(storage_node.body());
     *header_ = Header();
-    nodes_.reset(NodeArray::create(storage, storage_node_id_));
+    // TODO: Remove a magic number.
+    nodes_.reset(NodeArray::create(storage, storage_node_id_, 1ULL << 41));
     keys_.reset(KeyStore<T>::create(storage, storage_node_id_));
     header_->nodes_storage_node_id = nodes_->storage_node_id();
     header_->keys_storage_node_id = keys_->storage_node_id();
-    Node * const root_node = nodes_->get_pointer(ROOT_NODE_ID);
+    Node * const root_node = &nodes_->get_value(ROOT_NODE_ID);
     *root_node = Node::dead_node();
   } catch (...) {
     storage->unlink_node(storage_node_id_);
@@ -606,13 +598,13 @@ bool Patricia<Bytes>::get(int64_t key_id, Key *key) {
     // Out of range.
     return false;
   }
-  bool bit;
-  keys_->get_bit(key_id, &bit);
-  if (!bit) {
+  if (!keys_->get_bit(key_id)) {
     // Not found.
     return false;
   }
-  keys_->get_key(key_id, key);
+  if (key) {
+    *key = keys_->get_key(key_id);
+  }
   return true;
 }
 
@@ -626,7 +618,7 @@ bool Patricia<Bytes>::unset(int64_t key_id) {
   uint64_t node_id = ROOT_NODE_ID;
   Node *prev_node = nullptr;
   for ( ; ; ) {
-    Node * const node = nodes_->get_pointer(node_id);
+    Node * const node = &nodes_->get_value(node_id);
     switch (node->status()) {
       case NODE_LEAF: {
         if (node->key_id() != key_id) {
@@ -676,7 +668,7 @@ bool Patricia<Bytes>::reset(int64_t key_id, KeyArg dest_key) {
   Node *src_prev_node = nullptr;
   Node *src_sibling_node = nullptr;
   for ( ; ; ) {
-    src_node = nodes_->get_pointer(src_node_id);
+    src_node = &nodes_->get_value(src_node_id);
     if (src_node->status() == NODE_LEAF) {
       if (src_node->key_id() != key_id) {
         // Not found.
@@ -710,7 +702,7 @@ bool Patricia<Bytes>::reset(int64_t key_id, KeyArg dest_key) {
   Node *history[HISTORY_SIZE];
   int depth = -1;
   for ( ; ; ) {
-    Node *node = nodes_->get_pointer(dest_node_id);
+    Node *node = &nodes_->get_value(dest_node_id);
     history[++depth % HISTORY_SIZE] = node;
     if (node->status() == NODE_LEAF) {
       break;
@@ -729,11 +721,10 @@ bool Patricia<Bytes>::reset(int64_t key_id, KeyArg dest_key) {
   // Find a leaf node.
   Node *leaf_node = history[depth % HISTORY_SIZE];
   while (leaf_node->status() != NODE_LEAF) {
-    leaf_node = nodes_->get_pointer(leaf_node->offset());
+    leaf_node = &nodes_->get_value(leaf_node->offset());
   }
   // Count the number of the common prefix bits.
-  Key stored_key;
-  keys_->get_key(leaf_node->key_id(), &stored_key);
+  Key stored_key = keys_->get_key(leaf_node->key_id());
   const uint64_t min_size = (dest_key.size() < stored_key.size()) ?
                             dest_key.size() : stored_key.size();
   uint64_t count;
@@ -748,7 +739,7 @@ bool Patricia<Bytes>::reset(int64_t key_id, KeyArg dest_key) {
       return false;
     }
     Node * const dest_prev_node = history[depth % HISTORY_SIZE];
-    Node * const next_nodes = nodes_->get_pointer(header_->next_node_id);
+    Node * const next_nodes = &nodes_->get_value(header_->next_node_id);
     keys_->reset(key_id, dest_key);
     Node *dest_node;
     Node *dest_sibling_node;
@@ -796,7 +787,7 @@ bool Patricia<Bytes>::reset(int64_t key_id, KeyArg dest_key) {
     // Find the branching point with the naive method.
     dest_node_id = ROOT_NODE_ID;
     for ( ; ; ) {
-      dest_prev_node = nodes_->get_pointer(dest_node_id);
+      dest_prev_node = &nodes_->get_value(dest_node_id);
       if (dest_prev_node->status() == NODE_LEAF) {
         break;
       } else if (dest_prev_node->status() == NODE_BRANCH) {
@@ -813,7 +804,7 @@ bool Patricia<Bytes>::reset(int64_t key_id, KeyArg dest_key) {
       }
     }
   }
-  Node * const next_nodes = nodes_->get_pointer(header_->next_node_id);
+  Node * const next_nodes = &nodes_->get_value(header_->next_node_id);
   keys_->reset(key_id, dest_key);
   Node *dest_node;
   Node *dest_sibling_node;
@@ -841,8 +832,7 @@ bool Patricia<Bytes>::reset(int64_t key_id, KeyArg dest_key) {
 bool Patricia<Bytes>::find(KeyArg key, int64_t *key_id) {
   const uint64_t bit_size = key.size() * 8;
   uint64_t node_id = ROOT_NODE_ID;
-  Node node;
-  nodes_->get(node_id, &node);
+  Node node = nodes_->get(node_id);
   if (node.status() == NODE_DEAD) {
     // Not found.
     return false;
@@ -850,8 +840,7 @@ bool Patricia<Bytes>::find(KeyArg key, int64_t *key_id) {
   for ( ; ; ) {
     switch (node.status()) {
       case NODE_LEAF: {
-        Key stored_key;
-        keys_->get_key(node.key_id(), &stored_key);
+        Key stored_key = keys_->get_key(node.key_id());
         if (key != stored_key) {
           // Not found.
           return false;
@@ -878,7 +867,7 @@ bool Patricia<Bytes>::find(KeyArg key, int64_t *key_id) {
         break;
       }
     }
-    nodes_->get(node_id, &node);
+    node = nodes_->get(node_id);
   }
 }
 
@@ -886,12 +875,11 @@ bool Patricia<Bytes>::add(KeyArg key, int64_t *key_id) {
   constexpr std::size_t HISTORY_SIZE = 8;
   int64_t * const cache = nullptr;
 //  int64_t * const cache =
-//      cache_->get_pointer(hash_table::Hash<Key>()(key) % cache_->size());
+//      &cache_->get_value(hash_table::Hash<Key>()(key) % cache_->size());
 //  if ((*cache >= 0) && (*cache < keys_->max_key_id())) {
-//    bool bit;
-//    if (keys_->get_bit(*cache, &bit) && bit) {
-//      Key cached_key;
-//      if (keys_->get_key(*cache, &cached_key) && (key == cached_key)) {
+//    if (keys_->get_bit(*cache)) {
+//      Key cached_key = keys_->get_key(*cache);
+//      if (key == cached_key) {
 //        if (key_id) {
 //          *key_id = *cache;
 //        }
@@ -900,11 +888,10 @@ bool Patricia<Bytes>::add(KeyArg key, int64_t *key_id) {
 //    }
 //  }
   uint64_t node_id = ROOT_NODE_ID;
-  Node *node = nodes_->get_pointer(node_id);
+  Node *node = &nodes_->get_value(node_id);
   if (node->status() == NODE_DEAD) {
     // The patricia is empty.
-    int64_t next_key_id;
-    keys_->add(key, &next_key_id);
+    int64_t next_key_id = keys_->add(key);
     *node = Node::leaf_node(next_key_id);
     if (key_id) {
       *key_id = next_key_id;
@@ -930,17 +917,16 @@ bool Patricia<Bytes>::add(KeyArg key, int64_t *key_id) {
       }
       node_id = node->offset() + 1;
     }
-    node = nodes_->get_pointer(node_id);
+    node = &nodes_->get_value(node_id);
     history[++depth % HISTORY_SIZE] = node;
   }
   // Find a leaf node.
   while (node->status() != NODE_LEAF) {
     node_id = node->offset();
-    node = nodes_->get_pointer(node_id);
+    node = &nodes_->get_value(node_id);
   }
   // Count the number of the common prefix bits.
-  Key stored_key;
-  keys_->get_key(node->key_id(), &stored_key);
+  Key stored_key = keys_->get_key(node->key_id());
   const uint64_t min_size =
       (key.size() < stored_key.size()) ? key.size() : stored_key.size();
   uint64_t count;
@@ -961,9 +947,8 @@ bool Patricia<Bytes>::add(KeyArg key, int64_t *key_id) {
       return false;
     }
     node = history[depth % HISTORY_SIZE];
-    Node * const next_nodes = nodes_->get_pointer(header_->next_node_id);
-    int64_t next_key_id;
-    keys_->add(key, &next_key_id);
+    Node * const next_nodes = &nodes_->get_value(header_->next_node_id);
+    int64_t next_key_id = keys_->add(key);
     if (count == key.size()) {
       // "key" is a prefix of "stored_key".
       next_nodes[0] = Node::leaf_node(next_key_id);
@@ -1004,7 +989,7 @@ bool Patricia<Bytes>::add(KeyArg key, int64_t *key_id) {
     // Find the branching point with the naive method.
     node_id = ROOT_NODE_ID;
     for ( ; ; ) {
-      node = nodes_->get_pointer(node_id);
+      node = &nodes_->get_value(node_id);
       if (node->status() == NODE_LEAF) {
         break;
       } else if (node->status() == NODE_BRANCH) {
@@ -1020,9 +1005,8 @@ bool Patricia<Bytes>::add(KeyArg key, int64_t *key_id) {
       }
     }
   }
-  Node * const next_nodes = nodes_->get_pointer(header_->next_node_id);
-  int64_t next_key_id;
-  keys_->add(key, &next_key_id);
+  Node * const next_nodes = &nodes_->get_value(header_->next_node_id);
+  int64_t next_key_id = keys_->add(key);
   if (get_ith_bit(key, count)) {
     next_nodes[0] = *node;
     next_nodes[1] = Node::leaf_node(next_key_id);
@@ -1044,7 +1028,7 @@ bool Patricia<Bytes>::add(KeyArg key, int64_t *key_id) {
 bool Patricia<Bytes>::remove(KeyArg key) {
   const uint64_t bit_size = key.size() * 8;
   uint64_t node_id = ROOT_NODE_ID;
-  Node *node = nodes_->get_pointer(node_id);
+  Node *node = &nodes_->get_value(node_id);
   if (node->status() == NODE_DEAD) {
     // Not found.
     return false;
@@ -1053,8 +1037,7 @@ bool Patricia<Bytes>::remove(KeyArg key) {
   for ( ; ; ) {
     switch (node->status()) {
       case NODE_LEAF: {
-        Key stored_key;
-        keys_->get_key(node->key_id(), &stored_key);
+        Key stored_key = keys_->get_key(node->key_id());
         if (stored_key != key) {
           // Not found.
           return false;
@@ -1086,7 +1069,7 @@ bool Patricia<Bytes>::remove(KeyArg key) {
       }
     }
     prev_node = node;
-    node = nodes_->get_pointer(node_id);
+    node = &nodes_->get_value(node_id);
   }
 }
 
@@ -1096,7 +1079,7 @@ bool Patricia<Bytes>::replace(KeyArg src_key, KeyArg dest_key,
   const uint64_t src_bit_size = src_key.size() * 8;
   int64_t src_key_id;
   uint64_t src_node_id = ROOT_NODE_ID;
-  Node *src_node = nodes_->get_pointer(src_node_id);
+  Node *src_node = &nodes_->get_value(src_node_id);
   if (src_node->status() == NODE_DEAD) {
     // Not found.
     return false;
@@ -1106,8 +1089,7 @@ bool Patricia<Bytes>::replace(KeyArg src_key, KeyArg dest_key,
   for ( ; ; ) {
     if (src_node->status() == NODE_LEAF) {
       src_key_id = src_node->key_id();
-      Key stored_key;
-      keys_->get_key(src_key_id, &stored_key);
+      Key stored_key = keys_->get_key(src_key_id);
       if (stored_key != src_key) {
         // Not found.
         return false;
@@ -1135,7 +1117,7 @@ bool Patricia<Bytes>::replace(KeyArg src_key, KeyArg dest_key,
                     (src_node->bit_size() < src_bit_size);
     }
     src_prev_node = src_node;
-    src_node = nodes_->get_pointer(src_node_id);
+    src_node = &nodes_->get_value(src_node_id);
   }
   // Add the destination key.
   constexpr std::size_t HISTORY_SIZE = 8;
@@ -1144,7 +1126,7 @@ bool Patricia<Bytes>::replace(KeyArg src_key, KeyArg dest_key,
   Node *history[HISTORY_SIZE];
   int depth = -1;
   for ( ; ; ) {
-    Node *node = nodes_->get_pointer(dest_node_id);
+    Node *node = &nodes_->get_value(dest_node_id);
     history[++depth % HISTORY_SIZE] = node;
     if (node->status() == NODE_LEAF) {
       break;
@@ -1163,11 +1145,10 @@ bool Patricia<Bytes>::replace(KeyArg src_key, KeyArg dest_key,
   // Find a leaf node.
   Node *leaf_node = history[depth % HISTORY_SIZE];
   while (leaf_node->status() != NODE_LEAF) {
-    leaf_node = nodes_->get_pointer(leaf_node->offset());
+    leaf_node = &nodes_->get_value(leaf_node->offset());
   }
   // Count the number of the common prefix bits.
-  Key stored_key;
-  keys_->get_key(leaf_node->key_id(), &stored_key);
+  Key stored_key = keys_->get_key(leaf_node->key_id());
   const uint64_t min_size = (dest_key.size() < stored_key.size()) ?
                             dest_key.size() : stored_key.size();
   uint64_t count;
@@ -1182,7 +1163,7 @@ bool Patricia<Bytes>::replace(KeyArg src_key, KeyArg dest_key,
       return false;
     }
     Node * const dest_prev_node = history[depth % HISTORY_SIZE];
-    Node * const next_nodes = nodes_->get_pointer(header_->next_node_id);
+    Node * const next_nodes = &nodes_->get_value(header_->next_node_id);
     keys_->reset(src_key_id, dest_key);
     Node *dest_node;
     Node *dest_sibling_node;
@@ -1230,7 +1211,7 @@ bool Patricia<Bytes>::replace(KeyArg src_key, KeyArg dest_key,
     // Find the branching point with the naive method.
     dest_node_id = ROOT_NODE_ID;
     for ( ; ; ) {
-      dest_prev_node = nodes_->get_pointer(dest_node_id);
+      dest_prev_node = &nodes_->get_value(dest_node_id);
       if (dest_prev_node->status() == NODE_LEAF) {
         break;
       } else if (dest_prev_node->status() == NODE_BRANCH) {
@@ -1247,7 +1228,7 @@ bool Patricia<Bytes>::replace(KeyArg src_key, KeyArg dest_key,
       }
     }
   }
-  Node * const next_nodes = nodes_->get_pointer(header_->next_node_id);
+  Node * const next_nodes = &nodes_->get_value(header_->next_node_id);
   keys_->reset(src_key_id, dest_key);
   Node *dest_node;
   Node *dest_sibling_node;
@@ -1278,16 +1259,14 @@ bool Patricia<Bytes>::find_longest_prefix_match(KeyArg query, int64_t *key_id,
   bool found = false;
   uint64_t node_id = ROOT_NODE_ID;
   for ( ; ; ) {
-    Node node;
-    nodes_->get(node_id, &node);
+    Node node = nodes_->get(node_id);
     switch (node.status()) {
       case NODE_DEAD: {
         // Not found.
         return found;
       }
       case NODE_LEAF: {
-        Key stored_key;
-        keys_->get_key(node.key_id(), &stored_key);
+        Key stored_key = keys_->get_key(node.key_id());
         if (query.starts_with(stored_key)) {
           if (key_id) {
             *key_id = node.key_id();
@@ -1310,10 +1289,8 @@ bool Patricia<Bytes>::find_longest_prefix_match(KeyArg query, int64_t *key_id,
         if (node.bit_size() > bit_size) {
           return found;
         } else if (node.bit_size() < bit_size) {
-          Node leaf_node;
-          nodes_->get(node.offset(), &leaf_node);
-          Key stored_key;
-          keys_->get_key(leaf_node.key_id(), &stored_key);
+          Node leaf_node = nodes_->get(node.offset());
+          Key stored_key = keys_->get_key(leaf_node.key_id());
           if (query.starts_with(stored_key)) {
             if (key_id) {
               *key_id = leaf_node.key_id();
@@ -1332,7 +1309,7 @@ bool Patricia<Bytes>::find_longest_prefix_match(KeyArg query, int64_t *key_id,
 }
 
 bool Patricia<Bytes>::truncate() {
-  Node * const root_node = nodes_->get_pointer(ROOT_NODE_ID);
+  Node * const root_node = &nodes_->get_value(ROOT_NODE_ID);
   keys_->truncate();
   *root_node = Node::dead_node();
   return true;
@@ -1347,13 +1324,15 @@ void Patricia<Bytes>::create_map(Storage *storage, uint32_t storage_node_id,
   try {
     header_ = static_cast<Header *>(storage_node.body());
     *header_ = Header();
-    nodes_.reset(NodeArray::create(storage, storage_node_id_));
+    // TODO: Remove a magic number.
+    nodes_.reset(NodeArray::create(storage, storage_node_id_, 1ULL << 41));
     keys_.reset(KeyStore<Bytes>::create(storage, storage_node_id_));
-    cache_.reset(Cache::create(storage, storage_node_id_, -1));
+    // TODO: Remove a magic number.
+    cache_.reset(Cache::create(storage, storage_node_id_, 1ULL << 20, -1));
     header_->nodes_storage_node_id = nodes_->storage_node_id();
     header_->keys_storage_node_id = keys_->storage_node_id();
     header_->cache_storage_node_id = cache_->storage_node_id();
-    Node * const root_node = nodes_->get_pointer(ROOT_NODE_ID);
+    Node * const root_node = &nodes_->get_value(ROOT_NODE_ID);
     *root_node = Node::dead_node();
   } catch (...) {
     storage->unlink_node(storage_node_id_);

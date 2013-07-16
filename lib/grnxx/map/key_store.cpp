@@ -79,9 +79,9 @@ KeyStore<T> *KeyStore<T>::open(Storage *storage, uint32_t storage_node_id) {
 template <typename T>
 bool KeyStore<T>::unset(int64_t key_id) {
   // Prepare to update "bits_" and "links_".
-  const uint64_t unit_id = key_id / bits_->unit_size();
-  const uint64_t unit_bit = 1ULL << (key_id % bits_->unit_size());
-  BitArrayUnit * const unit = bits_->get_unit(unit_id);
+  const uint64_t unit_id = key_id / unit_size();
+  const uint64_t unit_bit = 1ULL << (key_id % unit_size());
+  BitArrayUnit * const unit = &bits_->get_unit(unit_id);
   if ((*unit & unit_bit) == 0) {
     // Not found.
     return false;
@@ -89,7 +89,7 @@ bool KeyStore<T>::unset(int64_t key_id) {
   // Set "link" if this operation creates the first 0 bit in the unit.
   uint64_t *link = nullptr;
   if (*unit == ~BitArrayUnit(0)) {
-    link = links_->get_pointer(unit_id);
+    link = &links_->get_value(unit_id);
   }
   *unit &= ~unit_bit;
   if (link) {
@@ -101,28 +101,34 @@ bool KeyStore<T>::unset(int64_t key_id) {
 }
 
 template <typename T>
-bool KeyStore<T>::add(KeyArg key, int64_t *key_id) {
+int64_t KeyStore<T>::add(KeyArg key) {
   // Find an unused key ID.
   const bool is_new_unit = (header_->latest_link == INVALID_LINK);
   uint64_t unit_id;
   if (is_new_unit) {
-    unit_id = (header_->max_key_id + 1) / bits_->unit_size();
+    unit_id = (header_->max_key_id + 1) / unit_size();
   } else {
     unit_id = header_->latest_link;
   }
-  BitArrayUnit * const unit = bits_->get_unit(unit_id);
-  const uint8_t unit_bit_id = bit_scan_forward(~*unit);
-  const uint64_t unit_bit = 1ULL << unit_bit_id;
-  const int64_t next_key_id = (unit_id * bits_->unit_size()) + unit_bit_id;
+  BitArrayUnit * const unit = &bits_->get_unit(unit_id);
+  uint8_t unit_bit_id;
+  uint64_t unit_bit;
   uint64_t *link = nullptr;
   if (is_new_unit) {
     links_->set(unit_id, INVALID_LINK);
     *unit = 0;
-    header_->latest_link = (header_->max_key_id + 1) / bits_->unit_size();
-  } else if ((*unit | unit_bit) == ~BitArrayUnit(0)) {
-    // The unit will be removed from "links_" if it becomes full.
-    link = links_->get_pointer(header_->latest_link);
+    unit_bit_id = 0;
+    unit_bit = 1;
+    header_->latest_link = (header_->max_key_id + 1) / unit_size();
+  } else {
+    unit_bit_id = bit_scan_forward(~*unit);
+    unit_bit = 1ULL << unit_bit_id;
+    if ((*unit | unit_bit) == ~BitArrayUnit(0)) {
+      // The unit will be removed from "links_" if it becomes full.
+      link = &links_->get_value(header_->latest_link);
+    }
   }
+  const int64_t next_key_id = (unit_id * unit_size()) + unit_bit_id;
   keys_->set(next_key_id, key);
   if (link) {
     header_->latest_link = *link;
@@ -132,10 +138,7 @@ bool KeyStore<T>::add(KeyArg key, int64_t *key_id) {
     header_->max_key_id = next_key_id;
   }
   ++header_->num_keys;
-  if (key_id) {
-    *key_id = next_key_id;
-  }
-  return true;
+  return next_key_id;
 }
 
 template <typename T>
@@ -155,9 +158,12 @@ void KeyStore<T>::create_store(Storage *storage, uint32_t storage_node_id) {
   try {
     header_ = static_cast<Header *>(storage_node.body());
     *header_ = Header();
-    keys_.reset(KeyArray::create(storage, storage_node_id_));
-    bits_.reset(BitArray::create(storage, storage_node_id_));
-    links_.reset(LinkArray::create(storage, storage_node_id_));
+    keys_.reset(KeyArray::create(storage, storage_node_id_,
+                                 KeyStoreHelper<T>::KEY_ARRAY_SIZE));
+    bits_.reset(BitArray::create(storage, storage_node_id_,
+                                 KeyStoreHelper<T>::BIT_ARRAY_SIZE));
+    links_.reset(LinkArray::create(storage, storage_node_id_,
+                                   KeyStoreHelper<T>::LINK_ARRAY_SIZE));
     header_->keys_storage_node_id = keys_->storage_node_id();
     header_->bits_storage_node_id = bits_->storage_node_id();
     header_->links_storage_node_id = links_->storage_node_id();

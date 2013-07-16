@@ -53,41 +53,61 @@ struct KeyStoreHelper;
 // Map<T> has at most 2^40 different keys.
 template <typename T, size_t T_SIZE>
 struct KeyStoreHelper {
-  using KeyArray = Array<T, 65536, 4096, 4096>;
-  using BitArray = Array<bool, 65536, 4096, 4096>;
-  using LinkArray = Array<uint64_t, 16384, 1024, 1024>;
+  using KeyArray = Array<T, 65536, 4096>;
+  using BitArray = Array<bool, 65536, 4096>;
+  using LinkArray = Array<uint64_t, 16384, 1024>;
+
+  static constexpr uint64_t KEY_ARRAY_SIZE  = 1ULL << 40;
+  static constexpr uint64_t BIT_ARRAY_SIZE  = 1ULL << 40;
+  static constexpr uint64_t LINK_ARRAY_SIZE = 1ULL << 34;
 };
 
 // Map<T> has at most 2^8 different keys.
 template <typename T>
 struct KeyStoreHelper<T, 1> {
-  using KeyArray = Array<T, 256, 1, 1>;
-  using BitArray = Array<bool, 256, 1, 1>;
-  using LinkArray = Array<uint64_t, 4, 1, 1>;
+  using KeyArray = Array<T>;
+  using BitArray = Array<bool>;
+  using LinkArray = Array<uint64_t>;
+
+  static constexpr uint64_t KEY_ARRAY_SIZE  = 1ULL << 8;
+  static constexpr uint64_t BIT_ARRAY_SIZE  = 1ULL << 8;
+  static constexpr uint64_t LINK_ARRAY_SIZE = 1ULL << 2;
 };
 
 // Map<T> has at most 2^16 different keys.
 template <typename T>
 struct KeyStoreHelper<T, 2> {
-  using KeyArray = Array<T, 256, 256, 1>;
-  using BitArray = Array<bool, 256, 256, 1>;
-  using LinkArray = Array<uint64_t, 1024, 1, 1>;
+  using KeyArray = Array<T, 256>;
+  using BitArray = Array<bool, 256>;
+  using LinkArray = Array<uint64_t>;
+
+  static constexpr uint64_t KEY_ARRAY_SIZE  = 1ULL << 16;
+  static constexpr uint64_t BIT_ARRAY_SIZE  = 1ULL << 16;
+  static constexpr uint64_t LINK_ARRAY_SIZE = 1ULL << 10;
 };
 
 // Map<T> has at most 2^32 different keys.
 template <typename T>
 struct KeyStoreHelper<T, 4> {
-  using KeyArray = Array<T, 65536, 256, 256>;
-  using BitArray = Array<bool, 16384, 512, 512>;
-  using LinkArray = Array<uint64_t, 4096, 128, 128>;
+  using KeyArray = Array<T, 65536, 256>;
+  using BitArray = Array<bool, 16384, 512>;
+  using LinkArray = Array<uint64_t, 4096, 128>;
+
+  static constexpr uint64_t KEY_ARRAY_SIZE  = 1ULL << 32;
+  static constexpr uint64_t BIT_ARRAY_SIZE  = 1ULL << 32;
+  static constexpr uint64_t LINK_ARRAY_SIZE = 1ULL << 26;
 };
 
 // Map<T> has at most 2^40 different keys.
 template <>
 struct KeyStoreHelper<Bytes> {
   using KeyArray = BytesArray;
-  using BitArray = Array<bool, 65536, 4096, 4096>;
-  using LinkArray = Array<uint64_t, 16384, 1024, 1024>;
+  using BitArray = Array<bool, 65536, 4096>;
+  using LinkArray = Array<uint64_t, 16384, 1024>;
+
+  static constexpr uint64_t KEY_ARRAY_SIZE  = 1ULL << 40;
+  static constexpr uint64_t BIT_ARRAY_SIZE  = 1ULL << 40;
+  static constexpr uint64_t LINK_ARRAY_SIZE = 1ULL << 34;
 };
 
 template <typename T>
@@ -119,18 +139,18 @@ class KeyStore {
     return header_->num_keys;
   }
 
-  bool get_key(int64_t key_id, Key *key = nullptr) {
-    return keys_->get(key_id, key);
+  Key get_key(int64_t key_id) {
+    return keys_->get(key_id);
   }
-  bool get_bit(int64_t key_id, bool *bit = nullptr) {
-    return bits_->get(key_id, bit);
+  bool get_bit(int64_t key_id) {
+    return bits_->get(key_id);
   }
   bool unset(int64_t key_id);
-  bool reset(int64_t key_id, KeyArg dest_key) {
-    return keys_->set(key_id, dest_key);
+  void reset(int64_t key_id, KeyArg dest_key) {
+    keys_->set(key_id, dest_key);
   }
 
-  bool add(KeyArg key, int64_t *key_id = nullptr);
+  int64_t add(KeyArg key);
 
   bool truncate();
 
@@ -144,6 +164,10 @@ class KeyStore {
 
   void create_store(Storage *storage, uint32_t storage_node_id);
   void open_store(Storage *storage, uint32_t storage_node_id);
+
+  static constexpr uint64_t unit_size() {
+    return sizeof(typename BitArray::Unit) * 8;
+  }
 };
 
 }  // namespace map

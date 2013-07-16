@@ -43,12 +43,13 @@ BytesArrayHeader::BytesArrayHeader()
 
 BytesArray::~BytesArray() {}
 
-BytesArray *BytesArray::create(Storage *storage, uint32_t storage_node_id) {
-  return create(storage, storage_node_id, "");
+BytesArray *BytesArray::create(Storage *storage, uint32_t storage_node_id,
+                               uint64_t) {
+  return create(storage, storage_node_id, 0, "");
 }
 
 BytesArray *BytesArray::create(Storage *storage, uint32_t storage_node_id,
-                               ValueArg default_value) {
+                               uint64_t, ValueArg default_value) {
   if (!storage) {
     GRNXX_ERROR() << "invalid argument: storage = nullptr";
     throw LogicError();
@@ -81,23 +82,18 @@ void BytesArray::unlink(Storage *storage, uint32_t storage_node_id) {
   storage->unlink_node(storage_node_id);
 }
 
-bool BytesArray::get(uint64_t value_id, Value *value) {
-  uint64_t bytes_id;
-  ids_->get(value_id, &bytes_id);
-  if (value) {
-    if (bytes_id == BYTES_STORE_INVALID_BYTES_ID) {
-      *value = default_value_;
-    } else {
-      store_->get(bytes_id, value);
-    }
+auto BytesArray::get(uint64_t value_id) -> Value {
+  uint64_t bytes_id = ids_->get(value_id);
+  if (bytes_id == BYTES_STORE_INVALID_BYTES_ID) {
+    return default_value_;
+  } else {
+    return store_->get(bytes_id);
   }
-  return true;
 }
 
-bool BytesArray::set(uint64_t value_id, ValueArg value) {
-  uint64_t *src_bytes_id = ids_->get_pointer(value_id);
-  uint64_t dest_bytes_id;
-  store_->add(value, &dest_bytes_id);
+void BytesArray::set(uint64_t value_id, ValueArg value) {
+  uint64_t * const src_bytes_id = &ids_->get_value(value_id);
+  const uint64_t dest_bytes_id = store_->add(value);
   if (*src_bytes_id != BYTES_STORE_INVALID_BYTES_ID) {
     try {
       store_->unset(*src_bytes_id);
@@ -107,7 +103,6 @@ bool BytesArray::set(uint64_t value_id, ValueArg value) {
     }
   }
   *src_bytes_id = dest_bytes_id;
-  return true;
 }
 
 bool BytesArray::sweep(Duration lifetime) {
@@ -135,7 +130,7 @@ void BytesArray::create_array(Storage *storage, uint32_t storage_node_id,
     header_->default_value_size = default_value.size();
     std::memcpy(header_ + 1, default_value.data(), default_value.size());
     default_value_ = Value(header_ + 1, default_value.size());
-    ids_.reset(IDArray::create(storage, storage_node_id_,
+    ids_.reset(IDArray::create(storage, storage_node_id_, ID_ARRAY_SIZE,
                                BYTES_STORE_INVALID_BYTES_ID));
     store_.reset(BytesStore::create(storage, storage_node_id_));
     header_->ids_storage_node_id = ids_->storage_node_id();

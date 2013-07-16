@@ -67,10 +67,15 @@ class DoubleArray<Bytes> : public Map<Bytes> {
   using Block = double_array::Block;
   using Entry = double_array::Entry;
 
-  using NodeArray    = Array<Node,     65536, 8192, 8192>;  // 42-bit
-  using SiblingArray = Array<uint8_t, 262144, 4096, 4096>;  // 42-bit
-  using BlockArray   = Array<Block,     8192, 1024, 1024>;  // 33-bit
-  using EntryArray   = Array<Entry,    65536, 4096, 4096>;  // 40-bit
+  using NodeArray    = Array<Node,     65536, 8192>;  // 42-bit
+  using SiblingArray = Array<uint8_t, 262144, 4096>;  // 42-bit
+  using BlockArray   = Array<Block,     8192, 1024>;  // 33-bit
+  using EntryArray   = Array<Entry,    65536, 4096>;  // 40-bit
+
+  static constexpr uint64_t NODE_ARRAY_SIZE    = 1ULL << 42;
+  static constexpr uint64_t SIBLING_ARRAY_SIZE = 1ULL << 42;
+  static constexpr uint64_t BLOCK_ARRAY_SIZE   = 1ULL << 33;
+  static constexpr uint64_t ENTRY_ARRAY_SIZE   = 1ULL << 40;
 
  public:
   using Header = double_array::Header;

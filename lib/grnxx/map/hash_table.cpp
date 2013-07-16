@@ -101,13 +101,13 @@ bool HashTable<T>::get(int64_t key_id, Key *key) {
     // Out of range.
     return false;
   }
-  bool bit;
-  keys_->get_bit(key_id, &bit);
-  if (!bit) {
+  if (!keys_->get_bit(key_id)) {
     // Not found.
     return false;
   }
-  keys_->get_key(key_id, key);
+  if (key) {
+    *key = keys_->get_key(key_id);
+  }
   return true;
 }
 
@@ -190,8 +190,7 @@ bool HashTable<T>::add(KeyArg key, int64_t *key_id) {
     // Error.
     return false;
   }
-  int64_t next_key_id;
-  keys_->add(normalized_key, &next_key_id);
+  int64_t next_key_id = keys_->add(normalized_key);
   if (*stored_key_id == MAP_INVALID_KEY_ID) {
     ++header_->num_key_ids;
   }
@@ -354,8 +353,7 @@ bool HashTable<T>::find_key(KeyArg key, int64_t **stored_key_id) {
         *stored_key_id = key_id;
       }
     } else {
-      Key stored_key;
-      keys_->get_key(*key_id, &stored_key);
+      Key stored_key = keys_->get_key(*key_id);
       if (Helper<T>::equal_to(stored_key, key)) {
         // Found.
         *stored_key_id = key_id;
@@ -392,13 +390,10 @@ void HashTable<T>::rebuild() {
     // Copy keys from the current hash table to the new one.
     int64_t key_id;
     for (key_id = MAP_MIN_KEY_ID; key_id <= max_key_id(); ++key_id) {
-      bool bit;
-      keys_->get_bit(key_id, &bit);
-      if (!bit) {
+      if (!keys_->get_bit(key_id)) {
         continue;
       }
-      Key stored_key;
-      keys_->get_key(key_id, &stored_key);
+      Key stored_key = keys_->get_key(key_id);
       const uint64_t first_hash = Hash<T>()(stored_key);
       int64_t *stored_key_id;
       for (uint64_t hash = first_hash; ; hash = rehash(hash)) {

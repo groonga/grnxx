@@ -41,12 +41,12 @@ constexpr uint64_t BYTES_STORE_SIZE_MASK    =
 static_assert(BYTES_STORE_MAX_SIZE <= BYTES_STORE_SIZE_MASK,
               "BYTES_STORE_MAX_SIZE > BYTES_STORE_SIZE_MASK");
 
+constexpr uint64_t BYTES_STORE_SIZE                 = 1ULL << 48;
 constexpr uint32_t BYTES_STORE_PAGE_SIZE            = 1U << 20;
 constexpr uint32_t BYTES_STORE_TABLE_SIZE           = 1U << 14;
-constexpr uint32_t BYTES_STORE_SECONDARY_TABLE_SIZE = 1U << 14;
 
 constexpr uint32_t BYTES_STORE_MAX_PAGE_ID          =
-    (BYTES_STORE_TABLE_SIZE * BYTES_STORE_SECONDARY_TABLE_SIZE) - 1;
+    (BYTES_STORE_SIZE / BYTES_STORE_PAGE_SIZE) - 1;
 constexpr uint32_t BYTES_STORE_INVALID_PAGE_ID      =
     BYTES_STORE_MAX_PAGE_ID + 1;
 
@@ -125,12 +125,8 @@ BytesStorePageHeader::BytesStorePageHeader()
 
 class BytesStoreImpl : public BytesStore {
   using BytesArray = Array<uint8_t, BYTES_STORE_PAGE_SIZE,
-                                    BYTES_STORE_TABLE_SIZE,
-                                    BYTES_STORE_SECONDARY_TABLE_SIZE>;
-  using PageHeaderArray = Array<BytesStorePageHeader,
-                                BYTES_STORE_TABLE_SIZE,
-                                BYTES_STORE_SECONDARY_TABLE_SIZE,
-                                1>;
+                                    BYTES_STORE_TABLE_SIZE>;
+  using PageHeaderArray = Array<BytesStorePageHeader, BYTES_STORE_TABLE_SIZE>;
 
  public:
   using Value = Bytes;
@@ -144,9 +140,9 @@ class BytesStoreImpl : public BytesStore {
 
   uint32_t storage_node_id() const;
 
-  bool get(uint64_t bytes_id, Value *bytes);
-  bool unset(uint64_t bytes_id);
-  bool add(ValueArg bytes, uint64_t *bytes_id);
+  Value get(uint64_t bytes_id);
+  void unset(uint64_t bytes_id);
+  uint64_t add(ValueArg bytes);
 
   bool sweep(Duration lifetime);
 
@@ -226,27 +222,13 @@ uint32_t BytesStoreImpl::storage_node_id() const {
   return storage_node_id_;
 }
 
-bool BytesStoreImpl::get(uint64_t bytes_id, Value *bytes) {
+auto BytesStoreImpl::get(uint64_t bytes_id) -> Value {
   const uint64_t offset = get_offset(bytes_id);
   const uint32_t size = get_size(bytes_id);
-  const uint32_t page_id = get_page_id(offset);
-  if ((size > BYTES_STORE_MAX_SIZE) || (page_id > header_->max_page_id)) {
-    GRNXX_ERROR() << "invalid argument: offset = " << offset
-                  << ", size = " << size
-                  << ", page_id = " << page_id
-                  << ", max_size = " << BYTES_STORE_MAX_SIZE
-                  << ", max_page_id = " << header_->max_page_id;
-    throw LogicError();
-  }
-  const uint8_t * const page = pages_->get_page(page_id);
-  if (bytes) {
-    const uint32_t offset_in_page = get_offset_in_page(offset);
-    *bytes = Value(&page[offset_in_page], size);
-  }
-  return true;
+  return Value(&pages_->get_value(offset), size);
 }
 
-bool BytesStoreImpl::unset(uint64_t bytes_id) {
+void BytesStoreImpl::unset(uint64_t bytes_id) {
   const uint64_t offset = get_offset(bytes_id);
   const uint32_t size = get_size(bytes_id);
   const uint32_t page_id = get_page_id(offset);
@@ -259,7 +241,7 @@ bool BytesStoreImpl::unset(uint64_t bytes_id) {
     throw LogicError();
   }
   BytesStorePageHeader * const page_header =
-       page_headers_->get_pointer(page_id);
+      &page_headers_->get_value(page_id);
   if ((page_header->status != BYTES_STORE_PAGE_ACTIVE) &&
       (page_header->status != BYTES_STORE_PAGE_IN_USE)) {
     GRNXX_ERROR() << "invalid argument: page_id = " << page_id
@@ -279,10 +261,9 @@ bool BytesStoreImpl::unset(uint64_t bytes_id) {
     // This operation makes the page EMPTY.
     make_page_empty(page_id, page_header);
   }
-  return true;
 }
 
-bool BytesStoreImpl::add(ValueArg bytes, uint64_t *bytes_id) {
+uint64_t BytesStoreImpl::add(ValueArg bytes) {
   if (bytes.size() > BYTES_STORE_MAX_SIZE) {
     GRNXX_ERROR() << "invalid argument: size = " << bytes.size();
     throw LogicError();
@@ -290,7 +271,7 @@ bool BytesStoreImpl::add(ValueArg bytes, uint64_t *bytes_id) {
   uint64_t offset = header_->next_offset;
   uint32_t size = static_cast<uint32_t>(bytes.size());
   uint32_t page_id = get_page_id(offset);
-  BytesStorePageHeader *page_header = page_headers_->get_pointer(page_id);
+  BytesStorePageHeader *page_header = &page_headers_->get_value(page_id);
   uint32_t offset_in_page = get_offset_in_page(offset);
   const uint32_t size_left = BYTES_STORE_PAGE_SIZE - offset_in_page;
   if (size >= size_left) {
@@ -308,26 +289,24 @@ bool BytesStoreImpl::add(ValueArg bytes, uint64_t *bytes_id) {
         page_header->modified_time = clock_.now();
       }
       // Use the new ACTIVE page.
-      header_->next_offset = next_page_id * pages_->page_size();
+      header_->next_offset = next_page_id * BYTES_STORE_PAGE_SIZE;
       offset = header_->next_offset;
       page_id = next_page_id;
       page_header = next_page_header;
-      offset_in_page = get_offset_in_page(offset);
     } else {
       // Use the previous ACTIVE page.
       page_header->status = BYTES_STORE_PAGE_IN_USE;
       page_header->modified_time = clock_.now();
-      header_->next_offset = next_page_id * pages_->page_size();
+      header_->next_offset = next_page_id * BYTES_STORE_PAGE_SIZE;
     }
   }
-  uint8_t * const page = pages_->get_page(page_id);
-  std::memcpy(page + offset_in_page, bytes.data(), size);
-  *bytes_id = get_bytes_id(offset, size);
+  uint8_t * const value = &pages_->get_value(offset);
+  std::memcpy(value, bytes.data(), size);
   page_header->size_in_use += size;
   if (offset == header_->next_offset) {
     header_->next_offset += size;
   }
-  return true;
+  return get_bytes_id(offset, size);
 }
 
 bool BytesStoreImpl::sweep(Duration lifetime) {
@@ -336,13 +315,13 @@ bool BytesStoreImpl::sweep(Duration lifetime) {
     return true;
   }
   BytesStorePageHeader * const latest_empty_page_header =
-      page_headers_->get_pointer(header_->latest_empty_page_id);
+      &page_headers_->get_value(header_->latest_empty_page_id);
   const Time threshold = clock_.now() - lifetime;
   do {
     const uint32_t oldest_empty_page_id =
         latest_empty_page_header->next_page_id;
     BytesStorePageHeader * const oldest_empty_page_header =
-        page_headers_->get_pointer(oldest_empty_page_id);
+        &page_headers_->get_value(oldest_empty_page_id);
     if (oldest_empty_page_header->status != BYTES_STORE_PAGE_EMPTY) {
       GRNXX_ERROR() << "status conflict: status = "
                     << oldest_empty_page_header->status;
@@ -372,8 +351,10 @@ void BytesStoreImpl::create_store(Storage *storage, uint32_t storage_node_id) {
   try {
     header_ = static_cast<BytesStoreHeader *>(storage_node.body());
     *header_ = BytesStoreHeader();
-    pages_.reset(BytesArray::create(storage, storage_node_id_));
-    page_headers_.reset(PageHeaderArray::create(storage, storage_node_id));
+    pages_.reset(BytesArray::create(storage, storage_node_id_,
+                                    BYTES_STORE_SIZE));
+    page_headers_.reset(PageHeaderArray::create(storage, storage_node_id,
+                                                BYTES_STORE_MAX_PAGE_ID + 1));
     header_->pages_storage_node_id = pages_->storage_node_id();
     header_->page_headers_storage_node_id = page_headers_->storage_node_id();
   } catch (...) {
@@ -399,7 +380,7 @@ void BytesStoreImpl::reserve_active_page(uint32_t *page_id,
   if (header_->latest_idle_page_id != BYTES_STORE_INVALID_PAGE_ID) {
     // Use the oldest IDLE page.
     latest_idle_page_header =
-        page_headers_->get_pointer(header_->latest_idle_page_id);
+        &page_headers_->get_value(header_->latest_idle_page_id);
     next_page_id = latest_idle_page_header->next_page_id;
   } else {
     // Create a new page.
@@ -411,7 +392,7 @@ void BytesStoreImpl::reserve_active_page(uint32_t *page_id,
     }
   }
   BytesStorePageHeader * const next_page_header =
-      page_headers_->get_pointer(next_page_id);
+      &page_headers_->get_value(next_page_id);
   if (latest_idle_page_header) {
     if (next_page_id != header_->latest_idle_page_id) {
       latest_idle_page_header->next_page_id = next_page_header->next_page_id;
@@ -432,7 +413,7 @@ void BytesStoreImpl::make_page_empty(uint32_t page_id,
   BytesStorePageHeader *latest_empty_page_header = nullptr;
   if (header_->latest_empty_page_id != BYTES_STORE_INVALID_PAGE_ID) {
     latest_empty_page_header =
-        page_headers_->get_pointer(header_->latest_empty_page_id);
+        &page_headers_->get_value(header_->latest_empty_page_id);
   }
   page_header->status = BYTES_STORE_PAGE_EMPTY;
   if (latest_empty_page_header) {
@@ -450,7 +431,7 @@ void BytesStoreImpl::make_page_idle(uint32_t page_id,
   BytesStorePageHeader *latest_idle_page_header = nullptr;
   if (header_->latest_idle_page_id != BYTES_STORE_INVALID_PAGE_ID) {
     latest_idle_page_header =
-        page_headers_->get_pointer(header_->latest_idle_page_id);
+        &page_headers_->get_value(header_->latest_idle_page_id);
   }
   page_header->status = BYTES_STORE_PAGE_IDLE;
   if (latest_idle_page_header) {

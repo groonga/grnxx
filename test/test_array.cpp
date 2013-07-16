@@ -44,6 +44,10 @@ T generate_random_value() {
   const T *value = reinterpret_cast<const T *>(&random_value);
   return *value;
 }
+template <>
+bool generate_random_value<bool>() {
+  return bool(mersenne_twister() & 1);
+}
 // Generate a random floating point number.
 template <>
 double generate_random_value<double>() {
@@ -92,128 +96,112 @@ void generate_random_values(std::uint64_t num_values, std::vector<T> *values) {
 //}
 
 template <typename T,
-          std::uint64_t PAGE_SIZE,
-          std::uint64_t TABLE_SIZE,
-          std::uint64_t SECONDARY_TABLE_SIZE>
-void test_array() {
-  using Array = grnxx::Array<T, PAGE_SIZE, TABLE_SIZE, SECONDARY_TABLE_SIZE>;
+          std::uint64_t PAGE_SIZE = 0,
+          std::uint64_t TABLE_SIZE = 0>
+void test_array(std::uint64_t size) {
+  using Array = grnxx::Array<T, PAGE_SIZE, TABLE_SIZE>;
 
   // Create an anonymous Storage.
   std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
   std::unique_ptr<Array> array;
 
   // Create an Array and test its member functions.
-  array.reset(array->create(storage.get(), grnxx::STORAGE_ROOT_NODE_ID));
-  assert(array->page_size() == PAGE_SIZE);
-  assert(array->table_size() == TABLE_SIZE);
-  assert(array->secondary_table_size() == SECONDARY_TABLE_SIZE);
-  assert(array->size() == (PAGE_SIZE * TABLE_SIZE * SECONDARY_TABLE_SIZE));
+  array.reset(Array::create(storage.get(), grnxx::STORAGE_ROOT_NODE_ID, size));
+  assert(array->size() == size);
   const std::uint32_t storage_node_id = array->storage_node_id();
 
   // Generate random data.
   std::vector<T> values;
-  generate_random_values<T>(array->size(), &values);
+  generate_random_values<T>(size, &values);
 
   // Set and get values.
-  for (std::uint64_t i = 0; i < array->size(); ++i) {
-    assert(array->set(i, values[i]));
+  for (std::uint64_t i = 0; i < size; ++i) {
+    array->set(i, values[i]);
+    assert(array->get(i) == values[i]);
   }
-  for (std::uint64_t i = 0; i < array->size(); ++i) {
-    T value;
-    assert(array->get(i, &value));
-    assert(value == values[i]);
-  }
-  for (std::uint64_t i = 0; i < (array->size() / array->page_size()); ++i) {
-    assert(array->get_page(i));
+  for (std::uint64_t i = 0; i < size; ++i) {
+    assert(array->get(i) == values[i]);
   }
 
   // Open the Array and get values.
   assert(array->open(storage.get(), storage_node_id));
-  for (std::uint64_t i = 0; i < array->size(); ++i) {
-    T value;
-    assert(array->get(i, &value));
-    assert(value == values[i]);
+  for (std::uint64_t i = 0; i < size; ++i) {
+    assert(array->get(i) == values[i]);
   }
 
   // Create an Array with default value.
   array.reset(array->create(storage.get(), grnxx::STORAGE_ROOT_NODE_ID,
-                            values[0]));
-  for (std::uint64_t i = 0; i < array->size(); ++i) {
-    T value;
-    assert(array->get(i, &value));
-    assert(value == values[0]);
+                            size, values[0]));
+  for (std::uint64_t i = 0; i < size; ++i) {
+    assert(array->get(i) == values[0]);
+  }
 
-    T * const pointer = array->get_pointer(i);
-    assert(pointer);
-    assert(*pointer == values[0]);
+  // Set and get values.
+  for (std::uint64_t i = 0; i < size; ++i) {
+    array->get_value(i) = values[i];
+    assert(array->get_value(i) == values[i]);
+  }
+  for (std::uint64_t i = 0; i < size; ++i) {
+    assert(array->get_value(i) == values[i]);
   }
 }
 
-template <std::uint64_t PAGE_SIZE,
-          std::uint64_t TABLE_SIZE,
-          std::uint64_t SECONDARY_TABLE_SIZE>
-void test_bit_array() {
-  using Array = grnxx::Array<bool, PAGE_SIZE, TABLE_SIZE, SECONDARY_TABLE_SIZE>;
+template <std::uint64_t PAGE_SIZE = 0,
+          std::uint64_t TABLE_SIZE = 0>
+void test_bit_array(std::uint64_t size) {
+  using Array = grnxx::Array<bool, PAGE_SIZE, TABLE_SIZE>;
   using Unit = typename Array::Unit;
+  constexpr uint64_t UNIT_SIZE = sizeof(Unit) * 8;
 
   // Create an anonymous Storage.
   std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
   std::unique_ptr<Array> array;
 
   // Create an Array and test its member functions.
-  array.reset(array->create(storage.get(), grnxx::STORAGE_ROOT_NODE_ID));
-  assert(array->unit_size() == (sizeof(Unit) * 8));
-  assert(array->page_size() == PAGE_SIZE);
-  assert(array->table_size() == TABLE_SIZE);
-  assert(array->secondary_table_size() == SECONDARY_TABLE_SIZE);
-  assert(array->size() == (PAGE_SIZE * TABLE_SIZE * SECONDARY_TABLE_SIZE));
+  array.reset(Array::create(storage.get(), grnxx::STORAGE_ROOT_NODE_ID, size));
+  assert(array->size() == size);
   const std::uint32_t storage_node_id = array->storage_node_id();
 
-  // Generate an array of random units.
-  std::vector<Unit> units;
-  generate_random_values(array->size() / array->unit_size(), &units);
+  // Generate random data.
+  std::vector<bool> values;
+  generate_random_values<bool>(size, &values);
 
   // Set and get values.
-  for (std::uint64_t i = 0; i < array->size(); ++i) {
-    const bool bit = (units[i / 64] >> (i % 64)) & 1;
-    assert(array->set(i, bit));
+  for (std::uint64_t i = 0; i < size; ++i) {
+    array->set(i, values[i]);
+    assert(array->get(i) == values[i]);
   }
-  for (std::uint64_t i = 0; i < array->size(); ++i) {
-    const bool expected_bit = (units[i / 64] >> (i % 64)) & 1;
-    bool stored_bit;
-    assert(array->get(i, &stored_bit));
-    assert(stored_bit == expected_bit);
-  }
-  for (std::uint64_t i = 0; i < (array->size() / array->unit_size()); ++i) {
-    const Unit * const unit = array->get_unit(i);
-    assert(unit);
-    assert(*unit == units[i]);
-  }
-  for (std::uint64_t i = 0; i < (array->size() / array->page_size()); ++i) {
-    assert(array->get_page(i));
+  for (std::uint64_t i = 0; i < size; ++i) {
+    assert(array->get(i) == values[i]);
   }
 
   // Open the Array and get values.
-  array.reset(array->open(storage.get(), storage_node_id));
-  for (std::uint64_t i = 0; i < array->size(); ++i) {
-    const bool expected_bit = (units[i / 64] >> (i % 64)) & 1;
-    bool stored_bit;
-    assert(array->get(i, &stored_bit));
-    assert(stored_bit == expected_bit);
+  assert(array->open(storage.get(), storage_node_id));
+  for (std::uint64_t i = 0; i < size; ++i) {
+    assert(array->get(i) == values[i]);
   }
 
-  // Create Arrays with default value.
-  array.reset(array->create(storage.get(), grnxx::STORAGE_ROOT_NODE_ID, false));
-  for (std::uint64_t i = 0; i < array->size(); ++i) {
-    bool bit;
-    assert(array->get(i, &bit));
-    assert(!bit);
+  // Create an Array with default value.
+  array.reset(array->create(storage.get(), grnxx::STORAGE_ROOT_NODE_ID,
+                            size, values[0]));
+  for (std::uint64_t i = 0; i < size; ++i) {
+    assert(array->get(i) == values[0]);
   }
-  array.reset(array->create(storage.get(), grnxx::STORAGE_ROOT_NODE_ID, true));
-  for (std::uint64_t i = 0; i < array->size(); ++i) {
-    bool bit;
-    assert(array->get(i, &bit));
-    assert(bit);
+
+  // Generate random data.
+  std::vector<Unit> units;
+  generate_random_values<Unit>(size, &units);
+
+  // Set and get units.
+  for (std::uint64_t i = 0; i < (size / UNIT_SIZE); ++i) {
+    array->get_unit(i) = units[i];
+    assert(array->get_unit(i) == units[i]);
+  }
+  for (std::uint64_t i = 0; i < (size / UNIT_SIZE); ++i) {
+    assert(array->get_unit(i) == units[i]);
+    for (std::uint64_t j = 0; j < UNIT_SIZE; ++j) {
+      assert(array->get((i * UNIT_SIZE) + j) == ((units[i] >> j) & 1));
+    }
   }
 }
 
@@ -221,18 +209,18 @@ template <typename T>
 void test_array() {
   GRNXX_NOTICE() << __PRETTY_FUNCTION__;
 
-  test_array<T, 256,  1,  1>();
-  test_array<T, 256, 64,  1>();
-  test_array<T, 256, 64, 16>();
+  test_array<T>(256);
+  test_array<T, 256>(256 * 64);
+  test_array<T, 256, 64>(256 * 64 * 16);
 }
 
 template <>
 void test_array<bool>() {
   GRNXX_NOTICE() << __PRETTY_FUNCTION__;
 
-  test_bit_array<256,  1,  1>();
-  test_bit_array<256, 64,  1>();
-  test_bit_array<256, 64, 16>();
+  test_bit_array(256);
+  test_bit_array<256>(256 * 64);
+  test_bit_array<256, 64>(256 * 64 * 16);
 }
 
 }  // namesapce

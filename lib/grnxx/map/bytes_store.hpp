@@ -54,11 +54,11 @@ class BytesStore {
   virtual uint32_t storage_node_id() const = 0;
 
   // Get a stored byte sequence.
-  virtual bool get(uint64_t bytes_id, Value *bytes) = 0;
+  virtual Value get(uint64_t bytes_id) = 0;
   // Remove a stored byte sequence.
-  virtual bool unset(uint64_t bytes_id) = 0;
-  // Add a byte sequence.
-  virtual bool add(ValueArg bytes, uint64_t *bytes_id) = 0;
+  virtual void unset(uint64_t bytes_id) = 0;
+  // Add a byte sequence and return its ID.
+  virtual uint64_t add(ValueArg bytes) = 0;
 
   // Sweep empty pages whose modified time < (now - lifetime).
   virtual bool sweep(Duration lifetime) = 0;
