@@ -67,10 +67,10 @@ class Array1D {
     return size_;
   }
 
-  // Return a pointer to a value.
+  // Return a reference to a value.
   template <typename T, uint64_t, uint64_t>
-  T *get_value(uint64_t value_id) {
-    return &static_cast<T *>(page_)[value_id];
+  T &get_value(uint64_t value_id) {
+    return static_cast<T *>(page_)[value_id];
   }
 
  private:
@@ -108,14 +108,14 @@ class Array2D {
     return size_;
   }
 
-  // Return a pointer to a value.
+  // Return a reference to a value.
   template <typename T, uint64_t PAGE_SIZE, uint64_t TABLE_SIZE>
-  T *get_value(uint64_t value_id) {
+  T &get_value(uint64_t value_id) {
     const uint64_t page_id = value_id / PAGE_SIZE;
     if (pages_[page_id] == invalid_page()) {
       reserve_page(page_id);
     }
-    return &static_cast<T *>(pages_[page_id])[value_id];
+    return static_cast<T *>(pages_[page_id])[value_id];
   }
 
  private:
@@ -170,15 +170,15 @@ class Array3D {
     return size_;
   }
 
-  // Return a pointer to a value.
+  // Return a reference to a value.
   template <typename T, uint64_t PAGE_SIZE, uint64_t TABLE_SIZE>
-  T *get_value(uint64_t value_id) {
+  T &get_value(uint64_t value_id) {
     const uint64_t table_id = value_id / (PAGE_SIZE * TABLE_SIZE);
     const uint64_t page_id = value_id / PAGE_SIZE;
     if (tables_[table_id][page_id] == invalid_page()) {
       reserve_page(page_id);
     }
-    return &static_cast<T *>(tables_[table_id][page_id])[value_id];
+    return static_cast<T *>(tables_[table_id][page_id])[value_id];
   }
 
   // Return a pointer to an invalid page.
@@ -240,11 +240,21 @@ struct ArrayPageFiller {
 
 template <typename T, uint64_t PAGE_SIZE, uint64_t TABLE_SIZE>
 class ArrayImpl {
+  // Test template parameters.
+  static_assert((PAGE_SIZE != 0) || (TABLE_SIZE == 0),
+                "TABLE_SIZE must be zero if PAGE_SIZE is zero");
+  static_assert((PAGE_SIZE & (PAGE_SIZE - 1)) == 0,
+                "PAGE_SIZE must be zero or a power of two");
+  static_assert((TABLE_SIZE & (TABLE_SIZE - 1)) == 0,
+                "TABLE_SIZE must be zero or a power of two");
+
   using Impl = typename ArrayImplSelector<PAGE_SIZE, TABLE_SIZE>::Type;
 
  public:
-  using Value = typename Traits<T>::Type;
+  using Value    = typename Traits<T>::Type;
   using ValueArg = typename Traits<T>::ArgumentType;
+  using ValueRef = Value &;
+  using Unit     = Value;
 
   ArrayImpl() : impl_() {}
   ~ArrayImpl() {}
@@ -284,9 +294,131 @@ class ArrayImpl {
     return impl_.size();
   }
 
-  // Return a pointer to a value.
-  Value *get_value(uint64_t value_id) {
+  // Return a reference to a value.
+  ValueRef get_value(uint64_t value_id) {
     return impl_. template get_value<Value, PAGE_SIZE, TABLE_SIZE>(value_id);
+  }
+  // Return a reference to a unit.
+  Unit &get_unit(uint64_t unit_id) {
+    return get_value(unit_id);
+  }
+
+ private:
+  Impl impl_;
+};
+
+// A reference to a bit.
+class ArrayBitRef {
+ public:
+  using Unit = uint64_t;
+
+  // Create a reference to a bit.
+  ArrayBitRef(Unit &unit, Unit mask) : unit_(unit), mask_(mask) {}
+
+  // Get a bit.
+  operator bool() const {
+    return (unit_ & mask_) != 0;
+  }
+
+  // Set a bit.
+  ArrayBitRef &operator=(bool value) {
+    if (value) {
+      unit_ |= mask_;
+    } else {
+      unit_ &= ~mask_;
+    }
+    return *this;
+  }
+
+  // Copy a bit.
+  ArrayBitRef &operator=(const ArrayBitRef &rhs) {
+    return *this = bool(rhs);
+  }
+
+  // Compare bits.
+  bool operator==(bool rhs) const {
+    return bool(*this) == rhs;
+  }
+  bool operator!=(bool rhs) const {
+    return bool(*this) != rhs;
+  }
+
+ private:
+  Unit &unit_;
+  Unit mask_;
+};
+
+// An array of bits.
+template <uint64_t PAGE_SIZE_IN_BITS, uint64_t TABLE_SIZE>
+class ArrayImpl<bool, PAGE_SIZE_IN_BITS, TABLE_SIZE> {
+  static constexpr uint64_t UNIT_SIZE = sizeof(ArrayBitRef::Unit) * 8;
+  static constexpr uint64_t PAGE_SIZE = PAGE_SIZE_IN_BITS / UNIT_SIZE;
+
+  // Test template parameters.
+  static_assert((PAGE_SIZE_IN_BITS % UNIT_SIZE) == 0,
+                "(PAGE_SIZE_IN_BITS % UNIT_SIZE) != 0");
+  static_assert((PAGE_SIZE != 0) || (TABLE_SIZE == 0),
+                "TABLE_SIZE must be zero if PAGE_SIZE is zero");
+  static_assert((PAGE_SIZE & (PAGE_SIZE - 1)) == 0,
+                "PAGE_SIZE must be zero or a power of two");
+  static_assert((TABLE_SIZE & (TABLE_SIZE - 1)) == 0,
+                "TABLE_SIZE must be zero or a power of two");
+
+  using Impl = typename ArrayImplSelector<PAGE_SIZE, TABLE_SIZE>::Type;
+
+ public:
+  using Value    = typename Traits<bool>::Type;
+  using ValueArg = typename Traits<bool>::ArgumentType;
+  using ValueRef = ArrayBitRef;
+  using Unit     = ArrayBitRef::Unit;
+
+  ArrayImpl() : impl_() {}
+  ~ArrayImpl() {}
+
+  // Create an array.
+  void create(Storage *storage, uint32_t storage_node_id, uint64_t size) {
+    impl_.create(storage, storage_node_id,
+                 sizeof(Unit), PAGE_SIZE, TABLE_SIZE, size / UNIT_SIZE,
+                 nullptr, ArrayPageFiller<Unit>::fill_page);
+  }
+  // Create an array with the default value.
+  void create(Storage *storage, uint32_t storage_node_id, uint64_t size,
+              ValueArg default_value) {
+    const Unit default_unit = default_value ? ~(Unit)0 : (Unit)0;
+    impl_.create(storage, storage_node_id,
+                 sizeof(Unit), PAGE_SIZE, TABLE_SIZE, size / UNIT_SIZE,
+                 &default_unit, ArrayPageFiller<Unit>::fill_page);
+  }
+  // Open an array.
+  void open(Storage *storage, uint32_t storage_node_id) {
+    impl_.open(storage, storage_node_id,
+               sizeof(Unit), PAGE_SIZE, TABLE_SIZE,
+               ArrayPageFiller<Unit>::fill_page);
+  }
+
+  // Unlink an array.
+  static void unlink(Storage *storage, uint32_t storage_node_id) {
+    Impl::unlink(storage, storage_node_id,
+                 sizeof(Unit), PAGE_SIZE, TABLE_SIZE);
+  }
+
+  // Return the storage node ID.
+  uint32_t storage_node_id() const {
+    return impl_.storage_node_id();
+  }
+  // Return the number of values.
+  uint64_t size() const {
+    return impl_.size() * UNIT_SIZE;
+  }
+
+  // Return a reference to a value.
+  ValueRef get_value(uint64_t value_id) {
+    return ValueRef(get_unit(value_id / UNIT_SIZE),
+                    Unit(1) << (value_id % UNIT_SIZE));
+  }
+  // Return a reference to a unit.
+  Unit &get_unit(uint64_t unit_id) {
+    return impl_. template get_value<Unit, PAGE_SIZE, TABLE_SIZE>(unit_id);
   }
 
  private:

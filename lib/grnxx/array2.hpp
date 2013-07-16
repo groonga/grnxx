@@ -38,19 +38,13 @@ struct ArrayErrorHandler {
 
 template <typename T, uint64_t PAGE_SIZE = 0, uint64_t TABLE_SIZE = 0>
 class Array {
-  // Test template parameters.
-  static_assert((PAGE_SIZE != 0) || (TABLE_SIZE == 0),
-                "TABLE_SIZE must be zero if PAGE_SIZE is zero");
-  static_assert((PAGE_SIZE & (PAGE_SIZE - 1)) == 0,
-                "PAGE_SIZE must be zero or a power of two");
-  static_assert((TABLE_SIZE & (TABLE_SIZE - 1)) == 0,
-                "TABLE_SIZE must be zero or a power of two");
-
   using Impl = ArrayImpl<T, PAGE_SIZE, TABLE_SIZE>;
 
  public:
-  using Value = typename Impl::Value;
+  using Value    = typename Impl::Value;
   using ValueArg = typename Impl::ValueArg;
+  using ValueRef = typename Impl::ValueRef;
+  using Unit     = typename Impl::Unit;
 
   ~Array() {}
 
@@ -90,17 +84,22 @@ class Array {
     return impl_.size();
   }
 
-  // Get a reference to a value.
-  Value &operator[](uint64_t value_id) {
-    return *impl_.get_value(value_id);
-  }
   // Get a value.
   Value get(uint64_t value_id) {
-    return *impl_.get_value(value_id);
+    return get_value(value_id);
   }
   // Set a value.
   void set(uint64_t value_id, ValueArg value) {
-    *impl_.get_value(value_id) = value;
+    get_value(value_id) = value;
+  }
+
+  // Get a reference to a value.
+  ValueRef get_value(uint64_t value_id) {
+    return impl_.get_value(value_id);
+  }
+  // Get a reference to a unit.
+  Unit &get_unit(uint64_t unit_id) {
+    return impl_.get_unit(unit_id);
   }
 
  private:
