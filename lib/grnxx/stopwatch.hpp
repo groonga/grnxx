@@ -27,12 +27,8 @@ namespace grnxx {
 // To measure the amount of time elapsed.
 class Stopwatch {
  public:
-  // Disable the default constructor so that users don't forget to start a
-  // stopwatch.
-  Stopwatch() = delete;
-
-  // Construct a stopwatch, which is started if is_running == true.
-  explicit Stopwatch(bool is_running);
+  // Initialize a stopwatch, which is started if "is_running" == true.
+  explicit Stopwatch(bool is_running = false);
 
   // Return true iff the stopwatch is running.
   bool is_running() const {
