@@ -55,7 +55,7 @@ class DummyTableManager {
 
   DummyTableManager() : dummy_tables_() {}
 
-  const DummyTableManager(const DummyTableManager &) = delete;
+  DummyTableManager(const DummyTableManager &) = delete;
   DummyTableManager &operator=(const DummyTableManager &) = delete;
 };
 
