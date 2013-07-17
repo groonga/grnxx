@@ -44,8 +44,6 @@ class Array {
   using ValueRef = typename Impl::ValueRef;
   using Unit     = typename Impl::Unit;
 
-  ~Array() {}
-
   // Create an array.
   static Array *create(Storage *storage, uint32_t storage_node_id,
                        uint64_t size) {

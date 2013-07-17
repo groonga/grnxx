@@ -254,9 +254,6 @@ class ArrayImpl {
   using ValueRef = Value &;
   using Unit     = Value;
 
-  ArrayImpl() : impl_() {}
-  ~ArrayImpl() {}
-
   // Create an array.
   void create(Storage *storage, uint32_t storage_node_id, uint64_t size) {
     impl_.create(storage, storage_node_id,
@@ -369,9 +366,6 @@ class ArrayImpl<bool, PAGE_SIZE_IN_BITS, TABLE_SIZE> {
   using ValueArg = typename Traits<bool>::ArgumentType;
   using ValueRef = ArrayBitRef;
   using Unit     = ArrayBitRef::Unit;
-
-  ArrayImpl() : impl_() {}
-  ~ArrayImpl() {}
 
   // Create an array.
   void create(Storage *storage, uint32_t storage_node_id, uint64_t size) {
