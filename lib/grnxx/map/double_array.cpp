@@ -24,7 +24,7 @@
 #include "grnxx/geo_point.hpp"
 #include "grnxx/intrinsic.hpp"
 #include "grnxx/logger.hpp"
-#include "grnxx/map/bytes_store.hpp"
+#include "grnxx/map/bytes_pool.hpp"
 #include "grnxx/map/double_array/block.hpp"
 #include "grnxx/map/double_array/entry.hpp"
 #include "grnxx/map/double_array/header.hpp"
@@ -82,7 +82,7 @@ DoubleArray<Bytes>::DoubleArray()
       siblings_(),
       blocks_(),
       entries_(),
-      store_() {}
+      pool_() {}
 
 DoubleArray<Bytes>::~DoubleArray() {}
 
@@ -225,7 +225,7 @@ bool DoubleArray<Bytes>::add(KeyArg key, int64_t *key_id) {
     return false;
   }
   Entry * const entry = &entries_->get_value(next_key_id);
-  uint64_t bytes_id = store_->add(key);
+  uint64_t bytes_id = pool_->add(key);
   ++header_->num_keys;
   if (next_key_id > header_->max_key_id) {
     header_->max_key_id = next_key_id;
@@ -253,7 +253,7 @@ bool DoubleArray<Bytes>::remove(KeyArg key) {
     // Not found.
     return false;
   }
-  Key stored_key = store_->get(entry->bytes_id());
+  Key stored_key = pool_->get(entry->bytes_id());
   if (key.except_prefix(key_pos) != stored_key.except_prefix(key_pos)) {
     // Not found.
     return false;
@@ -434,12 +434,12 @@ void DoubleArray<Bytes>::create_map(Storage *storage, uint32_t storage_node_id,
                                      BLOCK_ARRAY_SIZE));
     entries_.reset(EntryArray::create(storage, storage_node_id_,
                                       ENTRY_ARRAY_SIZE));
-    store_.reset(BytesStore::create(storage, storage_node_id_));
+    pool_.reset(BytesPool::create(storage, storage_node_id_));
     header_->nodes_storage_node_id = nodes_->storage_node_id();
     header_->siblings_storage_node_id = siblings_->storage_node_id();
     header_->blocks_storage_node_id = blocks_->storage_node_id();
     header_->entries_storage_node_id = entries_->storage_node_id();
-    header_->store_storage_node_id = store_->storage_node_id();
+    header_->pool_storage_node_id = pool_->storage_node_id();
     Node * const root_node = reserve_node(ROOT_NODE_ID);
     if (!root_node) {
       // TODO
@@ -468,7 +468,7 @@ void DoubleArray<Bytes>::open_map(Storage *storage, uint32_t storage_node_id) {
       SiblingArray::open(storage, header_->siblings_storage_node_id));
   blocks_.reset(BlockArray::open(storage, header_->blocks_storage_node_id));
   entries_.reset(EntryArray::open(storage, header_->entries_storage_node_id));
-  store_.reset(BytesStore::open(storage, header_->store_storage_node_id));
+  pool_.reset(BytesPool::open(storage, header_->pool_storage_node_id));
 }
 
 DoubleArrayResult DoubleArray<Bytes>::get_key(int64_t key_id, Key *key) {
@@ -477,7 +477,7 @@ DoubleArrayResult DoubleArray<Bytes>::get_key(int64_t key_id, Key *key) {
     return DOUBLE_ARRAY_NOT_FOUND;
   }
   if (key) {
-    *key = store_->get(entry.bytes_id());
+    *key = pool_->get(entry.bytes_id());
   }
   return DOUBLE_ARRAY_FOUND;
 }
@@ -507,7 +507,7 @@ bool DoubleArray<Bytes>::replace_key(int64_t key_id, KeyArg src_key,
     // Critical error.
     return false;
   }
-  uint64_t bytes_id = store_->add(dest_key);
+  uint64_t bytes_id = pool_->add(dest_key);
   dest_node->set_key_id(key_id);
   *entry = Entry::valid_entry(bytes_id);
   src_node->set_offset(NODE_INVALID_OFFSET);

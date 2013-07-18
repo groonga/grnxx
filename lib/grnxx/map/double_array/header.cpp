@@ -31,7 +31,7 @@ Header::Header()
       siblings_storage_node_id(STORAGE_INVALID_NODE_ID),
       blocks_storage_node_id(STORAGE_INVALID_NODE_ID),
       entries_storage_node_id(STORAGE_INVALID_NODE_ID),
-      store_storage_node_id(STORAGE_INVALID_NODE_ID),
+      pool_storage_node_id(STORAGE_INVALID_NODE_ID),
       next_key_id(MAP_MIN_KEY_ID),
       num_blocks(0),
       num_phantoms(0),

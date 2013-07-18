@@ -38,7 +38,7 @@ class Storage;
 
 namespace map {
 
-class BytesStore;
+class BytesPool;
 
 namespace double_array {
 
@@ -129,7 +129,7 @@ class DoubleArray<Bytes> : public Map<Bytes> {
   std::unique_ptr<SiblingArray> siblings_;
   std::unique_ptr<BlockArray> blocks_;
   std::unique_ptr<EntryArray> entries_;
-  std::unique_ptr<BytesStore> store_;
+  std::unique_ptr<BytesPool> pool_;
 
   void create_map(Storage *storage, uint32_t storage_node_id,
                   const MapOptions &options);
