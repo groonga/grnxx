@@ -34,7 +34,7 @@ class Storage;
 
 namespace map {
 
-class BytesStore;
+class BytesPool;
 
 struct BytesArrayHeader;
 
@@ -85,7 +85,7 @@ class BytesArray {
   BytesArrayHeader *header_;
   Value default_value_;
   std::unique_ptr<IDArray> ids_;
-  std::unique_ptr<BytesStore> store_;
+  std::unique_ptr<BytesPool> pool_;
 
   BytesArray();
 

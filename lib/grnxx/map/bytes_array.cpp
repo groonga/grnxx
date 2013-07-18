@@ -22,16 +22,21 @@
 
 #include "grnxx/exception.hpp"
 #include "grnxx/logger.hpp"
-#include "grnxx/map/bytes_store.hpp"
+#include "grnxx/map/bytes_pool.hpp"
 #include "grnxx/storage.hpp"
 
 namespace grnxx {
 namespace map {
+namespace {
+
+constexpr uint64_t INVALID_BYTES_ID = ~0ULL;
+
+}  // namespace
 
 struct BytesArrayHeader {
   uint64_t default_value_size;
   uint32_t ids_storage_node_id;
-  uint32_t store_storage_node_id;
+  uint32_t pool_storage_node_id;
 
   BytesArrayHeader();
 };
@@ -39,7 +44,7 @@ struct BytesArrayHeader {
 BytesArrayHeader::BytesArrayHeader()
     : default_value_size(0),
       ids_storage_node_id(STORAGE_INVALID_NODE_ID),
-      store_storage_node_id(STORAGE_INVALID_NODE_ID) {}
+      pool_storage_node_id(STORAGE_INVALID_NODE_ID) {}
 
 BytesArray::~BytesArray() {}
 
@@ -84,21 +89,21 @@ void BytesArray::unlink(Storage *storage, uint32_t storage_node_id) {
 
 auto BytesArray::get(uint64_t value_id) -> Value {
   uint64_t bytes_id = ids_->get(value_id);
-  if (bytes_id == BYTES_STORE_INVALID_BYTES_ID) {
+  if (bytes_id == INVALID_BYTES_ID) {
     return default_value_;
   } else {
-    return store_->get(bytes_id);
+    return pool_->get(bytes_id);
   }
 }
 
 void BytesArray::set(uint64_t value_id, ValueArg value) {
   uint64_t * const src_bytes_id = &ids_->get_value(value_id);
-  const uint64_t dest_bytes_id = store_->add(value);
-  if (*src_bytes_id != BYTES_STORE_INVALID_BYTES_ID) {
+  const uint64_t dest_bytes_id = pool_->add(value);
+  if (*src_bytes_id != INVALID_BYTES_ID) {
     try {
-      store_->unset(*src_bytes_id);
+      pool_->unset(*src_bytes_id);
     } catch (...) {
-      store_->unset(dest_bytes_id);
+      pool_->unset(dest_bytes_id);
       throw;
     }
   }
@@ -106,7 +111,7 @@ void BytesArray::set(uint64_t value_id, ValueArg value) {
 }
 
 bool BytesArray::sweep(Duration lifetime) {
-  return store_->sweep(lifetime);
+  return pool_->sweep(lifetime);
 }
 
 BytesArray::BytesArray()
@@ -115,7 +120,7 @@ BytesArray::BytesArray()
       header_(nullptr),
       default_value_(),
       ids_(),
-      store_() {}
+      pool_() {}
 
 void BytesArray::create_array(Storage *storage, uint32_t storage_node_id,
                               ValueArg default_value) {
@@ -131,10 +136,10 @@ void BytesArray::create_array(Storage *storage, uint32_t storage_node_id,
     std::memcpy(header_ + 1, default_value.data(), default_value.size());
     default_value_ = Value(header_ + 1, default_value.size());
     ids_.reset(IDArray::create(storage, storage_node_id_, ID_ARRAY_SIZE,
-                               BYTES_STORE_INVALID_BYTES_ID));
-    store_.reset(BytesStore::create(storage, storage_node_id_));
+                               INVALID_BYTES_ID));
+    pool_.reset(BytesPool::create(storage, storage_node_id_));
     header_->ids_storage_node_id = ids_->storage_node_id();
-    header_->store_storage_node_id = store_->storage_node_id();
+    header_->pool_storage_node_id = pool_->storage_node_id();
   } catch (...) {
     storage->unlink_node(storage_node_id_);
     throw;
@@ -148,7 +153,7 @@ void BytesArray::open_array(Storage *storage, uint32_t storage_node_id) {
   header_ = static_cast<BytesArrayHeader *>(storage_node.body());
   default_value_ = Value(header_ + 1, header_->default_value_size);
   ids_.reset(IDArray::open(storage, header_->ids_storage_node_id));
-  store_.reset(BytesStore::open(storage, header_->store_storage_node_id));
+  pool_.reset(BytesPool::open(storage, header_->pool_storage_node_id));
 }
 
 }  // namespace map
