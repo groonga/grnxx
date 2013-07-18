@@ -110,8 +110,8 @@ void BytesArray::set(uint64_t value_id, ValueArg value) {
   *src_bytes_id = dest_bytes_id;
 }
 
-bool BytesArray::sweep(Duration lifetime) {
-  return pool_->sweep(lifetime);
+void BytesArray::sweep(Duration lifetime) {
+  pool_->sweep(lifetime);
 }
 
 BytesArray::BytesArray()

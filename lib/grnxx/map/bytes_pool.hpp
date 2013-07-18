@@ -129,7 +129,7 @@ class BytesPool {
   }
 
   // Sweep empty pages whose modified time <= (now - lifetime).
-  bool sweep(Duration lifetime);
+  void sweep(Duration lifetime);
 
  private:
   Storage *storage_;

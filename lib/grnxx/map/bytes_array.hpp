@@ -75,7 +75,7 @@ class BytesArray {
   void set(uint64_t value_id, ValueArg value);
 
   // Sweep empty pages whose modified time < (now - lifetime).
-  bool sweep(Duration lifetime);
+  void sweep(Duration lifetime);
 
  private:
   Storage *storage_;

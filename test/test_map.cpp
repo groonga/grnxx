@@ -247,7 +247,7 @@ void test_bytes_pool_sweep() {
     std::uint64_t key_id = pool->add(keys[i]);
     pool->unset(key_id);
   }
-  assert(pool->sweep(grnxx::Duration(0)));
+  pool->sweep(grnxx::Duration(0));
   for (std::uint64_t i = 0; i < BYTES_POOL_NUM_KEYS; ++i) {
     std::uint64_t key_id = pool->add(keys[i]);
     key_ids.push_back(key_id);
@@ -255,7 +255,7 @@ void test_bytes_pool_sweep() {
   for (std::uint64_t i = 0; i < BYTES_POOL_NUM_KEYS; ++i) {
     pool->unset(key_ids[i]);
   }
-  assert(pool->sweep(grnxx::Duration(0)));
+  pool->sweep(grnxx::Duration(0));
 }
 
 void test_bytes_array_create() {

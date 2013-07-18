@@ -203,10 +203,10 @@ uint64_t BytesPool::add(ValueArg value) {
   return get_value_id(offset, size);
 }
 
-bool BytesPool::sweep(Duration lifetime) {
+void BytesPool::sweep(Duration lifetime) {
   if (header_->latest_empty_page_id == INVALID_PAGE_ID) {
     // Nothing to do.
-    return true;
+    return;
   }
   BytesPoolPageHeader * const latest_empty_page_header =
       &page_headers_->get_value(header_->latest_empty_page_id);
@@ -223,7 +223,7 @@ bool BytesPool::sweep(Duration lifetime) {
     }
     if (oldest_empty_page_header->modified_time > threshold) {
       // The remaining empty pages are not ready.
-      return true;
+      break;
     }
     const uint32_t next_oldest_empty_page_id =
         oldest_empty_page_header->next_page_id;
@@ -234,7 +234,6 @@ bool BytesPool::sweep(Duration lifetime) {
       header_->latest_empty_page_id = INVALID_PAGE_ID;
     }
   } while (header_->latest_empty_page_id != INVALID_PAGE_ID);
-  return true;
 }
 
 BytesPool::~BytesPool() {}
