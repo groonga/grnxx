@@ -117,6 +117,17 @@ class BytesPool {
   // Add a byte sequence and return its ID.
   uint64_t add(ValueArg value);
 
+  // Return the actually used size of a page in use.
+  // If a page is not in use, return the page size.
+  uint64_t get_page_size_in_use(uint64_t page_id) {
+    const BytesPoolPageHeader &page_header = page_headers_->get_value(page_id);
+    if (page_header.status == BYTES_POOL_PAGE_IN_USE) {
+      return page_header.size_in_use;
+    } else {
+      return page_size();
+    }
+  }
+
   // Sweep empty pages whose modified time <= (now - lifetime).
   bool sweep(Duration lifetime);
 
