@@ -29,6 +29,7 @@
 #include "grnxx/logger.hpp"
 #include "grnxx/map.hpp"
 #include "grnxx/map/bytes_array.hpp"
+#include "grnxx/map/bytes_pool.hpp"
 #include "grnxx/map/bytes_store.hpp"
 #include "grnxx/map/helper.hpp"
 #include "grnxx/map/hash_table/hash.hpp"
@@ -44,6 +45,7 @@ constexpr std::uint64_t MIN_TEXT_SIZE = 1024;
 constexpr std::uint64_t MAX_TEXT_SIZE = 2048;
 
 constexpr std::uint64_t MAP_NUM_KEYS         = 100;
+constexpr std::uint64_t BYTES_POOL_NUM_KEYS = 1 << 14;
 constexpr std::uint64_t BYTES_STORE_NUM_KEYS = 1 << 14;
 
 std::random_device random_device;
@@ -139,6 +141,123 @@ void generate_random_keys(std::uint64_t num_keys,
     keys->push_back(grnxx::Bytes(it->data(), it->size()));
   }
   std::random_shuffle(keys->begin(), keys->end(), RandomNumberGenerator());
+}
+
+void test_bytes_pool_create() {
+  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
+  std::unique_ptr<grnxx::map::BytesPool> pool(
+      grnxx::map::BytesPool::create(storage.get(),
+                                    grnxx::STORAGE_ROOT_NODE_ID));
+}
+
+void test_bytes_pool_open() {
+  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
+  std::unique_ptr<grnxx::map::BytesPool> pool(
+      grnxx::map::BytesPool::create(storage.get(),
+                                    grnxx::STORAGE_ROOT_NODE_ID));
+  const std::uint32_t storage_node_id = pool->storage_node_id();
+  pool.reset(grnxx::map::BytesPool::open(storage.get(), storage_node_id));
+}
+
+void test_bytes_pool_unlink() {
+  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
+  std::unique_ptr<grnxx::map::BytesPool> pool(
+      grnxx::map::BytesPool::create(storage.get(),
+                                    grnxx::STORAGE_ROOT_NODE_ID));
+  grnxx::StorageNode storage_node =
+      storage->open_node(pool->storage_node_id());
+  grnxx::map::BytesPool::unlink(storage.get(), storage_node.id());
+  assert(storage_node.status() == grnxx::STORAGE_NODE_UNLINKED);
+}
+
+void test_bytes_pool_storage_node_id() {
+  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
+  std::unique_ptr<grnxx::map::BytesPool> pool(
+      grnxx::map::BytesPool::create(storage.get(),
+                                    grnxx::STORAGE_ROOT_NODE_ID));
+  grnxx::StorageNode storage_node =
+      storage->open_node(pool->storage_node_id());
+  assert(storage_node.status() == grnxx::STORAGE_NODE_ACTIVE);
+}
+
+void test_bytes_pool_get() {
+  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
+  std::unique_ptr<grnxx::map::BytesPool> pool(
+      grnxx::map::BytesPool::create(storage.get(),
+                                    grnxx::STORAGE_ROOT_NODE_ID));
+  std::vector<grnxx::Bytes> keys;
+  std::vector<std::uint64_t> key_ids;
+  generate_random_keys(BYTES_POOL_NUM_KEYS, &keys);
+
+  for (std::uint64_t i = 0; i < BYTES_POOL_NUM_KEYS; ++i) {
+    std::uint64_t key_id = pool->add(keys[i]);
+    grnxx::Bytes stored_key = pool->get(key_id);
+    assert(keys[i] == stored_key);
+    key_ids.push_back(key_id);
+  }
+  for (std::uint64_t i = 0; i < BYTES_POOL_NUM_KEYS; ++i) {
+    grnxx::Bytes stored_key = pool->get(key_ids[i]);
+    assert(keys[i] == stored_key);
+  }
+}
+
+void test_bytes_pool_unset() {
+  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
+  std::unique_ptr<grnxx::map::BytesPool> pool(
+      grnxx::map::BytesPool::create(storage.get(),
+                                    grnxx::STORAGE_ROOT_NODE_ID));
+  std::vector<grnxx::Bytes> keys;
+  std::vector<std::uint64_t> key_ids;
+  generate_random_keys(BYTES_POOL_NUM_KEYS, &keys);
+
+  for (std::uint64_t i = 0; i < BYTES_POOL_NUM_KEYS; ++i) {
+    std::uint64_t key_id = pool->add(keys[i]);
+    pool->unset(key_id);
+  }
+  for (std::uint64_t i = 0; i < BYTES_POOL_NUM_KEYS; ++i) {
+    std::uint64_t key_id = pool->add(keys[i]);
+    key_ids.push_back(key_id);
+  }
+  for (std::uint64_t i = 0; i < BYTES_POOL_NUM_KEYS; ++i) {
+    pool->unset(key_ids[i]);
+  }
+}
+
+void test_bytes_pool_add() {
+  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
+  std::unique_ptr<grnxx::map::BytesPool> pool(
+      grnxx::map::BytesPool::create(storage.get(),
+                                    grnxx::STORAGE_ROOT_NODE_ID));
+  std::vector<grnxx::Bytes> keys;
+  generate_random_keys(BYTES_POOL_NUM_KEYS, &keys);
+
+  for (std::uint64_t i = 0; i < BYTES_POOL_NUM_KEYS; ++i) {
+    pool->add(keys[i]);
+  }
+}
+
+void test_bytes_pool_sweep() {
+  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
+  std::unique_ptr<grnxx::map::BytesPool> pool(
+      grnxx::map::BytesPool::create(storage.get(),
+                                    grnxx::STORAGE_ROOT_NODE_ID));
+  std::vector<grnxx::Bytes> keys;
+  std::vector<std::uint64_t> key_ids;
+  generate_random_keys(BYTES_POOL_NUM_KEYS, &keys);
+
+  for (std::uint64_t i = 0; i < BYTES_POOL_NUM_KEYS; ++i) {
+    std::uint64_t key_id = pool->add(keys[i]);
+    pool->unset(key_id);
+  }
+  assert(pool->sweep(grnxx::Duration(0)));
+  for (std::uint64_t i = 0; i < BYTES_POOL_NUM_KEYS; ++i) {
+    std::uint64_t key_id = pool->add(keys[i]);
+    key_ids.push_back(key_id);
+  }
+  for (std::uint64_t i = 0; i < BYTES_POOL_NUM_KEYS; ++i) {
+    pool->unset(key_ids[i]);
+  }
+  assert(pool->sweep(grnxx::Duration(0)));
 }
 
 void test_bytes_store_create() {
@@ -878,6 +997,17 @@ void test_map() {
   test_map<T>(grnxx::MAP_PATRICIA);
 }
 
+void test_bytes_pool() {
+  test_bytes_pool_create();
+  test_bytes_pool_open();
+  test_bytes_pool_unlink();
+  test_bytes_pool_storage_node_id();
+  test_bytes_pool_get();
+  test_bytes_pool_unset();
+  test_bytes_pool_add();
+  test_bytes_pool_sweep();
+}
+
 void test_bytes_store() {
   test_bytes_store_create();
   test_bytes_store_open();
@@ -926,6 +1056,7 @@ int main() {
 
   GRNXX_NOTICE() << "mersenne_twister_seed = " << mersenne_twister_seed;
 
+  test_bytes_pool();
   test_bytes_store();
   test_bytes_array();
   test_map();
