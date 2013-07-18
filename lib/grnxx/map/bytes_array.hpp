@@ -45,16 +45,14 @@ class BytesArray {
 
   using IDArray = Array<uint64_t, 65536, 4096>;
 
-  static constexpr uint64_t ID_ARRAY_SIZE = 1ULL << 40;
-
   ~BytesArray();
 
   // Create an array.
   static BytesArray *create(Storage *storage, uint32_t storage_node_id,
-                            uint64_t dummy);
+                            uint64_t size);
   // Create an array with default value.
   static BytesArray *create(Storage *storage, uint32_t storage_node_id,
-                            uint64_t dummy, ValueArg default_value);
+                            uint64_t size, ValueArg default_value);
   // Open an array.
   static BytesArray *open(Storage *storage, uint32_t storage_node_id);
 
@@ -91,7 +89,7 @@ class BytesArray {
 
   // Create an array with the default value.
   void create_array(Storage *storage, uint32_t storage_node_id,
-                    ValueArg default_value);
+                    uint64_t size, ValueArg default_value);
   // Open an array.
   void open_array(Storage *storage, uint32_t storage_node_id);
 };

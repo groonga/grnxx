@@ -49,12 +49,12 @@ BytesArrayHeader::BytesArrayHeader()
 BytesArray::~BytesArray() {}
 
 BytesArray *BytesArray::create(Storage *storage, uint32_t storage_node_id,
-                               uint64_t) {
-  return create(storage, storage_node_id, 0, "");
+                               uint64_t size) {
+  return create(storage, storage_node_id, size, "");
 }
 
 BytesArray *BytesArray::create(Storage *storage, uint32_t storage_node_id,
-                               uint64_t, ValueArg default_value) {
+                               uint64_t size, ValueArg default_value) {
   if (!storage) {
     GRNXX_ERROR() << "invalid argument: storage = nullptr";
     throw LogicError();
@@ -64,7 +64,7 @@ BytesArray *BytesArray::create(Storage *storage, uint32_t storage_node_id,
     GRNXX_ERROR() << "new grnxx::map::BytesArray failed";
     throw MemoryError();
   }
-  array->create_array(storage, storage_node_id, default_value);
+  array->create_array(storage, storage_node_id, size, default_value);
   return array.release();
 }
 
@@ -123,7 +123,7 @@ BytesArray::BytesArray()
       pool_() {}
 
 void BytesArray::create_array(Storage *storage, uint32_t storage_node_id,
-                              ValueArg default_value) {
+                              uint64_t size, ValueArg default_value) {
   storage_ = storage;
   uint64_t storage_node_size = sizeof(BytesArrayHeader) + default_value.size();
   StorageNode storage_node =
@@ -135,7 +135,7 @@ void BytesArray::create_array(Storage *storage, uint32_t storage_node_id,
     header_->default_value_size = default_value.size();
     std::memcpy(header_ + 1, default_value.data(), default_value.size());
     default_value_ = Value(header_ + 1, default_value.size());
-    ids_.reset(IDArray::create(storage, storage_node_id_, ID_ARRAY_SIZE,
+    ids_.reset(IDArray::create(storage, storage_node_id_, size,
                                INVALID_BYTES_ID));
     pool_.reset(BytesPool::create(storage, storage_node_id_));
     header_->ids_storage_node_id = ids_->storage_node_id();
