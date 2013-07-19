@@ -22,16 +22,10 @@
 
 #include "grnxx/exception.hpp"
 #include "grnxx/logger.hpp"
-#include "grnxx/map/bytes_pool.hpp"
 #include "grnxx/storage.hpp"
 
 namespace grnxx {
 namespace map {
-namespace {
-
-constexpr uint64_t INVALID_BYTES_ID = ~0ULL;
-
-}  // namespace
 
 struct BytesArrayHeader {
   uint64_t default_value_size;
@@ -85,15 +79,6 @@ BytesArray *BytesArray::open(Storage *storage, uint32_t storage_node_id) {
 void BytesArray::unlink(Storage *storage, uint32_t storage_node_id) {
   std::unique_ptr<BytesArray> array(open(storage, storage_node_id));
   storage->unlink_node(storage_node_id);
-}
-
-auto BytesArray::get(uint64_t value_id) -> Value {
-  uint64_t bytes_id = ids_->get(value_id);
-  if (bytes_id == INVALID_BYTES_ID) {
-    return default_value_;
-  } else {
-    return pool_->get(bytes_id);
-  }
 }
 
 void BytesArray::set(uint64_t value_id, ValueArg value) {

@@ -25,6 +25,7 @@
 #include "grnxx/array.hpp"
 #include "grnxx/bytes.hpp"
 #include "grnxx/duration.hpp"
+#include "grnxx/map/bytes_pool.hpp"
 #include "grnxx/traits.hpp"
 #include "grnxx/types.hpp"
 
@@ -39,6 +40,8 @@ class BytesPool;
 struct BytesArrayHeader;
 
 class BytesArray {
+  static constexpr uint64_t INVALID_BYTES_ID = ~0ULL;
+
  public:
   using Value = typename Traits<Bytes>::Type;
   using ValueArg = typename Traits<Bytes>::ArgumentType;
@@ -70,7 +73,14 @@ class BytesArray {
   }
 
   // Get a value.
-  Value get(uint64_t value_id);
+  Value get(uint64_t value_id) {
+    const uint64_t bytes_id = ids_->get(value_id);
+    if (bytes_id == INVALID_BYTES_ID) {
+      return default_value_;
+    } else {
+      return pool_->get(bytes_id);
+    }
+  }
   // Set a value.
   void set(uint64_t value_id, ValueArg value);
 
