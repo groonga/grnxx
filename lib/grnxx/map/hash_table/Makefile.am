@@ -10,5 +10,4 @@ libgrnxx_map_hash_table_includedir = ${includedir}/grnxx/map/hash_table
 libgrnxx_map_hash_table_include_HEADERS =	\
 	dummy.hpp				\
 	hash.hpp				\
-	header.hpp				\
-	key_id_array.hpp
+	header.hpp

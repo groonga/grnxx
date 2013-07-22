@@ -18,7 +18,6 @@
 #include "grnxx/map/hash_table/dummy.hpp"
 
 #include "grnxx/map/hash_table/hash.hpp"
-#include "grnxx/map/hash_table/key_id_array.hpp"
 
 namespace grnxx {
 namespace map {
