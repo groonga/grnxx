@@ -43,7 +43,7 @@ constexpr std::uint64_t MAX_KEY_SIZE = 16;
 constexpr std::uint64_t MIN_TEXT_SIZE = 1024;
 constexpr std::uint64_t MAX_TEXT_SIZE = 2048;
 
-constexpr std::uint64_t MAP_NUM_KEYS         = 100;
+constexpr std::uint64_t MAP_NUM_KEYS        = 100;
 constexpr std::uint64_t BYTES_POOL_NUM_KEYS = 1 << 14;
 
 std::random_device random_device;
