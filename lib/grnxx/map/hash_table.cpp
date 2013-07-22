@@ -35,6 +35,11 @@ namespace grnxx {
 namespace map {
 namespace {
 
+constexpr int64_t TABLE_ENTRY_UNUSED  = -1;
+constexpr int64_t TABLE_ENTRY_REMOVED = -2;
+
+constexpr uint64_t MIN_TABLE_SIZE = 256;
+
 template <typename T>
 using Hash = hash_table::Hash<T>;
 
@@ -123,7 +128,7 @@ bool HashTable<T>::unset(int64_t key_id) {
     GRNXX_ERROR() << "failed to unset: key_id = " << key_id;
     throw LogicError();
   }
-  *stored_key_id = -1;
+  *stored_key_id = TABLE_ENTRY_REMOVED;
   return true;
 }
 
@@ -147,11 +152,11 @@ bool HashTable<T>::reset(int64_t key_id, KeyArg dest_key) {
     return false;
   }
   keys_->reset(key_id, dest_normalized_key);
-  if (*dest_key_id == MAP_INVALID_KEY_ID) {
+  if (*dest_key_id == TABLE_ENTRY_UNUSED) {
     ++header_->num_key_ids;
   }
   *dest_key_id = key_id;
-  *src_key_id = -1;
+  *src_key_id = TABLE_ENTRY_REMOVED;
   return true;
 }
 
@@ -174,7 +179,7 @@ template <typename T>
 bool HashTable<T>::add(KeyArg key, int64_t *key_id) {
   refresh_key_ids();
   // Rebuild the hash table if the filling rate is greater than 62.5%.
-  const uint64_t key_ids_size = key_ids_->mask() + 1;
+  const uint64_t key_ids_size = key_ids_->size();
   if (header_->num_key_ids > ((key_ids_size + (key_ids_size / 4)) / 2)) {
     rebuild();
   }
@@ -191,7 +196,7 @@ bool HashTable<T>::add(KeyArg key, int64_t *key_id) {
     return false;
   }
   int64_t next_key_id = keys_->add(normalized_key);
-  if (*stored_key_id == MAP_INVALID_KEY_ID) {
+  if (*stored_key_id == TABLE_ENTRY_UNUSED) {
     ++header_->num_key_ids;
   }
   *stored_key_id = next_key_id;
@@ -215,7 +220,7 @@ bool HashTable<T>::remove(KeyArg key) {
                   << ", key_id = " << *stored_key_id;
     throw LogicError();
   }
-  *stored_key_id = -1;
+  *stored_key_id = TABLE_ENTRY_REMOVED;
   return true;
 }
 
@@ -235,11 +240,11 @@ bool HashTable<T>::replace(KeyArg src_key, KeyArg dest_key, int64_t *key_id) {
     return false;
   }
   keys_->reset(*src_key_id, dest_normalized_key);
-  if (*dest_key_id == MAP_INVALID_KEY_ID) {
+  if (*dest_key_id == TABLE_ENTRY_UNUSED) {
     ++header_->num_key_ids;
   }
   *dest_key_id = *src_key_id;
-  *src_key_id = -1;
+  *src_key_id = TABLE_ENTRY_REMOVED;
   if (key_id) {
     *key_id = *dest_key_id;
   }
@@ -254,8 +259,8 @@ bool HashTable<T>::truncate() {
     return true;
   }
   std::unique_ptr<KeyIDArray> new_key_ids(
-      KeyIDArray::create(storage_, storage_node_id_,
-                         KeyIDArray::page_size() - 1));
+      KeyIDArray::create(storage_, storage_node_id_, MIN_TABLE_SIZE,
+                         TABLE_ENTRY_UNUSED));
   if (header_->old_key_ids_storage_node_id != STORAGE_INVALID_NODE_ID) try {
     KeyIDArray::unlink(storage_, header_->old_key_ids_storage_node_id);
   } catch (...) {
@@ -285,7 +290,7 @@ void HashTable<T>::create_map(Storage *storage, uint32_t storage_node_id,
     header_ = static_cast<Header *>(storage_node.body());
     *header_ = Header();
     key_ids_.reset(KeyIDArray::create(storage, storage_node_id_,
-                                      KeyIDArray::page_size() - 1));
+                                      MIN_TABLE_SIZE, TABLE_ENTRY_UNUSED));
     keys_.reset(KeyStore<T>::create(storage, storage_node_id_));
     header_->key_ids_storage_node_id = key_ids_->storage_node_id();
     header_->keys_storage_node_id = keys_->storage_node_id();
@@ -320,7 +325,7 @@ bool HashTable<T>::find_key_id(int64_t key_id, int64_t **stored_key_id) {
   }
   const uint64_t first_hash = Hash<T>()(stored_key);
   for (uint64_t hash = first_hash; ; ) {
-    *stored_key_id = key_ids->get_pointer(hash);
+    *stored_key_id = &key_ids->get_value(hash & (key_ids->size() - 1));
     if (**stored_key_id == key_id) {
       // Found.
       return true;
@@ -340,14 +345,14 @@ bool HashTable<T>::find_key(KeyArg key, int64_t **stored_key_id) {
   *stored_key_id = nullptr;
   const uint64_t first_hash = Hash<T>()(key);
   for (uint64_t hash = first_hash; ; ) {
-    int64_t * const key_id = key_ids->get_pointer(hash);
-    if (*key_id == MAP_INVALID_KEY_ID) {
+    int64_t * const key_id = &key_ids->get_value(hash & (key_ids->size() - 1));
+    if (*key_id == TABLE_ENTRY_UNUSED) {
       // Not found.
       if (!*stored_key_id) {
         *stored_key_id = key_id;
       }
       return false;
-    } else if (*key_id < 0) {
+    } else if (*key_id == TABLE_ENTRY_REMOVED) {
       // Save the first removed entry.
       if (!*stored_key_id) {
         *stored_key_id = key_id;
@@ -372,22 +377,24 @@ bool HashTable<T>::find_key(KeyArg key, int64_t **stored_key_id) {
 template <typename T>
 void HashTable<T>::rebuild() {
   uint64_t new_size = num_keys() * 2;
-  if (new_size < key_ids_->page_size()) {
-    new_size = key_ids_->page_size();
+  if (new_size < MIN_TABLE_SIZE) {
+    new_size = MIN_TABLE_SIZE;
   }
   new_size = 2ULL << bit_scan_reverse(new_size - 1);
-  if (new_size > key_ids_->size()) {
-    // Critical error.
-    GRNXX_ERROR() << "too large table: size = " << new_size
-                  << ", max_size = " << key_ids_->size();
-    throw LogicError();
-  }
-  const uint64_t new_mask = new_size - 1;
+  // TODO: Size upper limit check.
+//  if (new_size > key_ids_->size()) {
+//    // Critical error.
+//    GRNXX_ERROR() << "too large table: size = " << new_size
+//                  << ", max_size = " << key_ids_->size();
+//    throw LogicError();
+//  }
   // Create a new hash table.
   std::unique_ptr<KeyIDArray> new_key_ids(
-      KeyIDArray::create(storage_, storage_node_id_, new_mask));
+      KeyIDArray::create(storage_, storage_node_id_, new_size,
+                         TABLE_ENTRY_UNUSED));
   try {
     // Copy keys from the current hash table to the new one.
+    const uint64_t new_mask = new_size - 1;
     int64_t key_id;
     for (key_id = MAP_MIN_KEY_ID; key_id <= max_key_id(); ++key_id) {
       if (!keys_->get_bit(key_id)) {
@@ -397,8 +404,8 @@ void HashTable<T>::rebuild() {
       const uint64_t first_hash = Hash<T>()(stored_key);
       int64_t *stored_key_id;
       for (uint64_t hash = first_hash; ; hash = rehash(hash)) {
-        stored_key_id = new_key_ids->get_pointer(hash);
-        if (*stored_key_id == MAP_INVALID_KEY_ID) {
+        stored_key_id = &new_key_ids->get_value(hash & new_mask);
+        if (*stored_key_id == TABLE_ENTRY_UNUSED) {
           *stored_key_id = key_id;
           break;
         }

@@ -23,7 +23,6 @@
 #include <memory>
 
 #include "grnxx/map.hpp"
-#include "grnxx/map/hash_table/key_id_array.hpp"
 #include "grnxx/map/key_store.hpp"
 #include "grnxx/types.hpp"
 
@@ -41,7 +40,7 @@ struct Header;
 template <typename T>
 class HashTable : public Map<T> {
   using Header = hash_table::Header;
-  using KeyIDArray = typename hash_table::KeyIDArray<T>;
+  using KeyIDArray = Array<int64_t>;
 
  public:
   using Key = typename Map<T>::Key;
