@@ -18,6 +18,7 @@ libgrnxx_map_la_SOURCES =				\
 	array_map.cpp					\
 	bytes_array.cpp					\
 	bytes_pool.cpp					\
+	common_header.cpp				\
 	cursor_impl.cpp					\
 	double_array.cpp				\
 	hash_table.cpp					\
@@ -30,6 +31,7 @@ libgrnxx_map_include_HEADERS =				\
 	array_map.hpp					\
 	bytes_array.hpp					\
 	bytes_pool.hpp					\
+	common_header.hpp				\
 	cursor_impl.hpp					\
 	double_array.hpp				\
 	hash_table.hpp					\
