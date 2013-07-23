@@ -31,15 +31,12 @@ namespace grnxx {
 class Storage;
 
 namespace map {
-namespace array_map {
 
-struct Header;
-
-}  // namespace array_map
+struct ArrayMapHeader;
 
 template <typename T>
 class ArrayMap : public Map<T> {
-  using Header = array_map::Header;
+  using Header = ArrayMapHeader;
 
  public:
   using Key = typename Map<T>::Key;

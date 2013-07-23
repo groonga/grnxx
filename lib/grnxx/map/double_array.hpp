@@ -40,18 +40,14 @@ namespace map {
 
 class BytesPool;
 
-namespace double_array {
-
-struct Header;
-
-}  // namespace double_array
-
 enum DoubleArrayResult {
   DOUBLE_ARRAY_FOUND,
   DOUBLE_ARRAY_NOT_FOUND,
   DOUBLE_ARRAY_INSERTED,
   DOUBLE_ARRAY_FAILED
 };
+
+struct DoubleArrayHeader;
 
 template <typename T>
 class DoubleArray {
@@ -63,6 +59,7 @@ class DoubleArray {
 
 template <>
 class DoubleArray<Bytes> : public Map<Bytes> {
+  using Header = DoubleArrayHeader;
   using Node = double_array::Node;
   using Block = double_array::Block;
   using Entry = double_array::Entry;
@@ -78,7 +75,6 @@ class DoubleArray<Bytes> : public Map<Bytes> {
   static constexpr uint64_t ENTRY_ARRAY_SIZE   = 1ULL << 40;
 
  public:
-  using Header = double_array::Header;
   using Key = typename Map<Bytes>::Key;
   using KeyArg = typename Map<Bytes>::KeyArg;
   using Cursor = typename Map<Bytes>::Cursor;

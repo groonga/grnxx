@@ -25,6 +25,7 @@
 #include "grnxx/intrinsic.hpp"
 #include "grnxx/logger.hpp"
 #include "grnxx/map/bytes_pool.hpp"
+#include "grnxx/map/common_header.hpp"
 #include "grnxx/map/double_array/block.hpp"
 #include "grnxx/map/double_array/entry.hpp"
 #include "grnxx/map/double_array/header.hpp"
@@ -35,6 +36,8 @@
 namespace grnxx {
 namespace map {
 namespace {
+
+constexpr char FORMAT_STRING[] = "grnxx::map::DoubleArray";
 
 using double_array::BLOCK_MAX_FAILURE_COUNT;
 using double_array::BLOCK_MAX_LEVEL;
@@ -50,6 +53,51 @@ using double_array::NODE_INVALID_OFFSET;
 constexpr uint64_t ROOT_NODE_ID = 0;
 
 }  // namespace
+
+struct DoubleArrayHeader {
+  CommonHeader common_header;
+  int64_t max_key_id;
+  uint64_t num_keys;
+  uint32_t nodes_storage_node_id;
+  uint32_t siblings_storage_node_id;
+  uint32_t blocks_storage_node_id;
+  uint32_t entries_storage_node_id;
+  uint32_t pool_storage_node_id;
+  uint64_t next_key_id;
+  uint64_t num_blocks;
+  uint64_t num_phantoms;
+  uint64_t num_zombies;
+  uint64_t latest_blocks[BLOCK_MAX_LEVEL + 1];
+
+  // Initialize the member variables.
+  DoubleArrayHeader();
+
+  // Return true iff the header seems to be correct.
+  explicit operator bool() const;
+};
+
+DoubleArrayHeader::DoubleArrayHeader()
+    : common_header(FORMAT_STRING, MAP_DOUBLE_ARRAY),
+      max_key_id(MAP_MIN_KEY_ID - 1),
+      num_keys(0),
+      nodes_storage_node_id(STORAGE_INVALID_NODE_ID),
+      siblings_storage_node_id(STORAGE_INVALID_NODE_ID),
+      blocks_storage_node_id(STORAGE_INVALID_NODE_ID),
+      entries_storage_node_id(STORAGE_INVALID_NODE_ID),
+      pool_storage_node_id(STORAGE_INVALID_NODE_ID),
+      next_key_id(MAP_MIN_KEY_ID),
+      num_blocks(0),
+      num_phantoms(0),
+      num_zombies(0),
+      latest_blocks() {
+  for (uint64_t i = 0; i <= BLOCK_MAX_LEVEL; ++i) {
+    latest_blocks[i] = BLOCK_INVALID_ID;
+  }
+}
+
+DoubleArrayHeader::operator bool() const {
+  return common_header.format() == FORMAT_STRING;
+}
 
 template <typename T>
 Map<T> *DoubleArray<T>::create(Storage *, uint32_t, const MapOptions &) {
@@ -463,6 +511,11 @@ void DoubleArray<Bytes>::open_map(Storage *storage, uint32_t storage_node_id) {
     throw LogicError();
   }
   header_ = static_cast<Header *>(storage_node.body());
+  if (!*header_) {
+    GRNXX_ERROR() << "wrong format: expected = " << FORMAT_STRING
+                  << ", actual = " << header_->common_header.format();
+    throw LogicError();
+  }
   nodes_.reset(NodeArray::open(storage, header_->nodes_storage_node_id));
   siblings_.reset(
       SiblingArray::open(storage, header_->siblings_storage_node_id));

@@ -23,12 +23,36 @@
 #include "grnxx/exception.hpp"
 #include "grnxx/geo_point.hpp"
 #include "grnxx/logger.hpp"
-#include "grnxx/map/array_map/header.hpp"
+#include "grnxx/map/common_header.hpp"
 #include "grnxx/map/helper.hpp"
 #include "grnxx/storage.hpp"
 
 namespace grnxx {
 namespace map {
+namespace {
+
+constexpr char FORMAT_STRING[] = "grnxx::map::ArrayMap";
+
+}  // namespace
+
+struct ArrayMapHeader {
+  CommonHeader common_header;
+  uint32_t keys_storage_node_id;
+
+  // Initialize the member variables.
+  ArrayMapHeader();
+
+  // Return true iff the header seems to be correct.
+  explicit operator bool() const;
+};
+
+ArrayMapHeader::ArrayMapHeader()
+    : common_header(FORMAT_STRING, MAP_ARRAY),
+      keys_storage_node_id(STORAGE_INVALID_NODE_ID) {}
+
+ArrayMapHeader::operator bool() const {
+  return common_header.format() == FORMAT_STRING;
+}
 
 template <typename T>
 ArrayMap<T>::ArrayMap()
@@ -242,6 +266,11 @@ void ArrayMap<T>::open_map(Storage *storage, uint32_t storage_node_id) {
   }
   storage_node_id_ = storage_node_id;
   header_ = static_cast<Header *>(storage_node.body());
+  if (!*header_) {
+    GRNXX_ERROR() << "wrong format: expected = " << FORMAT_STRING
+                  << ", actual = " << header_->common_header.format();
+    throw LogicError();
+  }
   keys_.reset(KeyStore<T>::open(storage, header_->keys_storage_node_id));
 }
 

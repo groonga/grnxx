@@ -25,8 +25,8 @@
 #include "grnxx/intrinsic.hpp"
 #include "grnxx/lock.hpp"
 #include "grnxx/logger.hpp"
+#include "grnxx/map/common_header.hpp"
 #include "grnxx/map/hash_table/hash.hpp"
-#include "grnxx/map/hash_table/header.hpp"
 #include "grnxx/map/helper.hpp"
 #include "grnxx/mutex.hpp"
 #include "grnxx/storage.hpp"
@@ -34,6 +34,8 @@
 namespace grnxx {
 namespace map {
 namespace {
+
+constexpr char FORMAT_STRING[] = "grnxx::map::HashTable";
 
 constexpr int64_t TABLE_ENTRY_UNUSED  = -1;
 constexpr int64_t TABLE_ENTRY_REMOVED = -2;
@@ -44,6 +46,33 @@ template <typename T>
 using Hash = hash_table::Hash<T>;
 
 }  // namespace
+
+struct HashTableHeader {
+  CommonHeader common_header;
+  uint32_t key_ids_storage_node_id;
+  uint32_t old_key_ids_storage_node_id;
+  uint32_t keys_storage_node_id;
+  uint64_t num_key_ids;
+  Mutex mutex;
+
+  // Initialize the member variables.
+  HashTableHeader();
+
+  // Return true iff the header seems to be correct.
+  explicit operator bool() const;
+};
+
+HashTableHeader::HashTableHeader()
+    : common_header(FORMAT_STRING, MAP_HASH_TABLE),
+      key_ids_storage_node_id(STORAGE_INVALID_NODE_ID),
+      old_key_ids_storage_node_id(STORAGE_INVALID_NODE_ID),
+      keys_storage_node_id(STORAGE_INVALID_NODE_ID),
+      num_key_ids(0),
+      mutex() {}
+
+HashTableHeader::operator bool() const {
+  return common_header.format() == FORMAT_STRING;
+}
 
 template <typename T>
 HashTable<T>::HashTable()
@@ -311,6 +340,11 @@ void HashTable<T>::open_map(Storage *storage, uint32_t storage_node_id) {
   }
   storage_node_id_ = storage_node_id;
   header_ = static_cast<Header *>(storage_node.body());
+  if (!*header_) {
+    GRNXX_ERROR() << "wrong format: expected = " << FORMAT_STRING
+                  << ", actual = " << header_->common_header.format();
+    throw LogicError();
+  }
   key_ids_.reset(KeyIDArray::open(storage, header_->key_ids_storage_node_id));
   keys_.reset(KeyStore<T>::open(storage, header_->keys_storage_node_id));
 }

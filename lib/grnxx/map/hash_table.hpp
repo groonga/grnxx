@@ -31,15 +31,12 @@ namespace grnxx {
 class Storage;
 
 namespace map {
-namespace hash_table {
 
-struct Header;
-
-}  // namespace hash_table
+struct HashTableHeader;
 
 template <typename T>
 class HashTable : public Map<T> {
-  using Header = hash_table::Header;
+  using Header = HashTableHeader;
   using KeyIDArray = Array<int64_t>;
 
  public:

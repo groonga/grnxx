@@ -23,6 +23,7 @@
 #include "grnxx/exception.hpp"
 #include "grnxx/geo_point.hpp"
 #include "grnxx/logger.hpp"
+#include "grnxx/map/common_header.hpp"
 #include "grnxx/map/hash_table/hash.hpp"
 #include "grnxx/map/helper.hpp"
 #include "grnxx/map/patricia/header.hpp"
@@ -31,6 +32,8 @@
 namespace grnxx {
 namespace map {
 namespace {
+
+constexpr char FORMAT_STRING[] = "grnxx::map::Patricia";
 
 constexpr uint64_t ROOT_NODE_ID = 0;
 
@@ -42,6 +45,32 @@ using patricia::NODE_BRANCH;
 using patricia::NODE_TERMINAL;
 
 }  // namespace
+
+struct PatriciaHeader {
+  CommonHeader common_header;
+  MapType map_type;
+  uint64_t next_node_id;
+  uint32_t nodes_storage_node_id;
+  uint32_t keys_storage_node_id;
+  uint32_t cache_storage_node_id;
+
+  // Initialize the member variables.
+  PatriciaHeader();
+
+  // Return true iff the header seems to be correct.
+  explicit operator bool() const;
+};
+
+PatriciaHeader::PatriciaHeader()
+    : common_header(FORMAT_STRING, MAP_PATRICIA),
+      next_node_id(2),
+      nodes_storage_node_id(STORAGE_INVALID_NODE_ID),
+      keys_storage_node_id(STORAGE_INVALID_NODE_ID),
+      cache_storage_node_id(STORAGE_INVALID_NODE_ID) {}
+
+PatriciaHeader::operator bool() const {
+  return common_header.format() == FORMAT_STRING;
+}
 
 template <typename T>
 Patricia<T>::Patricia()
@@ -479,7 +508,11 @@ void Patricia<T>::open_map(Storage *storage, uint32_t storage_node_id) {
   }
   storage_node_id_ = storage_node_id;
   header_ = static_cast<Header *>(storage_node.body());
-  // TODO: Check the format.
+  if (!*header_) {
+    GRNXX_ERROR() << "wrong format: expected = " << FORMAT_STRING
+                  << ", actual = " << header_->common_header.format();
+    throw LogicError();
+  }
   nodes_.reset(NodeArray::open(storage, header_->nodes_storage_node_id));
   keys_.reset(KeyStore<T>::open(storage, header_->keys_storage_node_id));
 }
@@ -1350,7 +1383,11 @@ void Patricia<Bytes>::open_map(Storage *storage, uint32_t storage_node_id) {
   }
   storage_node_id_ = storage_node_id;
   header_ = static_cast<Header *>(storage_node.body());
-  // TODO: Check the format.
+  if (!*header_) {
+    GRNXX_ERROR() << "wrong format: expected = " << FORMAT_STRING
+                  << ", actual = " << header_->common_header.format();
+    throw LogicError();
+  }
   nodes_.reset(NodeArray::open(storage, header_->nodes_storage_node_id));
   keys_.reset(KeyStore<Bytes>::open(storage, header_->keys_storage_node_id));
   cache_.reset(Cache::open(storage, header_->cache_storage_node_id));

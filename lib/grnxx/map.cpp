@@ -26,10 +26,10 @@
 #include "grnxx/storage.hpp"
 #include "grnxx/string_builder.hpp"
 #include "grnxx/map/array_map.hpp"
+#include "grnxx/map/common_header.hpp"
 #include "grnxx/map/cursor_impl.hpp"
 #include "grnxx/map/double_array.hpp"
 #include "grnxx/map/hash_table.hpp"
-#include "grnxx/map/header.hpp"
 #include "grnxx/map/helper.hpp"
 #include "grnxx/map/patricia.hpp"
 #include "grnxx/map/scanner_impl.hpp"
@@ -98,9 +98,13 @@ Map<T> *Map<T>::open(Storage *storage, uint32_t storage_node_id) {
     throw LogicError();
   }
   StorageNode storage_node = storage->open_node(storage_node_id);
-  const map::Header * const header =
-      static_cast<const map::Header *>(storage_node.body());
-  switch (header->type) {
+  const map::CommonHeader * const common_header =
+      static_cast<const map::CommonHeader *>(storage_node.body());
+  if (!*common_header) {
+    GRNXX_ERROR() << "wrong header: format = " << common_header->format();
+    throw LogicError();
+  }
+  switch (common_header->type()) {
     case MAP_ARRAY: {
       return map::ArrayMap<T>::open(storage, storage_node_id);
     }
@@ -114,7 +118,7 @@ Map<T> *Map<T>::open(Storage *storage, uint32_t storage_node_id) {
       return map::HashTable<T>::open(storage, storage_node_id);
     }
     default: {
-      GRNXX_ERROR() << "invalid format: type = " << header->type;
+      GRNXX_ERROR() << "invalid format: type = " << common_header->type();
       throw LogicError();
     }
   }

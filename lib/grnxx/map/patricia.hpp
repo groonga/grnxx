@@ -34,19 +34,16 @@ namespace grnxx {
 class Storage;
 
 namespace map {
-namespace patricia {
 
-struct Header;
-
-}  // namespace patricia
+struct PatriciaHeader;
 
 template <typename T>
 class Patricia : public Map<T> {
+  using Header = PatriciaHeader;
   using Node = patricia::Node;
   using NodeArray = Array<Node, 65536, 8192>;
 
  public:
-  using Header = patricia::Header;
   using Key = typename Map<T>::Key;
   using KeyArg = typename Map<T>::KeyArg;
   using Cursor = typename Map<T>::Cursor;
@@ -92,12 +89,12 @@ class Patricia : public Map<T> {
 
 template <>
 class Patricia<Bytes> : public Map<Bytes> {
+  using Header = PatriciaHeader;
   using Node = patricia::Node;
   using NodeArray = Array<Node, 65536, 8192>;
   using Cache = Array<int64_t>;
 
  public:
-  using Header = patricia::Header;
   using Key = typename Map<Bytes>::Key;
   using KeyArg = typename Map<Bytes>::KeyArg;
   using Cursor = typename Map<Bytes>::Cursor;
