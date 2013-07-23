@@ -27,7 +27,6 @@
 
 namespace grnxx {
 namespace map {
-namespace hash_table {
 
 // Calculate a hash value.
 template <typename T>
@@ -161,7 +160,6 @@ struct Hash<Bytes> {
   }
 };
 
-}  // namespace hash_table
 }  // namespace map
 }  // namespace grnxx
 

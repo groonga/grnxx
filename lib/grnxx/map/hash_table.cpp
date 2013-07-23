@@ -26,7 +26,7 @@
 #include "grnxx/lock.hpp"
 #include "grnxx/logger.hpp"
 #include "grnxx/map/common_header.hpp"
-#include "grnxx/map/hash_table/hash.hpp"
+#include "grnxx/map/hash.hpp"
 #include "grnxx/map/helper.hpp"
 #include "grnxx/mutex.hpp"
 #include "grnxx/storage.hpp"
@@ -41,9 +41,6 @@ constexpr int64_t TABLE_ENTRY_UNUSED  = -1;
 constexpr int64_t TABLE_ENTRY_REMOVED = -2;
 
 constexpr uint64_t MIN_TABLE_SIZE = 256;
-
-template <typename T>
-using Hash = hash_table::Hash<T>;
 
 }  // namespace
 

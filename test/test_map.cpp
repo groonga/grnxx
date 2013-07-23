@@ -30,8 +30,8 @@
 #include "grnxx/map.hpp"
 #include "grnxx/map/bytes_array.hpp"
 #include "grnxx/map/bytes_pool.hpp"
+#include "grnxx/map/hash.hpp"
 #include "grnxx/map/helper.hpp"
-#include "grnxx/map/hash_table/hash.hpp"
 #include "grnxx/periodic_clock.hpp"
 #include "grnxx/storage.hpp"
 
@@ -52,7 +52,7 @@ std::mt19937_64 mersenne_twister(mersenne_twister_seed);
 
 // For std::unordered_set.
 template <typename T>
-using Hash = grnxx::map::hash_table::Hash<T>;
+using Hash = grnxx::map::Hash<T>;
 
 // For std::random_shuffle().
 struct RandomNumberGenerator {

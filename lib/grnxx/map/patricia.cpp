@@ -24,7 +24,7 @@
 #include "grnxx/geo_point.hpp"
 #include "grnxx/logger.hpp"
 #include "grnxx/map/common_header.hpp"
-#include "grnxx/map/hash_table/hash.hpp"
+#include "grnxx/map/hash.hpp"
 #include "grnxx/map/helper.hpp"
 #include "grnxx/map/patricia/header.hpp"
 #include "grnxx/storage.hpp"
@@ -908,7 +908,7 @@ bool Patricia<Bytes>::add(KeyArg key, int64_t *key_id) {
   constexpr std::size_t HISTORY_SIZE = 8;
   int64_t * const cache = nullptr;
 //  int64_t * const cache =
-//      &cache_->get_value(hash_table::Hash<Key>()(key) % cache_->size());
+//      &cache_->get_value(Hash<Key>()(key) % cache_->size());
 //  if ((*cache >= 0) && (*cache < keys_->max_key_id())) {
 //    if (keys_->get_bit(*cache)) {
 //      Key cached_key = keys_->get_key(*cache);

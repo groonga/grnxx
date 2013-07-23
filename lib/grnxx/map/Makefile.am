@@ -1,13 +1,11 @@
 SUBDIRS =						\
 	double_array					\
-	hash_table					\
 	patricia
 
 noinst_LTLIBRARIES = libgrnxx_map.la
 
 libgrnxx_map_la_LIBADD =				\
 	double_array/libgrnxx_map_double_array.la	\
-	hash_table/libgrnxx_map_hash_table.la		\
 	patricia/libgrnxx_map_patricia.la
 
 libgrnxx_map_la_LDFLAGS = @AM_LTLDFLAGS@
@@ -32,6 +30,7 @@ libgrnxx_map_include_HEADERS =				\
 	common_header.hpp				\
 	cursor_impl.hpp					\
 	double_array.hpp				\
+	hash.hpp					\
 	hash_table.hpp					\
 	header.hpp					\
 	helper.hpp					\
