@@ -1,5 +1,4 @@
 SUBDIRS =						\
-	array_map					\
 	double_array					\
 	hash_table					\
 	patricia
@@ -7,7 +6,6 @@ SUBDIRS =						\
 noinst_LTLIBRARIES = libgrnxx_map.la
 
 libgrnxx_map_la_LIBADD =				\
-	array_map/libgrnxx_map_array_map.la		\
 	double_array/libgrnxx_map_double_array.la	\
 	hash_table/libgrnxx_map_hash_table.la		\
 	patricia/libgrnxx_map_patricia.la
