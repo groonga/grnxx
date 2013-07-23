@@ -17,7 +17,6 @@
 */
 #include "grnxx/map/patricia/dummy.hpp"
 
-#include "grnxx/map/patricia/header.hpp"
 #include "grnxx/map/patricia/node.hpp"
 
 namespace grnxx {
