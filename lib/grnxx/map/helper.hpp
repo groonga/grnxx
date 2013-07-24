@@ -27,7 +27,6 @@
 
 #include "grnxx/array.hpp"
 #include "grnxx/bytes.hpp"
-#include "grnxx/map/bytes_array.hpp"
 #include "grnxx/traits.hpp"
 
 namespace grnxx {

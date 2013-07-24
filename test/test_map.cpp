@@ -28,7 +28,6 @@
 #include "grnxx/geo_point.hpp"
 #include "grnxx/logger.hpp"
 #include "grnxx/map.hpp"
-#include "grnxx/map/bytes_array.hpp"
 #include "grnxx/map/bytes_pool.hpp"
 #include "grnxx/map/hash.hpp"
 #include "grnxx/map/helper.hpp"
@@ -256,86 +255,6 @@ void test_bytes_pool_sweep() {
     pool->unset(key_ids[i]);
   }
   pool->sweep(grnxx::Duration(0));
-}
-
-void test_bytes_array_create() {
-  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
-  std::unique_ptr<grnxx::map::BytesArray> array(
-      grnxx::map::BytesArray::create(storage.get(),
-                                     grnxx::STORAGE_ROOT_NODE_ID,
-                                     1ULL << 40));
-}
-
-void test_bytes_array_create_with_default_value() {
-  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
-  std::unique_ptr<grnxx::map::BytesArray> array(
-      grnxx::map::BytesArray::create(storage.get(),
-                                     grnxx::STORAGE_ROOT_NODE_ID,
-                                     1ULL << 40,
-                                     "Default"));
-}
-
-void test_bytes_array_open() {
-  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
-  std::unique_ptr<grnxx::map::BytesArray> array(
-      grnxx::map::BytesArray::create(storage.get(),
-                                     grnxx::STORAGE_ROOT_NODE_ID,
-                                     1ULL << 40));
-  const std::uint32_t storage_node_id = array->storage_node_id();
-  array.reset(grnxx::map::BytesArray::open(storage.get(), storage_node_id));
-}
-
-void test_bytes_array_unlink() {
-  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
-  std::unique_ptr<grnxx::map::BytesArray> array(
-      grnxx::map::BytesArray::create(storage.get(),
-                                     grnxx::STORAGE_ROOT_NODE_ID,
-                                     1ULL << 40));
-  grnxx::StorageNode storage_node =
-      storage->open_node(array->storage_node_id());
-  grnxx::map::BytesArray::unlink(storage.get(), storage_node.id());
-  assert(storage_node.status() == grnxx::STORAGE_NODE_UNLINKED);
-}
-
-void test_bytes_array_storage_node_id() {
-  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
-  std::unique_ptr<grnxx::map::BytesArray> array(
-      grnxx::map::BytesArray::create(storage.get(),
-                                     grnxx::STORAGE_ROOT_NODE_ID,
-                                     1ULL << 40));
-  grnxx::StorageNode storage_node =
-      storage->open_node(array->storage_node_id());
-  assert(storage_node.status() == grnxx::STORAGE_NODE_ACTIVE);
-}
-
-void test_bytes_array_get() {
-  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
-  std::unique_ptr<grnxx::map::BytesArray> array(
-      grnxx::map::BytesArray::create(storage.get(),
-                                     grnxx::STORAGE_ROOT_NODE_ID,
-                                     1ULL << 40));
-  std::vector<grnxx::Bytes> keys;
-  generate_random_keys(MAP_NUM_KEYS, &keys);
-  for (std::uint64_t i = 0; i < MAP_NUM_KEYS; ++i) {
-    array->set(i, keys[i]);
-  }
-  for (std::uint64_t i = 0; i < MAP_NUM_KEYS; ++i) {
-    grnxx::Bytes stored_key = array->get(i);
-    assert(stored_key == keys[i]);
-  }
-}
-
-void test_bytes_array_set() {
-  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
-  std::unique_ptr<grnxx::map::BytesArray> array(
-      grnxx::map::BytesArray::create(storage.get(),
-                                     grnxx::STORAGE_ROOT_NODE_ID,
-                                     1ULL << 40));
-  std::vector<grnxx::Bytes> keys;
-  generate_random_keys(MAP_NUM_KEYS, &keys);
-  for (std::uint64_t i = 0; i < MAP_NUM_KEYS; ++i) {
-    array->set(i, keys[i]);
-  }
 }
 
 template <typename T>
@@ -889,16 +808,6 @@ void test_bytes_pool() {
   test_bytes_pool_sweep();
 }
 
-void test_bytes_array() {
-  test_bytes_array_create();
-  test_bytes_array_create_with_default_value();
-  test_bytes_array_open();
-  test_bytes_array_unlink();
-  test_bytes_array_storage_node_id();
-  test_bytes_array_get();
-  test_bytes_array_set();
-}
-
 void test_map() {
   test_map<std::int8_t>();
   test_map<std::uint8_t>();
@@ -927,7 +836,6 @@ int main() {
   GRNXX_NOTICE() << "mersenne_twister_seed = " << mersenne_twister_seed;
 
   test_bytes_pool();
-  test_bytes_array();
   test_map();
 
   return 0;
