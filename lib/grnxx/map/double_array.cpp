@@ -19,15 +19,12 @@
 
 #include <new>
 
-#include "grnxx/bytes.hpp"
 #include "grnxx/exception.hpp"
 #include "grnxx/geo_point.hpp"
 #include "grnxx/intrinsic.hpp"
 #include "grnxx/logger.hpp"
-#include "grnxx/map/bytes_pool.hpp"
 #include "grnxx/map/common_header.hpp"
 #include "grnxx/map/double_array/block.hpp"
-#include "grnxx/map/double_array/header.hpp"
 #include "grnxx/map/double_array/node.hpp"
 #include "grnxx/map/helper.hpp"
 #include "grnxx/map/key_pool.hpp"
