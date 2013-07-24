@@ -25,6 +25,7 @@
 #include "grnxx/logger.hpp"
 #include "grnxx/map/common_header.hpp"
 #include "grnxx/map/helper.hpp"
+#include "grnxx/map/key_pool.hpp"
 #include "grnxx/storage.hpp"
 
 namespace grnxx {
@@ -37,7 +38,7 @@ constexpr char FORMAT_STRING[] = "grnxx::map::ArrayMap";
 
 struct ArrayMapHeader {
   CommonHeader common_header;
-  uint32_t keys_storage_node_id;
+  uint32_t pool_storage_node_id;
 
   // Initialize the member variables.
   ArrayMapHeader();
@@ -48,7 +49,7 @@ struct ArrayMapHeader {
 
 ArrayMapHeader::ArrayMapHeader()
     : common_header(FORMAT_STRING, MAP_ARRAY),
-      keys_storage_node_id(STORAGE_INVALID_NODE_ID) {}
+      pool_storage_node_id(STORAGE_INVALID_NODE_ID) {}
 
 ArrayMapHeader::operator bool() const {
   return common_header.format() == FORMAT_STRING;
@@ -59,7 +60,7 @@ ArrayMap<T>::ArrayMap()
     : storage_(nullptr),
       storage_node_id_(STORAGE_INVALID_NODE_ID),
       header_(nullptr),
-      keys_() {}
+      pool_() {}
 
 template <typename T>
 ArrayMap<T>::~ArrayMap() {}
@@ -99,12 +100,12 @@ MapType ArrayMap<T>::type() const {
 
 template <typename T>
 int64_t ArrayMap<T>::max_key_id() const {
-  return keys_->max_key_id();
+  return pool_->max_key_id();
 }
 
 template <typename T>
 uint64_t ArrayMap<T>::num_keys() const {
-  return keys_->num_keys();
+  return pool_->num_keys();
 }
 
 template <typename T>
@@ -113,22 +114,15 @@ bool ArrayMap<T>::get(int64_t key_id, Key *key) {
     // Out of range.
     return false;
   }
-  if (!keys_->get_bit(key_id)) {
-    // Not found.
-    return false;
-  }
-  if (key) {
-    *key = keys_->get_key(key_id);
-  }
-  return true;
+  return pool_->get(key_id, key);
 }
 
 template <typename T>
 bool ArrayMap<T>::unset(int64_t key_id) {
-  if (!keys_->unset(key_id)) {
-    // Not found.
+  if (!pool_->get_bit(key_id)) {
     return false;
   }
+  pool_->unset(key_id);
   return true;
 }
 
@@ -142,7 +136,7 @@ bool ArrayMap<T>::reset(int64_t key_id, KeyArg dest_key) {
     // Found.
     return false;
   }
-  keys_->reset(key_id, Helper<T>::normalize(dest_key));
+  pool_->reset(key_id, Helper<T>::normalize(dest_key));
   return true;
 }
 
@@ -150,8 +144,8 @@ template <typename T>
 bool ArrayMap<T>::find(KeyArg key, int64_t *key_id) {
   const Key normalized_key = map::Helper<T>::normalize(key);
   for (int64_t i = MAP_MIN_KEY_ID; i <= max_key_id(); ++i) {
-    if (keys_->get_bit(i)) {
-      Key stored_key = keys_->get_key(i);
+    Key stored_key;
+    if (pool_->get(i, &stored_key)) {
       if (Helper<T>::equal_to(normalized_key, stored_key)) {
         // Found.
         if (key_id) {
@@ -168,8 +162,8 @@ template <typename T>
 bool ArrayMap<T>::add(KeyArg key, int64_t *key_id) {
   const Key normalized_key = Helper<T>::normalize(key);
   for (int64_t i = MAP_MIN_KEY_ID; i <= max_key_id(); ++i) {
-    if (keys_->get_bit(i)) {
-      Key stored_key = keys_->get_key(i);
+    Key stored_key;
+    if (pool_->get(i, &stored_key)) {
       if (Helper<T>::equal_to(normalized_key, stored_key)) {
         // Found.
         if (key_id) {
@@ -180,9 +174,9 @@ bool ArrayMap<T>::add(KeyArg key, int64_t *key_id) {
     }
   }
   if (key_id) {
-    *key_id = keys_->add(normalized_key);
+    *key_id = pool_->add(normalized_key);
   } else {
-    keys_->add(normalized_key);
+    pool_->add(normalized_key);
   }
   return true;
 }
@@ -194,11 +188,7 @@ bool ArrayMap<T>::remove(KeyArg key) {
     // Not found.
     return false;
   }
-  if (!keys_->unset(key_id)) {
-    GRNXX_ERROR() << "failed to remove: key = " << key
-                  << ", key_id = " << key_id;
-    throw LogicError();
-  }
+  pool_->unset(key_id);
   return true;
 }
 
@@ -208,8 +198,8 @@ bool ArrayMap<T>::replace(KeyArg src_key, KeyArg dest_key, int64_t *key_id) {
   const Key normalized_dest_key = Helper<T>::normalize(dest_key);
   int64_t src_key_id = MAP_INVALID_KEY_ID;
   for (int64_t i = MAP_MIN_KEY_ID; i <= max_key_id(); ++i) {
-    if (keys_->get_bit(i)) {
-      Key stored_key = keys_->get_key(i);
+    Key stored_key;
+    if (pool_->get(i, &stored_key)) {
       if (Helper<T>::equal_to(normalized_src_key, stored_key)) {
         // Source key found.
         src_key_id = i;
@@ -224,7 +214,7 @@ bool ArrayMap<T>::replace(KeyArg src_key, KeyArg dest_key, int64_t *key_id) {
     // Not found.
     return false;
   }
-  keys_->reset(src_key_id, normalized_dest_key);
+  pool_->reset(src_key_id, normalized_dest_key);
   if (key_id) {
     *key_id = src_key_id;
   }
@@ -233,7 +223,7 @@ bool ArrayMap<T>::replace(KeyArg src_key, KeyArg dest_key, int64_t *key_id) {
 
 template <typename T>
 bool ArrayMap<T>::truncate() {
-  keys_->truncate();
+  pool_->truncate();
   return true;
 }
 
@@ -247,8 +237,8 @@ void ArrayMap<T>::create_map(Storage *storage, uint32_t storage_node_id,
   try {
     header_ = static_cast<Header *>(storage_node.body());
     *header_ = Header();
-    keys_.reset(KeyStore<T>::create(storage, storage_node_id_));
-    header_->keys_storage_node_id = keys_->storage_node_id();
+    pool_.reset(KeyPool<T>::create(storage, storage_node_id_));
+    header_->pool_storage_node_id = pool_->storage_node_id();
   } catch (...) {
     storage->unlink_node(storage_node_id_);
     throw;
@@ -271,7 +261,7 @@ void ArrayMap<T>::open_map(Storage *storage, uint32_t storage_node_id) {
                   << ", actual = " << header_->common_header.format();
     throw LogicError();
   }
-  keys_.reset(KeyStore<T>::open(storage, header_->keys_storage_node_id));
+  pool_.reset(KeyPool<T>::open(storage, header_->pool_storage_node_id));
 }
 
 template class ArrayMap<int8_t>;

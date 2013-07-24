@@ -23,7 +23,6 @@
 #include <memory>
 
 #include "grnxx/map.hpp"
-#include "grnxx/map/key_store.hpp"
 #include "grnxx/types.hpp"
 
 namespace grnxx {
@@ -31,6 +30,8 @@ namespace grnxx {
 class Storage;
 
 namespace map {
+
+template <typename T> class KeyPool;
 
 struct ArrayMapHeader;
 
@@ -71,7 +72,7 @@ class ArrayMap : public Map<T> {
   Storage *storage_;
   uint32_t storage_node_id_;
   Header *header_;
-  std::unique_ptr<KeyStore<T>> keys_;
+  std::unique_ptr<KeyPool<T>> pool_;
 
   void create_map(Storage *storage, uint32_t storage_node_id,
                   const MapOptions &options);
