@@ -82,10 +82,10 @@ class HashTable : public Map<T> {
                   const MapOptions &options);
   void open_map(Storage *storage, uint32_t storage_node_id);
 
-  // Find a key ID in the hash table.
-  // Return true on success and assign the address to "*stored_key_id".
-  // Return false on failure and don't modify "*stored_key_id".
-  bool find_key_id(int64_t key_id, int64_t **stored_key_id);
+  // Search a hash table for a key ID.
+  // Return a pointer to the stored key ID on success.
+  // Return nullptr on failure.
+  int64_t *find_key_id(int64_t key_id);
   // Find a key in the hash table.
   // Return true on success and assign the address to "*stored_key_id".
   // Return false on failure and assign the address of first unused entry.

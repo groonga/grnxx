@@ -139,8 +139,8 @@ bool HashTable<T>::get(int64_t key_id, Key *key) {
 template <typename T>
 bool HashTable<T>::unset(int64_t key_id) {
   refresh_key_ids();
-  int64_t *stored_key_id;
-  if (!find_key_id(key_id, &stored_key_id)) {
+  int64_t * const stored_key_id = find_key_id(key_id);
+  if (!stored_key_id) {
     // Not found.
     return false;
   }
@@ -157,8 +157,8 @@ bool HashTable<T>::reset(int64_t key_id, KeyArg dest_key) {
     // Not found.
     return false;
   }
-  int64_t *src_key_id;
-  if (!find_key_id(key_id, &src_key_id)) {
+  int64_t * const src_key_id = find_key_id(key_id);
+  if (!src_key_id) {
     // Not found.
     return false;
   }
@@ -334,19 +334,19 @@ void HashTable<T>::open_map(Storage *storage, uint32_t storage_node_id) {
 }
 
 template <typename T>
-bool HashTable<T>::find_key_id(int64_t key_id, int64_t **stored_key_id) {
+int64_t *HashTable<T>::find_key_id(int64_t key_id) {
   KeyIDArray * const key_ids = key_ids_.get();
   Key stored_key;
   if (!get(key_id, &stored_key)) {
     // Not found.
-    return false;
+    return nullptr;
   }
   const uint64_t first_hash = Hash<T>()(stored_key);
   for (uint64_t hash = first_hash; ; ) {
-    *stored_key_id = &key_ids->get_value(hash & (key_ids->size() - 1));
-    if (**stored_key_id == key_id) {
+    int64_t &stored_key_id = key_ids->get_value(hash & (key_ids->size() - 1));
+    if (stored_key_id == key_id) {
       // Found.
-      return true;
+      return &stored_key_id;
     }
     hash = rehash(hash);
     if (hash == first_hash) {
