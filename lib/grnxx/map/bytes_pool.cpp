@@ -20,6 +20,7 @@
 #include <cstring>
 #include <new>
 
+#include "grnxx/common_header.hpp"
 #include "grnxx/exception.hpp"
 #include "grnxx/logger.hpp"
 #include "grnxx/storage.hpp"
@@ -29,6 +30,8 @@ namespace grnxx {
 namespace map {
 namespace {
 
+constexpr char FORMAT_STRING[] = "grnxx::map::BytesPool";
+
 constexpr uint64_t POOL_SIZE       = 1ULL << 48;
 
 constexpr uint32_t MAX_PAGE_ID     = (POOL_SIZE / BytesPool::page_size()) - 1;
@@ -37,6 +40,7 @@ constexpr uint32_t INVALID_PAGE_ID = MAX_PAGE_ID + 1;
 }  // namespace
 
 struct BytesPoolHeader {
+  grnxx::CommonHeader common_header;
   uint64_t next_offset;
   uint32_t max_page_id;
   uint32_t latest_empty_page_id;
@@ -45,17 +49,26 @@ struct BytesPoolHeader {
   uint32_t page_headers_storage_node_id;
   uint32_t reserved;
 
+  // Initialize the member variables.
   BytesPoolHeader();
+
+  // Return true iff the header seems to be correct.
+  explicit operator bool() const;
 };
 
 BytesPoolHeader::BytesPoolHeader()
-    : next_offset(0),
+    : common_header(FORMAT_STRING),
+      next_offset(0),
       max_page_id(0),
       latest_empty_page_id(INVALID_PAGE_ID),
       latest_idle_page_id(INVALID_PAGE_ID),
       pool_storage_node_id(STORAGE_INVALID_NODE_ID),
       page_headers_storage_node_id(STORAGE_INVALID_NODE_ID),
       reserved(0) {}
+
+BytesPoolHeader::operator bool() const {
+  return common_header.format() == FORMAT_STRING;
+}
 
 StringBuilder &operator<<(StringBuilder &builder, BytesPoolPageStatus status) {
   switch (status) {
@@ -262,6 +275,11 @@ void BytesPool::open_pool(Storage *storage, uint32_t storage_node_id) {
   StorageNode storage_node = storage->open_node(storage_node_id);
   storage_node_id_ = storage_node.id();
   header_ = static_cast<BytesPoolHeader *>(storage_node.body());
+  if (!*header_) {
+    GRNXX_ERROR() << "wrong format: expected = " << FORMAT_STRING
+                  << ", actual = " << header_->common_header.format();
+    throw LogicError();
+  }
   pool_.reset(Pool::open(storage, header_->pool_storage_node_id));
   page_headers_.reset(
       PageHeaderArray::open(storage, header_->page_headers_storage_node_id));
