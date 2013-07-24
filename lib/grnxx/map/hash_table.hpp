@@ -86,10 +86,11 @@ class HashTable : public Map<T> {
   // Return a pointer to the stored key ID on success.
   // Return nullptr on failure.
   int64_t *find_key_id(int64_t key_id);
-  // Find a key in the hash table.
-  // Return true on success and assign the address to "*stored_key_id".
-  // Return false on failure and assign the address of first unused entry.
-  // Assign nullptr to "*stored_key_id" on error.
+  // Search a hash table for a key.
+  // Return true on success and assign the address of the stored key ID to
+  // "*stored_key_id".
+  // Return false on failure and assign the address of the first unused or
+  // removed entry to "*stored_key_id".
   bool find_key(KeyArg key, int64_t **stored_key_id);
 
   // Rebuild the hash table.
