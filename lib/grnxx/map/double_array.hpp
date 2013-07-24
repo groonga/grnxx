@@ -39,13 +39,6 @@ namespace map {
 
 template <typename T> class KeyPool;
 
-enum DoubleArrayResult {
-  DOUBLE_ARRAY_FOUND,
-  DOUBLE_ARRAY_NOT_FOUND,
-  DOUBLE_ARRAY_INSERTED,
-  DOUBLE_ARRAY_FAILED
-};
-
 struct DoubleArrayHeader;
 
 template <typename T>
@@ -128,27 +121,24 @@ class DoubleArray<Bytes> : public Map<Bytes> {
 
   bool replace_key(int64_t key_id, KeyArg src_key, KeyArg dest_key);
 
-  DoubleArrayResult find_leaf(KeyArg key, Node **leaf_node,
-                              uint64_t *leaf_key_pos);
-  DoubleArrayResult insert_leaf(KeyArg key, Node *node, uint64_t key_pos,
-                                Node **leaf_node);
+  bool find_leaf(KeyArg key, Node **leaf_node, uint64_t *leaf_key_pos);
+  bool insert_leaf(KeyArg key, Node *node, uint64_t key_pos, Node **leaf_node);
 
-  bool insert_node(Node *node, uint64_t label, Node **dest_node);
-  bool separate(Node *node, uint64_t labels[2], Node **dest_node);
+  Node *insert_node(Node *node, uint64_t label);
+  Node *separate(Node *node, uint64_t labels[2]);
 
-  bool resolve(Node *node, uint64_t label);
-  bool migrate_nodes(Node *node, uint64_t dest_offset,
+  void resolve(Node *node, uint64_t label);
+  void migrate_nodes(Node *node, uint64_t dest_offset,
                      const uint64_t *labels, uint64_t num_labels);
 
-  bool find_offset(const uint64_t *labels, uint64_t num_labels,
-                   uint64_t *found_offset);
+  uint64_t find_offset(const uint64_t *labels, uint64_t num_labels);
 
   Node *reserve_node(uint64_t node_id);
   Block *reserve_block(uint64_t block_id);
 
-  bool update_block_level(uint64_t block_id, Block *block, uint64_t level);
-  bool set_block_level(uint64_t block_id, Block *block, uint64_t level);
-  bool unset_block_level(uint64_t block_id, Block *block);
+  void update_block_level(uint64_t block_id, Block *block, uint64_t level);
+  void set_block_level(uint64_t block_id, Block *block, uint64_t level);
+  void unset_block_level(uint64_t block_id, Block *block);
 };
 
 }  // namespace map
