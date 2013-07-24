@@ -25,7 +25,6 @@
 #include "grnxx/array.hpp"
 #include "grnxx/bytes.hpp"
 #include "grnxx/map.hpp"
-#include "grnxx/map/key_store.hpp"
 #include "grnxx/map/patricia/node.hpp"
 #include "grnxx/types.hpp"
 
@@ -34,6 +33,8 @@ namespace grnxx {
 class Storage;
 
 namespace map {
+
+template <typename T> class KeyPool;
 
 struct PatriciaHeader;
 
@@ -77,7 +78,7 @@ class Patricia : public Map<T> {
   uint32_t storage_node_id_;
   Header *header_;
   std::unique_ptr<NodeArray> nodes_;
-  std::unique_ptr<KeyStore<T>> keys_;
+  std::unique_ptr<KeyPool<T>> pool_;
 
   void create_map(Storage *storage, uint32_t storage_node_id,
                   const MapOptions &options);
@@ -131,7 +132,7 @@ class Patricia<Bytes> : public Map<Bytes> {
   uint32_t storage_node_id_;
   Header *header_;
   std::unique_ptr<NodeArray> nodes_;
-  std::unique_ptr<KeyStore<Bytes>> keys_;
+  std::unique_ptr<KeyPool<Bytes>> pool_;
   std::unique_ptr<Cache> cache_;
 
   void create_map(Storage *storage, uint32_t storage_node_id,
