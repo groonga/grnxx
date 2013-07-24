@@ -407,11 +407,6 @@ void DoubleArray<Bytes>::create_map(Storage *storage, uint32_t storage_node_id,
     header_->blocks_storage_node_id = blocks_->storage_node_id();
     header_->pool_storage_node_id = pool_->storage_node_id();
     Node * const root_node = reserve_node(ROOT_NODE_ID);
-    if (!root_node) {
-      // TODO
-      storage->unlink_node(storage_node_id_);
-      throw LogicError();
-    }
     root_node[NODE_INVALID_OFFSET - ROOT_NODE_ID].set_is_origin(true);
   } catch (...) {
     storage->unlink_node(storage_node_id_);
