@@ -345,6 +345,7 @@ int64_t KeyPool<Bytes>::add(KeyArg key) {
   if (static_cast<int64_t>(entry_id) > header_->max_key_id) {
     header_->max_key_id = entry_id;
   }
+  ++header_->num_keys;
   return entry_id;
 }
 
