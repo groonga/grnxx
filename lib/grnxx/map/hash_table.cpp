@@ -208,9 +208,6 @@ bool HashTable<T>::add(KeyArg key, int64_t *key_id) {
       *key_id = *stored_key_id;
     }
     return false;
-  } else if (!stored_key_id) {
-    // Error.
-    return false;
   }
   int64_t next_key_id = pool_->add(normalized_key);
   if (*stored_key_id == TABLE_ENTRY_UNUSED) {
