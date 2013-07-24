@@ -28,6 +28,7 @@
 #include "grnxx/map/common_header.hpp"
 #include "grnxx/map/hash.hpp"
 #include "grnxx/map/helper.hpp"
+#include "grnxx/map/key_pool.hpp"
 #include "grnxx/mutex.hpp"
 #include "grnxx/storage.hpp"
 
@@ -48,7 +49,7 @@ struct HashTableHeader {
   CommonHeader common_header;
   uint32_t key_ids_storage_node_id;
   uint32_t old_key_ids_storage_node_id;
-  uint32_t keys_storage_node_id;
+  uint32_t pool_storage_node_id;
   uint64_t num_key_ids;
   Mutex mutex;
 
@@ -63,7 +64,7 @@ HashTableHeader::HashTableHeader()
     : common_header(FORMAT_STRING, MAP_HASH_TABLE),
       key_ids_storage_node_id(STORAGE_INVALID_NODE_ID),
       old_key_ids_storage_node_id(STORAGE_INVALID_NODE_ID),
-      keys_storage_node_id(STORAGE_INVALID_NODE_ID),
+      pool_storage_node_id(STORAGE_INVALID_NODE_ID),
       num_key_ids(0),
       mutex() {}
 
@@ -78,7 +79,7 @@ HashTable<T>::HashTable()
       header_(nullptr),
       key_ids_(),
       old_key_ids_(),
-      keys_() {}
+      pool_() {}
 
 template <typename T>
 HashTable<T>::~HashTable() {}
@@ -118,12 +119,12 @@ MapType HashTable<T>::type() const {
 
 template <typename T>
 int64_t HashTable<T>::max_key_id() const {
-  return keys_->max_key_id();
+  return pool_->max_key_id();
 }
 
 template <typename T>
 uint64_t HashTable<T>::num_keys() const {
-  return keys_->num_keys();
+  return pool_->num_keys();
 }
 
 template <typename T>
@@ -132,14 +133,7 @@ bool HashTable<T>::get(int64_t key_id, Key *key) {
     // Out of range.
     return false;
   }
-  if (!keys_->get_bit(key_id)) {
-    // Not found.
-    return false;
-  }
-  if (key) {
-    *key = keys_->get_key(key_id);
-  }
-  return true;
+  return pool_->get(key_id, key);
 }
 
 template <typename T>
@@ -150,10 +144,7 @@ bool HashTable<T>::unset(int64_t key_id) {
     // Not found.
     return false;
   }
-  if (!keys_->unset(key_id)) {
-    GRNXX_ERROR() << "failed to unset: key_id = " << key_id;
-    throw LogicError();
-  }
+  pool_->unset(key_id);
   *stored_key_id = TABLE_ENTRY_REMOVED;
   return true;
 }
@@ -177,7 +168,7 @@ bool HashTable<T>::reset(int64_t key_id, KeyArg dest_key) {
     // Found.
     return false;
   }
-  keys_->reset(key_id, dest_normalized_key);
+  pool_->reset(key_id, dest_normalized_key);
   if (*dest_key_id == TABLE_ENTRY_UNUSED) {
     ++header_->num_key_ids;
   }
@@ -221,7 +212,7 @@ bool HashTable<T>::add(KeyArg key, int64_t *key_id) {
     // Error.
     return false;
   }
-  int64_t next_key_id = keys_->add(normalized_key);
+  int64_t next_key_id = pool_->add(normalized_key);
   if (*stored_key_id == TABLE_ENTRY_UNUSED) {
     ++header_->num_key_ids;
   }
@@ -241,11 +232,7 @@ bool HashTable<T>::remove(KeyArg key) {
     // Not found.
     return false;
   }
-  if (!keys_->unset(*stored_key_id)) {
-    GRNXX_ERROR() << "failed to remove: key = " << key
-                  << ", key_id = " << *stored_key_id;
-    throw LogicError();
-  }
+  pool_->unset(*stored_key_id);
   *stored_key_id = TABLE_ENTRY_REMOVED;
   return true;
 }
@@ -265,7 +252,7 @@ bool HashTable<T>::replace(KeyArg src_key, KeyArg dest_key, int64_t *key_id) {
     // Found.
     return false;
   }
-  keys_->reset(*src_key_id, dest_normalized_key);
+  pool_->reset(*src_key_id, dest_normalized_key);
   if (*dest_key_id == TABLE_ENTRY_UNUSED) {
     ++header_->num_key_ids;
   }
@@ -293,7 +280,7 @@ bool HashTable<T>::truncate() {
     KeyIDArray::unlink(storage_, new_key_ids->storage_node_id());
     throw;
   }
-  keys_->truncate();
+  pool_->truncate();
   header_->num_key_ids = 0;
   header_->old_key_ids_storage_node_id = header_->key_ids_storage_node_id;
   header_->key_ids_storage_node_id = new_key_ids->storage_node_id();
@@ -317,9 +304,9 @@ void HashTable<T>::create_map(Storage *storage, uint32_t storage_node_id,
     *header_ = Header();
     key_ids_.reset(KeyIDArray::create(storage, storage_node_id_,
                                       MIN_TABLE_SIZE, TABLE_ENTRY_UNUSED));
-    keys_.reset(KeyStore<T>::create(storage, storage_node_id_));
+    pool_.reset(KeyPool<T>::create(storage, storage_node_id_));
     header_->key_ids_storage_node_id = key_ids_->storage_node_id();
-    header_->keys_storage_node_id = keys_->storage_node_id();
+    header_->pool_storage_node_id = pool_->storage_node_id();
   } catch (...) {
     storage->unlink_node(storage_node_id_);
     throw;
@@ -343,7 +330,7 @@ void HashTable<T>::open_map(Storage *storage, uint32_t storage_node_id) {
     throw LogicError();
   }
   key_ids_.reset(KeyIDArray::open(storage, header_->key_ids_storage_node_id));
-  keys_.reset(KeyStore<T>::open(storage, header_->keys_storage_node_id));
+  pool_.reset(KeyPool<T>::open(storage, header_->pool_storage_node_id));
 }
 
 template <typename T>
@@ -389,7 +376,7 @@ bool HashTable<T>::find_key(KeyArg key, int64_t **stored_key_id) {
         *stored_key_id = key_id;
       }
     } else {
-      Key stored_key = keys_->get_key(*key_id);
+      Key stored_key = pool_->get_key(*key_id);
       if (Helper<T>::equal_to(stored_key, key)) {
         // Found.
         *stored_key_id = key_id;
@@ -428,10 +415,10 @@ void HashTable<T>::rebuild() {
     const uint64_t new_mask = new_size - 1;
     int64_t key_id;
     for (key_id = MAP_MIN_KEY_ID; key_id <= max_key_id(); ++key_id) {
-      if (!keys_->get_bit(key_id)) {
+      Key stored_key;
+      if (!pool_->get(key_id, &stored_key)) {
         continue;
       }
-      Key stored_key = keys_->get_key(key_id);
       const uint64_t first_hash = Hash<T>()(stored_key);
       int64_t *stored_key_id;
       for (uint64_t hash = first_hash; ; hash = rehash(hash)) {
