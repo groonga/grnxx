@@ -28,7 +28,6 @@
 #include "grnxx/map_cursor.hpp"
 #include "grnxx/map_cursor_query.hpp"
 #include "grnxx/map/double_array/block.hpp"
-#include "grnxx/map/double_array/entry.hpp"
 #include "grnxx/map/double_array/node.hpp"
 #include "grnxx/types.hpp"
 
@@ -38,7 +37,7 @@ class Storage;
 
 namespace map {
 
-class BytesPool;
+template <typename T> class KeyPool;
 
 enum DoubleArrayResult {
   DOUBLE_ARRAY_FOUND,
@@ -62,17 +61,14 @@ class DoubleArray<Bytes> : public Map<Bytes> {
   using Header = DoubleArrayHeader;
   using Node = double_array::Node;
   using Block = double_array::Block;
-  using Entry = double_array::Entry;
 
   using NodeArray    = Array<Node,     65536, 8192>;  // 42-bit
   using SiblingArray = Array<uint8_t, 262144, 4096>;  // 42-bit
   using BlockArray   = Array<Block,     8192, 1024>;  // 33-bit
-  using EntryArray   = Array<Entry,    65536, 4096>;  // 40-bit
 
   static constexpr uint64_t NODE_ARRAY_SIZE    = 1ULL << 42;
   static constexpr uint64_t SIBLING_ARRAY_SIZE = 1ULL << 42;
   static constexpr uint64_t BLOCK_ARRAY_SIZE   = 1ULL << 33;
-  static constexpr uint64_t ENTRY_ARRAY_SIZE   = 1ULL << 40;
 
  public:
   using Key = typename Map<Bytes>::Key;
@@ -124,14 +120,11 @@ class DoubleArray<Bytes> : public Map<Bytes> {
   std::unique_ptr<NodeArray> nodes_;
   std::unique_ptr<SiblingArray> siblings_;
   std::unique_ptr<BlockArray> blocks_;
-  std::unique_ptr<EntryArray> entries_;
-  std::unique_ptr<BytesPool> pool_;
+  std::unique_ptr<KeyPool<Bytes>> pool_;
 
   void create_map(Storage *storage, uint32_t storage_node_id,
                   const MapOptions &options);
   void open_map(Storage *storage, uint32_t storage_node_id);
-
-  DoubleArrayResult get_key(int64_t key_id, Key *key);
 
   bool replace_key(int64_t key_id, KeyArg src_key, KeyArg dest_key);
 

@@ -27,10 +27,10 @@
 #include "grnxx/map/bytes_pool.hpp"
 #include "grnxx/map/common_header.hpp"
 #include "grnxx/map/double_array/block.hpp"
-#include "grnxx/map/double_array/entry.hpp"
 #include "grnxx/map/double_array/header.hpp"
 #include "grnxx/map/double_array/node.hpp"
 #include "grnxx/map/helper.hpp"
+#include "grnxx/map/key_pool.hpp"
 #include "grnxx/storage.hpp"
 
 namespace grnxx {
@@ -56,14 +56,10 @@ constexpr uint64_t ROOT_NODE_ID = 0;
 
 struct DoubleArrayHeader {
   CommonHeader common_header;
-  int64_t max_key_id;
-  uint64_t num_keys;
   uint32_t nodes_storage_node_id;
   uint32_t siblings_storage_node_id;
   uint32_t blocks_storage_node_id;
-  uint32_t entries_storage_node_id;
   uint32_t pool_storage_node_id;
-  uint64_t next_key_id;
   uint64_t num_blocks;
   uint64_t num_phantoms;
   uint64_t num_zombies;
@@ -78,14 +74,10 @@ struct DoubleArrayHeader {
 
 DoubleArrayHeader::DoubleArrayHeader()
     : common_header(FORMAT_STRING, MAP_DOUBLE_ARRAY),
-      max_key_id(MAP_MIN_KEY_ID - 1),
-      num_keys(0),
       nodes_storage_node_id(STORAGE_INVALID_NODE_ID),
       siblings_storage_node_id(STORAGE_INVALID_NODE_ID),
       blocks_storage_node_id(STORAGE_INVALID_NODE_ID),
-      entries_storage_node_id(STORAGE_INVALID_NODE_ID),
       pool_storage_node_id(STORAGE_INVALID_NODE_ID),
-      next_key_id(MAP_MIN_KEY_ID),
       num_blocks(0),
       num_phantoms(0),
       num_zombies(0),
@@ -129,7 +121,6 @@ DoubleArray<Bytes>::DoubleArray()
       nodes_(),
       siblings_(),
       blocks_(),
-      entries_(),
       pool_() {}
 
 DoubleArray<Bytes>::~DoubleArray() {}
@@ -167,19 +158,19 @@ MapType DoubleArray<Bytes>::type() const {
 }
 
 int64_t DoubleArray<Bytes>::max_key_id() const {
-  return header_->max_key_id;
+  return pool_->max_key_id();
 }
 
 uint64_t DoubleArray<Bytes>::num_keys() const {
-  return header_->num_keys;
+  return pool_->num_keys();
 }
 
 bool DoubleArray<Bytes>::get(int64_t key_id, Key *key) {
-  if ((key_id < MAP_MIN_KEY_ID) || (key_id > header_->max_key_id)) {
+  if ((key_id < MAP_MIN_KEY_ID) || (key_id > max_key_id())) {
     // Out of range.
     return false;
   }
-  return get_key(key_id, key) == DOUBLE_ARRAY_FOUND;
+  return pool_->get(key_id, key);
 }
 
 bool DoubleArray<Bytes>::unset(int64_t key_id) {
@@ -229,8 +220,8 @@ bool DoubleArray<Bytes>::find(KeyArg key, int64_t *key_id) {
     }
   }
   Key stored_key;
-  if (get_key(node.key_id(), &stored_key) != DOUBLE_ARRAY_FOUND) {
-    // Not found or error.
+  if (!pool_->get(node.key_id(), &stored_key)) {
+    // Not found.
     return false;
   }
   if (key.except_prefix(key_pos) != stored_key.except_prefix(key_pos)) {
@@ -265,23 +256,7 @@ bool DoubleArray<Bytes>::add(KeyArg key, int64_t *key_id) {
       return false;
     }
   }
-  const int64_t next_key_id = header_->next_key_id;
-  if (next_key_id > MAP_MAX_KEY_ID) {
-    // Error.
-    GRNXX_ERROR() << "too many keys: next_key_id = " << next_key_id
-                   << ", max_key_id = " << MAP_MAX_KEY_ID;
-    return false;
-  }
-  Entry * const entry = &entries_->get_value(next_key_id);
-  uint64_t bytes_id = pool_->add(key);
-  ++header_->num_keys;
-  if (next_key_id > header_->max_key_id) {
-    header_->max_key_id = next_key_id;
-    header_->next_key_id = next_key_id + 1;
-  } else {
-    header_->next_key_id = entry->next();
-  }
-  *entry = Entry::valid_entry(bytes_id);
+  const int64_t next_key_id = pool_->add(key);
   node->set_key_id(next_key_id);
   if (key_id) {
     *key_id = next_key_id;
@@ -296,20 +271,17 @@ bool DoubleArray<Bytes>::remove(KeyArg key) {
     // Not found or error.
     return false;
   }
-  Entry * const entry = &entries_->get_value(node->key_id());
-  if (!*entry) {
+  Key stored_key;
+  if (!pool_->get(node->key_id(), &stored_key)) {
     // Not found.
     return false;
   }
-  Key stored_key = pool_->get(entry->bytes_id());
   if (key.except_prefix(key_pos) != stored_key.except_prefix(key_pos)) {
     // Not found.
     return false;
   }
-  *entry = Entry::invalid_entry(header_->next_key_id);
+  pool_->unset(node->key_id());
   node->set_offset(NODE_INVALID_OFFSET);
-  header_->next_key_id = node->key_id();
-  --header_->num_keys;
   return true;
 }
 
@@ -331,12 +303,11 @@ bool DoubleArray<Bytes>::replace(KeyArg src_key, KeyArg dest_key,
 }
 
 bool DoubleArray<Bytes>::truncate() {
+  // TODO: How to recycle nodes.
   Node * const node = &nodes_->get_value(ROOT_NODE_ID);
   node->set_child(NODE_INVALID_LABEL);
   node->set_offset(NODE_INVALID_OFFSET);
-  header_->max_key_id = MAP_MIN_KEY_ID - 1;
-  header_->num_keys = 0;
-  header_->next_key_id = MAP_MIN_KEY_ID;
+  pool_->truncate();
   return true;
 }
 
@@ -350,27 +321,17 @@ bool DoubleArray<Bytes>::find_longest_prefix_match(KeyArg query,
   for (query_pos = 0; query_pos < query.size(); ++query_pos) {
     if (node.is_leaf()) {
       Key stored_key;
-      switch (get_key(node.key_id(), &stored_key)) {
-        case DOUBLE_ARRAY_FOUND: {
-          if ((stored_key.size() <= query.size()) &&
-              (stored_key.except_prefix(query_pos) ==
-               query.prefix(stored_key.size()).except_prefix(query_pos))) {
-            if (key_id) {
-              *key_id = node.key_id();
-            }
-            if (key) {
-              *key = stored_key;
-            }
-            found = true;
+      if (pool_->get(node.key_id(), &stored_key)) {
+        if ((stored_key.size() <= query.size()) &&
+            (stored_key.except_prefix(query_pos) ==
+             query.prefix(stored_key.size()).except_prefix(query_pos))) {
+          if (key_id) {
+            *key_id = node.key_id();
           }
-          break;
-        }
-        case DOUBLE_ARRAY_NOT_FOUND: {
-          break;
-        }
-        default: {
-          // Error.
-          return false;
+          if (key) {
+            *key = stored_key;
+          }
+          found = true;
         }
       }
       return found;
@@ -379,20 +340,11 @@ bool DoubleArray<Bytes>::find_longest_prefix_match(KeyArg query,
     if (node.child() == NODE_TERMINAL_LABEL) {
       Node leaf_node = nodes_->get(node.offset() ^ NODE_TERMINAL_LABEL);
       if (leaf_node.is_leaf()) {
-        switch (get_key(leaf_node.key_id(), key)) {
-          case DOUBLE_ARRAY_FOUND: {
-            if (key_id) {
-              *key_id = leaf_node.key_id();
-            }
-            found = true;
-            break;
+        if (pool_->get(leaf_node.key_id(), key)) {
+          if (key_id) {
+            *key_id = leaf_node.key_id();
           }
-          case DOUBLE_ARRAY_NOT_FOUND: {
-            break;
-          }
-          default: {
-            return false;
-          }
+          found = true;
         }
       }
     }
@@ -406,42 +358,24 @@ bool DoubleArray<Bytes>::find_longest_prefix_match(KeyArg query,
 
   if (node.is_leaf()) {
     Key stored_key;
-    switch (get_key(node.key_id(), &stored_key)) {
-      case DOUBLE_ARRAY_FOUND: {
-        if (stored_key.size() <= query.size()) {
-          if (key_id) {
-            *key_id = node.key_id();
-          }
-          if (key) {
-            *key = stored_key;
-          }
-          found = true;
+    if (pool_->get(node.key_id(), &stored_key)) {
+      if (stored_key.size() <= query.size()) {
+        if (key_id) {
+          *key_id = node.key_id();
         }
-        break;
-      }
-      case DOUBLE_ARRAY_NOT_FOUND: {
-        break;
-      }
-      default: {
-        return false;
+        if (key) {
+          *key = stored_key;
+        }
+        found = true;
       }
     }
   } else if (node.child() == NODE_TERMINAL_LABEL) {
     node = nodes_->get(node.offset() ^ NODE_TERMINAL_LABEL);
-    switch (get_key(node.key_id(), key)) {
-      case DOUBLE_ARRAY_FOUND: {
-        if (key_id) {
-          *key_id = node.key_id();
-        }
-        found = true;
-        break;
+    if (pool_->get(node.key_id(), key)) {
+      if (key_id) {
+        *key_id = node.key_id();
       }
-      case DOUBLE_ARRAY_NOT_FOUND: {
-        break;
-      }
-      default: {
-        return false;
-      }
+      found = true;
     }
   }
   return found;
@@ -480,13 +414,10 @@ void DoubleArray<Bytes>::create_map(Storage *storage, uint32_t storage_node_id,
                                          SIBLING_ARRAY_SIZE));
     blocks_.reset(BlockArray::create(storage, storage_node_id_,
                                      BLOCK_ARRAY_SIZE));
-    entries_.reset(EntryArray::create(storage, storage_node_id_,
-                                      ENTRY_ARRAY_SIZE));
-    pool_.reset(BytesPool::create(storage, storage_node_id_));
+    pool_.reset(KeyPool<Bytes>::create(storage, storage_node_id_));
     header_->nodes_storage_node_id = nodes_->storage_node_id();
     header_->siblings_storage_node_id = siblings_->storage_node_id();
     header_->blocks_storage_node_id = blocks_->storage_node_id();
-    header_->entries_storage_node_id = entries_->storage_node_id();
     header_->pool_storage_node_id = pool_->storage_node_id();
     Node * const root_node = reserve_node(ROOT_NODE_ID);
     if (!root_node) {
@@ -520,19 +451,7 @@ void DoubleArray<Bytes>::open_map(Storage *storage, uint32_t storage_node_id) {
   siblings_.reset(
       SiblingArray::open(storage, header_->siblings_storage_node_id));
   blocks_.reset(BlockArray::open(storage, header_->blocks_storage_node_id));
-  entries_.reset(EntryArray::open(storage, header_->entries_storage_node_id));
-  pool_.reset(BytesPool::open(storage, header_->pool_storage_node_id));
-}
-
-DoubleArrayResult DoubleArray<Bytes>::get_key(int64_t key_id, Key *key) {
-  Entry entry = entries_->get(key_id);
-  if (!entry) {
-    return DOUBLE_ARRAY_NOT_FOUND;
-  }
-  if (key) {
-    *key = pool_->get(entry.bytes_id());
-  }
-  return DOUBLE_ARRAY_FOUND;
+  pool_.reset(KeyPool<Bytes>::open(storage, header_->pool_storage_node_id));
 }
 
 bool DoubleArray<Bytes>::replace_key(int64_t key_id, KeyArg src_key,
@@ -554,15 +473,13 @@ bool DoubleArray<Bytes>::replace_key(int64_t key_id, KeyArg src_key,
       return false;
     }
   }
-  Entry * const entry = &entries_->get_value(key_id);
   Node *src_node;
   if (find_leaf(src_key, &src_node, &key_pos) != DOUBLE_ARRAY_FOUND) {
     // Critical error.
     return false;
   }
-  uint64_t bytes_id = pool_->add(dest_key);
+  pool_->reset(key_id, dest_key);
   dest_node->set_key_id(key_id);
-  *entry = Entry::valid_entry(bytes_id);
   src_node->set_offset(NODE_INVALID_OFFSET);
   return true;
 }
@@ -605,10 +522,9 @@ DoubleArrayResult DoubleArray<Bytes>::insert_leaf(KeyArg key, Node *node,
                                                   Node **leaf_node) {
   if (node->is_leaf()) {
     Key stored_key;
-    const DoubleArrayResult result = get_key(node->key_id(), &stored_key);
-    if (result != DOUBLE_ARRAY_FOUND) {
-      // Not found or error.
-      return result;
+    if (!pool_->get(node->key_id(), &stored_key)) {
+      // Not found.
+      return DOUBLE_ARRAY_NOT_FOUND;
     }
     uint64_t i = key_pos;
     while ((i < key.size()) && (i < stored_key.size())) {
