@@ -69,6 +69,9 @@ struct BytesPoolPageHeader {
 };
 
 class BytesPool {
+  using Header     = BytesPoolHeader;
+  using PageHeader = BytesPoolPageHeader;
+
   static constexpr uint32_t POOL_PAGE_SIZE     = 1U << 20;
   static constexpr uint32_t POOL_TABLE_SIZE    = 1U << 14;
 
@@ -80,7 +83,7 @@ class BytesPool {
       (1ULL << VALUE_ID_SIZE_BITS) - 1;
 
   using Pool            = Array<uint8_t, POOL_PAGE_SIZE, POOL_TABLE_SIZE>;
-  using PageHeaderArray = Array<BytesPoolPageHeader, POOL_TABLE_SIZE>;
+  using PageHeaderArray = Array<PageHeader, POOL_TABLE_SIZE>;
 
  public:
   using Value    = typename Traits<Bytes>::Type;
@@ -120,13 +123,16 @@ class BytesPool {
   // Return the actually used size of a page in use.
   // If a page is not in use, return the page size.
   uint64_t get_page_size_in_use(uint64_t page_id) {
-    const BytesPoolPageHeader &page_header = page_headers_->get_value(page_id);
+    const PageHeader &page_header = page_headers_->get_value(page_id);
     if (page_header.status == BYTES_POOL_PAGE_IN_USE) {
       return page_header.size_in_use;
     } else {
       return page_size();
     }
   }
+
+  // Remove all the byte sequences.
+  void truncate();
 
   // Sweep empty pages whose modified time <= (now - lifetime).
   void sweep(Duration lifetime);
@@ -145,11 +151,11 @@ class BytesPool {
   void open_pool(Storage *storage, uint32_t storage_node_id);
 
   // Reserve a page.
-  BytesPoolPageHeader *reserve_active_page(uint32_t *page_id);
+  PageHeader *reserve_active_page(uint32_t *page_id);
   // Make a page empty.
-  void make_page_empty(uint32_t page_id, BytesPoolPageHeader *page_header);
+  void make_page_empty(uint32_t page_id, PageHeader *page_header);
   // Make a page idle.
-  void make_page_idle(uint32_t page_id, BytesPoolPageHeader *page_header);
+  void make_page_idle(uint32_t page_id, PageHeader *page_header);
 
   static uint64_t get_value_id(uint64_t offset, uint32_t size) {
     return (offset * (VALUE_ID_SIZE_MASK + 1)) | size;

@@ -353,8 +353,7 @@ void KeyPool<Bytes>::truncate() {
   header_->max_key_id = MAP_MIN_KEY_ID - 1;
   header_->num_keys = 0;
   header_->latest_free_entry_id = INVALID_ENTRY_ID;
-
-  // TODO: Truncate pool!
+  pool_->truncate();
 }
 
 void KeyPool<Bytes>::create_pool(Storage *storage, uint32_t storage_node_id) {

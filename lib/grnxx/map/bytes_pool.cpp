@@ -32,9 +32,10 @@ namespace {
 
 constexpr char FORMAT_STRING[] = "grnxx::map::BytesPool";
 
-constexpr uint64_t POOL_SIZE       = 1ULL << 48;
+constexpr uint64_t POOL_SIZE              = 1ULL << 48;
+constexpr uint64_t PAGE_HEADER_ARRAY_SIZE = POOL_SIZE / BytesPool::page_size();
 
-constexpr uint32_t MAX_PAGE_ID     = (POOL_SIZE / BytesPool::page_size()) - 1;
+constexpr uint32_t MAX_PAGE_ID     = PAGE_HEADER_ARRAY_SIZE - 1;
 constexpr uint32_t INVALID_PAGE_ID = MAX_PAGE_ID + 1;
 
 }  // namespace
@@ -147,8 +148,7 @@ void BytesPool::unset(uint64_t value_id) {
                   << ", max_page_id = " << header_->max_page_id;
     throw LogicError();
   }
-  BytesPoolPageHeader * const page_header =
-      &page_headers_->get_value(page_id);
+  PageHeader * const page_header = &page_headers_->get_value(page_id);
   if ((page_header->status != BYTES_POOL_PAGE_ACTIVE) &&
       (page_header->status != BYTES_POOL_PAGE_IN_USE)) {
     GRNXX_ERROR() << "wrong page: page_id = " << page_id
@@ -179,12 +179,12 @@ uint64_t BytesPool::add(ValueArg value) {
   uint64_t offset = header_->next_offset;
   uint32_t size = static_cast<uint32_t>(value.size());
   uint32_t page_id = get_page_id(offset);
-  BytesPoolPageHeader *page_header = &page_headers_->get_value(page_id);
+  PageHeader *page_header = &page_headers_->get_value(page_id);
   uint32_t offset_in_page = get_offset_in_page(offset);
   const uint32_t size_left = POOL_PAGE_SIZE - offset_in_page;
   if (size >= size_left) {
     uint32_t next_page_id;
-    BytesPoolPageHeader *next_page_header = reserve_active_page(&next_page_id);
+    PageHeader *next_page_header = reserve_active_page(&next_page_id);
     if (size > size_left) {
       // Skip the remaining space of the previous ACTIVE page.
       if (page_header->size_in_use == 0) {
@@ -216,18 +216,27 @@ uint64_t BytesPool::add(ValueArg value) {
   return get_value_id(offset, size);
 }
 
+void BytesPool::truncate() {
+  for (uint64_t page_id = 0; page_id < header_->max_page_id; ++page_id) {
+    PageHeader *page_header = &page_headers_->get_value(page_id);
+    if (page_header->status == BYTES_POOL_PAGE_IN_USE) {
+      make_page_empty(page_id, page_header);
+    }
+  }
+}
+
 void BytesPool::sweep(Duration lifetime) {
   if (header_->latest_empty_page_id == INVALID_PAGE_ID) {
     // Nothing to do.
     return;
   }
-  BytesPoolPageHeader * const latest_empty_page_header =
+  PageHeader * const latest_empty_page_header =
       &page_headers_->get_value(header_->latest_empty_page_id);
   const Time threshold = clock_.now() - lifetime;
   do {
     const uint32_t oldest_empty_page_id =
         latest_empty_page_header->next_page_id;
-    BytesPoolPageHeader * const oldest_empty_page_header =
+    PageHeader * const oldest_empty_page_header =
         &page_headers_->get_value(oldest_empty_page_id);
     if (oldest_empty_page_header->status != BYTES_POOL_PAGE_EMPTY) {
       GRNXX_ERROR() << "status conflict: status = "
@@ -254,14 +263,14 @@ BytesPool::~BytesPool() {}
 void BytesPool::create_pool(Storage *storage, uint32_t storage_node_id) {
   storage_ = storage;
   StorageNode storage_node =
-      storage->create_node(storage_node_id, sizeof(BytesPoolHeader));
+      storage->create_node(storage_node_id, sizeof(Header));
   storage_node_id_ = storage_node.id();
   try {
-    header_ = static_cast<BytesPoolHeader *>(storage_node.body());
-    *header_ = BytesPoolHeader();
+    header_ = static_cast<Header *>(storage_node.body());
+    *header_ = Header();
     pool_.reset(Pool::create(storage, storage_node_id_, POOL_SIZE));
     page_headers_.reset(PageHeaderArray::create(storage, storage_node_id,
-                                                MAX_PAGE_ID + 1));
+                                                PAGE_HEADER_ARRAY_SIZE));
     header_->pool_storage_node_id = pool_->storage_node_id();
     header_->page_headers_storage_node_id = page_headers_->storage_node_id();
   } catch (...) {
@@ -274,7 +283,7 @@ void BytesPool::open_pool(Storage *storage, uint32_t storage_node_id) {
   storage_ = storage;
   StorageNode storage_node = storage->open_node(storage_node_id);
   storage_node_id_ = storage_node.id();
-  header_ = static_cast<BytesPoolHeader *>(storage_node.body());
+  header_ = static_cast<Header *>(storage_node.body());
   if (!*header_) {
     GRNXX_ERROR() << "wrong format: expected = " << FORMAT_STRING
                   << ", actual = " << header_->common_header.format();
@@ -286,7 +295,7 @@ void BytesPool::open_pool(Storage *storage, uint32_t storage_node_id) {
 }
 
 BytesPoolPageHeader *BytesPool::reserve_active_page(uint32_t *page_id) {
-  BytesPoolPageHeader *latest_idle_page_header = nullptr;
+  PageHeader *latest_idle_page_header = nullptr;
   uint32_t next_page_id;
   if (header_->latest_idle_page_id != INVALID_PAGE_ID) {
     // Use the oldest IDLE page.
@@ -302,7 +311,7 @@ BytesPoolPageHeader *BytesPool::reserve_active_page(uint32_t *page_id) {
       throw LogicError();
     }
   }
-  BytesPoolPageHeader * const next_page_header =
+  PageHeader * const next_page_header =
       &page_headers_->get_value(next_page_id);
   if (latest_idle_page_header) {
     if (next_page_id != header_->latest_idle_page_id) {
@@ -313,15 +322,14 @@ BytesPoolPageHeader *BytesPool::reserve_active_page(uint32_t *page_id) {
   } else {
     ++header_->max_page_id;
   }
-  *next_page_header = BytesPoolPageHeader();
+  *next_page_header = PageHeader();
   next_page_header->modified_time = clock_.now();
   *page_id = next_page_id;
   return next_page_header;
 }
 
-void BytesPool::make_page_empty(uint32_t page_id,
-                                BytesPoolPageHeader *page_header) {
-  BytesPoolPageHeader *latest_empty_page_header = nullptr;
+void BytesPool::make_page_empty(uint32_t page_id, PageHeader *page_header) {
+  PageHeader *latest_empty_page_header = nullptr;
   if (header_->latest_empty_page_id != INVALID_PAGE_ID) {
     latest_empty_page_header =
         &page_headers_->get_value(header_->latest_empty_page_id);
@@ -337,9 +345,8 @@ void BytesPool::make_page_empty(uint32_t page_id,
   header_->latest_empty_page_id = page_id;
 }
 
-void BytesPool::make_page_idle(uint32_t page_id,
-                               BytesPoolPageHeader *page_header) {
-  BytesPoolPageHeader *latest_idle_page_header = nullptr;
+void BytesPool::make_page_idle(uint32_t page_id, PageHeader *page_header) {
+  PageHeader *latest_idle_page_header = nullptr;
   if (header_->latest_idle_page_id != INVALID_PAGE_ID) {
     latest_idle_page_header =
         &page_headers_->get_value(header_->latest_idle_page_id);
