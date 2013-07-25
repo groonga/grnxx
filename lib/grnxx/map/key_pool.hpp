@@ -160,6 +160,9 @@ class KeyPool {
   // Add "key" and return its ID.
   int64_t add(KeyArg key);
 
+  // Defrag a pool.
+  void defrag(double usage_rate_threshold);
+
   // Remove all the keys.
   void truncate();
 
@@ -276,6 +279,9 @@ class KeyPool<Bytes> {
 
   // Add "key" and return its ID.
   int64_t add(KeyArg key);
+
+  // Defrag a pool.
+  void defrag(double usage_rate_threshold);
 
   // Remove all the keys.
   void truncate();

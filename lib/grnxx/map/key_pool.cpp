@@ -212,6 +212,11 @@ int64_t KeyPool<T>::add(KeyArg key) {
 }
 
 template <typename T>
+void KeyPool<T>::defrag(double) {
+  // Nothing to do.
+}
+
+template <typename T>
 void KeyPool<T>::truncate() {
   header_->max_key_id = MIN_KEY_ID - 1;
   header_->num_keys = 0;
@@ -355,6 +360,24 @@ int64_t KeyPool<Bytes>::add(KeyArg key) {
   }
   ++header_->num_keys;
   return entry_id;
+}
+
+void KeyPool<Bytes>::defrag(double usage_rate_threshold) {
+  const uint64_t page_size_in_use_threshold =
+      uint64_t(pool_->page_size() * usage_rate_threshold);
+  for (int64_t key_id = MIN_KEY_ID; key_id <= header_->max_key_id; ++key_id) {
+    Entry &entry = entries_->get_value(key_id);
+    if (entry) {
+      // Reallocate a key if it belongs to a page whose usage rate is less than
+      // "usage_rate_threshold".
+      const uint64_t bytes_id = entry.bytes_id();
+      const uint64_t page_id = bytes_id / pool_->page_size();
+      if (pool_->get_page_size_in_use(page_id) < page_size_in_use_threshold) {
+        entry.set_bytes_id(pool_->add(pool_->get(bytes_id)));
+        pool_->unset(bytes_id);
+      }
+    }
+  }
 }
 
 void KeyPool<Bytes>::truncate() {
