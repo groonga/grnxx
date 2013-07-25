@@ -39,10 +39,10 @@ struct HashTableHeader;
 template <typename T>
 class HashTable : public Map<T> {
   using Header = HashTableHeader;
-  using KeyIDArray = Array<int64_t>;
+  using Table  = Array<int64_t>;
 
  public:
-  using Key = typename Map<T>::Key;
+  using Key    = typename Map<T>::Key;
   using KeyArg = typename Map<T>::KeyArg;
   using Cursor = typename Map<T>::Cursor;
 
@@ -74,8 +74,8 @@ class HashTable : public Map<T> {
   Storage *storage_;
   uint32_t storage_node_id_;
   Header *header_;
-  std::unique_ptr<KeyIDArray> key_ids_;
-  std::unique_ptr<KeyIDArray> old_key_ids_;
+  std::unique_ptr<Table> table_;
+  std::unique_ptr<Table> old_table_;
   std::unique_ptr<KeyPool<T>> pool_;
 
   void create_map(Storage *storage, uint32_t storage_node_id,
@@ -83,23 +83,23 @@ class HashTable : public Map<T> {
   void open_map(Storage *storage, uint32_t storage_node_id);
 
   // Search a hash table for a key ID.
-  // Return a pointer to the stored key ID on success.
-  // Return nullptr on failure.
+  // On success, return a pointer to a matched entry.
+  // On failure, return nullptr.
   int64_t *find_key_id(int64_t key_id);
   // Search a hash table for a key.
-  // Return true on success and assign the address of the stored key ID to
-  // "*stored_key_id".
-  // Return false on failure and assign the address of the first unused or
-  // removed entry to "*stored_key_id".
-  bool find_key(KeyArg key, int64_t **stored_key_id);
+  // On success, assign a pointer to a matched entry to "*entry" and return
+  // true.
+  // On failure, assign a pointer to the first unused or removed entry to
+  // "*entry" and return false.
+  bool find_key(KeyArg key, int64_t **entry);
 
   // Rebuild the hash table.
   void rebuild();
   // Move to the next entry.
   uint64_t rehash(uint64_t hash) const;
 
-  // Refresh "key_ids_" if it is old.
-  void refresh_key_ids();
+  // Refresh "table_" if it is old.
+  void refresh_table();
 };
 
 }  // namespace map
