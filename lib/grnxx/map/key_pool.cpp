@@ -31,6 +31,9 @@ namespace {
 
 constexpr char FORMAT_STRING[] = "grnxx::map::KeyPool";
 
+constexpr int64_t MIN_KEY_ID = MAP_MIN_KEY_ID;
+constexpr int64_t MAX_KEY_ID = MAP_MAX_KEY_ID;
+
 constexpr uint64_t INVALID_UNIT_ID  = ~0ULL;
 constexpr uint64_t INVALID_ENTRY_ID = (1ULL << 63) - 1;
 
@@ -59,7 +62,7 @@ struct KeyPoolHeader {
 
 KeyPoolHeader::KeyPoolHeader()
     : common_header(FORMAT_STRING),
-      max_key_id(MAP_MIN_KEY_ID - 1),
+      max_key_id(MIN_KEY_ID - 1),
       num_keys(0),
       latest_available_unit_id(INVALID_UNIT_ID),
       keys_storage_node_id(STORAGE_INVALID_NODE_ID),
@@ -161,6 +164,11 @@ int64_t KeyPool<T>::add(KeyArg key) {
   const bool is_new_unit = header_->latest_available_unit_id == INVALID_UNIT_ID;
   uint64_t unit_id;
   if (is_new_unit) {
+    if (header_->max_key_id == MAX_KEY_ID) {
+      GRNXX_ERROR() << "too many keys: key_id = " << (header_->max_key_id + 1)
+                    << ", max_key_id = " << MAX_KEY_ID;
+      throw LogicError();
+    }
     unit_id = (header_->max_key_id + 1) / UNIT_SIZE;
   } else {
     unit_id = header_->latest_available_unit_id;
@@ -205,7 +213,7 @@ int64_t KeyPool<T>::add(KeyArg key) {
 
 template <typename T>
 void KeyPool<T>::truncate() {
-  header_->max_key_id = MAP_MIN_KEY_ID - 1;
+  header_->max_key_id = MIN_KEY_ID - 1;
   header_->num_keys = 0;
   header_->latest_available_unit_id = INVALID_UNIT_ID;
 }
@@ -350,7 +358,7 @@ int64_t KeyPool<Bytes>::add(KeyArg key) {
 }
 
 void KeyPool<Bytes>::truncate() {
-  header_->max_key_id = MAP_MIN_KEY_ID - 1;
+  header_->max_key_id = MIN_KEY_ID - 1;
   header_->num_keys = 0;
   header_->latest_free_entry_id = INVALID_ENTRY_ID;
   pool_->truncate();
