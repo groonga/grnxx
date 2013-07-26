@@ -187,6 +187,8 @@ class Array3D {
  private:
   std::unique_ptr<void **[]> tables_;
   uint64_t size_;
+  uint64_t table_size_;
+  uint64_t secondary_table_size_;
   Storage *storage_;
   uint32_t storage_node_id_;
   ArrayHeader *header_;

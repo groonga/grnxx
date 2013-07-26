@@ -378,6 +378,8 @@ void Array2D::reserve_page(uint64_t page_id) {
 Array3D::Array3D()
     : tables_(),
       size_(0),
+      table_size_(0),
+      secondary_table_size_(0),
       storage_(nullptr),
       storage_node_id_(STORAGE_INVALID_NODE_ID),
       header_(nullptr),
@@ -388,17 +390,18 @@ Array3D::Array3D()
       table_mutex_() {}
 
 Array3D::~Array3D() {
+  // A destructor must not access a header because it may be already lost.
   if (tables_) {
     uint64_t offset = 0;
-    for (uint64_t i = 0; i < header_->secondary_table_size; ++i) {
+    for (uint64_t i = 0; i < secondary_table_size_; ++i) {
       if (tables_[i] != (dummy_table_ - offset)) {
         delete [] (tables_[i] + offset);
       }
-      offset += header_->table_size;
+      offset += table_size_;
     }
   }
   if (dummy_table_) {
-    DummyTableManager::get().free_dummy_table(header_->table_size);
+    DummyTableManager::get().free_dummy_table(table_size_);
   }
 }
 
@@ -448,8 +451,10 @@ void Array3D::create(Storage *storage, uint32_t storage_node_id,
     for (uint64_t i = 0; i < header_->secondary_table_size; ++i) {
       secondary_table_[i] = STORAGE_INVALID_NODE_ID;
     }
+    size_ = header_->size;
+    table_size_ = header_->table_size;
+    secondary_table_size_ = header_->secondary_table_size;
     reserve_tables();
-    size_ = size;
   } catch (...) {
     storage->unlink_node(storage_node_id_);
     throw;
@@ -497,8 +502,10 @@ void Array3D::open(Storage *storage, uint32_t storage_node_id,
   StorageNode secondary_table_node =
       storage->open_node(header_->secondary_table_storage_node_id);
   secondary_table_ = static_cast<uint32_t *>(secondary_table_node.body());
-  reserve_tables();
   size_ = header_->size;
+  table_size_ = header_->table_size;
+  secondary_table_size_ = header_->secondary_table_size;
+  reserve_tables();
 }
 
 void Array3D::unlink(Storage *storage, uint32_t storage_node_id,
