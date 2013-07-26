@@ -144,6 +144,9 @@ void test_array(std::uint64_t size) {
   for (std::uint64_t i = 0; i < size; ++i) {
     assert(array->get_value(i) == values[i]);
   }
+
+  // Delete a storage before deleting an array.
+  storage.reset();
 }
 
 template <std::uint64_t PAGE_SIZE = 0,
