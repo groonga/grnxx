@@ -77,6 +77,7 @@ class HashTable : public Map<T> {
   std::unique_ptr<Table> table_;
   std::unique_ptr<Table> old_table_;
   std::unique_ptr<KeyPool<T>> pool_;
+  uint64_t table_id_;
 
   void create_map(Storage *storage, uint32_t storage_node_id,
                   const MapOptions &options);

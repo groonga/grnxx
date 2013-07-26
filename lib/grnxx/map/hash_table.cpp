@@ -50,8 +50,9 @@ struct HashTableHeader {
   uint32_t table_storage_node_id;
   uint32_t old_table_storage_node_id;
   uint32_t pool_storage_node_id;
-  uint64_t num_entries;
   Mutex mutex;
+  uint64_t num_entries;
+  uint64_t table_id;
 
   // Initialize the member variables.
   HashTableHeader();
@@ -65,8 +66,9 @@ HashTableHeader::HashTableHeader()
       table_storage_node_id(STORAGE_INVALID_NODE_ID),
       old_table_storage_node_id(STORAGE_INVALID_NODE_ID),
       pool_storage_node_id(STORAGE_INVALID_NODE_ID),
+      mutex(),
       num_entries(0),
-      mutex() {}
+      table_id(0) {}
 
 HashTableHeader::operator bool() const {
   return common_header.format() == FORMAT_STRING;
@@ -79,7 +81,8 @@ HashTable<T>::HashTable()
       header_(nullptr),
       table_(),
       old_table_(),
-      pool_() {}
+      pool_(),
+      table_id_(0) {}
 
 template <typename T>
 HashTable<T>::~HashTable() {}
@@ -282,13 +285,16 @@ bool HashTable<T>::truncate() {
     Table::unlink(storage_, new_table->storage_node_id());
     throw;
   }
-  header_->num_entries = 0;
+  // Validate a new table.
+  Lock lock(&header_->mutex);
   header_->old_table_storage_node_id = header_->table_storage_node_id;
   header_->table_storage_node_id = new_table->storage_node_id();
-  Lock lock(&header_->mutex);
-  if (table_->storage_node_id() != header_->table_storage_node_id) {
+  header_->num_entries = 0;
+  ++header_->table_id;
+  if (table_id_ != header_->table_id) {
     old_table_.swap(new_table);
     table_.swap(old_table_);
+    table_id_ = header_->table_id;
   }
   return true;
 }
@@ -330,8 +336,10 @@ void HashTable<T>::open_map(Storage *storage, uint32_t storage_node_id) {
                   << ", actual = " << header_->common_header.format();
     throw LogicError();
   }
+  Lock lock(&header_->mutex);
   table_.reset(Table::open(storage, header_->table_storage_node_id));
   pool_.reset(KeyPool<T>::open(storage, header_->pool_storage_node_id));
+  table_id_ = header_->table_id;
 }
 
 template <typename T>
@@ -429,13 +437,18 @@ void HashTable<T>::rebuild() {
   }
   if (header_->old_table_storage_node_id != STORAGE_INVALID_NODE_ID) {
     Table::unlink(storage_, header_->old_table_storage_node_id);
+    header_->old_table_storage_node_id = STORAGE_INVALID_NODE_ID;
   }
+  // Validate a new table.
+  Lock lock(&header_->mutex);
   header_->old_table_storage_node_id = header_->table_storage_node_id;
   header_->table_storage_node_id = new_table->storage_node_id();
-  Lock lock(&header_->mutex);
-  if (table_->storage_node_id() != header_->table_storage_node_id) {
+  header_->num_entries = num_keys();
+  ++header_->table_id;
+  if (table_id_ != header_->table_id) {
     old_table_.swap(new_table);
     table_.swap(old_table_);
+    table_id_ = header_->table_id;
   }
 }
 
@@ -446,13 +459,14 @@ uint64_t HashTable<T>::rehash(uint64_t hash) const {
 
 template <typename T>
 void HashTable<T>::refresh_table() {
-  if (table_->storage_node_id() != header_->table_storage_node_id) {
+  if (table_id_ != header_->table_id) {
     Lock lock(&header_->mutex);
-    if (table_->storage_node_id() != header_->table_storage_node_id) {
+    if (table_id_ != header_->table_id) {
       std::unique_ptr<Table> new_table(
           Table::open(storage_, header_->table_storage_node_id));
       old_table_.swap(new_table);
       table_.swap(old_table_);
+      table_id_ = header_->table_id;
     }
   }
 }
