@@ -25,7 +25,6 @@
 #include "grnxx/array.hpp"
 #include "grnxx/bytes.hpp"
 #include "grnxx/map.hpp"
-#include "grnxx/map/patricia/node.hpp"
 #include "grnxx/types.hpp"
 
 namespace grnxx {
@@ -33,6 +32,11 @@ namespace grnxx {
 class Storage;
 
 namespace map {
+namespace patricia {
+
+class Node;
+
+}  // namespace patricia
 
 template <typename T> class KeyPool;
 

@@ -28,6 +28,7 @@
 #include "grnxx/map/helper.hpp"
 #include "grnxx/map/key_pool.hpp"
 #include "grnxx/map/patricia/header.hpp"
+#include "grnxx/map/patricia/node.hpp"
 #include "grnxx/storage.hpp"
 
 namespace grnxx {
