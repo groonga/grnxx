@@ -145,7 +145,7 @@ bool Patricia<T>::unset(int64_t key_id) {
     // Not found.
     return false;
   }
-  // The root node must be a dead node because the above get() has succeeded.
+  // The root node must not be dead because the above get() has succeeded.
   uint64_t node_id = ROOT_NODE_ID;
   Node *prev_node = nullptr;
   for ( ; ; ) {
@@ -177,7 +177,7 @@ bool Patricia<T>::reset(int64_t key_id, KeyArg dest_key) {
     // Not found.
     return false;
   }
-  // The root node must be a dead node because the above get() has succeeded.
+  // The root node must not be dead because the above get() has succeeded.
   uint64_t node_id = ROOT_NODE_ID;
   Node *src_node;
   Node *src_prev_node = nullptr;
