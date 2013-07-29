@@ -47,11 +47,11 @@ constexpr uint64_t MIN_TABLE_SIZE = 256;
 
 struct HashTableHeader {
   CommonHeader common_header;
+  uint64_t num_entries;
+  uint64_t table_id;
   uint32_t table_storage_node_id;
   uint32_t pool_storage_node_id;
   Mutex mutex;
-  uint64_t num_entries;
-  uint64_t table_id;
 
   // Initialize the member variables.
   HashTableHeader();
@@ -62,11 +62,11 @@ struct HashTableHeader {
 
 HashTableHeader::HashTableHeader()
     : common_header(FORMAT_STRING, MAP_HASH_TABLE),
+      num_entries(0),
+      table_id(0),
       table_storage_node_id(STORAGE_INVALID_NODE_ID),
       pool_storage_node_id(STORAGE_INVALID_NODE_ID),
-      mutex(),
-      num_entries(0),
-      table_id(0) {}
+      mutex() {}
 
 HashTableHeader::operator bool() const {
   return common_header.format() == FORMAT_STRING;
