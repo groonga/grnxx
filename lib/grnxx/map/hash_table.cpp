@@ -48,7 +48,6 @@ constexpr uint64_t MIN_TABLE_SIZE = 256;
 struct HashTableHeader {
   CommonHeader common_header;
   uint32_t table_storage_node_id;
-  uint32_t old_table_storage_node_id;
   uint32_t pool_storage_node_id;
   Mutex mutex;
   uint64_t num_entries;
@@ -64,7 +63,6 @@ struct HashTableHeader {
 HashTableHeader::HashTableHeader()
     : common_header(FORMAT_STRING, MAP_HASH_TABLE),
       table_storage_node_id(STORAGE_INVALID_NODE_ID),
-      old_table_storage_node_id(STORAGE_INVALID_NODE_ID),
       pool_storage_node_id(STORAGE_INVALID_NODE_ID),
       mutex(),
       num_entries(0),
@@ -171,6 +169,12 @@ bool HashTable<T>::reset(int64_t key_id, KeyArg dest_key) {
     // Found.
     return false;
   }
+  // Create a new table if the filling rate of the current table is greater
+  // than 62.5%.
+  const uint64_t table_size = table_->size();
+  if (header_->num_entries > ((table_size + (table_size / 4)) / 2)) {
+    rebuild();
+  }
   pool_->reset(key_id, dest_normalized_key);
   if (*dest_key_id == TABLE_ENTRY_UNUSED) {
     ++header_->num_entries;
@@ -198,7 +202,8 @@ bool HashTable<T>::find(KeyArg key, int64_t *key_id) {
 template <typename T>
 bool HashTable<T>::add(KeyArg key, int64_t *key_id) {
   refresh_table();
-  // Rebuild the hash table if the filling rate is greater than 62.5%.
+  // Create a new table if the filling rate of the current table is greater
+  // than 62.5%.
   const uint64_t table_size = table_->size();
   if (header_->num_entries > ((table_size + (table_size / 4)) / 2)) {
     rebuild();
@@ -252,6 +257,12 @@ bool HashTable<T>::replace(KeyArg src_key, KeyArg dest_key, int64_t *key_id) {
     // Found.
     return false;
   }
+  // Create a new table if the filling rate of the current table is greater
+  // than 62.5%.
+  const uint64_t table_size = table_->size();
+  if (header_->num_entries > ((table_size + (table_size / 4)) / 2)) {
+    rebuild();
+  }
   pool_->reset(*src_key_id, dest_normalized_key);
   if (*dest_key_id == TABLE_ENTRY_UNUSED) {
     ++header_->num_entries;
@@ -276,26 +287,22 @@ bool HashTable<T>::truncate() {
       Table::create(storage_, storage_node_id_,
                     MIN_TABLE_SIZE, TABLE_ENTRY_UNUSED));
   try {
-    if (header_->old_table_storage_node_id != STORAGE_INVALID_NODE_ID) {
-      Table::unlink(storage_, header_->old_table_storage_node_id);
-      header_->old_table_storage_node_id = STORAGE_INVALID_NODE_ID;
-    }
     pool_->truncate();
   } catch (...) {
     Table::unlink(storage_, new_table->storage_node_id());
     throw;
   }
-  // Validate a new table.
-  Lock lock(&header_->mutex);
-  header_->old_table_storage_node_id = header_->table_storage_node_id;
-  header_->table_storage_node_id = new_table->storage_node_id();
-  header_->num_entries = 0;
-  ++header_->table_id;
-  if (table_id_ != header_->table_id) {
+  {
+    // Validate a new table.
+    Lock lock(&header_->mutex);
+    header_->table_storage_node_id = new_table->storage_node_id();
+    header_->num_entries = 0;
+    ++header_->table_id;
     old_table_.swap(new_table);
     table_.swap(old_table_);
     table_id_ = header_->table_id;
   }
+  Table::unlink(storage_, old_table_->storage_node_id());
   return true;
 }
 
@@ -435,21 +442,17 @@ void HashTable<T>::rebuild() {
     Table::unlink(storage_, new_table->storage_node_id());
     throw;
   }
-  if (header_->old_table_storage_node_id != STORAGE_INVALID_NODE_ID) {
-    Table::unlink(storage_, header_->old_table_storage_node_id);
-    header_->old_table_storage_node_id = STORAGE_INVALID_NODE_ID;
-  }
-  // Validate a new table.
-  Lock lock(&header_->mutex);
-  header_->old_table_storage_node_id = header_->table_storage_node_id;
-  header_->table_storage_node_id = new_table->storage_node_id();
-  header_->num_entries = num_keys();
-  ++header_->table_id;
-  if (table_id_ != header_->table_id) {
+  {
+    // Validate a new table.
+    Lock lock(&header_->mutex);
+    header_->table_storage_node_id = new_table->storage_node_id();
+    header_->num_entries = num_keys();
+    ++header_->table_id;
     old_table_.swap(new_table);
     table_.swap(old_table_);
     table_id_ = header_->table_id;
   }
+  Table::unlink(storage_, old_table_->storage_node_id());
 }
 
 template <typename T>
