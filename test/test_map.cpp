@@ -566,7 +566,7 @@ void test_map_truncate(grnxx::MapType map_type) {
   for (std::uint64_t i = 0; i < MAP_NUM_KEYS; ++i) {
     assert(map->add(keys[i]));
   }
-  assert(map->truncate());
+  map->truncate();
   assert(map->max_key_id() == (grnxx::MAP_MIN_KEY_ID - 1));
   assert(map->num_keys() == 0);
   for (std::uint64_t i = 0; i < MAP_NUM_KEYS; ++i) {

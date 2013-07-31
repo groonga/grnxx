@@ -469,14 +469,10 @@ bool Patricia<T>::replace(KeyArg src_key, KeyArg dest_key, int64_t *key_id) {
 }
 
 template <typename T>
-bool Patricia<T>::truncate() {
-  Node * const root_node = &nodes_->get_value(ROOT_NODE_ID);
-  if (!root_node) {
-    return false;
-  }
+void Patricia<T>::truncate() {
+  Node &root_node = nodes_->get_value(ROOT_NODE_ID);
   pool_->truncate();
-  *root_node = Node::dead_node();
-  return true;
+  root_node = Node::dead_node();
 }
 
 template <typename T>
@@ -1350,11 +1346,11 @@ bool Patricia<Bytes>::find_longest_prefix_match(KeyArg query, int64_t *key_id,
   }
 }
 
-bool Patricia<Bytes>::truncate() {
+void Patricia<Bytes>::truncate() {
   refresh_nodes();
   if (max_key_id() == MAP_MIN_KEY_ID) {
     // Nothing to do.
-    return true;
+    return;
   }
   std::unique_ptr<NodeArray> new_nodes(
       NodeArray::create(storage_, storage_node_id_, MIN_NODES_SIZE));
@@ -1387,7 +1383,6 @@ bool Patricia<Bytes>::truncate() {
   }
   NodeArray::unlink(storage_, old_nodes_->storage_node_id());
   Cache::unlink(storage_, old_cache_->storage_node_id());
-  return true;
 }
 
 void Patricia<Bytes>::create_map(Storage *storage, uint32_t storage_node_id,

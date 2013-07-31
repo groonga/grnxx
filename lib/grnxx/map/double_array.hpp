@@ -90,7 +90,7 @@ class DoubleArray<Bytes> : public Map<Bytes> {
   bool remove(KeyArg key);
   bool replace(KeyArg src_key, KeyArg dest_key, int64_t *key_id = nullptr);
 
-  bool truncate();
+  void truncate();
 
   bool find_longest_prefix_match(KeyArg query,
                                  int64_t *key_id = nullptr,

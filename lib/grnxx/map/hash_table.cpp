@@ -276,11 +276,11 @@ bool HashTable<T>::replace(KeyArg src_key, KeyArg dest_key, int64_t *key_id) {
 }
 
 template <typename T>
-bool HashTable<T>::truncate() {
+void HashTable<T>::truncate() {
   refresh_table();
   if (max_key_id() == MAP_MIN_KEY_ID) {
     // Nothing to do.
-    return true;
+    return;
   }
   // Create an empty table.
   std::unique_ptr<Table> new_table(
@@ -303,7 +303,6 @@ bool HashTable<T>::truncate() {
     table_id_ = header_->table_id;
   }
   Table::unlink(storage_, old_table_->storage_node_id());
-  return true;
 }
 
 template <typename T>

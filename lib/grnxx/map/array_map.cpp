@@ -222,9 +222,8 @@ bool ArrayMap<T>::replace(KeyArg src_key, KeyArg dest_key, int64_t *key_id) {
 }
 
 template <typename T>
-bool ArrayMap<T>::truncate() {
+void ArrayMap<T>::truncate() {
   pool_->truncate();
-  return true;
 }
 
 template <typename T>

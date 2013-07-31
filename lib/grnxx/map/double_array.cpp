@@ -286,13 +286,12 @@ bool DoubleArray<Bytes>::replace(KeyArg src_key, KeyArg dest_key,
   return true;
 }
 
-bool DoubleArray<Bytes>::truncate() {
+void DoubleArray<Bytes>::truncate() {
   // TODO: How to recycle nodes.
   Node * const node = &nodes_->get_value(ROOT_NODE_ID);
   node->set_child(NODE_INVALID_LABEL);
   node->set_offset(NODE_INVALID_OFFSET);
   pool_->truncate();
-  return true;
 }
 
 bool DoubleArray<Bytes>::find_longest_prefix_match(KeyArg query,

@@ -122,7 +122,7 @@ class Map {
                                          Key *key = nullptr);
 
   // Remove all the keys in "*this" and return true on success.
-  virtual bool truncate();
+  virtual void truncate();
 
   // Return a reference to create a cursor query.
   MapCursorAllKeys<T> all_keys() const {
