@@ -32,99 +32,66 @@ namespace map {
 template <typename T>
 struct Hash;
 
-// Use key as is.
-template <>
-struct Hash<int8_t> {
-  using KeyArg = typename Traits<int8_t>::ArgumentType;
-  uint64_t operator()(KeyArg key) const {
-    return static_cast<uint8_t>(key);
-  }
-};
-
-// Use key as is.
-template <>
-struct Hash<uint8_t> {
-  using KeyArg = typename Traits<uint8_t>::ArgumentType;
-  uint64_t operator()(KeyArg key) const {
-    return key;
-  }
-};
-
-// Use key as is.
-template <>
-struct Hash<int16_t> {
-  using KeyArg = typename Traits<int16_t>::ArgumentType;
-  uint64_t operator()(KeyArg key) const {
-    return static_cast<uint16_t>(key);
-  }
-};
-
-// Use key as is.
-template <>
-struct Hash<uint16_t> {
-  using KeyArg = typename Traits<uint16_t>::ArgumentType;
-  uint64_t operator()(KeyArg key) const {
-    return key;
-  }
-};
-
-// Murmur3's 32-bit finalizer.
-template <>
-struct Hash<int32_t> {
-  using KeyArg = typename Traits<int32_t>::ArgumentType;
-  uint64_t operator()(KeyArg key) const {
-    uint32_t hash = key;
-    hash ^= hash >> 16;
-    hash *= 0x85ebca6b;
-    hash ^= hash >> 13;
-    hash *= 0xc2b2ae35;
-    hash ^= hash >> 16;
-    return hash;
-  }
-};
-
-// Murmur3's 32-bit finalizer.
-template <>
-struct Hash<uint32_t> {
-  using KeyArg = typename Traits<uint32_t>::ArgumentType;
-  uint64_t operator()(KeyArg key) const {
-    uint32_t hash = key;
-    hash ^= hash >> 16;
-    hash *= 0x85ebca6b;
-    hash ^= hash >> 13;
-    hash *= 0xC2B2AE35;
-    hash ^= hash >> 16;
-    return hash;
-  }
-};
-
-// Murmur3's 64-bit finalizer.
-template <>
-struct Hash<int64_t> {
-  using KeyArg = typename Traits<int64_t>::ArgumentType;
-  uint64_t operator()(KeyArg key) const {
-    uint64_t hash = key;
-    hash ^= hash >> 33;
-    hash *= 0xFF51AFD7ED558CCD;
-    hash ^= hash >> 33;
-    hash *= 0xC4CEB9FE1A85EC53;
-    hash ^= hash >> 33;
-    return hash;
-  }
-};
-
-// Murmur3's 64-bit finalizer.
+// Use Murmur3's 64-bit finalizer for integers.
 template <>
 struct Hash<uint64_t> {
-  using KeyArg = typename Traits<uint64_t>::ArgumentType;
-  uint64_t operator()(KeyArg key) const {
+  uint64_t operator()(uint64_t key) const {
     uint64_t hash = key;
     hash ^= hash >> 33;
-    hash *= 0xFF51AFD7ED558CCD;
+    hash *= 0xFF51AFD7ED558CCDULL;
     hash ^= hash >> 33;
-    hash *= 0xC4CEB9FE1A85EC53;
+    hash *= 0xC4CEB9FE1A85EC53ULL;
     hash ^= hash >> 33;
     return hash;
+  }
+};
+
+template <>
+struct Hash<int64_t> {
+  uint64_t operator()(int64_t key) const {
+    return Hash<uint64_t>()(key);
+  }
+};
+
+template <>
+struct Hash<uint32_t> {
+  uint64_t operator()(uint32_t key) const {
+    return Hash<uint64_t>()(key);
+  }
+};
+
+template <>
+struct Hash<int32_t> {
+  uint64_t operator()(int32_t key) const {
+    return Hash<uint32_t>()(key);
+  }
+};
+
+template <>
+struct Hash<uint16_t> {
+  uint64_t operator()(uint16_t key) const {
+    return Hash<uint64_t>()(key);
+  }
+};
+
+template <>
+struct Hash<int16_t> {
+  uint64_t operator()(int16_t key) const {
+    return Hash<uint16_t>()(key);
+  }
+};
+
+template <>
+struct Hash<uint8_t> {
+  uint64_t operator()(uint8_t key) const {
+    return Hash<uint64_t>()(key);
+  }
+};
+
+template <>
+struct Hash<int8_t> {
+  uint64_t operator()(int8_t key) const {
+    return Hash<uint8_t>()(key);
   }
 };
 
