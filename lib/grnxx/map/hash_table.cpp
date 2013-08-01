@@ -38,9 +38,6 @@ namespace {
 
 constexpr char FORMAT_STRING[] = "grnxx::map::HashTable";
 
-constexpr int64_t TABLE_ENTRY_UNUSED  = -1;
-constexpr int64_t TABLE_ENTRY_REMOVED = -2;
-
 constexpr uint64_t MIN_TABLE_SIZE = 256;
 
 }  // namespace
@@ -71,6 +68,50 @@ HashTableHeader::HashTableHeader()
 HashTableHeader::operator bool() const {
   return common_header.format() == FORMAT_STRING;
 }
+
+class HashTableEntry {
+ public:
+  // Create an unused entry.
+  static HashTableEntry unused_entry() {
+    return HashTableEntry(IS_UNUSED_FLAG);
+  }
+
+  // Return true iff this entry is not used.
+  bool is_unused() const {
+    return value_ & IS_UNUSED_FLAG;
+  }
+  // Return true iff this entry is removed.
+  bool is_removed() const {
+    return value_ & IS_REMOVED_FLAG;
+  }
+  // Return true iff this entry and "hash_value" have the same memo.
+  bool test_hash_value(uint64_t hash_value) const {
+    return ((value_ ^ hash_value) >> MEMO_SHIFT) == 0;
+  }
+  // Return a stored key ID.
+  int64_t key_id() const {
+    return value_ & KEY_ID_MASK;
+  }
+
+  // Set a key ID and a memo, which is extracted from "hash_value".
+  void set(int64_t key_id, uint64_t hash_value) {
+    value_ = key_id | (hash_value & (~0ULL << MEMO_SHIFT));
+  }
+  // Remove this entry.
+  void remove() {
+    value_ |= IS_REMOVED_FLAG;
+  }
+
+ private:
+  uint64_t value_;
+
+  explicit HashTableEntry(uint64_t value) : value_(value) {}
+
+  static constexpr uint64_t IS_UNUSED_FLAG  = 1ULL << 40;
+  static constexpr uint64_t IS_REMOVED_FLAG = 1ULL << 41;
+  static constexpr uint8_t  MEMO_SHIFT      = 42;
+  static constexpr uint64_t KEY_ID_MASK     = (1ULL << 40) - 1;
+};
 
 template <typename T>
 HashTable<T>::HashTable()
@@ -140,32 +181,28 @@ bool HashTable<T>::get(int64_t key_id, Key *key) {
 template <typename T>
 bool HashTable<T>::unset(int64_t key_id) {
   refresh_table();
-  int64_t * const entry = find_key_id(key_id);
+  Entry * const entry = find_key_id(key_id);
   if (!entry) {
     // Not found.
     return false;
   }
   pool_->unset(key_id);
-  *entry = TABLE_ENTRY_REMOVED;
+  entry->remove();
   return true;
 }
 
 template <typename T>
 bool HashTable<T>::reset(int64_t key_id, KeyArg dest_key) {
   refresh_table();
-  Key src_key;
-  if (!get(key_id, &src_key)) {
-    // Not found.
-    return false;
-  }
-  int64_t * const src_entry = find_key_id(key_id);
+  Entry * const src_entry = find_key_id(key_id);
   if (!src_entry) {
     // Not found.
     return false;
   }
   const Key dest_normalized_key = Helper<T>::normalize(dest_key);
-  int64_t *dest_key_id;
-  if (find_key(dest_normalized_key, &dest_key_id)) {
+  const uint64_t dest_hash_value = Hash<T>()(dest_normalized_key);
+  Entry *dest_entry;
+  if (find_key(dest_normalized_key, dest_hash_value, &dest_entry)) {
     // Found.
     return false;
   }
@@ -176,11 +213,11 @@ bool HashTable<T>::reset(int64_t key_id, KeyArg dest_key) {
     rebuild();
   }
   pool_->reset(key_id, dest_normalized_key);
-  if (*dest_key_id == TABLE_ENTRY_UNUSED) {
+  if (dest_entry->is_unused()) {
     ++header_->num_entries;
   }
-  *dest_key_id = key_id;
-  *src_entry = TABLE_ENTRY_REMOVED;
+  dest_entry->set(key_id, dest_hash_value);
+  src_entry->remove();
   return true;
 }
 
@@ -188,15 +225,33 @@ template <typename T>
 bool HashTable<T>::find(KeyArg key, int64_t *key_id) {
   refresh_table();
   const Key normalized_key = Helper<T>::normalize(key);
-  int64_t *stored_key_id;
-  if (!find_key(normalized_key, &stored_key_id)) {
-    // Not found.
-    return false;
+  Table * const table = table_.get();
+  const uint64_t id_mask = table->size() - 1;
+  const uint64_t hash_value = Hash<T>()(normalized_key);
+  for (uint64_t id = hash_value; ; ) {
+    Entry entry = table->get(id & id_mask);
+    if (entry.is_unused()) {
+      // Not found.
+      return false;
+    } else if (!entry.is_removed()) {
+      if (entry.test_hash_value(hash_value)) {
+        Key stored_key = pool_->get_key(entry.key_id());
+        if (Helper<T>::equal_to(stored_key, normalized_key)) {
+          // Found.
+          if (key_id) {
+            *key_id = entry.key_id();
+          }
+          return true;
+        }
+      }
+    }
+    id = rehash(id);
+    if (((id ^ hash_value) & id_mask) == 0) {
+      // Critical error.
+      GRNXX_ERROR() << "endless loop";
+      throw LogicError();
+    }
   }
-  if (key_id) {
-    *key_id = *stored_key_id;
-  }
-  return true;
 }
 
 template <typename T>
@@ -209,19 +264,20 @@ bool HashTable<T>::add(KeyArg key, int64_t *key_id) {
     rebuild();
   }
   const Key normalized_key = Helper<T>::normalize(key);
-  int64_t *stored_key_id;
-  if (find_key(normalized_key, &stored_key_id)) {
+  const uint64_t hash_value = Hash<T>()(normalized_key);
+  Entry *entry;
+  if (find_key(normalized_key, hash_value, &entry)) {
     // Found.
     if (key_id) {
-      *key_id = *stored_key_id;
+      *key_id = entry->key_id();
     }
     return false;
   }
   int64_t next_key_id = pool_->add(normalized_key);
-  if (*stored_key_id == TABLE_ENTRY_UNUSED) {
+  if (entry->is_unused()) {
     ++header_->num_entries;
   }
-  *stored_key_id = next_key_id;
+  entry->set(next_key_id, hash_value);
   if (key_id) {
     *key_id = next_key_id;
   }
@@ -232,13 +288,14 @@ template <typename T>
 bool HashTable<T>::remove(KeyArg key) {
   refresh_table();
   const Key normalized_key = Helper<T>::normalize(key);
-  int64_t *stored_key_id;
-  if (!find_key(normalized_key, &stored_key_id)) {
+  const uint64_t hash_value = Hash<T>()(normalized_key);
+  Entry *entry;
+  if (!find_key(normalized_key, hash_value, &entry)) {
     // Not found.
     return false;
   }
-  pool_->unset(*stored_key_id);
-  *stored_key_id = TABLE_ENTRY_REMOVED;
+  pool_->unset(entry->key_id());
+  entry->remove();
   return true;
 }
 
@@ -246,14 +303,16 @@ template <typename T>
 bool HashTable<T>::replace(KeyArg src_key, KeyArg dest_key, int64_t *key_id) {
   refresh_table();
   const Key src_normalized_key = Helper<T>::normalize(src_key);
-  int64_t *src_key_id;
-  if (!find_key(src_normalized_key, &src_key_id)) {
+  const uint64_t src_hash_value = Hash<T>()(src_normalized_key);
+  Entry *src_entry;
+  if (!find_key(src_normalized_key, src_hash_value, &src_entry)) {
     // Not found.
     return false;
   }
   const Key dest_normalized_key = Helper<T>::normalize(dest_key);
-  int64_t *dest_key_id;
-  if (find_key(dest_normalized_key, &dest_key_id)) {
+  const uint64_t dest_hash_value = Hash<T>()(dest_normalized_key);
+  Entry *dest_entry;
+  if (find_key(dest_normalized_key, dest_hash_value, &dest_entry)) {
     // Found.
     return false;
   }
@@ -263,14 +322,14 @@ bool HashTable<T>::replace(KeyArg src_key, KeyArg dest_key, int64_t *key_id) {
   if (header_->num_entries > ((table_size + (table_size / 4)) / 2)) {
     rebuild();
   }
-  pool_->reset(*src_key_id, dest_normalized_key);
-  if (*dest_key_id == TABLE_ENTRY_UNUSED) {
+  pool_->reset(src_entry->key_id(), dest_normalized_key);
+  if (dest_entry->is_unused()) {
     ++header_->num_entries;
   }
-  *dest_key_id = *src_key_id;
-  *src_key_id = TABLE_ENTRY_REMOVED;
+  dest_entry->set(src_entry->key_id(), dest_hash_value);
+  src_entry->remove();
   if (key_id) {
-    *key_id = *dest_key_id;
+    *key_id = dest_entry->key_id();
   }
   return true;
 }
@@ -285,7 +344,7 @@ void HashTable<T>::truncate() {
   // Create an empty table.
   std::unique_ptr<Table> new_table(
       Table::create(storage_, storage_node_id_,
-                    MIN_TABLE_SIZE, TABLE_ENTRY_UNUSED));
+                    MIN_TABLE_SIZE, Entry::unused_entry()));
   try {
     pool_->truncate();
   } catch (...) {
@@ -316,7 +375,7 @@ void HashTable<T>::create_map(Storage *storage, uint32_t storage_node_id,
     header_ = static_cast<Header *>(storage_node.body());
     *header_ = Header();
     table_.reset(Table::create(storage, storage_node_id_,
-                               MIN_TABLE_SIZE, TABLE_ENTRY_UNUSED));
+                               MIN_TABLE_SIZE, Entry::unused_entry()));
     pool_.reset(KeyPool<T>::create(storage, storage_node_id_));
     header_->table_storage_node_id = table_->storage_node_id();
     header_->pool_storage_node_id = pool_->storage_node_id();
@@ -349,23 +408,23 @@ void HashTable<T>::open_map(Storage *storage, uint32_t storage_node_id) {
 }
 
 template <typename T>
-int64_t *HashTable<T>::find_key_id(int64_t key_id) {
+HashTableEntry *HashTable<T>::find_key_id(int64_t key_id) {
   Table * const table = table_.get();
   Key stored_key;
   if (!get(key_id, &stored_key)) {
     // Not found.
     return nullptr;
   }
-  const uint64_t hash_mask = table->size() - 1;
-  const uint64_t first_hash = Hash<T>()(stored_key);
-  for (uint64_t hash = first_hash; ; ) {
-    int64_t &entry = table->get_value(hash & hash_mask);
-    if (entry == key_id) {
+  const uint64_t id_mask = table->size() - 1;
+  const uint64_t hash_value = Hash<T>()(stored_key);
+  for (uint64_t id = hash_value; ; ) {
+    Entry &entry = table->get_value(id & id_mask);
+    if (entry.key_id() == key_id) {
       // Found.
       return &entry;
     }
-    hash = rehash(hash);
-    if (hash == first_hash) {
+    id = rehash(id);
+    if (((id ^ hash_value) & id_mask) == 0) {
       // Critical error.
       GRNXX_ERROR() << "endless loop";
       throw LogicError();
@@ -374,34 +433,33 @@ int64_t *HashTable<T>::find_key_id(int64_t key_id) {
 }
 
 template <typename T>
-bool HashTable<T>::find_key(KeyArg key, int64_t **entry) {
+bool HashTable<T>::find_key(KeyArg key, uint64_t hash_value, Entry **entry) {
   Table * const table = table_.get();
   *entry = nullptr;
-  const uint64_t hash_mask = table->size() - 1;
-  const uint64_t first_hash = Hash<T>()(key);
-  for (uint64_t hash = first_hash; ; ) {
-    int64_t &this_entry = table->get_value(hash & hash_mask);
-    if (this_entry == TABLE_ENTRY_UNUSED) {
+  const uint64_t id_mask = table->size() - 1;
+  for (uint64_t id = hash_value; ; ) {
+    Entry &this_entry = table->get_value(id & id_mask);
+    if (this_entry.is_unused()) {
       // Not found.
       if (!*entry) {
         *entry = &this_entry;
       }
       return false;
-    } else if (this_entry == TABLE_ENTRY_REMOVED) {
+    } else if (this_entry.is_removed()) {
       // Save the first removed entry.
       if (!*entry) {
         *entry = &this_entry;
       }
-    } else {
-      Key stored_key = pool_->get_key(this_entry);
+    } else if (this_entry.test_hash_value(hash_value)) {
+      Key stored_key = pool_->get_key(this_entry.key_id());
       if (Helper<T>::equal_to(stored_key, key)) {
         // Found.
         *entry = &this_entry;
         return true;
       }
     }
-    hash = rehash(hash);
-    if (hash == first_hash) {
+    id = rehash(id);
+    if (((id ^ hash_value) & id_mask) == 0) {
       // Critical error.
       GRNXX_ERROR() << "endless loop";
       throw LogicError();
@@ -418,21 +476,22 @@ void HashTable<T>::rebuild() {
   }
   new_size = 2ULL << bit_scan_reverse(new_size - 1);
   std::unique_ptr<Table> new_table(
-      Table::create(storage_, storage_node_id_, new_size, TABLE_ENTRY_UNUSED));
+      Table::create(storage_, storage_node_id_,
+                    new_size, Entry::unused_entry()));
   try {
     // Copy entries from the current table to the new table.
-    const uint64_t new_mask = new_size - 1;
+    const uint64_t new_id_mask = new_size - 1;
     int64_t key_id;
     for (key_id = MAP_MIN_KEY_ID; key_id <= max_key_id(); ++key_id) {
       Key stored_key;
       if (!pool_->get(key_id, &stored_key)) {
         continue;
       }
-      const uint64_t first_hash = Hash<T>()(stored_key);
-      for (uint64_t hash = first_hash; ; hash = rehash(hash)) {
-        int64_t &entry = new_table->get_value(hash & new_mask);
-        if (entry == TABLE_ENTRY_UNUSED) {
-          entry = key_id;
+      const uint64_t hash_value = Hash<T>()(stored_key);
+      for (uint64_t id = hash_value; ; id = rehash(id)) {
+        Entry &entry = new_table->get_value(id & new_id_mask);
+        if (entry.is_unused()) {
+          entry.set(key_id, hash_value);
           break;
         }
       }

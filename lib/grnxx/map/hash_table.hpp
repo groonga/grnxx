@@ -35,11 +35,13 @@ namespace map {
 template <typename T> class KeyPool;
 
 struct HashTableHeader;
+class HashTableEntry;
 
 template <typename T>
 class HashTable : public Map<T> {
   using Header = HashTableHeader;
-  using Table  = Array<int64_t>;
+  using Entry  = HashTableEntry;
+  using Table  = Array<Entry>;
 
  public:
   using Key    = typename Map<T>::Key;
@@ -86,13 +88,13 @@ class HashTable : public Map<T> {
   // Search a hash table for a key ID.
   // On success, return a pointer to a matched entry.
   // On failure, return nullptr.
-  int64_t *find_key_id(int64_t key_id);
+  Entry *find_key_id(int64_t key_id);
   // Search a hash table for a key.
   // On success, assign a pointer to a matched entry to "*entry" and return
   // true.
   // On failure, assign a pointer to the first unused or removed entry to
   // "*entry" and return false.
-  bool find_key(KeyArg key, int64_t **entry);
+  bool find_key(KeyArg key, uint64_t hash_value, Entry **entry);
 
   // Rebuild the hash table.
   void rebuild();
