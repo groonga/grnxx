@@ -45,8 +45,6 @@ constexpr uint64_t MIN_NODES_SIZE = 1ULL << 8;
 constexpr uint64_t MIN_CACHE_SIZE = 1ULL << 8;
 constexpr uint64_t MAX_CACHE_SIZE = 1ULL << 20;
 
-constexpr int64_t INVALID_CACHE_VALUE = -1;
-
 using patricia::NODE_INVALID_OFFSET;
 
 using patricia::NODE_DEAD;
@@ -85,6 +83,42 @@ PatriciaHeader::PatriciaHeader()
 PatriciaHeader::operator bool() const {
   return common_header.format() == FORMAT_STRING;
 }
+
+class PatriciaCacheEntry {
+ public:
+  // Create an unused entry.
+  static PatriciaCacheEntry invalid_entry() {
+    return PatriciaCacheEntry(0);
+  }
+
+  // Return true iff this entry is not empty.
+  explicit operator bool() {
+    return value_ & IS_VALID_FLAG;
+  }
+
+  // Return true iff this entry and "hash_value" have the same memo.
+  bool test_hash_value(uint64_t hash_value) const {
+    return ((value_ ^ hash_value) >> MEMO_SHIFT) == 0;
+  }
+  // Return a stored key ID.
+  int64_t key_id() const {
+    return value_ & KEY_ID_MASK;
+  }
+
+  // Set a key ID and a memo, which is extracted from "hash_value".
+  void set(int64_t key_id, uint64_t hash_value) {
+    value_ = IS_VALID_FLAG | key_id | (hash_value & (~0ULL << MEMO_SHIFT));
+  }
+
+ private:
+  uint64_t value_;
+
+  explicit PatriciaCacheEntry(uint64_t value) : value_(value) {}
+
+  static constexpr uint64_t IS_VALID_FLAG = 1ULL << 40;
+  static constexpr uint8_t  MEMO_SHIFT    = 41;
+  static constexpr uint64_t KEY_ID_MASK   = (1ULL << 40) - 1;
+};
 
 template <typename T>
 Patricia<T>::Patricia()
@@ -910,14 +944,14 @@ bool Patricia<Bytes>::find(KeyArg key, int64_t *key_id) {
 
 bool Patricia<Bytes>::add(KeyArg key, int64_t *key_id) {
   refresh_nodes();
-  int64_t * const cache =
-      &cache_->get_value(Hash<Key>()(key) & (cache_->size() - 1));
-  if ((*cache >= 0) && (*cache <= pool_->max_key_id())) {
+  const uint64_t hash_value = Hash<Key>()(key);
+  CacheEntry &cache = cache_->get_value(hash_value & (cache_->size() - 1));
+  if (cache && cache.test_hash_value(hash_value)) {
     Key cached_key;
-    if (pool_->get(*cache, &cached_key)) {
+    if (pool_->get(cache.key_id(), &cached_key)) {
       if (key == cached_key) {
         if (key_id) {
-          *key_id = *cache;
+          *key_id = cache.key_id();
         }
         return false;
       }
@@ -935,7 +969,7 @@ bool Patricia<Bytes>::add(KeyArg key, int64_t *key_id) {
     if (key_id) {
       *key_id = next_key_id;
     }
-    *cache = next_key_id;
+    cache.set(next_key_id, hash_value);
     return true;
   }
   const uint64_t bit_size = key.size() * 8;
@@ -979,7 +1013,7 @@ bool Patricia<Bytes>::add(KeyArg key, int64_t *key_id) {
       if (key_id) {
         *key_id = node->key_id();
       }
-      *cache = node->key_id();
+      cache.set(node->key_id(), hash_value);
       return false;
     }
     node = history[depth % HISTORY_SIZE];
@@ -999,7 +1033,7 @@ bool Patricia<Bytes>::add(KeyArg key, int64_t *key_id) {
     if (key_id) {
       *key_id = next_key_id;
     }
-    *cache = next_key_id;
+    cache.set(next_key_id, hash_value);
     return true;
   }
   count = (count * 8) + 7 - bit_scan_reverse(key[count] ^ stored_key[count]);
@@ -1052,7 +1086,7 @@ bool Patricia<Bytes>::add(KeyArg key, int64_t *key_id) {
   if (key_id) {
     *key_id = next_key_id;
   }
-  *cache = next_key_id;
+  cache.set(next_key_id, hash_value);
   return true;
 }
 
@@ -1357,7 +1391,7 @@ void Patricia<Bytes>::truncate() {
   std::unique_ptr<Cache> new_cache;
   try {
     new_cache.reset(Cache::create(storage_, storage_node_id_,
-                                  MIN_CACHE_SIZE, INVALID_CACHE_VALUE));
+                                  MIN_CACHE_SIZE, CacheEntry::invalid_entry()));
     try {
       pool_->truncate();
     } catch (...) {
@@ -1397,7 +1431,7 @@ void Patricia<Bytes>::create_map(Storage *storage, uint32_t storage_node_id,
     nodes_.reset(NodeArray::create(storage, storage_node_id_, MIN_NODES_SIZE));
     pool_.reset(KeyPool<Bytes>::create(storage, storage_node_id_));
     cache_.reset(Cache::create(storage, storage_node_id_,
-                               MIN_CACHE_SIZE, INVALID_CACHE_VALUE));
+                               MIN_CACHE_SIZE, CacheEntry::invalid_entry()));
     header_->nodes_storage_node_id = nodes_->storage_node_id();
     header_->pool_storage_node_id = pool_->storage_node_id();
     header_->cache_storage_node_id = cache_->storage_node_id();
@@ -1450,7 +1484,7 @@ void Patricia<Bytes>::resize_nodes() {
   uint64_t next_node_id = 2;
   try {
     new_cache.reset(Cache::create(storage_, storage_node_id_,
-                                  new_cache_size, INVALID_CACHE_VALUE));
+                                  new_cache_size, CacheEntry::invalid_entry()));
     try {
       next_node_id = rearrange_nodes(ROOT_NODE_ID, ROOT_NODE_ID,
                                      next_node_id, new_nodes.get());

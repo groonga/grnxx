@@ -41,6 +41,7 @@ class Node;
 template <typename T> class KeyPool;
 
 struct PatriciaHeader;
+class PatriciaCacheEntry;
 
 template <typename T>
 class Patricia : public Map<T> {
@@ -97,7 +98,8 @@ class Patricia<Bytes> : public Map<Bytes> {
   using Header = PatriciaHeader;
   using Node = patricia::Node;
   using NodeArray = Array<Node>;
-  using Cache = Array<int64_t>;
+  using CacheEntry = PatriciaCacheEntry;
+  using Cache = Array<CacheEntry>;
 
  public:
   using Key = typename Map<Bytes>::Key;
