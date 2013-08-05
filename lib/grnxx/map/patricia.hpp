@@ -97,7 +97,7 @@ template <>
 class Patricia<Bytes> : public Map<Bytes> {
   using Header = PatriciaHeader;
   using Node = patricia::Node;
-  using NodeArray = Array<Node>;
+  using NodeArray = Array<Node, 65536, 8192>;
   using CacheEntry = PatriciaCacheEntry;
   using Cache = Array<CacheEntry>;
 
@@ -141,7 +141,6 @@ class Patricia<Bytes> : public Map<Bytes> {
   std::unique_ptr<NodeArray> old_nodes_;
   std::unique_ptr<KeyPool<Bytes>> pool_;
   std::unique_ptr<Cache> cache_;
-  std::unique_ptr<Cache> old_cache_;
   uint64_t nodes_id_;
 
   void create_map(Storage *storage, uint32_t storage_node_id,
@@ -149,7 +148,7 @@ class Patricia<Bytes> : public Map<Bytes> {
   void open_map(Storage *storage, uint32_t storage_node_id);
 
   // Resize "nodes_" and "cache_".
-  void resize_nodes();
+  void defrag_nodes();
   // Recursively arrange nodes.
   uint64_t rearrange_nodes(uint64_t src_node_id, uint64_t dest_node_id,
                            uint64_t next_node_id, NodeArray *dest_nodes);
