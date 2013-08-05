@@ -32,21 +32,17 @@ namespace grnxx {
 class Storage;
 
 namespace map {
-namespace patricia {
-
-class Node;
-
-}  // namespace patricia
 
 template <typename T> class KeyPool;
 
 struct PatriciaHeader;
+class PatriciaNode;
 class PatriciaCacheEntry;
 
 template <typename T>
 class Patricia : public Map<T> {
   using Header = PatriciaHeader;
-  using Node = patricia::Node;
+  using Node = PatriciaNode;
   using NodeArray = Array<Node, 65536, 8192>;
 
  public:
@@ -96,7 +92,7 @@ class Patricia : public Map<T> {
 template <>
 class Patricia<Bytes> : public Map<Bytes> {
   using Header = PatriciaHeader;
-  using Node = patricia::Node;
+  using Node = PatriciaNode;
   using NodeArray = Array<Node, 65536, 8192>;
   using CacheEntry = PatriciaCacheEntry;
   using Cache = Array<CacheEntry>;

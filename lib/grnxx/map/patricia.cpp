@@ -28,7 +28,6 @@
 #include "grnxx/map/hash.hpp"
 #include "grnxx/map/helper.hpp"
 #include "grnxx/map/key_pool.hpp"
-#include "grnxx/map/patricia/node.hpp"
 #include "grnxx/mutex.hpp"
 #include "grnxx/storage.hpp"
 
@@ -44,12 +43,12 @@ constexpr uint64_t DUMMY_NODE_ID = ROOT_NODE_ID + 1;
 constexpr uint64_t NODE_ARRAY_SIZE = 1ULL << 41;
 constexpr uint64_t CACHE_SIZE      = 1ULL << 19;
 
-using patricia::NODE_INVALID_OFFSET;
-
-using patricia::NODE_DEAD;
-using patricia::NODE_LEAF;
-using patricia::NODE_BRANCH;
-using patricia::NODE_TERMINAL;
+enum NodeStatus : uint64_t {
+  NODE_DEAD     = 0,
+  NODE_LEAF     = 1,
+  NODE_BRANCH   = 2,
+  NODE_TERMINAL = 3
+};
 
 }  // namespace
 
@@ -82,6 +81,92 @@ PatriciaHeader::PatriciaHeader()
 PatriciaHeader::operator bool() const {
   return common_header.format() == FORMAT_STRING;
 }
+
+// The internal structure of PatriciaNode is as follows:
+// - Common
+//   62-63 ( 2): status (DEAD, LEAF, BRANCH, TERMINAL)
+// - Leaf: LEAF
+//    0-39 (40): key_id
+//   40-61 (22): reserved
+// - Branch or Terminal: BRANCH || TERMINAL
+//   16-57 (42): offset
+//   58-61 ( 4): reserved
+// - Branch: BRANCH
+//    0-15 (16): bit_pos
+// - Terminal: TERMINAL
+//    0-15 (16): bit_size
+// where 0 is the LSB and 63 is the MSB.
+class PatriciaNode {
+  static constexpr uint64_t STATUS_MASK    = (1ULL << 2) - 1;
+  static constexpr uint8_t  STATUS_SHIFT   = 62;
+
+  static constexpr uint64_t KEY_ID_MASK    = (1ULL << 40) - 1;
+  static constexpr uint8_t  KEY_ID_SHIFT   = 0;
+
+  static constexpr uint64_t OFFSET_MASK    = (1ULL << 42) - 1;
+  static constexpr uint8_t  OFFSET_SHIFT   = 16;
+
+  static constexpr uint64_t BIT_POS_MASK   = (1ULL << 16) - 1;
+  static constexpr uint8_t  BIT_POS_SHIFT  = 0;
+
+  static constexpr uint64_t BIT_SIZE_MASK  = (1ULL << 16) - 1;
+  static constexpr uint8_t  BIT_SIZE_SHIFT = 0;
+
+ public:
+  PatriciaNode() = default;
+
+  // Create a node that has neither descendants nor an associated key.
+  static PatriciaNode dead_node() {
+    return PatriciaNode(NODE_DEAD << STATUS_SHIFT);
+  }
+  // Create a node that has an associated key that is identified by "key_id".
+  static PatriciaNode leaf_node(int64_t key_id) {
+    return PatriciaNode((NODE_LEAF << STATUS_SHIFT) |
+                        ((key_id & KEY_ID_MASK) << KEY_ID_SHIFT));
+  }
+  // Create a node that works as a 0/1 branch.
+  // If key["bit_pos"] == 0, the next node ID is "offset".
+  // Otherwise, the next node ID is "offset" + 1.
+  static PatriciaNode branch_node(uint64_t bit_pos, uint64_t offset) {
+    return PatriciaNode((NODE_BRANCH << STATUS_SHIFT) |
+                        ((bit_pos & BIT_POS_MASK) << BIT_POS_SHIFT) |
+                        ((offset & OFFSET_MASK) << OFFSET_SHIFT));
+  }
+  // Create a node that works as a short/long branch.
+  // If key_size <= "bit_size", the next node ID is "offset".
+  // Otherwise, the next node ID is "offset" + 1.
+  static PatriciaNode terminal_node(uint64_t bit_size, uint64_t offset) {
+    return PatriciaNode((NODE_TERMINAL << STATUS_SHIFT) |
+                        ((bit_size & BIT_SIZE_MASK) << BIT_SIZE_SHIFT) |
+                         ((offset & OFFSET_MASK) << OFFSET_SHIFT));
+  }
+
+  // Return the node status.
+  uint64_t status() const {
+    return (value_ >> STATUS_SHIFT) & STATUS_MASK;
+  }
+  // Return the associated key ID.
+  int64_t key_id() const {
+    return (value_ >> KEY_ID_SHIFT) & KEY_ID_MASK;
+  }
+  // Return the offset to the next nodes.
+  uint64_t offset() const {
+    return (value_ >> OFFSET_SHIFT) & OFFSET_MASK;
+  }
+  // Return the position of the branch.
+  uint64_t bit_pos() const {
+    return (value_ >> BIT_POS_SHIFT) & BIT_POS_MASK;
+  }
+  // Return the branch condition.
+  uint64_t bit_size() const {
+    return (value_ >> BIT_SIZE_SHIFT) & BIT_SIZE_MASK;
+  }
+
+ private:
+  uint64_t value_;
+
+  explicit PatriciaNode(uint64_t value) : value_(value) {}
+};
 
 class PatriciaCacheEntry {
  public:
