@@ -1,10 +1,4 @@
-SUBDIRS =						\
-	double_array
-
 noinst_LTLIBRARIES = libgrnxx_map.la
-
-libgrnxx_map_la_LIBADD =				\
-	double_array/libgrnxx_map_double_array.la
 
 libgrnxx_map_la_LDFLAGS = @AM_LTLDFLAGS@
 

@@ -27,8 +27,6 @@
 #include "grnxx/map.hpp"
 #include "grnxx/map_cursor.hpp"
 #include "grnxx/map_cursor_query.hpp"
-#include "grnxx/map/double_array/block.hpp"
-#include "grnxx/map/double_array/node.hpp"
 #include "grnxx/types.hpp"
 
 namespace grnxx {
@@ -40,6 +38,8 @@ namespace map {
 template <typename T> class KeyPool;
 
 struct DoubleArrayHeader;
+class DoubleArrayBlock;
+class DoubleArrayNode;
 
 template <typename T>
 class DoubleArray {
@@ -52,8 +52,8 @@ class DoubleArray {
 template <>
 class DoubleArray<Bytes> : public Map<Bytes> {
   using Header = DoubleArrayHeader;
-  using Node = double_array::Node;
-  using Block = double_array::Block;
+  using Node = DoubleArrayNode;
+  using Block = DoubleArrayBlock;
 
   using NodeArray    = Array<Node,     65536, 8192>;  // 42-bit
   using SiblingArray = Array<uint8_t, 262144, 4096>;  // 42-bit

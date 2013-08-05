@@ -24,8 +24,6 @@
 #include "grnxx/intrinsic.hpp"
 #include "grnxx/logger.hpp"
 #include "grnxx/map/common_header.hpp"
-#include "grnxx/map/double_array/block.hpp"
-#include "grnxx/map/double_array/node.hpp"
 #include "grnxx/map/helper.hpp"
 #include "grnxx/map/key_pool.hpp"
 #include "grnxx/storage.hpp"
@@ -36,16 +34,16 @@ namespace {
 
 constexpr char FORMAT_STRING[] = "grnxx::map::DoubleArray";
 
-using double_array::BLOCK_MAX_FAILURE_COUNT;
-using double_array::BLOCK_MAX_LEVEL;
-using double_array::BLOCK_INVALID_ID;
-using double_array::BLOCK_SIZE;
-using double_array::BLOCK_MAX_COUNT;
+constexpr uint64_t BLOCK_MAX_FAILURE_COUNT  = 4;
+constexpr uint64_t BLOCK_MAX_LEVEL          = 5;
+constexpr uint64_t BLOCK_INVALID_ID         = (1ULL << 40) - 1;
+constexpr uint64_t BLOCK_SIZE               = 1ULL << 9;
+constexpr uint64_t BLOCK_MAX_COUNT          = 16;
 
-using double_array::NODE_TERMINAL_LABEL;
-using double_array::NODE_MAX_LABEL;
-using double_array::NODE_INVALID_LABEL;
-using double_array::NODE_INVALID_OFFSET;
+constexpr uint64_t NODE_TERMINAL_LABEL = 0x100;
+constexpr uint64_t NODE_MAX_LABEL      = NODE_TERMINAL_LABEL;
+constexpr uint64_t NODE_INVALID_LABEL  = NODE_MAX_LABEL + 1;
+constexpr uint64_t NODE_INVALID_OFFSET = 0;
 
 constexpr uint64_t ROOT_NODE_ID = 0;
 
@@ -87,6 +85,259 @@ DoubleArrayHeader::DoubleArrayHeader()
 DoubleArrayHeader::operator bool() const {
   return common_header.format() == FORMAT_STRING;
 }
+
+// The internal structure of DoubleArrayBlock is as follows:
+// - values_[0]
+//    0-15 (16): first_phantom
+//   16-23 ( 8): level
+//   24-63 (40): next
+// - values_[1]
+//    0-15 (16): num_phantoms
+//   16-23 ( 8): failure_count
+//   24-63 (40): prev
+// where 0 is the LSB and 63 is the MSB.
+class DoubleArrayBlock {
+  // For values_[0].
+  static constexpr uint64_t FIRST_PHANTOM_MASK  = (1ULL << 16) - 1;
+  static constexpr uint8_t  FIRST_PHANTOM_SHIFT = 0;
+  static constexpr uint64_t LEVEL_MASK          = (1ULL << 8) - 1;
+  static constexpr uint8_t  LEVEL_SHIFT         = 16;
+  static constexpr uint64_t NEXT_MASK           = (1ULL << 40) - 1;
+  static constexpr uint8_t  NEXT_SHIFT          = 24;
+
+  // For values_[1].
+  static constexpr uint64_t NUM_PHANTOMS_MASK   = (1ULL << 16) - 1;
+  static constexpr uint8_t  NUM_PHANTOMS_SHIFT  = 0;
+  static constexpr uint64_t FAILURE_COUNT_MASK  = (1ULL << 8) - 1;
+  static constexpr uint8_t  FAILURE_COUNT_SHIFT = 16;
+  static constexpr uint64_t PREV_MASK           = (1ULL << 40) - 1;
+  static constexpr uint8_t  PREV_SHIFT          = 24;
+
+ public:
+  static DoubleArrayBlock empty_block() {
+    return DoubleArrayBlock(0, BLOCK_SIZE << NUM_PHANTOMS_SHIFT);
+  }
+
+  // Return the first phantom node.
+  uint64_t first_phantom() const {
+    return (values_[0] >> FIRST_PHANTOM_SHIFT) & FIRST_PHANTOM_MASK;
+  }
+  // Return the level.
+  uint64_t level() const {
+    return (values_[0] >> LEVEL_SHIFT) & LEVEL_MASK;
+  }
+  // Return the next block ID of the same level.
+  uint64_t next() const {
+    return (values_[0] >> NEXT_SHIFT) & NEXT_MASK;
+  }
+
+  // Return the number of phantom nodes.
+  uint64_t num_phantoms() const {
+    return (values_[1] >> NUM_PHANTOMS_SHIFT) & NUM_PHANTOMS_MASK;
+  }
+  // Return the failure count.
+  uint64_t failure_count() const {
+    return (values_[1] >> FAILURE_COUNT_SHIFT) & FAILURE_COUNT_MASK;
+  }
+  // Return the previous block ID of the same level.
+  uint64_t prev() const {
+    return (values_[1] >> PREV_SHIFT) & PREV_MASK;
+  }
+
+  void set_first_phantom(uint64_t first_phantom) {
+    values_[0] = (values_[0] & ~(FIRST_PHANTOM_MASK << FIRST_PHANTOM_SHIFT)) |
+                 ((first_phantom & FIRST_PHANTOM_MASK) << FIRST_PHANTOM_SHIFT);
+  }
+  void set_level(uint64_t level) {
+    values_[0] = (values_[0] & ~(LEVEL_MASK << LEVEL_SHIFT)) |
+                 ((level & LEVEL_MASK) << LEVEL_SHIFT);
+  }
+  void set_next(uint64_t next) {
+    values_[0] = (values_[0] & ~(NEXT_MASK << NEXT_SHIFT)) |
+                 ((next & NEXT_MASK) << NEXT_SHIFT);
+  }
+
+  void set_num_phantoms(uint64_t num_phantoms) {
+    values_[1] = (values_[1] & ~(NUM_PHANTOMS_MASK << NUM_PHANTOMS_SHIFT)) |
+                 ((num_phantoms & NUM_PHANTOMS_MASK) << NUM_PHANTOMS_SHIFT);
+  }
+  void set_failure_count(uint64_t failure_count) {
+    values_[1] = (values_[1] & ~(FAILURE_COUNT_MASK << FAILURE_COUNT_SHIFT)) |
+                 ((failure_count & FAILURE_COUNT_MASK) << FAILURE_COUNT_SHIFT);
+  }
+  void set_prev(uint64_t prev) {
+    values_[1] = (values_[1] & ~(PREV_MASK << PREV_SHIFT)) |
+                 ((prev & PREV_MASK) << PREV_SHIFT);
+  }
+
+ private:
+  uint64_t values_[2];
+
+  DoubleArrayBlock(uint64_t value_0, uint64_t value_1)
+       : values_{ value_0, value_1 } {}
+};
+
+// The internal structure of DoubleArray is as follows:
+// - Common
+//      62 ( 1): is_phantom
+//      63 ( 1): is_origin
+// - Phantom: is_phantom
+//    0- 8 ( 9): next
+//    9-17 ( 9): prev
+//   18-61 (44): reserved
+// - NonPhantom: !is_phantom
+//    0- 8 ( 9): label
+//      60 ( 1): has_sibling
+//      61 ( 1): is_leaf
+// - Leaf: !is_phantom && is_leaf
+//    9-48 (40): key_id
+//   49-59 (11): reserved
+// - NonLeaf: !is_phantom && !is_leaf
+//    9-17 ( 9): child
+//   18-59 (42): offset
+// where 0 is the LSB and 63 is the MSB.
+class DoubleArrayNode {
+  static constexpr uint64_t IS_PHANTOM_FLAG  = 1ULL << 62;
+  static constexpr uint64_t IS_ORIGIN_FLAG   = 1ULL << 63;
+
+  static constexpr uint64_t NEXT_MASK        = (1ULL << 9) - 1;
+  static constexpr uint8_t  NEXT_SHIFT       = 0;
+  static constexpr uint64_t PREV_MASK        = (1ULL << 9) - 1;
+  static constexpr uint8_t  PREV_SHIFT       = 9;
+
+  static constexpr uint64_t LABEL_MASK       = (1ULL << 9) - 1;
+  static constexpr uint8_t  LABEL_SHIFT      = 0;
+  static constexpr uint64_t HAS_SIBLING_FLAG = 1ULL << 60;
+  static constexpr uint64_t IS_LEAF_FLAG     = 1ULL << 61;
+
+  static constexpr uint64_t KEY_ID_MASK      = (1ULL << 40) - 1;
+  static constexpr uint8_t  KEY_ID_SHIFT     = 9;
+
+  static constexpr uint64_t CHILD_MASK       = (1ULL << 9) - 1;
+  static constexpr uint8_t  CHILD_SHIFT      = 9;
+  static constexpr uint64_t OFFSET_MASK      = (1ULL << 42) - 1;
+  static constexpr uint8_t  OFFSET_SHIFT     = 18;
+
+ public:
+  // Create a phantom node.
+  static DoubleArrayNode phantom_node(uint64_t next, uint64_t prev) {
+    return DoubleArrayNode(IS_PHANTOM_FLAG |
+                           ((next & NEXT_MASK) << NEXT_SHIFT) |
+                           ((prev & PREV_MASK) << PREV_SHIFT));
+  }
+
+  // Return true iff this node is a phantom node.
+  bool is_phantom() const {
+    return value_ & IS_PHANTOM_FLAG;
+  }
+  // Return true iff the ID of this node is used as an offset.
+  bool is_origin() const {
+    return value_ & IS_ORIGIN_FLAG;
+  }
+
+  // Return the ID of the next phantom node in the same block.
+  uint64_t next() const {
+    return (value_ >> NEXT_SHIFT) & NEXT_MASK;
+  }
+  // Return the ID of the prev phantom node in the same block.
+  uint64_t prev() const {
+    return (value_ >> PREV_SHIFT) & PREV_MASK;
+  }
+
+  // Return the label.
+  // Note that a phantom node returns an invalid label.
+  uint64_t label() const {
+    return (value_ >> LABEL_SHIFT) &
+           ((IS_PHANTOM_FLAG >> LABEL_SHIFT) | LABEL_MASK);
+  }
+  // Return true iff this node has a sibling with a greater label.
+  bool has_sibling() const {
+    return value_ & HAS_SIBLING_FLAG;
+  }
+  // Return true iff this node is a leaf node.
+  bool is_leaf() const {
+    return value_ & IS_LEAF_FLAG;
+  }
+
+  // Return the associated key ID.
+  uint64_t key_id() const {
+    return (value_ >> KEY_ID_SHIFT) & KEY_ID_MASK;
+  }
+
+  // Return the ID of the child node with the least label.
+  uint64_t child() const {
+    return (value_ >> CHILD_SHIFT) & CHILD_MASK;
+  }
+  // Return the offset to child nodes.
+  uint64_t offset() const {
+    return (value_ >> OFFSET_SHIFT) & OFFSET_MASK;
+  }
+
+  void unset_is_phantom() {
+    value_ = (value_ & IS_ORIGIN_FLAG) |
+             (NODE_INVALID_LABEL << LABEL_SHIFT) |
+             (NODE_INVALID_LABEL << CHILD_SHIFT) |
+             (NODE_INVALID_OFFSET << OFFSET_SHIFT);
+  }
+  void set_is_origin(bool is_origin) {
+    if (is_origin) {
+      value_ |= IS_ORIGIN_FLAG;
+    } else {
+      value_ &= ~IS_ORIGIN_FLAG;
+    }
+  }
+
+  void set_next(uint64_t next) {
+    value_ = (value_ & ~(NEXT_MASK << NEXT_SHIFT)) |
+             ((next & NEXT_MASK) << NEXT_SHIFT);
+  }
+  void set_prev(uint64_t prev) {
+    value_ = (value_ & ~(PREV_MASK << PREV_SHIFT)) |
+             ((prev & PREV_MASK) << PREV_SHIFT);
+  }
+  void set_next_and_prev(uint64_t next, uint64_t prev) {
+    constexpr uint64_t NEXT_AND_PREV_MASK =
+        (NEXT_MASK << NEXT_SHIFT) | (PREV_MASK << PREV_SHIFT);
+    value_ = (value_ & ~NEXT_AND_PREV_MASK) |
+             ((next & NEXT_MASK) << NEXT_SHIFT) |
+             ((prev & PREV_MASK) << PREV_SHIFT);
+  }
+
+  void set_label(uint64_t label) {
+    value_ = (value_ & ~(LABEL_MASK << LABEL_SHIFT)) |
+             ((label & LABEL_MASK) << LABEL_SHIFT);
+  }
+  void set_has_sibling() {
+    value_ |= HAS_SIBLING_FLAG;
+  }
+  // set_is_leaf() is not provided because set_key_id() sets IS_LEAF_FLAG.
+
+  void set_key_id(uint64_t key_id) {
+    value_ = (value_ & ~(KEY_ID_MASK << KEY_ID_SHIFT)) | IS_LEAF_FLAG |
+             ((key_id & KEY_ID_MASK) << KEY_ID_SHIFT);
+  }
+
+  void set_child(uint64_t child) {
+    value_ = (value_ & ~(CHILD_MASK << CHILD_SHIFT)) |
+             ((child & CHILD_MASK) << CHILD_SHIFT);
+  }
+  void set_offset(uint64_t offset) {
+    if (value_ & IS_LEAF_FLAG) {
+      value_ = (value_ & ~(IS_LEAF_FLAG | (OFFSET_MASK << OFFSET_SHIFT) |
+                           (CHILD_MASK << CHILD_SHIFT))) |
+               (offset << OFFSET_SHIFT) |
+               (NODE_INVALID_LABEL << CHILD_SHIFT);
+    } else {
+      value_ = (value_ & ~(OFFSET_MASK << OFFSET_SHIFT)) |
+               (offset << OFFSET_SHIFT);
+    }
+  }
+
+ private:
+  uint64_t value_;
+
+  explicit DoubleArrayNode(uint64_t value) : value_(value) {}
+};
 
 template <typename T>
 Map<T> *DoubleArray<T>::create(Storage *, uint32_t, const MapOptions &) {
