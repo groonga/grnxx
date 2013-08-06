@@ -44,6 +44,8 @@ class Patricia : public Map<T> {
   using Header = PatriciaHeader;
   using Node = PatriciaNode;
   using NodeArray = Array<Node, 65536, 8192>;
+  using CacheEntry = PatriciaCacheEntry;
+  using Cache = Array<CacheEntry>;
 
  public:
   using Key = typename Map<T>::Key;
@@ -81,11 +83,23 @@ class Patricia : public Map<T> {
   uint32_t storage_node_id_;
   Header *header_;
   std::unique_ptr<NodeArray> nodes_;
+  std::unique_ptr<NodeArray> old_nodes_;
   std::unique_ptr<KeyPool<T>> pool_;
+  std::unique_ptr<Cache> cache_;
+  uint64_t nodes_id_;
 
   void create_map(Storage *storage, uint32_t storage_node_id,
                   const MapOptions &options);
   void open_map(Storage *storage, uint32_t storage_node_id);
+
+  // Resize "nodes_" and "cache_".
+  void defrag_nodes();
+  // Recursively arrange nodes.
+  uint64_t rearrange_nodes(uint64_t src_node_id, uint64_t dest_node_id,
+                           uint64_t next_node_id, NodeArray *dest_nodes);
+
+  // Refresh "nodes_" and "cache_" if new ones are available.
+  void refresh_nodes();
 
   static uint64_t get_ith_bit(KeyArg key, uint64_t bit_pos);
   static uint64_t count_common_prefix_bits(KeyArg lhs, KeyArg rhs);

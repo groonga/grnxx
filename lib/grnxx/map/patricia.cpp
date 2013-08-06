@@ -210,7 +210,10 @@ Patricia<T>::Patricia()
       storage_node_id_(STORAGE_INVALID_NODE_ID),
       header_(nullptr),
       nodes_(),
-      pool_() {}
+      old_nodes_(),
+      pool_(),
+      cache_(),
+      nodes_id_(0) {}
 
 template <typename T>
 Patricia<T>::~Patricia() {}
@@ -271,6 +274,7 @@ bool Patricia<T>::get(int64_t key_id, Key *key) {
 
 template <typename T>
 bool Patricia<T>::unset(int64_t key_id) {
+  refresh_nodes();
   Key key;
   if (!get(key_id, &key)) {
     // Not found.
@@ -302,6 +306,7 @@ bool Patricia<T>::unset(int64_t key_id) {
 
 template <typename T>
 bool Patricia<T>::reset(int64_t key_id, KeyArg dest_key) {
+  refresh_nodes();
   // Find the source key.
   Key src_key;
   if (!get(key_id, &src_key)) {
@@ -385,6 +390,7 @@ bool Patricia<T>::reset(int64_t key_id, KeyArg dest_key) {
 
 template <typename T>
 bool Patricia<T>::find(KeyArg key, int64_t *key_id) {
+  refresh_nodes();
   const Key normalized_key = Helper<T>::normalize(key);
   uint64_t node_id = ROOT_NODE_ID;
   Node node = nodes_->get(node_id);
@@ -411,7 +417,21 @@ bool Patricia<T>::find(KeyArg key, int64_t *key_id) {
 
 template <typename T>
 bool Patricia<T>::add(KeyArg key, int64_t *key_id) {
+  refresh_nodes();
   const Key normalized_key = Helper<T>::normalize(key);
+  const uint64_t hash_value = Hash<Key>()(normalized_key);
+  CacheEntry &cache = cache_->get_value(hash_value & (cache_->size() - 1));
+  if (cache && cache.test_hash_value(hash_value)) {
+    Key cached_key;
+    if (pool_->get(cache.key_id(), &cached_key)) {
+      if (key == cached_key) {
+        if (key_id) {
+          *key_id = cache.key_id();
+        }
+        return false;
+      }
+    }
+  }
   uint64_t node_id = ROOT_NODE_ID;
   Node *node = &nodes_->get_value(node_id);
   if (node->status() == NODE_DEAD) {
@@ -421,6 +441,7 @@ bool Patricia<T>::add(KeyArg key, int64_t *key_id) {
     if (key_id) {
       *key_id = next_key_id;
     }
+    cache.set(next_key_id, hash_value);
     return true;
   }
   Node *history[(sizeof(Key) * 8) + 1];
@@ -439,6 +460,7 @@ bool Patricia<T>::add(KeyArg key, int64_t *key_id) {
     if (key_id) {
       *key_id = node->key_id();
     }
+    cache.set(node->key_id(), hash_value);
     return false;
   }
   // Find the branching point in "history".
@@ -463,11 +485,13 @@ bool Patricia<T>::add(KeyArg key, int64_t *key_id) {
   if (key_id) {
     *key_id = next_key_id;
   }
+  cache.set(next_key_id, hash_value);
   return true;
 }
 
 template <typename T>
 bool Patricia<T>::remove(KeyArg key) {
+  refresh_nodes();
   const Key normalized_key = Helper<T>::normalize(key);
   uint64_t node_id = ROOT_NODE_ID;
   Node *node = &nodes_->get_value(node_id);
@@ -500,6 +524,7 @@ bool Patricia<T>::remove(KeyArg key) {
 
 template <typename T>
 bool Patricia<T>::replace(KeyArg src_key, KeyArg dest_key, int64_t *key_id) {
+  refresh_nodes();
   const Key src_normalized_key = Helper<T>::normalize(src_key);
   uint64_t node_id = ROOT_NODE_ID;
   Node *src_node = &nodes_->get_value(node_id);
@@ -588,15 +613,46 @@ bool Patricia<T>::replace(KeyArg src_key, KeyArg dest_key, int64_t *key_id) {
 
 template <typename T>
 void Patricia<T>::defrag(double usage_rate_threshold) {
-  // TODO
+  refresh_nodes();
+  if (max_key_id() == MAP_MIN_KEY_ID) {
+    // Nothing to do.
+    return;
+  }
+  defrag_nodes();
   pool_->defrag(usage_rate_threshold);
 }
 
 template <typename T>
 void Patricia<T>::truncate() {
-  Node &root_node = nodes_->get_value(ROOT_NODE_ID);
-  pool_->truncate();
-  root_node = Node::dead_node();
+  refresh_nodes();
+  if (max_key_id() == MAP_MIN_KEY_ID) {
+    // Nothing to do.
+    return;
+  }
+  std::unique_ptr<NodeArray> new_nodes(
+      NodeArray::create(storage_, storage_node_id_, NODE_ARRAY_SIZE));
+  try {
+    new_nodes->set(ROOT_NODE_ID, Node::dead_node());
+    new_nodes->set(DUMMY_NODE_ID, Node::dead_node());
+    for (uint64_t i = 0; i < CACHE_SIZE; ++i) {
+      cache_->set(i, CacheEntry::invalid_entry());
+    }
+    pool_->truncate();
+  } catch (...) {
+    NodeArray::unlink(storage_, new_nodes->storage_node_id());
+    throw;
+  }
+  {
+    // Validate a new nodes.
+    Lock lock(&header_->mutex);
+    header_->nodes_storage_node_id = new_nodes->storage_node_id();
+    header_->next_node_id = 2;
+    ++header_->nodes_id;
+    old_nodes_.swap(new_nodes);
+    nodes_.swap(old_nodes_);
+    nodes_id_ = header_->nodes_id;
+  }
+  NodeArray::unlink(storage_, old_nodes_->storage_node_id());
 }
 
 template <typename T>
@@ -611,8 +667,11 @@ void Patricia<T>::create_map(Storage *storage, uint32_t storage_node_id,
     *header_ = Header();
     nodes_.reset(NodeArray::create(storage, storage_node_id_, NODE_ARRAY_SIZE));
     pool_.reset(KeyPool<T>::create(storage, storage_node_id_));
+    cache_.reset(Cache::create(storage, storage_node_id_,
+                               CACHE_SIZE, CacheEntry::invalid_entry()));
     header_->nodes_storage_node_id = nodes_->storage_node_id();
     header_->pool_storage_node_id = pool_->storage_node_id();
+    header_->cache_storage_node_id = cache_->storage_node_id();
     nodes_->set(ROOT_NODE_ID, Node::dead_node());
     nodes_->set(DUMMY_NODE_ID, Node::dead_node());
   } catch (...) {
@@ -637,8 +696,85 @@ void Patricia<T>::open_map(Storage *storage, uint32_t storage_node_id) {
                   << ", actual = " << header_->common_header.format();
     throw LogicError();
   }
+  Lock lock(&header_->mutex);
   nodes_.reset(NodeArray::open(storage, header_->nodes_storage_node_id));
   pool_.reset(KeyPool<T>::open(storage, header_->pool_storage_node_id));
+  cache_.reset(Cache::open(storage, header_->cache_storage_node_id));
+  nodes_id_ = header_->nodes_id;
+}
+
+template <typename T>
+void Patricia<T>::defrag_nodes() {
+  // Create a new nodes.
+  std::unique_ptr<NodeArray> new_nodes(
+      NodeArray::create(storage_, storage_node_id_, NODE_ARRAY_SIZE));
+  uint64_t next_node_id = 2;
+  try {
+    next_node_id = rearrange_nodes(ROOT_NODE_ID, ROOT_NODE_ID,
+                                   next_node_id, new_nodes.get());
+    next_node_id = rearrange_nodes(DUMMY_NODE_ID, DUMMY_NODE_ID,
+                                   next_node_id, new_nodes.get());
+  } catch (...) {
+    NodeArray::unlink(storage_, new_nodes->storage_node_id());
+    throw;
+  }
+  {
+    // Validate a new nodes.
+    Lock lock(&header_->mutex);
+    header_->nodes_storage_node_id = new_nodes->storage_node_id();
+    header_->next_node_id = next_node_id;
+    ++header_->nodes_id;
+    old_nodes_.swap(new_nodes);
+    nodes_.swap(old_nodes_);
+    nodes_id_ = header_->nodes_id;
+  }
+  NodeArray::unlink(storage_, old_nodes_->storage_node_id());
+}
+
+template <typename T>
+uint64_t Patricia<T>::rearrange_nodes(uint64_t src_node_id,
+                                      uint64_t dest_node_id,
+                                      uint64_t next_node_id,
+                                      NodeArray *dest_nodes) {
+  const Node src_node = nodes_->get(src_node_id);
+  Node &dest_node = dest_nodes->get_value(dest_node_id);
+  switch (src_node.status()) {
+    case NODE_DEAD:
+    case NODE_LEAF: {
+      dest_node = src_node;
+      return next_node_id;
+    }
+    case NODE_BRANCH: {
+      dest_node = Node::branch_node(src_node.bit_pos(), next_node_id);
+      break;
+    }
+    case NODE_TERMINAL: {
+      dest_node = Node::terminal_node(src_node.bit_size(), next_node_id);
+      break;
+    }
+  }
+  src_node_id = src_node.offset();
+  dest_node_id = next_node_id;
+  next_node_id += 2;
+  next_node_id = rearrange_nodes(src_node_id, dest_node_id,
+                                 next_node_id, dest_nodes);
+  next_node_id = rearrange_nodes(src_node_id + 1, dest_node_id + 1,
+                                 next_node_id, dest_nodes);
+  return next_node_id;
+}
+
+template <typename T>
+void Patricia<T>::refresh_nodes() {
+  if (nodes_id_ != header_->nodes_id) {
+    Lock lock(&header_->mutex);
+    if (nodes_id_ != header_->nodes_id) {
+      std::unique_ptr<NodeArray> new_nodes(
+          NodeArray::open(storage_, header_->nodes_storage_node_id));
+      old_nodes_.swap(new_nodes);
+      nodes_.swap(old_nodes_);
+      nodes_id_ = header_->nodes_id;
+    }
+  }
 }
 
 template <typename T>
@@ -850,9 +986,7 @@ bool Patricia<Bytes>::reset(int64_t key_id, KeyArg dest_key) {
     src_prev_node = src_node;
   }
   if (header_->next_node_id >= NODE_ARRAY_SIZE) {
-    GRNXX_ERROR() << "too many nodes: next_node_id = " << header_->next_node_id
-                  << ", max_node_id = " << NODE_ARRAY_SIZE;
-    throw LogicError();
+    defrag_nodes();
   }
   // Add the destination key.
   constexpr std::size_t HISTORY_SIZE = 8;
@@ -1048,9 +1182,7 @@ bool Patricia<Bytes>::add(KeyArg key, int64_t *key_id) {
     }
   }
   if (header_->next_node_id >= NODE_ARRAY_SIZE) {
-    GRNXX_ERROR() << "too many nodes: next_node_id = " << header_->next_node_id
-                  << ", max_node_id = " << NODE_ARRAY_SIZE;
-    throw LogicError();
+    defrag_nodes();
   }
   uint64_t node_id = ROOT_NODE_ID;
   Node *node = &nodes_->get_value(node_id);
@@ -1279,9 +1411,7 @@ bool Patricia<Bytes>::replace(KeyArg src_key, KeyArg dest_key,
     src_node = &nodes_->get_value(src_node_id);
   }
   if (header_->next_node_id >= NODE_ARRAY_SIZE) {
-    GRNXX_ERROR() << "too many nodes: next_node_id = " << header_->next_node_id
-                  << ", max_node_id = " << NODE_ARRAY_SIZE;
-    throw LogicError();
+    defrag_nodes();
   }
   // Add the destination key.
   constexpr std::size_t HISTORY_SIZE = 8;
