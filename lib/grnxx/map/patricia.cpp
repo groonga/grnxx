@@ -1475,6 +1475,11 @@ bool Patricia<Bytes>::find_longest_prefix_match(KeyArg query, int64_t *key_id,
 }
 
 void Patricia<Bytes>::defrag(double usage_rate_threshold) {
+  refresh_nodes();
+  if (max_key_id() == MAP_MIN_KEY_ID) {
+    // Nothing to do.
+    return;
+  }
   defrag_nodes();
   pool_->defrag(usage_rate_threshold);
 }

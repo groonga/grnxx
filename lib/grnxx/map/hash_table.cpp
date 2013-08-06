@@ -336,6 +336,11 @@ bool HashTable<T>::replace(KeyArg src_key, KeyArg dest_key, int64_t *key_id) {
 
 template <typename T>
 void HashTable<T>::defrag(double usage_rate_threshold) {
+  refresh_table();
+  if (max_key_id() == MAP_MIN_KEY_ID) {
+    // Nothing to do.
+    return;
+  }
   rebuild();
   pool_->defrag(usage_rate_threshold);
 }
