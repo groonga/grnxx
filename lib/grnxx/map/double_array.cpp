@@ -537,6 +537,11 @@ bool DoubleArray<Bytes>::replace(KeyArg src_key, KeyArg dest_key,
   return true;
 }
 
+void DoubleArray<Bytes>::defrag(double usage_rate_threshold) {
+  // TODO
+  pool_->defrag(usage_rate_threshold);
+}
+
 void DoubleArray<Bytes>::truncate() {
   // TODO: How to recycle nodes.
   Node * const node = &nodes_->get_value(ROOT_NODE_ID);

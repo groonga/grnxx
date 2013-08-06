@@ -587,6 +587,12 @@ bool Patricia<T>::replace(KeyArg src_key, KeyArg dest_key, int64_t *key_id) {
 }
 
 template <typename T>
+void Patricia<T>::defrag(double usage_rate_threshold) {
+  // TODO
+  pool_->defrag(usage_rate_threshold);
+}
+
+template <typename T>
 void Patricia<T>::truncate() {
   Node &root_node = nodes_->get_value(ROOT_NODE_ID);
   pool_->truncate();
@@ -1466,6 +1472,11 @@ bool Patricia<Bytes>::find_longest_prefix_match(KeyArg query, int64_t *key_id,
       }
     }
   }
+}
+
+void Patricia<Bytes>::defrag(double usage_rate_threshold) {
+  defrag_nodes();
+  pool_->defrag(usage_rate_threshold);
 }
 
 void Patricia<Bytes>::truncate() {

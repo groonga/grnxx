@@ -222,6 +222,11 @@ bool ArrayMap<T>::replace(KeyArg src_key, KeyArg dest_key, int64_t *key_id) {
 }
 
 template <typename T>
+void ArrayMap<T>::defrag(double usage_rate_threshold) {
+  pool_->defrag(usage_rate_threshold);
+}
+
+template <typename T>
 void ArrayMap<T>::truncate() {
   pool_->truncate();
 }

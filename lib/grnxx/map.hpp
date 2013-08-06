@@ -121,6 +121,9 @@ class Map {
                                          int64_t *key_id = nullptr,
                                          Key *key = nullptr);
 
+  // Defrag components.
+  virtual void defrag(double usage_rate_threshold);
+
   // Remove all the keys in "*this" and return true on success.
   virtual void truncate();
 
