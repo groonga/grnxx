@@ -348,6 +348,8 @@ class DoubleArrayImpl {
   ~DoubleArrayImpl();
 
   static DoubleArrayImpl *create(Storage *storage, uint32_t storage_node_id);
+  static DoubleArrayImpl *create(Storage *storage, uint32_t storage_node_id,
+                                 DoubleArrayImpl *src_impl);
   static DoubleArrayImpl *open(Storage *storage, uint32_t storage_node_id);
 
   static void unlink(Storage *storage, uint32_t storage_node_id) {
@@ -378,8 +380,6 @@ class DoubleArrayImpl {
   bool remove(KeyArg key);
   bool replace(KeyArg src_key, KeyArg dest_key, int64_t *key_id = nullptr);
 
-  void defrag(double usage_rate_threshold);
-
   bool find_longest_prefix_match(KeyArg query,
                                  int64_t *key_id = nullptr,
                                  Key *key = nullptr);
@@ -404,7 +404,11 @@ class DoubleArrayImpl {
   Pool *pool_;
 
   void create_impl(Storage *storage, uint32_t storage_node_id);
+  void create_impl(Storage *storage, uint32_t storage_node_id,
+                   DoubleArrayImpl *src_impl);
   void open_impl(Storage *storage, uint32_t storage_node_id);
+
+  void defrag(DoubleArrayImpl *src_impl, uint64_t src, uint64_t dest);
 
   bool replace_key(int64_t key_id, KeyArg src_key, KeyArg dest_key);
 
@@ -447,6 +451,18 @@ DoubleArrayImpl *DoubleArrayImpl::create(Storage *storage,
     throw MemoryError();
   }
   impl->create_impl(storage, storage_node_id);
+  return impl.release();
+}
+
+DoubleArrayImpl *DoubleArrayImpl::create(Storage *storage,
+                                         uint32_t storage_node_id,
+                                         DoubleArrayImpl *src_impl) {
+  std::unique_ptr<DoubleArrayImpl> impl(new (std::nothrow) DoubleArrayImpl);
+  if (!impl) {
+    GRNXX_ERROR() << "new grnxx::map::DoubleArrayImpl failed";
+    throw MemoryError();
+  }
+  impl->create_impl(storage, storage_node_id, src_impl);
   return impl.release();
 }
 
@@ -586,11 +602,6 @@ bool DoubleArrayImpl::replace(KeyArg src_key, KeyArg dest_key,
   return true;
 }
 
-void DoubleArrayImpl::defrag(double usage_rate_threshold) {
-  // TODO
-  pool_->defrag(usage_rate_threshold);
-}
-
 bool DoubleArrayImpl::find_longest_prefix_match(KeyArg query,
                                                    int64_t *key_id,
                                                    Key *key) {
@@ -686,6 +697,19 @@ void DoubleArrayImpl::create_impl(Storage *storage, uint32_t storage_node_id) {
   }
 }
 
+void DoubleArrayImpl::create_impl(Storage *storage, uint32_t storage_node_id,
+                                  DoubleArrayImpl *src_impl) {
+  create_impl(storage, storage_node_id);
+  try {
+    // Build a double-array from "src_impl".
+    pool_ = src_impl->pool_;
+    defrag(src_impl, ROOT_NODE_ID, ROOT_NODE_ID);
+  } catch (...) {
+    storage->unlink_node(storage_node_id_);
+    throw;
+  }
+}
+
 void DoubleArrayImpl::open_impl(Storage *storage, uint32_t storage_node_id) {
   storage_ = storage;
   storage_node_id_ = storage_node_id;
@@ -720,6 +744,64 @@ bool DoubleArrayImpl::replace_key(int64_t key_id, KeyArg src_key,
   dest_node->set_key_id(key_id);
   src_node->set_offset(NODE_INVALID_OFFSET);
   return true;
+}
+
+void DoubleArrayImpl::defrag(DoubleArrayImpl *src_impl, uint64_t src_node_id,
+                             uint64_t dest_node_id) {
+  const Node src_node = src_impl->nodes_->get(src_node_id);
+  Node &dest_node = nodes_->get_value(dest_node_id);
+  if (src_node.is_leaf()) {
+    dest_node.set_key_id(src_node.key_id());
+    return;
+  }
+
+  const uint64_t src_offset = src_node.offset();
+  uint64_t dest_offset;
+  {
+    uint64_t labels[NODE_MAX_LABEL + 1];
+    uint64_t num_labels = 0;
+    uint64_t label = src_node.child();
+    while (label != NODE_INVALID_LABEL) {
+      const uint64_t child_node_id = src_offset ^ label;
+      const Node child_node = src_impl->nodes_->get(child_node_id);
+      if (child_node.is_leaf() || (child_node.child() != NODE_INVALID_LABEL)) {
+        labels[num_labels++] = label;
+      }
+      if (child_node.has_sibling()) {
+        label = src_impl->siblings_->get(child_node_id);
+      } else {
+        label = NODE_INVALID_LABEL;
+      }
+    }
+    if (num_labels == 0) {
+      return;
+    }
+
+    dest_offset = find_offset(labels, num_labels);
+    for (uint64_t i = 0; i < num_labels; ++i) {
+      const uint64_t child_node_id = dest_offset ^ labels[i];
+      reserve_node(child_node_id);
+      Node &child_node = nodes_->get_value(child_node_id);
+      child_node.set_label(labels[i]);
+      if ((i + 1) < num_labels) {
+        child_node.set_has_sibling();
+        siblings_->set(child_node_id, labels[i + 1]);
+      }
+    }
+
+    nodes_->get_value(dest_offset).set_is_origin(true);
+    dest_node.set_offset(dest_offset);
+    dest_node.set_child(labels[0]);
+  }
+
+  uint16_t label = dest_node.child();
+  while (label != NODE_INVALID_LABEL) {
+    const uint64_t next_src_node_id = src_offset ^ label;
+    const uint64_t next_dest_node_id = dest_offset ^ label;
+    defrag(src_impl, next_src_node_id, next_dest_node_id);
+    label = nodes_->get_value(next_dest_node_id).has_sibling() ?
+        siblings_->get(next_dest_node_id) : NODE_INVALID_LABEL;
+  }
 }
 
 bool DoubleArrayImpl::find_leaf(KeyArg key, Node **leaf_node,
@@ -1222,8 +1304,25 @@ bool DoubleArray<Bytes>::replace(KeyArg src_key, KeyArg dest_key,
 }
 
 void DoubleArray<Bytes>::defrag(double usage_rate_threshold) {
-  // TODO
-  impl_->defrag(usage_rate_threshold);
+  refresh_impl();
+  if (max_key_id() == MAP_MIN_KEY_ID) {
+    // Nothing to do.
+    return;
+  }
+  // Create a new impl.
+  std::unique_ptr<Impl> new_impl(
+      Impl::create(storage_, storage_node_id_, impl_.get()));
+  {
+    // Validate a new impl.
+    Lock lock(&header_->mutex);
+    header_->impl_storage_node_id = new_impl->storage_node_id();
+    ++header_->impl_id;
+    old_impl_.swap(new_impl);
+    impl_.swap(old_impl_);
+    impl_id_ = header_->impl_id;
+  }
+  Impl::unlink(storage_, old_impl_->storage_node_id());
+  pool_->defrag(usage_rate_threshold);
 }
 
 void DoubleArray<Bytes>::truncate() {
