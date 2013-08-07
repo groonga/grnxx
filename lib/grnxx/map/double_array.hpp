@@ -22,7 +22,6 @@
 
 #include <memory>
 
-#include "grnxx/array.hpp"
 #include "grnxx/bytes.hpp"
 #include "grnxx/map.hpp"
 #include "grnxx/map_cursor.hpp"
@@ -38,8 +37,7 @@ namespace map {
 template <typename T> class KeyPool;
 
 struct DoubleArrayHeader;
-class DoubleArrayBlock;
-class DoubleArrayNode;
+class DoubleArrayImpl;
 
 template <typename T>
 class DoubleArray {
@@ -52,16 +50,8 @@ class DoubleArray {
 template <>
 class DoubleArray<Bytes> : public Map<Bytes> {
   using Header = DoubleArrayHeader;
-  using Node = DoubleArrayNode;
-  using Block = DoubleArrayBlock;
-
-  using NodeArray    = Array<Node,     65536, 8192>;  // 42-bit
-  using SiblingArray = Array<uint8_t, 262144, 4096>;  // 42-bit
-  using BlockArray   = Array<Block,     8192, 1024>;  // 33-bit
-
-  static constexpr uint64_t NODE_ARRAY_SIZE    = 1ULL << 42;
-  static constexpr uint64_t SIBLING_ARRAY_SIZE = 1ULL << 42;
-  static constexpr uint64_t BLOCK_ARRAY_SIZE   = 1ULL << 33;
+  using Impl   = DoubleArrayImpl;
+  using Pool   = KeyPool<Bytes>;
 
  public:
   using Key = typename Map<Bytes>::Key;
@@ -112,35 +102,12 @@ class DoubleArray<Bytes> : public Map<Bytes> {
   Storage *storage_;
   uint32_t storage_node_id_;
   Header *header_;
-  std::unique_ptr<NodeArray> nodes_;
-  std::unique_ptr<SiblingArray> siblings_;
-  std::unique_ptr<BlockArray> blocks_;
-  std::unique_ptr<KeyPool<Bytes>> pool_;
+  std::unique_ptr<Impl> impl_;
+  std::unique_ptr<Pool> pool_;
 
   void create_map(Storage *storage, uint32_t storage_node_id,
                   const MapOptions &options);
   void open_map(Storage *storage, uint32_t storage_node_id);
-
-  bool replace_key(int64_t key_id, KeyArg src_key, KeyArg dest_key);
-
-  bool find_leaf(KeyArg key, Node **leaf_node, uint64_t *leaf_key_pos);
-  bool insert_leaf(KeyArg key, Node *node, uint64_t key_pos, Node **leaf_node);
-
-  Node *insert_node(Node *node, uint64_t label);
-  Node *separate(Node *node, uint64_t labels[2]);
-
-  void resolve(Node *node, uint64_t label);
-  void migrate_nodes(Node *node, uint64_t dest_offset,
-                     const uint64_t *labels, uint64_t num_labels);
-
-  uint64_t find_offset(const uint64_t *labels, uint64_t num_labels);
-
-  Node *reserve_node(uint64_t node_id);
-  Block *reserve_block(uint64_t block_id);
-
-  void update_block_level(uint64_t block_id, Block *block, uint64_t level);
-  void set_block_level(uint64_t block_id, Block *block, uint64_t level);
-  void unset_block_level(uint64_t block_id, Block *block);
 };
 
 }  // namespace map
