@@ -103,11 +103,15 @@ class DoubleArray<Bytes> : public Map<Bytes> {
   uint32_t storage_node_id_;
   Header *header_;
   std::unique_ptr<Impl> impl_;
+  std::unique_ptr<Impl> old_impl_;
   std::unique_ptr<Pool> pool_;
+  uint64_t impl_id_;
 
   void create_map(Storage *storage, uint32_t storage_node_id,
                   const MapOptions &options);
   void open_map(Storage *storage, uint32_t storage_node_id);
+
+  void refresh_impl();
 };
 
 }  // namespace map

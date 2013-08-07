@@ -23,10 +23,12 @@
 #include "grnxx/exception.hpp"
 #include "grnxx/geo_point.hpp"
 #include "grnxx/intrinsic.hpp"
+#include "grnxx/lock.hpp"
 #include "grnxx/logger.hpp"
 #include "grnxx/map/common_header.hpp"
 #include "grnxx/map/helper.hpp"
 #include "grnxx/map/key_pool.hpp"
+#include "grnxx/mutex.hpp"
 #include "grnxx/storage.hpp"
 
 namespace grnxx {
@@ -345,9 +347,12 @@ class DoubleArrayImpl {
   DoubleArrayImpl();
   ~DoubleArrayImpl();
 
-  static DoubleArrayImpl *create(Storage *storage, uint32_t storage_node_id,
-                                 const MapOptions &options);
+  static DoubleArrayImpl *create(Storage *storage, uint32_t storage_node_id);
   static DoubleArrayImpl *open(Storage *storage, uint32_t storage_node_id);
+
+  static void unlink(Storage *storage, uint32_t storage_node_id) {
+    storage->unlink_node(storage_node_id);
+  }
 
   void set_pool(Pool *pool) {
     pool_ = pool;
@@ -375,8 +380,6 @@ class DoubleArrayImpl {
 
   void defrag(double usage_rate_threshold);
 
-  void truncate();
-
   bool find_longest_prefix_match(KeyArg query,
                                  int64_t *key_id = nullptr,
                                  Key *key = nullptr);
@@ -400,8 +403,7 @@ class DoubleArrayImpl {
   std::unique_ptr<BlockArray> blocks_;
   Pool *pool_;
 
-  void create_impl(Storage *storage, uint32_t storage_node_id,
-                   const MapOptions &options);
+  void create_impl(Storage *storage, uint32_t storage_node_id);
   void open_impl(Storage *storage, uint32_t storage_node_id);
 
   bool replace_key(int64_t key_id, KeyArg src_key, KeyArg dest_key);
@@ -438,14 +440,13 @@ DoubleArrayImpl::DoubleArrayImpl()
 DoubleArrayImpl::~DoubleArrayImpl() {}
 
 DoubleArrayImpl *DoubleArrayImpl::create(Storage *storage,
-                                         uint32_t storage_node_id,
-                                         const MapOptions &options) {
+                                         uint32_t storage_node_id) {
   std::unique_ptr<DoubleArrayImpl> impl(new (std::nothrow) DoubleArrayImpl);
   if (!impl) {
     GRNXX_ERROR() << "new grnxx::map::DoubleArrayImpl failed";
     throw MemoryError();
   }
-  impl->create_impl(storage, storage_node_id, options);
+  impl->create_impl(storage, storage_node_id);
   return impl.release();
 }
 
@@ -590,14 +591,6 @@ void DoubleArrayImpl::defrag(double usage_rate_threshold) {
   pool_->defrag(usage_rate_threshold);
 }
 
-void DoubleArrayImpl::truncate() {
-  // TODO: How to recycle nodes.
-  Node * const node = &nodes_->get_value(ROOT_NODE_ID);
-  node->set_child(NODE_INVALID_LABEL);
-  node->set_offset(NODE_INVALID_OFFSET);
-  pool_->truncate();
-}
-
 bool DoubleArrayImpl::find_longest_prefix_match(KeyArg query,
                                                    int64_t *key_id,
                                                    Key *key) {
@@ -668,8 +661,7 @@ bool DoubleArrayImpl::find_longest_prefix_match(KeyArg query,
   return found;
 }
 
-void DoubleArrayImpl::create_impl(Storage *storage, uint32_t storage_node_id,
-                                  const MapOptions &) {
+void DoubleArrayImpl::create_impl(Storage *storage, uint32_t storage_node_id) {
   storage_ = storage;
   StorageNode storage_node =
       storage->create_node(storage_node_id, sizeof(Header));
@@ -1100,8 +1092,10 @@ void DoubleArrayImpl::unset_block_level(uint64_t block_id, Block *block) {
 
 struct DoubleArrayHeader {
   CommonHeader common_header;
+  uint64_t impl_id;
   uint32_t impl_storage_node_id;
   uint32_t pool_storage_node_id;
+  Mutex mutex;
 
   // Initialize the member variables.
   DoubleArrayHeader();
@@ -1112,8 +1106,10 @@ struct DoubleArrayHeader {
 
 DoubleArrayHeader::DoubleArrayHeader()
     : common_header(FORMAT_STRING, MAP_DOUBLE_ARRAY),
+      impl_id(0),
       impl_storage_node_id(STORAGE_INVALID_NODE_ID),
-      pool_storage_node_id(STORAGE_INVALID_NODE_ID) {}
+      pool_storage_node_id(STORAGE_INVALID_NODE_ID),
+      mutex() {}
 
 DoubleArrayHeader::operator bool() const {
   return common_header.format() == FORMAT_STRING;
@@ -1147,7 +1143,9 @@ DoubleArray<Bytes>::DoubleArray()
       storage_node_id_(STORAGE_INVALID_NODE_ID),
       header_(nullptr),
       impl_(),
-      pool_() {}
+      old_impl_(),
+      pool_(),
+      impl_id_(0) {}
 
 DoubleArray<Bytes>::~DoubleArray() {}
 
@@ -1229,8 +1227,30 @@ void DoubleArray<Bytes>::defrag(double usage_rate_threshold) {
 }
 
 void DoubleArray<Bytes>::truncate() {
-  // TODO
-  impl_->truncate();
+  refresh_impl();
+  if (max_key_id() == MAP_MIN_KEY_ID) {
+    // Nothing to do.
+    return;
+  }
+  // Create an empty impl.
+  std::unique_ptr<Impl> new_impl(Impl::create(storage_, storage_node_id_));
+  try {
+    pool_->truncate();
+    new_impl->set_pool(pool_.get());
+  } catch (...) {
+    Impl::unlink(storage_, new_impl->storage_node_id());
+    throw;
+  }
+  {
+    // Validate a new impl.
+    Lock lock(&header_->mutex);
+    header_->impl_storage_node_id = new_impl->storage_node_id();
+    ++header_->impl_id;
+    old_impl_.swap(new_impl);
+    impl_.swap(old_impl_);
+    impl_id_ = header_->impl_id;
+  }
+  Impl::unlink(storage_, old_impl_->storage_node_id());
 }
 
 bool DoubleArray<Bytes>::find_longest_prefix_match(KeyArg query,
@@ -1258,7 +1278,7 @@ bool DoubleArray<Bytes>::find_longest_prefix_match(KeyArg query,
 //}
 
 void DoubleArray<Bytes>::create_map(Storage *storage, uint32_t storage_node_id,
-                                    const MapOptions &options) {
+                                    const MapOptions &) {
   storage_ = storage;
   StorageNode storage_node =
       storage->create_node(storage_node_id, sizeof(Header));
@@ -1266,7 +1286,7 @@ void DoubleArray<Bytes>::create_map(Storage *storage, uint32_t storage_node_id,
   try {
     header_ = static_cast<Header *>(storage_node.body());
     *header_ = Header();
-    impl_.reset(Impl::create(storage, storage_node_id_, options));
+    impl_.reset(Impl::create(storage, storage_node_id_));
     pool_.reset(Pool::create(storage, storage_node_id_));
     impl_->set_pool(pool_.get());
     header_->impl_storage_node_id = impl_->storage_node_id();
@@ -1292,9 +1312,24 @@ void DoubleArray<Bytes>::open_map(Storage *storage, uint32_t storage_node_id) {
                   << ", actual = " << header_->common_header.format();
     throw LogicError();
   }
+  Lock lock(&header_->mutex);
   impl_.reset(Impl::open(storage, header_->impl_storage_node_id));
   pool_.reset(Pool::open(storage, header_->pool_storage_node_id));
   impl_->set_pool(pool_.get());
+  impl_id_ = header_->impl_id;
+}
+
+void DoubleArray<Bytes>::refresh_impl() {
+  if (impl_id_ != header_->impl_id) {
+    Lock lock(&header_->mutex);
+    if (impl_id_ != header_->impl_id) {
+      std::unique_ptr<Impl> new_impl(
+          Impl::open(storage_, header_->impl_storage_node_id));
+      old_impl_.swap(new_impl);
+      impl_.swap(old_impl_);
+      impl_id_ = header_->impl_id;
+    }
+  }
 }
 
 }  // namespace map
