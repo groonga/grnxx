@@ -555,6 +555,30 @@ void test_map_find_longest_prefix_match<grnxx::Bytes>(grnxx::MapType map_type) {
 }
 
 template <typename T>
+void test_map_defrag(grnxx::MapType map_type) {
+  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
+  std::unique_ptr<grnxx::Map<T>> map(
+      grnxx::Map<T>::create(storage.get(), grnxx::STORAGE_ROOT_NODE_ID,
+                            map_type));
+  std::vector<T> keys;
+  generate_random_keys(MAP_NUM_KEYS, &keys);
+
+  for (std::uint64_t i = 0; i < MAP_NUM_KEYS; ++i) {
+    assert(map->add(keys[i]));
+  }
+  map->defrag(0.5);
+  assert(map->max_key_id() == (MAP_NUM_KEYS - 1));
+  assert(map->num_keys() == (MAP_NUM_KEYS));
+  for (std::uint64_t i = 0; i < MAP_NUM_KEYS; ++i) {
+    assert(map->get(i));
+    assert(map->find(keys[i]));
+  }
+  for (std::uint64_t i = 0; i < MAP_NUM_KEYS; ++i) {
+    assert(!map->add(keys[i]));
+  }
+}
+
+template <typename T>
 void test_map_truncate(grnxx::MapType map_type) {
   std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
   std::unique_ptr<grnxx::Map<T>> map(
@@ -780,6 +804,7 @@ void test_map(grnxx::MapType map_type) {
   test_map_remove<T>(map_type);
   test_map_replace<T>(map_type);
   test_map_find_longest_prefix_match<T>(map_type);
+  test_map_defrag<T>(map_type);
   test_map_truncate<T>(map_type);
   test_map_all_keys<T>(map_type);
   test_map_key_id<T>(map_type);
