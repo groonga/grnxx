@@ -14,6 +14,7 @@ TESTS =					\
 	test_intrinsic			\
 	test_logger			\
 	test_map			\
+	test_map_pool			\
 	test_mutex			\
 	test_os				\
 	test_storage			\
@@ -64,6 +65,9 @@ test_logger_LDADD = ../lib/grnxx/libgrnxx.la
 
 test_map_SOURCES = test_map.cpp
 test_map_LDADD = ../lib/grnxx/libgrnxx.la
+
+test_map_pool_SOURCES = test_map_pool.cpp
+test_map_pool_LDADD = ../lib/grnxx/libgrnxx.la
 
 test_mutex_SOURCES = test_mutex.cpp
 test_mutex_LDADD = ../lib/grnxx/libgrnxx.la

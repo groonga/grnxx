@@ -40,6 +40,7 @@ test/test_grnxx
 test/test_intrinsic
 test/test_logger
 test/test_map
+test/test_map_pool
 test/test_mutex
 test/test_os
 test/test_storage
