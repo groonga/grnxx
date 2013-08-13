@@ -54,7 +54,6 @@ Pool<T>::Pool()
       pages_(),
       table_(nullptr),
       size_(0),
-      table_size_(0),
       queue_() {}
 
 template <typename T>
@@ -281,20 +280,20 @@ void Pool<T>::expand_pool() {
     header_->page_storage_node_id = page_node.id();
   } else {
     // Create a table.
-    uint64_t new_table_size = new_size / PAGE_SIZE;
-    if (new_table_size < MIN_TABLE_SIZE) {
-      new_size = PAGE_SIZE * MIN_TABLE_SIZE;
-      new_table_size = MIN_TABLE_SIZE;
-    }
+    const uint64_t old_table_size =
+        (size_ <= PAGE_SIZE) ? 0 : (size_ / PAGE_SIZE);
+    const uint64_t new_table_size =
+        (old_table_size == 0) ? MIN_TABLE_SIZE : (old_table_size * 2);
+    new_size = new_table_size * PAGE_SIZE;
     StorageNode table_node = storage_->create_node(
         storage_node_id_, sizeof(uint32_t) * new_table_size);
     uint32_t * const new_table = static_cast<uint32_t *>(table_node.body());
     uint64_t i;
-    if (table_size_ == 0) {
+    if (old_table_size == 0) {
       new_table[0] = header_->page_storage_node_id;
       i = 1;
     } else {
-      for (i = 0; i < table_size_; ++i) {
+      for (i = 0; i < old_table_size; ++i) {
         new_table[i] = table_[i];
       }
     }
@@ -343,8 +342,9 @@ void Pool<T>::refresh_pool() {
       throw MemoryError();
     }
     // Initialize a new cache table.
+    const uint64_t old_table_size = size_ / PAGE_SIZE;
     uint64_t i = 0;
-    for ( ; i < table_size_; ++i) {
+    for ( ; i < old_table_size; ++i) {
       new_pages[i] = pages_[i];
     }
     for ( ; i < new_table_size; ++i) {
@@ -362,7 +362,6 @@ void Pool<T>::refresh_pool() {
       }
     }
     table_ = new_table;
-    table_size_ = new_table_size;
   }
   size_ = header_->size;
 }

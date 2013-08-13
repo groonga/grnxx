@@ -139,7 +139,6 @@ class Pool {
   std::unique_ptr<void *[]> pages_;
   uint32_t *table_;
   uint64_t size_;
-  uint64_t table_size_;
   // TODO: Time must be added.
   std::queue<std::unique_ptr<void *[]>> queue_;
 
