@@ -11,6 +11,7 @@ libgrnxx_map_la_SOURCES =				\
 	hash_table.cpp					\
 	key_pool.cpp					\
 	patricia.cpp					\
+	pool.cpp					\
 	scanner_impl.cpp
 
 libgrnxx_map_includedir = ${includedir}/grnxx/map
@@ -26,4 +27,5 @@ libgrnxx_map_include_HEADERS =				\
 	helper.hpp					\
 	key_pool.hpp					\
 	patricia.hpp					\
+	pool.hpp					\
 	scanner_impl.hpp
