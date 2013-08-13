@@ -17,6 +17,8 @@
 */
 #include "grnxx/map/pool.hpp"
 
+#include <exception>
+
 #include "grnxx/exception.hpp"
 #include "grnxx/geo_point.hpp"
 #include "grnxx/intrinsic.hpp"
@@ -354,10 +356,9 @@ void Pool<T>::refresh_pool() {
       try {
         // TODO: Time must be added.
         queue_.push(std::move(new_pages));
-      } catch (...) {
+      } catch (const std::exception &exception) {
         GRNXX_ERROR() << "std::queue::push() failed";
-        // TODO: Wrap an error.
-        throw;
+        throw StandardError(exception);
       }
     }
     table_ = new_table;
