@@ -19,6 +19,8 @@
 
 #ifdef GRNXX_WINDOWS
 
+#include <limits>
+#include <memory>
 #include <new>
 
 #include "grnxx/errno.hpp"

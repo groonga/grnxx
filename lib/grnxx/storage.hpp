@@ -20,6 +20,8 @@
 
 #include "grnxx/features.hpp"
 
+#include <limits>
+
 #include "grnxx/duration.hpp"
 #include "grnxx/flags_impl.hpp"
 #include "grnxx/time.hpp"

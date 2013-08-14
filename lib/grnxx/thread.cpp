@@ -36,6 +36,7 @@
 # include <cerrno>
 #endif  // GRNXX_WINDOWS
 
+#include <limits>
 #include <memory>
 #include <new>
 
