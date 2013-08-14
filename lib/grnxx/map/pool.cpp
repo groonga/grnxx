@@ -17,6 +17,7 @@
 */
 #include "grnxx/map/pool.hpp"
 
+#include <cstring>
 #include <exception>
 
 #include "grnxx/exception.hpp"
@@ -31,14 +32,12 @@ namespace grnxx {
 namespace map {
 namespace {
 
-constexpr uint64_t MIN_SIZE        = POOL_UNIT_SIZE;
-constexpr uint64_t MIN_TABLE_SIZE  = 1 << 10;
-
 constexpr uint64_t INVALID_UNIT_ID = ~0ULL;
 
 }  // namespace
 
-PoolHeader::PoolHeader()
+template <typename T>
+PoolHeader<T>::PoolHeader()
     : max_key_id(-1),
       num_keys(0),
       size(0),
@@ -98,38 +97,39 @@ void Pool<T>::unlink(Storage *storage, uint32_t storage_node_id) {
 template <typename T>
 void Pool<T>::unset(int64_t key_id) {
   void * const page = get_page(key_id);
-  key_id %= PAGE_SIZE;
-  const uint64_t unit_id = key_id / UNIT_SIZE;
-  const uint64_t unit_bit = 1ULL << (key_id % UNIT_SIZE);
+  const uint64_t local_key_id = key_id % PAGE_SIZE;
+  const uint64_t unit_id = local_key_id / UNIT_SIZE;
+  const uint64_t validity_bit = 1ULL << (local_key_id % UNIT_SIZE);
   Unit * const unit = static_cast<Unit *>(page) - unit_id - 1;
-  if (~unit->bits & unit_bit) {
+  if (~unit->validity_bits & validity_bit) {
     GRNXX_ERROR() << "not found: key_id = " << key_id;
     throw LogicError();
   }
-  if (unit->bits == ~uint64_t(0)) {
+  if (unit->validity_bits == ~uint64_t(0)) {
     unit->next_available_unit_id = header_->latest_available_unit_id;
     header_->latest_available_unit_id = unit_id;
   }
-  unit->bits &= ~unit_bit;
+  unit->validity_bits &= ~validity_bit;
   --header_->num_keys;
 }
 
 template <typename T>
 void Pool<T>::reset(int64_t key_id, KeyArg dest_key) {
   void * const page = get_page(key_id);
-  key_id %= PAGE_SIZE;
+  const uint64_t local_key_id = key_id % PAGE_SIZE;
   const Unit * const unit =
-      static_cast<const Unit *>(page) - (key_id / UNIT_SIZE) - 1;
-  if (~unit->bits & (1ULL << (key_id % UNIT_SIZE))) {
+      static_cast<const Unit *>(page) - (local_key_id / UNIT_SIZE) - 1;
+  if (~unit->validity_bits & (1ULL << (local_key_id % UNIT_SIZE))) {
     GRNXX_ERROR() << "not found: key_id = " << key_id;
     throw LogicError();
   }
-  static_cast<T *>(page)[key_id] = dest_key;
+  static_cast<T *>(page)[local_key_id] = dest_key;
 }
 
 template <typename T>
 int64_t Pool<T>::add(KeyArg key) {
   if (header_->latest_available_unit_id == INVALID_UNIT_ID) {
+    // Use a new unit.
     const int64_t next_key_id = header_->max_key_id + 1;
     if (next_key_id > MAX_KEY_ID) {
       GRNXX_ERROR() << "pool is full: next_key_id = " << next_key_id
@@ -137,29 +137,31 @@ int64_t Pool<T>::add(KeyArg key) {
       throw LogicError();
     }
     void * const page = reserve_page(next_key_id);
-    const uint64_t key_id = next_key_id % PAGE_SIZE;
-    Unit * const unit = static_cast<Unit *>(page) - (key_id / UNIT_SIZE) - 1;
-    unit->bits = 1;
+    const uint64_t local_key_id = next_key_id % PAGE_SIZE;
+    Unit * const unit =
+        static_cast<Unit *>(page) - (local_key_id / UNIT_SIZE) - 1;
+    unit->validity_bits = 1;
     unit->next_available_unit_id = INVALID_UNIT_ID;
     header_->latest_available_unit_id = next_key_id / UNIT_SIZE;
-    static_cast<T *>(page)[key_id] = key;
+    static_cast<T *>(page)[local_key_id] = key;
     header_->max_key_id = next_key_id;
     ++header_->num_keys;
     return next_key_id;
   } else {
+    // Use an existing unit.
     const uint64_t unit_id = header_->latest_available_unit_id;
     void * const page = get_page(unit_id * UNIT_SIZE);
     Unit * const unit =
         static_cast<Unit *>(page) - (unit_id % (PAGE_SIZE / UNIT_SIZE)) - 1;
-    const uint8_t unit_bit_id = bit_scan_forward(~unit->bits);
-    const int64_t next_key_id = (unit_id * UNIT_SIZE) + unit_bit_id;
+    const uint8_t validity_bit_id = bit_scan_forward(~unit->validity_bits);
+    const int64_t next_key_id = (unit_id * UNIT_SIZE) + validity_bit_id;
     if (next_key_id > MAX_KEY_ID) {
       GRNXX_ERROR() << "pool is full: next_key_id = " << next_key_id
                     << ", max_key_id = " << MAX_KEY_ID;
       throw LogicError();
     }
-    unit->bits |= 1ULL << unit_bit_id;
-    if (unit->bits == ~uint64_t(0)) {
+    unit->validity_bits |= 1ULL << validity_bit_id;
+    if (unit->validity_bits == ~uint64_t(0)) {
       header_->latest_available_unit_id = unit->next_available_unit_id;
     }
     static_cast<T *>(page)[next_key_id % PAGE_SIZE] = key;
@@ -179,11 +181,11 @@ void Pool<T>::defrag() {
 template <typename T>
 void Pool<T>::create_pool(Storage *storage, uint32_t storage_node_id) {
   storage_ = storage;
-  StorageNode storage_node =
+  StorageNode header_node =
       storage->create_node(storage_node_id, sizeof(Header));
-  storage_node_id_ = storage_node.id();
+  storage_node_id_ = header_node.id();
   try {
-    header_ = static_cast<Header *>(storage_node.body());
+    header_ = static_cast<Header *>(header_node.body());
     *header_ = Header();
   } catch (...) {
     storage->unlink_node(storage_node_id_);
@@ -194,9 +196,9 @@ void Pool<T>::create_pool(Storage *storage, uint32_t storage_node_id) {
 template <typename T>
 void Pool<T>::open_pool(Storage *storage, uint32_t storage_node_id) {
   storage_ = storage;
-  StorageNode storage_node = storage->open_node(storage_node_id);
-  storage_node_id_ = storage_node.id();
-  header_ = static_cast<Header *>(storage_node.body());
+  StorageNode header_node = storage->open_node(storage_node_id);
+  storage_node_id_ = header_node.id();
+  header_ = static_cast<Header *>(header_node.body());
 }
 
 template <typename T>
@@ -258,7 +260,7 @@ template <typename T>
 void Pool<T>::expand_pool() {
   Lock lock(&header_->mutex);
   refresh_pool();
-  uint64_t new_size = (size_ == 0) ? MIN_SIZE : (size_ * 2);
+  uint64_t new_size = (size_ == 0) ? MIN_PAGE_SIZE : (size_ * 2);
   if (new_size <= PAGE_SIZE) {
     // Create a small-size page.
     const uint64_t page_node_size =

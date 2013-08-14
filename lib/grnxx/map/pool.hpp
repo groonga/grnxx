@@ -28,21 +28,18 @@
 #include "grnxx/traits.hpp"
 #include "grnxx/types.hpp"
 
-// FIXME: for debug.
-#include "grnxx/logger.hpp"
-
 namespace grnxx {
 
 class Storage;
 
 namespace map {
 
+// The minimum key ID.
 constexpr int64_t POOL_MIN_KEY_ID = 0;
-constexpr int64_t POOL_MAX_KEY_ID = (1ULL << 40) - 1;
+// The maximum key ID.
+constexpr int64_t POOL_MAX_KEY_ID = (1LL << 40) - 2;
 
-constexpr uint64_t POOL_UNIT_SIZE = 64;
-constexpr uint64_t POOL_PAGE_SIZE = 1ULL << 16;
-
+template <typename T>
 struct PoolHeader {
   int64_t max_key_id;
   uint64_t num_keys;
@@ -58,20 +55,23 @@ struct PoolHeader {
 };
 
 struct PoolUnit {
-  uint64_t bits;
+  uint64_t validity_bits;
   uint64_t next_available_unit_id;
 };
 
 template <typename T>
 class Pool {
-  using Header = PoolHeader;
+  using Header = PoolHeader<T>;
   using Unit   = PoolUnit;
 
-  static constexpr int64_t MIN_KEY_ID = POOL_MIN_KEY_ID;
-  static constexpr int64_t MAX_KEY_ID = POOL_MAX_KEY_ID;
+  static constexpr int64_t  MIN_KEY_ID     = POOL_MIN_KEY_ID;
+  static constexpr int64_t  MAX_KEY_ID     = POOL_MAX_KEY_ID;
 
-  static constexpr uint64_t UNIT_SIZE = POOL_UNIT_SIZE;
-  static constexpr uint64_t PAGE_SIZE = POOL_PAGE_SIZE;
+  static constexpr uint64_t UNIT_SIZE      = 64;
+  static constexpr uint64_t PAGE_SIZE      = 1ULL << 16;
+
+  static constexpr uint64_t MIN_PAGE_SIZE  = UNIT_SIZE;
+  static constexpr uint64_t MIN_TABLE_SIZE = 1ULL << 10;
 
  public:
   using Key = typename Traits<T>::Type;
@@ -101,14 +101,14 @@ class Pool {
 
   bool get(int64_t key_id, Key *key) {
     const void * const page = get_page(key_id);
-    key_id %= PAGE_SIZE;
+    const uint64_t local_key_id = key_id % PAGE_SIZE;
     const Unit * const unit =
-        static_cast<const Unit *>(page) - (key_id / UNIT_SIZE) - 1;
-    if (~unit->bits & (1ULL << (key_id % UNIT_SIZE))) {
+        static_cast<const Unit *>(page) - (local_key_id / UNIT_SIZE) - 1;
+    if (~unit->validity_bits & (1ULL << (local_key_id % UNIT_SIZE))) {
       // Not found.
       return false;
     }
-    *key = static_cast<const T *>(page)[key_id];
+    *key = static_cast<const T *>(page)[local_key_id];
     return true;
   }
 
@@ -119,10 +119,10 @@ class Pool {
 
   bool get_bit(int64_t key_id) {
     const void * const page = get_page(key_id);
-    key_id %= PAGE_SIZE;
+    const uint64_t local_key_id = key_id % PAGE_SIZE;
     const Unit * const unit =
-        static_cast<const Unit *>(page) - (key_id / UNIT_SIZE) - 1;
-    return unit->bits & (1ULL << (key_id % UNIT_SIZE));
+        static_cast<const Unit *>(page) - (local_key_id / UNIT_SIZE) - 1;
+    return unit->validity_bits & (1ULL << (local_key_id % UNIT_SIZE));
   }
 
   void unset(int64_t key_id);

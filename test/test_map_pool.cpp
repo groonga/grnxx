@@ -142,13 +142,13 @@ template <typename T>
 std::uint64_t get_num_keys() {
   switch (sizeof(T)) {
     case 1: {
-      return 1 << 6;
+      return 1ULL << 6;
     }
     case 2: {
-      return 1 << 12;
+      return 1ULL << 12;
     }
     default: {
-      return grnxx::map::POOL_PAGE_SIZE << 1;
+      return 1ULL << 17;
     }
   }
 }
