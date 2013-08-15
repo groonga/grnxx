@@ -19,6 +19,7 @@
 
 #include <cstring>
 #include <exception>
+#include <limits>
 
 #include "grnxx/exception.hpp"
 #include "grnxx/geo_point.hpp"
@@ -32,7 +33,7 @@ namespace grnxx {
 namespace map {
 namespace {
 
-constexpr uint64_t INVALID_UNIT_ID = ~0ULL;
+constexpr uint64_t INVALID_UNIT_ID = std::numeric_limits<uint64_t>::max();
 
 }  // namespace
 
@@ -96,6 +97,9 @@ void Pool<T>::unlink(Storage *storage, uint32_t storage_node_id) {
 
 template <typename T>
 void Pool<T>::unset(int64_t key_id) {
+  if (size_ != header_->size) {
+    refresh();
+  }
   void * const page = get_page(key_id);
   const uint64_t local_key_id = key_id % PAGE_SIZE;
   const uint64_t unit_id = local_key_id / UNIT_SIZE;
@@ -115,6 +119,9 @@ void Pool<T>::unset(int64_t key_id) {
 
 template <typename T>
 void Pool<T>::reset(int64_t key_id, KeyArg dest_key) {
+  if (size_ != header_->size) {
+    refresh();
+  }
   void * const page = get_page(key_id);
   const uint64_t local_key_id = key_id % PAGE_SIZE;
   const Unit * const unit =
@@ -128,6 +135,9 @@ void Pool<T>::reset(int64_t key_id, KeyArg dest_key) {
 
 template <typename T>
 int64_t Pool<T>::add(KeyArg key) {
+  if (size_ != header_->size) {
+    refresh();
+  }
   if (header_->latest_available_unit_id == INVALID_UNIT_ID) {
     // Use a new unit.
     const int64_t next_key_id = header_->max_key_id + 1;
@@ -208,19 +218,20 @@ void *Pool<T>::open_page(int64_t key_id) {
                   << ", size = " << header_->size;
     throw LogicError();
   }
-  Lock lock(&header_->mutex);
-  refresh_pool();
   const uint64_t page_id = key_id / PAGE_SIZE;
   if (!pages_[page_id]) {
-    // Open an existing full-size page.
-    // Note that a small-size page is opened in refresh_pool().
-    if (table_[page_id] == STORAGE_INVALID_NODE_ID) {
-      GRNXX_ERROR() << "not found: page_id = " << page_id;
-      throw LogicError();
+    Lock lock(&header_->mutex);
+    if (!pages_[page_id]) {
+      // Open an existing full-size page.
+      // Note that a small-size page is opened in refresh_page().
+      if (table_[page_id] == STORAGE_INVALID_NODE_ID) {
+        GRNXX_ERROR() << "not found: page_id = " << page_id;
+        throw LogicError();
+      }
+      StorageNode page_node = storage_->open_node(table_[page_id]);
+      pages_[page_id] =
+          static_cast<Unit *>(page_node.body()) + (PAGE_SIZE / UNIT_SIZE);
     }
-    StorageNode page_node = storage_->open_node(table_[page_id]);
-    pages_[page_id] =
-        static_cast<Unit *>(page_node.body()) + (PAGE_SIZE / UNIT_SIZE);
   }
   return pages_[page_id];
 }
@@ -228,7 +239,7 @@ void *Pool<T>::open_page(int64_t key_id) {
 template <typename T>
 void *Pool<T>::reserve_page(int64_t key_id) {
   if (static_cast<uint64_t>(key_id) >= header_->size) {
-    expand_pool();
+    expand();
   }
   const uint64_t page_id = key_id / PAGE_SIZE;
   if (!pages_[page_id]) {
@@ -237,7 +248,7 @@ void *Pool<T>::reserve_page(int64_t key_id) {
       void *page;
       if (table_[page_id] == STORAGE_INVALID_NODE_ID) {
         // Create a full-size page.
-        // Note that a small-size page is created in expand_pool().
+        // Note that a small-size page is created in expand_page().
         const uint64_t page_node_size =
             (sizeof(Unit) * (PAGE_SIZE / UNIT_SIZE)) + (sizeof(T) * PAGE_SIZE);
         StorageNode page_node =
@@ -246,7 +257,7 @@ void *Pool<T>::reserve_page(int64_t key_id) {
         page = page_node.body();
       } else {
         // Open an existing full-size page.
-        // Note that a small-size page is opened in refresh_pool().
+        // Note that a small-size page is opened in refresh_page().
         StorageNode page_node = storage_->open_node(table_[page_id]);
         page = page_node.body();
       }
@@ -257,115 +268,135 @@ void *Pool<T>::reserve_page(int64_t key_id) {
 }
 
 template <typename T>
-void Pool<T>::expand_pool() {
+void Pool<T>::expand() {
   Lock lock(&header_->mutex);
-  refresh_pool();
-  uint64_t new_size = (size_ == 0) ? MIN_PAGE_SIZE : (size_ * 2);
-  if (new_size <= PAGE_SIZE) {
-    // Create a small-size page.
-    const uint64_t page_node_size =
-        (sizeof(Unit) * (new_size / UNIT_SIZE)) + (sizeof(T) * new_size);
-    StorageNode page_node =
-        storage_->create_node(storage_node_id_, page_node_size);
-    if (size_ != 0) {
-      // Copy data from the current page and unlink it.
-      std::memcpy(static_cast<Unit *>(page_node.body()) + (size_ / UNIT_SIZE),
-                  static_cast<Unit *>(pages_[0]) - (size_ / UNIT_SIZE),
-                  page_node_size / 2);
-      try {
-        storage_->unlink_node(header_->page_storage_node_id);
-      } catch (...) {
-        storage_->unlink_node(page_node.id());
-        throw;
-      }
-    }
-    header_->page_storage_node_id = page_node.id();
+  if (size_ < PAGE_SIZE) {
+    // Create a small-size page or the first full-size page.
+    header_->size = expand_page();
+    refresh_page();
   } else {
     // Create a table.
-    const uint64_t old_table_size =
-        (size_ <= PAGE_SIZE) ? 0 : (size_ / PAGE_SIZE);
-    const uint64_t new_table_size =
-        (old_table_size == 0) ? MIN_TABLE_SIZE : (old_table_size * 2);
-    new_size = new_table_size * PAGE_SIZE;
-    StorageNode table_node = storage_->create_node(
-        storage_node_id_, sizeof(uint32_t) * new_table_size);
-    uint32_t * const new_table = static_cast<uint32_t *>(table_node.body());
-    uint64_t i;
-    if (old_table_size == 0) {
-      new_table[0] = header_->page_storage_node_id;
-      i = 1;
-    } else {
-      for (i = 0; i < old_table_size; ++i) {
-        new_table[i] = table_[i];
-      }
-    }
-    for ( ; i < new_table_size; ++i) {
-      new_table[i] = STORAGE_INVALID_NODE_ID;
-    }
-    header_->table_storage_node_id = table_node.id();
+    header_->size = expand_table();
+    refresh_table();
   }
-  header_->size = new_size;
-  refresh_pool();
 }
 
 template <typename T>
-void Pool<T>::refresh_pool() {
-  if (size_ == header_->size) {
-    // Nothing to do.
-    return;
-  }
-  if (header_->size <= PAGE_SIZE) {
-    // Reopen a page because it is old.
-    StorageNode page_node =
-        storage_->open_node(header_->page_storage_node_id);
-    if (!pages_) {
-      std::unique_ptr<void *[]> new_pages(new (std::nothrow) void *[1]);
-      if (!new_pages) {
-        GRNXX_ERROR() << "new void *[] failed: size = " << 1;
-        throw MemoryError();
-      }
-      new_pages[0] =
-          static_cast<Unit *>(page_node.body()) + (header_->size / UNIT_SIZE);
-      pages_.swap(new_pages);
-    } else {
-      pages_[0] =
-          static_cast<Unit *>(page_node.body()) + (header_->size / UNIT_SIZE);
+uint64_t Pool<T>::expand_page() {
+  const uint64_t new_size = (size_ == 0) ? MIN_PAGE_SIZE : (size_ * 2);
+  const uint64_t page_node_size =
+      (sizeof(Unit) * (new_size / UNIT_SIZE)) + (sizeof(T) * new_size);
+  StorageNode page_node =
+      storage_->create_node(storage_node_id_, page_node_size);
+  if (size_ != 0) {
+    // Copy data from the current page and unlink it.
+    std::memcpy(static_cast<Unit *>(page_node.body()) + (size_ / UNIT_SIZE),
+                static_cast<Unit *>(pages_[0]) - (size_ / UNIT_SIZE),
+                page_node_size / 2);
+    try {
+      storage_->unlink_node(header_->page_storage_node_id);
+    } catch (...) {
+      storage_->unlink_node(page_node.id());
+      throw;
     }
+  }
+  header_->page_storage_node_id = page_node.id();
+  return new_size;
+}
+
+template <typename T>
+uint64_t Pool<T>::expand_table() {
+  const uint64_t old_table_size =
+      (size_ <= PAGE_SIZE) ? 0 : (size_ / PAGE_SIZE);
+  const uint64_t new_table_size =
+      (old_table_size == 0) ? MIN_TABLE_SIZE : (old_table_size * 2);
+  const uint64_t new_size = new_table_size * PAGE_SIZE;
+  StorageNode table_node = storage_->create_node(
+      storage_node_id_, sizeof(uint32_t) * new_table_size);
+  uint32_t * const new_table = static_cast<uint32_t *>(table_node.body());
+  uint64_t i;
+  if (old_table_size == 0) {
+    new_table[0] = header_->page_storage_node_id;
+    i = 1;
   } else {
-    // Reopen a table because it is old.
-    StorageNode table_node =
-        storage_->open_node(header_->table_storage_node_id);
-    uint32_t * const new_table = static_cast<uint32_t *>(table_node.body());
-    const uint64_t new_table_size = header_->size / PAGE_SIZE;
-    std::unique_ptr<void *[]> new_pages(
-        new (std::nothrow) void *[new_table_size]);
+    for (i = 0; i < old_table_size; ++i) {
+      new_table[i] = table_[i];
+    }
+  }
+  for ( ; i < new_table_size; ++i) {
+    new_table[i] = STORAGE_INVALID_NODE_ID;
+  }
+  header_->table_storage_node_id = table_node.id();
+  return new_size;
+}
+
+template <typename T>
+void Pool<T>::refresh() {
+  Lock lock(&header_->mutex);
+  if (size_ != header_->size) {
+    if (header_->size <= PAGE_SIZE) {
+      // Reopen a page because it is old.
+      refresh_page();
+    } else {
+      // Reopen a table because it is old.
+      refresh_table();
+    }
+    size_ = header_->size;
+  }
+}
+
+template <typename T>
+void Pool<T>::refresh_page() {
+  StorageNode page_node =
+      storage_->open_node(header_->page_storage_node_id);
+  if (!pages_) {
+    std::unique_ptr<void *[]> new_pages(new (std::nothrow) void *[1]);
     if (!new_pages) {
-      GRNXX_ERROR() << "new void *[] failed: size = " << new_table_size;
+      GRNXX_ERROR() << "new void *[] failed: size = " << 1;
       throw MemoryError();
     }
-    // Initialize a new cache table.
-    const uint64_t old_table_size = size_ / PAGE_SIZE;
-    uint64_t i = 0;
-    for ( ; i < old_table_size; ++i) {
-      new_pages[i] = pages_[i];
-    }
-    for ( ; i < new_table_size; ++i) {
-      new_pages[i] = nullptr;
-    }
+    new_pages[0] =
+        static_cast<Unit *>(page_node.body()) + (header_->size / UNIT_SIZE);
     pages_.swap(new_pages);
-    // Keep an old cache table because another thread may read it.
-    if (new_pages) {
-      try {
-        // TODO: Time must be added.
-        queue_.push(std::move(new_pages));
-      } catch (const std::exception &exception) {
-        GRNXX_ERROR() << "std::queue::push() failed";
-        throw StandardError(exception);
-      }
-    }
-    table_ = new_table;
+  } else {
+    pages_[0] =
+        static_cast<Unit *>(page_node.body()) + (header_->size / UNIT_SIZE);
   }
-  size_ = header_->size;
+}
+
+template <typename T>
+void Pool<T>::refresh_table() {
+  StorageNode table_node =
+      storage_->open_node(header_->table_storage_node_id);
+  uint32_t * const new_table = static_cast<uint32_t *>(table_node.body());
+  const uint64_t new_table_size = header_->size / PAGE_SIZE;
+  std::unique_ptr<void *[]> new_pages(
+      new (std::nothrow) void *[new_table_size]);
+  if (!new_pages) {
+    GRNXX_ERROR() << "new void *[] failed: size = " << new_table_size;
+    throw MemoryError();
+  }
+  // Initialize a new cache table.
+  const uint64_t old_table_size = size_ / PAGE_SIZE;
+  uint64_t i = 0;
+  for ( ; i < old_table_size; ++i) {
+    new_pages[i] = pages_[i];
+  }
+  for ( ; i < new_table_size; ++i) {
+    new_pages[i] = nullptr;
+  }
+  pages_.swap(new_pages);
+  // Keep an old cache table because another thread may read it.
+  if (new_pages) {
+    try {
+      // TODO: Time must be added.
+      queue_.push(std::move(new_pages));
+    } catch (const std::exception &exception) {
+      GRNXX_ERROR() << "std::queue::push() failed";
+      throw StandardError(exception);
+    }
+  }
+  table_ = new_table;
 }
 
 template class Pool<int8_t>;

@@ -100,6 +100,9 @@ class Pool {
   }
 
   bool get(int64_t key_id, Key *key) {
+    if (size_ != header_->size) {
+      refresh();
+    }
     const void * const page = get_page(key_id);
     const uint64_t local_key_id = key_id % PAGE_SIZE;
     const Unit * const unit =
@@ -113,11 +116,17 @@ class Pool {
   }
 
   Key get_key(int64_t key_id) {
+    if (size_ != header_->size) {
+      refresh();
+    }
     const void * const page = get_page(key_id);
     return static_cast<const T *>(page)[key_id % PAGE_SIZE];
   }
 
   bool get_bit(int64_t key_id) {
+    if (size_ != header_->size) {
+      refresh();
+    }
     const void * const page = get_page(key_id);
     const uint64_t local_key_id = key_id % PAGE_SIZE;
     const Unit * const unit =
@@ -146,9 +155,6 @@ class Pool {
   void open_pool(Storage *storage, uint32_t storage_node_id);
 
   void *get_page(int64_t key_id) {
-    if (size_ != header_->size) {
-      return open_page(key_id);
-    }
     void * const page = pages_[key_id / PAGE_SIZE];
     if (!page) {
       return open_page(key_id);
@@ -159,8 +165,13 @@ class Pool {
 
   void *reserve_page(int64_t key_id);
 
-  void expand_pool();
-  void refresh_pool();
+  void expand();
+  uint64_t expand_page();
+  uint64_t expand_table();
+
+  void refresh();
+  void refresh_page();
+  void refresh_table();
 };
 
 }  // namespace map
