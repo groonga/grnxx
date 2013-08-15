@@ -452,8 +452,7 @@ int main() {
   test_map_pool<std::uint64_t>();
   test_map_pool<double>();
   test_map_pool<grnxx::GeoPoint>();
-  // TODO
-//  test_map_pool<grnxx::Bytes>();
+  test_map_pool<grnxx::Bytes>();
 
   return 0;
 }
