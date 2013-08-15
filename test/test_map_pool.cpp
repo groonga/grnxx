@@ -164,17 +164,39 @@ void test_map_pool_create() {
 template <typename T>
 void test_map_pool_open() {
   std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
-  std::unique_ptr<grnxx::map::Pool<T>> pool(
+  std::unique_ptr<grnxx::map::Pool<T>> pool_1(
       grnxx::map::Pool<T>::create(storage.get(),
                                   grnxx::STORAGE_ROOT_NODE_ID));
-  const std::uint32_t storage_node_id = pool->storage_node_id();
-  const T key = generate_random_key<T>();
-  const std::int64_t key_id = pool->add(key);
-  pool.reset(grnxx::map::Pool<T>::open(storage.get(), storage_node_id));
-  assert(pool->storage_node_id() == storage_node_id);
-  T stored_key;
-  assert(pool->get(key_id, &stored_key));
-  assert(key == stored_key);
+  std::unique_ptr<grnxx::map::Pool<T>> pool_2(
+      grnxx::map::Pool<T>::open(storage.get(), pool_1->storage_node_id()));
+  std::vector<T> keys;
+  std::vector<std::int64_t> key_ids;
+  generate_random_keys(get_num_keys<T>(), &keys);
+  for (std::uint64_t i = 0; i < (keys.size() / 2); ++i) {
+    const std::int64_t key_id = pool_1->add(keys[i]);
+    T stored_key;
+    assert(pool_1->get(key_id, &stored_key));
+    assert(grnxx::map::Helper<T>::equal_to(stored_key, keys[i]));
+    key_ids.push_back(key_id);
+  }
+  for (std::uint64_t i = (keys.size() / 2); i < keys.size(); ++i) {
+    const std::int64_t key_id = pool_2->add(keys[i]);
+    T stored_key;
+    assert(pool_2->get(key_id, &stored_key));
+    assert(grnxx::map::Helper<T>::equal_to(stored_key, keys[i]));
+    key_ids.push_back(key_id);
+  }
+  std::unique_ptr<grnxx::map::Pool<T>> pool_3(
+      grnxx::map::Pool<T>::open(storage.get(), pool_1->storage_node_id()));
+  for (std::uint64_t i = 0; i < keys.size(); ++i) {
+    T stored_key;
+    assert(pool_1->get(key_ids[i], &stored_key));
+    assert(grnxx::map::Helper<T>::equal_to(stored_key, keys[i]));
+    assert(pool_2->get(key_ids[i], &stored_key));
+    assert(grnxx::map::Helper<T>::equal_to(stored_key, keys[i]));
+    assert(pool_3->get(key_ids[i], &stored_key));
+    assert(grnxx::map::Helper<T>::equal_to(stored_key, keys[i]));
+  }
 }
 
 template <typename T>
