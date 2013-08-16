@@ -24,6 +24,7 @@
 #include <queue>
 
 #include "grnxx/bytes.hpp"
+#include "grnxx/duration.hpp"
 #include "grnxx/mutex.hpp"
 #include "grnxx/traits.hpp"
 #include "grnxx/types.hpp"
@@ -134,6 +135,7 @@ class Pool {
   int64_t add(KeyArg key);
 
   void defrag();
+  void sweep(Duration lifetime);
 
  private:
   Storage *storage_;
@@ -259,6 +261,7 @@ class Pool<Bytes> {
   int64_t add(KeyArg key);
 
   void defrag();
+  void sweep(Duration lifetime);
 
  private:
   Storage *storage_;

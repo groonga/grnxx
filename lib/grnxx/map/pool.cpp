@@ -184,6 +184,11 @@ void Pool<T>::defrag() {
 }
 
 template <typename T>
+void Pool<T>::sweep(Duration lifetime) {
+  // TODO
+}
+
+template <typename T>
 void Pool<T>::create_pool(Storage *storage, uint32_t storage_node_id) {
   storage_ = storage;
   StorageNode header_node =
@@ -497,6 +502,10 @@ int64_t Pool<Bytes>::add(KeyArg key) {
 
 void Pool<Bytes>::defrag() {
   index_pool_->defrag();
+  // TODO
+}
+
+void Pool<Bytes>::sweep(Duration lifetime) {
   // TODO
 }
 
