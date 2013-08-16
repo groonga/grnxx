@@ -180,6 +180,7 @@ int64_t Pool<T>::add(KeyArg key) {
 
 template <typename T>
 void Pool<T>::defrag() {
+  refresh_if_possible();
   // Nothing to do.
 }
 
@@ -502,7 +503,52 @@ int64_t Pool<Bytes>::add(KeyArg key) {
 
 void Pool<Bytes>::defrag() {
   index_pool_->defrag();
-  // TODO
+  refresh_if_possible();
+  if (header_->size <= PAGE_SIZE) {
+    // Nothing to do.
+    return;
+  }
+  // Keys in the active page should not be moved.
+  const uint64_t offset_threshold =
+      header_->next_offset - (header_->next_offset % PAGE_SIZE);
+  // Keys in low-usage-rate pages should be moved.
+  const uint32_t size_in_use_threshold =
+      static_cast<uint32_t>(PAGE_SIZE * USAGE_RATE_THRESHOLD);
+  const int64_t max_key_id = index_pool_->max_key_id();
+  uint32_t prev_page_id = INVALID_PAGE_ID;
+  uint8_t *page = nullptr;
+  for (int64_t key_id = MIN_KEY_ID; key_id <= max_key_id; ++key_id) {
+    // TODO: "index_pool_->get/reset()" can be the bottleneck.
+    uint64_t bytes_id;
+    if (!index_pool_->get(key_id, &bytes_id)) {
+      continue;
+    }
+    const uint64_t offset = get_offset(bytes_id);
+    if (offset >= offset_threshold) {
+      continue;
+    }
+    const uint32_t page_id = static_cast<uint32_t>(offset / PAGE_SIZE);
+    if (page_id != prev_page_id) {
+      if (table_[page_id].size_in_use >= size_in_use_threshold) {
+        page = nullptr;
+      } else {
+        page = get_page(page_id);
+      }
+      prev_page_id = page_id;
+    }
+    if (!page) {
+      continue;
+    }
+    const uint32_t bytes_size = get_size(bytes_id);
+    const Bytes bytes(page + (offset % PAGE_SIZE), bytes_size);
+    const uint64_t new_bytes_id = add_bytes(bytes);
+    index_pool_->reset(key_id, new_bytes_id);
+    table_[page_id].size_in_use -= bytes_size;
+    if (table_[page_id].size_in_use == 0) {
+      // Unlink a page if this operation makes it empty.
+      storage_->unlink_node(table_[page_id].page_storage_node_id);
+    }
+  }
 }
 
 void Pool<Bytes>::sweep(Duration lifetime) {

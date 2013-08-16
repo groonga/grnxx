@@ -211,6 +211,8 @@ class Pool<Bytes> {
 
   static constexpr uint64_t EMPTY_BYTES_ID = 0;
 
+  static constexpr double   USAGE_RATE_THRESHOLD = 0.5;
+
  public:
   using Key = typename Traits<Bytes>::Type;
   using KeyArg = typename Traits<Bytes>::ArgumentType;
