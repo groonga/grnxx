@@ -26,6 +26,8 @@
 #include "grnxx/bytes.hpp"
 #include "grnxx/duration.hpp"
 #include "grnxx/mutex.hpp"
+#include "grnxx/periodic_clock.hpp"
+#include "grnxx/time.hpp"
 #include "grnxx/traits.hpp"
 #include "grnxx/types.hpp"
 
@@ -61,9 +63,16 @@ struct PoolUnit {
 };
 
 template <typename T>
+struct PoolQueueEntry {
+  std::unique_ptr<void *[]> page;
+  Time time;
+};
+
+template <typename T>
 class Pool {
-  using Header = PoolHeader<T>;
-  using Unit   = PoolUnit;
+  using Header     = PoolHeader<T>;
+  using Unit       = PoolUnit;
+  using QueueEntry = PoolQueueEntry<T>;
 
   static constexpr int64_t  MIN_KEY_ID     = POOL_MIN_KEY_ID;
   static constexpr int64_t  MAX_KEY_ID     = POOL_MAX_KEY_ID;
@@ -144,8 +153,8 @@ class Pool {
   std::unique_ptr<void *[]> pages_;
   uint32_t *table_;
   uint64_t size_;
-  // TODO: Time must be added.
-  std::queue<std::unique_ptr<void *[]>> queue_;
+  std::queue<QueueEntry> queue_;
+  PeriodicClock clock_;
 
   void create_pool(Storage *storage, uint32_t storage_node_id);
   void open_pool(Storage *storage, uint32_t storage_node_id);
@@ -193,10 +202,17 @@ struct PoolTableEntry {
 };
 
 template <>
+struct PoolQueueEntry<Bytes> {
+  std::unique_ptr<uint8_t *[]> page;
+  Time time;
+};
+
+template <>
 class Pool<Bytes> {
   using Header     = PoolHeader<Bytes>;
   using IndexPool  = Pool<uint64_t>;
   using TableEntry = PoolTableEntry;
+  using QueueEntry = PoolQueueEntry<Bytes>;
 
   static constexpr int64_t  MIN_KEY_ID     = POOL_MIN_KEY_ID;
   static constexpr int64_t  MAX_KEY_ID     = POOL_MAX_KEY_ID;
@@ -273,8 +289,8 @@ class Pool<Bytes> {
   std::unique_ptr<uint8_t *[]> pages_;
   TableEntry *table_;
   uint64_t size_;
-  // TODO: Time must be added.
-  std::queue<std::unique_ptr<uint8_t *[]>> queue_;
+  std::queue<QueueEntry> queue_;
+  PeriodicClock clock_;
 
   void create_pool(Storage *storage, uint32_t storage_node_id);
   void open_pool(Storage *storage, uint32_t storage_node_id);

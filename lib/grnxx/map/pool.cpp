@@ -54,7 +54,8 @@ Pool<T>::Pool()
       pages_(),
       table_(nullptr),
       size_(0),
-      queue_() {}
+      queue_(),
+      clock_() {}
 
 template <typename T>
 Pool<T>::~Pool() {}
@@ -186,7 +187,13 @@ void Pool<T>::defrag() {
 
 template <typename T>
 void Pool<T>::sweep(Duration lifetime) {
-  // TODO
+  const Time threshold = clock_.now() - lifetime;
+  while (!queue_.empty()) {
+    QueueEntry &queue_entry = queue_.front();
+    if (queue_entry.time <= threshold) {
+      queue_.pop();
+    }
+  }
 }
 
 template <typename T>
@@ -382,8 +389,7 @@ void Pool<T>::refresh_table() {
   // Keep an old cache table because another thread may read it.
   if (new_pages) {
     try {
-      // TODO: Time must be added.
-      queue_.push(std::move(new_pages));
+      queue_.push(QueueEntry{ std::move(new_pages), clock_.now() });
     } catch (const std::exception &exception) {
       GRNXX_ERROR() << "std::queue::push() failed";
       throw StandardError(exception);
@@ -429,7 +435,8 @@ Pool<Bytes>::Pool()
       pages_(),
       table_(nullptr),
       size_(0),
-      queue_() {}
+      queue_(),
+      clock_() {}
 
 Pool<Bytes>::~Pool() {}
 
@@ -518,7 +525,7 @@ void Pool<Bytes>::defrag() {
   uint32_t prev_page_id = INVALID_PAGE_ID;
   uint8_t *page = nullptr;
   for (int64_t key_id = MIN_KEY_ID; key_id <= max_key_id; ++key_id) {
-    // TODO: "index_pool_->get/reset()" can be the bottleneck.
+    // FIXME: "index_pool_->get/reset()" can be the bottleneck.
     uint64_t bytes_id;
     if (!index_pool_->get(key_id, &bytes_id)) {
       continue;
@@ -552,7 +559,13 @@ void Pool<Bytes>::defrag() {
 }
 
 void Pool<Bytes>::sweep(Duration lifetime) {
-  // TODO
+  const Time threshold = clock_.now() - lifetime;
+  while (!queue_.empty()) {
+    QueueEntry &queue_entry = queue_.front();
+    if (queue_entry.time <= threshold) {
+      queue_.pop();
+    }
+  }
 }
 
 void Pool<Bytes>::create_pool(Storage *storage, uint32_t storage_node_id) {
@@ -798,8 +811,7 @@ void Pool<Bytes>::refresh_table() {
   // Keep an old cache table because another thread may read it.
   if (new_pages) {
     try {
-      // TODO: Time must be added.
-      queue_.push(std::move(new_pages));
+      queue_.push(QueueEntry{ std::move(new_pages), clock_.now() });
     } catch (const std::exception &exception) {
       GRNXX_ERROR() << "std::queue::push() failed";
       throw StandardError(exception);
