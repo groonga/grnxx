@@ -68,8 +68,8 @@ class DoubleArray<Bytes> : public Map<Bytes> {
   uint32_t storage_node_id() const;
   MapType type() const;
 
-  int64_t max_key_id() const;
-  uint64_t num_keys() const;
+  int64_t max_key_id();
+  uint64_t num_keys();
 
   bool get(int64_t key_id, Key *key = nullptr);
   bool unset(int64_t key_id);
@@ -80,7 +80,7 @@ class DoubleArray<Bytes> : public Map<Bytes> {
   bool remove(KeyArg key);
   bool replace(KeyArg src_key, KeyArg dest_key, int64_t *key_id = nullptr);
 
-  void defrag(double usage_rate_threshold);
+  void defrag();
 
   void truncate();
 

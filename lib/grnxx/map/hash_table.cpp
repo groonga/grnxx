@@ -160,12 +160,12 @@ MapType HashTable<T>::type() const {
 }
 
 template <typename T>
-int64_t HashTable<T>::max_key_id() const {
+int64_t HashTable<T>::max_key_id() {
   return pool_->max_key_id();
 }
 
 template <typename T>
-uint64_t HashTable<T>::num_keys() const {
+uint64_t HashTable<T>::num_keys() {
   return pool_->num_keys();
 }
 
@@ -335,14 +335,14 @@ bool HashTable<T>::replace(KeyArg src_key, KeyArg dest_key, int64_t *key_id) {
 }
 
 template <typename T>
-void HashTable<T>::defrag(double usage_rate_threshold) {
+void HashTable<T>::defrag() {
   refresh_table();
   if (max_key_id() == MAP_MIN_KEY_ID) {
     // Nothing to do.
     return;
   }
   rebuild();
-  pool_->defrag(usage_rate_threshold);
+  pool_->defrag(0.5);
 }
 
 template <typename T>

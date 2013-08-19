@@ -364,10 +364,10 @@ class DoubleArrayImpl {
     return storage_node_id_;
   }
 
-  int64_t max_key_id() const {
+  int64_t max_key_id() {
     return pool_->max_key_id();
   }
-  uint64_t num_keys() const {
+  uint64_t num_keys() {
     return pool_->num_keys();
   }
 
@@ -1262,11 +1262,11 @@ MapType DoubleArray<Bytes>::type() const {
   return MAP_DOUBLE_ARRAY;
 }
 
-int64_t DoubleArray<Bytes>::max_key_id() const {
+int64_t DoubleArray<Bytes>::max_key_id() {
   return pool_->max_key_id();
 }
 
-uint64_t DoubleArray<Bytes>::num_keys() const {
+uint64_t DoubleArray<Bytes>::num_keys() {
   return pool_->num_keys();
 }
 
@@ -1303,7 +1303,7 @@ bool DoubleArray<Bytes>::replace(KeyArg src_key, KeyArg dest_key,
   return impl_->replace(src_key, dest_key, key_id);
 }
 
-void DoubleArray<Bytes>::defrag(double usage_rate_threshold) {
+void DoubleArray<Bytes>::defrag() {
   refresh_impl();
   if (max_key_id() == MAP_MIN_KEY_ID) {
     // Nothing to do.
@@ -1322,7 +1322,7 @@ void DoubleArray<Bytes>::defrag(double usage_rate_threshold) {
     impl_id_ = header_->impl_id;
   }
   Impl::unlink(storage_, old_impl_->storage_node_id());
-  pool_->defrag(usage_rate_threshold);
+  pool_->defrag(0.5);
 }
 
 void DoubleArray<Bytes>::truncate() {

@@ -566,7 +566,7 @@ void test_map_defrag(grnxx::MapType map_type) {
   for (std::uint64_t i = 0; i < MAP_NUM_KEYS; ++i) {
     assert(map->add(keys[i]));
   }
-  map->defrag(0.5);
+  map->defrag();
   assert(map->max_key_id() == (MAP_NUM_KEYS - 1));
   assert(map->num_keys() == (MAP_NUM_KEYS));
   for (std::uint64_t i = 0; i < MAP_NUM_KEYS; ++i) {

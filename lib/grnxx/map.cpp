@@ -243,7 +243,7 @@ bool Map<Bytes>::find_longest_prefix_match(KeyArg query, int64_t *key_id,
 }
 
 template <typename T>
-void Map<T>::defrag(double) {
+void Map<T>::defrag() {
   GRNXX_ERROR() << "invalid operation";
   throw LogicError();
 }

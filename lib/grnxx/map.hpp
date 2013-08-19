@@ -81,9 +81,9 @@ class Map {
   }
   // Return the maximum key ID ever used.
   // The return value can be a negative value iff the map is empty.
-  virtual int64_t max_key_id() const = 0;
+  virtual int64_t max_key_id() = 0;
   // Return the number of keys.
-  virtual uint64_t num_keys() const = 0;
+  virtual uint64_t num_keys() = 0;
 
   // Get a key associated with "key_id" and return true on success.
   // Assign the found key to "*key" iff "key" != nullptr.
@@ -122,7 +122,7 @@ class Map {
                                          Key *key = nullptr);
 
   // Defrag components.
-  virtual void defrag(double usage_rate_threshold);
+  virtual void defrag();
 
   // Remove all the keys in "*this" and return true on success.
   virtual void truncate();

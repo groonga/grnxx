@@ -21,8 +21,13 @@
 #include "grnxx/features.hpp"
 
 #include <memory>
+#include <queue>
 
+#include "grnxx/duration.hpp"
 #include "grnxx/map.hpp"
+#include "grnxx/mutex.hpp"
+#include "grnxx/periodic_clock.hpp"
+#include "grnxx/time.hpp"
 #include "grnxx/types.hpp"
 
 namespace grnxx {
@@ -31,16 +36,24 @@ class Storage;
 
 namespace map {
 
-template <typename T> class KeyPool;
+template <typename T> class Pool;
 
 struct ArrayMapHeader;
 
 template <typename T>
+struct ArrayMapQueueEntry {
+  std::unique_ptr<Pool<T>> pool;
+  Time time;
+};
+
+template <typename T>
 class ArrayMap : public Map<T> {
-  using Header = ArrayMapHeader;
+  using Header     = ArrayMapHeader;
+  using Pool       = map::Pool<T>;
+  using QueueEntry = ArrayMapQueueEntry<T>;
 
  public:
-  using Key = typename Map<T>::Key;
+  using Key    = typename Map<T>::Key;
   using KeyArg = typename Map<T>::KeyArg;
   using Cursor = typename Map<T>::Cursor;
 
@@ -54,8 +67,8 @@ class ArrayMap : public Map<T> {
   uint32_t storage_node_id() const;
   MapType type() const;
 
-  int64_t max_key_id() const;
-  uint64_t num_keys() const;
+  int64_t max_key_id();
+  uint64_t num_keys();
 
   bool get(int64_t key_id, Key *key = nullptr);
   bool unset(int64_t key_id);
@@ -66,7 +79,8 @@ class ArrayMap : public Map<T> {
   bool remove(KeyArg key);
   bool replace(KeyArg src_key, KeyArg dest_key, int64_t *key_id = nullptr);
 
-  void defrag(double usage_rate_threshold);
+  void defrag();
+  void sweep(Duration lifetime);
 
   void truncate();
 
@@ -74,11 +88,17 @@ class ArrayMap : public Map<T> {
   Storage *storage_;
   uint32_t storage_node_id_;
   Header *header_;
-  std::unique_ptr<KeyPool<T>> pool_;
+  std::unique_ptr<Pool> pool_;
+  std::queue<QueueEntry> queue_;
+  uint64_t pool_id_;
+  PeriodicClock clock_;
 
   void create_map(Storage *storage, uint32_t storage_node_id,
                   const MapOptions &options);
   void open_map(Storage *storage, uint32_t storage_node_id);
+
+  inline void refresh_if_possible();
+  void refresh();
 };
 
 }  // namespace map

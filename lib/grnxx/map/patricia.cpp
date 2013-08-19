@@ -254,12 +254,12 @@ MapType Patricia<T>::type() const {
 }
 
 template <typename T>
-int64_t Patricia<T>::max_key_id() const {
+int64_t Patricia<T>::max_key_id() {
   return pool_->max_key_id();
 }
 
 template <typename T>
-uint64_t Patricia<T>::num_keys() const {
+uint64_t Patricia<T>::num_keys() {
   return pool_->num_keys();
 }
 
@@ -612,14 +612,14 @@ bool Patricia<T>::replace(KeyArg src_key, KeyArg dest_key, int64_t *key_id) {
 }
 
 template <typename T>
-void Patricia<T>::defrag(double usage_rate_threshold) {
+void Patricia<T>::defrag() {
   refresh_nodes();
   if (max_key_id() == MAP_MIN_KEY_ID) {
     // Nothing to do.
     return;
   }
   defrag_nodes();
-  pool_->defrag(usage_rate_threshold);
+  pool_->defrag(0.5);
 }
 
 template <typename T>
@@ -880,11 +880,11 @@ MapType Patricia<Bytes>::type() const {
   return MAP_PATRICIA;
 }
 
-int64_t Patricia<Bytes>::max_key_id() const {
+int64_t Patricia<Bytes>::max_key_id() {
   return pool_->max_key_id();
 }
 
-uint64_t Patricia<Bytes>::num_keys() const {
+uint64_t Patricia<Bytes>::num_keys() {
   return pool_->num_keys();
 }
 
@@ -1604,14 +1604,14 @@ bool Patricia<Bytes>::find_longest_prefix_match(KeyArg query, int64_t *key_id,
   }
 }
 
-void Patricia<Bytes>::defrag(double usage_rate_threshold) {
+void Patricia<Bytes>::defrag() {
   refresh_nodes();
   if (max_key_id() == MAP_MIN_KEY_ID) {
     // Nothing to do.
     return;
   }
   defrag_nodes();
-  pool_->defrag(usage_rate_threshold);
+  pool_->defrag(0.5);
 }
 
 void Patricia<Bytes>::truncate() {
