@@ -439,7 +439,23 @@ void test_map_pool_defrag() {
 
 template <typename T>
 void test_map_pool_sweep() {
-  // TODO
+  std::unique_ptr<grnxx::Storage> storage(grnxx::Storage::create(nullptr));
+  std::unique_ptr<grnxx::map::Pool<T>> pool(
+      grnxx::map::Pool<T>::create(storage.get(),
+                                  grnxx::STORAGE_ROOT_NODE_ID));
+  std::vector<T> keys;
+  std::vector<std::int64_t> key_ids;
+  generate_random_keys(get_num_keys<T>(), &keys);
+  for (std::uint64_t i = 0; i < keys.size(); ++i) {
+    const std::int64_t key_id = pool->add(keys[i]);
+    key_ids.push_back(key_id);
+  }
+  pool->sweep(grnxx::Duration(0));
+  for (std::uint64_t i = 0; i < keys.size(); ++i) {
+    T stored_key;
+    assert(pool->get(key_ids[i], &stored_key));
+    assert(grnxx::map::Helper<T>::equal_to(stored_key, keys[i]));
+  }
 }
 
 template <typename T>
