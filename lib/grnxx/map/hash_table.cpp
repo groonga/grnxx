@@ -39,9 +39,11 @@ namespace {
 constexpr char FORMAT_STRING[] = "grnxx::map::HashTable";
 
 constexpr uint64_t MIN_TABLE_SIZE = 64;
+constexpr uint64_t MAX_TABLE_SIZE = 1ULL << 41;
 
 struct ImplHeader {
   uint64_t num_entries;
+  uint64_t table_size;
   uint32_t table_storage_node_id;
 
   ImplHeader();
@@ -49,6 +51,7 @@ struct ImplHeader {
 
 ImplHeader::ImplHeader()
     : num_entries(0),
+      table_size(0),
       table_storage_node_id(STORAGE_INVALID_NODE_ID) {}
 
 class TableEntry {
@@ -102,7 +105,6 @@ struct TableSizeError {};
 template <typename T>
 class HashTableImpl {
   using Header = ImplHeader;
-  using Table  = Array<TableEntry>;
   using Pool   = Pool<T>;
 
  public:
@@ -151,7 +153,8 @@ class HashTableImpl {
   uint32_t storage_node_id_;
   Header *header_;
   Pool *pool_;
-  std::unique_ptr<Table> table_;
+  TableEntry *table_;
+  uint64_t id_mask_;
 
   void create_impl(Storage *storage, uint32_t storage_node_id, Pool *pool);
   void open_impl(Storage *storage, uint32_t storage_node_id, Pool *pool);
@@ -174,6 +177,11 @@ class HashTableImpl {
   uint64_t rehash(uint64_t hash) const {
     return hash + 1;
   }
+
+  // Return the table size threshold.
+  uint64_t table_size_threshold() const {
+    return ((header_->table_size + (header_->table_size / 4)) / 2);
+  }
 };
 
 template <typename T>
@@ -182,7 +190,8 @@ HashTableImpl<T>::HashTableImpl()
       storage_node_id_(STORAGE_INVALID_NODE_ID),
       header_(nullptr),
       pool_(nullptr),
-      table_() {}
+      table_(nullptr),
+      id_mask_(0) {}
 
 template <typename T>
 HashTableImpl<T>::~HashTableImpl() {}
@@ -261,8 +270,7 @@ bool HashTableImpl<T>::reset(int64_t key_id, KeyArg dest_key) {
   }
   // Throw an exception if the filling rate of the current table is greater
   // than 62.5%.
-  const uint64_t table_size = table_->size();
-  if (header_->num_entries > ((table_size + (table_size / 4)) / 2)) {
+  if (header_->num_entries > table_size_threshold()) {
     throw TableSizeError();
   }
   pool_->reset(key_id, dest_normalized_key);
@@ -277,10 +285,9 @@ bool HashTableImpl<T>::reset(int64_t key_id, KeyArg dest_key) {
 template <typename T>
 bool HashTableImpl<T>::find(KeyArg key, int64_t *key_id) {
   const Key normalized_key = Helper<T>::normalize(key);
-  const uint64_t id_mask = table_->size() - 1;
   const uint64_t hash_value = Hash<T>()(normalized_key);
   for (uint64_t id = hash_value; ; ) {
-    TableEntry entry = table_->get(id & id_mask);
+    const TableEntry entry = table_[id & id_mask_];
     if (entry.is_unused()) {
       // Not found.
       return false;
@@ -297,7 +304,7 @@ bool HashTableImpl<T>::find(KeyArg key, int64_t *key_id) {
       }
     }
     id = rehash(id);
-    if (((id ^ hash_value) & id_mask) == 0) {
+    if (((id ^ hash_value) & id_mask_) == 0) {
       // Critical error.
       GRNXX_ERROR() << "endless loop";
       throw LogicError();
@@ -309,8 +316,7 @@ template <typename T>
 bool HashTableImpl<T>::add(KeyArg key, int64_t *key_id) {
   // Throw an exception if the filling rate of the current table is greater
   // than 62.5%.
-  const uint64_t table_size = table_->size();
-  if (header_->num_entries > ((table_size + (table_size / 4)) / 2)) {
+  if (header_->num_entries > table_size_threshold()) {
     throw TableSizeError();
   }
   const Key normalized_key = Helper<T>::normalize(key);
@@ -367,8 +373,7 @@ bool HashTableImpl<T>::replace(KeyArg src_key, KeyArg dest_key,
   }
   // Throw an exception if the filling rate of the current table is greater
   // than 62.5%.
-  const uint64_t table_size = table_->size();
-  if (header_->num_entries > ((table_size + (table_size / 4)) / 2)) {
+  if (header_->num_entries > table_size_threshold()) {
     throw TableSizeError();
   }
   pool_->reset(src_entry->key_id(), dest_normalized_key);
@@ -414,7 +419,9 @@ void HashTableImpl<T>::open_impl(Storage *storage, uint32_t storage_node_id,
   storage_node_id_ = storage_node_id;
   header_ = static_cast<Header *>(header_node.body());
   pool_ = pool;
-  table_.reset(Table::open(storage, header_->table_storage_node_id));
+  StorageNode table_node = storage->open_node(header_->table_storage_node_id);
+  table_ = static_cast<TableEntry *>(table_node.body());
+  id_mask_ = header_->table_size - 1;
 }
 
 template <typename T>
@@ -424,16 +431,15 @@ TableEntry *HashTableImpl<T>::find_key_id(int64_t key_id) {
     // Not found.
     return nullptr;
   }
-  const uint64_t id_mask = table_->size() - 1;
   const uint64_t hash_value = Hash<T>()(stored_key);
   for (uint64_t id = hash_value; ; ) {
-    TableEntry &entry = table_->get_value(id & id_mask);
+    TableEntry &entry = table_[id & id_mask_];
     if (entry.key_id() == key_id) {
       // Found.
       return &entry;
     }
     id = rehash(id);
-    if (((id ^ hash_value) & id_mask) == 0) {
+    if (((id ^ hash_value) & id_mask_) == 0) {
       // Critical error.
       GRNXX_ERROR() << "endless loop";
       throw LogicError();
@@ -445,9 +451,8 @@ template <typename T>
 bool HashTableImpl<T>::find_key(KeyArg key, uint64_t hash_value,
                                 TableEntry **entry) {
   *entry = nullptr;
-  const uint64_t id_mask = table_->size() - 1;
   for (uint64_t id = hash_value; ; ) {
-    TableEntry &this_entry = table_->get_value(id & id_mask);
+    TableEntry &this_entry = table_[id & id_mask_];
     if (this_entry.is_unused()) {
       // Not found.
       if (!*entry) {
@@ -468,7 +473,7 @@ bool HashTableImpl<T>::find_key(KeyArg key, uint64_t hash_value,
       }
     }
     id = rehash(id);
-    if (((id ^ hash_value) & id_mask) == 0) {
+    if (((id ^ hash_value) & id_mask_) == 0) {
       // Critical error.
       GRNXX_ERROR() << "endless loop";
       throw LogicError();
@@ -482,10 +487,17 @@ void HashTableImpl<T>::build_table() {
   uint64_t new_size = pool_->num_keys() * 2;
   if (new_size < MIN_TABLE_SIZE) {
     new_size = MIN_TABLE_SIZE;
+  } else if (new_size > MAX_TABLE_SIZE) {
+    new_size = MAX_TABLE_SIZE;
   }
   new_size = 2ULL << bit_scan_reverse(new_size - 1);
-  table_.reset(Table::create(storage_, storage_node_id_,
-                             new_size, TableEntry::unused_entry()));
+  StorageNode table_node =
+      storage_->create_node(storage_node_id_, sizeof(TableEntry) * new_size);
+  table_ = static_cast<TableEntry *>(table_node.body());
+  id_mask_ = new_size - 1;
+  for (uint64_t i = 0; i < new_size; ++i) {
+    table_[i] = TableEntry::unused_entry();
+  }
   // Add entries associated with keys in a pool.
   const uint64_t new_id_mask = new_size - 1;
   const int64_t max_key_id = pool_->max_key_id();
@@ -496,7 +508,7 @@ void HashTableImpl<T>::build_table() {
     }
     const uint64_t hash_value = Hash<T>()(stored_key);
     for (uint64_t id = hash_value; ; id = rehash(id)) {
-      TableEntry &entry = table_->get_value(id & new_id_mask);
+      TableEntry &entry = table_[id & new_id_mask];
       if (entry.is_unused()) {
         entry.set(key_id, hash_value);
         break;
@@ -504,7 +516,8 @@ void HashTableImpl<T>::build_table() {
     }
     ++header_->num_entries;
   }
-  header_->table_storage_node_id = table_->storage_node_id();
+  header_->table_size = new_size;
+  header_->table_storage_node_id = table_node.id();
 }
 
 struct HashTableHeader {

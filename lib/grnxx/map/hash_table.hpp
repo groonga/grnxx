@@ -23,7 +23,6 @@
 #include <memory>
 #include <queue>
 
-#include "grnxx/array.hpp"
 #include "grnxx/map.hpp"
 #include "grnxx/periodic_clock.hpp"
 #include "grnxx/time.hpp"
@@ -51,8 +50,8 @@ struct HashTableQueueEntry {
 template <typename T>
 class HashTable : public Map<T> {
   using Header     = HashTableHeader;
-  using Impl       = HashTableImpl<T>;
   using Pool       = Pool<T>;
+  using Impl       = HashTableImpl<T>;
   using QueueEntry = HashTableQueueEntry<T>;
 
  public:
