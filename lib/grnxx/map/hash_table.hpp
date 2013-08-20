@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013  Brazil, Inc.
+  Copyright (C) 2012-2013  Brazil, Inc.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -21,9 +21,12 @@
 #include "grnxx/features.hpp"
 
 #include <memory>
+#include <queue>
 
 #include "grnxx/array.hpp"
 #include "grnxx/map.hpp"
+#include "grnxx/periodic_clock.hpp"
+#include "grnxx/time.hpp"
 #include "grnxx/types.hpp"
 
 namespace grnxx {
@@ -32,16 +35,25 @@ class Storage;
 
 namespace map {
 
-template <typename T> class KeyPool;
+template <typename T> class Pool;
+
+template <typename T> class HashTableImpl;
 
 struct HashTableHeader;
-class HashTableEntry;
+
+template <typename T>
+struct HashTableQueueEntry {
+  std::unique_ptr<Pool<T>> pool;
+  std::unique_ptr<HashTableImpl<T>> impl;
+  Time time;
+};
 
 template <typename T>
 class HashTable : public Map<T> {
-  using Header = HashTableHeader;
-  using Entry  = HashTableEntry;
-  using Table  = Array<Entry>;
+  using Header     = HashTableHeader;
+  using Impl       = HashTableImpl<T>;
+  using Pool       = Pool<T>;
+  using QueueEntry = HashTableQueueEntry<T>;
 
  public:
   using Key    = typename Map<T>::Key;
@@ -78,33 +90,23 @@ class HashTable : public Map<T> {
   Storage *storage_;
   uint32_t storage_node_id_;
   Header *header_;
-  std::unique_ptr<Table> table_;
-  std::unique_ptr<Table> old_table_;
-  std::unique_ptr<KeyPool<T>> pool_;
-  uint64_t table_id_;
+  std::unique_ptr<Pool> pool_;
+  std::unique_ptr<Impl> impl_;
+  std::queue<QueueEntry> queue_;
+  uint64_t pool_id_;
+  uint64_t impl_id_;
+  PeriodicClock clock_;
 
   void create_map(Storage *storage, uint32_t storage_node_id,
                   const MapOptions &options);
   void open_map(Storage *storage, uint32_t storage_node_id);
 
-  // Search a hash table for a key ID.
-  // On success, return a pointer to a matched entry.
-  // On failure, return nullptr.
-  Entry *find_key_id(int64_t key_id);
-  // Search a hash table for a key.
-  // On success, assign a pointer to a matched entry to "*entry" and return
-  // true.
-  // On failure, assign a pointer to the first unused or removed entry to
-  // "*entry" and return false.
-  bool find_key(KeyArg key, uint64_t hash_value, Entry **entry);
+  void rebuild_table();
 
-  // Rebuild the hash table.
-  void rebuild();
-  // Move to the next entry.
-  uint64_t rehash(uint64_t hash) const;
-
-  // Refresh "table_" if it is old.
-  void refresh_table();
+  inline void refresh_if_possible();
+  void refresh();
+  void refresh_pool();
+  void refresh_impl();
 };
 
 }  // namespace map
