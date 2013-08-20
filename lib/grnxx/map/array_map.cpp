@@ -311,6 +311,7 @@ void ArrayMap<T>::create_map(Storage *storage, uint32_t storage_node_id,
     *header_ = Header();
     pool_.reset(Pool::create(storage, storage_node_id_));
     header_->pool_storage_node_id = pool_->storage_node_id();
+    pool_id_ = ++header_->pool_id;
   } catch (...) {
     storage->unlink_node(storage_node_id_);
     throw;
@@ -333,9 +334,6 @@ void ArrayMap<T>::open_map(Storage *storage, uint32_t storage_node_id) {
                   << ", actual = " << header_->common_header.format();
     throw LogicError();
   }
-  Lock lock(&header_->mutex);
-  pool_.reset(Pool::open(storage, header_->pool_storage_node_id));
-  pool_id_ = header_->pool_id;
 }
 
 template <typename T>
