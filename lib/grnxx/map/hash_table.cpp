@@ -688,6 +688,10 @@ void HashTable<T>::rebuild_table() {
 template <typename T>
 void HashTable<T>::defrag() {
   refresh_if_possible();
+  if (max_key_id() < MAP_MIN_KEY_ID) {
+    // Nothing to do.
+    return;
+  }
   pool_->defrag();
   rebuild_table();
 }
@@ -706,6 +710,10 @@ void HashTable<T>::sweep(Duration lifetime) {
 template <typename T>
 void HashTable<T>::truncate() {
   refresh_if_possible();
+  if (max_key_id() < MAP_MIN_KEY_ID) {
+    // Nothing to do.
+    return;
+  }
   std::unique_ptr<Pool> new_pool(Pool::create(storage_, storage_node_id_));
   std::unique_ptr<Impl> new_impl;
   try {
@@ -741,11 +749,11 @@ template <typename T>
 void HashTable<T>::create_map(Storage *storage, uint32_t storage_node_id,
                               const MapOptions &) {
   storage_ = storage;
-  StorageNode storage_node =
+  StorageNode header_node =
       storage->create_node(storage_node_id, sizeof(Header));
-  storage_node_id_ = storage_node.id();
+  storage_node_id_ = header_node.id();
   try {
-    header_ = static_cast<Header *>(storage_node.body());
+    header_ = static_cast<Header *>(header_node.body());
     *header_ = Header();
     pool_.reset(Pool::create(storage, storage_node_id_));
     impl_.reset(Impl::create(storage, storage_node_id_, pool_.get()));
@@ -762,14 +770,14 @@ void HashTable<T>::create_map(Storage *storage, uint32_t storage_node_id,
 template <typename T>
 void HashTable<T>::open_map(Storage *storage, uint32_t storage_node_id) {
   storage_ = storage;
-  StorageNode storage_node = storage->open_node(storage_node_id);
-  if (storage_node.size() < sizeof(Header)) {
-    GRNXX_ERROR() << "invalid format: size = " << storage_node.size()
+  StorageNode header_node = storage->open_node(storage_node_id);
+  if (header_node.size() < sizeof(Header)) {
+    GRNXX_ERROR() << "invalid format: size = " << header_node.size()
                   << ", header_size = " << sizeof(Header);
     throw LogicError();
   }
   storage_node_id_ = storage_node_id;
-  header_ = static_cast<Header *>(storage_node.body());
+  header_ = static_cast<Header *>(header_node.body());
   if (!*header_) {
     GRNXX_ERROR() << "wrong format: expected = " << FORMAT_STRING
                   << ", actual = " << header_->common_header.format();
