@@ -693,6 +693,17 @@ void HashTable<T>::defrag() {
 }
 
 template <typename T>
+void HashTable<T>::sweep(Duration lifetime) {
+  const Time threshold = clock_.now() - lifetime;
+  while (!queue_.empty()) {
+    QueueEntry &queue_entry = queue_.front();
+    if (queue_entry.time <= threshold) {
+      queue_.pop();
+    }
+  }
+}
+
+template <typename T>
 void HashTable<T>::truncate() {
   refresh_if_possible();
   std::unique_ptr<Pool> new_pool(Pool::create(storage_, storage_node_id_));

@@ -23,6 +23,7 @@
 #include <memory>
 #include <queue>
 
+#include "grnxx/duration.hpp"
 #include "grnxx/map.hpp"
 #include "grnxx/periodic_clock.hpp"
 #include "grnxx/time.hpp"
@@ -82,6 +83,7 @@ class HashTable : public Map<T> {
   bool replace(KeyArg src_key, KeyArg dest_key, int64_t *key_id = nullptr);
 
   void defrag();
+  void sweep(Duration lifetime);
 
   void truncate();
 
