@@ -42,18 +42,16 @@ template <typename T> class HashTableImpl;
 struct HashTableHeader;
 
 template <typename T>
-struct HashTableQueueEntry {
-  std::unique_ptr<Pool<T>> pool;
-  std::unique_ptr<HashTableImpl<T>> impl;
-  Time time;
-};
-
-template <typename T>
 class HashTable : public Map<T> {
   using Header     = HashTableHeader;
   using Pool       = Pool<T>;
   using Impl       = HashTableImpl<T>;
-  using QueueEntry = HashTableQueueEntry<T>;
+
+  struct QueueEntry {
+    std::unique_ptr<Pool> pool;
+    std::unique_ptr<Impl> impl;
+    Time time;
+  };
 
  public:
   using Key    = typename Map<T>::Key;
