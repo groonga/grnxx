@@ -333,7 +333,7 @@ class DoubleArrayImpl {
   using NodeArray    = Array<Node,     65536, 8192>;  // 42-bit
   using SiblingArray = Array<uint8_t, 262144, 4096>;  // 42-bit
   using BlockArray   = Array<Block,     8192, 1024>;  // 33-bit
-  using Pool         = Pool<Bytes>;
+  using Pool         = map::Pool<Bytes>;
 
   static constexpr uint64_t NODE_ARRAY_SIZE    = 1ULL << 42;
   static constexpr uint64_t SIBLING_ARRAY_SIZE = 1ULL << 42;

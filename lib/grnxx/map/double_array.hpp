@@ -56,7 +56,7 @@ template <>
 class DoubleArray<Bytes> : public Map<Bytes> {
   using Header = DoubleArrayHeader;
   using Impl   = DoubleArrayImpl;
-  using Pool   = Pool<Bytes>;
+  using Pool   = map::Pool<Bytes>;
 
   struct QueueEntry {
     std::unique_ptr<Pool> pool;

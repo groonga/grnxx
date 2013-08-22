@@ -44,7 +44,7 @@ struct HashTableHeader;
 template <typename T>
 class HashTable : public Map<T> {
   using Header     = HashTableHeader;
-  using Pool       = Pool<T>;
+  using Pool       = map::Pool<T>;
   using Impl       = HashTableImpl<T>;
 
   struct QueueEntry {

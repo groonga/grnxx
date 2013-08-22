@@ -105,7 +105,7 @@ struct TableSizeError {};
 template <typename T>
 class HashTableImpl {
   using Header = ImplHeader;
-  using Pool   = Pool<T>;
+  using Pool   = map::Pool<T>;
 
  public:
   using Key    = typename Map<T>::Key;
