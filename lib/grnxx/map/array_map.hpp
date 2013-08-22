@@ -41,16 +41,14 @@ template <typename T> class Pool;
 struct ArrayMapHeader;
 
 template <typename T>
-struct ArrayMapQueueEntry {
-  std::unique_ptr<Pool<T>> pool;
-  Time time;
-};
-
-template <typename T>
 class ArrayMap : public Map<T> {
   using Header     = ArrayMapHeader;
   using Pool       = map::Pool<T>;
-  using QueueEntry = ArrayMapQueueEntry<T>;
+
+  struct QueueEntry {
+    std::unique_ptr<Pool> pool;
+    Time time;
+  };
 
  public:
   using Key    = typename Map<T>::Key;
