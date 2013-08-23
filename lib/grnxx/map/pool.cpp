@@ -685,7 +685,7 @@ uint64_t Pool<Bytes>::reserve_space(uint32_t size) {
   }
   const uint32_t page_id = static_cast<uint32_t>(offset / PAGE_SIZE);
   if (page_id > 0) {
-    if (table_[page_id - 1].size_in_use == 0) {
+    if ((table_[page_id - 1].size_in_use == 0) && (page_size_left != 0)) {
       // Unlink an empty page if it is fixed.
       storage_->unlink_node(table_[page_id - 1].page_storage_node_id);
     }
