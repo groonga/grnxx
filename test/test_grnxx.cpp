@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2012  Brazil, Inc.
+  Copyright (C) 2012-2014  Brazil, Inc.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -17,15 +17,8 @@
 */
 #include <cassert>
 
-#include "grnxx/grnxx.hpp"
-#include "grnxx/logger.hpp"
+#include "grnxx/library.hpp"
 
 int main() {
-  grnxx::Logger::set_flags(grnxx::LOGGER_WITH_ALL |
-                           grnxx::LOGGER_ENABLE_COUT);
-  grnxx::Logger::set_max_level(grnxx::NOTICE_LOGGER);
-
-  GRNXX_NOTICE() << "bugreport: " << grnxx::Grnxx::bugreport();
-  GRNXX_NOTICE() << "version: " << grnxx::Grnxx::version();
   return 0;
 }

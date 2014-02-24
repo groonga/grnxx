@@ -2,22 +2,19 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.67])
-AC_INIT([grnxx], [pre-alpha], [groonga@razil.jp])
-AC_CONFIG_SRCDIR([lib/grnxx/grnxx.hpp])
-AC_CONFIG_HEADERS(config.h)
+AC_INIT([grnxx], [dummy12], [groonga@razil.jp])
+AC_CONFIG_SRCDIR([lib/grnxx/library.hpp])
+AC_CONFIG_HEADERS([config.h])
 AM_INIT_AUTOMAKE
 
 # Checks for programs.
 LT_INIT([win32-dll])
-AC_PROG_CXX
+AC_PROG_CXX([clang++ g++-4.8])
 AC_PROG_INSTALL
 
 AC_CONFIG_MACRO_DIR([m4])
 
-AM_CXXFLAGS="-Wall -Wextra -std=c++11 -fno-strict-aliasing -I\${top_srcdir}/lib"
-
-AC_SUBST([AM_CXXFLAGS])
-AC_SUBST([AM_LTLDFLAGS])
+AM_CXXFLAGS="-Wall -std=c++11 -fno-strict-aliasing -I\${top_srcdir}/lib"
 
 AC_C_BIGENDIAN
 AC_CANONICAL_HOST
@@ -31,6 +28,9 @@ case "${host}" in
     AM_LTLDFLAGS=""
     ;;
 esac
+
+AC_SUBST([AM_CXXFLAGS])
+AC_SUBST([AM_LTLDFLAGS])
 
 # Checks for libraries.
 
@@ -47,22 +47,10 @@ if test "x$enable_backtrace" != "xno"; then
 fi
 
 AC_CHECK_LIB([rt], [clock_gettime])
-AC_CHECK_LIB([pthread], [pthread_create])
-AC_CHECK_LIB([pthread], [pthread_create],
-             [AM_CXXFLAGS="${AM_CXXFLAGS} -pthread"])
-
-# For std::this_thread::yield() and std::this_thread::sleep_for().
-#AC_CHECK_FUNC([sched_yield],
-#              [AM_CXXFLAGS="${AM_CXXFLAGS} -D_GLIBCXX_USE_SCHED_YIELD"])
-#AC_CHECK_FUNC([nanosleep],
-#              [AM_CXXFLAGS="${AM_CXXFLAGS} -D_GLIBCXX_USE_NANOSLEEP"])
 
 AC_CONFIG_FILES([Makefile
                  lib/Makefile
                  lib/grnxx/Makefile
-                 lib/grnxx/charset/Makefile
-                 lib/grnxx/map/Makefile
-                 lib/grnxx/storage/Makefile
                  src/Makefile
                  test/Makefile])
 AC_OUTPUT
@@ -79,4 +67,4 @@ echo "Paths:"
 echo "  Install path prefix:   ${prefix}"
 echo
 
-echo "Now type 'make' to build $PACKAGE_NAME $PACKAGE_VERSION!"
+echo "Now type 'make' to build ${PACKAGE_NAME} ${PACKAGE_VERSION}!"

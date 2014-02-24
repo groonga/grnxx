@@ -1,21 +1,20 @@
-// FIXME
 #include <getopt.h>
 
 #include <iostream>
 
-#include "grnxx/grnxx.hpp"
+#include "grnxx/library.hpp"
 
 namespace {
 
 void print_version() {
-  std::cout << "grnxx " << grnxx::Grnxx::version() << std::endl;
+  std::cout << "grnxx " << grnxx::Library::version() << std::endl;
 }
 
 void print_usage() {
   std::cout << "Usage: grnxx [options...]\n\n"
-            << "Options:\n"
-            << "  -h, --help:     show usage\n"
-            << "  -v, --version:  show grnxx version"
+               "Options:\n"
+               "  -h, --help:     show this help\n"
+               "  -v, --version:  show grnxx version"
             << std::endl;
 }
 
@@ -33,7 +32,7 @@ int main(int argc, char *argv[]) {
     switch (value) {
       case 'h': {
         print_usage();
-        break;
+        return 0;
       }
       case 'v': {
         print_version();

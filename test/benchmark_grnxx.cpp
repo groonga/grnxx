@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2012-2013  Brazil, Inc.
+  Copyright (C) 2012-2014  Brazil, Inc.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -15,30 +15,10 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#include "grnxx/duration.hpp"
+#include <cassert>
 
-#include "grnxx/string_builder.hpp"
-#include "grnxx/string_format.hpp"
+#include "grnxx/library.hpp"
 
-namespace grnxx {
-
-StringBuilder &operator<<(StringBuilder &builder, Duration duration) {
-  if (!builder) {
-    return builder;
-  }
-  uint64_t count;
-  if (duration.count() >= 0) {
-    count = duration.count();
-  } else {
-    builder << '-';
-    count = -duration.count();
-  }
-  builder << (count / 1000000);
-  count %= 1000000;
-  if (count != 0) {
-    builder << '.' << StringFormat::align_right(count, 6, '0');
-  }
-  return builder;
+int main() {
+  return 0;
 }
-
-}  // namespace grnxx
