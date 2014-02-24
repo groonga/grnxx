@@ -1,8 +1,13 @@
 #include "grnxx/library.hpp"
 
+#include "../config.h"
 #include "grnxx/version.h"
 
 namespace grnxx {
+
+const char *Library::name() {
+  return PACKAGE;
+}
 
 const char *Library::version() {
   return GRNXX_VERSION;

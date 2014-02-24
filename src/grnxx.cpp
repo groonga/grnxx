@@ -7,7 +7,8 @@
 namespace {
 
 void print_version() {
-  std::cout << "grnxx " << grnxx::Library::version() << std::endl;
+  std::cout << grnxx::Library::name() << ' '
+            << grnxx::Library::version() << std::endl;
 }
 
 void print_usage() {

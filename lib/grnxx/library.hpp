@@ -5,6 +5,7 @@ namespace grnxx {
 
 class Library {
  public:
+  static const char *name();
   static const char *version();
 };
 
