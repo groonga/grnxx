@@ -5,10 +5,12 @@
 
 namespace grnxx {
 
+// ライブラリの名前を返す．
 const char *Library::name() {
   return PACKAGE;
 }
 
+// ライブラリのバージョンを返す．
 const char *Library::version() {
   return GRNXX_VERSION;
 }
