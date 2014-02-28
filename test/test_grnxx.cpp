@@ -675,6 +675,7 @@ void test_sorter() {
   }
 
   // Boolean, Integer, _id を基準に整列する．
+  std::vector<grnxx::RowID> answer;
   {
     std::vector<grnxx::RowID> row_ids(all_row_ids);
     std::unique_ptr<grnxx::Sorter> sorter(
@@ -693,6 +694,19 @@ void test_sorter() {
           assert(row_ids[i - 1] > row_ids[i]);
         }
       }
+    }
+    answer = row_ids;
+  }
+
+  // Boolean, Integer, _id を基準に整列する．
+  {
+    std::vector<grnxx::RowID> row_ids(all_row_ids);
+    std::unique_ptr<grnxx::Sorter> sorter(
+        table->create_sorter("Boolean,-Integer,-_id"));
+    assert(sorter);
+    sorter->sort(&*row_ids.begin(), row_ids.size(), 800, 100);
+    for (grnxx::Int64 i = 800; i < 900; ++i) {
+      assert(row_ids[i] == answer[i]);
     }
   }
 }
