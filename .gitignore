@@ -17,6 +17,7 @@ aclocal.m4
 autom4te.cache/
 config.*
 configure
+data/
 depcomp
 install-sh
 lib/grnxx/version.h
