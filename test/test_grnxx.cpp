@@ -473,6 +473,8 @@ void test_calc() {
 }
 
 void test_sorter() {
+  constexpr grnxx::Int64 DATA_SIZE = 1000;
+
   grnxx::Database database;
 
   grnxx::Table *table = database.create_table("Table");
@@ -492,7 +494,7 @@ void test_sorter() {
   assert(string_column);
 
   std::mt19937_64 random;
-  for (grnxx::Int64 i = 0; i < 1000; ++i) {
+  for (grnxx::Int64 i = 0; i < DATA_SIZE; ++i) {
     grnxx::RowID row_id = table->insert_row();
     boolean_column->set(row_id, random() & 1);
     integer_column->set(row_id, random() % 100);
@@ -506,7 +508,7 @@ void test_sorter() {
 
   std::vector<grnxx::RowID> all_row_ids;
   std::unique_ptr<grnxx::RowIDCursor> cursor(table->create_cursor());
-  assert(cursor->get_next(INT64_MAX, &all_row_ids) == 1000);
+  assert(cursor->get_next(INT64_MAX, &all_row_ids) == DATA_SIZE);
 
   // Boolean を基準に整列する．
   {
@@ -514,7 +516,7 @@ void test_sorter() {
     std::unique_ptr<grnxx::Sorter> sorter(table->create_sorter("Boolean"));
     assert(sorter);
     sorter->sort(&*row_ids.begin(), row_ids.size());
-    for (grnxx::Int64 i = 1; i < 1000; ++i) {
+    for (grnxx::Int64 i = 1; i < DATA_SIZE; ++i) {
       assert(boolean_column->get(row_ids[i - 1]) <=
              boolean_column->get(row_ids[i]));
     }
@@ -526,7 +528,7 @@ void test_sorter() {
     std::unique_ptr<grnxx::Sorter> sorter(table->create_sorter("Integer"));
     assert(sorter);
     sorter->sort(&*row_ids.begin(), row_ids.size());
-    for (grnxx::Int64 i = 1; i < 1000; ++i) {
+    for (grnxx::Int64 i = 1; i < DATA_SIZE; ++i) {
       assert(integer_column->get(row_ids[i - 1]) <=
              integer_column->get(row_ids[i]));
     }
@@ -538,7 +540,7 @@ void test_sorter() {
     std::unique_ptr<grnxx::Sorter> sorter(table->create_sorter("Float"));
     assert(sorter);
     sorter->sort(&*row_ids.begin(), row_ids.size());
-    for (grnxx::Int64 i = 1; i < 1000; ++i) {
+    for (grnxx::Int64 i = 1; i < DATA_SIZE; ++i) {
       assert(float_column->get(row_ids[i - 1]) <=
              float_column->get(row_ids[i]));
     }
@@ -550,7 +552,7 @@ void test_sorter() {
     std::unique_ptr<grnxx::Sorter> sorter(table->create_sorter("String"));
     assert(sorter);
     sorter->sort(&*row_ids.begin(), row_ids.size());
-    for (grnxx::Int64 i = 1; i < 1000; ++i) {
+    for (grnxx::Int64 i = 1; i < DATA_SIZE; ++i) {
       assert(string_column->get(row_ids[i - 1]) <=
              string_column->get(row_ids[i]));
     }
@@ -562,7 +564,7 @@ void test_sorter() {
     std::unique_ptr<grnxx::Sorter> sorter(table->create_sorter("-Boolean"));
     assert(sorter);
     sorter->sort(&*row_ids.begin(), row_ids.size());
-    for (grnxx::Int64 i = 1; i < 1000; ++i) {
+    for (grnxx::Int64 i = 1; i < DATA_SIZE; ++i) {
       assert(boolean_column->get(row_ids[i - 1]) >=
              boolean_column->get(row_ids[i]));
     }
@@ -574,7 +576,7 @@ void test_sorter() {
     std::unique_ptr<grnxx::Sorter> sorter(table->create_sorter("-Integer"));
     assert(sorter);
     sorter->sort(&*row_ids.begin(), row_ids.size());
-    for (grnxx::Int64 i = 1; i < 1000; ++i) {
+    for (grnxx::Int64 i = 1; i < DATA_SIZE; ++i) {
       assert(integer_column->get(row_ids[i - 1]) >=
              integer_column->get(row_ids[i]));
     }
@@ -586,7 +588,7 @@ void test_sorter() {
     std::unique_ptr<grnxx::Sorter> sorter(table->create_sorter("-Float"));
     assert(sorter);
     sorter->sort(&*row_ids.begin(), row_ids.size());
-    for (grnxx::Int64 i = 1; i < 1000; ++i) {
+    for (grnxx::Int64 i = 1; i < DATA_SIZE; ++i) {
       assert(float_column->get(row_ids[i - 1]) >=
              float_column->get(row_ids[i]));
     }
@@ -598,7 +600,7 @@ void test_sorter() {
     std::unique_ptr<grnxx::Sorter> sorter(table->create_sorter("-String"));
     assert(sorter);
     sorter->sort(&*row_ids.begin(), row_ids.size());
-    for (grnxx::Int64 i = 1; i < 1000; ++i) {
+    for (grnxx::Int64 i = 1; i < DATA_SIZE; ++i) {
       assert(string_column->get(row_ids[i - 1]) >=
              string_column->get(row_ids[i]));
     }
@@ -635,7 +637,7 @@ void test_sorter() {
         table->create_sorter("Boolean,Integer,-Float"));
     assert(sorter);
     sorter->sort(&*row_ids.begin(), row_ids.size());
-    for (grnxx::Int64 i = 1; i < 1000; ++i) {
+    for (grnxx::Int64 i = 1; i < DATA_SIZE; ++i) {
       assert(boolean_column->get(row_ids[i - 1]) <=
              boolean_column->get(row_ids[i]));
       if (boolean_column->get(row_ids[i - 1]) ==
@@ -682,7 +684,7 @@ void test_sorter() {
         table->create_sorter("Boolean,-Integer,-_id"));
     assert(sorter);
     sorter->sort(&*row_ids.begin(), row_ids.size());
-    for (grnxx::Int64 i = 1; i < 1000; ++i) {
+    for (grnxx::Int64 i = 1; i < DATA_SIZE; ++i) {
       assert(boolean_column->get(row_ids[i - 1]) <=
              boolean_column->get(row_ids[i]));
       if (boolean_column->get(row_ids[i - 1]) ==
@@ -706,6 +708,110 @@ void test_sorter() {
     assert(sorter);
     sorter->sort(&*row_ids.begin(), row_ids.size(), 800, 100);
     for (grnxx::Int64 i = 800; i < 900; ++i) {
+      assert(row_ids[i] == answer[i]);
+    }
+  }
+}
+
+void test_sorter_large() {
+  constexpr grnxx::Int64 DATA_SIZE = 100000;
+
+  grnxx::Database database;
+
+  grnxx::Table *table = database.create_table("Table");
+  assert(table);
+
+  auto less_than_10 = dynamic_cast<grnxx::ColumnImpl<grnxx::Int64> *>(
+      table->create_column("LessThan10", grnxx::INTEGER));
+  assert(less_than_10);
+  auto less_than_100 = dynamic_cast<grnxx::ColumnImpl<grnxx::Int64> *>(
+      table->create_column("LessThan100", grnxx::INTEGER));
+  assert(less_than_100);
+  auto less_than_1000 = dynamic_cast<grnxx::ColumnImpl<grnxx::Int64> *>(
+      table->create_column("LessThan1000", grnxx::INTEGER));
+  assert(less_than_1000);
+
+  std::mt19937_64 random;
+  for (grnxx::Int64 i = 0; i < DATA_SIZE; ++i) {
+    grnxx::RowID row_id = table->insert_row();
+    less_than_10->set(row_id, random() % 10);
+    less_than_100->set(row_id, random() % 100);
+    less_than_1000->set(row_id, random() % 1000);
+  }
+
+  std::vector<grnxx::RowID> all_row_ids;
+  std::unique_ptr<grnxx::RowIDCursor> cursor(table->create_cursor());
+  assert(cursor->get_next(INT64_MAX, &all_row_ids) == DATA_SIZE);
+
+  std::vector<grnxx::RowID> answer;
+  {
+    // LessThan10, LessThan100, LessThan1000 を基準に整列する．
+    std::vector<grnxx::RowID> row_ids(all_row_ids);
+    std::unique_ptr<grnxx::Sorter> sorter(
+        table->create_sorter("LessThan10,LessThan100,LessThan1000,_id"));
+    assert(sorter);
+    sorter->sort(&*row_ids.begin(), row_ids.size());
+    for (grnxx::Int64 i = 1; i < DATA_SIZE; ++i) {
+      assert(less_than_10->get(row_ids[i - 1]) <=
+             less_than_10->get(row_ids[i]));
+      if (less_than_10->get(row_ids[i - 1]) ==
+          less_than_10->get(row_ids[i])) {
+        assert(less_than_100->get(row_ids[i - 1]) <=
+               less_than_100->get(row_ids[i]));
+        if (less_than_100->get(row_ids[i - 1]) ==
+            less_than_100->get(row_ids[i])) {
+          assert(less_than_1000->get(row_ids[i - 1]) <=
+                 less_than_1000->get(row_ids[i]));
+          if (less_than_1000->get(row_ids[i - 1]) ==
+              less_than_1000->get(row_ids[i])) {
+            assert(row_ids[i - 1] < row_ids[i]);
+          }
+        }
+      }
+    }
+    // 重複がないことを確認する．
+    std::vector<bool> bitmap(DATA_SIZE, false);
+    for (grnxx::RowID row_id : row_ids) {
+      assert(!bitmap[row_id]);
+      bitmap[row_id] = true;
+    }
+    answer = row_ids;
+  }
+
+  {
+    // LessThan10, LessThan100, LessThan1000 を基準に整列する．
+    std::vector<grnxx::RowID> row_ids(all_row_ids);
+    std::unique_ptr<grnxx::Sorter> sorter(
+        table->create_sorter("LessThan10,LessThan100,LessThan1000,_id"));
+    assert(sorter);
+    sorter->sort(&*row_ids.begin(), row_ids.size(), 0, DATA_SIZE / 2);
+    for (grnxx::Int64 i = 0; i < (DATA_SIZE / 2); ++i) {
+      assert(row_ids[i] == answer[i]);
+    }
+  }
+
+  {
+    // LessThan10, LessThan100, LessThan1000 を基準に整列する．
+    std::vector<grnxx::RowID> row_ids(all_row_ids);
+    std::unique_ptr<grnxx::Sorter> sorter(
+        table->create_sorter("LessThan10,LessThan100,LessThan1000,_id"));
+    assert(sorter);
+    sorter->sort(&*row_ids.begin(), row_ids.size(),
+                 DATA_SIZE / 2, DATA_SIZE / 2);
+    for (grnxx::Int64 i = DATA_SIZE / 2; i < DATA_SIZE; ++i) {
+      assert(row_ids[i] == answer[i]);
+    }
+  }
+
+  {
+    // LessThan10, LessThan100, LessThan1000 を基準に整列する．
+    std::vector<grnxx::RowID> row_ids(all_row_ids);
+    std::unique_ptr<grnxx::Sorter> sorter(
+        table->create_sorter("LessThan10,LessThan100,LessThan1000,_id"));
+    assert(sorter);
+    sorter->sort(&*row_ids.begin(), row_ids.size(),
+                 DATA_SIZE / 4, DATA_SIZE / 2);
+    for (grnxx::Int64 i = DATA_SIZE / 4; i < (DATA_SIZE / 4 * 3); ++i) {
       assert(row_ids[i] == answer[i]);
     }
   }
@@ -988,6 +1094,7 @@ int main() {
   test_column();
   test_calc();
   test_sorter();
+  test_sorter_large();
   test_index();
   return 0;
 }
