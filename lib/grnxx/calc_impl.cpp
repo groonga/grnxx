@@ -1577,7 +1577,7 @@ CalcNode *CalcImpl::create_arithmetic_node_3(
 // T: 算術演算子．
 template <typename T>
 CalcNode *CalcImpl::create_arithmetic_node_4(CalcNode *lhs, CalcNode *rhs) {
-  using Result = typename T::Result;
+//  using Result = typename T::Result;
   using Lhs = typename T::Lhs;
   using Rhs = typename T::Rhs;
   switch (lhs->type()) {
