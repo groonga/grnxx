@@ -1292,6 +1292,7 @@ CalcNode *CalcImpl::create_comparer_node(
           binary_operator_type, lhs, rhs);
     }
   }
+  return nullptr;
 }
 
 // 指定された比較演算子と対応するノードを作成する．
