@@ -904,7 +904,13 @@ void run_terminal() {
 
 void print_version() {
   std::cout << grnxx::Library::name() << ' '
-            << grnxx::Library::version() << std::endl;
+            << grnxx::Library::version() << "\n\n";
+
+  std::cout << "options:";
+  if (grnxx::Library::enable_varint()) {
+    std::cout << " varint";
+  }
+  std::cout << std::endl;
 }
 
 void print_usage(int argc, char *argv[]) {

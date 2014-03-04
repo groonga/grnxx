@@ -11,6 +11,9 @@ class Library {
 
   // ライブラリのバージョンを返す．
   static const char *version();
+
+  // 可変長整数型が有効であれば true を返し，そうでなければ false を返す．
+  static bool enable_varint();
 };
 
 }  // namespace grnxx
