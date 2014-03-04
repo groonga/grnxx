@@ -278,6 +278,7 @@ void test_calc() {
     assert(calc);
     std::vector<grnxx::RowID> row_ids(all_row_ids);
     grnxx::Int64 num_row_ids = calc->filter(&*row_ids.begin(), row_ids.size());
+    assert(num_row_ids != 0);
     grnxx::Int64 count = 0;
     for (grnxx::Int64 i = 0; i < 1000; ++i) {
       grnxx::RowID row_id = grnxx::MIN_ROW_ID + i;
@@ -295,6 +296,7 @@ void test_calc() {
     assert(calc);
     std::vector<grnxx::RowID> row_ids(all_row_ids);
     grnxx::Int64 num_row_ids = calc->filter(&*row_ids.begin(), row_ids.size());
+    assert(num_row_ids != 0);
     grnxx::Int64 count = 0;
     for (grnxx::Int64 i = 0; i < 1000; ++i) {
       grnxx::RowID row_id = grnxx::MIN_ROW_ID + i;
@@ -313,6 +315,7 @@ void test_calc() {
     assert(calc);
     std::vector<grnxx::RowID> row_ids(all_row_ids);
     grnxx::Int64 num_row_ids = calc->filter(&*row_ids.begin(), row_ids.size());
+    assert(num_row_ids != 0);
     grnxx::Int64 count = 0;
     for (grnxx::Int64 i = 0; i < 1000; ++i) {
       grnxx::RowID row_id = grnxx::MIN_ROW_ID + i;
@@ -331,6 +334,7 @@ void test_calc() {
     assert(calc);
     std::vector<grnxx::RowID> row_ids(all_row_ids);
     grnxx::Int64 num_row_ids = calc->filter(&*row_ids.begin(), row_ids.size());
+    assert(num_row_ids != 0);
     grnxx::Int64 count = 0;
     for (grnxx::Int64 i = 0; i < 1000; ++i) {
       grnxx::RowID row_id = grnxx::MIN_ROW_ID + i;
@@ -350,6 +354,7 @@ void test_calc() {
     assert(calc);
     std::vector<grnxx::RowID> row_ids(all_row_ids);
     grnxx::Int64 num_row_ids = calc->filter(&*row_ids.begin(), row_ids.size());
+    assert(num_row_ids != 0);
     grnxx::Int64 count = 0;
     for (grnxx::Int64 i = 0; i < 1000; ++i) {
       grnxx::RowID row_id = grnxx::MIN_ROW_ID + i;
@@ -361,12 +366,33 @@ void test_calc() {
     assert(count == num_row_ids);
   }
 
-  // Float の演算結果で絞り込む．
+  // Integer の演算結果で絞り込む．
   {
-    std::unique_ptr<grnxx::Calc> calc(table->create_calc("(Float + 1.0) < 1.5"));
+    std::unique_ptr<grnxx::Calc> calc(
+        table->create_calc("(Integer == 0) || (100 / Integer) > 10"));
     assert(calc);
     std::vector<grnxx::RowID> row_ids(all_row_ids);
     grnxx::Int64 num_row_ids = calc->filter(&*row_ids.begin(), row_ids.size());
+    assert(num_row_ids != 0);
+    grnxx::Int64 count = 0;
+    for (grnxx::Int64 i = 0; i < 1000; ++i) {
+      grnxx::RowID row_id = grnxx::MIN_ROW_ID + i;
+      if ((integer_data[i] == 0) || ((100 / integer_data[i]) > 10)) {
+        assert(row_ids[count] == row_id);
+        assert(++count <= num_row_ids);
+      }
+    }
+    assert(count == num_row_ids);
+  }
+
+  // Float の演算結果で絞り込む．
+  {
+    std::unique_ptr<grnxx::Calc> calc(
+        table->create_calc("(Float + 1.0) < 1.5"));
+    assert(calc);
+    std::vector<grnxx::RowID> row_ids(all_row_ids);
+    grnxx::Int64 num_row_ids = calc->filter(&*row_ids.begin(), row_ids.size());
+    assert(num_row_ids != 0);
     grnxx::Int64 count = 0;
     for (grnxx::Int64 i = 0; i < 1000; ++i) {
       grnxx::RowID row_id = grnxx::MIN_ROW_ID + i;
