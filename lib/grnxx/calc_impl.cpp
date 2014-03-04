@@ -247,7 +247,7 @@ Int64 ComparerNode<T, U, V>::filter(RowID *row_ids, Int64 num_row_ids) {
   Int64 count = 0;
   for (Int64 i = 0; i < num_row_ids; ++i) {
     RowID row_id = row_ids[i];
-    if (comparer_(lhs_->get(i, row_ids[i]), rhs_->get(i, row_ids[i]))) {
+    if (comparer_(lhs_->get(i, row_id), rhs_->get(i, row_id))) {
       row_ids[count++] = row_id;
     }
   }
@@ -261,7 +261,8 @@ void ComparerNode<T, U, V>::fill(const RowID *row_ids, Int64 num_row_ids) {
   rhs_->fill(row_ids, num_row_ids);
   data_.resize(num_row_ids);
   for (Int64 i = 0; i < num_row_ids; ++i) {
-    data_[i] = comparer_(lhs_->get(i, row_ids[i]), rhs_->get(i, row_ids[i]));
+    RowID row_id = row_ids[i];
+    data_[i] = comparer_(lhs_->get(i, row_id), rhs_->get(i, row_id));
   }
 }
 
