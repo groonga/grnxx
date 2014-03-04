@@ -2,7 +2,7 @@
 
 #include "grnxx/index.hpp"
 
-#include <iostream>
+//#include <iostream>
 
 namespace grnxx {
 
@@ -153,21 +153,21 @@ void ColumnImpl<Int64>::expand_and_set(RowID row_id, Int64 value) {
     case 8: {
       if ((value < INT32_MIN) || (value > INT32_MAX)) {
         // Int8 -> Int64.
-        std::cerr << "Log: " << name() << ": Int8 -> Int64" << std::endl;
+//        std::cerr << "Log: " << name() << ": Int8 -> Int64" << std::endl;
         data_64_.reserve(data_8_.capacity());
         data_64_.assign(data_8_.begin(), data_8_.end());
         data_64_[row_id] = value;
         internal_data_type_size_ = 64;
       } else if ((value < INT16_MIN) || (value > INT16_MAX)) {
         // Int8 -> Int32.
-        std::cerr << "Log: " << name() << ": Int8 -> Int32" << std::endl;
+//        std::cerr << "Log: " << name() << ": Int8 -> Int32" << std::endl;
         data_32_.reserve(data_8_.capacity());
         data_32_.assign(data_8_.begin(), data_8_.end());
         data_32_[row_id] = value;
         internal_data_type_size_ = 32;
       } else {
         // Int8 -> Int16.
-        std::cerr << "Log: " << name() << ": Int8 -> Int16" << std::endl;
+//        std::cerr << "Log: " << name() << ": Int8 -> Int16" << std::endl;
         data_16_.reserve(data_8_.capacity());
         data_16_.assign(data_8_.begin(), data_8_.end());
         data_16_[row_id] = value;
@@ -179,14 +179,14 @@ void ColumnImpl<Int64>::expand_and_set(RowID row_id, Int64 value) {
     case 16: {
       if ((value < INT32_MIN) || (value > INT32_MAX)) {
         // Int16 -> Int64.
-        std::cerr << "Log: " << name() << ": Int16 -> Int64" << std::endl;
+//        std::cerr << "Log: " << name() << ": Int16 -> Int64" << std::endl;
         data_64_.reserve(data_16_.capacity());
         data_64_.assign(data_16_.begin(), data_16_.end());
         data_64_[row_id] = value;
         internal_data_type_size_ = 64;
       } else if ((value < INT16_MIN) || (value > INT16_MAX)) {
         // Int16 -> Int32.
-        std::cerr << "Log: " << name() << ": Int16 -> Int32" << std::endl;
+//        std::cerr << "Log: " << name() << ": Int16 -> Int32" << std::endl;
         data_32_.reserve(data_16_.capacity());
         data_32_.assign(data_16_.begin(), data_16_.end());
         data_32_[row_id] = value;
@@ -197,7 +197,7 @@ void ColumnImpl<Int64>::expand_and_set(RowID row_id, Int64 value) {
     }
     case 32: {
       // Int32 -> Int64.
-      std::cerr << "Log: " << name() << ": Int32-> Int64" << std::endl;
+//      std::cerr << "Log: " << name() << ": Int32-> Int64" << std::endl;
       data_64_.reserve(data_32_.capacity());
       data_64_.assign(data_32_.begin(), data_32_.end());
       data_64_[row_id] = value;
