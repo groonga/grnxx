@@ -145,16 +145,10 @@ class OperatorNode : public CalcNode {
   virtual ~OperatorNode() {}
 
   // 行の一覧を受け取り，演算結果が真になる行のみを残して，残った行の数を返す．
-  virtual Int64 filter(RowID *row_ids, Int64 num_row_ids) {
-    // すべて破棄する．
-    return 0;
-  }
+  virtual Int64 filter(RowID *row_ids, Int64 num_row_ids) = 0;
 
   // 与えられた行の一覧について演算をおこない，その結果を取得できる状態にする．
-  virtual void fill(const RowID *row_ids, Int64 num_row_ids) {
-    // 致命的なエラーを回避するために領域を確保する．
-    data_.resize(num_row_ids);
-  }
+  virtual void fill(const RowID *row_ids, Int64 num_row_ids) = 0;
 
   // 指定された値を返す．
   T get(Int64 i, RowID row_id) const {
