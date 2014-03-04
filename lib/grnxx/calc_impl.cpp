@@ -595,7 +595,7 @@ template <typename T, typename U> struct DividesOperator {
 template <> struct DividesOperator<Int64, Int64> {
   using Result = Int64;
   using Lhs = Int64;
-  using Rhs = Int32;
+  using Rhs = Int64;
   Result operator()(Int64 lhs, Int64 rhs) const {
     return divides_with_overflow_check(lhs, rhs);
   }
