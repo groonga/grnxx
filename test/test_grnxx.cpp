@@ -290,6 +290,24 @@ void test_calc() {
     assert(count == num_row_ids);
   }
 
+  // Boolean で絞り込む．
+  {
+    std::unique_ptr<grnxx::Calc> calc(table->create_calc("!Boolean"));
+    assert(calc);
+    std::vector<grnxx::RowID> row_ids(all_row_ids);
+    grnxx::Int64 num_row_ids = calc->filter(&*row_ids.begin(), row_ids.size());
+    assert(num_row_ids != 0);
+    grnxx::Int64 count = 0;
+    for (grnxx::Int64 i = 0; i < 1000; ++i) {
+      grnxx::RowID row_id = grnxx::MIN_ROW_ID + i;
+      if (!boolean_data[i]) {
+        assert(row_ids[count] == row_id);
+        assert(++count <= num_row_ids);
+      }
+    }
+    assert(count == num_row_ids);
+  }
+
   // Integer の範囲で絞り込む．
   {
     std::unique_ptr<grnxx::Calc> calc(table->create_calc("Integer < 50"));
