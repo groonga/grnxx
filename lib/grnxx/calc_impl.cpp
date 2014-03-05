@@ -300,6 +300,7 @@ Int64 LogicalAndNode<T, U>::filter(RowID *row_ids, Int64 num_row_ids) {
 // 与えられた行の一覧について演算をおこない，その結果を取得できる状態にする．
 template <typename T, typename U>
 void LogicalAndNode<T, U>::fill(const RowID *row_ids, Int64 num_row_ids) {
+  // TODO: 左側が偽になるときは右側を評価しないようにする．
   lhs_->fill(row_ids, num_row_ids);
   rhs_->fill(row_ids, num_row_ids);
   data_.resize(num_row_ids);
@@ -404,6 +405,7 @@ Int64 LogicalOrNode<T, U>::filter(RowID *row_ids, Int64 num_row_ids) {
 // 与えられた行の一覧について演算をおこない，その結果を取得できる状態にする．
 template <typename T, typename U>
 void LogicalOrNode<T, U>::fill(const RowID *row_ids, Int64 num_row_ids) {
+  // TODO: 左側が真になるときは右側を評価しないようにする．
   lhs_->fill(row_ids, num_row_ids);
   rhs_->fill(row_ids, num_row_ids);
   data_.resize(num_row_ids);
