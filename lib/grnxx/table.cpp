@@ -226,13 +226,22 @@ Table::Cursor::Cursor(RowID range_min, RowID range_max)
 // 行 ID を最大 limit 個取得して row_ids の末尾に追加し，取得した行 ID の数を返す．
 // 取得できる行 ID が尽きたときは limit より小さい値を返す．
 Int64 Table::Cursor::get_next(Int64 limit, std::vector<RowID> *row_ids) {
+  if (limit > (max_row_id_ - row_id_)) {
+    limit = (max_row_id_ - row_id_) + 1;
+  }
+  if (limit <= 0) {
+    return 0;
+  }
   if (row_ids) {
     Int64 count = 0;
+    Int64 offset = row_ids->size();
+    row_ids->resize(offset + limit);
     while ((count < limit) && (row_id_ <= max_row_id_)) {
-      row_ids->push_back(row_id_);
+      (*row_ids)[offset + count] = row_id_;
       ++row_id_;
       ++count;
     }
+    row_ids->resize(offset + count);
     return count;
   } else {
     Int64 count;
