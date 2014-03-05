@@ -1068,7 +1068,7 @@ bool CalcImpl::push_token(const CalcToken &token,
       }
       // 直前の単項演算子を適用した結果に置き換える．
       auto node = create_unary_operator_node(
-          LOGICAL_NOT_OPERATOR, stack->back().node());
+          LOGICAL_NOT_OPERATOR, token.node());
       if (!node) {
         return false;
       }
