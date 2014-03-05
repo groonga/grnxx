@@ -24,6 +24,7 @@ lib/grnxx/version.h
 libtool
 ltmain.sh
 missing
+oprofile_data/
 src/grnxx
 stamp-h1
 test/*.trs
