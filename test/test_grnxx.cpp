@@ -272,6 +272,15 @@ void test_calc() {
     }
   }
 
+  // 定数ですべて破棄する．
+  {
+    std::unique_ptr<grnxx::Calc> calc(table->create_calc("!TRUE"));
+    assert(calc);
+    std::vector<grnxx::RowID> row_ids(all_row_ids);
+    grnxx::Int64 num_row_ids = calc->filter(&*row_ids.begin(), row_ids.size());
+    assert(num_row_ids == 0);
+  }
+
   // Boolean で絞り込む．
   {
     std::unique_ptr<grnxx::Calc> calc(table->create_calc("Boolean"));
