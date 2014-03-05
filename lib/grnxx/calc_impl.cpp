@@ -1045,8 +1045,9 @@ bool CalcImpl::push_token(const CalcToken &token,
             ((*stack)[stack->size() - 2].bracket_type() != LEFT_BRACKET)) {
           return false;
         }
-        (*stack)[stack->size() - 2] = stack->back();
-        stack->pop_back();
+        CalcToken content_token = stack->back();
+        stack->resize(stack->size() - 2);
+        push_token(content_token, stack);
         break;
       }
       break;
