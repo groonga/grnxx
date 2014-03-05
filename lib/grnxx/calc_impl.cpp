@@ -274,7 +274,8 @@ class LogicalAndNode : public OperatorNode<Boolean> {
   explicit LogicalAndNode(CalcNode *lhs, CalcNode *rhs)
       : OperatorNode<Boolean>(),
         lhs_(static_cast<T *>(lhs)),
-        rhs_(static_cast<U *>(rhs)) {}
+        rhs_(static_cast<U *>(rhs)),
+        local_row_ids_() {}
   // ノードを破棄する．
   ~LogicalAndNode() {}
 
@@ -287,6 +288,7 @@ class LogicalAndNode : public OperatorNode<Boolean> {
  private:
   T *lhs_;
   U *rhs_;
+  std::vector<RowID> local_row_ids_;
 };
 
 // 行の一覧を受け取り，演算結果が真になる行のみを残して，残った行の数を返す．
@@ -300,12 +302,34 @@ Int64 LogicalAndNode<T, U>::filter(RowID *row_ids, Int64 num_row_ids) {
 // 与えられた行の一覧について演算をおこない，その結果を取得できる状態にする．
 template <typename T, typename U>
 void LogicalAndNode<T, U>::fill(const RowID *row_ids, Int64 num_row_ids) {
-  // TODO: 左側が偽になるときは右側を評価しないようにする．
-  lhs_->fill(row_ids, num_row_ids);
-  rhs_->fill(row_ids, num_row_ids);
+  // 必要な領域を確保する．
   data_.resize(num_row_ids);
+  local_row_ids_.resize(num_row_ids);
+
+  lhs_->fill(row_ids, num_row_ids);
+
+  // 左側の評価が真になる行のみを抜き出す．
+  Int64 count = 0;
   for (Int64 i = 0; i < num_row_ids; ++i) {
-    data_[i] = lhs_->get(i, row_ids[i]) && rhs_->get(i, row_ids[i]);
+    RowID row_id = row_ids[i];
+    if (lhs_->get(i, row_id)) {
+      local_row_ids_[count] = row_id;
+      ++count;
+    }
+  }
+
+  rhs_->fill(&*local_row_ids_.begin(), count);
+
+  // 左右ともに真になる行のみ真にする．
+  Int64 j = 0;
+  for (Int64 i = 0; i < num_row_ids; ++i) {
+    auto lhs_value = lhs_->get(i, row_ids[i]);
+    if (lhs_value) {
+      data_[i] = rhs_->get(j, row_ids[j]);
+      ++j;
+    } else {
+      data_[i] = lhs_value;
+    }
   }
 }
 
