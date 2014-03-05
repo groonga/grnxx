@@ -750,15 +750,33 @@ bool run_select(grnxx::Database *database, const grnxx::String &params,
     // 整列条件がなければ offset, limit を考慮する．
     if (calc->empty()) {
       // 検索条件がなければ，先頭の offset 件をスキップした後，
-      // limit 件を取り出して終了する．
-      cursor->get_next(query.offset, nullptr);
-      cursor->get_next(query.limit, &row_ids);
+      // 最大 limit 件を取り出して終了する．
+      cursor->get_next(nullptr, query.offset);
+      grnxx::Int64 num_rows = 0;
+      while (num_rows < query.limit) {
+        grnxx::Int64 limit_left = query.limit - num_rows;
+        grnxx::Int64 block_size =
+            (limit_left < BLOCK_SIZE) ? limit_left : BLOCK_SIZE;
+        row_ids.resize(num_rows + block_size);
+        grnxx::Int64 num_new_rows =
+            cursor->get_next(&row_ids[num_rows], block_size);
+        num_rows += num_new_rows;
+        if (num_new_rows < block_size) {
+          break;
+        }
+      }
+      row_ids.resize(num_rows);
     } else {
       // 検索条件があればブロック単位でフィルタにかける．
       grnxx::Int64 num_rows = 0;
       grnxx::Int64 offset_left = query.offset;
-      grnxx::Int64 num_new_rows;
-      while ((num_new_rows = cursor->get_next(BLOCK_SIZE, &row_ids)) != 0) {
+      for ( ; ; ) {
+        row_ids.resize(num_rows + BLOCK_SIZE);
+        grnxx::Int64 num_new_rows =
+            cursor->get_next(&row_ids[num_rows], BLOCK_SIZE);
+        if (num_new_rows == 0) {
+          break;
+        }
         num_filtered_rows += num_new_rows;
         num_new_rows = calc->filter(&row_ids[num_rows], num_new_rows);
         if (offset_left != 0) {
@@ -775,22 +793,25 @@ bool run_select(grnxx::Database *database, const grnxx::String &params,
         }
         num_rows += num_new_rows;
         if (num_rows >= query.limit) {
-          row_ids.resize(query.limit);
+          num_rows = query.limit;
           break;
         }
-        row_ids.resize(num_rows);
       }
+      row_ids.resize(num_rows);
     }
   } else {
     // 整列条件が指定されているときは，後で offset, limit を適用する．
     grnxx::Int64 num_rows = 0;
-    grnxx::Int64 num_new_rows;
-    while ((num_new_rows = cursor->get_next(BLOCK_SIZE, &row_ids)) != 0) {
-      num_filtered_rows += num_new_rows;
-      num_new_rows = calc->filter(&row_ids[num_rows], num_new_rows);
+    for ( ; ; ) {
+      row_ids.resize(num_rows + BLOCK_SIZE);
+      grnxx::Int64 num_new_rows =
+          cursor->get_next(&row_ids[num_rows], BLOCK_SIZE);
       num_rows += num_new_rows;
-      row_ids.resize(num_rows);
+      if (num_new_rows < BLOCK_SIZE) {
+        break;
+      }
     }
+    row_ids.resize(num_rows);
   }
 
   if (verbose_mode) {

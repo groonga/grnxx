@@ -145,9 +145,9 @@ void test_table() {
   std::unique_ptr<grnxx::RowIDCursor> cursor(table->create_cursor());
   assert(cursor);
 
-  std::vector<grnxx::RowID> row_ids;
-  assert(cursor->get_next(10, &row_ids) == 10);
-  assert(cursor->get_next(100, &row_ids) == 90);
+  std::vector<grnxx::RowID> row_ids(110);
+  assert(cursor->get_next(&row_ids[0], 10) == 10);
+  assert(cursor->get_next(&row_ids[10], 100) == 90);
   for (grnxx::Int64 i = 0; i < 100; ++i) {
     assert(row_ids[i] == (grnxx::MIN_ROW_ID + i));
   }
@@ -255,9 +255,9 @@ void test_calc() {
     string_column->set(row_id, string_data[i]);
   }
 
-  std::vector<grnxx::RowID> all_row_ids;
+  std::vector<grnxx::RowID> all_row_ids(1000);
   std::unique_ptr<grnxx::RowIDCursor> cursor(table->create_cursor());
-  assert(cursor->get_next(INT64_MAX, &all_row_ids) == 1000);
+  assert(cursor->get_next(&all_row_ids[0], 1000) == 1000);
 
   // 何もしない．
   {
@@ -532,9 +532,9 @@ void test_sorter() {
     string_column->set(row_id, str);
   }
 
-  std::vector<grnxx::RowID> all_row_ids;
+  std::vector<grnxx::RowID> all_row_ids(DATA_SIZE);
   std::unique_ptr<grnxx::RowIDCursor> cursor(table->create_cursor());
-  assert(cursor->get_next(INT64_MAX, &all_row_ids) == DATA_SIZE);
+  assert(cursor->get_next(&all_row_ids[0], DATA_SIZE) == DATA_SIZE);
 
   // Boolean を基準に整列する．
   {
@@ -765,9 +765,9 @@ void test_sorter_large() {
     less_than_1000->set(row_id, random() % 1000);
   }
 
-  std::vector<grnxx::RowID> all_row_ids;
+  std::vector<grnxx::RowID> all_row_ids(DATA_SIZE);
   std::unique_ptr<grnxx::RowIDCursor> cursor(table->create_cursor());
-  assert(cursor->get_next(INT64_MAX, &all_row_ids) == DATA_SIZE);
+  assert(cursor->get_next(&all_row_ids[0], DATA_SIZE) == DATA_SIZE);
 
   std::vector<grnxx::RowID> answer;
   {
@@ -889,8 +889,8 @@ void test_index() {
   {
     std::unique_ptr<grnxx::RowIDCursor> cursor(integer_index->find_all());
     assert(cursor);
-    std::vector<grnxx::RowID> row_ids;
-    assert(cursor->get_next(INT64_MAX, &row_ids) == 1000);
+    std::vector<grnxx::RowID> row_ids(1000);
+    assert(cursor->get_next(&row_ids[0], 1000) == 1000);
     auto value = integer_column->get(row_ids[0]);
     assert(value >= 0);
     assert(value < 100);
@@ -910,8 +910,9 @@ void test_index() {
         integer_index->find_between(grnxx::Int64(30), grnxx::Int64(70),
                                     false, false));
     assert(cursor);
-    std::vector<grnxx::RowID> row_ids;
-    assert(cursor->get_next(INT64_MAX, &row_ids) > 100);
+    std::vector<grnxx::RowID> row_ids(1000);
+    row_ids.resize(cursor->get_next(&row_ids[0], 1000));
+    assert(row_ids.size() > 100);
     auto value = integer_column->get(row_ids[0]);
     assert(value > 30);
     assert(value < 70);
@@ -931,8 +932,9 @@ void test_index() {
         integer_index->find_between(grnxx::Int64(30), grnxx::Int64(70),
                                     true, true));
     assert(cursor);
-    std::vector<grnxx::RowID> row_ids;
-    assert(cursor->get_next(INT64_MAX, &row_ids) > 100);
+    std::vector<grnxx::RowID> row_ids(1000);
+    row_ids.resize(cursor->get_next(&row_ids[0], 1000));
+    assert(row_ids.size() > 100);
     auto value = integer_column->get(row_ids[0]);
     assert(value >= 30);
     assert(value <= 70);
@@ -951,8 +953,9 @@ void test_index() {
     std::unique_ptr<grnxx::RowIDCursor> cursor(
         float_index->find_between(0.3, 0.7));
     assert(cursor);
-    std::vector<grnxx::RowID> row_ids;
-    assert(cursor->get_next(INT64_MAX, &row_ids) > 100);
+    std::vector<grnxx::RowID> row_ids(1000);
+    row_ids.resize(cursor->get_next(&row_ids[0], 1000));
+    assert(row_ids.size() > 100);
     auto value = float_column->get(row_ids[0]);
     assert(value > 0.3);
     assert(value < 0.7);
@@ -971,8 +974,9 @@ void test_index() {
     std::unique_ptr<grnxx::RowIDCursor> cursor(
         string_index->find_between("G", "P"));
     assert(cursor);
-    std::vector<grnxx::RowID> row_ids;
-    assert(cursor->get_next(INT64_MAX, &row_ids) > 100);
+    std::vector<grnxx::RowID> row_ids(1000);
+    row_ids.resize(cursor->get_next(&row_ids[0], 1000));
+    assert(row_ids.size() > 100);
     auto value = string_column->get(row_ids[0]);
     assert(value > "G");
     assert(value < "P");
@@ -990,8 +994,8 @@ void test_index() {
   {
     std::unique_ptr<grnxx::RowIDCursor> cursor(integer_index->find_all(true));
     assert(cursor);
-    std::vector<grnxx::RowID> row_ids;
-    assert(cursor->get_next(INT64_MAX, &row_ids) == 1000);
+    std::vector<grnxx::RowID> row_ids(1000);
+    assert(cursor->get_next(&row_ids[0], 1000) == 1000);
     auto value = integer_column->get(row_ids[0]);
     assert(value >= 0);
     assert(value < 100);
@@ -1011,8 +1015,9 @@ void test_index() {
         integer_index->find_between(grnxx::Int64(30), grnxx::Int64(70),
                                     false, false, true));
     assert(cursor);
-    std::vector<grnxx::RowID> row_ids;
-    assert(cursor->get_next(INT64_MAX, &row_ids) > 100);
+    std::vector<grnxx::RowID> row_ids(1000);
+    row_ids.resize(cursor->get_next(&row_ids[0], 1000));
+    assert(row_ids.size() > 100);
     auto value = integer_column->get(row_ids[0]);
     assert(value > 30);
     assert(value < 70);
@@ -1032,8 +1037,9 @@ void test_index() {
         integer_index->find_between(grnxx::Int64(30), grnxx::Int64(70),
                                     true, true, true));
     assert(cursor);
-    std::vector<grnxx::RowID> row_ids;
-    assert(cursor->get_next(INT64_MAX, &row_ids) > 100);
+    std::vector<grnxx::RowID> row_ids(1000);
+    row_ids.resize(cursor->get_next(&row_ids[0], 1000));
+    assert(row_ids.size() > 100);
     auto value = integer_column->get(row_ids[0]);
     assert(value >= 30);
     assert(value <= 70);
@@ -1052,8 +1058,9 @@ void test_index() {
     std::unique_ptr<grnxx::RowIDCursor> cursor(
         float_index->find_between(0.3, 0.7, false, false, true));
     assert(cursor);
-    std::vector<grnxx::RowID> row_ids;
-    assert(cursor->get_next(INT64_MAX, &row_ids) > 100);
+    std::vector<grnxx::RowID> row_ids(1000);
+    row_ids.resize(cursor->get_next(&row_ids[0], 1000));
+    assert(row_ids.size() > 100);
     auto value = float_column->get(row_ids[0]);
     assert(value > 0.3);
     assert(value < 0.7);
@@ -1072,8 +1079,9 @@ void test_index() {
     std::unique_ptr<grnxx::RowIDCursor> cursor(
         string_index->find_between("G", "P", false, false, true));
     assert(cursor);
-    std::vector<grnxx::RowID> row_ids;
-    assert(cursor->get_next(INT64_MAX, &row_ids) > 100);
+    std::vector<grnxx::RowID> row_ids(1000);
+    row_ids.resize(cursor->get_next(&row_ids[0], 1000));
+    assert(row_ids.size() > 100);
     auto value = string_column->get(row_ids[0]);
     assert(value > "G");
     assert(value < "P");
@@ -1091,8 +1099,8 @@ void test_index() {
   {
     std::unique_ptr<grnxx::RowIDCursor> cursor(integer_index->find_all());
     assert(cursor);
-    std::vector<grnxx::RowID> ordered_row_ids;
-    assert(cursor->get_next(INT64_MAX, &ordered_row_ids) == 1000);
+    std::vector<grnxx::RowID> ordered_row_ids(1000);
+    assert(cursor->get_next(&ordered_row_ids[0], 1000) == 1000);
     std::unique_ptr<grnxx::Calc> calc(
         table->create_calc("(Boolean && Integer >= 50) || (String <= \"O\")"));
     assert(calc);

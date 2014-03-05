@@ -42,9 +42,9 @@ class TreeMapIndex : public Index {
    public:
     Cursor(typename Map::iterator begin, typename Map::iterator end);
 
-    // 行 ID を最大 limit 個取得して row_ids の末尾に追加し，取得した行 ID の数を返す．
-    // 取得できる行 ID が尽きたときは limit より小さい値を返す．
-    Int64 get_next(Int64 limit, std::vector<RowID> *row_ids);
+    // 行 ID を最大 size 個取得して buf に格納し，取得した行 ID の数を返す．
+    // buf が nullptr のときは取得した行 ID をそのまま捨てる．
+    Int64 get_next(RowID *buf, Int64 size);
 
    private:
     typename Map::iterator map_it_;
@@ -57,9 +57,9 @@ class TreeMapIndex : public Index {
    public:
     ReverseCursor(typename Map::iterator begin, typename Map::iterator end);
 
-    // 行 ID を最大 limit 個取得して row_ids の末尾に追加し，取得した行 ID の数を返す．
-    // 取得できる行 ID が尽きたときは limit より小さい値を返す．
-    Int64 get_next(Int64 limit, std::vector<RowID> *row_ids);
+    // 行 ID を最大 size 個取得して buf に格納し，取得した行 ID の数を返す．
+    // buf が nullptr のときは取得した行 ID をそのまま捨てる．
+    Int64 get_next(RowID *buf, Int64 size);
 
    private:
     typename Map::reverse_iterator map_it_;
@@ -189,16 +189,15 @@ TreeMapIndex<T>::Cursor::Cursor(typename Map::iterator begin,
   }
 }
 
-// 行 ID を最大 limit 個取得して row_ids の末尾に追加し，取得した行 ID の数を返す．
-// 取得できる行 ID が尽きたときは limit より小さい値を返す．
+// 行 ID を最大 size 個取得して buf に格納し，取得した行 ID の数を返す．
+// buf が nullptr のときは取得した行 ID をそのまま捨てる．
 template <typename T>
-Int64 TreeMapIndex<T>::Cursor::get_next(Int64 limit,
-                                        std::vector<RowID> *row_ids) {
+Int64 TreeMapIndex<T>::Cursor::get_next(RowID *buf, Int64 size) {
   if (map_it_ == map_end_) {
     return 0;
   }
   Int64 count = 0;
-  while (count < limit) {
+  while (count < size) {
     if (set_it_ == set_end_) {
       ++map_it_;
       if (map_it_ == map_end_) {
@@ -207,8 +206,8 @@ Int64 TreeMapIndex<T>::Cursor::get_next(Int64 limit,
       set_it_ = map_it_->second.begin();
       set_end_ = map_it_->second.end();
     }
-    if (row_ids) {
-      row_ids->push_back(*set_it_);
+    if (buf) {
+      buf[count] = *set_it_;
     }
     ++set_it_;
     ++count;
@@ -230,16 +229,15 @@ TreeMapIndex<T>::ReverseCursor::ReverseCursor(typename Map::iterator begin,
   }
 }
 
-// 行 ID を最大 limit 個取得して row_ids の末尾に追加し，取得した行 ID の数を返す．
-// 取得できる行 ID が尽きたときは limit より小さい値を返す．
+// 行 ID を最大 size 個取得して buf に格納し，取得した行 ID の数を返す．
+// buf が nullptr のときは取得した行 ID をそのまま捨てる．
 template <typename T>
-Int64 TreeMapIndex<T>::ReverseCursor::get_next(Int64 limit,
-                                               std::vector<RowID> *row_ids) {
+Int64 TreeMapIndex<T>::ReverseCursor::get_next(RowID *buf, Int64 size) {
   if (map_it_ == map_end_) {
     return 0;
   }
   Int64 count = 0;
-  while (count < limit) {
+  while (count < size) {
     if (set_it_ == set_end_) {
       ++map_it_;
       if (map_it_ == map_end_) {
@@ -248,8 +246,8 @@ Int64 TreeMapIndex<T>::ReverseCursor::get_next(Int64 limit,
       set_it_ = map_it_->second.begin();
       set_end_ = map_it_->second.end();
     }
-    if (row_ids) {
-      row_ids->push_back(*set_it_);
+    if (buf) {
+      buf[count] = *set_it_;
     }
     ++set_it_;
     ++count;
@@ -306,9 +304,9 @@ class TreeMapIndex<String> : public Index {
    public:
     Cursor(Map::iterator begin, Map::iterator end);
 
-    // 行 ID を最大 limit 個取得して row_ids の末尾に追加し，取得した行 ID の数を返す．
-    // 取得できる行 ID が尽きたときは limit より小さい値を返す．
-    Int64 get_next(Int64 limit, std::vector<RowID> *row_ids);
+    // 行 ID を最大 size 個取得して buf に格納し，取得した行 ID の数を返す．
+    // buf が nullptr のときは取得した行 ID をそのまま捨てる．
+    Int64 get_next(RowID *buf, Int64 size);
 
    private:
     Map::iterator map_it_;
@@ -321,9 +319,9 @@ class TreeMapIndex<String> : public Index {
    public:
     ReverseCursor(Map::iterator begin, Map::iterator end);
 
-    // 行 ID を最大 limit 個取得して row_ids の末尾に追加し，取得した行 ID の数を返す．
-    // 取得できる行 ID が尽きたときは limit より小さい値を返す．
-    Int64 get_next(Int64 limit, std::vector<RowID> *row_ids);
+    // 行 ID を最大 size 個取得して buf に格納し，取得した行 ID の数を返す．
+    // buf が nullptr のときは取得した行 ID をそのまま捨てる．
+    Int64 get_next(RowID *buf, Int64 size);
 
    private:
     Map::reverse_iterator map_it_;
@@ -447,15 +445,14 @@ TreeMapIndex<String>::Cursor::Cursor(Map::iterator begin, Map::iterator end)
   }
 }
 
-// 行 ID を最大 limit 個取得して row_ids の末尾に追加し，取得した行 ID の数を返す．
-// 取得できる行 ID が尽きたときは limit より小さい値を返す．
-Int64 TreeMapIndex<String>::Cursor::get_next(Int64 limit,
-                                             std::vector<RowID> *row_ids) {
+// 行 ID を最大 size 個取得して buf に格納し，取得した行 ID の数を返す．
+// buf が nullptr のときは取得した行 ID をそのまま捨てる．
+Int64 TreeMapIndex<String>::Cursor::get_next(RowID *buf, Int64 size) {
   if (map_it_ == map_end_) {
     return 0;
   }
   Int64 count = 0;
-  while (count < limit) {
+  while (count < size) {
     if (set_it_ == set_end_) {
       ++map_it_;
       if (map_it_ == map_end_) {
@@ -464,8 +461,8 @@ Int64 TreeMapIndex<String>::Cursor::get_next(Int64 limit,
       set_it_ = map_it_->second.begin();
       set_end_ = map_it_->second.end();
     }
-    if (row_ids) {
-      row_ids->push_back(*set_it_);
+    if (buf) {
+      buf[count] = *set_it_;
     }
     ++set_it_;
     ++count;
@@ -486,15 +483,14 @@ TreeMapIndex<String>::ReverseCursor::ReverseCursor(Map::iterator begin,
   }
 }
 
-// 行 ID を最大 limit 個取得して row_ids の末尾に追加し，取得した行 ID の数を返す．
-// 取得できる行 ID が尽きたときは limit より小さい値を返す．
-Int64 TreeMapIndex<String>::ReverseCursor::get_next(
-    Int64 limit, std::vector<RowID> *row_ids) {
+// 行 ID を最大 size 個取得して buf に格納し，取得した行 ID の数を返す．
+// buf が nullptr のときは取得した行 ID をそのまま捨てる．
+Int64 TreeMapIndex<String>::ReverseCursor::get_next(RowID *buf, Int64 size) {
   if (map_it_ == map_end_) {
     return 0;
   }
   Int64 count = 0;
-  while (count < limit) {
+  while (count < size) {
     if (set_it_ == set_end_) {
       ++map_it_;
       if (map_it_ == map_end_) {
@@ -503,8 +499,8 @@ Int64 TreeMapIndex<String>::ReverseCursor::get_next(
       set_it_ = map_it_->second.begin();
       set_end_ = map_it_->second.end();
     }
-    if (row_ids) {
-      row_ids->push_back(*set_it_);
+    if (buf) {
+      buf[count] = *set_it_;
     }
     ++set_it_;
     ++count;

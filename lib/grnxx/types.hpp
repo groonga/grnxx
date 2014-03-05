@@ -63,9 +63,9 @@ class RowIDCursor {
   // カーソルを破棄する．
   virtual ~RowIDCursor() {}
 
-  // 行 ID を最大 limit 個取得して row_ids の末尾に追加し，取得した行 ID の数を返す．
-  // 取得できる行 ID が尽きたときは limit より小さい値を返す．
-  virtual Int64 get_next(Int64 limit, std::vector<RowID> *row_ids) = 0;
+  // 行 ID を最大 size 個取得して buf に格納し，取得した行 ID の数を返す．
+  // buf が nullptr のときは取得した行 ID をそのまま捨てる．
+  virtual Int64 get_next(RowID *buf, Int64 size) = 0;
 };
 
 // データ型の種類．
