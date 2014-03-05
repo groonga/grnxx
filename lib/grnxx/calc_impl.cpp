@@ -1204,7 +1204,7 @@ CalcNode *CalcImpl::create_logical_not_operator_node(CalcNode *operand) {
   }
   switch (operand->type()) {
     case CONSTANT_NODE: {
-      auto value = static_cast<ConstantNode<Boolean> *>(operand)->get(0, 0);
+      auto value = !static_cast<ConstantNode<Boolean> *>(operand)->get(0, 0);
       return new ConstantNode<Boolean>(value);
     }
     case COLUMN_NODE: {
