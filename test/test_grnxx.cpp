@@ -579,6 +579,152 @@ void test_calc() {
   }
 }
 
+void test_reference() {
+  grnxx::Database database;
+
+  grnxx::Table *src_table = database.create_table("Src");
+  assert(src_table);
+  grnxx::Table *dest_table = database.create_table("Dest");
+  assert(dest_table);
+
+  auto reference_column = dynamic_cast<grnxx::ColumnImpl<grnxx::Int64> *>(
+      src_table->create_reference_column("Reference", "Dest"));
+  assert(reference_column);
+
+  auto boolean_column = dynamic_cast<grnxx::ColumnImpl<grnxx::Boolean> *>(
+      dest_table->create_column("Boolean", grnxx::BOOLEAN));
+  assert(boolean_column);
+  auto integer_column = dynamic_cast<grnxx::ColumnImpl<grnxx::Int64> *>(
+      dest_table->create_column("Integer", grnxx::INTEGER));
+  assert(integer_column);
+  auto float_column = dynamic_cast<grnxx::ColumnImpl<grnxx::Float> *>(
+      dest_table->create_column("Float", grnxx::FLOAT));
+  assert(float_column);
+
+  std::mt19937_64 random;
+
+  std::vector<grnxx::Int64> boolean_data;
+  std::vector<grnxx::Int64> integer_data;
+  std::vector<grnxx::Int64> float_data;
+  for (grnxx::Int64 i = 0; i < 1000; ++i) {
+    boolean_data.push_back(random() & 1);
+    integer_data.push_back(random() % 100);
+    float_data.push_back(1.0 * random() / random.max());
+    grnxx::RowID row_id = dest_table->insert_row();
+    boolean_column->set(row_id, boolean_data[i]);
+    integer_column->set(row_id, integer_data[i]);
+    float_column->set(row_id, float_data[i]);
+  }
+
+  std::vector<grnxx::Int64> reference_data;
+  for (grnxx::Int64 i = 0; i < 1000; ++i) {
+    grnxx::RowID row_id = src_table->insert_row();
+    reference_data.push_back(random() % 1000);
+    reference_column->set(row_id, reference_data[i] + 1);
+  }
+
+  std::vector<grnxx::RowID> all_row_ids(1000);
+  std::unique_ptr<grnxx::RowIDCursor> cursor(src_table->create_cursor());
+  assert(cursor->get_next(&all_row_ids[0], 1000) == 1000);
+
+  // Boolean で絞り込む．
+  {
+    std::unique_ptr<grnxx::Calc> calc(
+        src_table->create_calc("Reference.Boolean"));
+    assert(calc);
+    std::vector<grnxx::RowID> row_ids(all_row_ids);
+    grnxx::Int64 num_row_ids = calc->filter(&*row_ids.begin(), row_ids.size());
+    assert(num_row_ids != 0);
+    grnxx::Int64 count = 0;
+    for (grnxx::Int64 i = 0; i < 1000; ++i) {
+      grnxx::RowID row_id = grnxx::MIN_ROW_ID + i;
+      if (boolean_data[reference_data[i]]) {
+        assert(row_ids[count] == row_id);
+        assert(++count <= num_row_ids);
+      }
+    }
+    assert(count == num_row_ids);
+  }
+
+  // Boolean で絞り込む．
+  {
+    std::unique_ptr<grnxx::Calc> calc(
+        src_table->create_calc("!Reference.Boolean"));
+    assert(calc);
+    std::vector<grnxx::RowID> row_ids(all_row_ids);
+    grnxx::Int64 num_row_ids = calc->filter(&*row_ids.begin(), row_ids.size());
+    assert(num_row_ids != 0);
+    grnxx::Int64 count = 0;
+    for (grnxx::Int64 i = 0; i < 1000; ++i) {
+      grnxx::RowID row_id = grnxx::MIN_ROW_ID + i;
+      if (!boolean_data[reference_data[i]]) {
+        assert(row_ids[count] == row_id);
+        assert(++count <= num_row_ids);
+      }
+    }
+    assert(count == num_row_ids);
+  }
+
+  // Integer で絞り込む．
+  {
+    std::unique_ptr<grnxx::Calc> calc(
+        src_table->create_calc("Reference.Integer < 50"));
+    assert(calc);
+    std::vector<grnxx::RowID> row_ids(all_row_ids);
+    grnxx::Int64 num_row_ids = calc->filter(&*row_ids.begin(), row_ids.size());
+    assert(num_row_ids != 0);
+    grnxx::Int64 count = 0;
+    for (grnxx::Int64 i = 0; i < 1000; ++i) {
+      grnxx::RowID row_id = grnxx::MIN_ROW_ID + i;
+      if (integer_data[reference_data[i]] < 50) {
+        assert(row_ids[count] == row_id);
+        assert(++count <= num_row_ids);
+      }
+    }
+    assert(count == num_row_ids);
+  }
+
+  // Float で絞り込む．
+  {
+    std::unique_ptr<grnxx::Calc> calc(
+        src_table->create_calc("Reference.Float <= 0.5"));
+    assert(calc);
+    std::vector<grnxx::RowID> row_ids(all_row_ids);
+    grnxx::Int64 num_row_ids = calc->filter(&*row_ids.begin(), row_ids.size());
+    assert(num_row_ids != 0);
+    grnxx::Int64 count = 0;
+    for (grnxx::Int64 i = 0; i < 1000; ++i) {
+      grnxx::RowID row_id = grnxx::MIN_ROW_ID + i;
+      if (float_data[reference_data[i]] <= 0.5) {
+        assert(row_ids[count] == row_id);
+        assert(++count <= num_row_ids);
+      }
+    }
+    assert(count == num_row_ids);
+  }
+
+  // Boolean と Integer と Float の範囲で絞り込む．
+  {
+    std::unique_ptr<grnxx::Calc> calc(src_table->create_calc(
+        "Reference.Boolean && Reference.Integer < 50 && Reference.Float < 0.5"));
+    assert(calc);
+    std::vector<grnxx::RowID> row_ids(all_row_ids);
+    grnxx::Int64 num_row_ids = calc->filter(&*row_ids.begin(), row_ids.size());
+    assert(num_row_ids != 0);
+    grnxx::Int64 count = 0;
+    for (grnxx::Int64 i = 0; i < 1000; ++i) {
+      grnxx::RowID row_id = grnxx::MIN_ROW_ID + i;
+      if (boolean_data[reference_data[i]] &&
+          (integer_data[reference_data[i]] < 50) &&
+          (float_data[reference_data[i]] < 0.5)) {
+        assert(row_ids[count] == row_id);
+        assert(++count <= num_row_ids);
+      }
+    }
+    assert(count == num_row_ids);
+  }
+}
+
 void test_sorter() {
   constexpr grnxx::Int64 DATA_SIZE = 1000;
 
@@ -1208,6 +1354,7 @@ int main() {
   test_table();
   test_column();
   test_calc();
+  test_reference();
   test_sorter();
   test_sorter_large();
   test_index();

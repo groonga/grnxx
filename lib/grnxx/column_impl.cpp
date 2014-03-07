@@ -1,6 +1,7 @@
 #include "grnxx/column_impl.hpp"
 
 #include "grnxx/index.hpp"
+#include "grnxx/table.hpp"
 
 //#include <iostream>
 
@@ -60,8 +61,10 @@ template class ColumnImpl<Float>;
 #ifdef GRNXX_ENABLE_VARIABLE_INTEGER_TYPE
 
 // カラムを初期化する．
-ColumnImpl<Int64>::ColumnImpl(Table *table, ColumnID id, const String &name)
+ColumnImpl<Int64>::ColumnImpl(Table *table, ColumnID id, const String &name,
+                              Table *dest_table)
     : Column(table, id, name, INTEGER),
+      dest_table_(dest_table),
       data_8_(MIN_ROW_ID, 0),
       data_16_(),
       data_32_(),
@@ -112,6 +115,12 @@ void ColumnImpl<Int64>::resize(RowID max_row_id) {
 
 // 指定された ID の値を更新する．
 void ColumnImpl<Int64>::set(RowID row_id, Int64 value) {
+  if (dest_table_) {
+    if ((value < dest_table_->min_row_id()) ||
+        (value > dest_table_->max_row_id())) {
+      throw "invalid reference";
+    }
+  }
   switch (internal_data_type_size_) {
     case 8: {
       if ((value < INT8_MIN) || (value > INT8_MAX)) {

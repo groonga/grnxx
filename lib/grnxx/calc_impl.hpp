@@ -24,7 +24,8 @@ enum BinaryOperatorType {
   MINUS_OPERATOR,
   MULTIPLIES_OPERATOR,
   DIVIDES_OPERATOR,
-  MODULUS_OPERATOR
+  MODULUS_OPERATOR,
+  REFERENCE_OPERATOR
 };
 
 // 演算器を構成するノードの種類．
@@ -167,8 +168,8 @@ class CalcImpl : public Calc {
   // トークンをひとつずつ解釈する．
   bool push_token(const CalcToken &token, std::vector<CalcToken> *stack);
 
-  // 指定された名前のカラムと対応するノードを作成する．
-  CalcNode *create_column_node(const String &column_name);
+  // 指定されたカラムと対応するノードを作成する．
+  CalcNode *create_column_node(Column *column);
 
   // 指定された Boolean の定数と対応するノードを作成する．
   CalcNode *create_boolean_node(Boolean value);
@@ -226,6 +227,9 @@ class CalcImpl : public Calc {
   // T: 算術演算子．
   template <typename T>
   CalcNode *create_arithmetic_node_4(CalcNode *lhs, CalcNode *rhs);
+
+  // 参照演算子と対応するノードを作成する．
+  CalcNode *create_reference_node(CalcNode *lhs, CalcNode *rhs);
 };
 
 }  // namespace grnxx

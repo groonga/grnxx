@@ -9,6 +9,8 @@ namespace grnxx {
 template <typename T>
 class ColumnImpl : public Column {
  public:
+  using Value = T;
+
   // カラムを初期化する．
   ColumnImpl(Table *table, ColumnID id, const String &name);
   // カラムを破棄する．
@@ -42,8 +44,11 @@ class ColumnImpl : public Column {
 template <>
 class ColumnImpl<Int64> : public Column {
  public:
+  using Value = Int64;
+
   // カラムを初期化する．
-  ColumnImpl(Table *table, ColumnID id, const String &name);
+  ColumnImpl(Table *table, ColumnID id, const String &name,
+             Table *dest_table = nullptr);
   // カラムを破棄する．
   ~ColumnImpl();
 
@@ -58,6 +63,12 @@ class ColumnImpl<Int64> : public Column {
 
   // 指定された行 ID が使えるようにサイズを変更する．
   void resize(RowID max_row_id);
+
+  // 参照先のテーブルを返す．
+  // なければ nullptr を返す．
+  Table *dest_table() const {
+    return dest_table_;
+  }
 
   // 指定された ID の値を返す．
   Int64 get(RowID row_id) const {
@@ -80,6 +91,7 @@ class ColumnImpl<Int64> : public Column {
   void set(RowID row_id, Int64 value);
 
  private:
+  Table *dest_table_;
   std::vector<Int8> data_8_;
   std::vector<Int16> data_16_;
   std::vector<Int32> data_32_;
@@ -94,6 +106,8 @@ class ColumnImpl<Int64> : public Column {
 template <>
 class ColumnImpl<Int64> : public Column {
  public:
+  using Value = Int64;
+
   // カラムを初期化する．
   ColumnImpl(Table *table, ColumnID id, const String &name);
   // カラムを破棄する．
@@ -127,6 +141,8 @@ class ColumnImpl<Int64> : public Column {
 template <>
 class ColumnImpl<String> : public Column {
  public:
+  using Value = String;
+
   // カラムを初期化する．
   ColumnImpl(Table *table, ColumnID id, const String &name);
   // カラムを破棄する．

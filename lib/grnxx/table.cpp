@@ -2,6 +2,7 @@
 
 #include "grnxx/calc.hpp"
 #include "grnxx/column_impl.hpp"
+#include "grnxx/database.hpp"
 #include "grnxx/index.hpp"
 #include "grnxx/sorter.hpp"
 
@@ -86,7 +87,37 @@ Column *Table::create_column(const String &column_name, DataType data_type) {
     columns_.resize(column_id + 1);
   }
   std::unique_ptr<Column> new_column(
-      ColumnHelper::create(this, column_id, column_name, data_type));
+      ColumnHelper::create_column(this, column_id, column_name, data_type));
+  new_column->resize(max_row_id());
+  columns_map_.insert(it, std::make_pair(new_column->name(), column_id));
+  columns_[column_id] = std::move(new_column);
+  return columns_[column_id].get();
+}
+
+// 参照型のカラムを作成して返す．
+// 失敗すると nullptr を返す．
+Column *Table::create_reference_column(const String &column_name,
+                                       const String &table_name) {
+  Table *dest_table = database_->get_table_by_name(table_name);
+  if (!dest_table) {
+    return nullptr;
+  }
+  auto it = columns_map_.find(column_name);
+  if (it != columns_map_.end()) {
+    return nullptr;
+  }
+  ColumnID column_id = min_column_id();
+  for ( ; column_id <= max_column_id(); ++column_id) {
+    if (!columns_[column_id]) {
+      break;
+    }
+  }
+  if (column_id > max_column_id()) {
+    columns_.resize(column_id + 1);
+  }
+  std::unique_ptr<Column> new_column(
+      ColumnHelper::create_reference_column(this, column_id, column_name,
+                                            dest_table));
   new_column->resize(max_row_id());
   columns_map_.insert(it, std::make_pair(new_column->name(), column_id));
   columns_[column_id] = std::move(new_column);

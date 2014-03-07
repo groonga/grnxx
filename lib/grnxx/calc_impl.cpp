@@ -88,6 +88,10 @@ class ColumnNode : public CalcNode {
   // ノードを破棄する．
   ~ColumnNode() {}
 
+  ColumnImpl<T> *column() const {
+    return column_;
+  }
+
   // 指定された値を返す．
   T get(Int64 i, RowID row_id) const {
     return column_->get(row_id);
@@ -760,6 +764,76 @@ class ArithmeticNodeHelper<T, InvalidResult> {
   }
 };
 
+// 参照と対応するノード．
+template <typename T>
+class ReferenceNode : public OperatorNode<T> {
+ public:
+  using Result = T;
+
+  // 指定されたノードに対する四則演算と対応するノードとして初期化する．
+  explicit ReferenceNode(CalcNode *lhs, CalcNode *rhs)
+      : OperatorNode<Result>(),
+        lhs_(static_cast<ColumnNode<Int64> *>(lhs)),
+        rhs_(static_cast<ColumnNode<T> *>(rhs)) {}
+  // ノードを破棄する．
+  ~ReferenceNode() {}
+
+  // 行の一覧を受け取り，演算結果が真になる行のみを残して，残った行の数を返す．
+  Int64 filter(RowID *row_ids, Int64 num_row_ids);
+
+  // 与えられた行の一覧について演算をおこない，その結果を取得できる状態にする．
+  void fill(const RowID *row_ids, Int64 num_row_ids);
+
+ private:
+  ColumnNode<Int64> *lhs_;
+  ColumnNode<T> *rhs_;
+  std::vector<RowID> local_row_ids_;
+};
+
+// 行の一覧を受け取り，演算結果が真になる行のみを残して，残った行の数を返す．
+template <typename T>
+Int64 ReferenceNode<T>::filter(RowID *row_ids, Int64 num_row_ids) {
+  // 参照先が真になる行だけを残す．
+  lhs_->fill(row_ids, num_row_ids);
+  // FIXME: lhs が行 ID の一覧を持っているのにコピーしなければならない．
+  local_row_ids_.resize(num_row_ids);
+  for (Int64 i = 0; i < num_row_ids; ++i) {
+    local_row_ids_[i] = lhs_->get(i, row_ids[i]);
+  }
+  rhs_->fill(&*local_row_ids_.begin(), num_row_ids);
+  Int64 count = 0;
+  for (Int64 i = 0; i < num_row_ids; ++i) {
+    if (rhs_->get(i, local_row_ids_[i])) {
+      row_ids[count++] = row_ids[i];
+    }
+  }
+  return count;
+}
+
+// 行の一覧を受け取り，演算結果が真になる行のみを残して，残った行の数を返す．
+template <>
+Int64 ReferenceNode<String>::filter(RowID *row_ids, Int64 num_row_ids) {
+  // FIXME: String から Boolean の変換は未定義．
+  return 0;
+}
+
+// 与えられた行の一覧について演算をおこない，その結果を取得できる状態にする．
+template <typename T>
+void ReferenceNode<T>::fill(const RowID *row_ids, Int64 num_row_ids) {
+  lhs_->fill(row_ids, num_row_ids);
+  // FIXME: lhs が行 ID の一覧を持っているのにコピーしなければならない．
+  local_row_ids_.resize(num_row_ids);
+  for (Int64 i = 0; i < num_row_ids; ++i) {
+    local_row_ids_[i] = lhs_->get(i, row_ids[i]);
+  }
+  // FIXME: わざわざコピーしなければならない．
+  rhs_->fill(&*local_row_ids_.begin(), num_row_ids);
+  this->data_.resize(num_row_ids);
+  for (Int64 i = 0; i < num_row_ids; ++i) {
+    this->data_[i] = rhs_->get(i, local_row_ids_[i]);
+  }
+}
+
 }  // namespace
 
 // 指定された種類のノードとして初期化する．
@@ -822,6 +896,9 @@ int CalcToken::get_binary_operator_priority(BinaryOperatorType operator_type) {
     }
     case MODULUS_OPERATOR: {
       return 9;
+    }
+    case REFERENCE_OPERATOR: {
+      return 10;
     }
   }
   return 0;
@@ -1017,15 +1094,16 @@ bool CalcImpl::tokenize_query(const String &query,
         if (end == left.npos) {
           end = left.size();
         }
-        // カラムもしくは Boolean, Int64, Float の定数に対応するノードを作成する．
+        // FIXME: アドホックに書き足したのでひどいことになっている．
+        // 最初に Boolean, Int64, Float の可能性を調べる．
         String token = left.prefix(end);
-        auto node = create_column_node(token);
-        if (!node) {
-          if (token == "TRUE") {
-            node = create_boolean_node(true);
-          } else if (token == "FALSE") {
-            node = create_boolean_node(false);
-          } else if (token.find_first_of('.') != token.npos) {
+        CalcNode *node = nullptr;
+        if (token == "TRUE") {
+          node = create_boolean_node(true);
+        } else if (token == "FALSE") {
+          node = create_boolean_node(false);
+        } else if (std::isdigit(static_cast<UInt8>(token[0]))) {
+          if (token.find_first_of('.') != token.npos) {
             node = create_float_node(static_cast<Float>(std::stod(
                 std::string(reinterpret_cast<const char *>(token.data()),
                             token.size()))));
@@ -1034,9 +1112,45 @@ bool CalcImpl::tokenize_query(const String &query,
                 std::string(reinterpret_cast<const char *>(token.data()),
                             token.size()))));
           }
-          if (!node) {
-            return false;
+        } else {
+          // カラムと参照演算子に対応するノードを作成する．
+          // 参照演算子は単項演算子より優先順位が高いため，以降の処理における面倒を
+          // なくすべく，最後に作成したノードのみをトークン化する．
+          const Table *current_table = table_;
+          ColumnNode<Int64> *src_node = nullptr;
+          for ( ; ; ) {
+            auto delim_pos = token.find_first_of('.');
+            auto column = current_table->get_column_by_name(
+                (delim_pos != token.npos) ? token.prefix(delim_pos) : token);
+            if (!column) {
+              return false;
+            }
+            node = create_column_node(column);
+            if (!node) {
+              return false;
+            }
+            if (src_node) {
+              node = create_binary_operator_node(REFERENCE_OPERATOR,
+                                                 src_node, node);
+              if (!node) {
+                return false;
+              }
+            }
+            if (delim_pos == token.npos) {
+              // 参照演算子がなければここで終わる．
+              break;
+            }
+
+            token = token.except_prefix(delim_pos + 1);
+            if (column->data_type() != INTEGER) {
+              return false;
+            }
+            src_node = static_cast<ColumnNode<Int64> *>(node);
+            current_table = src_node->column()->dest_table();
           }
+        }
+        if (!node) {
+          return false;
         }
         tokens->push_back(CalcToken(node));
         left = left.except_prefix(end);
@@ -1168,11 +1282,7 @@ bool CalcImpl::push_token(const CalcToken &token,
 }
 
 // 指定された名前のカラムと対応するノードを作成する．
-CalcNode *CalcImpl::create_column_node(const String &column_name) {
-  auto column = table_->get_column_by_name(column_name);
-  if (!column) {
-    return nullptr;
-  }
+CalcNode *CalcImpl::create_column_node(Column *column) {
   std::unique_ptr<CalcNode> node;
   switch (column->data_type()) {
     case BOOLEAN: {
@@ -1292,6 +1402,10 @@ CalcNode *CalcImpl::create_binary_operator_node(
     case DIVIDES_OPERATOR:
     case MODULUS_OPERATOR: {
       node.reset(create_arithmetic_node(binary_operator_type, lhs, rhs));
+      break;
+    }
+    case REFERENCE_OPERATOR: {
+      node.reset(create_reference_node(lhs, rhs));
       break;
     }
   }
@@ -1676,6 +1790,36 @@ CalcNode *CalcImpl::create_arithmetic_node_4(CalcNode *lhs, CalcNode *rhs) {
               OperatorNode<Lhs>, OperatorNode<Rhs>>(lhs, rhs);
         }
       }
+    }
+  }
+  return nullptr;
+}
+
+// 参照演算子と対応するノードを作成する．
+CalcNode *CalcImpl::create_reference_node(CalcNode *lhs, CalcNode *rhs) {
+  // 左の被演算子は参照型のカラムでなければならない．
+  if ((lhs->data_type() != INTEGER) ||
+      (lhs->type() != COLUMN_NODE) ||
+      !static_cast<ColumnNode<Int64> *>(lhs)->column()->dest_table()) {
+    return nullptr;
+  }
+  // 右の被演算子もカラムでなければならない．
+  if (rhs->type() != COLUMN_NODE) {
+    return nullptr;
+  }
+  // 右の被演算子の型に応じたノードを作成する．
+  switch (rhs->data_type()) {
+    case BOOLEAN: {
+      return new ReferenceNode<Boolean>(lhs, rhs);
+    }
+    case INTEGER: {
+      return new ReferenceNode<Int64>(lhs, rhs);
+    }
+    case FLOAT: {
+      return new ReferenceNode<Float>(lhs, rhs);
+    }
+    case STRING: {
+      return new ReferenceNode<String>(lhs, rhs);
     }
   }
   return nullptr;

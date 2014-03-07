@@ -2,6 +2,7 @@
 #define GRNXX_TYPES_HPP
 
 #include <algorithm>
+#include <cctype>
 #include <cstdint>
 #include <cstring>
 #include <functional>

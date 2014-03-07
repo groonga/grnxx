@@ -57,10 +57,15 @@ std::ostream &operator<<(std::ostream &stream, const Column &column);
 class ColumnHelper {
  public:
   // 指定されたカラムを作成して返す．
-  static Column *create(Table *table,
-                        ColumnID column_id,
-                        const String &column_name,
-                        DataType data_type);
+  static Column *create_column(Table *table,
+                               ColumnID column_id,
+                               const String &column_name,
+                               DataType data_type);
+  // 指定された参照型のカラムを作成して返す．
+  static Column *create_reference_column(Table *table,
+                                         ColumnID column_id,
+                                         const String &column_name,
+                                         Table *dest_table);
 };
 
 }  // namespace grnxx

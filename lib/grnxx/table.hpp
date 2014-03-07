@@ -32,6 +32,10 @@ class Table {
   // 指定された名前とデータ型のカラムを作成して返す．
   // 失敗すると nullptr を返す．
   Column *create_column(const String &column_name, DataType data_type);
+  // 参照型のカラムを作成して返す．
+  // 失敗すると nullptr を返す．
+  Column *create_reference_column(const String &column_name,
+                                  const String &table_name);
   // 指定された名前のカラムを破棄する．
   // 成功すれば true を返し，失敗すれば false を返す．
   bool drop_column(const String &column_name);

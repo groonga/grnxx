@@ -76,7 +76,7 @@ std::ostream &operator<<(std::ostream &stream, const Column &column) {
 }
 
 // 指定されたカラムを作成して返す．
-Column *ColumnHelper::create(Table *table,
+Column *ColumnHelper::create_column(Table *table,
                              ColumnID column_id,
                              const String &column_name,
                              DataType data_type) {
@@ -95,6 +95,14 @@ Column *ColumnHelper::create(Table *table,
     }
   }
   return nullptr;
+}
+
+// 指定された参照型のカラムを作成して返す．
+Column *ColumnHelper::create_reference_column(Table *table,
+                                              ColumnID column_id,
+                                              const String &column_name,
+                                              Table *dest_table) {
+  return new ColumnImpl<Int64>(table, column_id, column_name, dest_table);
 }
 
 }  // namespace grnxx
