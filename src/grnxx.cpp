@@ -134,9 +134,20 @@ bool run_column_create(grnxx::Database *database,
   } else if (data_type_name == "STRING") {
     data_type = grnxx::STRING;
   } else {
-    std::cerr << "Error: Unknown data type: "
-              << "data_type = " << data_type_name << std::endl;
-    return false;
+    if (!database->get_table_by_name(data_type_name)) {
+      std::cerr << "Error: Unknown data type: "
+                << "data_type = " << data_type_name << std::endl;
+      return false;
+    }
+    if (!table->create_reference_column(column_name, data_type_name)) {
+      std::cerr << "Error: grnxx::Table::create_reference_column() failed: "
+                << "table_name = \"" << table_name << '"'
+                << ", column_name = \"" << column_name << '"'
+                << ", dest_table_name = " << data_type_name << std::endl;
+      return false;
+    }
+    std::cout << "OK\n";
+    return true;
   }
   if (!table->create_column(column_name, data_type)) {
     std::cerr << "Error: grnxx::Table::create_column() failed: "
