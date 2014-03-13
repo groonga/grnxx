@@ -725,6 +725,116 @@ void test_reference() {
   }
 }
 
+void test_deep_reference() {
+  grnxx::Database database;
+
+  grnxx::Table *first_table = database.create_table("First");
+  assert(first_table);
+  grnxx::Table *second_table = database.create_table("Second");
+  assert(second_table);
+  grnxx::Table *third_table = database.create_table("Third");
+  assert(third_table);
+
+  auto third_column = dynamic_cast<grnxx::ColumnImpl<grnxx::Float> *>(
+      third_table->create_column("Third", grnxx::FLOAT));
+  assert(third_column);
+  auto second_column = dynamic_cast<grnxx::ColumnImpl<grnxx::Int64> *>(
+      second_table->create_reference_column("Second", "Third"));
+  assert(second_column);
+  auto first_column = dynamic_cast<grnxx::ColumnImpl<grnxx::Int64> *>(
+      first_table->create_reference_column("First", "Second"));
+  assert(first_column);
+
+  std::mt19937_64 random;
+
+  std::vector<grnxx::Float> third_data;
+  for (grnxx::Int64 i = 0; i < 1000; ++i) {
+    grnxx::RowID row_id = third_table->insert_row();
+    third_data.push_back(1.0 * random() / random.max());
+    third_column->set(row_id, third_data[i]);
+  }
+
+  std::vector<grnxx::Int64> second_data;
+  for (grnxx::Int64 i = 0; i < 1000; ++i) {
+    grnxx::RowID row_id = second_table->insert_row();
+    second_data.push_back(random() % 1000);
+    second_column->set(row_id, second_data[i] + 1);
+  }
+
+  std::vector<grnxx::Int64> first_data;
+  for (grnxx::Int64 i = 0; i < 1000; ++i) {
+    grnxx::RowID row_id = first_table->insert_row();
+    first_data.push_back(random() % 1000);
+    first_column->set(row_id, first_data[i] + 1);
+  }
+
+  std::vector<grnxx::RowID> all_row_ids(1000);
+  std::unique_ptr<grnxx::RowIDCursor> cursor(first_table->create_cursor());
+  assert(cursor->get_next(&all_row_ids[0], 1000) == 1000);
+
+  // Third で絞り込む．
+  {
+    std::unique_ptr<grnxx::Calc> calc(third_table->create_calc("Third > 0.5"));
+    assert(calc);
+    std::vector<grnxx::RowID> row_ids(all_row_ids);
+    grnxx::Int64 num_row_ids = calc->filter(&*row_ids.begin(), row_ids.size());
+    assert(num_row_ids != 0);
+    grnxx::Int64 count = 0;
+    for (grnxx::Int64 i = 0; i < 1000; ++i) {
+      grnxx::RowID row_id = grnxx::MIN_ROW_ID + i;
+      if (third_data[i] > 0.5) {
+        assert(row_ids[count] == row_id);
+        assert(++count <= num_row_ids);
+      }
+    }
+    assert(count == num_row_ids);
+  }
+
+  cursor.reset(second_table->create_cursor());
+  assert(cursor->get_next(&all_row_ids[0], 1000) == 1000);
+
+  // Second.Third で絞り込む．
+  {
+    std::unique_ptr<grnxx::Calc> calc(
+        second_table->create_calc("Second.Third > 0.5"));
+    assert(calc);
+    std::vector<grnxx::RowID> row_ids(all_row_ids);
+    grnxx::Int64 num_row_ids = calc->filter(&*row_ids.begin(), row_ids.size());
+    assert(num_row_ids != 0);
+    grnxx::Int64 count = 0;
+    for (grnxx::Int64 i = 0; i < 1000; ++i) {
+      grnxx::RowID row_id = grnxx::MIN_ROW_ID + i;
+      if (third_data[second_data[i]] > 0.5) {
+        assert(row_ids[count] == row_id);
+        assert(++count <= num_row_ids);
+      }
+    }
+    assert(count == num_row_ids);
+  }
+
+  cursor.reset(third_table->create_cursor());
+  assert(cursor->get_next(&all_row_ids[0], 1000) == 1000);
+
+  // First.Second.Third で絞り込む．
+  {
+    std::unique_ptr<grnxx::Calc> calc(
+        first_table->create_calc("First.Second.Third > 0.5"));
+    assert(calc);
+    std::vector<grnxx::RowID> row_ids(all_row_ids);
+    grnxx::Int64 num_row_ids = calc->filter(&*row_ids.begin(), row_ids.size());
+    assert(num_row_ids != 0);
+    grnxx::Int64 count = 0;
+    for (grnxx::Int64 i = 0; i < 1000; ++i) {
+      grnxx::RowID row_id = grnxx::MIN_ROW_ID + i;
+      if (third_data[second_data[first_data[i]]] > 0.5) {
+        assert(row_ids[count] == row_id);
+        assert(++count <= num_row_ids);
+      }
+    }
+    assert(count == num_row_ids);
+  }
+}
+
 void test_sorter() {
   constexpr grnxx::Int64 DATA_SIZE = 1000;
 
@@ -1355,6 +1465,7 @@ int main() {
   test_column();
   test_calc();
   test_reference();
+  test_deep_reference();
   test_sorter();
   test_sorter_large();
   test_index();
