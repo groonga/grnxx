@@ -765,7 +765,7 @@ class ArithmeticNodeHelper<T, InvalidResult> {
 };
 
 // 参照と対応するノード．
-template <typename T>
+template <typename T, typename U>
 class ReferenceNode : public OperatorNode<T> {
  public:
   using Result = T;
@@ -773,7 +773,7 @@ class ReferenceNode : public OperatorNode<T> {
   // 指定されたノードに対する四則演算と対応するノードとして初期化する．
   explicit ReferenceNode(CalcNode *lhs, CalcNode *rhs)
       : OperatorNode<Result>(),
-        lhs_(static_cast<ColumnNode<Int64> *>(lhs)),
+        lhs_(static_cast<U *>(lhs)),
         rhs_(static_cast<ColumnNode<T> *>(rhs)) {}
   // ノードを破棄する．
   ~ReferenceNode() {}
@@ -785,14 +785,14 @@ class ReferenceNode : public OperatorNode<T> {
   void fill(const RowID *row_ids, Int64 num_row_ids);
 
  private:
-  ColumnNode<Int64> *lhs_;
+  U *lhs_;
   ColumnNode<T> *rhs_;
   std::vector<RowID> local_row_ids_;
 };
 
 // 行の一覧を受け取り，演算結果が真になる行のみを残して，残った行の数を返す．
-template <typename T>
-Int64 ReferenceNode<T>::filter(RowID *row_ids, Int64 num_row_ids) {
+template <typename T, typename U>
+Int64 ReferenceNode<T, U>::filter(RowID *row_ids, Int64 num_row_ids) {
   // 参照先が真になる行だけを残す．
   lhs_->fill(row_ids, num_row_ids);
   // FIXME: lhs が行 ID の一覧を持っているのにコピーしなければならない．
@@ -812,14 +812,23 @@ Int64 ReferenceNode<T>::filter(RowID *row_ids, Int64 num_row_ids) {
 
 // 行の一覧を受け取り，演算結果が真になる行のみを残して，残った行の数を返す．
 template <>
-Int64 ReferenceNode<String>::filter(RowID *row_ids, Int64 num_row_ids) {
+Int64 ReferenceNode<String, ColumnNode<Int64>>::filter(
+    RowID *row_ids, Int64 num_row_ids) {
+  // FIXME: String から Boolean の変換は未定義．
+  return 0;
+}
+
+// 行の一覧を受け取り，演算結果が真になる行のみを残して，残った行の数を返す．
+template <>
+Int64 ReferenceNode<String, OperatorNode<Int64>>::filter(
+    RowID *row_ids, Int64 num_row_ids) {
   // FIXME: String から Boolean の変換は未定義．
   return 0;
 }
 
 // 与えられた行の一覧について演算をおこない，その結果を取得できる状態にする．
-template <typename T>
-void ReferenceNode<T>::fill(const RowID *row_ids, Int64 num_row_ids) {
+template <typename T, typename U>
+void ReferenceNode<T, U>::fill(const RowID *row_ids, Int64 num_row_ids) {
   lhs_->fill(row_ids, num_row_ids);
   // FIXME: lhs が行 ID の一覧を持っているのにコピーしなければならない．
   local_row_ids_.resize(num_row_ids);
@@ -1117,7 +1126,7 @@ bool CalcImpl::tokenize_query(const String &query,
           // 参照演算子は単項演算子より優先順位が高いため，以降の処理における面倒を
           // なくすべく，最後に作成したノードのみをトークン化する．
           const Table *current_table = table_;
-          ColumnNode<Int64> *src_node = nullptr;
+          CalcNode *src_node = nullptr;
           for ( ; ; ) {
             auto delim_pos = token.find_first_of('.');
             auto column = current_table->get_column_by_name(
@@ -1145,8 +1154,12 @@ bool CalcImpl::tokenize_query(const String &query,
             if (column->data_type() != INTEGER) {
               return false;
             }
-            src_node = static_cast<ColumnNode<Int64> *>(node);
-            current_table = src_node->column()->dest_table();
+            src_node = node;
+            current_table =
+                static_cast<ColumnImpl<Int64> *>(column)->dest_table();
+            if (!current_table) {
+              return false;
+            }
           }
         }
         if (!node) {
@@ -1797,10 +1810,10 @@ CalcNode *CalcImpl::create_arithmetic_node_4(CalcNode *lhs, CalcNode *rhs) {
 
 // 参照演算子と対応するノードを作成する．
 CalcNode *CalcImpl::create_reference_node(CalcNode *lhs, CalcNode *rhs) {
-  // 左の被演算子は参照型のカラムでなければならない．
+  // 左の被演算子は参照型のカラムもしくは演算子でなければならない．
+  // FIXME: 左の被演算子が参照型かどうかは呼び出し側で確認している．
   if ((lhs->data_type() != INTEGER) ||
-      (lhs->type() != COLUMN_NODE) ||
-      !static_cast<ColumnNode<Int64> *>(lhs)->column()->dest_table()) {
+      ((lhs->type() != COLUMN_NODE) && (lhs->type() != OPERATOR_NODE))) {
     return nullptr;
   }
   // 右の被演算子もカラムでなければならない．
@@ -1810,16 +1823,32 @@ CalcNode *CalcImpl::create_reference_node(CalcNode *lhs, CalcNode *rhs) {
   // 右の被演算子の型に応じたノードを作成する．
   switch (rhs->data_type()) {
     case BOOLEAN: {
-      return new ReferenceNode<Boolean>(lhs, rhs);
+      if (lhs->type() == COLUMN_NODE) {
+        return new ReferenceNode<Boolean, ColumnNode<Int64>>(lhs, rhs);
+      } else {
+        return new ReferenceNode<Boolean, OperatorNode<Int64>>(lhs, rhs);
+      }
     }
     case INTEGER: {
-      return new ReferenceNode<Int64>(lhs, rhs);
+      if (lhs->type() == COLUMN_NODE) {
+        return new ReferenceNode<Int64, ColumnNode<Int64>>(lhs, rhs);
+      } else {
+        return new ReferenceNode<Int64, OperatorNode<Int64>>(lhs, rhs);
+      }
     }
     case FLOAT: {
-      return new ReferenceNode<Float>(lhs, rhs);
+      if (lhs->type() == COLUMN_NODE) {
+        return new ReferenceNode<Float, ColumnNode<Int64>>(lhs, rhs);
+      } else {
+        return new ReferenceNode<Float, OperatorNode<Int64>>(lhs, rhs);
+      }
     }
     case STRING: {
-      return new ReferenceNode<String>(lhs, rhs);
+      if (lhs->type() == COLUMN_NODE) {
+        return new ReferenceNode<String, ColumnNode<Int64>>(lhs, rhs);
+      } else {
+        return new ReferenceNode<String, OperatorNode<Int64>>(lhs, rhs);
+      }
     }
   }
   return nullptr;
