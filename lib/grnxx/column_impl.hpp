@@ -20,6 +20,9 @@ class ColumnImpl : public Column {
   ColumnImpl(const ColumnImpl &) = delete;
   ColumnImpl &operator=(const ColumnImpl &) = delete;
 
+  // UNIQUE 制約を設定する．
+  bool set_unique();
+
   // 指定された索引との関連付けをおこなう．
   bool register_index(Index *index);
   // 指定された索引との関連を削除する．
@@ -27,6 +30,9 @@ class ColumnImpl : public Column {
 
   // 指定された行 ID が使えるようにサイズを変更する．
   void resize(RowID max_row_id);
+
+  // 指定された値を検索する．
+  RowID find(T value) const;
 
   // 指定された ID の値を返す．
   T get(RowID row_id) const {
@@ -56,6 +62,9 @@ class ColumnImpl<Int64> : public Column {
   ColumnImpl(const ColumnImpl &) = delete;
   ColumnImpl &operator=(const ColumnImpl &) = delete;
 
+  // UNIQUE 制約を設定する．
+  bool set_unique();
+
   // 指定された索引との関連付けをおこなう．
   bool register_index(Index *index);
   // 指定された索引との関連を削除する．
@@ -69,6 +78,9 @@ class ColumnImpl<Int64> : public Column {
   Table *dest_table() const {
     return dest_table_;
   }
+
+  // 指定された値を検索する．
+  RowID find(Int64 value) const;
 
   // 指定された ID の値を返す．
   Int64 get(RowID row_id) const {
@@ -109,13 +121,17 @@ class ColumnImpl<Int64> : public Column {
   using Value = Int64;
 
   // カラムを初期化する．
-  ColumnImpl(Table *table, ColumnID id, const String &name);
+  ColumnImpl(Table *table, ColumnID id, const String &name,
+             Table *dest_table = nullptr);
   // カラムを破棄する．
   ~ColumnImpl();
 
   // コピーと代入を禁止する．
   ColumnImpl(const ColumnImpl &) = delete;
   ColumnImpl &operator=(const ColumnImpl &) = delete;
+
+  // UNIQUE 制約を設定する．
+  bool set_unique();
 
   // 指定された索引との関連付けをおこなう．
   bool register_index(Index *index);
@@ -125,6 +141,15 @@ class ColumnImpl<Int64> : public Column {
   // 指定された行 ID が使えるようにサイズを変更する．
   void resize(RowID max_row_id);
 
+  // 参照先のテーブルを返す．
+  // なければ nullptr を返す．
+  Table *dest_table() const {
+    return dest_table_;
+  }
+
+  // 指定された値を検索する．
+  RowID find(Int64 value) const;
+
   // 指定された ID の値を返す．
   Int64 get(RowID row_id) const {
     return data_[row_id];
@@ -133,6 +158,7 @@ class ColumnImpl<Int64> : public Column {
   void set(RowID row_id, Int64 value);
 
  private:
+  Table *dest_table_;
   std::vector<Int64> data_;
   std::vector<Index *> indexes_;
 };
@@ -152,6 +178,9 @@ class ColumnImpl<String> : public Column {
   ColumnImpl(const ColumnImpl &) = delete;
   ColumnImpl &operator=(const ColumnImpl &) = delete;
 
+  // UNIQUE 制約を設定する．
+  bool set_unique();
+
   // 指定された索引との関連付けをおこなう．
   bool register_index(Index *index);
   // 指定された索引との関連を削除する．
@@ -159,6 +188,9 @@ class ColumnImpl<String> : public Column {
 
   // 指定された行 ID が使えるようにサイズを変更する．
   void resize(RowID max_row_id);
+
+  // 指定された値を検索する．
+  RowID find(const String &value) const;
 
   // 指定された ID の値を返す．
   String get(RowID row_id) const {

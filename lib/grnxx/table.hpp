@@ -40,6 +40,13 @@ class Table {
   // 成功すれば true を返し，失敗すれば false を返す．
   bool drop_column(const String &column_name);
 
+  // 指定されたカラムに主キー属性を与える．
+  // 成功すれば true を返し，失敗すれば false を返す．
+  bool set_primary_key(const String &column_name);
+  // 主キー属性を解除する．
+  // 成功すれば true を返し，失敗すれば false を返す．
+  bool unset_primary_key();
+
   // カラム ID の最小値を返す．
   ColumnID min_column_id() const {
     return MIN_COLUMN_ID;
@@ -106,6 +113,10 @@ class Table {
   RowID max_row_id() const {
     return max_row_id_;
   }
+  // 主キーカラムを返す．
+  Column *primary_key_column() const {
+    return primary_key_column_;
+  }
 
   // 行 ID を取得するカーソル．
   class Cursor : public RowIDCursor {
@@ -127,6 +138,9 @@ class Table {
   // 行 ID の最小値・最大値を範囲として使用する．
   Cursor *create_cursor(RowID range_min = MIN_ROW_ID,
                         RowID range_max = INT64_MAX) const;
+
+  // FIXME: 指定された主キーを持つ行を検索する．
+  RowID find_row(const Datum &datum);
 
   // 演算器を作成する．
   Calc *create_calc(const String &query) const;
@@ -156,6 +170,7 @@ class Table {
   TableID id_;
   std::string name_;
   RowID max_row_id_;
+  Column *primary_key_column_;
   std::vector<std::unique_ptr<Column>> columns_;
   std::map<String, ColumnID> columns_map_;
   std::vector<std::unique_ptr<Index>> indexes_;

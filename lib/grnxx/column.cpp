@@ -12,10 +12,43 @@ Column::Column(Table *table, ColumnID id, const String &name,
     : table_(table),
       id_(id),
       name_(reinterpret_cast<const char *>(name.data()), name.size()),
-      data_type_(data_type) {}
+      data_type_(data_type),
+      is_unique_(false) {}
 
 // カラムを破棄する．
 Column::~Column() {}
+
+// UNIQUE 制約を解除する．
+bool Column::unset_unique() {
+  if (!is_unique_) {
+    return false;
+  }
+  is_unique_ = false;
+  return true;
+}
+
+// FIXME: 指定された値を検索する．
+RowID Column::generic_find(const Datum &datum) const {
+  switch (data_type()) {
+    case BOOLEAN: {
+      auto impl = static_cast<const ColumnImpl<Boolean> *>(this);
+      return impl->find(static_cast<Boolean>(datum));
+    }
+    case INTEGER: {
+      auto impl = static_cast<const ColumnImpl<Int64> *>(this);
+      return impl->find(static_cast<Int64>(datum));
+    }
+    case FLOAT: {
+      auto impl = static_cast<const ColumnImpl<Float> *>(this);
+      return impl->find(static_cast<Float>(datum));
+    }
+    case STRING: {
+      auto impl = static_cast<const ColumnImpl<String> *>(this);
+      return impl->find(static_cast<std::string>(datum));
+    }
+  }
+  return false;
+}
 
 // FIXME: 指定された ID の値を返す．
 Datum Column::generic_get(RowID row_id) const {

@@ -3,7 +3,7 @@
 #include "grnxx/index.hpp"
 #include "grnxx/table.hpp"
 
-//#include <iostream>
+#include <iostream>  // For debugging.
 
 namespace grnxx {
 
@@ -17,6 +17,22 @@ ColumnImpl<T>::ColumnImpl(Table *table, ColumnID id, const String &name)
 // カラムを破棄する．
 template <typename T>
 ColumnImpl<T>::~ColumnImpl() {}
+
+// UNIQUE 制約を設定する．
+template <typename T>
+bool ColumnImpl<T>::set_unique() {
+  std::set<T> set;
+  for (RowID row_id = MIN_ROW_ID; row_id <= data_.size(); ++row_id) {
+    auto it = set.find(data_[row_id]);
+    if (it != set.end()) {
+      // 重複があれば失敗する．
+      return false;
+    }
+    set.insert(data_[row_id]);
+  }
+  is_unique_ = true;
+  return true;
+}
 
 // 指定された索引との関連付けをおこなう．
 template <typename T>
@@ -44,6 +60,27 @@ bool ColumnImpl<T>::unregister_index(Index *index) {
 template <typename T>
 void ColumnImpl<T>::resize(RowID max_row_id) {
   data_.resize(max_row_id + 1, 0);
+}
+
+// 指定された値を検索する．
+template <typename T>
+RowID ColumnImpl<T>::find(T value) const {
+  if (indexes_.empty()) {
+    // 索引がなければ全体を走査する．
+    for (RowID row_id = MIN_ROW_ID; row_id <= data_.size(); ++row_id) {
+      if (data_[row_id] == value) {
+        return row_id;
+      }
+    }
+  } else {
+    // 索引があれば使う．
+    auto cursor = indexes_[0]->find_equal(value);
+    RowID row_id;
+    if (cursor->get_next(&row_id, 1) != 0) {
+      return row_id;
+    }
+  }
+  return 0;
 }
 
 // 指定された ID の値を更新する．
@@ -74,6 +111,62 @@ ColumnImpl<Int64>::ColumnImpl(Table *table, ColumnID id, const String &name,
 
 // カラムを破棄する．
 ColumnImpl<Int64>::~ColumnImpl() {}
+
+// UNIQUE 制約を設定する．
+bool ColumnImpl<Int64>::set_unique() {
+  switch (internal_data_type_size_) {
+    case 8: {
+      std::set<Int8> set;
+      for (RowID row_id = MIN_ROW_ID; row_id <= data_8_.size(); ++row_id) {
+        auto it = set.find(data_8_[row_id]);
+        if (it != set.end()) {
+          // 重複があれば失敗する．
+          return false;
+        }
+        set.insert(get(row_id));
+      }
+      break;
+    }
+    case 16: {
+      std::set<Int16> set;
+      for (RowID row_id = MIN_ROW_ID; row_id <= data_8_.size(); ++row_id) {
+        auto it = set.find(data_16_[row_id]);
+        if (it != set.end()) {
+          // 重複があれば失敗する．
+          return false;
+        }
+        set.insert(get(row_id));
+      }
+      break;
+    }
+    case 32: {
+      std::set<Int32> set;
+      for (RowID row_id = MIN_ROW_ID; row_id <= data_8_.size(); ++row_id) {
+        auto it = set.find(data_32_[row_id]);
+        if (it != set.end()) {
+          // 重複があれば失敗する．
+          return false;
+        }
+        set.insert(get(row_id));
+      }
+      break;
+    }
+    default: {
+      std::set<Int64> set;
+      for (RowID row_id = MIN_ROW_ID; row_id <= data_8_.size(); ++row_id) {
+        auto it = set.find(data_64_[row_id]);
+        if (it != set.end()) {
+          // 重複があれば失敗する．
+          return false;
+        }
+        set.insert(get(row_id));
+      }
+      break;
+    }
+  }
+  is_unique_ = true;
+  return true;
+}
 
 // 指定された索引との関連付けをおこなう．
 bool ColumnImpl<Int64>::register_index(Index *index) {
@@ -111,6 +204,55 @@ void ColumnImpl<Int64>::resize(RowID max_row_id) {
       return data_64_.resize(max_row_id + 1, 0);
     }
   }
+}
+
+// 指定された値を検索する．
+RowID ColumnImpl<Int64>::find(Int64 value) const {
+  if (indexes_.empty()) {
+    // 索引がなければ全体を走査する．
+    switch (internal_data_type_size_) {
+      case 8: {
+        for (RowID row_id = MIN_ROW_ID; row_id <= data_8_.size(); ++row_id) {
+          if (data_8_[row_id] == value) {
+            return false;
+          }
+        }
+        break;
+      }
+      case 16: {
+        for (RowID row_id = MIN_ROW_ID; row_id <= data_16_.size(); ++row_id) {
+          if (data_16_[row_id] == value) {
+            return false;
+          }
+        }
+        break;
+      }
+      case 32: {
+        for (RowID row_id = MIN_ROW_ID; row_id <= data_32_.size(); ++row_id) {
+          if (data_32_[row_id] == value) {
+            return false;
+          }
+        }
+        break;
+      }
+      default: {
+        for (RowID row_id = MIN_ROW_ID; row_id <= data_64_.size(); ++row_id) {
+          if (data_64_[row_id] == value) {
+            return false;
+          }
+        }
+        break;
+      }
+    }
+  } else {
+    // 索引があれば使う．
+    auto cursor = indexes_[0]->find_equal(value);
+    RowID row_id;
+    if (cursor->get_next(&row_id, 1) != 0) {
+      return row_id;
+    }
+  }
+  return 0;
 }
 
 // 指定された ID の値を更新する．
@@ -220,13 +362,30 @@ void ColumnImpl<Int64>::expand_and_set(RowID row_id, Int64 value) {
 #else  // GRNXX_ENABLE_VARIABLE_INTEGER_TYPE
 
 // カラムを初期化する．
-ColumnImpl<Int64>::ColumnImpl(Table *table, ColumnID id, const String &name)
+ColumnImpl<Int64>::ColumnImpl(Table *table, ColumnID id, const String &name,
+                              Table *dest_table)
     : Column(table, id, name, INTEGER),
+      dest_table_(dest_table),
       data_(MIN_ROW_ID, 0),
       indexes_() {}
 
 // カラムを破棄する．
 ColumnImpl<Int64>::~ColumnImpl() {}
+
+// UNIQUE 制約を設定する．
+bool ColumnImpl<Int64>::set_unique() {
+  std::set<Int64> set;
+  for (RowID row_id = MIN_ROW_ID; row_id <= data_.size(); ++row_id) {
+    auto it = set.find(data_[row_id]);
+    if (it != set.end()) {
+      // 重複があれば失敗する．
+      return false;
+    }
+    set.insert(data_[row_id]);
+  }
+  is_unique_ = true;
+  return true;
+}
 
 // 指定された索引との関連付けをおこなう．
 bool ColumnImpl<Int64>::register_index(Index *index) {
@@ -253,8 +412,34 @@ void ColumnImpl<Int64>::resize(RowID max_row_id) {
   data_.resize(max_row_id + 1, 0);
 }
 
+// 指定された値を検索する．
+RowID ColumnImpl<Int64>::find(Int64 value) const {
+  if (indexes_.empty()) {
+    // 索引がなければ全体を走査する．
+    for (RowID row_id = MIN_ROW_ID; row_id <= data_.size(); ++row_id) {
+      if (data_[row_id] == value) {
+        return row_id;
+      }
+    }
+  } else {
+    // 索引があれば使う．
+    auto cursor = indexes_[0]->find_equal(value);
+    RowID row_id;
+    if (cursor->get_next(&row_id, 1) != 0) {
+      return row_id;
+    }
+  }
+  return 0;
+}
+
 // 指定された ID の値を更新する．
 void ColumnImpl<Int64>::set(RowID row_id, Int64 value) {
+  if (dest_table_) {
+    if ((value < dest_table_->min_row_id()) ||
+        (value > dest_table_->max_row_id())) {
+      throw "invalid reference";
+    }
+  }
   data_[row_id] = value;
   for (auto index : indexes_) {
     index->insert(row_id);
@@ -272,6 +457,22 @@ ColumnImpl<String>::ColumnImpl(Table *table, ColumnID id, const String &name)
 
 // カラムを破棄する．
 ColumnImpl<String>::~ColumnImpl() {}
+
+// UNIQUE 制約を設定する．
+bool ColumnImpl<String>::set_unique() {
+  std::set<String> set;
+  for (RowID row_id = MIN_ROW_ID; row_id <= headers_.size(); ++row_id) {
+    auto value = get(row_id);
+    auto it = set.find(value);
+    if (it != set.end()) {
+      // 重複があれば失敗する．
+      return false;
+    }
+    set.insert(value);
+  }
+  is_unique_ = true;
+  return true;
+}
 
 // 指定された索引との関連付けをおこなう．
 bool ColumnImpl<String>::register_index(Index *index) {
@@ -296,6 +497,26 @@ bool ColumnImpl<String>::unregister_index(Index *index) {
 // 指定された行 ID が使えるようにサイズを変更する．
 void ColumnImpl<String>::resize(RowID max_row_id) {
   headers_.resize(max_row_id + 1, 0);
+}
+
+// 指定された値を検索する．
+RowID ColumnImpl<String>::find(const String &value) const {
+  if (indexes_.empty()) {
+    // 索引がなければ全体を走査する．
+    for (RowID row_id = MIN_ROW_ID; row_id <= headers_.size(); ++row_id) {
+      if (get(row_id) == value) {
+        return row_id;
+      }
+    }
+  } else {
+    // 索引があれば使う．
+    auto cursor = indexes_[0]->find_equal(value);
+    RowID row_id;
+    if (cursor->get_next(&row_id, 1) != 0) {
+      return row_id;
+    }
+  }
+  return 0;
 }
 
 // 指定された ID の値を更新する．

@@ -7,6 +7,7 @@
 
 #include "grnxx/calc.hpp"
 #include "grnxx/column.hpp"
+#include "grnxx/column_impl.hpp"
 #include "grnxx/database.hpp"
 #include "grnxx/index.hpp"
 #include "grnxx/library.hpp"
@@ -368,6 +369,19 @@ bool run_load(grnxx::Database *database,
       if (!column) {
         continue;
       }
+      grnxx::Table *dest_table = nullptr;
+      if (params[begin] == '&') {
+        // 参照型．
+        if (column->data_type() != grnxx::INTEGER) {
+          return false;
+        }
+        auto impl = static_cast<grnxx::ColumnImpl<grnxx::Int64> *>(column);
+        dest_table = impl->dest_table();
+        if (!dest_table || !dest_table->primary_key_column()) {
+          return false;
+        }
+        ++begin;
+      }
       if (params[begin] == '"') {
         // 文字列．
         end = params.find_first_of('"', ++begin);
@@ -386,6 +400,16 @@ bool run_load(grnxx::Database *database,
         }
         datum = params.extract(begin, end - begin);
       }
+      if (dest_table) {
+        // 参照の解決．
+        datum = dest_table->find_row(datum);
+      }
+      if (column->is_unique()) {
+        // UNIQUE 制約の確認．
+        if (column->generic_find(datum) != 0) {
+          return false;
+        }
+      }
       column->generic_set(table->max_row_id(), datum);
       begin = params.find_first_not_of(" \t\n", end);
       if (begin == params.npos) {
@@ -394,6 +418,37 @@ bool run_load(grnxx::Database *database,
     }
   } while (begin != params.npos);
   std::cout << "OK: " << count << " rows\n";
+  return true;
+}
+
+// set_primary_key コマンド．
+bool run_set_primary_key(grnxx::Database *database,
+                         const grnxx::String &params) {
+  auto end = params.find_first_of(" \t\n");
+  if (end == params.npos) {
+    std::cerr << "Error: too few arguments" << std::endl;
+    return false;
+  }
+  grnxx::String table_name = params.prefix(end);
+  auto table = database->get_table_by_name(table_name);
+  if (!table) {
+    std::cerr << "Error: table not found: "
+              << "table_name = " << table_name << std::endl;
+    return false;
+  }
+  auto begin = params.find_first_not_of(" \t\n", end);
+  end = params.find_first_of(" \t\n", begin);
+  if (end == params.npos) {
+    end = params.size();
+  }
+  grnxx::String column_name = params.extract(begin, end - begin);
+  if (!table->set_primary_key(column_name)) {
+    std::cerr << "Error: grnxx::Table::set_primary_key() failed: "
+              << "table_name = " << table_name
+              << ", column_name = " << column_name << std::endl;
+    return false;
+  }
+  std::cout << "OK\n";
   return true;
 }
 
@@ -913,6 +968,8 @@ void run_terminal() {
         run_index_list(&database, params);
       } else if (command == "load") {
         run_load(&database, params);
+      } else if (command == "set_primary_key") {
+        run_set_primary_key(&database, params);
       } else if (command == "select") {
         grnxx::Timer timer;
         run_select(&database, params, std::cout);

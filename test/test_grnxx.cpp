@@ -835,6 +835,78 @@ void test_deep_reference() {
   }
 }
 
+void test_primary_key() {
+  grnxx::Database database;
+
+  grnxx::Table *src_table = database.create_table("Src");
+  assert(src_table);
+  grnxx::Table *dest_table = database.create_table("Dest");
+  assert(dest_table);
+
+  auto reference_column = dynamic_cast<grnxx::ColumnImpl<grnxx::Int64> *>(
+      src_table->create_reference_column("Reference", "Dest"));
+  assert(reference_column);
+
+  auto key_column = dynamic_cast<grnxx::ColumnImpl<grnxx::String> *>(
+      dest_table->create_column("Key", grnxx::STRING));
+  assert(key_column);
+  assert(dest_table->set_primary_key("Key"));
+
+  std::mt19937_64 random;
+
+  std::vector<std::string> key_data;
+  for (grnxx::Int64 i = 0; i < 1000; ++i) {
+    std::string str(8, 'A');
+    for (std::size_t i = 0; i < str.size(); ++i) {
+      str[i] += random() % 26;
+    }
+    key_data.push_back(str);
+    grnxx::RowID row_id = dest_table->insert_row();
+    key_column->set(row_id, key_data[i]);
+  }
+
+  std::vector<grnxx::Int64> reference_data;
+  for (grnxx::Int64 i = 0; i < 1000; ++i) {
+    reference_data.push_back(random() % 1000);
+    grnxx::RowID row_id = src_table->insert_row();
+    reference_column->set(row_id, reference_data[i] + 1);
+  }
+
+  std::vector<grnxx::RowID> all_row_ids(1000);
+  std::unique_ptr<grnxx::RowIDCursor> cursor(src_table->create_cursor());
+  assert(cursor->get_next(&all_row_ids[0], 1000) == 1000);
+
+  // Reference.Key で絞り込む．
+  {
+    std::unique_ptr<grnxx::Calc> calc(
+        src_table->create_calc("Reference.Key > \"N\""));
+    assert(calc);
+    std::vector<grnxx::RowID> row_ids(all_row_ids);
+    grnxx::Int64 num_row_ids = calc->filter(&*row_ids.begin(), row_ids.size());
+    assert(num_row_ids != 0);
+    grnxx::Int64 count = 0;
+    for (grnxx::Int64 i = 0; i < 1000; ++i) {
+      grnxx::RowID row_id = grnxx::MIN_ROW_ID + i;
+      if (key_data[reference_data[i]] > "N") {
+        assert(row_ids[count] == row_id);
+        assert(++count <= num_row_ids);
+      }
+    }
+    assert(count == num_row_ids);
+  }
+
+  for (grnxx::Int64 i = 0; i < 1000; ++i) {
+    assert(dest_table->find_row(key_data[i]) == (i + 1));
+  }
+  for (grnxx::Int64 i = 0; i < 1000; ++i) {
+    std::string str(8, 'a');
+    for (std::size_t i = 0; i < str.size(); ++i) {
+      str[i] += random() % 26;
+    }
+    assert(dest_table->find_row(str) == 0);
+  }
+}
+
 void test_sorter() {
   constexpr grnxx::Int64 DATA_SIZE = 1000;
 
@@ -1466,6 +1538,7 @@ int main() {
   test_calc();
   test_reference();
   test_deep_reference();
+  test_primary_key();
   test_sorter();
   test_sorter_large();
   test_index();

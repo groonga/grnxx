@@ -28,6 +28,15 @@ class Column {
   DataType data_type() const {
     return data_type_;
   }
+  // UNIQUE 制約の有無を返す．
+  bool is_unique() const {
+    return is_unique_;
+  }
+
+  // UNIQUE 制約を設定する．
+  virtual bool set_unique() = 0;
+  // UNIQUE 制約を解除する．
+  virtual bool unset_unique();
 
   // 指定された索引との関連付けをおこなう．
   virtual bool register_index(Index *index) = 0;
@@ -37,6 +46,8 @@ class Column {
   // 指定された行 ID が使えるようにサイズを変更する．
   virtual void resize(RowID max_row_id) = 0;
 
+  // FIXME: 指定された値を検索する．
+  virtual RowID generic_find(const Datum &datum) const;
   // FIXME: 指定された ID の値を返す．
   virtual Datum generic_get(RowID row_id) const;
   // FIXME: 指定された ID の値を設定する．
@@ -50,6 +61,7 @@ class Column {
   ColumnID id_;
   std::string name_;
   DataType data_type_;
+  bool is_unique_;
 };
 
 std::ostream &operator<<(std::ostream &stream, const Column &column);

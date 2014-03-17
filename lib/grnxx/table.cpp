@@ -8,6 +8,8 @@
 
 #include <ostream>
 
+#include <iostream>  // For debugging.
+
 namespace grnxx {
 namespace {
 
@@ -62,6 +64,7 @@ Table::Table(Database *database, TableID id, const String &name)
       id_(id),
       name_(reinterpret_cast<const char *>(name.data()), name.size()),
       max_row_id_(MIN_ROW_ID - 1),
+      primary_key_column_(nullptr),
       columns_(MIN_COLUMN_ID),
       columns_map_(),
       indexes_(MIN_INDEX_ID),
@@ -141,6 +144,37 @@ bool Table::drop_column(const String &column_name) {
   }
   column.reset();
   columns_map_.erase(it);
+  return true;
+}
+
+// 指定されたカラムに主キー属性を与える．
+// 成功すれば true を返し，失敗すれば false を返す．
+bool Table::set_primary_key(const String &column_name) {
+  if (primary_key_column_) {
+    return false;
+  }
+  auto it = columns_map_.find(column_name);
+  if (it == columns_map_.end()) {
+    return false;
+  }
+  auto column = columns_[it->second].get();
+  if (!column->set_unique()) {
+    return false;
+  }
+  primary_key_column_ = column;
+  return true;
+}
+
+// 主キー属性を解除する．
+// 成功すれば true を返し，失敗すれば false を返す．
+bool Table::unset_primary_key() {
+  if (!primary_key_column_) {
+    return false;
+  }
+  if (!primary_key_column_->unset_unique()) {
+    return false;
+  }
+  primary_key_column_ = nullptr;
   return true;
 }
 
@@ -288,6 +322,11 @@ Table::Cursor *Table::create_cursor(RowID range_min, RowID range_max) const {
     range_max = max_row_id();
   }
   return new Cursor(range_min, range_max);
+}
+
+// FIXME: 指定された主キーを持つ行を検索する．
+RowID Table::find_row(const Datum &datum) {
+  return primary_key_column_->generic_find(datum);
 }
 
 // 演算器を作成する．
