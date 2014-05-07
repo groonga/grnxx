@@ -48,7 +48,7 @@ EXTRA_DIST = version.sh
 
 FORCE:
 
-grnxx.cpp: version.h
+library.cpp: version.h
 
 version.h: FORCE
 	TOP_SRCDIR="$(top_srcdir)" "$(srcdir)/version.sh"
