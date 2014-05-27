@@ -47,7 +47,7 @@ class Expression {
   // - リソースを確保できない．
   virtual ExpressionNode *create_operator_node(OperatorType operator_type,
                                                Int64 num_args,
-                                               ExpressionNode *args,
+                                               ExpressionNode **args,
                                                Error *error) = 0;
 
   // 行の一覧をフィルタにかける．
@@ -66,9 +66,9 @@ class Expression {
   //  - ゼロによる除算が発生する．
   //  - NaN が発生する．
   //   - TODO: これらの取り扱いについては検討の余地がある．
-  virtual Int64 filter(Int64 num_row_ids,
-                       RowID *row_ids,
-                       Error *error) = 0;
+  virtual int64_t filter(Int64 num_row_ids,
+                         RowID *row_ids,
+                         Error *error) = 0;
 
   // 行の一覧に対する評価結果を取得する．
   // 成功すれば true を返す．
