@@ -46,7 +46,7 @@ class Expression {
   //  - 演算子が求める引数の型・数と実際の引数の型・数が異なる．
   // - リソースを確保できない．
   virtual ExpressionNode *create_operator_node(OperatorType operator_type,
-                                               Int64 num_args,
+                                               int64_t num_args,
                                                ExpressionNode **args,
                                                Error *error) = 0;
 
@@ -66,7 +66,7 @@ class Expression {
   //  - ゼロによる除算が発生する．
   //  - NaN が発生する．
   //   - TODO: これらの取り扱いについては検討の余地がある．
-  virtual int64_t filter(Int64 num_row_ids,
+  virtual int64_t filter(int64_t num_row_ids,
                          RowID *row_ids,
                          Error *error) = 0;
 
@@ -88,7 +88,7 @@ class Expression {
   //  - ゼロによる除算が発生する．
   //  - NaN が発生する．
   //   - TODO: これらの取り扱いについては検討の余地がある．
-  virtual bool evaluate(Int64 num_row_ids,
+  virtual bool evaluate(int64_t num_row_ids,
                         const RowID *row_ids,
                         Datum *values,
                         Error *error) = 0;
