@@ -219,7 +219,8 @@ class Table {
   // - オプションが不正である．
   // - リソースが確保できない．
   virtual std::unique_ptr<Cursor> create_cursor(
-      const CursorOptions &options) const = 0;
+      const CursorOptions &options,
+      Error *error) const = 0;
 
   // 行 ID の一覧に適用できる式を作成する．
   // 成功すれば有効なオブジェクトへのポインタを返す．
@@ -235,8 +236,13 @@ class Table {
   //       インタフェースがあれば何かと便利かもしれない．
   //       テスト用と考えれば，最適化などは一切せず，
   //       真っ正直にやってくれるのがベスト．
+  //
+  // 失敗する状況としては，以下のようなものが挙げられる．
+  // - オプションが不正である．
+  // - リソースが確保できない．
   virtual std::unique_ptr<Expression> create_expression(
-      const ExpressionOptions &options) const = 0;
+      const ExpressionOptions &options,
+      Error *error) const = 0;
 
   // 整列器を作成する．
   // 成功すれば有効なオブジェクトへのポインタを返す．
@@ -245,13 +251,16 @@ class Table {
   // 返り値は std::unique_ptr なので自動的に delete される．
   // 自動で delete されて困るときは release() で生のポインタを取り出す必要がある．
   //
-  // TODO: Sorter のインタフェースを決める．
-  //
   // TODO: 索引，整列，グループ化の連携について検討する．
   //       たとえば，整列の途中経過をグループ化に利用するなど．
   //       行の整列とグループの整列が考えられる．
+  //
+  // 失敗する状況としては，以下のようなものが挙げられる．
+  // - オプションが不正である．
+  // - リソースが確保できない．
   virtual std::unique_ptr<Sorter> create_sorter(
-      const SorterOptions &options) const = 0;
+      const SorterOptions &options,
+      Error *error) const = 0;
 
   // TODO: Grouper
   //
