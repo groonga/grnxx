@@ -17,6 +17,8 @@ class Column {
   virtual IndexID min_index_id() const = 0;
   // 索引 ID の最大値を取得する．
   virtual IndexID max_index_id() const = 0;
+  // 参照先テーブルを取得する．
+  virtual Table *linked_table() const = 0;
   // キーカラムかどうかを取得する．
   virtual bool is_key() const = 0;
 
