@@ -115,7 +115,7 @@ class DB {
   // - 作業領域が確保できない．
   // - ディスクの空き容量が足りない．
   virtual bool save(const char *path,
-                    const DBSaveOptions &options,
+                    const DBOptions &options,
                     Error *error) const = 0;
 };
 
@@ -137,7 +137,7 @@ class DB {
 // - 指定された名前のファイルがデータベースのファイルではない．
 // - データベースを構成するファイルが存在しない．
 std::unique_ptr<DB> open_db(const char *path,
-                            const OpenDBOptions &options,
+                            const DBOptions &options,
                             Error *error);
 
 // データベースを削除する．
@@ -152,7 +152,7 @@ std::unique_ptr<DB> open_db(const char *path,
 //  - 一部のファイルが欠けていても強制的に残りを削除するオプションは欲しい．
 //  - データベースを開かずにパスのみから推論して削除したいケースもありうる．
 // - ファイルの削除に失敗する．
-bool drop_db(const char *path, const DropDBOptions &options, Error *error);
+bool drop_db(const char *path, const DBOptions &options, Error *error);
 
 }  // namespace grnxx
 
