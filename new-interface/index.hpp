@@ -27,6 +27,8 @@ class Index {
   // 失敗する状況としては，以下のようなものが挙げられる．
   // - オプションが不正である．
   // - リソースが確保できない．
+  //
+  // TODO: 有効なオプションを取得できるようにしたい．
   virtual std::unique_ptr<Cursor> create_cursor(
       const CursorOptions &options) const = 0;
 };
