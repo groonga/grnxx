@@ -5,6 +5,11 @@
 
 namespace grnxx {
 
+enum SortOrder {
+  ASCENDING_ORDER,
+  DESCENDING_ORDER
+};
+
 class Sorter {
  public:
   Sorter();
@@ -15,9 +20,6 @@ class Sorter {
 
   // TODO: 条件を一気に設定するようにした方が使いやすい可能性がある．
   //       その場合， Table::create_sorter() で指定することも考慮すべきである．
-
-  // TODO: reverse_order を bool で受け取るよりは，
-  //       enum で受け取る方がわかりやすい．
 
   // 前提条件を追加する．
   // 成功すれば true を返す．
@@ -30,7 +32,7 @@ class Sorter {
   // - 式の評価結果が大小関係を持たない型になる．
   // - リソースを確保できない．
   virtual bool add_precondition(const Expression *expression,
-                                bool reverse_order,
+                                SortOrder order,
                                 Error *error) const = 0;
 
   // 整列条件を追加する．
@@ -44,7 +46,7 @@ class Sorter {
   // - 式の評価結果が大小関係を持たない型になる．
   // - リソースを確保できない．
   virtual bool add_condition(const Expression *expression,
-                             bool reverse_order,
+                             SortOrder order,
                              Error *error) const = 0;
 
   // 行の一覧を整列する．
