@@ -17,38 +17,7 @@ class Expression {
   // 評価結果の型を取得する．
   virtual DataType data_type() const = 0;
 
-  // 定数に対応するノードを作成する．
-  // 成功すれば有効なオブジェクトへのポインタを返す．
-  // 失敗したときは *error にその内容を格納し， nullptr を返す．
-  //
-  // 失敗する状況としては，以下のようなものが挙げられる．
-  // - 指定された定数が異常値である．
-  // - リソースを確保できない．
-  virtual ExpressionNode *create_datum_node(const Datum &datum,
-                                            Error *error) = 0;
-
-  // カラムに対応するノードを作成する．
-  // 成功すれば有効なオブジェクトへのポインタを返す．
-  // 失敗したときは *error にその内容を格納し， nullptr を返す．
-  //
-  // 失敗する状況としては，以下のようなものが挙げられる．
-  // - 指定されたカラムが存在しない．
-  // - リソースを確保できない．
-  virtual ExpressionNode *create_column_node(const char *column_name,
-                                             Error *error) = 0;
-
-  // 演算子に対応するノードを作成する．
-  // 成功すれば有効なオブジェクトへのポインタを返す．
-  // 失敗したときは *error にその内容を格納し， nullptr を返す．
-  //
-  // 失敗する状況としては，以下のようなものが挙げられる．
-  // - 演算子と引数が対応していない．
-  //  - 演算子が求める引数の型・数と実際の引数の型・数が異なる．
-  // - リソースを確保できない．
-  virtual ExpressionNode *create_operator_node(OperatorType operator_type,
-                                               int64_t num_args,
-                                               ExpressionNode **args,
-                                               Error *error) = 0;
+  // TODO: 行の一覧とスコアの受け渡し方を決める．
 
   // 行の一覧をフィルタにかける．
   // 成功すればフィルタにかけて残った行数を返す．
@@ -68,7 +37,29 @@ class Expression {
   //   - TODO: これらの取り扱いについては検討の余地がある．
   virtual int64_t filter(int64_t num_row_ids,
                          RowID *row_ids,
+                         double *scores,
                          Error *error) = 0;
+
+  // スコアを調整する．
+  // 成功すれば true を返す．
+  // 失敗したときは *error にその内容を格納し， false を返す．
+  //
+  // 評価結果を *scores に格納する．
+  // 式において _score を指定することにより， scores を入力として使うこともできる．
+  //
+  // 有効でない行 ID を渡したときの動作は未定義である．
+  //
+  // 失敗する状況としては，以下のようなものが挙げられる．
+  // - 評価結果をスコアに変換できない．
+  // - 演算において例外が発生する．
+  //  - オーバーフローやアンダーフローが発生する．
+  //  - ゼロによる除算が発生する．
+  //  - NaN が発生する．
+  //   - TODO: これらの取り扱いについては検討の余地がある．
+  virtual bool adjust(int64_t num_row_ids,
+                      RowID *row_ids,
+                      double *scores,
+                      Error *error) = 0;
 
   // 行の一覧に対する評価結果を取得する．
   // 成功すれば true を返す．
@@ -90,6 +81,7 @@ class Expression {
   //   - TODO: これらの取り扱いについては検討の余地がある．
   virtual bool evaluate(int64_t num_row_ids,
                         const RowID *row_ids,
+                        const double *scores,
                         Datum *values,
                         Error *error) = 0;
 };
