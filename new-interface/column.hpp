@@ -142,7 +142,8 @@ class Column {
   // - オプションが不正である．
   // - リソースが確保できない．
   virtual std::unique_ptr<Cursor> create_cursor(
-      const CursorOptions &options) const = 0;
+      const CursorOptions &options,
+      Error *error) const = 0;
 
  protected:
   Column();
