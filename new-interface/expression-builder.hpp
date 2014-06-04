@@ -48,13 +48,14 @@ class ExpressionBuilder {
                                                ExpressionNode **args,
                                                Error *error) = 0;
 
+  // すべてのノードを破棄する．
+  virtual void clear();
+
   // 最後に作成したノードを根とする構文木に対応する式を作成する．
   // 成功すれば有効なオブジェクトへのポインタを返す．
   // 失敗したときは *error にその内容を格納し， nullptr を返す．
   //
   // 失敗する状況としては，以下のようなものが挙げられる．
-  // - 演算子と引数が対応していない．
-  //  - 演算子が求める引数の型・数と実際の引数の型・数が異なる．
   // - リソースを確保できない．
   virtual std::unique_ptr<Expression> create_expression(Error *error) const;
 };
