@@ -228,15 +228,12 @@ class Table {
       const CursorOptions &options,
       Error *error) const = 0;
 
-  // TODO: Table には create_expression_builder() を持たせ，
-  //       ExpressionBuilder を使って Expression を作成する方がすっきりする．
-
-  // 行 ID の一覧に適用できる式を作成する．
+  // 式を構築するためのオブジェクトを作成する．
   // 成功すれば有効なオブジェクトへのポインタを返す．
   // 失敗したときは *error にその内容を格納し， nullptr を返す．
   //
-  // 索引による検索の後で絞り込むために用いる．
-  // ほかに，スコアの調整や出力の指定，整列条件やグループ化条件の指定にも用いる．
+  // 検索結果の絞り込み，スコアの調整や出力の指定，
+  // 整列条件やグループ化条件の指定に用いる．
   //
   // 返り値は std::unique_ptr なので自動的に delete される．
   // 自動で delete されて困るときは release() で生のポインタを取り出す必要がある．
@@ -250,13 +247,11 @@ class Table {
   // 失敗する状況としては，以下のようなものが挙げられる．
   // - オプションが不正である．
   // - リソースが確保できない．
-  virtual std::unique_ptr<Expression> create_expression(
+  virtual std::unique_ptr<Expression> create_expression_builder(
       const ExpressionOptions &options,
       Error *error) const = 0;
 
-  // TODO: Expression と同じく SorterBuilder を介する方がよさそう．
-
-  // 整列器を作成する．
+  // 整列器を構築するためのオブジェクトを作成する．
   // 成功すれば有効なオブジェクトへのポインタを返す．
   // 失敗したときは *error にその内容を格納し， nullptr を返す．
   //
@@ -273,7 +268,7 @@ class Table {
   // 失敗する状況としては，以下のようなものが挙げられる．
   // - オプションが不正である．
   // - リソースが確保できない．
-  virtual std::unique_ptr<Sorter> create_sorter(
+  virtual std::unique_ptr<Sorter> create_sorter_builder(
       const SorterOptions &options,
       Error *error) const = 0;
 
