@@ -32,10 +32,10 @@ class Column {
   // - オプションの内容が不正である．
   // - 十分なリソースを確保できない．
   // - 索引の数が上限に達している．
-  virtual Index *create_index(const char *index_name,
+  virtual Index *create_index(Error *error,
+                              const char *index_name,
                               IndexType index_type,
-                              const IndexOptions &options,
-                              Error *error) = 0;
+                              const IndexOptions &options) = 0;
   // 索引を破棄する．
   // 成功すれば true を返す．
   // 失敗したときは *error にその内容を格納し， false を返す．
@@ -45,7 +45,7 @@ class Column {
   //
   // 失敗する状況としては，以下のようなものが挙げられる．
   // - 指定された名前の索引が存在しない．
-  virtual bool drop_index(const char *index_name, Error *error) = 0;
+  virtual bool drop_index(Error *error, const char *index_name) = 0;
 
   // 索引の名前を変更する．
   // 成功すれば true を返す．
@@ -56,9 +56,9 @@ class Column {
   // - 指定された名前（new）が索引名の条件を満たさない．
   // - 指定された名前（new）の索引が存在する．
   //  - 変更前後の名前が同じときは何もせずに成功とする．
-  virtual bool rename_index(const char *index_name,
-                            const char *new_index_name,
-                            Error *error) = 0;
+  virtual bool rename_index(Error *error,
+                            const char *index_name,
+                            const char *new_index_name) = 0;
 
   // 索引の順番を変更する．
   // 成功すれば true を返す．
@@ -70,9 +70,9 @@ class Column {
   //
   // 失敗する状況としては，以下のようなものが挙げられる．
   // - 指定された名前の索引が存在しない．
-  virtual bool reorder_index(const char *index_name,
-                             const char *prev_index_name,
-                             Error *error) = 0;
+  virtual bool reorder_index(Error *error,
+                             const char *index_name,
+                             const char *prev_index_name) = 0;
 
   // 索引を取得する．
   // 成功すれば有効なオブジェクトへのポインタを返す．
@@ -84,7 +84,7 @@ class Column {
   //
   // 失敗する状況としては，以下のようなものが挙げられる．
   // - 指定された ID が有効な範囲にない．
-  virtual Index *get_index(IndexID index_id, Error *error) const = 0;
+  virtual Index *get_index(Error *error, IndexID index_id) const = 0;
 
   // 索引を検索する．
   // 成功すれば有効なオブジェクトへのポインタを返す．
@@ -92,7 +92,7 @@ class Column {
   //
   // 失敗する状況としては，以下のようなものが挙げられる．
   // - 指定された名前の索引が存在しない．
-  virtual Index *find_index(const char *index_name, Error *error) const = 0;
+  virtual Index *find_index(Error *error, const char *index_name) const = 0;
 
   // TODO: 機能から索引を検索する API が欲しい．
   //       たとえば，範囲検索に使える索引を探す，全文検索に使える索引を探すなど．
@@ -119,7 +119,7 @@ class Column {
   // - 指定された値がカラムの制約にかかる．
   // - リソースが確保できない．
   // - 索引の更新に失敗する．
-  virtual bool set(RowID row_id, const Datum &datum, Error *error) = 0;
+  virtual bool set(Error *error, RowID row_id, const Datum &datum) = 0;
 
   // 値を取得する．
   // 成功すれば true を返す．
@@ -129,7 +129,7 @@ class Column {
   //
   // 失敗する状況としては，以下のようなものが挙げられる．
   // - 指定された行 ID が有効でない．
-  virtual bool get(RowID row_id, Datum *datum, Error *error) const = 0;
+  virtual bool get(Error *error, RowID row_id, Datum *datum) const = 0;
 
   // 指定された条件を持たす行の ID を取得するためのカーソルを作成する．
   // 成功すれば有効なオブジェクトへのポインタを返す．
@@ -142,8 +142,8 @@ class Column {
   // - オプションが不正である．
   // - リソースが確保できない．
   virtual std::unique_ptr<Cursor> create_cursor(
-      const CursorOptions &options,
-      Error *error) const = 0;
+      Error *error,
+      const CursorOptions &options) const = 0;
 
  protected:
   Column();

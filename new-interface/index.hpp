@@ -30,8 +30,8 @@ class Index {
   //
   // TODO: 有効なオプションを取得できるようにしたい．
   virtual std::unique_ptr<Cursor> create_cursor(
-      const CursorOptions &options,
-      Error *error) const = 0;
+      Error *error,
+      const CursorOptions &options) const = 0;
 };
 
 }  // namespace grnxx

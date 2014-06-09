@@ -33,10 +33,10 @@ class Table {
   // - オプションの内容が不正である．
   // - 十分なリソースを確保できない．
   // - カラムの数が上限に達している．
-  virtual Column *create_column(const char *column_name,
+  virtual Column *create_column(Error *error,
+                                const char *column_name,
                                 ColumnType column_type,
-                                const ColumnOptions &column_options,
-                                Error *error) = 0;
+                                const ColumnOptions &column_options) = 0;
   // カラムを破棄する．
   // 成功すれば true を返す．
   // 失敗したときは *error にその内容を格納し， false を返す．
@@ -47,7 +47,7 @@ class Table {
   // 失敗する状況としては，以下のようなものが挙げられる．
   // - 指定された名前のカラムが存在しない．
   // - 依存関係を解決できない．
-  virtual bool drop_column(const char *column_name, Error *error) = 0;
+  virtual bool drop_column(Error *error, const char *column_name) = 0;
 
   // カラムの名前を変更する．
   // 成功すれば true を返す．
@@ -59,9 +59,9 @@ class Table {
   // - 指定された名前（new）のカラムが存在する．
   //  - 変更前後の名前が同じときは何もせずに成功とする．
   // - 索引の更新に失敗する．
-  virtual bool rename_column(const char *column_name,
-                             const char *new_column_name,
-                             Error *error) = 0;
+  virtual bool rename_column(Error *error,
+                             const char *column_name,
+                             const char *new_column_name) = 0;
 
   // カラムの順番を変更する．
   // 成功すれば true を返す．
@@ -73,9 +73,9 @@ class Table {
   //
   // 失敗する状況としては，以下のようなものが挙げられる．
   // - 指定された名前のカラムが存在しない．
-  virtual bool reorder_column(const char *column_name,
-                              const char *prev_column_name,
-                              Error *error) = 0;
+  virtual bool reorder_column(Error *error,
+                              const char *column_name,
+                              const char *prev_column_name) = 0;
 
   // カラムを取得する．
   // 成功すれば有効なオブジェクトへのポインタを返す．
@@ -87,7 +87,7 @@ class Table {
   //
   // 失敗する状況としては，以下のようなものが挙げられる．
   // - 指定された ID が有効な範囲にない．
-  virtual Column *get_column(ColumnID column_id， Error *error) const = 0;
+  virtual Column *get_column(Error *error, ColumnID column_id) const = 0;
 
   // カラムを検索する．
   // 成功すれば有効なオブジェクトへのポインタを返す．
@@ -95,7 +95,7 @@ class Table {
   //
   // 失敗する状況としては，以下のようなものが挙げられる．
   // - 指定された名前のカラムが存在しない．
-  virtual Column *find_column(const char *column_name, Error *error) const = 0;
+  virtual Column *find_column(Error *error, const char *column_name) const = 0;
 
   // キーカラムを設定する．
   // 成功すれば true を返す．
@@ -107,7 +107,7 @@ class Table {
   // - 指定されたカラムの型がキーとしてサポートされていない．
   // - 指定されたカラムに同じ値が複数存在する．
   // - 一時領域を確保できない．
-  virtual bool set_key_column(const char *column_name, Error *error) = 0;
+  virtual bool set_key_column(Error *error, const char *column_name) = 0;
 
   // キーカラムを解除する．
   // 成功すれば true を返す．
@@ -155,10 +155,10 @@ class Table {
   // - 行数が上限に達している．
   // - 索引の更新に失敗する．
   // - リソースを確保できない．
-  virtual bool insert_row(RowID request_row_id,
+  virtual bool insert_row(Error *error,
+                          RowID request_row_id,
                           const Datum &key,
-                          RowID *result_row_id,
-                          Error *error) = 0;
+                          RowID *result_row_id) = 0;
 
   // 行を削除する．
   // 成功すれば true を返す．
@@ -189,7 +189,7 @@ class Table {
   //       不要になった（参照されなくなった）タグを削除するような用途を考えると，
   //       削除可能な行をすべて削除するという操作が実現できると便利そうである．
   //       デフラグに似た専用のインタフェースを提供すべきかもしれない．
-  virtual bool delete_row(RowID row_id, Error *error) = 0;
+  virtual bool delete_row(Error *error, RowID row_id) = 0;
 
   // 行の有効性を確認する．
   // 指定された行が有効であれば true を返す．
@@ -200,7 +200,7 @@ class Table {
   // 無効と判定される条件としては，以下のようなものが挙げられる．
   // - 指定された行 ID が有効範囲にない．
   // - 指定された行は削除されてから再利用されていない．
-  virtual bool test_row(RowID row_id, Error *error) const = 0;
+  virtual bool test_row(Error *error, RowID row_id) const = 0;
 
   // キーカラムを持つテーブルから行を検索する．
   // 成功すれば有効な行 ID を返す．
@@ -212,7 +212,7 @@ class Table {
   // - キーカラムが存在しない．
   // - 指定されたキーをキーカラムの型に変換できない．
   // - 指定されたキーを持つ行が存在しない．
-  virtual RowID find_row(const Datum &key, Error *error) const = 0;
+  virtual RowID find_row(Error *error, const Datum &key) const = 0;
 
   // 行 ID を昇順もしくは降順に取得するためのカーソルを作成する．
   // 成功すれば有効なオブジェクトへのポインタを返す．
@@ -225,8 +225,8 @@ class Table {
   // - オプションが不正である．
   // - リソースが確保できない．
   virtual std::unique_ptr<Cursor> create_cursor(
-      const CursorOptions &options,
-      Error *error) const = 0;
+      Error *error,
+      const CursorOptions &options) const = 0;
 
   // 式を構築するためのオブジェクトを作成する．
   // 成功すれば有効なオブジェクトへのポインタを返す．
@@ -248,8 +248,8 @@ class Table {
   // - オプションが不正である．
   // - リソースが確保できない．
   virtual std::unique_ptr<Expression> create_expression_builder(
-      const ExpressionOptions &options,
-      Error *error) const = 0;
+      Error *error,
+      const ExpressionOptions &options) const = 0;
 
   // 整列器を構築するためのオブジェクトを作成する．
   // 成功すれば有効なオブジェクトへのポインタを返す．
@@ -269,8 +269,8 @@ class Table {
   // - オプションが不正である．
   // - リソースが確保できない．
   virtual std::unique_ptr<Sorter> create_sorter_builder(
-      const SorterOptions &options,
-      Error *error) const = 0;
+      Error *error,
+      const SorterOptions &options) const = 0;
 
   // TODO: 分類器については，条件をひとつしか受け付けないのであれば，
   //       create_grouper() が条件を受け取るようにした方がすっきりする．
@@ -311,8 +311,8 @@ class Table {
   // - オプションが不正である．
   // - リソースが確保できない．
   virtual std::unique_ptr<Grouper> create_grouper(
-      const GrouperOptions &options,
-      Error *error) const = 0;
+      Error *error,
+      const GrouperOptions &options) const = 0;
 
   // TODO: 検索結果の型を決める．
   //

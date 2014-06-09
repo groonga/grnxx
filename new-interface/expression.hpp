@@ -35,10 +35,10 @@ class Expression {
   //  - ゼロによる除算が発生する．
   //  - NaN が発生する．
   //   - TODO: これらの取り扱いについては検討の余地がある．
-  virtual int64_t filter(int64_t num_row_ids,
+  virtual int64_t filter(Error *error,
+                         int64_t num_row_ids,
                          RowID *row_ids,
-                         double *scores,
-                         Error *error) = 0;
+                         double *scores) = 0;
 
   // スコアを調整する．
   // 成功すれば true を返す．
@@ -56,10 +56,10 @@ class Expression {
   //  - ゼロによる除算が発生する．
   //  - NaN が発生する．
   //   - TODO: これらの取り扱いについては検討の余地がある．
-  virtual bool adjust(int64_t num_row_ids,
+  virtual bool adjust(Error *error,
+                      int64_t num_row_ids,
                       RowID *row_ids,
-                      double *scores,
-                      Error *error) = 0;
+                      double *scores) = 0;
 
   // 行の一覧に対する評価結果を取得する．
   // 成功すれば true を返す．
@@ -79,11 +79,11 @@ class Expression {
   //  - ゼロによる除算が発生する．
   //  - NaN が発生する．
   //   - TODO: これらの取り扱いについては検討の余地がある．
-  virtual bool evaluate(int64_t num_row_ids,
+  virtual bool evaluate(Error *error,
+                        int64_t num_row_ids,
                         const RowID *row_ids,
                         const double *scores,
-                        Datum *values,
-                        Error *error) = 0;
+                        Datum *values) = 0;
 };
 
 }  // namespace grnxx

@@ -28,9 +28,9 @@ class Sorter {
   // 失敗する状況としては，以下のようなものが挙げられる．
   // - 式の評価結果が大小関係を持たない型になる．
   // - リソースを確保できない．
-  virtual bool add_precondition(const Expression *expression,
-                                SortOrder order,
-                                Error *error) const = 0;
+  virtual bool add_precondition(Error *error,
+                                const Expression *expression,
+                                SortOrder order) const = 0;
 
   // 整列条件を追加する．
   // 成功すれば true を返す．
@@ -42,9 +42,9 @@ class Sorter {
   // 失敗する状況としては，以下のようなものが挙げられる．
   // - 式の評価結果が大小関係を持たない型になる．
   // - リソースを確保できない．
-  virtual bool add_condition(const Expression *expression,
-                             SortOrder order,
-                             Error *error) const = 0;
+  virtual bool add_condition(Error *error,
+                             const Expression *expression,
+                             SortOrder order) const = 0;
 
   // すべての条件を破棄する．
   virtual void clear();

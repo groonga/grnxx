@@ -25,9 +25,9 @@ class DB {
   // - オプションの内容が不正である．
   // - 十分なリソースを確保できない．
   // - テーブルの数が上限に達している．
-  virtual Table *create_table(const char *table_name,
-                              const TableOptions &table_options,
-                              Error *error) = 0;
+  virtual Table *create_table(Error *error,
+                              const char *table_name,
+                              const TableOptions &table_options) = 0;
 
   // テーブルを破棄する．
   // 成功すれば true を返す．
@@ -39,8 +39,8 @@ class DB {
   // 失敗する状況としては，以下のようなものが挙げられる．
   // - 指定された名前のテーブルが存在しない．
   // - 依存関係を解決できない．
-  virtual bool drop_table(const char *table_name,
-                          Error *error) = 0;
+  virtual bool drop_table(Error *error,
+                          const char *table_name) = 0;
 
   // テーブルの名前を変更する．
   // 成功すれば true を返す．
@@ -52,9 +52,9 @@ class DB {
   // - 指定された名前（new）のテーブルが存在する．
   //  - 変更前後の名前が同じときは何もせずに成功とする．
   // - 索引の更新に失敗する．
-  virtual bool rename_table(const char *table_name,
-                            const char *new_table_name,
-                            Error *error) = 0;
+  virtual bool rename_table(Error *error,
+                            const char *table_name,
+                            const char *new_table_name) = 0;
 
   // テーブルの順番を変更する．
   // 成功すれば true を返す．
@@ -66,9 +66,9 @@ class DB {
   //
   // 失敗する状況としては，以下のようなものが挙げられる．
   // - 指定された名前のテーブルが存在しない．
-  virtual bool reorder_table(const char *table_name,
-                             const char *prev_table_name,
-                             Error *error) = 0;
+  virtual bool reorder_table(Error *error,
+                             const char *table_name,
+                             const char *prev_table_name) = 0;
 
   // テーブルを取得する．
   // 成功すれば有効なオブジェクトへのポインタを返す．
@@ -80,8 +80,7 @@ class DB {
   //
   // 失敗する状況としては，以下のようなものが挙げられる．
   // - 指定された ID が有効な範囲にない．
-  virtual Table *get_table(TableID table_id，
-                           Error *error) const = 0;
+  virtual Table *get_table(Error *error, TableID table_id) const = 0;
 
   // テーブルを検索する．
   // 成功すれば有効なオブジェクトへのポインタを返す．
@@ -89,7 +88,7 @@ class DB {
   //
   // 失敗する状況としては，以下のようなものが挙げられる．
   // - 指定された名前のテーブルが存在しない．
-  virtual Table *find_table(const char *table_name, Error *error) const = 0;
+  virtual Table *find_table(Error *error, const char *table_name) const = 0;
 
   // データベースの内容をファイルに出力する．
   // 成功すれば true を返す．
@@ -114,9 +113,8 @@ class DB {
   // - 指定された名前のファイルに対するアクセス権限がない．
   // - 作業領域が確保できない．
   // - ディスクの空き容量が足りない．
-  virtual bool save(const char *path,
-                    const DBOptions &options,
-                    Error *error) const = 0;
+  virtual bool save(Error *error, const char *path,
+                    const DBOptions &options) const = 0;
 };
 
 // データベースを開く，もしくは作成する．
@@ -136,9 +134,9 @@ class DB {
 // - 指定された名前のファイルに対するアクセス権限がない．
 // - 指定された名前のファイルがデータベースのファイルではない．
 // - データベースを構成するファイルが存在しない．
-std::unique_ptr<DB> open_db(const char *path,
-                            const DBOptions &options,
-                            Error *error);
+std::unique_ptr<DB> open_db(Error *error,
+                            const char *path,
+                            const DBOptions &options);
 
 // データベースを削除する．
 // 成功すれば true を返す．
@@ -152,7 +150,7 @@ std::unique_ptr<DB> open_db(const char *path,
 //  - 一部のファイルが欠けていても強制的に残りを削除するオプションは欲しい．
 //  - データベースを開かずにパスのみから推論して削除したいケースもありうる．
 // - ファイルの削除に失敗する．
-bool drop_db(const char *path, const DBOptions &options, Error *error);
+bool drop_db(Error *error, const char *path, const DBOptions &options);
 
 }  // namespace grnxx
 
