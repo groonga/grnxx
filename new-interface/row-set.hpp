@@ -12,11 +12,13 @@ class RowSet {
 
   // 所属するテーブルを取得する．
   Table *table() const;
+  // 行数を取得する．
+  int64_t num_rows() const;
 
   // 行 ID を取得する．
-  RowID get_row_id(Int64 i) const;
+  RowID get_row_id(int64_t i) const;
   // スコアを取得する．
-  double get_score(Int64 i) const;
+  double get_score(int64_t i) const;
 
   // スコアを正規化する．
   // 成功すれば true を返す．
@@ -43,6 +45,20 @@ class RowSet {
   // - リソースが足りない．
   // - 演算において例外が発生する．
   bool sort(Error *error, const SortConditions &conditions);
+
+  // TODO: Grouper を使うより RowSet::group() の方が良い？
+
+  // グループ化する．
+  // 成功すれば true を返す．
+  // 失敗したときは *error にその内容を格納し， false を返す．
+  //
+  // 失敗する状況としては，以下のようなものが挙げられる．
+  // - オプションが不正である．
+  // - リソースが確保できない．
+  bool group(Error *error,
+             GroupSet *group_set,
+             const Expression &expression,
+             GroupOptions &options) const;
 };
 
 }  // namespace grnxx
