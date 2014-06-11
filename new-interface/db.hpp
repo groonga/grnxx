@@ -113,7 +113,8 @@ class DB {
   // - 指定された名前のファイルに対するアクセス権限がない．
   // - 作業領域が確保できない．
   // - ディスクの空き容量が足りない．
-  virtual bool save(Error *error, const char *path,
+  virtual bool save(Error *error,
+                    const char *path,
                     const DBOptions &options) const = 0;
 };
 

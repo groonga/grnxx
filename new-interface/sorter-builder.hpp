@@ -29,7 +29,7 @@ class Sorter {
   // - 式の評価結果が大小関係を持たない型になる．
   // - リソースを確保できない．
   virtual bool add_precondition(Error *error,
-                                const Expression *expression,
+                                const Expression &expression,
                                 SortOrder order) const = 0;
 
   // 整列条件を追加する．
@@ -43,7 +43,7 @@ class Sorter {
   // - 式の評価結果が大小関係を持たない型になる．
   // - リソースを確保できない．
   virtual bool add_condition(Error *error,
-                             const Expression *expression,
+                             const Expression &expression,
                              SortOrder order) const = 0;
 
   // すべての条件を破棄する．
@@ -55,7 +55,9 @@ class Sorter {
   //
   // 失敗する状況としては，以下のようなものが挙げられる．
   // - リソースを確保できない．
-  virtual std::unique_ptr<Sorter> create_sorter(Error *error) const;
+  virtual std::unique_ptr<Sorter> create_sorter(
+      Error *error,
+      const SorterOptions &options) const;
 };
 
 }  // namespace grnxx

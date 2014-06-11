@@ -10,14 +10,21 @@ class Cursor {
   Cursor();
   virtual ~Cursor();
 
-  // カーソルの位置を進めて移動量を返す．
-  // 途中で終端に到達したときは，そこで移動を停止し，それまでの移動量を返す．
-  virtual int64_t seek(int64_t count) = 0;
+  // カーソルの位置を最大で count 進める．
+  // 成功すれば移動量を返す．
+  // 失敗したときは *error にその内容を格納し， -1 を返す．
+  //
+  // 途中で終端に到達したときは count より小さい値を返す．
+  virtual int64_t seek(Error *error, int64_t count) = 0;
 
-  // カーソルの位置を進めて移動量を返す．
-  // 途中で終端に到達したときは，そこで移動を停止し，それまでの移動量を返す．
-  // 移動中に取得した行 ID は *row_ids に格納する．
-  virtual int64_t read(int64_t count, RowID *row_ids) = 0;
+  // カーソルの位置を最大で count 進める．
+  // 成功すれば移動量を返す．
+  // 失敗したときは *error にその内容を格納し， -1 を返す．
+  //
+  // カーソルの移動中に取得した行は *row_set の末尾に追加する．
+  //
+  // 途中で終端に到達したときは count より小さい値を返す．
+  virtual int64_t read(Error *error, int64_t count, RowSet *row_set) = 0;
 };
 
 }  // namespace grnxx

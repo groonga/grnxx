@@ -43,10 +43,11 @@ class ExpressionBuilder {
   // - 演算子と引数が対応していない．
   //  - 演算子が求める引数の型・数と実際の引数の型・数が異なる．
   // - リソースを確保できない．
-  virtual ExpressionNode *create_operator_node(Error *error,
-                                               OperatorType operator_type,
-                                               int64_t num_args,
-                                               ExpressionNode **args) = 0;
+  virtual ExpressionNode *create_operator_node(
+      Error *error,
+      OperatorType operator_type,
+      int64_t num_args,
+      ExpressionNode * const *args) = 0;
 
   // すべてのノードを破棄する．
   virtual void clear();
@@ -57,7 +58,9 @@ class ExpressionBuilder {
   //
   // 失敗する状況としては，以下のようなものが挙げられる．
   // - リソースを確保できない．
-  virtual std::unique_ptr<Expression> create_expression(Error *error) const;
+  virtual std::unique_ptr<Expression> create_expression(
+      Error *error,
+      const ExpressionOptions &options) const;
 };
 
 }  // namespace grnxx

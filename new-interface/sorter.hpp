@@ -24,8 +24,9 @@ class Sorter {
   // - 演算において例外が発生する．
   // - リソースを確保できない．
   virtual bool sort(Error *error,
-                    int64_t num_row_ids, RowID *row_ids,
-                    int64_t offset, int64_t limit);
+                    RowSet *row_set,
+                    int64_t offset,
+                    int64_t limit);
 };
 
 }  // namespace grnxx
