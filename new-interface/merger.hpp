@@ -25,9 +25,9 @@ class Merger {
   // 入力がまだ残っているときは MERGE_CONTINUE,
   // 入力がもう残っていないときは MERGE_FINISH を指定する．
   //
-  // lhs_row_set, rhs_row_set を入力として，
-  // 合成した結果を result_row_set に出力する．
-  // 合成に使用された行は lhs_row_set, rhs_row_set から取り除かれる．
+  // lhs_record_set, rhs_record_set を入力として，
+  // 合成した結果を result_record_set に出力する．
+  // 合成に使用された行は lhs_record_set, rhs_record_set から取り除かれる．
   // そのため，空になった方の入力に行を補充することで合成を継続できる．
   //
   // 入力は行 ID 昇順もしくは降順になっているものとする．
@@ -37,9 +37,9 @@ class Merger {
   // - スコアが合成によって不正な値になる．
   // - リソースが確保できない．
   virtual int64_t merge(Error *error,
-                        RowSet *lhs_row_set,
-                        RowSet *rhs_row_set,
-                        RowSet *result_row_set,
+                        RecordSet *lhs_record_set,
+                        RecordSet *rhs_record_set,
+                        RecordSet *result_record_set,
                         MergeStatus status) const = 0;
 };
 

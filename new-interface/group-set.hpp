@@ -18,7 +18,7 @@ class GroupSet {
   // 行数を取得する．
   int64_t get_num_rows(int64_t i) const;
   // 保存してある行の一覧を取得する．
-  RowSet *get_row_set(int64_t i) const;
+  RecordSet *get_record_set(int64_t i) const;
 
   // 整列する．
   // 成功すれば true を返す．

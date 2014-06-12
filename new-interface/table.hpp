@@ -343,9 +343,9 @@ class Table {
   // - オプションが不正である．
   // - リソースが確保できない．
   virtual bool merge(Error *error,
-                     RowSet *lhs,
-                     RowSet *rhs,
-                     RowSet *output,
+                     RecordSet *lhs_record_set,
+                     RecordSet *rhs_record_set,
+                     RecordSet *result_record_set,
                      const MergerOptions &options);
 
  protected:

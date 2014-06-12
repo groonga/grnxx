@@ -24,7 +24,7 @@ class Sorter {
   // - 演算において例外が発生する．
   // - リソースを確保できない．
   virtual bool sort(Error *error,
-                    RowSet *row_set,
+                    RecordSet *record_set,
                     int64_t offset,
                     int64_t limit);
 };

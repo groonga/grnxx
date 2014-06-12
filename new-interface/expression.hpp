@@ -37,14 +37,14 @@ class Expression {
   //  - NaN が発生する．
   //   - TODO: これらの取り扱いについては検討の余地がある．
   virtual int64_t filter(Error *error,
-                         RowSet *row_set,
+                         RecordSet *record_set,
                          int64_t offset) = 0;
 
   // スコアを調整する．
   // 成功すれば true を返す．
   // 失敗したときは *error にその内容を格納し， false を返す．
   //
-  // 評価結果を *row_set に格納する．
+  // 評価結果を *record_set に格納する．
   // 式の構築において _score を指定することにより，
   // 既存のスコアを入力として使うこともできる．
   //
@@ -60,7 +60,7 @@ class Expression {
   //  - NaN が発生する．
   //   - TODO: これらの取り扱いについては検討の余地がある．
   virtual bool adjust(Error *error,
-                      RowSet *row_set,
+                      RecordSet *record_set,
                       int64_t offset) = 0;
 
   // 行の一覧に対する評価結果を取得する．
@@ -75,7 +75,7 @@ class Expression {
   //   - TODO: これらの取り扱いについては検討の余地がある．
   // - リソースが確保できない．
   virtual bool evaluate(Error *error,
-                        const RowSet &row_set,
+                        const RecordSet &record_set,
                         int64_t offset,
                         int64_t limit,
                         Data *values) = 0;

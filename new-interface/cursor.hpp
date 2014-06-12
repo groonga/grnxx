@@ -21,10 +21,10 @@ class Cursor {
   // 成功すれば移動量を返す．
   // 失敗したときは *error にその内容を格納し， -1 を返す．
   //
-  // カーソルの移動中に取得した行は *row_set の末尾に追加する．
+  // カーソルの移動中に取得した行は *record_set の末尾に追加する．
   //
   // 途中で終端に到達したときは count より小さい値を返す．
-  virtual int64_t read(Error *error, int64_t count, RowSet *row_set) = 0;
+  virtual int64_t read(Error *error, int64_t count, RecordSet *record_set) = 0;
 };
 
 }  // namespace grnxx
