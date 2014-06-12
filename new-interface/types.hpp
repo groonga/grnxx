@@ -31,7 +31,6 @@ using TableID  = int64_t;
 using ColumnID = int64_t;
 using IndexID  = int64_t;
 using RowID    = int64_t;
-using RecordID = int64_t;
 
 constexpr RowID NULL_ROW_ID = RowID(0);
 constexpr RowID MIN_ROW_ID  = RowID(1);

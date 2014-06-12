@@ -5,6 +5,11 @@
 
 namespace grnxx {
 
+struct Record {
+  RowID row_id;
+  double score;
+};
+
 class RecordSet {
  public:
   RecordSet();
@@ -12,15 +17,24 @@ class RecordSet {
 
   // 所属するテーブルを取得する．
   Table *table() const;
-  // レコード ID の最小値を取得する．
-  RecordID min_record_id() const;
-  // レコード ID の最大値を取得する．
-  RecordID max_record_id() const;
+  // レコード数を取得する．
+  int64_t num_records() const;
+
+  // レコードを取得する．
+  // 不正なレコード ID を指定したときの動作は未定義である．
+  Record get(int64_t i) const;
 
   // 行 ID を取得する．
-  RowID get_row_id(RecordID record_id) const;
+  // 不正なレコード ID を指定したときの動作は未定義である．
+  RowID get_row_id(int64_t i) const;
+
   // スコアを取得する．
-  double get_score(RecordID record_id) const;
+  // 不正なレコード ID を指定したときの動作は未定義である．
+  double get_score(int64_t i) const;
+
+  // 一部を取得する．
+  // 不正な範囲を指定したときの動作は未定義である．
+  RecordSet subset(int64_t offset, int64_t count) const;
 
   // スコアを正規化する．
   // 成功すれば true を返す．

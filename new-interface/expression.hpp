@@ -37,8 +37,7 @@ class Expression {
   //  - NaN が発生する．
   //   - TODO: これらの取り扱いについては検討の余地がある．
   virtual int64_t filter(Error *error,
-                         RecordSet *record_set,
-                         int64_t offset) = 0;
+                         RecordSet *record_set) = 0;
 
   // スコアを調整する．
   // 成功すれば true を返す．
@@ -60,8 +59,7 @@ class Expression {
   //  - NaN が発生する．
   //   - TODO: これらの取り扱いについては検討の余地がある．
   virtual bool adjust(Error *error,
-                      RecordSet *record_set,
-                      int64_t offset) = 0;
+                      RecordSet *record_set) = 0;
 
   // 行の一覧に対する評価結果を取得する．
   // 成功すれば true を返す．
@@ -76,8 +74,6 @@ class Expression {
   // - リソースが確保できない．
   virtual bool evaluate(Error *error,
                         const RecordSet &record_set,
-                        int64_t offset,
-                        int64_t limit,
                         Data *values) = 0;
 };
 
