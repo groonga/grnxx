@@ -5,11 +5,6 @@
 
 namespace grnxx {
 
-enum SortStatus {
-  SORT_CONTINUE,
-  SORT_FINISH
-};
-
 class Sorter {
  public:
   Sorter();
@@ -54,6 +49,18 @@ class Sorter {
   // - 演算で例外が発生する．
   // - リソースを確保できない．
   virtual bool finish(Error *error) = 0;
+
+  // レコードの一覧を整列する．
+  // 成功すれば true を返す．
+  // 失敗したときは *error にその内容を格納し， false を返す．
+  //
+  // reset(), finish() を呼び出すことで整列をおこなう．
+  //
+  // 失敗する状況としては，以下のようなものが挙げられる．
+  // - 不正なレコードの一覧が指定された．
+  // - 演算で例外が発生する．
+  // - リソースを確保できない．
+  virtual bool sort(Error *error, RecordSet *record_set) = 0;
 };
 
 }  // namespace grnxx
