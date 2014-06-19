@@ -20,7 +20,7 @@ class Pipeline {
   // - 演算において例外が発生する．
   // - リソースを確保できない．
   virtual bool flush(Error *error,
-                     RecordSet *record_set);
+                     RecordSet *record_set) = 0;
 };
 
 }  // namespace grnxx

@@ -21,7 +21,7 @@ class Merger {
   virtual bool reset(Error *error,
                      RecordSet *lhs_record_set,
                      RecordSet *rhs_record_set,
-                     RecordSet *result_record_set);
+                     RecordSet *result_record_set) = 0;
 
   // 合成を進める．
   // 成功すれば true を返す．
@@ -64,7 +64,7 @@ class Merger {
   virtual bool merge(Error *error,
                      RecordSet *lhs_record_set,
                      RecordSet *rhs_record_set,
-                     RecordSet *result_record_set,
+                     RecordSet *result_record_set) = 0;
 };
 
 }  // namespace grnxx
