@@ -24,9 +24,6 @@ class Sorter {
   Sorter();
   virtual ~Sorter();
 
-  // 所属するテーブルを取得する．
-  virtual Table *table() const = 0;
-
   // 前提条件を追加する．
   // 成功すれば true を返す．
   // 失敗したときは *error にその内容を格納し， false を返す．
@@ -38,7 +35,7 @@ class Sorter {
   // - 式の評価結果が大小関係を持たない型になる．
   // - リソースを確保できない．
   virtual bool add_precondition(Error *error,
-                                const Expression &expression,
+                                std::unique_ptr<Expression> &&expression,
                                 SortOrder order) const = 0;
 
   // 整列条件を追加する．
@@ -52,21 +49,25 @@ class Sorter {
   // - 式の評価結果が大小関係を持たない型になる．
   // - リソースを確保できない．
   virtual bool add_condition(Error *error,
-                             const Expression &expression,
+                             std::unique_ptr<Expression> &&expression,
                              SortOrder order) const = 0;
 
   // すべての条件を破棄する．
   virtual void clear();
 
-  // 指定された条件に対応する整列器を作成する．
+  // 構築中の整列器を完成させ，その所有権を取得する．
   // 成功すれば有効なオブジェクトへのポインタを返す．
   // 失敗したときは *error にその内容を格納し， nullptr を返す．
   //
+  // 所有権を返すため，保持している条件などは破棄する．
+  //
   // 失敗する状況としては，以下のようなものが挙げられる．
+  // - 整列条件が何も指定されていない．
+  // - オプションが不正である．
   // - リソースを確保できない．
-  virtual std::unique_ptr<Sorter> create_sorter(
+  virtual std::unique_ptr<Sorter> release(
       Error *error,
-      const SorterOptions &options) const;
+      const SorterOptions &options) const = 0;
 };
 
 }  // namespace grnxx
