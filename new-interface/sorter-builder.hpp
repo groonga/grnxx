@@ -10,6 +10,15 @@ enum SortOrder {
   DESCENDING_ORDER
 };
 
+struct SorterOptions {
+  // 整列の結果が保証されるのは [offset, offset + limit) の範囲である．
+  // なお，行 ID を整列条件に加えれば安定な整列になる．
+  int64_t offset;
+  int64_t limit;
+
+  SorterOptions();
+};
+
 class Sorter {
  public:
   Sorter();

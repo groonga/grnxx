@@ -52,7 +52,7 @@ class ExpressionBuilder {
   virtual bool push_operator(Error *error, OperatorType operator_type) = 0;
 
   // 保持しているノードやスタックを破棄する．
-  virtual void clear();
+  virtual void clear() = 0;
 
   // 構築中の式を完成させ，その所有権を取得する．
   // 成功すれば有効なオブジェクトへのポインタを返す．
@@ -66,7 +66,9 @@ class ExpressionBuilder {
   //  - 積まれたものが使われずに残っている．
   //   - 式が完成していないことを示す．
   // - リソースを確保できない．
-  virtual std::unique_ptr<Expression> release(Error *error);
+  virtual std::unique_ptr<Expression> release(
+      Error *error,
+      const ExpressionOptions &options) = 0;
 };
 
 }  // namespace grnxx
