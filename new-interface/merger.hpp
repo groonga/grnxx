@@ -5,6 +5,8 @@
 
 namespace grnxx {
 
+// TODO: オプションの名前などは後で調整する．
+
 enum MergeLogicalOperator {
   // 両方に含まれるレコードを残す．
   MERGE_LOGICAL_AND,
@@ -16,7 +18,10 @@ enum MergeLogicalOperator {
   MERGE_LOGICAL_XOR,
 
   // 一つ目の入力には含まれていて，二つ目の入力には含まれていないものを残す．
-  MERGE_LOGICAL_SUB
+  MERGE_LOGICAL_SUB,
+
+  // 一つ目の入力をそのまま残して，スコアの合成のみをおこなう．
+  MERGE_LOGICAL_LHS
 };
 
 enum MergeScoreOperator {
@@ -28,6 +33,17 @@ enum MergeScoreOperator {
 
   // スコアを乗算する．
   MERGE_SCORE_MUL
+
+  // 減算は Adjuster との組み合わせでも実現できるものの，
+  // Merger でサポートした方が便利かつ効率的になる．
+};
+
+enum MergeResultOrder {
+  // 出力の順序は一つ目の入力に準拠する．
+  MERGE_ORDER_AS_IS,
+
+  // 出力の順序は任意とする．
+  MERGE_ORDER_ARBITRARY
 };
 
 struct MergerOptions {
@@ -36,6 +52,9 @@ struct MergerOptions {
 
   // スコアの合成に用いる演算子．
   MergeLogicalOperator score_operator;
+
+  // 出力の順序．
+  MergeResultOrder result_order;
 
   MergerOptions();
 };
