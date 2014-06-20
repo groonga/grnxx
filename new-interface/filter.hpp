@@ -6,7 +6,12 @@
 namespace grnxx {
 
 struct FilterOptions {
+  // フィルタを通過するようなレコードの内，先頭の offset 件は破棄する．
+  // 0 以上でなければならない．
   int64_t offset;
+
+  // フィルタを通過したレコードが limit 件に到達した時点で残りの入力は破棄する．
+  // 1 以上でなければならない．
   int64_t limit;
 
   FilterOptions();
