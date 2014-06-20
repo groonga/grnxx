@@ -5,10 +5,63 @@
 
 namespace grnxx {
 
+enum MergeLogicalOperator {
+  // 両方に含まれるレコードを残す．
+  MERGE_LOGICAL_AND,
+
+  // どちらか一方もしくは両方に含まれるレコードを残す．
+  MERGE_LOGICAL_OR,
+
+  // 一方には含まれていて，もう一方には含まれていないものを残す．
+  MERGE_LOGICAL_XOR,
+
+  // 一つ目の入力には含まれていて，二つ目の入力には含まれていないものを残す．
+  MERGE_LOGICAL_SUB
+};
+
+enum MergeScoreOperator {
+  // スコアを加算する．
+  MERGE_SCORE_ADD,
+
+  // スコアを減算する．
+  MERGE_SCORE_SUB,
+
+  // スコアを乗算する．
+  MERGE_SCORE_MUL
+};
+
+struct MergerOptions {
+  // レコードの合成方法．
+  MergeLogicalOperator logical_operator;
+
+  // スコアの合成に用いる演算子．
+  MergeLogicalOperator score_operator;
+
+  MergerOptions();
+};
+
 class Merger {
  public:
   Merger();
   virtual ~Merger();
+
+  // TODO: 入力の順序によって実装の切り替えが必要である．
+  //
+  // TODO: 一気に合成するときは，入力の数によって実装を切り替えたい．
+  //       ただし， Merger の作成時点で出力の順序が確定しなくなる．
+  //
+  // 合成器を作成する．
+  // 成功すれば有効なオブジェクトへのポインタを返す．
+  // 失敗したときは *error にその内容を格納し， nullptr を返す．
+  //
+  // 返り値は std::unique_ptr なので自動的に delete される．
+  // 自動で delete されて困るときは release() で生のポインタを取り出す必要がある．
+  //
+  // 失敗する状況としては，以下のようなものが挙げられる．
+  // - オプションが不正である．
+  // - リソースが確保できない．
+  static std::unique_ptr<Merger> create(Error *error,
+                                        const MergerOptions &options);
 
   // 合成の入出力となるレコードの一覧を設定する．
   // 成功すれば true を返す．
