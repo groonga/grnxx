@@ -6,29 +6,39 @@
 namespace grnxx {
 
 enum DivisionByZeroHandling {
-  // TODO:
-  // - 失敗する．
-  // - デフォルト値にする．
+  // ゼロによる整数除算が発生すると失敗する．
+  FAIL_ON_DIVISION_BY_ZERO,
+
+  // ゼロによる整数除算をデフォルト値に置き換える．
+  REPLACE_DIVISION_BY_ZERO_WITH_DEFAULT
 };
 
 enum OverflowHandling {
-  // TODO:
-  // - 失敗する．
-  // - デフォルト値にする．
-  // - 無視する（動作は未定義になる）．
-  //  - INT64_MIN / -1 は無視すると落ちるので無視できない．
+  // オーバーフローが発生すると失敗する．
+  FAIL_ON_OVERFLOW,
+
+  // オーバーフローが発生するとデフォルト値に置き換える．
+  REPLACE_OVERFLOW_WITH_DEFAULT,
+
+  // オーバーフローが発生すると未定義の動作になる．
+  // INT64_MIN / -1 で落ちないようにする．
+  IGNORE_OVERFLOW
 };
 
-enum NullHandling {
-  // TODO
-  // 失敗する．
-  // 参照先のデフォルト値にする．
+enum NullDereferenceHandling {
+  // NULL を参照しようとすると失敗する．
+  FAIL_ON_NULL_DEREFERENCE,
+
+  // NULL を参照するとデフォルト値に置き換える．
+  REPLACE_NULL_DEREFERENCE_WITH_DEFAULT
 };
 
 enum NaNHandling {
-  // TODO
-  // 失敗する．
-  // 参照先のデフォルト値にする．
+  // NaN が出現すると失敗する．
+  FAIL_ON_NAN,
+
+  // NaN が出現するとデフォルト値（0.0）に置き換える．
+  REPLACE_NAN_WITH_DEFAULT
 };
 
 struct ExpressionOptions {
@@ -39,7 +49,7 @@ struct ExpressionOptions {
   OverflowHandling overflow_handling;
 
   // NULL 参照の扱い．
-  NullHandling null_handling;
+  NullDereferenceHandling null_dereference_handling;
 
   // NaN の扱い．
   NaNHandling nan_handling;
