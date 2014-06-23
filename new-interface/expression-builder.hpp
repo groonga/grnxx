@@ -5,6 +5,48 @@
 
 namespace grnxx {
 
+enum DivisionByZeroHandling {
+  // TODO:
+  // - 失敗する．
+  // - デフォルト値にする．
+};
+
+enum OverflowHandling {
+  // TODO:
+  // - 失敗する．
+  // - デフォルト値にする．
+  // - 無視する（動作は未定義になる）．
+  //  - INT64_MIN / -1 は無視すると落ちるので無視できない．
+};
+
+enum NullHandling {
+  // TODO
+  // 失敗する．
+  // 参照先のデフォルト値にする．
+};
+
+enum NaNHandling {
+  // TODO
+  // 失敗する．
+  // 参照先のデフォルト値にする．
+};
+
+struct ExpressionOptions {
+  // ゼロによる除算の扱い．
+  DivisionByZeroHandling division_by_zero_handling;
+
+  // オーバーフローの扱い．
+  OverflowHandling overflow_handling;
+
+  // NULL 参照の扱い．
+  NullHandling null_handling;
+
+  // NaN の扱い．
+  NaNHandling nan_handling;
+
+  ExpressionOptions();
+};
+
 // 後置記法（逆ポーランド記法）に基づいて式のオブジェクトを構築する．
 class ExpressionBuilder {
  public:
