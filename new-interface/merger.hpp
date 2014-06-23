@@ -64,10 +64,9 @@ class Merger {
   Merger();
   virtual ~Merger();
 
-  // TODO: 入力の順序によって実装の切り替えが必要である．
+  // TODO: 入力の順序によって実装を切り替える．
   //
   // TODO: 一気に合成するときは，入力の数によって実装を切り替えたい．
-  //       ただし， Merger の作成時点で出力の順序が確定しなくなる．
   //
   // 合成器を作成する．
   // 成功すれば有効なオブジェクトへのポインタを返す．
@@ -80,6 +79,8 @@ class Merger {
   // - オプションが不正である．
   // - リソースが確保できない．
   static std::unique_ptr<Merger> create(Error *error,
+                                        std::unique_ptr<Order> &&lhs_order,
+                                        std::unique_ptr<Order> &&rhs_order,
                                         const MergerOptions &options);
 
   // 合成の入出力となるレコードの一覧を設定する．
