@@ -5,10 +5,37 @@
 
 namespace grnxx {
 
+struct SorterOptions {
+  // 整列結果から上位 offset 件を破棄する．
+  // 0 以上でなければならない．
+  int64_t offset;
+  // 整列結果から最大 limit 件を取得する．
+  // 1 以上でなければならない．
+  int64_t limit;
+
+  SorterOptions();
+};
+
 class Sorter {
  public:
   Sorter();
   virtual ~Sorter();
+
+  // 整列器を作成する．
+  // 成功すれば有効なオブジェクトへのポインタを返す．
+  // 失敗したときは *error にその内容を格納し， nullptr を返す．
+  //
+  // 返り値は std::unique_ptr なので自動的に delete される．
+  // 自動で delete されて困るときは release() で生のポインタを取り出す必要がある．
+  //
+  // 失敗する状況としては，以下のようなものが挙げられる．
+  // - 指定された式の評価結果が真偽値ではない．
+  // - オプションが不正である．
+  // - リソースが確保できない．
+  static std::unique_ptr<Sorter> create(
+      Error *error,
+      std::unique_ptr<Order> &&order,
+      const SorterOptions &options);
 
   // 整列の対象となるレコードの一覧を設定する．
   // 成功すれば true を返す．
