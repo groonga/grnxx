@@ -35,7 +35,8 @@ class PipelineBuilder {
   // - 入力が存在しない．
   // - リソースを確保できない．
   virtual bool push_filter(Error *error,
-                           std::unique_ptr<Filter> &&filter) = 0;
+                           std::unique_ptr<Expression> &&expression,
+                           const FilterOptions &options) = 0;
 
   // 入力をスタックから降ろし，代わりにスコアの Adjuster を積む．
   // 成功すれば true を返す．
@@ -48,7 +49,8 @@ class PipelineBuilder {
   // - 入力が存在しない．
   // - リソースを確保できない．
   virtual bool push_adjuster(Error *error,
-                             std::unique_ptr<Adjuster> &&adjuster) = 0;
+                             std::unique_ptr<Expression> &&expression,
+                             const AdjusterOptions &options) = 0;
 
   // TODO: 将来的な検討案．
   //
@@ -75,11 +77,9 @@ class PipelineBuilder {
   // - 指定された整列器が不正である．
   // - 入力が存在しない．
   // - リソースを確保できない．
-  //
-  // TODO: 将来的な検討案．
-  //       スタックに積まれている入力から preconditions を生成する．
   virtual bool push_sorter(Error *error,
-                           std::unique_ptr<Sorter> &&sorter) = 0;
+                           std::unique_ptr<Order> &&order,
+                           const SorterOptions &options) = 0;
 
   // 二つの入力をスタックから降ろし，代わりに合成器を積む．
   // 成功すれば true を返す．
@@ -92,7 +92,7 @@ class PipelineBuilder {
   // - 入力が存在しない．
   // - リソースを確保できない．
   virtual bool push_merger(Error *error,
-                           std::unique_ptr<Merger> &&sorter) = 0;
+                           const MergerOptions &options) = 0;
 
   // 保持しているノードやスタックを破棄する．
   virtual void clear() = 0;
