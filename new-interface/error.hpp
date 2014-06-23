@@ -19,9 +19,17 @@ namespace grnxx {
 // 使うのであれば， message_ の生成がネックになりうる．
 class Error {
  public:
+  // エラーがない状態を示すように初期化する．
+  Error();
+  ~Error();
+
+  // __LINE__ により得られる行番号を取得する．
   int line() const;
+  // __FILE__ により得られるファイル名を取得する．
   const char *file() const;
+  // __func__, __FUNCTION__, __PRETTY_FUNCTION__ により得られる関数名を取得する．
   const char *function() const;
+  // エラーメッセージを取得する．
   const char *message() const;
 
 // private:
