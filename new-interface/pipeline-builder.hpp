@@ -5,6 +5,10 @@
 
 namespace grnxx {
 
+struct PipelineOptions {
+  PipelineOptions();
+};
+
 // 後置記法（逆ポーランド記法）に基づいてパイプラインを構築する．
 class PipelineBuilder {
  public:
@@ -109,7 +113,9 @@ class PipelineBuilder {
   //  - 積まれたものが使われずに残っている．
   //   - パイプラインが完成していないことを示す．
   // - リソースを確保できない．
-  virtual std::unique_ptr<Pipeline> release(Error *error) = 0;
+  virtual std::unique_ptr<Pipeline> release(
+      Error *error,
+      const PipelineOptions &options) = 0;
 };
 
 }  // namespace grnxx
