@@ -35,7 +35,7 @@ class Table {
   // - カラムの数が上限に達している．
   virtual Column *create_column(Error *error,
                                 const char *column_name,
-                                ColumnType column_type,
+                                DataType data_type,
                                 const ColumnOptions &column_options) = 0;
   // カラムを破棄する．
   // 成功すれば true を返す．
@@ -239,26 +239,37 @@ class Table {
   //
   // 失敗する状況としては，以下のようなものが挙げられる．
   // - リソースが確保できない．
-  virtual std::unique_ptr<Expression> create_expression_builder(
+  virtual std::unique_ptr<ExpressionBuilder> create_expression_builder(
       Error *error) const = 0;
 
-  // 整列器を構築するためのオブジェクトを作成する．
+  // 順序を構築するためのオブジェクトを作成する．
   // 成功すれば有効なオブジェクトへのポインタを返す．
   // 失敗したときは *error にその内容を格納し， nullptr を返す．
   //
-  // 索引との連携については，特定の条件で整列済みであることを
-  // 前提条件（Expression）として指示できるようにし，
-  // 前提条件の評価結果が一致する範囲に対して個別に整列条件を適用する．
-  //
-  // グループ化との連携については，まずグループ化をおこない，
-  // その後で各グループを整列するという使い方になる．
+  // 順序は整列器や合成器を作成するときに使用する．
   //
   // 返り値は std::unique_ptr なので自動的に delete される．
   // 自動で delete されて困るときは release() で生のポインタを取り出す必要がある．
   //
   // 失敗する状況としては，以下のようなものが挙げられる．
   // - リソースが確保できない．
-  virtual std::unique_ptr<Sorter> create_sorter_builder(
+  virtual std::unique_ptr<OrderBuilder> create_order_builder(
+      Error *error) const = 0;
+
+  // パイプラインを構築するためのオブジェクトを作成する．
+  // 成功すれば有効なオブジェクトへのポインタを返す．
+  // 失敗したときは *error にその内容を格納し， nullptr を返す．
+  //
+  // パイプラインはカーソルやフィルタ，整列器などにより構成される木構造であり，
+  // クエリの内部データ構造および実行エンジンに相当する．
+  // クエリが実際に処理されるのはパイプラインの flush() を呼び出したときである．
+  //
+  // 返り値は std::unique_ptr なので自動的に delete される．
+  // 自動で delete されて困るときは release() で生のポインタを取り出す必要がある．
+  //
+  // 失敗する状況としては，以下のようなものが挙げられる．
+  // - リソースが確保できない．
+  virtual std::unique_ptr<PipelineBuilder> create_pipeline_builder(
       Error *error) const = 0;
 
   // 分類器を作成する．
@@ -299,54 +310,6 @@ class Table {
       Error *error,
       Expression *expression,
       const GrouperOptions &options) const = 0;
-
-  // 行の一覧を逐次マージするためのオブジェクトを作成する．
-  // 成功すれば有効なオブジェクトへのポインタを返す．
-  // 失敗したときは *error にその内容を格納し， nullptr を返す．
-  //
-  // 行の一覧は行 ID 順になっているものとする．
-  // 昇順と降順については，どちらかをオプションで選択できるものとする．
-  //
-  // 返り値は std::unique_ptr なので自動的に delete される．
-  // 自動で delete されて困るときは release() で生のポインタを取り出す必要がある．
-  //
-  // マージの種類としては，以下のようなものが挙げられる．
-  // - AND: 両方に含まれるものを残す．
-  // - OR: どちらかに含まれるものを残す．
-  // - XOR: 一方には含まれていて，もう一方には含まれていないものを残す．
-  // - SUB: 一つ目の入力には含まれていて，二つ目の入力には含まれていないものを残す．
-  //
-  // スコアの合成方法としては，以下のようなものが使われそうである．
-  // - 単純に加算したり乗算したりする．
-  //  - 乗算は必要ないかもしれない．
-  // - 重みを乗せて加算する．
-  //  - これは Adjuster でも対応できる．
-  // - スコアを正規化する．
-  //  - たとえば，最大値が 1.0 になるように修正する．
-  //  - すべてのスコアが分かっている状況でなければ適用できないため，
-  //    逐次マージでは使えない．
-  //
-  // 失敗する状況としては，以下のようなものが挙げられる．
-  // - オプションが不正である．
-  // - リソースが確保できない．
-  virtual std::unique_ptr<Merger> create_merger(
-      Error *error,
-      const MergerOptions &options) const = 0;
-
-  // 行の一覧を一括でマージする．
-  // 成功すれば true を返す．
-  // 失敗したときは *error にその内容を格納し， false を返す．
-  //
-  // マージの種類やスコアの合成方法は逐次マージと同様になる．
-  //
-  // 失敗する状況としては，以下のようなものが挙げられる．
-  // - オプションが不正である．
-  // - リソースが確保できない．
-  virtual bool merge(Error *error,
-                     RecordSet *lhs_record_set,
-                     RecordSet *rhs_record_set,
-                     RecordSet *result_record_set,
-                     const MergerOptions &options);
 
  protected:
   Table();
