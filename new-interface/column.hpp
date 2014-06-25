@@ -11,8 +11,8 @@ class Column {
   virtual Table *table() const = 0;
   // 名前を取得する．
   virtual const char *name() const = 0;
-  // カラムの種類を取得する．
-  virtual ColumnType type() const = 0;
+  // カラムのデータ型を取得する．
+  virtual DataType data_type() const = 0;
   // 索引 ID の最小値を取得する．
   virtual IndexID min_index_id() const = 0;
   // 索引 ID の最大値を取得する．

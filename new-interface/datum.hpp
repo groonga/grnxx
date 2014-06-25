@@ -61,7 +61,7 @@ class Datum {
   Datum &operator=(Datum &&datum);
 
   // 種類を返す．
-  DatumType type() const {
+  DataType type() const {
     return type_;
   }
 
@@ -129,7 +129,7 @@ class Datum {
   void clear();
 
  private:
-  DatumType type_;
+  DataType type_;
   union {
     std::nullptr_t null_;
     bool bool_;
