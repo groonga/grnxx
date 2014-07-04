@@ -189,9 +189,9 @@ unique_ptr<BoolColumn> BoolColumn::create(Error *error,
 BoolColumn::~BoolColumn() {}
 
 bool BoolColumn::set_default_value(Error *error, Int row_id) {
-  if (static_cast<size_t>(row_id / 64) >= values_.size()) {
+  if (row_id >= values_.size()) {
     try {
-      values_.resize((row_id / 64) + 1, false);
+      values_.resize(row_id + 1, false);
       return true;
     } catch (...) {
       GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
