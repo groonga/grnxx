@@ -162,11 +162,67 @@ void test_table() {
   // TODO: create_cursor().
 }
 
+void test_column() {
+  grnxx::Error error;
+
+  auto db = grnxx::open_db(&error, "", grnxx::DBOptions());
+  assert(db);
+
+  auto table = db->create_table(&error, "Table", grnxx::TableOptions());
+  assert(table);
+
+  grnxx::Int row_id;
+  assert(table->insert_row(&error, grnxx::NULL_ROW_ID,
+                           grnxx::Datum(), &row_id));
+
+  auto bool_column = table->create_column(&error, "BoolColumn",
+                                          grnxx::BOOL_DATA,
+                                          grnxx::ColumnOptions());
+  assert(bool_column);
+  assert(bool_column->table() == table);
+  assert(bool_column->name() == "BoolColumn");
+  assert(bool_column->data_type() == grnxx::BOOL_DATA);
+  assert(!bool_column->has_key_attribute());
+  assert(bool_column->num_indexes() == 0);
+
+  auto int_column = table->create_column(&error, "IntColumn",
+                                         grnxx::INT_DATA,
+                                         grnxx::ColumnOptions());
+  assert(int_column);
+  assert(int_column->table() == table);
+  assert(int_column->name() == "IntColumn");
+  assert(int_column->data_type() == grnxx::INT_DATA);
+  assert(!int_column->has_key_attribute());
+  assert(int_column->num_indexes() == 0);
+
+  grnxx::Datum datum;
+
+  assert(bool_column->get(&error, 1, &datum));
+  assert(datum.type() == grnxx::BOOL_DATA);
+  assert(!static_cast<grnxx::Bool>(datum));
+
+  assert(int_column->get(&error, 1, &datum));
+  assert(datum.type() == grnxx::INT_DATA);
+  assert(static_cast<grnxx::Int>(datum) == 0);
+
+  assert(bool_column->set(&error, 1, grnxx::Bool(true)));
+  assert(int_column->set(&error, 1, grnxx::Int(123)));
+
+  assert(bool_column->get(&error, 1, &datum));
+  assert(datum.type() == grnxx::BOOL_DATA);
+  assert(static_cast<grnxx::Bool>(datum));
+
+  assert(int_column->get(&error, 1, &datum));
+  assert(datum.type() == grnxx::INT_DATA);
+  assert(static_cast<grnxx::Int>(datum) == 123);
+}
+
 }  // namespace
 
 int main() {
   test_db();
   test_table();
+  test_column();
 
   return 0;
 }
