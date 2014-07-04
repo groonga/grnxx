@@ -37,7 +37,7 @@ void test_db() {
   assert(table->name() == "Table_1");
   assert(db->num_tables() == 1);
 
-  assert(db->get_table(&error, 0) == table);
+  assert(db->get_table(0) == table);
   assert(db->find_table(&error, "Table_1") == table);
 
   assert(!db->create_table(&error, "Table_1", grnxx::TableOptions()));
@@ -49,25 +49,25 @@ void test_db() {
   assert(db->remove_table(&error, "Table_2"));
   assert(db->num_tables() == 2);
 
-  assert(db->get_table(&error, 0)->name() == "Table_1");
-  assert(db->get_table(&error, 1)->name() == "Table_3");
+  assert(db->get_table(0)->name() == "Table_1");
+  assert(db->get_table(1)->name() == "Table_3");
 
   assert(db->create_table(&error, "Table_2", grnxx::TableOptions()));
 
   assert(db->reorder_table(&error, "Table_3", "Table_2"));
-  assert(db->get_table(&error, 0)->name() == "Table_1");
-  assert(db->get_table(&error, 1)->name() == "Table_2");
-  assert(db->get_table(&error, 2)->name() == "Table_3");
+  assert(db->get_table(0)->name() == "Table_1");
+  assert(db->get_table(1)->name() == "Table_2");
+  assert(db->get_table(2)->name() == "Table_3");
 
   assert(db->reorder_table(&error, "Table_3", ""));
-  assert(db->get_table(&error, 0)->name() == "Table_3");
-  assert(db->get_table(&error, 1)->name() == "Table_1");
-  assert(db->get_table(&error, 2)->name() == "Table_2");
+  assert(db->get_table(0)->name() == "Table_3");
+  assert(db->get_table(1)->name() == "Table_1");
+  assert(db->get_table(2)->name() == "Table_2");
 
   assert(db->reorder_table(&error, "Table_2", "Table_3"));
-  assert(db->get_table(&error, 0)->name() == "Table_3");
-  assert(db->get_table(&error, 1)->name() == "Table_2");
-  assert(db->get_table(&error, 2)->name() == "Table_1");
+  assert(db->get_table(0)->name() == "Table_3");
+  assert(db->get_table(1)->name() == "Table_2");
+  assert(db->get_table(2)->name() == "Table_1");
 }
 
 void test_table() {

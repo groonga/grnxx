@@ -93,15 +93,6 @@ bool DB::reorder_table(Error *error,
   return true;
 }
 
-Table *DB::get_table(Error *error, size_t table_id) const {
-  if (table_id >= num_tables()) {
-    GRNXX_ERROR_SET(error, NOT_FOUND,
-                    "Table not found: table_id = %" PRIi64, table_id);
-    return nullptr;
-  }
-  return tables_[table_id].get();
-}
-
 Table *DB::find_table(Error *error, String name) const {
   for (size_t table_id = 0; table_id < num_tables(); ++table_id) {
     if (name == tables_[table_id]->name()) {

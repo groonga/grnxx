@@ -62,10 +62,14 @@ class DB {
 
   // Get a table identified by "table_id".
   //
+  // If "table_id" is invalid, the result is undefined.
+  //
   // Returns a pointer to the table on success.
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
-  Table *get_table(Error *error, size_t table_id) const;
+  Table *get_table(size_t table_id) const {
+    return tables_[table_id].get();
+  }
 
   // Find a table named "name".
   //
