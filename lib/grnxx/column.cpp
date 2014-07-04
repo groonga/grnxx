@@ -76,20 +76,20 @@ unique_ptr<Column> Column::create(Error *error,
     case BOOL_DATA: {
       return BoolColumn::create(error, table, name, options);
     }
-//    case INT_DATA: {
-//      return ColumnImpl<Int>::create(error, table, name, options);
-//    }
+    case INT_DATA: {
+      return IntColumn::create(error, table, name, options);
+    }
 //    case FLOAT_DATA: {
-//      return ColumnImpl<Float>::create(error, table, name, options);
+//      return FloatColumn::create(error, table, name, options);
 //    }
 //    case TIME_DATA: {
-//      return ColumnImpl<Time>::create(error, table, name, options);
+//      return TimeColumn::create(error, table, name, options);
 //    }
 //    case GEO_POINT_DATA: {
-//      return ColumnImpl<GeoPoint>::create(error, table, name, options);
+//      return GeoPointColumn::create(error, table, name, options);
 //    }
 //    case TEXT_DATA: {
-//      return ColumnImpl<Text>::create(error, table, name, options);
+//      return TextColumn::create(error, table, name, options);
 //    }
     default: {
       // TODO: Other data types are not supported yet.
