@@ -96,15 +96,6 @@ bool Table::reorder_column(Error *error,
   return true;
 }
 
-Column *Table::get_column(Error *error, size_t column_id) const {
-  if (column_id >= num_columns()) {
-    GRNXX_ERROR_SET(error, NOT_FOUND,
-                    "Column not found: column_id = %" PRIi64, column_id);
-    return nullptr;
-  }
-  return columns_[column_id].get();
-}
-
 Column *Table::find_column(Error *error, String name) const {
   for (size_t column_id = 0; column_id < num_columns(); ++column_id) {
     if (name == columns_[column_id]->name()) {

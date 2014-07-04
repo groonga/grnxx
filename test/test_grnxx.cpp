@@ -90,7 +90,7 @@ void test_table() {
   assert(column->name() == "Column_1");
   assert(table->num_columns() == 1);
 
-  assert(table->get_column(&error, 0) == column);
+  assert(table->get_column(0) == column);
   assert(table->find_column(&error, "Column_1") == column);
 
   assert(!table->create_column(&error, "Column_1", grnxx::BOOL_DATA,
@@ -105,26 +105,26 @@ void test_table() {
   assert(table->remove_column(&error, "Column_2"));
   assert(table->num_columns() == 2);
 
-  assert(table->get_column(&error, 0)->name() == "Column_1");
-  assert(table->get_column(&error, 1)->name() == "Column_3");
+  assert(table->get_column(0)->name() == "Column_1");
+  assert(table->get_column(1)->name() == "Column_3");
 
   assert(table->create_column(&error, "Column_2", grnxx::BOOL_DATA,
                               grnxx::ColumnOptions()));
 
   assert(table->reorder_column(&error, "Column_3", "Column_2"));
-  assert(table->get_column(&error, 0)->name() == "Column_1");
-  assert(table->get_column(&error, 1)->name() == "Column_2");
-  assert(table->get_column(&error, 2)->name() == "Column_3");
+  assert(table->get_column(0)->name() == "Column_1");
+  assert(table->get_column(1)->name() == "Column_2");
+  assert(table->get_column(2)->name() == "Column_3");
 
   assert(table->reorder_column(&error, "Column_3", ""));
-  assert(table->get_column(&error, 0)->name() == "Column_3");
-  assert(table->get_column(&error, 1)->name() == "Column_1");
-  assert(table->get_column(&error, 2)->name() == "Column_2");
+  assert(table->get_column(0)->name() == "Column_3");
+  assert(table->get_column(1)->name() == "Column_1");
+  assert(table->get_column(2)->name() == "Column_2");
 
   assert(table->reorder_column(&error, "Column_2", "Column_3"));
-  assert(table->get_column(&error, 0)->name() == "Column_3");
-  assert(table->get_column(&error, 1)->name() == "Column_2");
-  assert(table->get_column(&error, 2)->name() == "Column_1");
+  assert(table->get_column(0)->name() == "Column_3");
+  assert(table->get_column(1)->name() == "Column_2");
+  assert(table->get_column(2)->name() == "Column_1");
 
   // TODO: set_key_column(), unset_key_column().
 

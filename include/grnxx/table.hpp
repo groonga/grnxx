@@ -81,10 +81,14 @@ class Table {
 
   // Get a column identified by "column_id".
   //
+  // If "column_id" is invalid, the result is undefined.
+  //
   // Returns a pointer to the column on success.
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
-  Column *get_column(Error *error, size_t column_id) const;
+  Column *get_column(size_t column_id) const {
+    return columns_[column_id].get();
+  }
 
   // Find a column named "name".
   //
