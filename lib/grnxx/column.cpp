@@ -143,6 +143,8 @@ bool Column::set_default_value(Error *error, Int row_id) {
 void Column::unset(Int row_id) {
 }
 
+// -- BoolColumn --
+
 bool BoolColumn::set(Error *error, Int row_id, const Datum &datum) {
   if (datum.type() != BOOL_DATA) {
     GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Wrong data type");
@@ -205,5 +207,70 @@ void BoolColumn::unset(Int row_id) {
 }
 
 BoolColumn::BoolColumn() : Column(), values_() {}
+
+// -- IntColumn --
+
+bool IntColumn::set(Error *error, Int row_id, const Datum &datum) {
+  if (datum.type() != INT_DATA) {
+    GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Wrong data type");
+    return false;
+  }
+  if (!table_->test_row(error, row_id)) {
+    return false;
+  }
+  values_[row_id] = static_cast<Int>(datum);
+  return true;
+}
+
+bool IntColumn::get(Error *error, Int row_id, Datum *datum) const {
+  if (!table_->test_row(error, row_id)) {
+    return false;
+  }
+  *datum = values_[row_id];
+  return true;
+}
+
+unique_ptr<IntColumn> IntColumn::create(Error *error,
+                                        Table *table,
+                                        String name,
+                                        const ColumnOptions &options) {
+  unique_ptr<IntColumn> column(new (nothrow) IntColumn);
+  if (!column) {
+    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    return nullptr;
+  }
+  if (!column->initialize_base(error, table, name, INT_DATA, options)) {
+    return nullptr;
+  }
+  try {
+    column->values_.resize(table->max_row_id() + 1, 0);
+  } catch (...) {
+    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    return nullptr;
+  }
+  return column;
+}
+
+IntColumn::~IntColumn() {}
+
+bool IntColumn::set_default_value(Error *error, Int row_id) {
+  if (row_id >= values_.size()) {
+    try {
+      values_.resize(row_id + 1, 0);
+      return true;
+    } catch (...) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+      return false;
+    }
+  }
+  values_[row_id] = false;
+  return true;
+}
+
+void IntColumn::unset(Int row_id) {
+  values_[row_id] = false;
+}
+
+IntColumn::IntColumn() : Column(), values_() {}
 
 }  // namespace grnxx
