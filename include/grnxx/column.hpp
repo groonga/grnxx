@@ -88,10 +88,15 @@ class Column {
 
   // Get an index identified by "index_id".
   //
+  // If "index_id" is invalid, the result is undefined.
+  //
   // Returns a pointer to the index on success.
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
-  Index *get_index(Error *error, size_t index_id) const;
+  Index *get_index(size_t index_id) const {
+    // TODO
+    return nullptr;
+  }
 
   // Find an index named "name".
   //

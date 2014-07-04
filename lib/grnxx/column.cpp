@@ -41,12 +41,6 @@ bool Column::reorder_index(Error *error,
   return false;
 }
 
-Index *Column::get_index(Error *error, size_t index_id) const {
-  // TODO: Index is not supported yet.
-  GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not suported yet");
-  return nullptr;
-}
-
 Index *Column::find_index(Error *error, String name) const {
   // TODO: Index is not supported yet.
   GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not suported yet");
