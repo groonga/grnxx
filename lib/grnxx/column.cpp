@@ -263,12 +263,12 @@ bool IntColumn::set_default_value(Error *error, Int row_id) {
       return false;
     }
   }
-  values_[row_id] = false;
+  values_[row_id] = 0;
   return true;
 }
 
 void IntColumn::unset(Int row_id) {
-  values_[row_id] = false;
+  values_[row_id] = 0;
 }
 
 IntColumn::IntColumn() : Column(), values_() {}
