@@ -15,7 +15,8 @@ libgrnxx_la_SOURCES =			\
 	index.cpp			\
 	library.cpp			\
 	name.cpp			\
-	table.cpp
+	table.cpp			\
+	types.cpp
 
 libgrnxx_includedir = ${includedir}/grnxx
 libgrnxx_include_HEADERS =		\

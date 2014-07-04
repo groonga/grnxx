@@ -214,16 +214,18 @@ class GeoPoint {
 
   // The upper 32 bits of "latitude" and "longitude" are ignored.
   GeoPoint(Int latitude, Int longitude)
-      : latitude_(static_cast<int32_t>(latitude)),
-        longitude_(static_cast<int32_t>(longitude)) {}
-
-  // The upper 32 bits of "latitude" are ignored.
-  void set_latitude(Int latitude) {
+      : latitude_(),
+        longitude_() {
+    if ((latitude < DEGREES(-90)) || (latitude > DEGREES(90)) ||
+        (longitude < DEGREES(-180)) || (longitude >= DEGREES(180))) {
+      // Fix out-of-range values.
+      fix(&latitude, &longitude);
+    }
+    // The south pole or the north pole.
+    if ((latitude == DEGREES(-90)) || (latitude == DEGREES(90))) {
+      longitude = 0;
+    }
     latitude_ = static_cast<int32_t>(latitude);
-  }
-
-  // The upper 32 bits of "longitude" are ignored.
-  void set_longitude(Int longitude) {
     longitude_ = static_cast<int32_t>(longitude);
   }
 
@@ -237,6 +239,12 @@ class GeoPoint {
  private:
   int32_t latitude_;  // Latitude in milliseconds.
   int32_t longitude_;  // Longitude in milliseconds.
+
+  static constexpr Int DEGREES(Int value) {
+    return value * 60 * 60 * 1000;
+  }
+
+  static void fix(Int *latitude, Int *longitude);
 };
 
 inline bool operator==(GeoPoint lhs, GeoPoint rhs) {
