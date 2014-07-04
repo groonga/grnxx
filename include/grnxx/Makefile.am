@@ -1,6 +1,7 @@
 pkginclude_HEADERS =	\
 	column.hpp	\
 	cursor.hpp	\
+	datum.hpp	\
 	db.hpp		\
 	error.hpp	\
 	index.hpp	\
