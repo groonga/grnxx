@@ -2,8 +2,8 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.67])
-AC_INIT([grnxx], [dummy12], [groonga@razil.jp])
-AC_CONFIG_SRCDIR([lib/grnxx/library.hpp])
+AC_INIT([grnxx], [dummy13], [groonga@razil.jp])
+AC_CONFIG_SRCDIR([lib/grnxx/library.cpp])
 AC_CONFIG_HEADERS([config.h])
 AM_INIT_AUTOMAKE
 
@@ -14,7 +14,8 @@ AC_PROG_INSTALL
 
 AC_CONFIG_MACRO_DIR([m4])
 
-AM_CXXFLAGS="-Wall -std=c++11 -fno-strict-aliasing -I\${top_srcdir}/lib"
+AM_CXXFLAGS="-Wall -std=c++11 -fno-strict-aliasing"
+AM_CXXFLAGS="${AM_CXXFLAGS} -I\${top_srcdir}/include -I\${top_srcdir}/lib"
 
 AC_C_BIGENDIAN
 AC_CANONICAL_HOST
@@ -34,17 +35,6 @@ AC_SUBST([AM_LTLDFLAGS])
 
 # Checks for libraries.
 
-AC_ARG_ENABLE([varint],
-              [AS_HELP_STRING([--enable-varint],
-                              [enable variable integer type [default=no]])],
-              [],
-              [enable_varint="no"])
-if test "x$enable_varint" != "xno"; then
-  AC_DEFINE(GRNXX_ENABLE_VARIABLE_INTEGER_TYPE,
-            [1],
-            [Define to 1 for variable integer type])
-fi
-
 AC_ARG_ENABLE([backtrace],
               [AS_HELP_STRING([--enable-backtrace],
                               [show backtrace on error [default=no]])],
@@ -60,6 +50,8 @@ fi
 AC_CHECK_LIB([rt], [clock_gettime])
 
 AC_CONFIG_FILES([Makefile
+                 include/Makefile
+                 include/grnxx/Makefile
                  lib/Makefile
                  lib/grnxx/Makefile
                  src/Makefile

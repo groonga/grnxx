@@ -17,8 +17,14 @@
 */
 #include <cassert>
 
-#include "grnxx/library.hpp"
+namespace {
+
+// TODO
+
+}  // namespace
 
 int main() {
+  // TODO
+
   return 0;
 }
