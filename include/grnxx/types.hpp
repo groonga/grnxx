@@ -97,13 +97,13 @@ inline bool operator>=(String lhs, String rhs) {
 // Error information.
 class Error;
 
-// Database object types.
+// Database persistent object types.
 class DB;
 class Table;
 class Column;
 class Index;
 
-// Database option types.
+// Database persistent object option types.
 struct DBOptions;
 struct TableOptions;
 struct ColumnOptions;
@@ -295,17 +295,18 @@ constexpr Int NULL_ROW_ID = 0;
 constexpr Int MIN_ROW_ID  = 1;
 constexpr Int MAX_ROW_ID  = (Int(1) << 40) - 1;
 
-// TODO
-struct CursorOptions;
-
-class Datum;
-class Cursor;
-class RecordSet;
-
 enum IndexType {
   TREE_INDEX,
   HASH_INDEX
 };
+
+// Database temporary object types.
+class Datum;
+class Cursor;
+class RecordSet;
+
+// Database temporary object option types.
+struct CursorOptions;
 
 }  // namespace grnxx
 
