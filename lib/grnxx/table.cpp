@@ -4,8 +4,162 @@
 #include "grnxx/cursor.hpp"
 #include "grnxx/db.hpp"
 #include "grnxx/error.hpp"
+#include "grnxx/record.hpp"
 
 namespace grnxx {
+
+// -- TableCursor --
+
+class TableCursor : public Cursor {
+ public:
+  // -- Public API --
+
+  ~TableCursor() {}
+
+  Table *table() const {
+    return table_;
+  }
+  Int read(Error *error, Int max_count, RecordSet *record_set);
+
+  // -- Internal API --
+
+  // Create a cursor.
+  //
+  // Returns a pointer to the cursor on success.
+  // On failure, returns nullptr and stores error information into "*error" if
+  // "error" != nullptr.
+  static unique_ptr<TableCursor> create(Error *error,
+                                        Table *table,
+                                        const CursorOptions &options);
+
+  // Read records in regular order.
+  Int regular_read(Error *error, Int max_count, RecordSet *record_set);
+
+  // Read records in reverse order.
+  Int reverse_read(Error *error, Int max_count, RecordSet *record_set);
+
+ private:
+  Int offset_left_;
+  Int limit_left_;
+  OrderType order_type_;
+  Int next_row_id_;
+
+  explicit TableCursor(Table *table);
+};
+
+Int TableCursor::read(Error *error, Int max_count, RecordSet *record_set) {
+  if (max_count <= 0) {
+    return 0;
+  }
+  switch (order_type_) {
+    case REGULAR_ORDER: {
+      return regular_read(error, max_count, record_set);
+    }
+    case REVERSE_ORDER: {
+      return reverse_read(error, max_count, record_set);
+    }
+    default: {
+      GRNXX_ERROR_SET(error, BROKEN, "Broken cursor");
+      return -1;
+    }
+  }
+}
+
+unique_ptr<TableCursor> TableCursor::create(Error *error,
+                                            Table *table,
+                                            const CursorOptions &options) {
+  unique_ptr<TableCursor> cursor(new (nothrow) TableCursor(table));
+  if (!cursor) {
+    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    return nullptr;
+  }
+  cursor->offset_left_ = options.offset;
+  cursor->limit_left_ = options.limit;
+  switch (options.order_type) {
+    case REGULAR_ORDER: {
+      cursor->order_type_ = REGULAR_ORDER;
+      cursor->next_row_id_ = MIN_ROW_ID;
+      break;
+    }
+    case REVERSE_ORDER: {
+      cursor->order_type_ = REVERSE_ORDER;
+      cursor->next_row_id_ = table->max_row_id();
+      break;
+    }
+    default: {
+      GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Invalid order type");
+      return nullptr;
+    }
+  }
+  return cursor;
+}
+
+TableCursor::TableCursor(Table *table)
+    : Cursor(table),
+      offset_left_(),
+      limit_left_(),
+      order_type_(),
+      next_row_id_() {}
+
+Int TableCursor::regular_read(Error *error,
+                              Int max_count,
+                              RecordSet *record_set) {
+  Int count = 0;
+  while (next_row_id_ <= table_->max_row_id()) {
+    // TODO: This check should be skipped if there are no deleted rows.
+    if (!table_->get_bit(next_row_id_)) {
+      ++next_row_id_;
+      continue;
+    }
+    if (offset_left_ > 0) {
+      --offset_left_;
+      ++next_row_id_;
+    } else {
+      // TODO: Resize the buffer outside the loop and set records in the loop.
+      if (!record_set->append(error, Record(next_row_id_, 0.0))) {
+        return -1;
+      }
+      --limit_left_;
+      ++count;
+      ++next_row_id_;
+      if ((limit_left_ <= 0) || (count >= max_count)) {
+        break;
+      }
+    }
+  }
+  return count;
+}
+
+Int TableCursor::reverse_read(Error *error,
+                              Int max_count,
+                              RecordSet *record_set) {
+  Int count = 0;
+  while (next_row_id_ >= MIN_ROW_ID) {
+    // TODO: This check should be skipped if there are no deleted rows.
+    if (!table_->get_bit(next_row_id_)) {
+      --next_row_id_;
+      continue;
+    }
+    if (offset_left_ > 0) {
+      --offset_left_;
+      --next_row_id_;
+    } else {
+      // TODO: Resize the buffer outside the loop and set records in the loop.
+      if (!record_set->append(error, Record(next_row_id_, 0.0))) {
+        return -1;
+      }
+      --limit_left_;
+      ++count;
+      --next_row_id_;
+      if ((limit_left_ <= 0) || (count >= max_count)) {
+        break;
+      }
+    }
+  }
+  return count;
+}
+
+// -- Table --
 
 Table::~Table() {}
 
@@ -225,10 +379,8 @@ Int Table::find_row(Error *error, const Datum &key) const {
 
 unique_ptr<Cursor> Table::create_cursor(
     Error *error,
-    const CursorOptions &options) const {
-  // TODO: Cursor is not supported yet.
-  GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
-  return nullptr;
+    const CursorOptions &options) {
+  return TableCursor::create(error, this, options);
 }
 
 unique_ptr<Table> Table::create(Error *error,

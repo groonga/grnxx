@@ -18,9 +18,11 @@
 #include <cassert>
 
 #include "grnxx/column.hpp"
+#include "grnxx/cursor.hpp"
 #include "grnxx/datum.hpp"
 #include "grnxx/db.hpp"
 #include "grnxx/error.hpp"
+#include "grnxx/record.hpp"
 #include "grnxx/table.hpp"
 
 namespace {
@@ -159,7 +161,32 @@ void test_table() {
 
   // TODO: find_row().
 
-  // TODO: create_cursor().
+  grnxx::CursorOptions cursor_options;
+  auto cursor = table->create_cursor(&error, cursor_options);
+  assert(cursor);
+
+  grnxx::RecordSet record_set;
+  assert(cursor->read(&error, 0, &record_set) == 0);
+
+  assert(cursor->read(&error, 1, &record_set) == 1);
+  assert(record_set.size() == 1);
+  assert(record_set.get(0).row_id == 1);
+
+  assert(cursor->read(&error, 2, &record_set) == 1);
+  assert(record_set.size() == 2);
+  assert(record_set.get(0).row_id == 1);
+  assert(record_set.get(1).row_id == 3);
+
+  record_set.clear();
+
+  cursor_options.order_type = grnxx::REVERSE_ORDER;
+  cursor = table->create_cursor(&error, cursor_options);
+  assert(cursor);
+
+  assert(cursor->read(&error, 100, &record_set) == 2);
+  assert(record_set.size() == 2);
+  assert(record_set.get(0).row_id == 3);
+  assert(record_set.get(1).row_id == 1);
 }
 
 void test_column() {

@@ -1,6 +1,8 @@
 #ifndef GRNXX_RECORD_HPP
 #define GRNXX_RECORD_HPP
 
+#include <vector>
+
 #include "grnxx/types.hpp"
 
 namespace grnxx {
@@ -8,34 +10,50 @@ namespace grnxx {
 struct Record {
   Int row_id;
   Float score;
+
+  Record() = default;
+  Record(Int row_id, Float score) : row_id(row_id), score(score) {}
 };
 
 class RecordSet {
  public:
-  RecordSet();
-  ~RecordSet();
+  RecordSet() : records_() {}
+  ~RecordSet() {}
 
-  // Return the associated table.
-  Table *table() const {
-    return table_;
-  }
   // Return the number of records.
-  size_t num_records() const {
-    return size_;
+  Int size() const {
+    return static_cast<Int>(records_.size());
+  }
+
+  // Append a record.
+  //
+  // Returns true on success.
+  // On failure, returns false and stores error information into "*error" if
+  // "error" != nullptr.
+  bool append(Error *error, const Record &record) {
+    try {
+      records_.push_back(record);
+      return true;
+    } catch (...) {
+      // TODO: Error report.
+      return false;
+    }
   }
 
   // Return the record identified by "i".
   //
-  // The result is undefined if "i" is invalid.
-  Record get(size_t i) const {
+  // If "i" is invalid, the result is undefined.
+  Record get(Int i) const {
     return records_[i];
   }
 
+  // Clear all the records.
+  void clear() {
+    records_.clear();
+  }
+
  private:
-  Table table_;
-  size_t size_;
-  size_t capacity_;
-  unique_ptr<Record[]> records_;
+  std::vector<Record> records_;
 };
 
 }  // namespace grnxx

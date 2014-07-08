@@ -168,31 +168,31 @@ class Table {
   // "error" != nullptr.
   unique_ptr<Cursor> create_cursor(
       Error *error,
-      const CursorOptions &options) const;
+      const CursorOptions &options);
 
   // Create an object to build expressions.
   //
   // Returns a pointer to the builder on success.
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
-//  virtual unique_ptr<ExpressionBuilder> create_expression_builder(
-//      Error *error) const = 0;
+//  unique_ptr<ExpressionBuilder> create_expression_builder(
+//      Error *error) const;
 
   // Create an object to build ordering information.
   //
   // Returns a pointer to the builder on success.
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
-//  virtual unique_ptr<OrderBuilder> create_order_builder(
-//      Error *error) const = 0;
+//  unique_ptr<OrderBuilder> create_order_builder(
+//      Error *error) const;
 
   // Create an object to build pipelines.
   //
   // Returns a pointer to the builder on success.
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
-//  virtual unique_ptr<PipelineBuilder> create_pipeline_builder(
-//      Error *error) const = 0;
+//  unique_ptr<PipelineBuilder> create_pipeline_builder(
+//      Error *error) const;
 
   // TODO: Grouping (drilldown).
   //
@@ -203,10 +203,10 @@ class Table {
   // 失敗する状況としては，以下のようなものが挙げられる．
   // - オプションが不正である．
   // - リソースが確保できない．
-//  virtual unique_ptr<Grouper> create_grouper(
+//  unique_ptr<Grouper> create_grouper(
 //      Error *error,
-//      Expression *expression,
-//      const GrouperOptions &options) const = 0;
+//      unique_ptr<Expression> &&expression,
+//      const GrouperOptions &options) const;
 
  private:
   DB *db_;
@@ -273,6 +273,7 @@ class Table {
                               size_t *column_id) const;
 
   friend class DB;
+  friend class TableCursor;
 };
 
 }  // namespace grnxx

@@ -6,28 +6,43 @@
 namespace grnxx {
 
 struct CursorOptions {
+  // The first "offset" records are skipped.
+  Int offset;
+
+  // At most "limit" records are read.
+  Int limit;
+
+  // The order of records.
+  OrderType order_type;
+
+  // Initialize the options.
+  CursorOptions();
 };
 
 class Cursor {
  public:
-  Cursor() {}
+  explicit Cursor(Table *table) : table_(table) {}
   virtual ~Cursor() {}
 
-  // Skip at most the next "count" records.
-  //
-  // Returns the number of skipped records on success.
-  // On failure, returns -1 and stores error information into "*error" if
-  // "error" != nullptr.
-  virtual size_t seek(Error *error, size_t count) = 0;
+  // Return the associated table.
+  Table *table() const {
+    return table_;
+  }
 
-  // Read at most the next "count" records.
+  // Read the next records.
   //
-  // Records are stored into "*record_set". 
+  // Reads at most "max_count" records and stores the records into
+  // "*record_set".
   //
-  // Returns the number of read records on success.
+  // On success, returns the number of records read on success.
   // On failure, returns -1 and stores error information into "*error" if
   // "error" != nullptr.
-  virtual size_t read(Error *error, size_t count, RecordSet *record_set) = 0;
+  virtual Int read(Error *error,
+                   Int max_count,
+                   RecordSet *record_set) = 0;
+
+ protected:
+  Table *table_;
 };
 
 }  // namespace grnxx

@@ -3,6 +3,7 @@
 
 #include <cinttypes>
 #include <cstring>
+#include <limits>
 #include <memory>
 
 namespace grnxx {
@@ -25,6 +26,9 @@ using std::uint64_t;
 
 // Integer type for representing offset and size.
 using std::size_t;
+
+// Limitations.
+using std::numeric_limits;
 
 // Smart pointer type.
 using std::unique_ptr;
@@ -300,10 +304,19 @@ enum IndexType {
   HASH_INDEX
 };
 
+enum OrderType {
+  // The natural order.
+  REGULAR_ORDER,
+
+  // The reverse order of REGULAR_ORDER.
+  REVERSE_ORDER
+};
+
 // Database temporary object types.
 class Datum;
 class Cursor;
 class RecordSet;
+class ExpressionBuilder;
 
 // Database temporary object option types.
 struct CursorOptions;
