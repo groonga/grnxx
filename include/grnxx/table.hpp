@@ -170,14 +170,6 @@ class Table {
       Error *error,
       const CursorOptions &options) const;
 
-  // Create an object to build expressions.
-  //
-  // Returns a pointer to the builder on success.
-  // On failure, returns nullptr and stores error information into "*error" if
-  // "error" != nullptr.
-//  unique_ptr<ExpressionBuilder> create_expression_builder(
-//      Error *error) const;
-
   // Create an object to build ordering information.
   //
   // Returns a pointer to the builder on success.
