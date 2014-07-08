@@ -21,7 +21,6 @@ struct CursorOptions {
 
 class Cursor {
  public:
-  explicit Cursor(const Table *table) : table_(table) {}
   virtual ~Cursor() {}
 
   // Return the associated table.
@@ -43,6 +42,8 @@ class Cursor {
 
  protected:
   const Table *table_;
+
+  explicit Cursor(const Table *table) : table_(table) {}
 };
 
 }  // namespace grnxx
