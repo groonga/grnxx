@@ -4,6 +4,7 @@ pkginclude_HEADERS =	\
 	datum.hpp	\
 	db.hpp		\
 	error.hpp	\
+	expression.hpp	\
 	index.hpp	\
 	library.hpp	\
 	table.hpp	\

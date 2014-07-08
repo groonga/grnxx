@@ -316,6 +316,7 @@ enum OrderType {
 class Datum;
 class Cursor;
 class RecordSet;
+class Expression;
 class ExpressionBuilder;
 
 // Database temporary object option types.

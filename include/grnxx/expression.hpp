@@ -1,0 +1,90 @@
+#ifndef GRNXX_EXPRESSION_HPP
+#define GRNXX_EXPRESSION_HPP
+
+#include "grnxx/types.hpp"
+
+namespace grnxx {
+
+enum OperatorType {
+  // TODO
+};
+
+class Expression {
+ public:
+  Table *table() const {
+    return table_;
+  }
+  DataType data_type() const {
+    return data_type_;
+  }
+
+  friend class ExpressionBuilder;
+
+ private:
+  Table *table_;
+  DataType data_type_;
+};
+
+class ExpressionBuilder {
+ public:
+  // Create an object for building expressons.
+  //
+  // Returns a poitner to the builder on success.
+  // On failure, returns nullptr and stores error information into "*error" if
+  // "error" != nullptr.
+  static unique_ptr<ExpressionBuilder> create(Error *error,
+                                              const Table *table);
+
+  ~ExpressionBuilder();
+
+  Table *table() const {
+    return table_;
+  }
+
+  // Push a datum.
+  //
+  // Returns true on success.
+  // On failure, returns false and stores error information into "*error" if
+  // "error" != nullptr.
+  bool push_datum(Error *error, const Datum &datum);
+
+  // Push a column.
+  //
+  // If "name" == "_id", pushes a pseudo column associated with row IDs.
+  // If "name" == "_score", pushes a pseudo column associated with scores.
+  //
+  // Returns true on success.
+  // On failure, returns false and stores error information into "*error" if
+  // "error" != nullptr.
+  bool push_column(Error *error, String name);
+
+  // Push an operator.
+  //
+  // Pops operands and pushes an operator.
+  // Fails if there are not enough operands.
+  // Fails if the combination of operands are invalid.
+  //
+  // Returns true on success.
+  // On failure, returns false and stores error information into "*error" if
+  // "error" != nullptr.
+  bool push_operator(Error *error, OperatorType operator_type);
+
+  // Clear the builder.
+  void clear();
+
+  // Complete building an expression and clear the builder.
+  //
+  // Returns a poitner to the expression on success.
+  // On failure, returns nullptr and stores error information into "*error" if
+  // "error" != nullptr.
+  unique_ptr<Expression> release(Error *error);
+
+ private:
+  Table *table_;
+
+  explicit ExpressionBuilder(Table *table);
+};
+
+}  // namespace grnxx
+
+#endif  // GRNXX_EXPRESSION_HPP

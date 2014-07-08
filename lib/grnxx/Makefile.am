@@ -13,6 +13,7 @@ libgrnxx_la_SOURCES =			\
 	cursor.cpp			\
 	db.cpp				\
 	error.cpp			\
+	expression.cpp			\
 	index.cpp			\
 	library.cpp			\
 	name.cpp			\
