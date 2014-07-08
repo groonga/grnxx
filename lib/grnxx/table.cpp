@@ -16,9 +16,6 @@ class TableCursor : public Cursor {
 
   ~TableCursor() {}
 
-  Table *table() const {
-    return table_;
-  }
   Int read(Error *error, Int max_count, RecordSet *record_set);
 
   // -- Internal API --
@@ -29,7 +26,7 @@ class TableCursor : public Cursor {
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
   static unique_ptr<TableCursor> create(Error *error,
-                                        Table *table,
+                                        const Table *table,
                                         const CursorOptions &options);
 
   // Read records in regular order.
@@ -44,7 +41,7 @@ class TableCursor : public Cursor {
   OrderType order_type_;
   Int next_row_id_;
 
-  explicit TableCursor(Table *table);
+  explicit TableCursor(const Table *table);
 };
 
 Int TableCursor::read(Error *error, Int max_count, RecordSet *record_set) {
@@ -66,7 +63,7 @@ Int TableCursor::read(Error *error, Int max_count, RecordSet *record_set) {
 }
 
 unique_ptr<TableCursor> TableCursor::create(Error *error,
-                                            Table *table,
+                                            const Table *table,
                                             const CursorOptions &options) {
   unique_ptr<TableCursor> cursor(new (nothrow) TableCursor(table));
   if (!cursor) {
@@ -94,7 +91,7 @@ unique_ptr<TableCursor> TableCursor::create(Error *error,
   return cursor;
 }
 
-TableCursor::TableCursor(Table *table)
+TableCursor::TableCursor(const Table *table)
     : Cursor(table),
       offset_left_(),
       limit_left_(),
@@ -379,7 +376,7 @@ Int Table::find_row(Error *error, const Datum &key) const {
 
 unique_ptr<Cursor> Table::create_cursor(
     Error *error,
-    const CursorOptions &options) {
+    const CursorOptions &options) const {
   return TableCursor::create(error, this, options);
 }
 

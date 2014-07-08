@@ -168,7 +168,7 @@ class Table {
   // "error" != nullptr.
   unique_ptr<Cursor> create_cursor(
       Error *error,
-      const CursorOptions &options);
+      const CursorOptions &options) const;
 
   // Create an object to build expressions.
   //
