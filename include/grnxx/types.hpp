@@ -317,6 +317,7 @@ class Datum;
 class Cursor;
 class RecordSet;
 class Expression;
+class ExpressionNode;
 class ExpressionBuilder;
 
 // Database temporary object option types.

@@ -1,28 +1,46 @@
 #ifndef GRNXX_EXPRESSION_HPP
 #define GRNXX_EXPRESSION_HPP
 
+#include <vector>
+
 #include "grnxx/types.hpp"
 
 namespace grnxx {
 
 enum OperatorType {
-  // TODO
+  // -- Unary operators --
+
+  // -- Binary operators --
+
+  EQUAL_OPERATOR,
+  NOT_EQUAL_OPERATOR
 };
 
 class Expression {
  public:
+  // Create an expression.
+  //
+  // Returns a poitner to the builder on success.
+  // On failure, returns nullptr and stores error information into "*error" if
+  // "error" != nullptr.
+  static unique_ptr<Expression> create(Error *error,
+                                       unique_ptr<ExpressionNode> &&root);
+
+  ~Expression();
+
   Table *table() const {
     return table_;
   }
-  DataType data_type() const {
-    return data_type_;
-  }
+  DataType data_type() const;
 
-  friend class ExpressionBuilder;
+  bool filter(Error *error, RecordSet *record_set);
 
  private:
   Table *table_;
-  DataType data_type_;
+  unique_ptr<ExpressionNode> root_;
+
+  Expression(Table *table,
+             unique_ptr<ExpressionNode> &&root);
 };
 
 class ExpressionBuilder {
@@ -37,7 +55,7 @@ class ExpressionBuilder {
 
   ~ExpressionBuilder();
 
-  Table *table() const {
+  const Table *table() const {
     return table_;
   }
 
@@ -69,10 +87,12 @@ class ExpressionBuilder {
   // "error" != nullptr.
   bool push_operator(Error *error, OperatorType operator_type);
 
-  // Clear the builder.
+  // Clear the stack.
   void clear();
 
   // Complete building an expression and clear the builder.
+  //
+  // Fails if the stack is empty or contains more than one nodes.
   //
   // Returns a poitner to the expression on success.
   // On failure, returns nullptr and stores error information into "*error" if
@@ -80,9 +100,10 @@ class ExpressionBuilder {
   unique_ptr<Expression> release(Error *error);
 
  private:
-  Table *table_;
+  const Table *table_;
+  std::vector<unique_ptr<ExpressionNode>> stack_;
 
-  explicit ExpressionBuilder(Table *table);
+  explicit ExpressionBuilder(const Table *table);
 };
 
 }  // namespace grnxx
