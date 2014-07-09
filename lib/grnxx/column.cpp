@@ -153,7 +153,7 @@ bool BoolColumn::set(Error *error, Int row_id, const Datum &datum) {
   if (!table_->test_row(error, row_id)) {
     return false;
   }
-  values_[row_id] = static_cast<Bool>(datum);
+  values_[row_id] = datum.force_bool();
   return true;
 }
 
@@ -218,7 +218,7 @@ bool IntColumn::set(Error *error, Int row_id, const Datum &datum) {
   if (!table_->test_row(error, row_id)) {
     return false;
   }
-  values_[row_id] = static_cast<Int>(datum);
+  values_[row_id] = datum.force_int();
   return true;
 }
 

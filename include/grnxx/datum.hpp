@@ -34,26 +34,23 @@ class Datum {
     return type_;
   }
 
-  // TODO: Typecast operators are dangerous.
-  //       These should not be used.
-  //
   // Force the specified interpretation.
-  explicit operator Bool() const {
+  Bool force_bool() const {
     return bool_;
   }
-  explicit operator Int() const {
+  Int force_int() const {
     return int_;
   }
-  explicit operator Float() const {
+  Float force_float() const {
     return float_;
   }
-  explicit operator Time() const {
+  Time force_time() const {
     return time_;
   }
-  explicit operator GeoPoint() const {
+  GeoPoint force_geo_point() const {
     return geo_point_;
   }
-  explicit operator Text() const {
+  Text force_text() const {
     return text_;
   }
 

@@ -226,22 +226,22 @@ void test_column() {
 
   assert(bool_column->get(&error, 1, &datum));
   assert(datum.type() == grnxx::BOOL_DATA);
-  assert(!static_cast<grnxx::Bool>(datum));
+  assert(!datum.force_bool());
 
   assert(int_column->get(&error, 1, &datum));
   assert(datum.type() == grnxx::INT_DATA);
-  assert(static_cast<grnxx::Int>(datum) == 0);
+  assert(datum.force_int() == 0);
 
   assert(bool_column->set(&error, 1, grnxx::Bool(true)));
   assert(int_column->set(&error, 1, grnxx::Int(123)));
 
   assert(bool_column->get(&error, 1, &datum));
   assert(datum.type() == grnxx::BOOL_DATA);
-  assert(static_cast<grnxx::Bool>(datum));
+  assert(datum.force_bool());
 
   assert(int_column->get(&error, 1, &datum));
   assert(datum.type() == grnxx::INT_DATA);
-  assert(static_cast<grnxx::Int>(datum) == 123);
+  assert(datum.force_int() == 123);
 }
 
 }  // namespace

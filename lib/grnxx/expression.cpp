@@ -326,13 +326,11 @@ bool ExpressionBuilder::push_datum(Error *error, const Datum &datum) {
   unique_ptr<ExpressionDatumNode> node;
   switch (datum.type()) {
     case BOOL_DATA: {
-      node.reset(new (nothrow) ExpressionBoolDatumNode(
-          static_cast<Bool>(datum)));
+      node.reset(new (nothrow) ExpressionBoolDatumNode(datum.force_bool()));
       break;
     }
     case INT_DATA: {
-      node.reset(new (nothrow) ExpressionIntDatumNode(
-          static_cast<Int>(datum)));
+      node.reset(new (nothrow) ExpressionIntDatumNode(datum.force_int()));
       break;
     }
     default: {
