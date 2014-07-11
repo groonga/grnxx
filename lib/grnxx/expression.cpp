@@ -294,8 +294,7 @@ bool Expression::filter(Error *error, RecordSet *record_set) {
   return false;
 }
 
-Expression::Expression(Table *table,
-                       unique_ptr<ExpressionNode> &&root)
+Expression::Expression(Table *table, unique_ptr<ExpressionNode> &&root)
     : table_(table),
       root_(std::move(root)) {}
 

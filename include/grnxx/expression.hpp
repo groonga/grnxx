@@ -28,19 +28,28 @@ class Expression {
 
   ~Expression();
 
+  // Return the associated table.
   Table *table() const {
     return table_;
   }
+  // Return the result data type.
   DataType data_type() const;
 
+  // Filter records.
+  //
+  // Evaluates the expression for the given record set and removes records
+  // whose evaluation results are false.
+  //
+  // Returns true on success.
+  // On failure, returns false and stores error information into "*error" if
+  // "error" != nullptr.
   bool filter(Error *error, RecordSet *record_set);
 
  private:
   Table *table_;
   unique_ptr<ExpressionNode> root_;
 
-  Expression(Table *table,
-             unique_ptr<ExpressionNode> &&root);
+  Expression(Table *table, unique_ptr<ExpressionNode> &&root);
 };
 
 class ExpressionBuilder {
