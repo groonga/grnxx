@@ -35,7 +35,7 @@ class Expression {
   // Return the result data type.
   DataType data_type() const;
 
-  // Filter records.
+  // Filter out false records.
   //
   // Evaluates the expression for the given record set and removes records
   // whose evaluation results are false.

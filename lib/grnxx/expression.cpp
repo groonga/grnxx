@@ -21,14 +21,32 @@ class ExpressionNode {
   ExpressionNode() {}
   virtual ~ExpressionNode() {}
 
+  // Return the node type.
   virtual ExpressionNodeType node_type() const = 0;
+  // Return the result data type.
   virtual DataType data_type() const = 0;
 
+  // Filter out false records.
+  //
+  // Evaluates the expression for the given record set and removes records
+  // whose evaluation results are false.
+  //
+  // Returns true on success.
+  // On failure, returns false and stores error information into "*error" if
+  // "error" != nullptr.
   virtual bool filter(Error *error, RecordSet *record_set) {
-    // TODO: Set an "This type is not supported" error.
+    // TODO: Define "This type is not supported" error.
     GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
     return false;
   }
+
+  // Evaluate the expression subtree.
+  //
+  // The evaluation results are stored into each expression node.
+  //
+  // Returns true on success.
+  // On failure, returns false and stores error information into "*error" if
+  // "error" != nullptr.
   virtual bool evaluate(Error *error, const RecordSet &record_set) {
     // TODO: This should be a pure virtual function.
     GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
