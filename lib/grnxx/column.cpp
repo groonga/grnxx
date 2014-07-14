@@ -79,15 +79,15 @@ unique_ptr<Column> Column::create(Error *error,
     case INT_DATA: {
       return ColumnImpl<Int>::create(error, table, name, options);
     }
-//    case FLOAT_DATA: {
-//      return ColumnImpl<Float>::create(error, table, name, options);
-//    }
-//    case TIME_DATA: {
-//      return ColumnImpl<Time>::create(error, table, name, options);
-//    }
-//    case GEO_POINT_DATA: {
-//      return ColumnImpl<GeoPoint>::create(error, table, name, options);
-//    }
+    case FLOAT_DATA: {
+      return ColumnImpl<Float>::create(error, table, name, options);
+    }
+    case TIME_DATA: {
+      return ColumnImpl<Time>::create(error, table, name, options);
+    }
+    case GEO_POINT_DATA: {
+      return ColumnImpl<GeoPoint>::create(error, table, name, options);
+    }
 //    case TEXT_DATA: {
 //      return ColumnImpl<Text>::create(error, table, name, options);
 //    }
