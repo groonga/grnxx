@@ -117,14 +117,13 @@ class Table {
 
   // Insert a row.
   //
-  // If "request_row_id" is valid, inserts a row identified by
-  // "request_row_id".
-  // If "key" is valid, inserts a row identified by "key".
-  // If both are invalid, the next row ID is allocated.
+  // If "request_row_id" specifies an unused row ID, uses the row ID.
+  // If the table has a key column, "key" is used as the key of the new row.
+  // If "request_row_id" == NULL_ROW_ID, an unused row ID or max_row_id() + 1
+  // is allocated for the new row.
   //
-  // Fails if "request_row_id" is valid and points to an existing row.
+  // Fails if "request_row_id" specifies an existing row.
   // Fails if the table has a key column and "key" is invalid.
-  // Fails if the table does not have a key column and "key" is valid.
   //
   // On success, stores the inserted row ID into "*result_row_id".
   // On failure, if "request_row_id" or "key" matches an existing row,
