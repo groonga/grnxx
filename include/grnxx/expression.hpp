@@ -12,8 +12,15 @@ enum OperatorType {
 
   // -- Binary operators --
 
+  // Equality operators.
   EQUAL_OPERATOR,
-  NOT_EQUAL_OPERATOR
+  NOT_EQUAL_OPERATOR,
+
+  // Comparison operators.
+  LESS_OPERATOR,
+  LESS_EQUAL_OPERATOR,
+  GREATER_OPERATOR,
+  GREATER_EQUAL_OPERATOR
 };
 
 class Expression {
@@ -115,8 +122,12 @@ class ExpressionBuilder {
 
   explicit ExpressionBuilder(const Table *table);
 
+  // Push an operator == or !=.
   template <typename T>
   bool push_equality_operator(Error *error);
+  // Push an operator <, <=, >, or >=.
+  template <typename T>
+  bool push_comparison_operator(Error *error);
 };
 
 }  // namespace grnxx

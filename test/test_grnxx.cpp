@@ -382,6 +382,40 @@ void test_expression() {
   assert(expression->filter(&error, &record_set));
   assert(record_set.size() == 1);
   assert(record_set.get(0).row_id == 2);
+
+  record_set.clear();
+  cursor = table->create_cursor(&error, grnxx::CursorOptions());
+  assert(cursor);
+  assert(cursor->read(&error, 2, &record_set) == 2);
+
+  // 大小関係による比較を試す．
+  assert(builder->push_column(&error, "IntColumn"));
+  assert(builder->push_datum(&error, grnxx::Int(300)));
+  assert(builder->push_operator(&error, grnxx::LESS_OPERATOR));
+  expression = builder->release(&error);
+  assert(expression);
+
+  // フィルタとして使ったときの結果を確認する．
+  assert(expression->filter(&error, &record_set));
+  assert(record_set.size() == 1);
+  assert(record_set.get(0).row_id == 1);
+
+  record_set.clear();
+  cursor = table->create_cursor(&error, grnxx::CursorOptions());
+  assert(cursor);
+  assert(cursor->read(&error, 2, &record_set) == 2);
+
+  // 大小関係による比較を試す．
+  assert(builder->push_column(&error, "IntColumn"));
+  assert(builder->push_datum(&error, grnxx::Int(456)));
+  assert(builder->push_operator(&error, grnxx::GREATER_EQUAL_OPERATOR));
+  expression = builder->release(&error);
+  assert(expression);
+
+  // フィルタとして使ったときの結果を確認する．
+  assert(expression->filter(&error, &record_set));
+  assert(record_set.size() == 1);
+  assert(record_set.get(0).row_id == 2);
 }
 
 }  // namespace
