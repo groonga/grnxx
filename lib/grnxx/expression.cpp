@@ -415,6 +415,18 @@ bool ExpressionBuilder::push_datum(Error *error, const Datum &datum) {
       node.reset(new (nothrow) DatumNode<Int>(datum.force_int()));
       break;
     }
+    case FLOAT_DATA: {
+      node.reset(new (nothrow) DatumNode<Float>(datum.force_float()));
+      break;
+    }
+    case TIME_DATA: {
+      node.reset(new (nothrow) DatumNode<Time>(datum.force_time()));
+      break;
+    }
+    case GEO_POINT_DATA: {
+      node.reset(new (nothrow) DatumNode<GeoPoint>(datum.force_geo_point()));
+      break;
+    }
     default: {
       // TODO: Other types are not supported yet.
       GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
@@ -454,6 +466,18 @@ bool ExpressionBuilder::push_column(Error *error, String name) {
       }
       case INT_DATA: {
         node.reset(new (nothrow) ColumnNode<Int>(column));
+        break;
+      }
+      case FLOAT_DATA: {
+        node.reset(new (nothrow) ColumnNode<Float>(column));
+        break;
+      }
+      case TIME_DATA: {
+        node.reset(new (nothrow) ColumnNode<Time>(column));
+        break;
+      }
+      case GEO_POINT_DATA: {
+        node.reset(new (nothrow) ColumnNode<GeoPoint>(column));
         break;
       }
       default: {
@@ -578,6 +602,24 @@ bool ExpressionBuilder::push_equality_operator(Error *error) {
           functor, std::move(lhs), std::move(rhs)));
       break;
     }
+    case FLOAT_DATA: {
+      typename T::template Functor<Float> functor;
+      node.reset(new (nothrow) BinaryNode<decltype(functor)>(
+          functor, std::move(lhs), std::move(rhs)));
+      break;
+    }
+    case TIME_DATA: {
+      typename T::template Functor<Time> functor;
+      node.reset(new (nothrow) BinaryNode<decltype(functor)>(
+          functor, std::move(lhs), std::move(rhs)));
+      break;
+    }
+    case GEO_POINT_DATA: {
+      typename T::template Functor<GeoPoint> functor;
+      node.reset(new (nothrow) BinaryNode<decltype(functor)>(
+          functor, std::move(lhs), std::move(rhs)));
+      break;
+    }
     // TODO: Support other types.
     default: {
       GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
@@ -611,6 +653,18 @@ bool ExpressionBuilder::push_comparison_operator(Error *error) {
   switch (lhs->data_type()) {
     case INT_DATA: {
       typename T::template Functor<Int> functor;
+      node.reset(new (nothrow) BinaryNode<decltype(functor)>(
+          functor, std::move(lhs), std::move(rhs)));
+      break;
+    }
+    case FLOAT_DATA: {
+      typename T::template Functor<Float> functor;
+      node.reset(new (nothrow) BinaryNode<decltype(functor)>(
+          functor, std::move(lhs), std::move(rhs)));
+      break;
+    }
+    case TIME_DATA: {
+      typename T::template Functor<Time> functor;
       node.reset(new (nothrow) BinaryNode<decltype(functor)>(
           functor, std::move(lhs), std::move(rhs)));
       break;
