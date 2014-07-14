@@ -250,6 +250,17 @@ void test_column() {
   assert(!int_column->has_key_attribute());
   assert(int_column->num_indexes() == 0);
 
+  // Float を格納する "FloatColumn" という名前のカラムを作成する．
+  auto float_column = table->create_column(&error, "FloatColumn",
+                                           grnxx::FLOAT_DATA,
+                                           grnxx::ColumnOptions());
+  assert(float_column);
+  assert(float_column->table() == table);
+  assert(float_column->name() == "FloatColumn");
+  assert(float_column->data_type() == grnxx::FLOAT_DATA);
+  assert(!float_column->has_key_attribute());
+  assert(float_column->num_indexes() == 0);
+
   grnxx::Datum datum;
 
   // 最初の行にデフォルト値が格納されていることを確認する．
@@ -261,9 +272,14 @@ void test_column() {
   assert(datum.type() == grnxx::INT_DATA);
   assert(datum.force_int() == 0);
 
+  assert(float_column->get(&error, 1, &datum));
+  assert(datum.type() == grnxx::FLOAT_DATA);
+  assert(datum.force_float() == 0.0);
+
   // 最初の行に正しく値を格納できるか確認する．
   assert(bool_column->set(&error, 1, grnxx::Bool(true)));
   assert(int_column->set(&error, 1, grnxx::Int(123)));
+  assert(float_column->set(&error, 1, grnxx::Float(0.25)));
 
   assert(bool_column->get(&error, 1, &datum));
   assert(datum.type() == grnxx::BOOL_DATA);
@@ -272,6 +288,10 @@ void test_column() {
   assert(int_column->get(&error, 1, &datum));
   assert(datum.type() == grnxx::INT_DATA);
   assert(datum.force_int() == 123);
+
+  assert(float_column->get(&error, 1, &datum));
+  assert(datum.type() == grnxx::FLOAT_DATA);
+  assert(datum.force_float() == 0.25);
 }
 
 void test_expression() {
@@ -293,21 +313,28 @@ void test_expression() {
                                          grnxx::ColumnOptions());
   assert(int_column);
 
+  auto float_column = table->create_column(&error, "FloatColumn",
+                                           grnxx::FLOAT_DATA,
+                                           grnxx::ColumnOptions());
+  assert(float_column);
+
   // 下記のデータを格納する．
   //
-  // RowID BoolColumn IntColumn
-  //     1      false       123
-  //     2       true       456
+  // RowID BoolColumn IntColumn FloatColumn
+  //     1      false       123       -0.25
+  //     2       true       456        0.25
   grnxx::Int row_id;
   assert(table->insert_row(&error, grnxx::NULL_ROW_ID,
                            grnxx::Datum(), &row_id));
   assert(bool_column->set(&error, row_id, grnxx::Bool(false)));
   assert(int_column->set(&error, row_id, grnxx::Int(123)));
+  assert(float_column->set(&error, row_id, grnxx::Float(-0.25)));
 
   assert(table->insert_row(&error, grnxx::NULL_ROW_ID,
                            grnxx::Datum(), &row_id));
   assert(bool_column->set(&error, row_id, grnxx::Bool(true)));
   assert(int_column->set(&error, row_id, grnxx::Int(456)));
+  assert(float_column->set(&error, row_id, grnxx::Float(0.25)));
 
   // 式構築用のオブジェクトを用意する．
   auto builder = grnxx::ExpressionBuilder::create(&error, table);
@@ -423,8 +450,8 @@ void test_expression() {
   assert(cursor->read(&error, 2, &record_set) == 2);
 
   // 論理演算を試す．
-  assert(builder->push_column(&error, "IntColumn"));
-  assert(builder->push_datum(&error, grnxx::Int(300)));
+  assert(builder->push_column(&error, "FloatColumn"));
+  assert(builder->push_datum(&error, grnxx::Float(0.0)));
   assert(builder->push_operator(&error, grnxx::GREATER_OPERATOR));
   assert(builder->push_column(&error, "BoolColumn"));
   assert(builder->push_operator(&error, grnxx::LOGICAL_AND_OPERATOR));
