@@ -114,6 +114,9 @@ class ExpressionBuilder {
   std::vector<unique_ptr<ExpressionNode>> stack_;
 
   explicit ExpressionBuilder(const Table *table);
+
+  template <typename T>
+  bool push_equality_operator(Error *error);
 };
 
 }  // namespace grnxx

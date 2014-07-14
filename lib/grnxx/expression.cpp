@@ -216,13 +216,27 @@ class ColumnNode : public Node<T> {
 
 // -- OperatorNode --
 
-template <typename T, typename U>
 struct Equal {
-  using Arg1 = T;
-  using Arg2 = U;
-  using ResultType = Bool;
-  Bool operator()(Arg1 lhs, Arg2 rhs) const {
-    return lhs == rhs;
+  template <typename T>
+  struct Functor {
+    using Arg1 = T;
+    using Arg2 = T;
+    using Result = Bool;
+    Bool operator()(Arg1 lhs, Arg2 rhs) const {
+      return lhs == rhs;
+    };
+  };
+};
+
+struct NotEqual {
+  template <typename T>
+  struct Functor {
+    using Arg1 = T;
+    using Arg2 = T;
+    using Result = Bool;
+    Bool operator()(Arg1 lhs, Arg2 rhs) const {
+      return lhs != rhs;
+    };
   };
 };
 
@@ -235,7 +249,7 @@ class BinaryNode : public Node<Bool> {
   BinaryNode(Op op,
              unique_ptr<ExpressionNode> &&lhs,
              unique_ptr<ExpressionNode> &&rhs)
-      : Node<typename Op::ResultType>(),
+      : Node<typename Op::Result>(),
         operator_(op),
         lhs_(static_cast<Node<Arg1> *>(lhs.release())),
         rhs_(static_cast<Node<Arg2> *>(rhs.release())) {}
@@ -389,51 +403,12 @@ bool ExpressionBuilder::push_column(Error *error, String name) {
 
 bool ExpressionBuilder::push_operator(Error *error,
                                       OperatorType operator_type) {
-  unique_ptr<ExpressionNode> node;
   switch (operator_type) {
     case EQUAL_OPERATOR: {
-      if (stack_.size() != 2) {
-        // TODO: Define a better error code.
-        GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Not enough operands");
-        return false;
-      }
-      auto &lhs = stack_[stack_.size() - 2];
-      auto &rhs = stack_[stack_.size() - 1];
-      if (lhs->data_type() != rhs->data_type()) {
-        // TODO: Define a better error code.
-        GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Type conflict");
-        return false;
-      }
-      switch (lhs->data_type()) {
-        case BOOL_DATA: {
-          Equal<Bool, Bool> equal;
-          node.reset(new (nothrow) BinaryNode<decltype(equal)>(
-              equal, std::move(lhs), std::move(rhs)));
-          break;
-        }
-        case INT_DATA: {
-          Equal<Int, Int> equal;
-          node.reset(new (nothrow) BinaryNode<decltype(equal)>(
-              equal, std::move(lhs), std::move(rhs)));
-          break;
-        }
-        default: {
-          GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
-          return false;
-        }
-      }
-      if (!node) {
-        GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
-        return false;
-      }
-      stack_.resize(stack_.size() - 2);
-      stack_.push_back(std::move(node));
-      return true;
+      return push_equality_operator<Equal>(error);
     }
     case NOT_EQUAL_OPERATOR: {
-      // TODO: Not supported yet.
-      GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
-      return false;
+      return push_equality_operator<NotEqual>(error);
     }
     default: {
       // TODO: Not supported yet.
@@ -458,5 +433,47 @@ unique_ptr<Expression> ExpressionBuilder::release(Error *error) {
 }
 
 ExpressionBuilder::ExpressionBuilder(const Table *table) : table_(table) {}
+
+template <typename T>
+bool ExpressionBuilder::push_equality_operator(Error *error) {
+  if (stack_.size() < 2) {
+    // TODO: Define a better error code.
+    GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Not enough operands");
+    return false;
+  }
+  auto &lhs = stack_[stack_.size() - 2];
+  auto &rhs = stack_[stack_.size() - 1];
+  if (lhs->data_type() != rhs->data_type()) {
+    // TODO: Define a better error code.
+    GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Type conflict");
+    return false;
+  }
+  unique_ptr<ExpressionNode> node;
+  switch (lhs->data_type()) {
+    case BOOL_DATA: {
+      typename T::template Functor<Bool> equal;
+      node.reset(new (nothrow) BinaryNode<decltype(equal)>(
+          equal, std::move(lhs), std::move(rhs)));
+      break;
+    }
+    case INT_DATA: {
+      typename T::template Functor<Int> equal;
+      node.reset(new (nothrow) BinaryNode<decltype(equal)>(
+          equal, std::move(lhs), std::move(rhs)));
+      break;
+    }
+    default: {
+      GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
+      return false;
+    }
+  }
+  if (!node) {
+    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    return false;
+  }
+  stack_.pop_back();
+  stack_.back() = std::move(node);
+  return true;
+}
 
 }  // namespace grnxx
