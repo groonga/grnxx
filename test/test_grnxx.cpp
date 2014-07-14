@@ -16,12 +16,14 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 #include <cassert>
+#include <iostream>
 
 #include "grnxx/column.hpp"
 #include "grnxx/cursor.hpp"
 #include "grnxx/datum.hpp"
 #include "grnxx/db.hpp"
 #include "grnxx/error.hpp"
+#include "grnxx/expression.hpp"
 #include "grnxx/record.hpp"
 #include "grnxx/table.hpp"
 
@@ -244,12 +246,91 @@ void test_column() {
   assert(datum.force_int() == 123);
 }
 
+void test_expression() {
+  grnxx::Error error;
+
+  auto db = grnxx::open_db(&error, "", grnxx::DBOptions());
+  assert(db);
+
+  auto table = db->create_table(&error, "Table", grnxx::TableOptions());
+  assert(table);
+
+  auto bool_column = table->create_column(&error, "BoolColumn",
+                                          grnxx::BOOL_DATA,
+                                          grnxx::ColumnOptions());
+  assert(bool_column);
+
+  auto int_column = table->create_column(&error, "IntColumn",
+                                         grnxx::INT_DATA,
+                                         grnxx::ColumnOptions());
+  assert(int_column);
+
+  grnxx::Int row_id;
+  assert(table->insert_row(&error, grnxx::NULL_ROW_ID,
+                           grnxx::Datum(), &row_id));
+  assert(bool_column->set(&error, row_id, grnxx::Bool(false)));
+  assert(int_column->set(&error, row_id, grnxx::Int(123)));
+
+  assert(table->insert_row(&error, grnxx::NULL_ROW_ID,
+                           grnxx::Datum(), &row_id));
+  assert(bool_column->set(&error, row_id, grnxx::Bool(true)));
+  assert(int_column->set(&error, row_id, grnxx::Int(456)));
+
+  auto builder = grnxx::ExpressionBuilder::create(&error, table);
+  assert(builder);
+
+  assert(builder->push_datum(&error, grnxx::Bool(true)));
+
+  auto expression = builder->release(&error);
+  assert(expression);
+
+  auto cursor = table->create_cursor(&error, grnxx::CursorOptions());
+  assert(cursor);
+
+  grnxx::RecordSet record_set;
+  assert(cursor->read(&error, 2, &record_set) == 2);
+
+  assert(expression->filter(&error, &record_set));
+  assert(record_set.size() == 2);
+
+  assert(builder->push_datum(&error, grnxx::Int(100)));
+  assert(builder->push_datum(&error, grnxx::Int(100)));
+  assert(builder->push_operator(&error, grnxx::EQUAL_OPERATOR));
+  expression = builder->release(&error);
+  assert(expression);
+
+  assert(expression->filter(&error, &record_set));
+  assert(record_set.size() == 2);
+
+  assert(builder->push_column(&error, "BoolColumn"));
+  expression = builder->release(&error);
+  assert(expression);
+
+  assert(expression->filter(&error, &record_set));
+  assert(record_set.size() == 1);
+
+  cursor = table->create_cursor(&error, grnxx::CursorOptions());
+  assert(cursor);
+  record_set.clear();
+  assert(cursor->read(&error, 2, &record_set) == 2);
+
+  assert(builder->push_column(&error, "IntColumn"));
+  assert(builder->push_datum(&error, grnxx::Int(123)));
+  assert(builder->push_operator(&error, grnxx::EQUAL_OPERATOR));
+  expression = builder->release(&error);
+  assert(expression);
+
+  assert(expression->filter(&error, &record_set));
+  assert(record_set.size() == 1);
+}
+
 }  // namespace
 
 int main() {
   test_db();
   test_table();
   test_column();
+  test_expression();
 
   return 0;
 }

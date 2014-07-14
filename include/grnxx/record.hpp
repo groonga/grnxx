@@ -35,7 +35,7 @@ class RecordSet {
       records_.push_back(record);
       return true;
     } catch (...) {
-      // TODO: Error report.
+      // TODO: Error report should be written in .cpp file.
       return false;
     }
   }
@@ -45,6 +45,28 @@ class RecordSet {
   // If "i" is invalid, the result is undefined.
   Record get(Int i) const {
     return records_[i];
+  }
+
+  // Set a record.
+  //
+  // If "i" is invalid, the result is undefined.
+  void set(Int i, Record record) {
+    records_[i] = record;
+  }
+
+  // Resize the set.
+  //
+  // Returns true on success.
+  // On failure, returns false and stores error information into "*error" if
+  // "error" != nullptr.
+  bool resize(Error *error, Int size) {
+    try {
+      records_.resize(size);
+      return true;
+    } catch (...) {
+      // TODO: Error report should be written in .cpp file.
+      return false;
+    }
   }
 
   // Clear all the records.

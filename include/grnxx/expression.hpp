@@ -24,12 +24,13 @@ class Expression {
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
   static unique_ptr<Expression> create(Error *error,
+                                       const Table *table,
                                        unique_ptr<ExpressionNode> &&root);
 
   ~Expression();
 
   // Return the associated table.
-  Table *table() const {
+  const Table *table() const {
     return table_;
   }
   // Return the result data type.
@@ -46,10 +47,10 @@ class Expression {
   bool filter(Error *error, RecordSet *record_set);
 
  private:
-  Table *table_;
+  const Table *table_;
   unique_ptr<ExpressionNode> root_;
 
-  Expression(Table *table, unique_ptr<ExpressionNode> &&root);
+  Expression(const Table *table, unique_ptr<ExpressionNode> &&root);
 };
 
 class ExpressionBuilder {

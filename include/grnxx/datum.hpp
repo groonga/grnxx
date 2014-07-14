@@ -54,6 +54,26 @@ class Datum {
     return text_;
   }
 
+  // Force the specified interpretation.
+  void force(Bool *value) const {
+    *value = bool_;
+  }
+  void force(Int *value) const {
+    *value = int_;
+  }
+  void force(Float *value) const {
+    *value = float_;
+  }
+  void force(Time *value) const {
+    *value = time_;
+  }
+  void force(GeoPoint *value) const {
+    *value = geo_point_;
+  }
+  void force(Text *value) const {
+    *value = text_;
+  }
+
  private:
   DataType type_;
   union {

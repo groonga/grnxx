@@ -74,22 +74,22 @@ unique_ptr<Column> Column::create(Error *error,
                                   const ColumnOptions &options) {
   switch (data_type) {
     case BOOL_DATA: {
-      return BoolColumn::create(error, table, name, options);
+      return ColumnImpl<Bool>::create(error, table, name, options);
     }
     case INT_DATA: {
-      return IntColumn::create(error, table, name, options);
+      return ColumnImpl<Int>::create(error, table, name, options);
     }
 //    case FLOAT_DATA: {
-//      return FloatColumn::create(error, table, name, options);
+//      return ColumnImpl<Float>::create(error, table, name, options);
 //    }
 //    case TIME_DATA: {
-//      return TimeColumn::create(error, table, name, options);
+//      return ColumnImpl<Time>::create(error, table, name, options);
 //    }
 //    case GEO_POINT_DATA: {
-//      return GeoPointColumn::create(error, table, name, options);
+//      return ColumnImpl<GeoPoint>::create(error, table, name, options);
 //    }
 //    case TEXT_DATA: {
-//      return TextColumn::create(error, table, name, options);
+//      return ColumnImpl<Text>::create(error, table, name, options);
 //    }
     default: {
       // TODO: Other data types are not supported yet.
@@ -143,21 +143,26 @@ bool Column::set_default_value(Error *error, Int row_id) {
 void Column::unset(Int row_id) {
 }
 
-// -- BoolColumn --
+// -- ColumnImpl --
 
-bool BoolColumn::set(Error *error, Int row_id, const Datum &datum) {
-  if (datum.type() != BOOL_DATA) {
+template <typename T>
+bool ColumnImpl<T>::set(Error *error, Int row_id, const Datum &datum) {
+  if (datum.type() != TypeTraits<T>::data_type()) {
     GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Wrong data type");
     return false;
   }
   if (!table_->test_row(error, row_id)) {
     return false;
   }
-  values_[row_id] = datum.force_bool();
+  // Note that a Bool object does not have its own address.
+  T value;
+  datum.force(&value);
+  values_[row_id] = value;
   return true;
 }
 
-bool BoolColumn::get(Error *error, Int row_id, Datum *datum) const {
+template <typename T>
+bool ColumnImpl<T>::get(Error *error, Int row_id, Datum *datum) const {
   if (!table_->test_row(error, row_id)) {
     return false;
   }
@@ -165,20 +170,23 @@ bool BoolColumn::get(Error *error, Int row_id, Datum *datum) const {
   return true;
 }
 
-unique_ptr<BoolColumn> BoolColumn::create(Error *error,
-                                          Table *table,
-                                          String name,
-                                          const ColumnOptions &options) {
-  unique_ptr<BoolColumn> column(new (nothrow) BoolColumn);
+template <typename T>
+unique_ptr<ColumnImpl<T>> ColumnImpl<T>::create(Error *error,
+                                                Table *table,
+                                                String name,
+                                                const ColumnOptions &options) {
+  unique_ptr<ColumnImpl> column(new (nothrow) ColumnImpl);
   if (!column) {
     GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
     return nullptr;
   }
-  if (!column->initialize_base(error, table, name, BOOL_DATA, options)) {
+  if (!column->initialize_base(error, table, name,
+                               TypeTraits<T>::data_type(), options)) {
     return nullptr;
   }
   try {
-    column->values_.resize(table->max_row_id() + 1, false);
+    column->values_.resize(table->max_row_id() + 1,
+                           TypeTraits<T>::default_value());
   } catch (...) {
     GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
     return nullptr;
@@ -186,91 +194,30 @@ unique_ptr<BoolColumn> BoolColumn::create(Error *error,
   return column;
 }
 
-BoolColumn::~BoolColumn() {}
+template <typename T>
+ColumnImpl<T>::~ColumnImpl() {}
 
-bool BoolColumn::set_default_value(Error *error, Int row_id) {
+template <typename T>
+bool ColumnImpl<T>::set_default_value(Error *error, Int row_id) {
   if (row_id >= values_.size()) {
     try {
-      values_.resize(row_id + 1, false);
+      values_.resize(row_id + 1, TypeTraits<T>::default_value());
       return true;
     } catch (...) {
       GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
       return false;
     }
   }
-  values_[row_id] = false;
+  values_[row_id] = TypeTraits<T>::default_value();
   return true;
 }
 
-void BoolColumn::unset(Int row_id) {
-  values_[row_id] = false;
+template <typename T>
+void ColumnImpl<T>::unset(Int row_id) {
+  values_[row_id] = TypeTraits<T>::default_value();
 }
 
-BoolColumn::BoolColumn() : Column(), values_() {}
-
-// -- IntColumn --
-
-bool IntColumn::set(Error *error, Int row_id, const Datum &datum) {
-  if (datum.type() != INT_DATA) {
-    GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Wrong data type");
-    return false;
-  }
-  if (!table_->test_row(error, row_id)) {
-    return false;
-  }
-  values_[row_id] = datum.force_int();
-  return true;
-}
-
-bool IntColumn::get(Error *error, Int row_id, Datum *datum) const {
-  if (!table_->test_row(error, row_id)) {
-    return false;
-  }
-  *datum = values_[row_id];
-  return true;
-}
-
-unique_ptr<IntColumn> IntColumn::create(Error *error,
-                                        Table *table,
-                                        String name,
-                                        const ColumnOptions &options) {
-  unique_ptr<IntColumn> column(new (nothrow) IntColumn);
-  if (!column) {
-    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
-    return nullptr;
-  }
-  if (!column->initialize_base(error, table, name, INT_DATA, options)) {
-    return nullptr;
-  }
-  try {
-    column->values_.resize(table->max_row_id() + 1, 0);
-  } catch (...) {
-    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
-    return nullptr;
-  }
-  return column;
-}
-
-IntColumn::~IntColumn() {}
-
-bool IntColumn::set_default_value(Error *error, Int row_id) {
-  if (row_id >= values_.size()) {
-    try {
-      values_.resize(row_id + 1, 0);
-      return true;
-    } catch (...) {
-      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
-      return false;
-    }
-  }
-  values_[row_id] = 0;
-  return true;
-}
-
-void IntColumn::unset(Int row_id) {
-  values_[row_id] = 0;
-}
-
-IntColumn::IntColumn() : Column(), values_() {}
+template <typename T>
+ColumnImpl<T>::ColumnImpl() : Column(), values_() {}
 
 }  // namespace grnxx

@@ -6,15 +6,20 @@
 #include "grnxx/record.hpp"
 #include "grnxx/table.hpp"
 
-namespace grnxx {
+#include <iostream>  // For debugging.
 
-enum ExpressionNodeType {
-  EXPRESSION_DATUM_NODE,
-  EXPRESSION_ROW_ID_NODE,
-  EXPRESSION_SCORE_NODE,
-  EXPRESSION_COLUMN_NODE,
-  EXPRESSION_OPERATOR_NODE
+namespace grnxx {
+namespace {
+
+enum NodeType {
+  DATUM_NODE,
+  ROW_ID_NODE,
+  SCORE_NODE,
+  COLUMN_NODE,
+  OPERATOR_NODE
 };
+
+}  // namespace
 
 class ExpressionNode {
  public:
@@ -22,7 +27,7 @@ class ExpressionNode {
   virtual ~ExpressionNode() {}
 
   // Return the node type.
-  virtual ExpressionNodeType node_type() const = 0;
+  virtual NodeType node_type() const = 0;
   // Return the result data type.
   virtual DataType data_type() const = 0;
 
@@ -34,11 +39,7 @@ class ExpressionNode {
   // Returns true on success.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
-  virtual bool filter(Error *error, RecordSet *record_set) {
-    // TODO: Define "This type is not supported" error.
-    GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
-    return false;
-  }
+  virtual bool filter(Error *error, RecordSet *record_set) = 0;
 
   // Evaluate the expression subtree.
   //
@@ -47,257 +48,240 @@ class ExpressionNode {
   // Returns true on success.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
-  virtual bool evaluate(Error *error, const RecordSet &record_set) {
-    // TODO: This should be a pure virtual function.
-    GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
-    return false;
-  }
+  virtual bool evaluate(Error *error, const RecordSet &record_set) = 0;
 };
 
-// -- ExpressionDatumNode --
+namespace {
 
-class ExpressionDatumNode : public ExpressionNode {
+template <typename T>
+class Node : public ExpressionNode {
  public:
-  ExpressionDatumNode() : ExpressionNode() {}
-  virtual ~ExpressionDatumNode() {}
-
-  ExpressionNodeType node_type() const {
-    return EXPRESSION_DATUM_NODE;
-  }
-};
-
-class ExpressionBoolDatumNode : public ExpressionDatumNode {
- public:
-  ExpressionBoolDatumNode(Bool datum)
-      : ExpressionDatumNode(),
-        datum_(datum) {}
-  ~ExpressionBoolDatumNode() {}
+  Node() : ExpressionNode(), values_() {}
+  virtual ~Node() {}
 
   DataType data_type() const {
-    return BOOL_DATA;
+    return TypeTraits<T>::data_type();
   }
 
-  bool filter(Error *error, RecordSet *record_set) {
-    if (!datum_) {
-      record_set->clear();
+  virtual bool filter(Error *error, RecordSet *record_set);
+
+  virtual bool evaluate(Error *error, const RecordSet &record_set);
+
+  T get(Int i) const {
+    return values_[i];
+  }
+
+ protected:
+  std::vector<T> values_;
+};
+
+template <typename T>
+bool Node<T>::filter(Error *error, RecordSet *record_set) {
+  // TODO: Define "This type is not supported" error.
+  GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
+  return false;
+}
+
+template <>
+bool Node<Bool>::filter(Error *error, RecordSet *record_set) {
+  if (!evaluate(error, *record_set)) {
+    return false;
+  }
+  Int dest = 0;
+  for (Int i = 0; i < record_set->size(); ++i) {
+    if (values_[i]) {
+      record_set->set(dest, record_set->get(i));
+      ++dest;
+    }
+  }
+  return record_set->resize(error, dest);
+}
+
+template <typename T>
+bool Node<T>::evaluate(Error *error, const RecordSet &record_set) {
+  // TODO: This should be a pure virtual function.
+  GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
+  return false;
+}
+
+// -- DatumNode --
+
+template <typename T>
+class DatumNode : public Node<T> {
+ public:
+  explicit DatumNode(T datum) : Node<T>(), datum_(datum) {}
+  virtual ~DatumNode() {}
+
+  NodeType node_type() const {
+    return DATUM_NODE;
+  }
+
+  bool evaluate(Error *error, const RecordSet &record_set);
+
+ private:
+  T datum_;
+};
+
+template <typename T>
+bool DatumNode<T>::evaluate(Error *error, const RecordSet &record_set) {
+  try {
+    this->values_.resize(record_set.size(), datum_);
+    return true;
+  } catch (...) {
+    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    return false;
+  }
+}
+
+// -- RowIDNode --
+
+class RowIDNode : public Node<Int> {
+ public:
+  RowIDNode() : Node<Int>() {}
+  ~RowIDNode() {}
+
+  NodeType node_type() const {
+    return ROW_ID_NODE;
+  }
+
+  bool evaluate(Error *error, const RecordSet &record_set) {
+    try {
+      this->values_.resize(record_set.size());
+    } catch (...) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+      return false;
+    }
+    for (Int i = 0; i < record_set.size(); ++i) {
+      this->values_[i] = record_set.get(i).row_id;
+    }
+    return true;
+  }
+};
+
+// -- ScoreNode --
+
+class ScoreNode : public Node<Float> {
+ public:
+  ScoreNode() : Node<Float>() {}
+  ~ScoreNode() {}
+
+  NodeType node_type() const {
+    return SCORE_NODE;
+  }
+
+  bool evaluate(Error *error, const RecordSet &record_set) {
+    try {
+      this->values_.resize(record_set.size());
+    } catch (...) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+      return false;
+    }
+    for (Int i = 0; i < record_set.size(); ++i) {
+      this->values_[i] = record_set.get(i).score;
+    }
+    return true;
+  }
+};
+
+// -- ColumnNode --
+
+template <typename T>
+class ColumnNode : public Node<T> {
+ public:
+  explicit ColumnNode(const Column *column)
+      : Node<T>(),
+        column_(static_cast<const ColumnImpl<T> *>(column)) {}
+  virtual ~ColumnNode() {}
+
+  NodeType node_type() const {
+    return COLUMN_NODE;
+  }
+
+  bool evaluate(Error *error, const RecordSet &record_set) {
+    try {
+      this->values_.resize(record_set.size());
+    } catch (...) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+      return false;
+    }
+    for (Int i = 0; i < record_set.size(); ++i) {
+      this->values_[i] = column_->get(record_set.get(i).row_id);
     }
     return true;
   }
 
-  bool evaluate(Error *error, const RecordSet &record_set) {
-    return true;
-  }
-
-  Bool get(Int i) const {
-    return datum_;
-  }
-
  private:
-  Bool datum_;
+  const ColumnImpl<T> *column_;
 };
 
-class ExpressionIntDatumNode : public ExpressionDatumNode {
- public:
-  ExpressionIntDatumNode(Int datum)
-      : ExpressionDatumNode(),
-        datum_(datum) {}
-  ~ExpressionIntDatumNode() {}
-
-  DataType data_type() const {
-    return INT_DATA;
-  }
-
-  bool evaluate(Error *error, const RecordSet &record_set) {
-    return true;
-  }
-
-  Int get(Int i) const {
-    return datum_;
-  }
-
- private:
-  Int datum_;
-};
-
-// -- ExpressionRowIDNode --
-
-class ExpressionRowIDNode : public ExpressionNode {
- public:
-  ExpressionRowIDNode()
-      : ExpressionNode(),
-        record_set_(nullptr) {}
-  ~ExpressionRowIDNode() {}
-
-  ExpressionNodeType node_type() const {
-    return EXPRESSION_ROW_ID_NODE;
-  }
-  DataType data_type() const {
-    return INT_DATA;
-  }
-
-  bool evaluate(Error *error, const RecordSet &record_set) {
-    record_set_ = &record_set;
-    return true;
-  }
-
-  Int get(Int i) const {
-    return record_set_->get(i).row_id;
-  }
-
- private:
-  const RecordSet *record_set_;
-};
-
-// -- ExpressionScoreNode --
-
-class ExpressionScoreNode : public ExpressionNode {
- public:
-  ExpressionScoreNode() : ExpressionNode() {}
-  ~ExpressionScoreNode() {}
-
-  ExpressionNodeType node_type() const {
-    return EXPRESSION_SCORE_NODE;
-  }
-  DataType data_type() const {
-    return FLOAT_DATA;
-  }
-
-  bool evaluate(Error *error, const RecordSet &record_set) {
-    record_set_ = &record_set;
-    return true;
-  }
-
-  Float get(Int i) const {
-    return record_set_->get(i).score;
-  }
-
- private:
-  const RecordSet *record_set_;
-};
-
-// -- ExpressionColumnNode --
-
-class ExpressionColumnNode : public ExpressionNode {
- public:
-  ExpressionColumnNode() : ExpressionNode() {}
-  virtual ~ExpressionColumnNode() {}
-
-  ExpressionNodeType node_type() const {
-    return EXPRESSION_COLUMN_NODE;
-  }
-};
-
-class ExpressionBoolColumnNode : public ExpressionColumnNode {
- public:
-  ExpressionBoolColumnNode(const BoolColumn *column)
-      : ExpressionColumnNode(),
-        column_(column),
-        record_set_(nullptr) {}
-  ~ExpressionBoolColumnNode() {}
-
-  DataType data_type() const {
-    return column_->data_type();
-  }
-
-//  bool filter(Error *error, RecordSet *record_set) {
-//    return false;
-//  }
-
-  bool evaluate(Error *error, const RecordSet &record_set) {
-    record_set_ = &record_set;
-    return true;
-  }
-
-  Bool get(Int i) const {
-    return column_->get(record_set_->get(i).row_id);
-  }
-
- private:
-  const BoolColumn *column_;
-  const RecordSet *record_set_;
-};
-
-class ExpressionIntColumnNode : public ExpressionColumnNode {
- public:
-  ExpressionIntColumnNode(const IntColumn *column)
-      : ExpressionColumnNode(),
-        column_(column),
-        record_set_(nullptr) {}
-  ~ExpressionIntColumnNode() {}
-
-  DataType data_type() const {
-    return column_->data_type();
-  }
-
-  bool evaluate(Error *error, const RecordSet &record_set) {
-    record_set_ = &record_set;
-    return true;
-  }
-
-  Int get(Int i) const {
-    return column_->get(record_set_->get(i).row_id);
-  }
-
- private:
-  const IntColumn *column_;
-  const RecordSet *record_set_;
-};
-
-// -- ExpressionOperatorNode --
-
-// TODO: 演算子の実装はどうしても長くなるので，別ファイルに移行すべきかもしれません．
-
-// TODO: ExpressionOperatorNode<T> （T: 評価結果のデータ型）に data_type と
-//       バッファを持たせてインタフェースを統一しないと，再帰的な組み合わせが発生します．
-
-class ExpressionOperatorNode : public ExpressionNode {
- public:
-  ExpressionOperatorNode() : ExpressionNode() {}
-  virtual ~ExpressionOperatorNode() {}
-
-  ExpressionNodeType node_type() const {
-    return EXPRESSION_OPERATOR_NODE;
-  }
-
-  virtual OperatorType operator_type() const = 0;
-};
+// -- OperatorNode --
 
 template <typename T, typename U>
-class ExpressionEqualOperatorNode : public ExpressionOperatorNode {
- public:
-  ExpressionEqualOperatorNode() : ExpressionOperatorNode() {}
-  virtual ~ExpressionEqualOperatorNode() {}
+struct Equal {
+  using Arg1 = T;
+  using Arg2 = U;
+  using ResultType = Bool;
+  Bool operator()(Arg1 lhs, Arg2 rhs) const {
+    return lhs == rhs;
+  };
+};
 
-  DataType data_type() const {
-    return BOOL_DATA;
-  }
-  OperatorType operator_type() const {
-    return EQUAL_OPERATOR;
+template <typename Op>
+class BinaryNode : public Node<Bool> {
+ public:
+  using Arg1 = typename Op::Arg1;
+  using Arg2 = typename Op::Arg2;
+
+  BinaryNode(Op op,
+             unique_ptr<ExpressionNode> &&lhs,
+             unique_ptr<ExpressionNode> &&rhs)
+      : Node<typename Op::ResultType>(),
+        operator_(op),
+        lhs_(static_cast<Node<Arg1> *>(lhs.release())),
+        rhs_(static_cast<Node<Arg2> *>(rhs.release())) {}
+  virtual ~BinaryNode() {}
+
+  NodeType node_type() const {
+    return OPERATOR_NODE;
   }
 
   bool evaluate(Error *error, const RecordSet &record_set) {
-    // TODO: Not supported yet.
-    GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
-    return false;
-  }
-
-  Int get(Int i) const {
-    return values_[i];
+    try {
+      this->values_.resize(record_set.size());
+    } catch (...) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+      return false;
+    }
+    if (!lhs_->evaluate(error, record_set) ||
+        !rhs_->evaluate(error, record_set)) {
+      return false;
+    }
+    for (Int i = 0; i < record_set.size(); ++i) {
+      this->values_[i] = operator_(lhs_->get(i), rhs_->get(i));
+    }
+    return true;
   }
 
  private:
-  unique_ptr<T> lhs_;
-  unique_ptr<U> rhs_;
-  std::vector<Bool> values_;
+  Op operator_;
+  unique_ptr<Node<Arg1>> lhs_;
+  unique_ptr<Node<Arg2>> rhs_;
 };
+
+}  // namespace
 
 // -- Expression --
 
 unique_ptr<Expression> Expression::create(Error *error,
+                                          const Table *table,
                                           unique_ptr<ExpressionNode> &&root) {
-  // TODO: Not supported yet.
-  GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
-  return nullptr;
+  unique_ptr<Expression> expression(
+      new (nothrow) Expression(table, std::move(root)));
+  if (!expression) {
+    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    return nullptr;
+  }
+  return expression;
 }
 
 Expression::~Expression() {}
@@ -307,12 +291,10 @@ DataType Expression::data_type() const {
 }
 
 bool Expression::filter(Error *error, RecordSet *record_set) {
-  // TODO
-  GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
-  return false;
+  return root_->filter(error, record_set);
 }
 
-Expression::Expression(Table *table, unique_ptr<ExpressionNode> &&root)
+Expression::Expression(const Table *table, unique_ptr<ExpressionNode> &&root)
     : table_(table),
       root_(std::move(root)) {}
 
@@ -338,16 +320,15 @@ bool ExpressionBuilder::push_datum(Error *error, const Datum &datum) {
     GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
     return false;
   }
-  // TODO: ExpressionDatumNode::create() should be provided to get error
-  //       information.
-  unique_ptr<ExpressionDatumNode> node;
+  // TODO: DatumNode::create() should be provided to get error information.
+  unique_ptr<ExpressionNode> node;
   switch (datum.type()) {
     case BOOL_DATA: {
-      node.reset(new (nothrow) ExpressionBoolDatumNode(datum.force_bool()));
+      node.reset(new (nothrow) DatumNode<Bool>(datum.force_bool()));
       break;
     }
     case INT_DATA: {
-      node.reset(new (nothrow) ExpressionIntDatumNode(datum.force_int()));
+      node.reset(new (nothrow) DatumNode<Int>(datum.force_int()));
       break;
     }
     default: {
@@ -373,25 +354,22 @@ bool ExpressionBuilder::push_column(Error *error, String name) {
   }
   unique_ptr<ExpressionNode> node;
   if (name == "_id") {
-    node.reset(new (nothrow) ExpressionRowIDNode());
+    node.reset(new (nothrow) RowIDNode());
   } else if (name == "_score") {
-    node.reset(new (nothrow) ExpressionScoreNode());
+    node.reset(new (nothrow) ScoreNode());
   } else {
     Column *column = table_->find_column(error, name);
     if (!column) {
       return false;
     }
-    // TODO: The following switch should be done in
-    //       ExpressionColumnNode::create().
+    // TODO: The following switch should be done in ColumnNode::create() or ...
     switch (column->data_type()) {
       case BOOL_DATA: {
-        node.reset(new (nothrow) ExpressionBoolColumnNode(
-            static_cast<BoolColumn *>(column)));
+        node.reset(new (nothrow) ColumnNode<Bool>(column));
         break;
       }
       case INT_DATA: {
-        node.reset(new (nothrow) ExpressionIntColumnNode(
-            static_cast<IntColumn *>(column)));
+        node.reset(new (nothrow) ColumnNode<Int>(column));
         break;
       }
       default: {
@@ -405,6 +383,7 @@ bool ExpressionBuilder::push_column(Error *error, String name) {
     GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
     return false;
   }
+  stack_.push_back(std::move(node));
   return true;
 }
 
@@ -418,15 +397,38 @@ bool ExpressionBuilder::push_operator(Error *error,
         GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Not enough operands");
         return false;
       }
-      if (stack_[stack_.size() - 1]->data_type() !=
-          stack_[stack_.size() - 2]->data_type()) {
+      auto &lhs = stack_[stack_.size() - 2];
+      auto &rhs = stack_[stack_.size() - 1];
+      if (lhs->data_type() != rhs->data_type()) {
         // TODO: Define a better error code.
         GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Type conflict");
         return false;
       }
-      // TODO: Not supported yet.
-      GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
-      return false;
+      switch (lhs->data_type()) {
+        case BOOL_DATA: {
+          Equal<Bool, Bool> equal;
+          node.reset(new (nothrow) BinaryNode<decltype(equal)>(
+              equal, std::move(lhs), std::move(rhs)));
+          break;
+        }
+        case INT_DATA: {
+          Equal<Int, Int> equal;
+          node.reset(new (nothrow) BinaryNode<decltype(equal)>(
+              equal, std::move(lhs), std::move(rhs)));
+          break;
+        }
+        default: {
+          GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
+          return false;
+        }
+      }
+      if (!node) {
+        GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+        return false;
+      }
+      stack_.resize(stack_.size() - 2);
+      stack_.push_back(std::move(node));
+      return true;
     }
     case NOT_EQUAL_OPERATOR: {
       // TODO: Not supported yet.
@@ -439,12 +441,6 @@ bool ExpressionBuilder::push_operator(Error *error,
       return false;
     }
   }
-  if (!node) {
-    // TODO: Error information should be set in the above switch.
-    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
-    return false;
-  }
-  return true;
 }
 
 void ExpressionBuilder::clear() {
@@ -458,7 +454,7 @@ unique_ptr<Expression> ExpressionBuilder::release(Error *error) {
   }
   unique_ptr<ExpressionNode> root_node = std::move(stack_[0]);
   stack_.clear();
-  return Expression::create(error, std::move(root_node));
+  return Expression::create(error, table_, std::move(root_node));
 }
 
 ExpressionBuilder::ExpressionBuilder(const Table *table) : table_(table) {}

@@ -294,6 +294,33 @@ class RowRef {
   Int row_id_;  // Row ID number.
 };
 
+// Type information.
+template <typename T> struct TypeTraits;
+template <> struct TypeTraits <Bool> {
+  static DataType data_type() {
+    return BOOL_DATA;
+  }
+  static Bool default_value() {
+    return false;
+  }
+};
+template <> struct TypeTraits <Int> {
+  static DataType data_type() {
+    return INT_DATA;
+  }
+  static Int default_value() {
+    return 0;
+  }
+};
+template <> struct TypeTraits <Float> {
+  static DataType data_type() {
+    return FLOAT_DATA;
+  }
+  static Float default_value() {
+    return 0.0;
+  }
+};
+
 // Zero is reserved for representing a null reference.
 constexpr Int NULL_ROW_ID = 0;
 constexpr Int MIN_ROW_ID  = 1;
