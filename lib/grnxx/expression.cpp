@@ -216,6 +216,28 @@ class ColumnNode : public Node<T> {
 
 // -- OperatorNode --
 
+struct LogicalAnd {
+  struct Functor {
+    using Arg1 = Bool;
+    using Arg2 = Bool;
+    using Result = Bool;
+    Bool operator()(Arg1 lhs, Arg2 rhs) const {
+      return lhs && rhs;
+    };
+  };
+};
+
+struct LogicalOr {
+  struct Functor {
+    using Arg1 = Bool;
+    using Arg2 = Bool;
+    using Result = Bool;
+    Bool operator()(Arg1 lhs, Arg2 rhs) const {
+      return lhs || rhs;
+    };
+  };
+};
+
 struct Equal {
   template <typename T>
   struct Functor {
@@ -452,6 +474,12 @@ bool ExpressionBuilder::push_column(Error *error, String name) {
 bool ExpressionBuilder::push_operator(Error *error,
                                       OperatorType operator_type) {
   switch (operator_type) {
+    case LOGICAL_AND_OPERATOR: {
+      return push_logical_operator<LogicalAnd>(error);
+    }
+    case LOGICAL_OR_OPERATOR: {
+      return push_logical_operator<LogicalOr>(error);
+    }
     case EQUAL_OPERATOR: {
       return push_equality_operator<Equal>(error);
     }
@@ -493,6 +521,34 @@ unique_ptr<Expression> ExpressionBuilder::release(Error *error) {
 }
 
 ExpressionBuilder::ExpressionBuilder(const Table *table) : table_(table) {}
+
+template <typename T>
+bool ExpressionBuilder::push_logical_operator(Error *error) {
+  if (stack_.size() < 2) {
+    // TODO: Define a better error code.
+    GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Not enough operands");
+    return false;
+  }
+  auto &lhs = stack_[stack_.size() - 2];
+  auto &rhs = stack_[stack_.size() - 1];
+  if ((lhs->data_type() != BOOL_DATA) ||
+      (rhs->data_type() != BOOL_DATA)) {
+    // TODO: Define a better error code.
+    GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Wrong type");
+    return false;
+  }
+  unique_ptr<ExpressionNode> node;
+  typename T::Functor functor;
+  node.reset(new (nothrow) BinaryNode<decltype(functor)>(
+      functor, std::move(lhs), std::move(rhs)));
+  if (!node) {
+    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    return false;
+  }
+  stack_.pop_back();
+  stack_.back() = std::move(node);
+  return true;
+}
 
 template <typename T>
 bool ExpressionBuilder::push_equality_operator(Error *error) {

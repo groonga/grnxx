@@ -12,6 +12,10 @@ enum OperatorType {
 
   // -- Binary operators --
 
+  // Logical operators.
+  LOGICAL_AND_OPERATOR,
+  LOGICAL_OR_OPERATOR,
+
   // Equality operators.
   EQUAL_OPERATOR,
   NOT_EQUAL_OPERATOR,
@@ -122,6 +126,9 @@ class ExpressionBuilder {
 
   explicit ExpressionBuilder(const Table *table);
 
+  // Push an operator && or ||.
+  template <typename T>
+  bool push_logical_operator(Error *error);
   // Push an operator == or !=.
   template <typename T>
   bool push_equality_operator(Error *error);
