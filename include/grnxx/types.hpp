@@ -320,6 +320,30 @@ template <> struct TypeTraits <Float> {
     return 0.0;
   }
 };
+template <> struct TypeTraits <Time> {
+  static DataType data_type() {
+    return TIME_DATA;
+  }
+  static Time default_value() {
+    return Time(0);
+  }
+};
+template <> struct TypeTraits <GeoPoint> {
+  static DataType data_type() {
+    return GEO_POINT_DATA;
+  }
+  static GeoPoint default_value() {
+    return GeoPoint(0, 0);
+  }
+};
+template <> struct TypeTraits <Text> {
+  static DataType data_type() {
+    return TEXT_DATA;
+  }
+  static Text default_value() {
+    return Text("", 0);
+  }
+};
 
 // Zero is reserved for representing a null reference.
 constexpr Int NULL_ROW_ID = 0;
