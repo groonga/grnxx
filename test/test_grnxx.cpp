@@ -203,7 +203,7 @@ void test_table() {
   cursor = table->create_cursor(&error, cursor_options);
   assert(cursor);
 
-  assert(cursor->read(&error, 100, &record_set) == 2);
+  assert(cursor->read_all(&error, &record_set) == 2);
   assert(record_set.size() == 2);
   assert(record_set.get(0).row_id == 3);
   assert(record_set.get(1).row_id == 1);
@@ -338,7 +338,7 @@ void test_expression() {
   grnxx::RecordSet record_set;
   auto cursor = table->create_cursor(&error);
   assert(cursor);
-  assert(cursor->read(&error, 2, &record_set) == 2);
+  assert(cursor->read_all(&error, &record_set) == 2);
 
   assert(expression->filter(&error, &record_set));
   assert(record_set.size() == 2);
@@ -366,7 +366,7 @@ void test_expression() {
   record_set.clear();
   cursor = table->create_cursor(&error);
   assert(cursor);
-  assert(cursor->read(&error, 2, &record_set) == 2);
+  assert(cursor->read_all(&error, &record_set) == 2);
 
   // "IntColumn" という名前のカラムに格納されている値が 123 のときだけ
   // 真になる式を作成する．
@@ -384,7 +384,7 @@ void test_expression() {
   record_set.clear();
   cursor = table->create_cursor(&error);
   assert(cursor);
-  assert(cursor->read(&error, 2, &record_set) == 2);
+  assert(cursor->read_all(&error, &record_set) == 2);
 
   // "IntColumn" という名前のカラムに格納されている値が 123 でないときだけ
   // 真になる式を作成する．
@@ -402,7 +402,7 @@ void test_expression() {
   record_set.clear();
   cursor = table->create_cursor(&error);
   assert(cursor);
-  assert(cursor->read(&error, 2, &record_set) == 2);
+  assert(cursor->read_all(&error, &record_set) == 2);
 
   // 大小関係による比較を試す．
   assert(builder->push_column(&error, "IntColumn"));
@@ -419,7 +419,7 @@ void test_expression() {
   record_set.clear();
   cursor = table->create_cursor(&error);
   assert(cursor);
-  assert(cursor->read(&error, 2, &record_set) == 2);
+  assert(cursor->read_all(&error, &record_set) == 2);
 
   // 大小関係による比較を試す．
   assert(builder->push_column(&error, "IntColumn"));
@@ -436,7 +436,7 @@ void test_expression() {
   record_set.clear();
   cursor = table->create_cursor(&error);
   assert(cursor);
-  assert(cursor->read(&error, 2, &record_set) == 2);
+  assert(cursor->read_all(&error, &record_set) == 2);
 
   // 論理演算を試す．
   assert(builder->push_column(&error, "FloatColumn"));
@@ -455,7 +455,7 @@ void test_expression() {
   record_set.clear();
   cursor = table->create_cursor(&error);
   assert(cursor);
-  assert(cursor->read(&error, 2, &record_set) == 2);
+  assert(cursor->read_all(&error, &record_set) == 2);
 
   // ビット論理積を試す．
   assert(builder->push_column(&error, "IntColumn"));
@@ -474,7 +474,7 @@ void test_expression() {
   record_set.clear();
   cursor = table->create_cursor(&error);
   assert(cursor);
-  assert(cursor->read(&error, 2, &record_set) == 2);
+  assert(cursor->read_all(&error, &record_set) == 2);
 
   // ビット論理和を試す．
   assert(builder->push_column(&error, "IntColumn"));
@@ -493,7 +493,7 @@ void test_expression() {
   record_set.clear();
   cursor = table->create_cursor(&error);
   assert(cursor);
-  assert(cursor->read(&error, 2, &record_set) == 2);
+  assert(cursor->read_all(&error, &record_set) == 2);
 
   // ビット排他的論理和を試す．
   assert(builder->push_column(&error, "IntColumn"));
