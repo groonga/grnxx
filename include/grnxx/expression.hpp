@@ -52,6 +52,11 @@ class Expression {
   // Evaluates the expression for the given record set and removes records
   // whose evaluation results are false.
   //
+  // TODO: If there are many records, the filter should be applied per block.
+  //       The best block size is not clear.
+  //
+  // TODO: An interface to apply a filter to a part of "*record_set" is needed.
+  //
   // Returns true on success.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
