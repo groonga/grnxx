@@ -95,6 +95,7 @@ void test_table() {
   assert(table->name() == "Table");
   assert(table->num_columns() == 0);
   assert(!table->key_column());
+  assert(table->num_rows() == 0);
   assert(table->max_row_id() == 0);
 
   // Bool を格納する "Column_1" という名前のカラムを作成する．
@@ -149,6 +150,7 @@ void test_table() {
   assert(table->insert_row(&error, grnxx::NULL_ROW_ID,
                            grnxx::Datum(), &row_id));
   assert(row_id == 1);
+  assert(table->num_rows() == 1);
   assert(table->max_row_id() == 1);
   assert(!table->test_row(&error, 0));
   assert(table->test_row(&error, 1));
@@ -160,6 +162,7 @@ void test_table() {
   assert(table->insert_row(&error, grnxx::NULL_ROW_ID,
                            grnxx::Datum(), &row_id));
   assert(row_id == 3);
+  assert(table->num_rows() == 3);
   assert(table->max_row_id() == 3);
   assert(!table->test_row(&error, 0));
   assert(table->test_row(&error, 1));
@@ -169,6 +172,7 @@ void test_table() {
 
   // 2 番目の行を削除する．
   assert(table->remove_row(&error, 2));
+  assert(table->num_rows() == 2);
   assert(table->max_row_id() == 3);
   assert(!table->test_row(&error, 0));
   assert(table->test_row(&error, 1));
