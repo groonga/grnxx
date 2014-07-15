@@ -107,12 +107,6 @@ class Table;
 class Column;
 class Index;
 
-// Database persistent object option types.
-struct DBOptions;
-struct TableOptions;
-struct ColumnOptions;
-struct IndexOptions;
-
 // Database built-in data types.
 enum DataType {
   INVALID_DATA,
@@ -361,6 +355,36 @@ enum OrderType {
 
   // The reverse order of REGULAR_ORDER.
   REVERSE_ORDER
+};
+
+// Database persistent object option types.
+struct DBOptions {
+  DBOptions();
+};
+
+struct TableOptions {
+  TableOptions();
+};
+
+struct ColumnOptions {
+  ColumnOptions();
+};
+
+struct IndexOptions {
+  IndexOptions();
+};
+
+struct CursorOptions {
+  // The first "offset" records are skipped (default: 0).
+  Int offset;
+
+  // At most "limit" records are read (default: numeric_limits<Int>::max()).
+  Int limit;
+
+  // The order of records (default: REGULAR_ORDER).
+  OrderType order_type;
+
+  CursorOptions();
 };
 
 // Database temporary object types.

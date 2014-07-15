@@ -3,14 +3,10 @@
 
 #include <vector>
 
+#include "grnxx/name.hpp"
 #include "grnxx/types.hpp"
 
-#include "grnxx/name.hpp"
-
 namespace grnxx {
-
-struct TableOptions {
-};
 
 class Table {
  public:

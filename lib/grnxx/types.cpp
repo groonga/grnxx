@@ -38,4 +38,17 @@ void GeoPoint::fix(Int *latitude, Int *longitude) {
   }
 }
 
+DBOptions::DBOptions() {}
+
+TableOptions::TableOptions() {}
+
+ColumnOptions::ColumnOptions() {}
+
+IndexOptions::IndexOptions() {}
+
+CursorOptions::CursorOptions()
+    : offset(0),
+      limit(numeric_limits<Int>::max()),
+      order_type(REGULAR_ORDER) {}
+
 }  // namespace grnxx

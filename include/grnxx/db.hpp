@@ -7,9 +7,6 @@
 
 namespace grnxx {
 
-struct DBOptions {
-};
-
 class DB {
  public:
   ~DB();

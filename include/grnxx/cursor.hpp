@@ -5,20 +5,6 @@
 
 namespace grnxx {
 
-struct CursorOptions {
-  // The first "offset" records are skipped.
-  Int offset;
-
-  // At most "limit" records are read.
-  Int limit;
-
-  // The order of records.
-  OrderType order_type;
-
-  // Initialize the options.
-  CursorOptions();
-};
-
 class Cursor {
  public:
   virtual ~Cursor() {}
