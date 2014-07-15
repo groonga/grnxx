@@ -33,12 +33,12 @@ void test_db() {
   grnxx::Error error;
 
   // デフォルトの設定で空のデータベースを作成する．
-  auto db = grnxx::open_db(&error, "", grnxx::DBOptions());
+  auto db = grnxx::open_db(&error, "");
   assert(db);
   assert(db->num_tables() == 0);
 
   // "Table_1" という名前のテーブルを作成する．
-  auto table = db->create_table(&error, "Table_1", grnxx::TableOptions());
+  auto table = db->create_table(&error, "Table_1");
   assert(table);
   assert(table->name() == "Table_1");
   assert(db->num_tables() == 1);
@@ -47,11 +47,11 @@ void test_db() {
   assert(db->find_table(&error, "Table_1") == table);
 
   // 同じ名前でテーブルを作成しようとすると失敗する．
-  assert(!db->create_table(&error, "Table_1", grnxx::TableOptions()));
+  assert(!db->create_table(&error, "Table_1"));
 
   // "Table_2", "Table_3" という名前のテーブルを作成する．
-  assert(db->create_table(&error, "Table_2", grnxx::TableOptions()));
-  assert(db->create_table(&error, "Table_3", grnxx::TableOptions()));
+  assert(db->create_table(&error, "Table_2"));
+  assert(db->create_table(&error, "Table_3"));
   assert(db->num_tables() == 3);
 
   // "Table_2" という名前のテーブルを破棄する．
@@ -62,7 +62,7 @@ void test_db() {
   assert(db->get_table(1)->name() == "Table_3");
 
   // "Table_2" という名前のテーブルを作成しなおす．
-  assert(db->create_table(&error, "Table_2", grnxx::TableOptions()));
+  assert(db->create_table(&error, "Table_2"));
 
   // "Table_3" を "Table_2" の後ろに移動する．
   assert(db->reorder_table(&error, "Table_3", "Table_2"));
@@ -86,10 +86,10 @@ void test_db() {
 void test_table() {
   grnxx::Error error;
 
-  auto db = grnxx::open_db(&error, "", grnxx::DBOptions());
+  auto db = grnxx::open_db(&error, "");
   assert(db);
 
-  auto table = db->create_table(&error, "Table", grnxx::TableOptions());
+  auto table = db->create_table(&error, "Table");
   assert(table);
   assert(table->db() == db.get());
   assert(table->name() == "Table");
@@ -98,8 +98,7 @@ void test_table() {
   assert(table->max_row_id() == 0);
 
   // Bool を格納する "Column_1" という名前のカラムを作成する．
-  auto column = table->create_column(&error, "Column_1", grnxx::BOOL_DATA,
-                                     grnxx::ColumnOptions());
+  auto column = table->create_column(&error, "Column_1", grnxx::BOOL_DATA);
   assert(column);
   assert(column->name() == "Column_1");
   assert(table->num_columns() == 1);
@@ -108,14 +107,11 @@ void test_table() {
   assert(table->find_column(&error, "Column_1") == column);
 
   // 同じ名前でカラムを作成しようとすると失敗する．
-  assert(!table->create_column(&error, "Column_1", grnxx::BOOL_DATA,
-                               grnxx::ColumnOptions()));
+  assert(!table->create_column(&error, "Column_1", grnxx::BOOL_DATA));
 
   // "Column_2", "Column_3" という名前のカラムを作成する．
-  assert(table->create_column(&error, "Column_2", grnxx::BOOL_DATA,
-                              grnxx::ColumnOptions()));
-  assert(table->create_column(&error, "Column_3", grnxx::BOOL_DATA,
-                              grnxx::ColumnOptions()));
+  assert(table->create_column(&error, "Column_2", grnxx::BOOL_DATA));
+  assert(table->create_column(&error, "Column_3", grnxx::BOOL_DATA));
   assert(table->num_columns() == 3);
 
   // "Column_2" という名前のカラムを破棄する．
@@ -126,8 +122,7 @@ void test_table() {
   assert(table->get_column(1)->name() == "Column_3");
 
   // "Column_2" という名前のカラムを作成しなおす．
-  assert(table->create_column(&error, "Column_2", grnxx::BOOL_DATA,
-                              grnxx::ColumnOptions()));
+  assert(table->create_column(&error, "Column_2", grnxx::BOOL_DATA));
 
   // "Column_3" を "Column_2" の後ろに移動する．
   assert(table->reorder_column(&error, "Column_3", "Column_2"));
@@ -184,8 +179,7 @@ void test_table() {
   // TODO: find_row().
 
   // デフォルト（行 ID 昇順）のカーソルを作成する．
-  grnxx::CursorOptions cursor_options;
-  auto cursor = table->create_cursor(&error, cursor_options);
+  auto cursor = table->create_cursor(&error);
   assert(cursor);
 
   // カーソルからレコードを読み出す．
@@ -204,6 +198,7 @@ void test_table() {
   record_set.clear();
 
   // 行 ID 降順のカーソルを作成する．
+  grnxx::CursorOptions cursor_options;
   cursor_options.order_type = grnxx::REVERSE_ORDER;
   cursor = table->create_cursor(&error, cursor_options);
   assert(cursor);
@@ -217,10 +212,10 @@ void test_table() {
 void test_column() {
   grnxx::Error error;
 
-  auto db = grnxx::open_db(&error, "", grnxx::DBOptions());
+  auto db = grnxx::open_db(&error, "");
   assert(db);
 
-  auto table = db->create_table(&error, "Table", grnxx::TableOptions());
+  auto table = db->create_table(&error, "Table");
   assert(table);
 
   // 最初の行を追加する．
@@ -230,8 +225,7 @@ void test_column() {
 
   // Bool を格納する "BoolColumn" という名前のカラムを作成する．
   auto bool_column = table->create_column(&error, "BoolColumn",
-                                          grnxx::BOOL_DATA,
-                                          grnxx::ColumnOptions());
+                                          grnxx::BOOL_DATA);
   assert(bool_column);
   assert(bool_column->table() == table);
   assert(bool_column->name() == "BoolColumn");
@@ -241,8 +235,7 @@ void test_column() {
 
   // Int を格納する "IntColumn" という名前のカラムを作成する．
   auto int_column = table->create_column(&error, "IntColumn",
-                                         grnxx::INT_DATA,
-                                         grnxx::ColumnOptions());
+                                         grnxx::INT_DATA);
   assert(int_column);
   assert(int_column->table() == table);
   assert(int_column->name() == "IntColumn");
@@ -252,8 +245,7 @@ void test_column() {
 
   // Float を格納する "FloatColumn" という名前のカラムを作成する．
   auto float_column = table->create_column(&error, "FloatColumn",
-                                           grnxx::FLOAT_DATA,
-                                           grnxx::ColumnOptions());
+                                           grnxx::FLOAT_DATA);
   assert(float_column);
   assert(float_column->table() == table);
   assert(float_column->name() == "FloatColumn");
@@ -297,25 +289,22 @@ void test_column() {
 void test_expression() {
   grnxx::Error error;
 
-  auto db = grnxx::open_db(&error, "", grnxx::DBOptions());
+  auto db = grnxx::open_db(&error, "");
   assert(db);
 
-  auto table = db->create_table(&error, "Table", grnxx::TableOptions());
+  auto table = db->create_table(&error, "Table");
   assert(table);
 
   auto bool_column = table->create_column(&error, "BoolColumn",
-                                          grnxx::BOOL_DATA,
-                                          grnxx::ColumnOptions());
+                                          grnxx::BOOL_DATA);
   assert(bool_column);
 
   auto int_column = table->create_column(&error, "IntColumn",
-                                         grnxx::INT_DATA,
-                                         grnxx::ColumnOptions());
+                                         grnxx::INT_DATA);
   assert(int_column);
 
   auto float_column = table->create_column(&error, "FloatColumn",
-                                           grnxx::FLOAT_DATA,
-                                           grnxx::ColumnOptions());
+                                           grnxx::FLOAT_DATA);
   assert(float_column);
 
   // 下記のデータを格納する．
@@ -347,7 +336,7 @@ void test_expression() {
 
   // 恒真式のフィルタにかけても変化しないことを確認する．
   grnxx::RecordSet record_set;
-  auto cursor = table->create_cursor(&error, grnxx::CursorOptions());
+  auto cursor = table->create_cursor(&error);
   assert(cursor);
   assert(cursor->read(&error, 2, &record_set) == 2);
 
@@ -375,7 +364,7 @@ void test_expression() {
   assert(record_set.get(0).row_id == 2);
 
   record_set.clear();
-  cursor = table->create_cursor(&error, grnxx::CursorOptions());
+  cursor = table->create_cursor(&error);
   assert(cursor);
   assert(cursor->read(&error, 2, &record_set) == 2);
 
@@ -393,7 +382,7 @@ void test_expression() {
   assert(record_set.get(0).row_id == 1);
 
   record_set.clear();
-  cursor = table->create_cursor(&error, grnxx::CursorOptions());
+  cursor = table->create_cursor(&error);
   assert(cursor);
   assert(cursor->read(&error, 2, &record_set) == 2);
 
@@ -411,7 +400,7 @@ void test_expression() {
   assert(record_set.get(0).row_id == 2);
 
   record_set.clear();
-  cursor = table->create_cursor(&error, grnxx::CursorOptions());
+  cursor = table->create_cursor(&error);
   assert(cursor);
   assert(cursor->read(&error, 2, &record_set) == 2);
 
@@ -428,7 +417,7 @@ void test_expression() {
   assert(record_set.get(0).row_id == 1);
 
   record_set.clear();
-  cursor = table->create_cursor(&error, grnxx::CursorOptions());
+  cursor = table->create_cursor(&error);
   assert(cursor);
   assert(cursor->read(&error, 2, &record_set) == 2);
 
@@ -445,7 +434,7 @@ void test_expression() {
   assert(record_set.get(0).row_id == 2);
 
   record_set.clear();
-  cursor = table->create_cursor(&error, grnxx::CursorOptions());
+  cursor = table->create_cursor(&error);
   assert(cursor);
   assert(cursor->read(&error, 2, &record_set) == 2);
 
