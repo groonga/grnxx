@@ -337,6 +337,7 @@ bool Table::insert_row(Error *error,
     max_row_id_ = next_row_id;
   }
   set_bit(next_row_id);
+  ++num_rows_;
   *result_row_id = next_row_id;
   return true;
 }
@@ -350,6 +351,7 @@ bool Table::remove_row(Error *error, Int row_id) {
     columns_[column_id]->unset(row_id);
   }
   unset_bit(row_id);
+  --num_rows_;
   return true;
 }
 
@@ -426,6 +428,7 @@ Table::Table()
       name_(),
       columns_(),
       key_column_(nullptr),
+      num_rows_(0),
       max_row_id_(MIN_ROW_ID - 1),
       bitmap_() {}
 

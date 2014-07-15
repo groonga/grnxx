@@ -28,6 +28,10 @@ class Table {
   Column *key_column() const {
     return key_column_;
   }
+  // Return the number of rows.
+  Int num_rows() const {
+    return num_rows_;
+  }
   // Return the maximum row ID.
   Int max_row_id() const {
     return max_row_id_;
@@ -200,6 +204,7 @@ class Table {
   Name name_;
   std::vector<unique_ptr<Column>> columns_;
   Column *key_column_;
+  Int num_rows_;
   Int max_row_id_;
   std::vector<uint64_t> bitmap_;
 
