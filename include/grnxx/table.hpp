@@ -41,7 +41,7 @@ class Table {
   Column *create_column(Error *error,
                         String name,
                         DataType data_type,
-                        const ColumnOptions &options);
+                        const ColumnOptions &options = ColumnOptions());
 
   // Remove a column named "name".
   //
@@ -163,7 +163,7 @@ class Table {
   // "error" != nullptr.
   unique_ptr<Cursor> create_cursor(
       Error *error,
-      const CursorOptions &options) const;
+      const CursorOptions &options = CursorOptions()) const;
 
   // Create an object to build ordering information.
   //
@@ -193,7 +193,7 @@ class Table {
 //  unique_ptr<Grouper> create_grouper(
 //      Error *error,
 //      unique_ptr<Expression> &&expression,
-//      const GrouperOptions &options) const;
+//      const GrouperOptions &options = GrouperOptions()) const;
 
  private:
   DB *db_;
@@ -208,10 +208,11 @@ class Table {
   // Returns a pointer to the table on success.
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
-  static unique_ptr<Table> create(Error *error,
-                                  DB *db,
-                                  String name,
-                                  const TableOptions &options);
+  static unique_ptr<Table> create(
+      Error *error,
+      DB *db,
+      String name,
+      const TableOptions &options = TableOptions());
 
   Table();
 

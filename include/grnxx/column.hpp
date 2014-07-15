@@ -44,10 +44,11 @@ class Column {
   // Returns a pointer to the index on success.
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
-  virtual Index *create_index(Error *error,
-                              String name,
-                              IndexType index_type,
-                              const IndexOptions &index_options);
+  virtual Index *create_index(
+      Error *error,
+      String name,
+      IndexType index_type,
+      const IndexOptions &index_options = IndexOptions());
 
   // Remove an index named "name".
   //
@@ -124,7 +125,7 @@ class Column {
   // "error" != nullptr.
   virtual unique_ptr<Cursor> create_cursor(
       Error *error,
-      const CursorOptions &options) const;
+      const CursorOptions &options = CursorOptions()) const;
 
  protected:
   Table *table_;
@@ -144,7 +145,7 @@ class Column {
                        Table *table,
                        String name,
                        DataType data_type,
-                       const ColumnOptions &options);
+                       const ColumnOptions &options = ColumnOptions());
 
  private:
   // Create a new column.
@@ -152,11 +153,12 @@ class Column {
   // Returns a pointer to the column on success.
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
-  static unique_ptr<Column> create(Error *error,
-                                   Table *table,
-                                   String name,
-                                   DataType data_type,
-                                   const ColumnOptions &options);
+  static unique_ptr<Column> create(
+      Error *error,
+      Table *table,
+      String name,
+      DataType data_type,
+      const ColumnOptions &options = ColumnOptions());
 
   // Change the column name.
   //

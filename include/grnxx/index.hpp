@@ -30,7 +30,7 @@ class Index {
   // "error" != nullptr.
   virtual unique_ptr<Cursor> create_cursor(
       Error *error,
-      const CursorOptions &options) const;
+      const CursorOptions &options = CursorOptions()) const;
 
  private:
   Column *column_;
@@ -42,11 +42,12 @@ class Index {
   // Returns a pointer to the index on success.
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
-  static unique_ptr<Index> create(Error *error,
-                                  Column *column,
-                                  String name,
-                                  IndexType type,
-                                  const IndexOptions &options);
+  static unique_ptr<Index> create(
+      Error *error,
+      Column *column,
+      String name,
+      IndexType type,
+      const IndexOptions &options = IndexOptions());
 
   Index();
 

@@ -23,7 +23,7 @@ class DB {
   // "error" != nullptr.
   Table *create_table(Error *error,
                       String name,
-                      const TableOptions &options);
+                      const TableOptions &options = TableOptions());
 
   // Remove a table named "name".
   //
@@ -84,7 +84,7 @@ class DB {
   // "error" != nullptr.
   bool save(Error *error,
             String path,
-            const DBOptions &options) const;
+            const DBOptions &options = DBOptions()) const;
 
  private:
   std::vector<unique_ptr<Table>> tables_;
@@ -114,14 +114,16 @@ class DB {
 // "error" != nullptr.
 unique_ptr<DB> open_db(Error *error,
                        String path,
-                       const DBOptions &options);
+                       const DBOptions &options = DBOptions());
 
 // Remove a database identified by "path".
 //
 // Returns true on success.
 // On failure, returns false and stores error information into "*error" if
 // "error" != nullptr.
-bool remove_db(Error *error, String path, const DBOptions &options);
+bool remove_db(Error *error,
+               String path,
+               const DBOptions &options = DBOptions());
 
 }  // namespace grnxx
 
