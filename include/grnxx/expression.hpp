@@ -10,21 +10,51 @@ namespace grnxx {
 enum OperatorType {
   // -- Unary operators --
 
+//  LOGICAL_NOT_OPERATOR,  // For Bool.
+
+//  BITWISE_NOT_OPERATOR,  // For Int.
+
+//  POSITIVE_OPERATOR,  // For Int, Float.
+//  NEGATIVE_OPERATOR,  // For Int, Float.
+
+  // Typecast operators.
+//  BOOL_OPERATOR,
+//  INT_OPERATOR,
+//  FLOAT_OPERATOR,
+//  TIME_OPERATOR,
+//  GEO_POINT_OPERATOR,
+//  TEXT_OPERATOR,
+
   // -- Binary operators --
 
   // Logical operators.
-  LOGICAL_AND_OPERATOR,
-  LOGICAL_OR_OPERATOR,
+  LOGICAL_AND_OPERATOR,  // For Bool.
+  LOGICAL_OR_OPERATOR,   // For Bool.
 
   // Equality operators.
-  EQUAL_OPERATOR,
-  NOT_EQUAL_OPERATOR,
+  EQUAL_OPERATOR,      // For any types.
+  NOT_EQUAL_OPERATOR,  // For any types.
 
   // Comparison operators.
-  LESS_OPERATOR,
-  LESS_EQUAL_OPERATOR,
-  GREATER_OPERATOR,
-  GREATER_EQUAL_OPERATOR
+  LESS_OPERATOR,           // Int, Float, Time.
+  LESS_EQUAL_OPERATOR,     // Int, Float, Time.
+  GREATER_OPERATOR,        // Int, Float, Time.
+  GREATER_EQUAL_OPERATOR,  // Int, Float, Time.
+
+  // Bitwise operators.
+  BITWISE_AND_OPERATOR,  // For Bool, Int.
+  BITWISE_OR_OPERATOR,   // For Bool, Int.
+  BITWISE_XOR_OPERATOR,  // For Bool, Int.
+
+  // Arithmetic operators.
+//  PLUS_OPERATOR,            // For Int, Float.
+//  MINUS_OPERATOR,           // For Int, Float.
+//  DIVISION_OPERATOR,        // For Int, Float.
+//  MULTIPLICATION_OPERATOR,  // For Int, Float.
+//  MODULUS_OPERATOR,         // For Int.
+
+  // Array operators.
+//  SUBSCRIPT_OPERATOR,
 };
 
 class Expression {
@@ -140,6 +170,9 @@ class ExpressionBuilder {
   // Push an operator <, <=, >, or >=.
   template <typename T>
   bool push_comparison_operator(Error *error);
+  // Push an operator &, |, or ^.
+  template <typename T>
+  bool push_bitwise_operator(Error *error);
 };
 
 }  // namespace grnxx

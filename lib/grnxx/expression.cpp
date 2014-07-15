@@ -310,8 +310,44 @@ struct GreaterEqual {
   };
 };
 
+struct BitwiseAnd {
+  template <typename T>
+  struct Functor {
+    using Arg1 = T;
+    using Arg2 = T;
+    using Result = T;
+    T operator()(Arg1 lhs, Arg2 rhs) const {
+      return lhs & rhs;
+    };
+  };
+};
+
+struct BitwiseOr {
+  template <typename T>
+  struct Functor {
+    using Arg1 = T;
+    using Arg2 = T;
+    using Result = T;
+    T operator()(Arg1 lhs, Arg2 rhs) const {
+      return lhs | rhs;
+    };
+  };
+};
+
+struct BitwiseXor {
+  template <typename T>
+  struct Functor {
+    using Arg1 = T;
+    using Arg2 = T;
+    using Result = T;
+    T operator()(Arg1 lhs, Arg2 rhs) const {
+      return lhs ^ rhs;
+    };
+  };
+};
+
 template <typename Op>
-class BinaryNode : public Node<Bool> {
+class BinaryNode : public Node<typename Op::Result> {
  public:
   using Arg1 = typename Op::Arg1;
   using Arg2 = typename Op::Arg2;
@@ -522,6 +558,15 @@ bool ExpressionBuilder::push_operator(Error *error,
     case GREATER_EQUAL_OPERATOR: {
       return push_comparison_operator<GreaterEqual>(error);
     }
+    case BITWISE_AND_OPERATOR: {
+      return push_bitwise_operator<BitwiseAnd>(error);
+    }
+    case BITWISE_OR_OPERATOR: {
+      return push_bitwise_operator<BitwiseOr>(error);
+    }
+    case BITWISE_XOR_OPERATOR: {
+      return push_bitwise_operator<BitwiseXor>(error);
+    }
     default: {
       // TODO: Not supported yet.
       GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
@@ -665,6 +710,49 @@ bool ExpressionBuilder::push_comparison_operator(Error *error) {
     }
     case TIME_DATA: {
       typename T::template Functor<Time> functor;
+      node.reset(new (nothrow) BinaryNode<decltype(functor)>(
+          functor, std::move(lhs), std::move(rhs)));
+      break;
+    }
+    // TODO: Support other comparable types.
+    default: {
+      GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
+      return false;
+    }
+  }
+  if (!node) {
+    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    return false;
+  }
+  stack_.pop_back();
+  stack_.back() = std::move(node);
+  return true;
+}
+
+template <typename T>
+bool ExpressionBuilder::push_bitwise_operator(Error *error) {
+  if (stack_.size() < 2) {
+    // TODO: Define a better error code.
+    GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Not enough operands");
+    return false;
+  }
+  auto &lhs = stack_[stack_.size() - 2];
+  auto &rhs = stack_[stack_.size() - 1];
+  if (lhs->data_type() != rhs->data_type()) {
+    // TODO: Define a better error code.
+    GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Type conflict");
+    return false;
+  }
+  unique_ptr<ExpressionNode> node;
+  switch (lhs->data_type()) {
+    case BOOL_DATA: {
+      typename T::template Functor<Bool> functor;
+      node.reset(new (nothrow) BinaryNode<decltype(functor)>(
+          functor, std::move(lhs), std::move(rhs)));
+      break;
+    }
+    case INT_DATA: {
+      typename T::template Functor<Int> functor;
       node.reset(new (nothrow) BinaryNode<decltype(functor)>(
           functor, std::move(lhs), std::move(rhs)));
       break;
