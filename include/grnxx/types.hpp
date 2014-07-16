@@ -123,26 +123,29 @@ enum DataType {
   // Value: Double precision (64-bit) floating point number.
   // Default: 0.0.
   FLOAT_DATA,
-  // TODO
   // Type: Time.
   // Value: Microseconds since the Unix epoch (1970-01-01 00:00:00 UTC).
   // Default: The Unix epoch.
   TIME_DATA,
-  // TODO
   // Type: GeoPoint.
   // Value: Latitude-longitude in milliseconds.
   // Default: (0, 0).
   GEO_POINT_DATA,
+  // TODO: Not supported yet.
   // Type: String.
   // Value: Byte string.
   // Default: "".
   TEXT_DATA,
+  // TODO: Not supported yet.
   // Type: Reference.
   // Value: Reference to a row.
   // Default: NULL.
   ROW_REF_DATA,
 
-  // TODO
+  // TODO: Not supported yet.
+  //       Data types for I/O are required.
+  //       BOOL_VECTOR and TEXT_VECTOR are the problem.
+  //
   // Type: Vector.
   // Value: Vector of above data types.
   // Default: {}.

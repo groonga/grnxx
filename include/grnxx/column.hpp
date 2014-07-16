@@ -91,7 +91,7 @@ class Column {
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
   Index *get_index(size_t index_id) const {
-    // TODO
+    // TODO: Not supported yet.
     return nullptr;
   }
 
