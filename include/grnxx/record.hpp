@@ -15,6 +15,7 @@ struct Record {
   Record(Int row_id, Float score) : row_id(row_id), score(score) {}
 };
 
+// TODO: RecordSet should be reimplemented not to use std::vector?
 class RecordSet {
  public:
   RecordSet() : records_() {}
@@ -35,7 +36,7 @@ class RecordSet {
       records_.push_back(record);
       return true;
     } catch (...) {
-      // TODO: Error report should be written in .cpp file.
+      report_error(error);
       return false;
     }
   }
@@ -64,7 +65,7 @@ class RecordSet {
       records_.resize(size);
       return true;
     } catch (...) {
-      // TODO: Error report should be written in .cpp file.
+      report_error(error);
       return false;
     }
   }
@@ -76,6 +77,9 @@ class RecordSet {
 
  private:
   std::vector<Record> records_;
+
+  // Report a no memory error.
+  void report_error(Error *error);
 };
 
 }  // namespace grnxx
