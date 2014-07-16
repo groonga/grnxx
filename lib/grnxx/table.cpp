@@ -6,6 +6,8 @@
 #include "grnxx/error.hpp"
 #include "grnxx/record.hpp"
 
+#include <iostream>  // For debug.
+
 namespace grnxx {
 
 // -- TableCursor --
@@ -101,26 +103,61 @@ TableCursor::TableCursor(const Table *table)
 Int TableCursor::regular_read(Error *error,
                               Int max_count,
                               RecordSet *record_set) {
+  // TODO: If possible, the buffer should be expanded outside the loop in order
+  //       to remove size check and buffer expansion inside the loop.
+  //       However, note that max_count can be extremely large for reading all
+  //       the remaining records.
   Int count = 0;
-  while (next_row_id_ <= table_->max_row_id()) {
-    // TODO: This check should be skipped if there are no deleted rows.
-    if (!table_->get_bit(next_row_id_)) {
-      ++next_row_id_;
-      continue;
-    }
+  bool has_false_bit =
+      table_->num_rows() != (table_->max_row_id() - MIN_ROW_ID + 1);
+  if (!has_false_bit) {
+    // There are no false bits in the bitmap and bit checks are not required.
+    Int num_remaining_records = table_->max_row_id() - next_row_id_ + 1;
     if (offset_left_ > 0) {
-      --offset_left_;
-      ++next_row_id_;
-    } else {
-      // TODO: Resize the buffer outside the loop and set records in the loop.
+      if (offset_left_ >= num_remaining_records) {
+        next_row_id_ += num_remaining_records;
+        offset_left_ -= num_remaining_records;
+        return 0;
+      }
+      num_remaining_records -= offset_left_;
+      next_row_id_ += offset_left_;
+      offset_left_ = 0;
+    }
+    // Calculate the number of records to be read.
+    count = max_count;
+    if (count > num_remaining_records) {
+      count = num_remaining_records;
+    }
+    if (count > limit_left_) {
+      count = limit_left_;
+    }
+    for (Int i = 0; i < count; ++i) {
       if (!record_set->append(error, Record(next_row_id_, 0.0))) {
         return -1;
       }
-      --limit_left_;
-      ++count;
       ++next_row_id_;
-      if ((limit_left_ <= 0) || (count >= max_count)) {
-        break;
+      --limit_left_;
+    }
+  } else {
+    // There exist false bits in the bitmap and bit checks are required.
+    while (next_row_id_ <= table_->max_row_id()) {
+      if (!table_->get_bit(next_row_id_)) {
+        ++next_row_id_;
+        continue;
+      }
+      if (offset_left_ > 0) {
+        --offset_left_;
+        ++next_row_id_;
+      } else {
+        if (!record_set->append(error, Record(next_row_id_, 0.0))) {
+          return -1;
+        }
+        --limit_left_;
+        ++count;
+        ++next_row_id_;
+        if ((limit_left_ <= 0) || (count >= max_count)) {
+          break;
+        }
       }
     }
   }
@@ -130,26 +167,61 @@ Int TableCursor::regular_read(Error *error,
 Int TableCursor::reverse_read(Error *error,
                               Int max_count,
                               RecordSet *record_set) {
+  // TODO: If possible, the buffer should be expanded outside the loop in order
+  //       to remove size check and buffer expansion inside the loop.
+  //       However, note that max_count can be extremely large for reading all
+  //       the remaining records.
   Int count = 0;
-  while (next_row_id_ >= MIN_ROW_ID) {
-    // TODO: This check should be skipped if there are no deleted rows.
-    if (!table_->get_bit(next_row_id_)) {
-      --next_row_id_;
-      continue;
-    }
+  bool has_false_bit =
+      table_->num_rows() != (table_->max_row_id() - MIN_ROW_ID + 1);
+  if (!has_false_bit) {
+    // There are no false bits in the bitmap and bit checks are not required.
+    Int num_remaining_records = next_row_id_ - MIN_ROW_ID + 1;
     if (offset_left_ > 0) {
-      --offset_left_;
-      --next_row_id_;
-    } else {
-      // TODO: Resize the buffer outside the loop and set records in the loop.
+      if (offset_left_ >= num_remaining_records) {
+        next_row_id_ -= num_remaining_records;
+        offset_left_ -= num_remaining_records;
+        return 0;
+      }
+      num_remaining_records -= offset_left_;
+      next_row_id_ -= offset_left_;
+      offset_left_ = 0;
+    }
+    // Calculate the number of records to be read.
+    count = max_count;
+    if (count > num_remaining_records) {
+      count = num_remaining_records;
+    }
+    if (count > limit_left_) {
+      count = limit_left_;
+    }
+    for (Int i = 0; i < count; ++i) {
       if (!record_set->append(error, Record(next_row_id_, 0.0))) {
         return -1;
       }
-      --limit_left_;
-      ++count;
       --next_row_id_;
-      if ((limit_left_ <= 0) || (count >= max_count)) {
-        break;
+      --limit_left_;
+    }
+  } else {
+    while (next_row_id_ >= MIN_ROW_ID) {
+      // There exist false bits in the bitmap and bit checks are required.
+      if (!table_->get_bit(next_row_id_)) {
+        --next_row_id_;
+        continue;
+      }
+      if (offset_left_ > 0) {
+        --offset_left_;
+        --next_row_id_;
+      } else {
+        if (!record_set->append(error, Record(next_row_id_, 0.0))) {
+          return -1;
+        }
+        --limit_left_;
+        ++count;
+        --next_row_id_;
+        if ((limit_left_ <= 0) || (count >= max_count)) {
+          break;
+        }
       }
     }
   }

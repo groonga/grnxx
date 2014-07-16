@@ -211,6 +211,20 @@ void test_table() {
   assert(record_set.size() == 2);
   assert(record_set.get(0).row_id == 3);
   assert(record_set.get(1).row_id == 1);
+
+  record_set.clear();
+
+  cursor = table->create_cursor(&error, cursor_options);
+  assert(cursor);
+
+  assert(cursor->read(&error, 1, &record_set) == 1);
+  assert(record_set.size() == 1);
+  assert(record_set.get(0).row_id == 3);
+
+  assert(cursor->read(&error, 2, &record_set) == 1);
+  assert(record_set.size() == 2);
+  assert(record_set.get(0).row_id == 3);
+  assert(record_set.get(1).row_id == 1);
 }
 
 void test_column() {
