@@ -271,6 +271,16 @@ void test_column() {
   assert(!float_column->has_key_attribute());
   assert(float_column->num_indexes() == 0);
 
+  // Text を格納する "TextColumn" という名前のカラムを作成する．
+  auto text_column = table->create_column(&error, "TextColumn",
+                                           grnxx::TEXT_DATA);
+  assert(text_column);
+  assert(text_column->table() == table);
+  assert(text_column->name() == "TextColumn");
+  assert(text_column->data_type() == grnxx::TEXT_DATA);
+  assert(!text_column->has_key_attribute());
+  assert(text_column->num_indexes() == 0);
+
   grnxx::Datum datum;
 
   // 最初の行にデフォルト値が格納されていることを確認する．
@@ -286,10 +296,15 @@ void test_column() {
   assert(datum.type() == grnxx::FLOAT_DATA);
   assert(datum.force_float() == 0.0);
 
+  assert(text_column->get(&error, 1, &datum));
+  assert(datum.type() == grnxx::TEXT_DATA);
+  assert(datum.force_text() == "");
+
   // 最初の行に正しく値を格納できるか確認する．
   assert(bool_column->set(&error, 1, grnxx::Bool(true)));
   assert(int_column->set(&error, 1, grnxx::Int(123)));
   assert(float_column->set(&error, 1, grnxx::Float(0.25)));
+  assert(text_column->set(&error, 1, grnxx::Text("Hello, world!")));
 
   assert(bool_column->get(&error, 1, &datum));
   assert(datum.type() == grnxx::BOOL_DATA);
@@ -302,6 +317,10 @@ void test_column() {
   assert(float_column->get(&error, 1, &datum));
   assert(datum.type() == grnxx::FLOAT_DATA);
   assert(datum.force_float() == 0.25);
+
+  assert(text_column->get(&error, 1, &datum));
+  assert(datum.type() == grnxx::TEXT_DATA);
+  assert(datum.force_text() == "Hello, world!");
 }
 
 void test_expression() {
