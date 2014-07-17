@@ -245,28 +245,6 @@ class ColumnNode : public Node<T> {
 
 // -- OperatorNode --
 
-struct LogicalAnd {
-  struct Functor {
-    using Arg1 = Bool;
-    using Arg2 = Bool;
-    using Result = Bool;
-    Bool operator()(Arg1 lhs, Arg2 rhs) const {
-      return lhs && rhs;
-    };
-  };
-};
-
-struct LogicalOr {
-  struct Functor {
-    using Arg1 = Bool;
-    using Arg2 = Bool;
-    using Result = Bool;
-    Bool operator()(Arg1 lhs, Arg2 rhs) const {
-      return lhs || rhs;
-    };
-  };
-};
-
 struct Equal {
   template <typename T>
   struct Functor {
@@ -394,28 +372,116 @@ class BinaryNode : public Node<typename Op::Result> {
     return OPERATOR_NODE;
   }
 
-  bool evaluate(Error *error, const RecordSet &record_set) {
-    try {
-      this->values_.resize(record_set.size());
-    } catch (...) {
-      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
-      return false;
-    }
-    if (!lhs_->evaluate(error, record_set) ||
-        !rhs_->evaluate(error, record_set)) {
-      return false;
-    }
-    for (Int i = 0; i < record_set.size(); ++i) {
-      this->values_[i] = operator_(lhs_->get(i), rhs_->get(i));
-    }
-    return true;
-  }
+  bool evaluate(Error *error, const RecordSet &record_set);
 
  private:
   Op operator_;
   unique_ptr<Node<Arg1>> lhs_;
   unique_ptr<Node<Arg2>> rhs_;
 };
+
+template <typename Op>
+bool BinaryNode<Op>::evaluate(Error *error, const RecordSet &record_set) {
+  try {
+    this->values_.resize(record_set.size());
+  } catch (...) {
+    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    return false;
+  }
+  if (!lhs_->evaluate(error, record_set) ||
+      !rhs_->evaluate(error, record_set)) {
+    return false;
+  }
+  for (Int i = 0; i < record_set.size(); ++i) {
+    this->values_[i] = operator_(lhs_->get(i), rhs_->get(i));
+  }
+  return true;
+}
+
+class LogicalAndNode : public Node<Bool> {
+ public:
+  LogicalAndNode(unique_ptr<ExpressionNode> &&lhs,
+                 unique_ptr<ExpressionNode> &&rhs)
+      : Node<Bool>(),
+        lhs_(static_cast<Node<Bool> *>(lhs.release())),
+        rhs_(static_cast<Node<Bool> *>(rhs.release())) {}
+  virtual ~LogicalAndNode() {}
+
+  NodeType node_type() const {
+    return OPERATOR_NODE;
+  }
+
+  bool filter(Error *error, RecordSet *record_set);
+
+  bool evaluate(Error *error, const RecordSet &record_set);
+
+ private:
+  unique_ptr<Node<Bool>> lhs_;
+  unique_ptr<Node<Bool>> rhs_;
+};
+
+bool LogicalAndNode::filter(Error *error, RecordSet *record_set) {
+  return lhs_->filter(error, record_set) && rhs_->filter(error, record_set);
+}
+
+bool LogicalAndNode::evaluate(Error *error, const RecordSet &record_set) {
+  // TODO: Don't evaluate rhs entries if lhs entries are false.
+  try {
+    this->values_.resize(record_set.size());
+  } catch (...) {
+    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    return false;
+  }
+  if (!lhs_->evaluate(error, record_set) ||
+      !rhs_->evaluate(error, record_set)) {
+    return false;
+  }
+  for (Int i = 0; i < record_set.size(); ++i) {
+    this->values_[i] = lhs_->get(i) && rhs_->get(i);
+  }
+  return true;
+}
+
+class LogicalOrNode : public Node<Bool> {
+ public:
+  LogicalOrNode(unique_ptr<ExpressionNode> &&lhs,
+                 unique_ptr<ExpressionNode> &&rhs)
+      : Node<Bool>(),
+        lhs_(static_cast<Node<Bool> *>(lhs.release())),
+        rhs_(static_cast<Node<Bool> *>(rhs.release())) {}
+  virtual ~LogicalOrNode() {}
+
+  NodeType node_type() const {
+    return OPERATOR_NODE;
+  }
+
+  // TODO: filter() must be specialized.
+//  bool filter(Error *error, RecordSet *record_set);
+
+  bool evaluate(Error *error, const RecordSet &record_set);
+
+ private:
+  unique_ptr<Node<Bool>> lhs_;
+  unique_ptr<Node<Bool>> rhs_;
+};
+
+bool LogicalOrNode::evaluate(Error *error, const RecordSet &record_set) {
+  // TODO: Don't evaluate rhs entries if lhs entries are true.
+  try {
+    this->values_.resize(record_set.size());
+  } catch (...) {
+    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    return false;
+  }
+  if (!lhs_->evaluate(error, record_set) ||
+      !rhs_->evaluate(error, record_set)) {
+    return false;
+  }
+  for (Int i = 0; i < record_set.size(); ++i) {
+    this->values_[i] = lhs_->get(i) || rhs_->get(i);
+  }
+  return true;
+}
 
 }  // namespace
 
@@ -572,10 +638,10 @@ bool ExpressionBuilder::push_operator(Error *error,
                                       OperatorType operator_type) {
   switch (operator_type) {
     case LOGICAL_AND_OPERATOR: {
-      return push_logical_operator<LogicalAnd>(error);
+      return push_logical_and_operator(error);
     }
     case LOGICAL_OR_OPERATOR: {
-      return push_logical_operator<LogicalOr>(error);
+      return push_logical_or_operator(error);
     }
     case EQUAL_OPERATOR: {
       return push_equality_operator<Equal>(error);
@@ -628,8 +694,7 @@ unique_ptr<Expression> ExpressionBuilder::release(Error *error) {
 
 ExpressionBuilder::ExpressionBuilder(const Table *table) : table_(table) {}
 
-template <typename T>
-bool ExpressionBuilder::push_logical_operator(Error *error) {
+bool ExpressionBuilder::push_logical_and_operator(Error *error) {
   if (stack_.size() < 2) {
     // TODO: Define a better error code.
     GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Not enough operands");
@@ -643,10 +708,34 @@ bool ExpressionBuilder::push_logical_operator(Error *error) {
     GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Wrong type");
     return false;
   }
-  unique_ptr<ExpressionNode> node;
-  typename T::Functor functor;
-  node.reset(new (nothrow) BinaryNode<decltype(functor)>(
-      functor, std::move(lhs), std::move(rhs)));
+  unique_ptr<ExpressionNode> node(
+      new (nothrow) LogicalAndNode(std::move(lhs), std::move(rhs)));
+  if (!node) {
+    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    return false;
+  }
+  stack_.pop_back();
+  stack_.back() = std::move(node);
+  return true;
+}
+
+
+bool ExpressionBuilder::push_logical_or_operator(Error *error) {
+  if (stack_.size() < 2) {
+    // TODO: Define a better error code.
+    GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Not enough operands");
+    return false;
+  }
+  auto &lhs = stack_[stack_.size() - 2];
+  auto &rhs = stack_[stack_.size() - 1];
+  if ((lhs->data_type() != BOOL_DATA) ||
+      (rhs->data_type() != BOOL_DATA)) {
+    // TODO: Define a better error code.
+    GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Wrong type");
+    return false;
+  }
+  unique_ptr<ExpressionNode> node(
+      new (nothrow) LogicalOrNode(std::move(lhs), std::move(rhs)));
   if (!node) {
     GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
     return false;

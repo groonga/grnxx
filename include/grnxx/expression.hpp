@@ -161,9 +161,10 @@ class ExpressionBuilder {
 
   explicit ExpressionBuilder(const Table *table);
 
-  // Push an operator && or ||.
-  template <typename T>
-  bool push_logical_operator(Error *error);
+  // Push an operator &&.
+  bool push_logical_and_operator(Error *error);
+  // Push an operator ||.
+  bool push_logical_or_operator(Error *error);
   // Push an operator == or !=.
   template <typename T>
   bool push_equality_operator(Error *error);

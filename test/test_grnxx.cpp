@@ -534,6 +534,23 @@ void test_expression() {
   assert(cursor);
   assert(cursor->read_all(&error, &record_set) == 2);
 
+  // 論理演算を試す．
+  assert(builder->push_datum(&error, grnxx::Bool(false)));
+  assert(builder->push_column(&error, "BoolColumn"));
+  assert(builder->push_operator(&error, grnxx::LOGICAL_OR_OPERATOR));
+  expression = builder->release(&error);
+  assert(expression);
+
+  // フィルタとして使ったときの結果を確認する．
+  assert(expression->filter(&error, &record_set));
+  assert(record_set.size() == 1);
+  assert(record_set.get(0).row_id == 2);
+
+  record_set.clear();
+  cursor = table->create_cursor(&error);
+  assert(cursor);
+  assert(cursor->read_all(&error, &record_set) == 2);
+
   // ビット論理積を試す．
   assert(builder->push_column(&error, "IntColumn"));
   assert(builder->push_datum(&error, grnxx::Int(255)));
