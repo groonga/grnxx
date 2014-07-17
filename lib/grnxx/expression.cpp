@@ -133,6 +133,35 @@ bool DatumNode<T>::evaluate(Error *error, const RecordSet &record_set) {
   }
 }
 
+template <>
+class DatumNode<Text> : public Node<Text> {
+ public:
+  explicit DatumNode(Text datum)
+      : Node<Text>(),
+        datum_(datum.data(), datum.size()) {}
+  virtual ~DatumNode() {}
+
+  NodeType node_type() const {
+    return DATUM_NODE;
+  }
+
+  bool evaluate(Error *error, const RecordSet &record_set);
+
+ private:
+  std::string datum_;
+};
+
+bool DatumNode<Text>::evaluate(Error *error, const RecordSet &record_set) {
+  try {
+    this->values_.resize(record_set.size(),
+                         Text(datum_.data(), datum_.size()));
+    return true;
+  } catch (...) {
+    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    return false;
+  }
+}
+
 // -- RowIDNode --
 
 class RowIDNode : public Node<Int> {
@@ -463,6 +492,10 @@ bool ExpressionBuilder::push_datum(Error *error, const Datum &datum) {
       node.reset(new (nothrow) DatumNode<GeoPoint>(datum.force_geo_point()));
       break;
     }
+    case TEXT_DATA: {
+      node.reset(new (nothrow) DatumNode<Text>(datum.force_text()));
+      break;
+    }
     default: {
       // TODO: Other types are not supported yet.
       GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
@@ -470,7 +503,7 @@ bool ExpressionBuilder::push_datum(Error *error, const Datum &datum) {
     }
   }
   if (!node) {
-    GRNXX_ERROR_SET(error, NO_MEMORY, "Not supported yet");
+    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
     return false;
   }
   stack_.push_back(std::move(node));
@@ -514,6 +547,10 @@ bool ExpressionBuilder::push_column(Error *error, String name) {
       }
       case GEO_POINT_DATA: {
         node.reset(new (nothrow) ColumnNode<GeoPoint>(column));
+        break;
+      }
+      case TEXT_DATA: {
+        node.reset(new (nothrow) ColumnNode<Text>(column));
         break;
       }
       default: {
@@ -665,6 +702,12 @@ bool ExpressionBuilder::push_equality_operator(Error *error) {
           functor, std::move(lhs), std::move(rhs)));
       break;
     }
+    case TEXT_DATA: {
+      typename T::template Functor<Text> functor;
+      node.reset(new (nothrow) BinaryNode<decltype(functor)>(
+          functor, std::move(lhs), std::move(rhs)));
+      break;
+    }
     // TODO: Support other types.
     default: {
       GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
@@ -710,6 +753,12 @@ bool ExpressionBuilder::push_comparison_operator(Error *error) {
     }
     case TIME_DATA: {
       typename T::template Functor<Time> functor;
+      node.reset(new (nothrow) BinaryNode<decltype(functor)>(
+          functor, std::move(lhs), std::move(rhs)));
+      break;
+    }
+    case TEXT_DATA: {
+      typename T::template Functor<Text> functor;
       node.reset(new (nothrow) BinaryNode<decltype(functor)>(
           functor, std::move(lhs), std::move(rhs)));
       break;
