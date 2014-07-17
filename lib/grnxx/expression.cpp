@@ -467,23 +467,99 @@ class LogicalOrNode : public Node<Bool> {
       : Node<Bool>(),
         lhs_(static_cast<Node<Bool> *>(lhs.release())),
         rhs_(static_cast<Node<Bool> *>(rhs.release())),
-        temp_record_set_() {}
+        left_record_set_(),
+        right_record_set_() {}
   virtual ~LogicalOrNode() {}
 
   NodeType node_type() const {
     return OPERATOR_NODE;
   }
 
-  // TODO: filter() must be specialized.
-//  bool filter(Error *error, RecordSet *record_set);
+  bool filter(Error *error, RecordSet *record_set);
 
   bool evaluate(Error *error, const RecordSet &record_set);
 
  private:
   unique_ptr<Node<Bool>> lhs_;
   unique_ptr<Node<Bool>> rhs_;
-  RecordSet temp_record_set_;
+  RecordSet left_record_set_;
+  RecordSet right_record_set_;
 };
+
+bool LogicalOrNode::filter(Error *error, RecordSet *record_set) {
+  // Make a copy of the given record set and apply the left-filter to it.
+  if (!left_record_set_.resize(error, record_set->size())) {
+    return false;
+  }
+  for (Int i = 0; i < record_set->size(); ++i) {
+    left_record_set_.set(i, record_set->get(i));
+  }
+  if (!lhs_->filter(error, &left_record_set_)) {
+    return false;
+  }
+  if (left_record_set_.size() == 0) {
+    // There are no left-true records.
+    return rhs_->filter(error, record_set);
+  } else if (left_record_set_.size() == record_set->size()) {
+    // There are no left-false records.
+    // This means that all the records pass through the filter.
+    return true;
+  }
+
+  // Enumerate left-false records and apply the right-filter to it.
+  if (!right_record_set_.resize(error,
+                                record_set->size() - left_record_set_.size())) {
+    return false;
+  }
+  Int left_count = 0;
+  Int right_count = 0;
+  for (Int i = 0; i < record_set->size(); ++i) {
+    if (record_set->get(i).row_id == left_record_set_.get(left_count).row_id) {
+      ++left_count;
+    } else {
+      right_record_set_.set(right_count, record_set->get(i));
+      ++right_count;
+    }
+  }
+  if (!rhs_->filter(error, &right_record_set_)) {
+    return false;
+  }
+  if (right_record_set_.size() == 0) {
+    // There are no right-true records.
+    if (!record_set->resize(error, left_record_set_.size())) {
+      return false;
+    }
+    for (Int i = 0; i < record_set->size(); ++i) {
+      record_set->set(i, left_record_set_.get(i));
+    }
+    return true;
+  } else if (right_record_set_.size() == right_count) {
+    // There are no right-false records.
+    // This means that all the records pass through the filter.
+    return true;
+  }
+
+  // Append sentinels.
+  if (!left_record_set_.append(error, Record(NULL_ROW_ID, 0.0)) ||
+      !right_record_set_.append(error, Record(NULL_ROW_ID, 0.0))) {
+    return false;
+  }
+
+  // Merge the left-true records and the right-true records.
+  left_count = 0;
+  right_count = 0;
+  for (Int i = 0; i < record_set->size(); ++i) {
+    if (record_set->get(i).row_id == left_record_set_.get(left_count).row_id) {
+      record_set->set(left_count + right_count, record_set->get(i));
+      ++left_count;
+    } else if (record_set->get(i).row_id ==
+               right_record_set_.get(right_count).row_id) {
+      record_set->set(left_count + right_count, record_set->get(i));
+      ++right_count;
+    }
+  }
+  return record_set->resize(error, left_count + right_count);
+}
 
 bool LogicalOrNode::evaluate(Error *error, const RecordSet &record_set) {
   // TODO: This logic should be tested.
@@ -497,15 +573,15 @@ bool LogicalOrNode::evaluate(Error *error, const RecordSet &record_set) {
     return false;
   }
   // True records must not be evaluated for the 2nd argument.
-  temp_record_set_.clear();
+  left_record_set_.clear();
   for (Int i = 0; i < record_set.size(); ++i) {
     if (!lhs_->get(i)) {
-      if (!temp_record_set_.append(error, record_set.get(i))) {
+      if (!left_record_set_.append(error, record_set.get(i))) {
         return false;
       }
     }
   }
-  if (!rhs_->evaluate(error, temp_record_set_)) {
+  if (!rhs_->evaluate(error, left_record_set_)) {
     return false;
   }
   Int j = 0;
