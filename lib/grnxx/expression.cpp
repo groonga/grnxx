@@ -408,7 +408,8 @@ class LogicalAndNode : public Node<Bool> {
                  unique_ptr<ExpressionNode> &&rhs)
       : Node<Bool>(),
         lhs_(static_cast<Node<Bool> *>(lhs.release())),
-        rhs_(static_cast<Node<Bool> *>(rhs.release())) {}
+        rhs_(static_cast<Node<Bool> *>(rhs.release())),
+        temp_record_set_() {}
   virtual ~LogicalAndNode() {}
 
   NodeType node_type() const {
@@ -422,6 +423,7 @@ class LogicalAndNode : public Node<Bool> {
  private:
   unique_ptr<Node<Bool>> lhs_;
   unique_ptr<Node<Bool>> rhs_;
+  RecordSet temp_record_set_;
 };
 
 bool LogicalAndNode::filter(Error *error, RecordSet *record_set) {
@@ -429,19 +431,31 @@ bool LogicalAndNode::filter(Error *error, RecordSet *record_set) {
 }
 
 bool LogicalAndNode::evaluate(Error *error, const RecordSet &record_set) {
-  // TODO: Don't evaluate rhs entries if lhs entries are false.
+  // TODO: This logic should be tested.
   try {
     this->values_.resize(record_set.size());
   } catch (...) {
     GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
     return false;
   }
-  if (!lhs_->evaluate(error, record_set) ||
-      !rhs_->evaluate(error, record_set)) {
+  if (!lhs_->evaluate(error, record_set)) {
     return false;
   }
+  // False records must not be evaluated for the 2nd argument.
+  temp_record_set_.clear();
   for (Int i = 0; i < record_set.size(); ++i) {
-    this->values_[i] = lhs_->get(i) && rhs_->get(i);
+    if (lhs_->get(i)) {
+      if (!temp_record_set_.append(error, record_set.get(i))) {
+        return false;
+      }
+    }
+  }
+  if (!rhs_->evaluate(error, temp_record_set_)) {
+    return false;
+  }
+  Int j = 0;
+  for (Int i = 0; i < record_set.size(); ++i) {
+    this->values_[i] = lhs_->get(i) ? rhs_->get(j++) : false;
   }
   return true;
 }
@@ -452,7 +466,8 @@ class LogicalOrNode : public Node<Bool> {
                  unique_ptr<ExpressionNode> &&rhs)
       : Node<Bool>(),
         lhs_(static_cast<Node<Bool> *>(lhs.release())),
-        rhs_(static_cast<Node<Bool> *>(rhs.release())) {}
+        rhs_(static_cast<Node<Bool> *>(rhs.release())),
+        temp_record_set_() {}
   virtual ~LogicalOrNode() {}
 
   NodeType node_type() const {
@@ -467,22 +482,35 @@ class LogicalOrNode : public Node<Bool> {
  private:
   unique_ptr<Node<Bool>> lhs_;
   unique_ptr<Node<Bool>> rhs_;
+  RecordSet temp_record_set_;
 };
 
 bool LogicalOrNode::evaluate(Error *error, const RecordSet &record_set) {
-  // TODO: Don't evaluate rhs entries if lhs entries are true.
+  // TODO: This logic should be tested.
   try {
     this->values_.resize(record_set.size());
   } catch (...) {
     GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
     return false;
   }
-  if (!lhs_->evaluate(error, record_set) ||
-      !rhs_->evaluate(error, record_set)) {
+  if (!lhs_->evaluate(error, record_set)) {
     return false;
   }
+  // True records must not be evaluated for the 2nd argument.
+  temp_record_set_.clear();
   for (Int i = 0; i < record_set.size(); ++i) {
-    this->values_[i] = lhs_->get(i) || rhs_->get(i);
+    if (!lhs_->get(i)) {
+      if (!temp_record_set_.append(error, record_set.get(i))) {
+        return false;
+      }
+    }
+  }
+  if (!rhs_->evaluate(error, temp_record_set_)) {
+    return false;
+  }
+  Int j = 0;
+  for (Int i = 0; i < record_set.size(); ++i) {
+    this->values_[i] = lhs_->get(i) ? true : rhs_->get(j++);
   }
   return true;
 }
