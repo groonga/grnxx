@@ -344,23 +344,29 @@ void test_expression() {
                                            grnxx::FLOAT_DATA);
   assert(float_column);
 
+  auto text_column = table->create_column(&error, "TextColumn",
+                                           grnxx::TEXT_DATA);
+  assert(text_column);
+
   // 下記のデータを格納する．
   //
-  // RowID BoolColumn IntColumn FloatColumn
-  //     1      false       123       -0.25
-  //     2       true       456        0.25
+  // RowID BoolColumn IntColumn FloatColumn TextColumn
+  //     1      false       123       -0.25      "ABC"
+  //     2       true       456        0.25      "XYZ"
   grnxx::Int row_id;
   assert(table->insert_row(&error, grnxx::NULL_ROW_ID,
                            grnxx::Datum(), &row_id));
   assert(bool_column->set(&error, row_id, grnxx::Bool(false)));
   assert(int_column->set(&error, row_id, grnxx::Int(123)));
   assert(float_column->set(&error, row_id, grnxx::Float(-0.25)));
+  assert(text_column->set(&error, row_id, grnxx::Text("ABC")));
 
   assert(table->insert_row(&error, grnxx::NULL_ROW_ID,
                            grnxx::Datum(), &row_id));
   assert(bool_column->set(&error, row_id, grnxx::Bool(true)));
   assert(int_column->set(&error, row_id, grnxx::Int(456)));
   assert(float_column->set(&error, row_id, grnxx::Float(0.25)));
+  assert(text_column->set(&error, row_id, grnxx::Text("XYZ")));
 
   // 式構築用のオブジェクトを用意する．
   auto builder = grnxx::ExpressionBuilder::create(&error, table);
@@ -452,6 +458,40 @@ void test_expression() {
   assert(expression->filter(&error, &record_set));
   assert(record_set.size() == 1);
   assert(record_set.get(0).row_id == 1);
+
+  record_set.clear();
+  cursor = table->create_cursor(&error);
+  assert(cursor);
+  assert(cursor->read_all(&error, &record_set) == 2);
+
+  // 大小関係による比較を試す．
+  assert(builder->push_column(&error, "TextColumn"));
+  assert(builder->push_datum(&error, grnxx::Text("ABC")));
+  assert(builder->push_operator(&error, grnxx::LESS_EQUAL_OPERATOR));
+  expression = builder->release(&error);
+  assert(expression);
+
+  // フィルタとして使ったときの結果を確認する．
+  assert(expression->filter(&error, &record_set));
+  assert(record_set.size() == 1);
+  assert(record_set.get(0).row_id == 1);
+
+  record_set.clear();
+  cursor = table->create_cursor(&error);
+  assert(cursor);
+  assert(cursor->read_all(&error, &record_set) == 2);
+
+  // 大小関係による比較を試す．
+  assert(builder->push_column(&error, "TextColumn"));
+  assert(builder->push_datum(&error, grnxx::Text("ABC")));
+  assert(builder->push_operator(&error, grnxx::GREATER_OPERATOR));
+  expression = builder->release(&error);
+  assert(expression);
+
+  // フィルタとして使ったときの結果を確認する．
+  assert(expression->filter(&error, &record_set));
+  assert(record_set.size() == 1);
+  assert(record_set.get(0).row_id == 2);
 
   record_set.clear();
   cursor = table->create_cursor(&error);
