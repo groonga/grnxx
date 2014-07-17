@@ -125,7 +125,9 @@ class DatumNode : public Node<T> {
 template <typename T>
 bool DatumNode<T>::evaluate(Error *error, const RecordSet &record_set) {
   try {
-    this->values_.resize(record_set.size(), datum_);
+    if (static_cast<size_t>(record_set.size()) > this->values_.size()) {
+      this->values_.resize(record_set.size(), datum_);
+    }
     return true;
   } catch (...) {
     GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
@@ -153,8 +155,10 @@ class DatumNode<Text> : public Node<Text> {
 
 bool DatumNode<Text>::evaluate(Error *error, const RecordSet &record_set) {
   try {
-    this->values_.resize(record_set.size(),
-                         Text(datum_.data(), datum_.size()));
+    if (static_cast<size_t>(record_set.size()) > this->values_.size()) {
+      this->values_.resize(record_set.size(),
+                           Text(datum_.data(), datum_.size()));
+    }
     return true;
   } catch (...) {
     GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
