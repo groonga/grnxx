@@ -9,7 +9,7 @@ Index::~Index() {}
 unique_ptr<Cursor> Index::create_cursor(
     Error *error,
     const CursorOptions &options) const {
-  // TODO
+  // TODO: Not supported yet.
   GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supoprted yet");
   return nullptr;
 }
@@ -19,7 +19,7 @@ unique_ptr<Index> Index::create(Error *error,
                                 String name,
                                 IndexType type,
                                 const IndexOptions &options) {
-  // TODO
+  // TODO: Not supported yet.
   GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supoprted yet");
   return nullptr;
 }
@@ -29,7 +29,7 @@ bool Index::rename(Error *error, String new_name) {
 }
 
 bool Index::is_removable() {
-  // TODO
+  // TODO: Not supported yet.
   return true;
 }
 

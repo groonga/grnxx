@@ -88,9 +88,9 @@ unique_ptr<Column> Column::create(Error *error,
     case GEO_POINT_DATA: {
       return ColumnImpl<GeoPoint>::create(error, table, name, options);
     }
-//    case TEXT_DATA: {
-//      return ColumnImpl<Text>::create(error, table, name, options);
-//    }
+    case TEXT_DATA: {
+      return ColumnImpl<Text>::create(error, table, name, options);
+    }
     default: {
       // TODO: Other data types are not supported yet.
       GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not suported yet");
@@ -124,26 +124,27 @@ bool Column::rename(Error *error, String new_name) {
 }
 
 bool Column::is_removable() {
-  // TODO
+  // TODO: Reference column is not supported yet.
   return true;
 }
 
 bool Column::set_initial_key(Error *error, Int row_id, const Datum &key) {
-  // TODO
+  // TODO: Key column is not supported yet.
   GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not suported yet");
   return false;
 }
 
 bool Column::set_default_value(Error *error, Int row_id) {
-  // TODO
+  // TODO: This function should be a pure virtual function.
   GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not suported yet");
   return false;
 }
 
 void Column::unset(Int row_id) {
+  // TODO: This function should be a pure virtual function.
 }
 
-// -- ColumnImpl --
+// -- ColumnImpl<T> --
 
 template <typename T>
 bool ColumnImpl<T>::set(Error *error, Int row_id, const Datum &datum) {
@@ -219,5 +220,78 @@ void ColumnImpl<T>::unset(Int row_id) {
 
 template <typename T>
 ColumnImpl<T>::ColumnImpl() : Column(), values_() {}
+
+// -- ColumnImpl<Text> --
+
+bool ColumnImpl<Text>::set(Error *error, Int row_id, const Datum &datum) {
+  if (datum.type() != TEXT_DATA) {
+    GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Wrong data type");
+    return false;
+  }
+  if (!table_->test_row(error, row_id)) {
+    return false;
+  }
+  // Note that a Bool object does not have its own address.
+  Text value = datum.force_text();
+  try {
+    std::string internal_value(value.data(), value.size());
+    values_[row_id] = std::move(internal_value);
+  } catch (...) {
+    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+  }
+  return true;
+}
+
+bool ColumnImpl<Text>::get(Error *error, Int row_id, Datum *datum) const {
+  if (!table_->test_row(error, row_id)) {
+    return false;
+  }
+  *datum = Text(values_[row_id].data(), values_[row_id].size());
+  return true;
+}
+
+unique_ptr<ColumnImpl<Text>> ColumnImpl<Text>::create(
+    Error *error,
+    Table *table,
+    String name,
+    const ColumnOptions &options) {
+  unique_ptr<ColumnImpl> column(new (nothrow) ColumnImpl);
+  if (!column) {
+    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    return nullptr;
+  }
+  if (!column->initialize_base(error, table, name, TEXT_DATA, options)) {
+    return nullptr;
+  }
+  try {
+    column->values_.resize(table->max_row_id() + 1);
+  } catch (...) {
+    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    return nullptr;
+  }
+  return column;
+}
+
+ColumnImpl<Text>::~ColumnImpl() {}
+
+bool ColumnImpl<Text>::set_default_value(Error *error, Int row_id) {
+  if (row_id >= values_.size()) {
+    try {
+      values_.resize(row_id + 1);
+      return true;
+    } catch (...) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+      return false;
+    }
+  }
+  values_[row_id].clear();
+  return true;
+}
+
+void ColumnImpl<Text>::unset(Int row_id) {
+  values_[row_id].clear();
+}
+
+ColumnImpl<Text>::ColumnImpl() : Column(), values_() {}
 
 }  // namespace grnxx

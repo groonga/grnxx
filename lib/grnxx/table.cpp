@@ -388,8 +388,8 @@ bool Table::insert_row(Error *error,
       return false;
     }
   }
-  // TODO: Fill other column values with the default values.
   if (next_row_id > max_row_id()) {
+    // Fill non-key column values with the default values.
     for (size_t column_id = 0; column_id < num_columns(); ++column_id) {
       if (columns_[column_id].get() != key_column()) {
         if (!columns_[column_id]->set_default_value(error, next_row_id)) {
