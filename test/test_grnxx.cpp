@@ -244,11 +244,15 @@ void test_bitmap() {
                              grnxx::Datum(), &row_id));
     assert(row_id == (i + 1));
   }
+  assert(table->num_rows() == NUM_ROWS);
+  assert(table->max_row_id() == NUM_ROWS);
 
   for (int i = 0; i < NUM_ROWS; ++i) {
     grnxx::Int row_id = i + 1;
     assert(table->remove_row(&error, row_id));
   }
+  assert(table->num_rows() == 0);
+  assert(table->max_row_id() == (grnxx::MIN_ROW_ID - 1));
 
   for (int i = 0; i < NUM_ROWS; ++i) {
     grnxx::Int row_id;
@@ -256,17 +260,29 @@ void test_bitmap() {
                              grnxx::Datum(), &row_id));
     assert(row_id == (i + 1));
   }
+  assert(table->num_rows() == NUM_ROWS);
+  assert(table->max_row_id() == NUM_ROWS);
 
   for (int i = 0; i < NUM_ROWS; i += 2) {
     grnxx::Int row_id = i + 1;
     assert(table->remove_row(&error, row_id));
   }
+  assert(table->num_rows() == (NUM_ROWS / 2));
+  assert(table->max_row_id() == NUM_ROWS);
 
   for (int i = 0; i < NUM_ROWS; i += 2) {
     grnxx::Int row_id;
     assert(table->insert_row(&error, grnxx::NULL_ROW_ID,
                              grnxx::Datum(), &row_id));
     assert(row_id == (i + 1));
+  }
+  assert(table->num_rows() == NUM_ROWS);
+  assert(table->max_row_id() == NUM_ROWS);
+
+  for (int i = 0; i < NUM_ROWS; ++i) {
+    grnxx::Int row_id = NUM_ROWS - i;
+    assert(table->remove_row(&error, row_id));
+    assert(table->max_row_id() == (row_id - 1));
   }
 }
 

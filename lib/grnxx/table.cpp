@@ -431,6 +431,18 @@ bool Table::remove_row(Error *error, Int row_id) {
   }
   unset_bit(row_id);
   --num_rows_;
+  if (num_rows_ == 0) {
+    max_row_id_ = MIN_ROW_ID - 1;
+  } else if (row_id == max_row_id()) {
+    Int block_id = (max_row_id() - 1) / 64;
+    while (block_id >= 0) {
+      if (bitmap_[block_id] != 0) {
+        break;
+      }
+      --block_id;
+    }
+    max_row_id_ = (block_id * 64) + 63 - ::__builtin_clzll(bitmap_[block_id]);
+  }
   return true;
 }
 
