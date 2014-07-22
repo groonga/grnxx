@@ -227,6 +227,49 @@ void test_table() {
   assert(record_set.get(1).row_id == 1);
 }
 
+void test_bitmap() {
+  constexpr int NUM_ROWS = 1 << 14;
+
+  grnxx::Error error;
+
+  auto db = grnxx::open_db(&error, "");
+  assert(db);
+
+  auto table = db->create_table(&error, "Table");
+  assert(table);
+
+  for (int i = 0; i < NUM_ROWS; ++i) {
+    grnxx::Int row_id;
+    assert(table->insert_row(&error, grnxx::NULL_ROW_ID,
+                             grnxx::Datum(), &row_id));
+    assert(row_id == (i + 1));
+  }
+
+  for (int i = 0; i < NUM_ROWS; ++i) {
+    grnxx::Int row_id = i + 1;
+    assert(table->remove_row(&error, row_id));
+  }
+
+  for (int i = 0; i < NUM_ROWS; ++i) {
+    grnxx::Int row_id;
+    assert(table->insert_row(&error, grnxx::NULL_ROW_ID,
+                             grnxx::Datum(), &row_id));
+    assert(row_id == (i + 1));
+  }
+
+  for (int i = 0; i < NUM_ROWS; i += 2) {
+    grnxx::Int row_id = i + 1;
+    assert(table->remove_row(&error, row_id));
+  }
+
+  for (int i = 0; i < NUM_ROWS; i += 2) {
+    grnxx::Int row_id;
+    assert(table->insert_row(&error, grnxx::NULL_ROW_ID,
+                             grnxx::Datum(), &row_id));
+    assert(row_id == (i + 1));
+  }
+}
+
 void test_column() {
   grnxx::Error error;
 
@@ -609,6 +652,7 @@ void test_expression() {
 int main() {
   test_db();
   test_table();
+  test_bitmap();
   test_column();
   test_expression();
 
