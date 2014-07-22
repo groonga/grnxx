@@ -207,6 +207,7 @@ class Table {
   Int num_rows_;
   Int max_row_id_;
   std::vector<uint64_t> bitmap_;
+  std::vector<std::vector<uint64_t>> bitmap_indexes_;
 
   // Create a new table.
   //
@@ -221,30 +222,22 @@ class Table {
 
   Table();
 
-  // Read a bit from the bitmap.
-  //
-  // Assumes that the bitmap size is greater than "row_id".
-  bool get_bit(Int row_id) const {
-    return (bitmap_[row_id / 64] & (Int(1) << (row_id % 64))) != 0;
+  // Get the "i"-th bit from the bitmap.
+  bool get_bit(Int i) const {
+    return (bitmap_[i / 64] & (Int(1) << (i % 64))) != 0;
   }
-  // Set a bit of the bitmap.
+  // Set 1 to the "i"-th bit of the bitmap and update bitmap indexes.
+  void set_bit(Int i);
+  // Set 0 to the "i"-th bit of the bitmap and update bitmap indexes.
+  void unset_bit(Int i);
+  // Find a zero-bit and return its position.
+  Int find_zero_bit() const;
+  // Reserve the "i"-th bit for the next row.
   //
-  // Assumes that the bitmap size is greater than "row_id".
-  void set_bit(Int row_id) {
-    bitmap_[row_id / 64] |= Int(1) << (row_id % 64);
-  }
-  // Unset a bit of the bitmap.
-  //
-  // Assumes that the bitmap size is greater than "row_id".
-  void unset_bit(Int row_id) {
-    bitmap_[row_id / 64] &= ~(Int(1) << (row_id % 64));
-  }
-  // Reverse a bit.
-  //
-  // Returns true on success.
+  // On success, returns true.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
-  bool reserve_bit(Error *error, Int row_id);
+  bool reserve_bit(Error *error, Int i);
 
   // Change the table name.
   //

@@ -354,13 +354,17 @@ bool Table::insert_row(Error *error,
                        Int *result_row_id) {
   *result_row_id = NULL_ROW_ID;
   Int next_row_id;
-  if (request_row_id != NULL_ROW_ID) {
-    if (request_row_id > (max_row_id() + 1)) {
-      GRNXX_ERROR_SET(error, INVALID_ARGUMENT,
-                      "Invalid argument: request_row_id = %" PRIi64,
-                      request_row_id);
-      return false;
-    }
+  if (request_row_id == NULL_ROW_ID) {
+    next_row_id = find_zero_bit();
+  } else if ((request_row_id < MIN_ROW_ID) || (request_row_id > MAX_ROW_ID)) {
+    GRNXX_ERROR_SET(error, INVALID_ARGUMENT,
+                    "Invalid argument: request_row_id = %" PRIi64,
+                    request_row_id);
+    return false;
+  } else if (request_row_id > max_row_id()) {
+    next_row_id = request_row_id;
+  } else {
+    // Fails if the request row ID is used.
     if (get_bit(request_row_id)) {
       *result_row_id = request_row_id;
       GRNXX_ERROR_SET(error, ALREADY_EXISTS,
@@ -369,25 +373,27 @@ bool Table::insert_row(Error *error,
       return false;
     }
     next_row_id = request_row_id;
-  } else {
-    // TODO: Removed rows should be reused.
-    next_row_id = max_row_id() + 1;
   }
+
   if (key_column()) {
+    // Fails if the key already exists.
     *result_row_id = find_row(nullptr, key);
     if (*result_row_id != NULL_ROW_ID) {
       GRNXX_ERROR_SET(error, ALREADY_EXISTS, "Key already exists");
       return false;
     }
   }
+
   if (!reserve_bit(error, next_row_id)) {
     return false;
   }
+
   if (key_column()) {
     if (!key_column_->set_initial_key(error, next_row_id, key)) {
       return false;
     }
   }
+
   if (next_row_id > max_row_id()) {
     // Fill non-key column values with the default values.
     for (size_t column_id = 0; column_id < num_columns(); ++column_id) {
@@ -408,6 +414,7 @@ bool Table::insert_row(Error *error,
     }
     max_row_id_ = next_row_id;
   }
+
   set_bit(next_row_id);
   ++num_rows_;
   *result_row_id = next_row_id;
@@ -463,24 +470,93 @@ unique_ptr<Table> Table::create(Error *error,
   if (!table->name_.assign(error, name)) {
     return nullptr;
   }
-  try {
-    // Disable NULL_ROW_ID.
-    table->bitmap_.push_back(~uint64_t(0) ^ 1);
-  } catch (...) {
-    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+  // Initialize the bitmap.
+  if (!table->reserve_bit(error, 0)) {
     return nullptr;
   }
+  table->set_bit(0);
   // TODO: Apply options.
   return table;
 }
 
-bool Table::reserve_bit(Error *error, Int row_id) {
-  if (static_cast<size_t>(row_id / 64) >= bitmap_.size()) {
-    try {
-      bitmap_.push_back(~uint64_t(0));
-    } catch (...) {
-      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
-      return false;
+Table::Table()
+    : db_(nullptr),
+      name_(),
+      columns_(),
+      key_column_(nullptr),
+      num_rows_(0),
+      max_row_id_(MIN_ROW_ID - 1),
+      bitmap_(),
+      bitmap_indexes_() {}
+
+void Table::set_bit(Int i) {
+  bitmap_[i / 64] |= uint64_t(1) << (i % 64);
+  if (bitmap_[i / 64] == ~uint64_t(0)) {
+    for (auto &bitmap_index : bitmap_indexes_) {
+      i /= 64;
+      bitmap_index[i / 64] |= uint64_t(1) << (i % 64);
+      if (bitmap_index[i / 64] != ~uint64_t(0)) {
+        break;
+      }
+    }
+  }
+}
+
+void Table::unset_bit(Int i) {
+  bool is_full = bitmap_[i / 64] == ~uint64_t(0);
+  bitmap_[i / 64] &= ~(uint64_t(1) << (i % 64));
+  if (is_full) {
+    for (auto &bitmap_index : bitmap_indexes_) {
+      i /= 64;
+      is_full = bitmap_index[i / 64] == ~uint64_t(0);
+      bitmap_index[i / 64] &= ~(uint64_t(1) << (i % 64));
+      if (!is_full) {
+        break;
+      }
+    }
+  }
+}
+
+Int Table::find_zero_bit() const {
+  if (num_rows() == (max_row_id() - MIN_ROW_ID + 1)) {
+    return max_row_id() + 1;
+  }
+  Int pos = 0;
+  for (size_t i = bitmap_indexes_.size(); i > 0; ) {
+    pos = (pos * 64) + ::__builtin_ctzll(~bitmap_indexes_[--i][pos]);
+  }
+  return (pos * 64) + ::__builtin_ctzll(~bitmap_[pos]);
+}
+
+bool Table::reserve_bit(Error *error, Int i) {
+  if (i > MAX_ROW_ID) {
+    // TODO: Define a better error code.
+    GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Invalid argument");
+    return false;
+  }
+  // TODO: Error handling.
+  size_t block_id = i / 64;
+  if (block_id >= bitmap_.size()) {
+    bitmap_.resize(block_id + 1, 0);
+  }
+  for (auto &bitmap_index : bitmap_indexes_) {
+    block_id /= 64;
+    if (block_id >= bitmap_index.size()) {
+      bitmap_index.resize(block_id + 1, 0);
+    } else {
+      block_id = 0;
+      break;
+    }
+  }
+  Int depth = bitmap_indexes_.size();
+  while (block_id > 0) {
+    block_id /= 64;
+    bitmap_indexes_.resize(depth + 1);
+    bitmap_indexes_[depth].resize(block_id + 1, 0);
+    if (depth == 0) {
+      bitmap_indexes_[depth][0] = bitmap_[0] != 0;
+    } else {
+      bitmap_indexes_[depth][0] = bitmap_indexes_[depth - 1][0] != 0;
     }
   }
   return true;
@@ -494,15 +570,6 @@ bool Table::is_removable() {
   // TODO: Referenced table (except self-reference) is not removable.
   return true;
 }
-
-Table::Table()
-    : db_(nullptr),
-      name_(),
-      columns_(),
-      key_column_(nullptr),
-      num_rows_(0),
-      max_row_id_(MIN_ROW_ID - 1),
-      bitmap_() {}
 
 Column *Table::find_column_with_id(Error *error,
                                    String name,
