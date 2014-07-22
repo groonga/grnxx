@@ -47,10 +47,10 @@ enum OperatorType {
   BITWISE_XOR_OPERATOR,  // For Bool, Int.
 
   // Arithmetic operators.
-//  PLUS_OPERATOR,            // For Int, Float.
-//  MINUS_OPERATOR,           // For Int, Float.
+  PLUS_OPERATOR,            // For Int, Float.
+  MINUS_OPERATOR,           // For Int, Float.
+  MULTIPLICATION_OPERATOR,  // For Int, Float.
 //  DIVISION_OPERATOR,        // For Int, Float.
-//  MULTIPLICATION_OPERATOR,  // For Int, Float.
 //  MODULUS_OPERATOR,         // For Int.
 
   // Array operators.
@@ -174,6 +174,9 @@ class ExpressionBuilder {
   // Push an operator &, |, or ^.
   template <typename T>
   bool push_bitwise_operator(Error *error);
+  // Push an operator +, -, or *.
+  template <typename T>
+  bool push_arithmetic_operator(Error *error);
 };
 
 }  // namespace grnxx

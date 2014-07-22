@@ -661,6 +661,63 @@ void test_expression() {
   assert(expression->filter(&error, &record_set));
   assert(record_set.size() == 1);
   assert(record_set.get(0).row_id == 1);
+
+  record_set.clear();
+  cursor = table->create_cursor(&error);
+  assert(cursor);
+  assert(cursor->read_all(&error, &record_set) == 2);
+
+  // 加算を試す．
+  assert(builder->push_column(&error, "IntColumn"));
+  assert(builder->push_datum(&error, grnxx::Int(100)));
+  assert(builder->push_operator(&error, grnxx::PLUS_OPERATOR));
+  assert(builder->push_datum(&error, grnxx::Int(223)));
+  assert(builder->push_operator(&error, grnxx::EQUAL_OPERATOR));
+  expression = builder->release(&error);
+  assert(expression);
+
+  // フィルタとして使ったときの結果を確認する．
+  assert(expression->filter(&error, &record_set));
+  assert(record_set.size() == 1);
+  assert(record_set.get(0).row_id == 1);
+
+  record_set.clear();
+  cursor = table->create_cursor(&error);
+  assert(cursor);
+  assert(cursor->read_all(&error, &record_set) == 2);
+
+  // 減算を試す．
+  assert(builder->push_column(&error, "FloatColumn"));
+  assert(builder->push_datum(&error, grnxx::Float(0.25)));
+  assert(builder->push_operator(&error, grnxx::MINUS_OPERATOR));
+  assert(builder->push_datum(&error, grnxx::Float(0.0)));
+  assert(builder->push_operator(&error, grnxx::EQUAL_OPERATOR));
+  expression = builder->release(&error);
+  assert(expression);
+
+  // フィルタとして使ったときの結果を確認する．
+  assert(expression->filter(&error, &record_set));
+  assert(record_set.size() == 1);
+  assert(record_set.get(0).row_id == 2);
+
+  record_set.clear();
+  cursor = table->create_cursor(&error);
+  assert(cursor);
+  assert(cursor->read_all(&error, &record_set) == 2);
+
+  // 乗算を試す．
+  assert(builder->push_column(&error, "IntColumn"));
+  assert(builder->push_datum(&error, grnxx::Int(2)));
+  assert(builder->push_operator(&error, grnxx::MULTIPLICATION_OPERATOR));
+  assert(builder->push_datum(&error, grnxx::Int(912)));
+  assert(builder->push_operator(&error, grnxx::EQUAL_OPERATOR));
+  expression = builder->release(&error);
+  assert(expression);
+
+  // フィルタとして使ったときの結果を確認する．
+  assert(expression->filter(&error, &record_set));
+  assert(record_set.size() == 1);
+  assert(record_set.get(0).row_id == 2);
 }
 
 }  // namespace

@@ -357,6 +357,42 @@ struct BitwiseXor {
   };
 };
 
+struct Plus {
+  template <typename T>
+  struct Functor {
+    using Arg1 = T;
+    using Arg2 = T;
+    using Result = T;
+    T operator()(Arg1 lhs, Arg2 rhs) const {
+      return lhs + rhs;
+    };
+  };
+};
+
+struct Minus {
+  template <typename T>
+  struct Functor {
+    using Arg1 = T;
+    using Arg2 = T;
+    using Result = T;
+    T operator()(Arg1 lhs, Arg2 rhs) const {
+      return lhs - rhs;
+    };
+  };
+};
+
+struct Multiplication {
+  template <typename T>
+  struct Functor {
+    using Arg1 = T;
+    using Arg2 = T;
+    using Result = T;
+    T operator()(Arg1 lhs, Arg2 rhs) const {
+      return lhs * rhs;
+    };
+  };
+};
+
 template <typename Op>
 class BinaryNode : public Node<typename Op::Result> {
  public:
@@ -778,6 +814,15 @@ bool ExpressionBuilder::push_operator(Error *error,
     case BITWISE_XOR_OPERATOR: {
       return push_bitwise_operator<BitwiseXor>(error);
     }
+    case PLUS_OPERATOR: {
+      return push_arithmetic_operator<Plus>(error);
+    }
+    case MINUS_OPERATOR: {
+      return push_arithmetic_operator<Minus>(error);
+    }
+    case MULTIPLICATION_OPERATOR: {
+      return push_arithmetic_operator<Multiplication>(error);
+    }
     default: {
       // TODO: Not supported yet.
       GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
@@ -1004,6 +1049,48 @@ bool ExpressionBuilder::push_bitwise_operator(Error *error) {
       break;
     }
     // TODO: Support other comparable types.
+    default: {
+      GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
+      return false;
+    }
+  }
+  if (!node) {
+    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    return false;
+  }
+  stack_.pop_back();
+  stack_.back() = std::move(node);
+  return true;
+}
+
+template <typename T>
+bool ExpressionBuilder::push_arithmetic_operator(Error *error) {
+  if (stack_.size() < 2) {
+    // TODO: Define a better error code.
+    GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Not enough operands");
+    return false;
+  }
+  auto &lhs = stack_[stack_.size() - 2];
+  auto &rhs = stack_[stack_.size() - 1];
+  if (lhs->data_type() != rhs->data_type()) {
+    // TODO: Define a better error code.
+    GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Type conflict");
+    return false;
+  }
+  unique_ptr<ExpressionNode> node;
+  switch (lhs->data_type()) {
+    case INT_DATA: {
+      typename T::template Functor<Int> functor;
+      node.reset(new (nothrow) BinaryNode<decltype(functor)>(
+          functor, std::move(lhs), std::move(rhs)));
+      break;
+    }
+    case FLOAT_DATA: {
+      typename T::template Functor<Float> functor;
+      node.reset(new (nothrow) BinaryNode<decltype(functor)>(
+          functor, std::move(lhs), std::move(rhs)));
+      break;
+    }
     default: {
       GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
       return false;
