@@ -718,6 +718,26 @@ void test_expression() {
   assert(expression->filter(&error, &record_set));
   assert(record_set.size() == 1);
   assert(record_set.get(0).row_id == 2);
+
+  record_set.clear();
+  cursor = table->create_cursor(&error);
+  assert(cursor);
+  assert(cursor->read_all(&error, &record_set) == 2);
+
+  // スコア計算を試す．
+  assert(builder->push_column(&error, "_score"));
+  assert(builder->push_datum(&error, grnxx::Float(1.0)));
+  assert(builder->push_operator(&error, grnxx::PLUS_OPERATOR));
+  expression = builder->release(&error);
+  assert(expression);
+
+  // スコア調整に使ったときの結果を確認する．
+  assert(expression->adjust(&error, &record_set));
+  assert(record_set.size() == 2);
+  assert(record_set.get(0).row_id == 1);
+  assert(record_set.get(0).score == 1.0);
+  assert(record_set.get(1).row_id == 2);
+  assert(record_set.get(1).score == 1.0);
 }
 
 }  // namespace

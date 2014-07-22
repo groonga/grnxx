@@ -92,6 +92,16 @@ class Expression {
   // "error" != nullptr.
   bool filter(Error *error, RecordSet *record_set);
 
+  // Adjust scores of records.
+  //
+  // Evaluates the expression for the given record set and replaces their
+  // scores with the evaluation results.
+  //
+  // Returns true on success.
+  // On failure, returns false and stores error information into "*error" if
+  // "error" != nullptr.
+  bool adjust(Error *error, RecordSet *record_set);
+
  private:
   const Table *table_;
   unique_ptr<ExpressionNode> root_;

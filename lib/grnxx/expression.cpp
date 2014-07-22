@@ -41,6 +41,16 @@ class ExpressionNode {
   // "error" != nullptr.
   virtual bool filter(Error *error, RecordSet *record_set) = 0;
 
+  // Adjust scores of records.
+  //
+  // Evaluates the expression for the given record set and replaces their
+  // scores with the evaluation results.
+  //
+  // Returns true on success.
+  // On failure, returns false and stores error information into "*error" if
+  // "error" != nullptr.
+  virtual bool adjust(Error *error, RecordSet *record_set) = 0;
+
   // Evaluate the expression subtree.
   //
   // The evaluation results are stored into each expression node.
@@ -64,6 +74,7 @@ class Node : public ExpressionNode {
   }
 
   virtual bool filter(Error *error, RecordSet *record_set);
+  virtual bool adjust(Error *error, RecordSet *record_set);
 
   virtual bool evaluate(Error *error, const RecordSet &record_set);
 
@@ -95,6 +106,26 @@ bool Node<Bool>::filter(Error *error, RecordSet *record_set) {
     }
   }
   return record_set->resize(error, dest);
+}
+
+template <typename T>
+bool Node<T>::adjust(Error *error, RecordSet *record_set) {
+  // TODO: Define "This type is not supported" error.
+  GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
+  return false;
+}
+
+template <>
+bool Node<Float>::adjust(Error *error, RecordSet *record_set) {
+  if (!evaluate(error, *record_set)) {
+    return false;
+  }
+  for (Int i = 0; i < record_set->size(); ++i) {
+    Record record = record_set->get(i);
+    record.score = values_[i];
+    record_set->set(i, record);
+  }
+  return true;
 }
 
 template <typename T>
@@ -651,6 +682,10 @@ DataType Expression::data_type() const {
 
 bool Expression::filter(Error *error, RecordSet *record_set) {
   return root_->filter(error, record_set);
+}
+
+bool Expression::adjust(Error *error, RecordSet *record_set) {
+  return root_->adjust(error, record_set);
 }
 
 Expression::Expression(const Table *table, unique_ptr<ExpressionNode> &&root)
