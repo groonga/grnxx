@@ -146,7 +146,7 @@ class Table {
 
   // Check the validity of a row.
   //
-  // Returns true if the row is valid.
+  // Returns true if "row_id" specifies a row in use.
   // Otherwise, returns false and stores error information into "*error" if
   // "error" != nullptr.
   bool test_row(Error *error, Int row_id) const;
