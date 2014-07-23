@@ -688,6 +688,45 @@ bool Expression::adjust(Error *error, RecordSet *record_set) {
   return root_->adjust(error, record_set);
 }
 
+template <typename T>
+bool Expression::evaluate(Error *error,
+                          const RecordSet &record_set,
+                          std::vector<T> *result_set) {
+  Node<T> *node = static_cast<Node<T> *>(root_.get());
+  if (!node->evaluate(error, record_set)) {
+    return false;
+  }
+  try {
+    result_set->resize(record_set.size());
+  } catch (...) {
+    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    return false;
+  }
+  for (Int i = 0; i < result_set->size(); ++i) {
+    (*result_set)[i] = node->get(i);
+  }
+  return true;
+}
+
+template bool Expression::evaluate(Error *error,
+                                   const RecordSet &record_set,
+                                   std::vector<Bool> *result_set);
+template bool Expression::evaluate(Error *error,
+                                   const RecordSet &record_set,
+                                   std::vector<Int> *result_set);
+template bool Expression::evaluate(Error *error,
+                                   const RecordSet &record_set,
+                                   std::vector<Float> *result_set);
+template bool Expression::evaluate(Error *error,
+                                   const RecordSet &record_set,
+                                   std::vector<Time> *result_set);
+template bool Expression::evaluate(Error *error,
+                                   const RecordSet &record_set,
+                                   std::vector<GeoPoint> *result_set);
+template bool Expression::evaluate(Error *error,
+                                   const RecordSet &record_set,
+                                   std::vector<Text> *result_set);
+
 Expression::Expression(const Table *table, unique_ptr<ExpressionNode> &&root)
     : table_(table),
       root_(std::move(root)) {}

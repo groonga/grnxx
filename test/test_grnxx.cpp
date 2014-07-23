@@ -738,6 +738,25 @@ void test_expression() {
   assert(record_set.get(0).score == 1.0);
   assert(record_set.get(1).row_id == 2);
   assert(record_set.get(1).score == 1.0);
+
+  record_set.clear();
+  cursor = table->create_cursor(&error);
+  assert(cursor);
+  assert(cursor->read_all(&error, &record_set) == 2);
+
+  // 評価結果を取り出す．
+  assert(builder->push_column(&error, "IntColumn"));
+  assert(builder->push_datum(&error, grnxx::Int(100)));
+  assert(builder->push_operator(&error, grnxx::PLUS_OPERATOR));
+  expression = builder->release(&error);
+  assert(expression);
+
+  // 評価結果を確認する．
+  std::vector<grnxx::Int> result_set;
+  assert(expression->evaluate(&error, record_set, &result_set));
+  assert(result_set.size() == 2);
+  assert(result_set[0] == 223);
+  assert(result_set[1] == 556);
 }
 
 }  // namespace

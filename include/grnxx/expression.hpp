@@ -102,6 +102,18 @@ class Expression {
   // "error" != nullptr.
   bool adjust(Error *error, RecordSet *record_set);
 
+  // Evaluate the expression.
+  //
+  // The result is stored into "*result_set".
+  //
+  // Returns true on success.
+  // On failure, returns false and stores error information into "*error" if
+  // "error" != nullptr.
+  template <typename T>
+  bool evaluate(Error *error,
+                const RecordSet &record_set,
+                std::vector<T> *result_set);
+
  private:
   const Table *table_;
   unique_ptr<ExpressionNode> root_;
