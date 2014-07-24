@@ -14,9 +14,9 @@ class Sorter {
   // On success, returns a poitner to the sorter.
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
-  static std::unique_ptr<Sorter> create(
+  static unique_ptr<Sorter> create(
       Error *error,
-      std::unique_ptr<OrderSet> &&order_set,
+      unique_ptr<OrderSet> &&order_set,
       const SorterOptions &options);
 
   // Set the target record set.
@@ -55,6 +55,8 @@ class Sorter {
   bool sort(Error *error, RecordSet *record_set);
 
  private:
+  RecordSet *record_set_;
+
   Sorter();
 };
 
