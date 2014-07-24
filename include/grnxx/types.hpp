@@ -409,6 +409,7 @@ class ExpressionNode;
 class ExpressionBuilder;
 class OrderSet;
 class OrderSetBuilder;
+class SorterNode;
 class Sorter;
 
 }  // namespace grnxx

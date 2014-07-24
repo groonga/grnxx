@@ -56,6 +56,7 @@ class Sorter {
 
  private:
   RecordSet *record_set_;
+  unique_ptr<SorterNode> head_;
 
   Sorter();
 };

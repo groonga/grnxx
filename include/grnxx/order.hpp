@@ -31,7 +31,7 @@ class OrderSet {
   // Return the "i"-th sort condition.
   //
   // If "i" is invalid, the result is undefined.
-  const Order &get(Int i) const {
+  Order &get(Int i) {
     return orders_[i];
   }
 
