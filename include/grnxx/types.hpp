@@ -390,6 +390,16 @@ struct CursorOptions {
   CursorOptions();
 };
 
+struct SorterOptions {
+  // The first "offset" records are skipped (default: 0).
+  Int offset;
+
+  // At most "limit" records are sorted (default: numeric_limits<Int>::max()).
+  Int limit;
+
+  SorterOptions();
+};
+
 // Database temporary object types.
 class Datum;
 class Cursor;
@@ -397,9 +407,9 @@ class RecordSet;
 class Expression;
 class ExpressionNode;
 class ExpressionBuilder;
-
-// Database temporary object option types.
-struct CursorOptions;
+class OrderSet;
+class OrderSetBuilder;
+class Sorter;
 
 }  // namespace grnxx
 
