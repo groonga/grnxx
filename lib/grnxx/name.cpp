@@ -24,7 +24,7 @@ bool Name::assign(Error *error, String name) {
     return false;
   }
 
-  std::unique_ptr<char[]> new_data(new (std::nothrow) char[name.size() + 1]);
+  unique_ptr<char[]> new_data(new (std::nothrow) char[name.size() + 1]);
   if (!new_data) {
     GRNXX_ERROR_SET(error, NO_MEMORY,
                     "Memory allocation failed: size = %" PRIi64, name.size());

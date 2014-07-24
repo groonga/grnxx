@@ -477,7 +477,7 @@ unique_ptr<Table> Table::create(Error *error,
                                 DB *db,
                                 String name,
                                 const TableOptions &options) {
-  std::unique_ptr<Table> table(new Table);
+  unique_ptr<Table> table(new Table);
   table->db_ = db;
   if (!table->name_.assign(error, name)) {
     return nullptr;

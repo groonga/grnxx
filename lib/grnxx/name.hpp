@@ -42,7 +42,7 @@ class Name {
   bool assign(Error *error, String name);
 
  private:
-  std::unique_ptr<char[]> data_;
+  unique_ptr<char[]> data_;
   Int size_;
 
   static constexpr Int MIN_SIZE = 1;

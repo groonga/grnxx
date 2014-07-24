@@ -138,7 +138,7 @@ unique_ptr<DB> open_db(Error *error,
     GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
     return nullptr;
   }
-  std::unique_ptr<DB> db(new (nothrow) DB);
+  unique_ptr<DB> db(new (nothrow) DB);
   if (!db) {
     GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
     return nullptr;
