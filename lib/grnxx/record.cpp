@@ -4,8 +4,6 @@
 
 namespace grnxx {
 
-void RecordSet::report_error(Error *error) {
-  GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
-}
+// TODO: RecordSet should be replaced with Array<Record>?
 
 }  // namespace

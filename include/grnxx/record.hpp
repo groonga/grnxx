@@ -1,8 +1,7 @@
 #ifndef GRNXX_RECORD_HPP
 #define GRNXX_RECORD_HPP
 
-#include <vector>
-
+#include "grnxx/array.hpp"
 #include "grnxx/types.hpp"
 
 namespace grnxx {
@@ -15,7 +14,6 @@ struct Record {
   Record(Int row_id, Float score) : row_id(row_id), score(score) {}
 };
 
-// TODO: RecordSet should be reimplemented not to use std::vector?
 class RecordSet {
  public:
   RecordSet() : records_() {}
@@ -32,13 +30,7 @@ class RecordSet {
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
   bool append(Error *error, const Record &record) {
-    try {
-      records_.push_back(record);
-      return true;
-    } catch (...) {
-      report_error(error);
-      return false;
-    }
+    return records_.push_back(error, record);
   }
 
   // Return the record identified by "i".
@@ -61,13 +53,7 @@ class RecordSet {
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
   bool resize(Error *error, Int size) {
-    try {
-      records_.resize(size);
-      return true;
-    } catch (...) {
-      report_error(error);
-      return false;
-    }
+    return records_.resize(error, size);
   }
 
   // Clear all the records.
@@ -76,10 +62,7 @@ class RecordSet {
   }
 
  private:
-  std::vector<Record> records_;
-
-  // Report a no memory error.
-  void report_error(Error *error);
+  Array<Record> records_;
 };
 
 }  // namespace grnxx
