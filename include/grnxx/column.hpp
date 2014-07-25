@@ -1,8 +1,6 @@
 #ifndef GRNXX_COLUMN_HPP
 #define GRNXX_COLUMN_HPP
 
-#include <vector>
-
 #include "grnxx/name.hpp"
 #include "grnxx/types.hpp"
 
