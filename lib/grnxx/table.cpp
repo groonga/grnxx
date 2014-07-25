@@ -242,10 +242,7 @@ Column *Table::create_column(Error *error,
                     static_cast<int>(name.size()), name.data());
     return nullptr;
   }
-  try {
-    columns_.reserve(columns_.size() + 1);
-  } catch (...) {
-    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+  if (!columns_.reserve(error, columns_.size() + 1)) {
     return nullptr;
   }
   unique_ptr<Column> new_column =
@@ -253,7 +250,7 @@ Column *Table::create_column(Error *error,
   if (!new_column) {
     return nullptr;
   }
-  columns_.push_back(std::move(new_column));
+  columns_.push_back(error, std::move(new_column));
   return columns_.back().get();
 }
 
@@ -268,7 +265,7 @@ bool Table::remove_column(Error *error, String name) {
                     static_cast<int>(name.size()), name.data());
     return false;
   }
-  columns_.erase(columns_.begin() + column_id);
+  columns_.erase(column_id);
   return true;
 }
 
@@ -504,10 +501,10 @@ Table::Table()
 void Table::set_bit(Int i) {
   bitmap_[i / 64] |= uint64_t(1) << (i % 64);
   if (bitmap_[i / 64] == ~uint64_t(0)) {
-    for (auto &bitmap_index : bitmap_indexes_) {
+    for (Int index_id = 0; index_id < bitmap_indexes_.size(); ++index_id) {
       i /= 64;
-      bitmap_index[i / 64] |= uint64_t(1) << (i % 64);
-      if (bitmap_index[i / 64] != ~uint64_t(0)) {
+      bitmap_indexes_[index_id][i / 64] |= uint64_t(1) << (i % 64);
+      if (bitmap_indexes_[index_id][i / 64] != ~uint64_t(0)) {
         break;
       }
     }
@@ -518,10 +515,10 @@ void Table::unset_bit(Int i) {
   bool is_full = bitmap_[i / 64] == ~uint64_t(0);
   bitmap_[i / 64] &= ~(uint64_t(1) << (i % 64));
   if (is_full) {
-    for (auto &bitmap_index : bitmap_indexes_) {
+    for (Int index_id = 0; index_id < bitmap_indexes_.size(); ++index_id) {
       i /= 64;
-      is_full = bitmap_index[i / 64] == ~uint64_t(0);
-      bitmap_index[i / 64] &= ~(uint64_t(1) << (i % 64));
+      is_full = bitmap_indexes_[index_id][i / 64] == ~uint64_t(0);
+      bitmap_indexes_[index_id][i / 64] &= ~(uint64_t(1) << (i % 64));
       if (!is_full) {
         break;
       }
@@ -549,12 +546,12 @@ bool Table::reserve_bit(Error *error, Int i) {
   // TODO: Error handling.
   size_t block_id = i / 64;
   if (block_id >= bitmap_.size()) {
-    bitmap_.resize(block_id + 1, 0);
+    bitmap_.resize(error, block_id + 1, 0);
   }
-  for (auto &bitmap_index : bitmap_indexes_) {
+  for (Int index_id = 0; index_id < bitmap_indexes_.size(); ++index_id) {
     block_id /= 64;
-    if (block_id >= bitmap_index.size()) {
-      bitmap_index.resize(block_id + 1, 0);
+    if (block_id >= bitmap_indexes_[index_id].size()) {
+      bitmap_indexes_[index_id].resize(error, block_id + 1, 0);
     } else {
       block_id = 0;
       break;
@@ -563,8 +560,8 @@ bool Table::reserve_bit(Error *error, Int i) {
   Int depth = bitmap_indexes_.size();
   while (block_id > 0) {
     block_id /= 64;
-    bitmap_indexes_.resize(depth + 1);
-    bitmap_indexes_[depth].resize(block_id + 1, 0);
+    bitmap_indexes_.resize(error, depth + 1);
+    bitmap_indexes_[depth].resize(error, block_id + 1, 0);
     if (depth == 0) {
       bitmap_indexes_[depth][0] = bitmap_[0] != 0;
     } else {

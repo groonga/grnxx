@@ -1,8 +1,7 @@
 #ifndef GRNXX_TABLE_HPP
 #define GRNXX_TABLE_HPP
 
-#include <vector>
-
+#include "grnxx/array.hpp"
 #include "grnxx/name.hpp"
 #include "grnxx/types.hpp"
 
@@ -202,12 +201,12 @@ class Table {
  private:
   DB *db_;
   Name name_;
-  std::vector<unique_ptr<Column>> columns_;
+  Array<unique_ptr<Column>> columns_;
   Column *key_column_;
   Int num_rows_;
   Int max_row_id_;
-  std::vector<uint64_t> bitmap_;
-  std::vector<std::vector<uint64_t>> bitmap_indexes_;
+  Array<uint64_t> bitmap_;
+  Array<Array<uint64_t>> bitmap_indexes_;
 
   // Create a new table.
   //
