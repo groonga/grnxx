@@ -114,13 +114,8 @@ class Array {
     ArrayHelper::report_memory_error(error);
     return false;
   }
-  bool pop_back(Error *error) {
-    if (values_.size() == 0) {
-      ArrayHelper::report_empty_error(error);
-      return false;
-    }
+  void pop_back() {
     values_.pop_back();
-    return true;
   }
 
  private:
