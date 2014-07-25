@@ -19,6 +19,13 @@ class Array {
   Array() : values_() {}
   ~Array() {}
 
+  Array(Array &&array) : values_(std::move(array.values_)) {}
+
+  Array &operator=(Array &&array) {
+    values_ = std::move(array.values_);
+    return *this;
+  }
+
   T &operator[](Int i) {
     return values_[static_cast<size_t>(i)];
   }
