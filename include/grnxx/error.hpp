@@ -6,16 +6,17 @@
 namespace grnxx {
 
 enum ErrorCode {
-  NO_ERROR,          // No error occurred.
-  NOT_FOUND,         // The target does not found.
-  ALREADY_EXISTS,    // The target already exists.
-  NOT_REMOVABLE,     // The target is not removable.
-  BROKEN,            // The database is broken.
-  NO_MEMORY,         // Memory allocation failed.
-  INVALID_NAME,      // The string is invalid as an object name.
-  NO_KEY_COLUMN,     // The table has no key column.
-  INVALID_ARGUMENT,  // Invalid argument.
-  NOT_SUPPORTED_YET  // The operation is not supported yet.
+  NO_ERROR,           // No error occurred.
+  NOT_FOUND,          // The target does not found.
+  ALREADY_EXISTS,     // The target already exists.
+  NOT_REMOVABLE,      // The target is not removable.
+  BROKEN,             // The database is broken.
+  NO_MEMORY,          // Memory allocation failed.
+  INVALID_NAME,       // The string is invalid as an object name.
+  NO_KEY_COLUMN,      // The table has no key column.
+  INVALID_ARGUMENT,   // Invalid argument.
+  INVALID_OPERATION,  // Invalid operation.
+  NOT_SUPPORTED_YET   // The operation is not supported yet.
 };
 
 // Many functions take a pointer to an Error object as the first argument
