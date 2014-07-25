@@ -1,8 +1,7 @@
 #ifndef GRNXX_DB_HPP
 #define GRNXX_DB_HPP
 
-#include <vector>
-
+#include "grnxx/array.hpp"
 #include "grnxx/types.hpp"
 
 namespace grnxx {
@@ -87,7 +86,7 @@ class DB {
             const DBOptions &options = DBOptions()) const;
 
  private:
-  std::vector<unique_ptr<Table>> tables_;
+  Array<unique_ptr<Table>> tables_;
 
   DB();
 

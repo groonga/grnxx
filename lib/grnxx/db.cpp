@@ -16,10 +16,7 @@ Table *DB::create_table(Error *error,
                     static_cast<int>(name.size()), name.data());
     return nullptr;
   }
-  try {
-    tables_.reserve(tables_.size() + 1);
-  } catch (...) {
-    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+  if (!tables_.reserve(error, tables_.size() + 1)) {
     return nullptr;
   }
   unique_ptr<Table> new_table =
@@ -27,7 +24,7 @@ Table *DB::create_table(Error *error,
   if (!new_table) {
     return nullptr;
   }
-  tables_.push_back(std::move(new_table));
+  tables_.push_back(error, std::move(new_table));
   return tables_.back().get();
 }
 
@@ -42,7 +39,7 @@ bool DB::remove_table(Error *error, String name) {
                     static_cast<int>(name.size()), name.data());
     return false;
   }
-  tables_.erase(tables_.begin() + table_id);
+  tables_.erase(table_id);
   return true;
 }
 
