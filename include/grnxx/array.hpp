@@ -122,7 +122,146 @@ class Array {
   std::vector<T> values_;
 };
 
-template class Array<Int>;
+class BoolReference {
+ public:
+  BoolReference(uint64_t *block, uint64_t mask)
+      : block_(block),
+        mask_(mask) {}
+
+  operator Bool() const {
+    return (*block_ & mask_) != 0;
+  }
+
+  BoolReference operator=(Bool rhs) {
+    if (rhs) {
+      *block_ |= mask_;
+    } else {
+      *block_ &= ~mask_;
+    }
+    return *this;
+  }
+
+ private:
+  uint64_t *block_;
+  uint64_t mask_;
+};
+
+inline bool operator==(const BoolReference &lhs, Bool rhs) {
+  return static_cast<Bool>(lhs) == rhs;
+}
+
+inline bool operator!=(const BoolReference &lhs, Bool rhs) {
+  return static_cast<Bool>(lhs) != rhs;
+}
+
+// Array<Bool> is specialized because a bit does not have its address.
+template <>
+class Array<Bool> {
+ public:
+  Array() : blocks_(), size_(0) {}
+  ~Array() {}
+
+  Array(Array &&array) : blocks_(std::move(array.blocks_)) {}
+
+  Array &operator=(Array &&array) {
+    blocks_ = std::move(array.blocks_);
+    return *this;
+  }
+
+  BoolReference operator[](Int i) {
+    return BoolReference(&blocks_[i / 64], uint64_t(1) << (i % 64));
+  }
+  Bool operator[](Int i) const {
+    return (blocks_[i / 64] & (uint64_t(1) << (i % 64))) != 0;
+  }
+
+  BoolReference front() {
+    return BoolReference(&blocks_[0], 1);
+  }
+  Bool front() const {
+    return (blocks_[0] & 1) != 0;
+  }
+
+  BoolReference back() {
+    return operator[](size_ - 1);
+  }
+  Bool back() const {
+    return operator[](size_ - 1);
+  }
+
+  // Instead of data().
+  uint64_t *blocks() {
+    return blocks_.data();
+  }
+  const uint64_t *blocks() const {
+    return blocks_.data();
+  }
+
+  Int size() const {
+    return size_;
+  }
+  Int capacity() const {
+    return blocks_.capacity() * 64;
+  }
+
+  bool reserve(Error *error, Int new_size) {
+    return blocks_.reserve(error, (new_size + 63) / 64);
+  }
+
+  bool resize(Error *error, Int new_size) {
+    if (!blocks_.resize(error, (new_size + 63) / 64)) {
+      return false;
+    }
+    size_ = new_size;
+    return true;
+  }
+  bool resize(Error *error, Int new_size, Bool value) {
+    if (!blocks_.resize(error, (new_size + 63) / 64,
+                        value ? ~uint64_t(0) : uint64_t(0))) {
+      return false;
+    }
+    size_ = new_size;
+    return true;
+  }
+
+  bool shrink_to_fit(Error *error) {
+    return blocks_.shrink_to_fit(error);
+  }
+
+  void clear() {
+    blocks_.clear();
+    size_ = 0;
+  }
+
+//  void erase(Int i) {
+//    values_.erase(values_.begin() + i);
+//  }
+
+  bool push_back(Error *error, Bool value) {
+    if ((size_ % 64) == 0) {
+      if (!blocks_.push_back(error, 0)) {
+        return false;
+      }
+    }
+    if (value) {
+      blocks_[size_ / 64] |= uint64_t(1) << (size_ % 64);
+    } else {
+      blocks_[size_ / 64] &= ~(uint64_t(1) << (size_ % 64));
+    }
+    ++size_;
+    return true;
+  }
+  void pop_back() {
+    if ((size_ % 64) == 1) {
+      blocks_.pop_back();
+    }
+    --size_;
+  }
+
+ private:
+  Array<uint64_t> blocks_;
+  Int size_;
+};
 
 }  // namespace grnxx
 
