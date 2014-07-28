@@ -33,18 +33,32 @@ class RecordSet {
     return records_.push_back(error, record);
   }
 
-  // Return the record identified by "i".
-  //
-  // If "i" is invalid, the result is undefined.
+  // If "i" is invalid, the result of the following functions is undefined.
+
+  // Return the "i"-th record.
   Record get(Int i) const {
     return records_[i];
   }
+  // Return the row ID of the "i"-th record.
+  Int get_row_id(Int i) const {
+    return records_[i].row_id;
+  }
+  // Return the score of the "i"-th record.
+  Float get_score(Int i) const {
+    return records_[i].score;
+  }
 
-  // Set a record.
-  //
-  // If "i" is invalid, the result is undefined.
+  // Set the "i"-th record.
   void set(Int i, Record record) {
     records_[i] = record;
+  }
+  // Set the row ID of the "i"-th record.
+  void set_row_id(Int i, Int row_id) {
+    records_[i].row_id = row_id;
+  }
+  // Set the score of the "i"-th record.
+  void set_score(Int i, Float score) {
+    records_[i].score = score;
   }
 
   // Resize the set.

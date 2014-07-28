@@ -121,9 +121,7 @@ bool Node<Float>::adjust(Error *error, RecordSet *record_set) {
     return false;
   }
   for (Int i = 0; i < record_set->size(); ++i) {
-    Record record = record_set->get(i);
-    record.score = values_[i];
-    record_set->set(i, record);
+    record_set->set_score(i, values_[i]);
   }
   return true;
 }
@@ -205,7 +203,7 @@ class RowIDNode : public Node<Int> {
       return false;
     }
     for (Int i = 0; i < record_set.size(); ++i) {
-      this->values_[i] = record_set.get(i).row_id;
+      this->values_[i] = record_set.get_row_id(i);
     }
     return true;
   }
@@ -227,7 +225,7 @@ class ScoreNode : public Node<Float> {
       return false;
     }
     for (Int i = 0; i < record_set.size(); ++i) {
-      this->values_[i] = record_set.get(i).score;
+      this->values_[i] = record_set.get_score(i);
     }
     return true;
   }
@@ -252,7 +250,7 @@ class ColumnNode : public Node<T> {
       return false;
     }
     for (Int i = 0; i < record_set.size(); ++i) {
-      this->values_[i] = column_->get(record_set.get(i).row_id);
+      this->values_[i] = column_->get(record_set.get_row_id(i));
     }
     return true;
   }
@@ -560,7 +558,7 @@ bool LogicalOrNode::filter(Error *error, RecordSet *record_set) {
   Int left_count = 0;
   Int right_count = 0;
   for (Int i = 0; i < record_set->size(); ++i) {
-    if (record_set->get(i).row_id == left_record_set_.get(left_count).row_id) {
+    if (record_set->get_row_id(i) == left_record_set_.get_row_id((left_count))) {
       ++left_count;
     } else {
       right_record_set_.set(right_count, record_set->get(i));
