@@ -83,7 +83,7 @@ class Node : public ExpressionNode {
   }
 
  protected:
-  std::vector<T> values_;
+  Array<T> values_;
 };
 
 template <typename T>
@@ -155,15 +155,11 @@ class DatumNode : public Node<T> {
 
 template <typename T>
 bool DatumNode<T>::evaluate(Error *error, const RecordSet &record_set) {
-  try {
-    if (static_cast<size_t>(record_set.size()) > this->values_.size()) {
-      this->values_.resize(record_set.size(), datum_);
-    }
+  if (static_cast<size_t>(record_set.size()) <= this->values_.size()) {
+    // The buffer is already filled and there is nothing to do.
     return true;
-  } catch (...) {
-    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
-    return false;
   }
+  return this->values_.resize(error, record_set.size(), datum_);
 }
 
 template <>
@@ -185,16 +181,12 @@ class DatumNode<Text> : public Node<Text> {
 };
 
 bool DatumNode<Text>::evaluate(Error *error, const RecordSet &record_set) {
-  try {
-    if (static_cast<size_t>(record_set.size()) > this->values_.size()) {
-      this->values_.resize(record_set.size(),
-                           Text(datum_.data(), datum_.size()));
-    }
+  if (static_cast<size_t>(record_set.size()) <= this->values_.size()) {
+    // The buffer is already filled and there is nothing to do.
     return true;
-  } catch (...) {
-    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
-    return false;
   }
+  return this->values_.resize(error, record_set.size(),
+                              Text(datum_.data(), datum_.size()));
 }
 
 // -- RowIDNode --
@@ -209,10 +201,7 @@ class RowIDNode : public Node<Int> {
   }
 
   bool evaluate(Error *error, const RecordSet &record_set) {
-    try {
-      this->values_.resize(record_set.size());
-    } catch (...) {
-      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    if (!this->values_.resize(error, record_set.size())) {
       return false;
     }
     for (Int i = 0; i < record_set.size(); ++i) {
@@ -234,10 +223,7 @@ class ScoreNode : public Node<Float> {
   }
 
   bool evaluate(Error *error, const RecordSet &record_set) {
-    try {
-      this->values_.resize(record_set.size());
-    } catch (...) {
-      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    if (!this->values_.resize(error, record_set.size())) {
       return false;
     }
     for (Int i = 0; i < record_set.size(); ++i) {
@@ -262,10 +248,7 @@ class ColumnNode : public Node<T> {
   }
 
   bool evaluate(Error *error, const RecordSet &record_set) {
-    try {
-      this->values_.resize(record_set.size());
-    } catch (...) {
-      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    if (!this->values_.resize(error, record_set.size())) {
       return false;
     }
     for (Int i = 0; i < record_set.size(); ++i) {
@@ -454,7 +437,7 @@ class BinaryNode : public Node<typename Op::Result> {
 template <typename Op>
 bool BinaryNode<Op>::evaluate(Error *error, const RecordSet &record_set) {
   try {
-    this->values_.resize(record_set.size());
+    this->values_.resize(error, record_set.size());
   } catch (...) {
     GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
     return false;
@@ -498,11 +481,7 @@ bool LogicalAndNode::filter(Error *error, RecordSet *record_set) {
 }
 
 bool LogicalAndNode::evaluate(Error *error, const RecordSet &record_set) {
-  // TODO: This logic should be tested.
-  try {
-    this->values_.resize(record_set.size());
-  } catch (...) {
-    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+  if (!this->values_.resize(error, record_set.size())) {
     return false;
   }
   if (!lhs_->evaluate(error, record_set)) {
@@ -630,10 +609,7 @@ bool LogicalOrNode::filter(Error *error, RecordSet *record_set) {
 
 bool LogicalOrNode::evaluate(Error *error, const RecordSet &record_set) {
   // TODO: This logic should be tested.
-  try {
-    this->values_.resize(record_set.size());
-  } catch (...) {
-    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+  if (!this->values_.resize(error, record_set.size())) {
     return false;
   }
   if (!lhs_->evaluate(error, record_set)) {
@@ -691,15 +667,12 @@ bool Expression::adjust(Error *error, RecordSet *record_set) {
 template <typename T>
 bool Expression::evaluate(Error *error,
                           const RecordSet &record_set,
-                          std::vector<T> *result_set) {
+                          Array<T> *result_set) {
   Node<T> *node = static_cast<Node<T> *>(root_.get());
   if (!node->evaluate(error, record_set)) {
     return false;
   }
-  try {
-    result_set->resize(record_set.size());
-  } catch (...) {
-    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+  if (!result_set->resize(error, record_set.size())) {
     return false;
   }
   for (Int i = 0; i < result_set->size(); ++i) {
@@ -710,22 +683,22 @@ bool Expression::evaluate(Error *error,
 
 template bool Expression::evaluate(Error *error,
                                    const RecordSet &record_set,
-                                   std::vector<Bool> *result_set);
+                                   Array<Bool> *result_set);
 template bool Expression::evaluate(Error *error,
                                    const RecordSet &record_set,
-                                   std::vector<Int> *result_set);
+                                   Array<Int> *result_set);
 template bool Expression::evaluate(Error *error,
                                    const RecordSet &record_set,
-                                   std::vector<Float> *result_set);
+                                   Array<Float> *result_set);
 template bool Expression::evaluate(Error *error,
                                    const RecordSet &record_set,
-                                   std::vector<Time> *result_set);
+                                   Array<Time> *result_set);
 template bool Expression::evaluate(Error *error,
                                    const RecordSet &record_set,
-                                   std::vector<GeoPoint> *result_set);
+                                   Array<GeoPoint> *result_set);
 template bool Expression::evaluate(Error *error,
                                    const RecordSet &record_set,
-                                   std::vector<Text> *result_set);
+                                   Array<Text> *result_set);
 
 Expression::Expression(const Table *table, unique_ptr<ExpressionNode> &&root)
     : table_(table),
@@ -747,10 +720,7 @@ unique_ptr<ExpressionBuilder> ExpressionBuilder::create(Error *error,
 ExpressionBuilder::~ExpressionBuilder() {}
 
 bool ExpressionBuilder::push_datum(Error *error, const Datum &datum) {
-  try {
-    stack_.reserve(stack_.size() + 1);
-  } catch (...) {
-    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+  if (!stack_.reserve(error, stack_.size() + 1)) {
     return false;
   }
   // TODO: DatumNode::create() should be provided to get error information.
@@ -790,15 +760,12 @@ bool ExpressionBuilder::push_datum(Error *error, const Datum &datum) {
     GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
     return false;
   }
-  stack_.push_back(std::move(node));
+  stack_.push_back(error, std::move(node));
   return true;
 }
 
 bool ExpressionBuilder::push_column(Error *error, String name) {
-  try {
-    stack_.reserve(stack_.size() + 1);
-  } catch (...) {
-    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+  if (!stack_.reserve(error, stack_.size() + 1)) {
     return false;
   }
   unique_ptr<ExpressionNode> node;
@@ -848,7 +815,7 @@ bool ExpressionBuilder::push_column(Error *error, String name) {
     GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
     return false;
   }
-  stack_.push_back(std::move(node));
+  stack_.push_back(error, std::move(node));
   return true;
 }
 
@@ -945,7 +912,6 @@ bool ExpressionBuilder::push_logical_and_operator(Error *error) {
   stack_.back() = std::move(node);
   return true;
 }
-
 
 bool ExpressionBuilder::push_logical_or_operator(Error *error) {
   if (stack_.size() < 2) {

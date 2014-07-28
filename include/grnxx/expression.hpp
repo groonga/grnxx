@@ -1,8 +1,7 @@
 #ifndef GRNXX_EXPRESSION_HPP
 #define GRNXX_EXPRESSION_HPP
 
-#include <vector>
-
+#include "grnxx/array.hpp"
 #include "grnxx/types.hpp"
 
 namespace grnxx {
@@ -112,7 +111,7 @@ class Expression {
   template <typename T>
   bool evaluate(Error *error,
                 const RecordSet &record_set,
-                std::vector<T> *result_set);
+                Array<T> *result_set);
 
  private:
   const Table *table_;
@@ -179,7 +178,7 @@ class ExpressionBuilder {
 
  private:
   const Table *table_;
-  std::vector<unique_ptr<ExpressionNode>> stack_;
+  Array<unique_ptr<ExpressionNode>> stack_;
 
   explicit ExpressionBuilder(const Table *table);
 

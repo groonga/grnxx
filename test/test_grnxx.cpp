@@ -752,7 +752,7 @@ void test_expression() {
   assert(expression);
 
   // 評価結果を確認する．
-  std::vector<grnxx::Int> result_set;
+  grnxx::Array<grnxx::Int> result_set;
   assert(expression->evaluate(&error, record_set, &result_set));
   assert(result_set.size() == 2);
   assert(result_set[0] == 223);
