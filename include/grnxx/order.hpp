@@ -1,8 +1,7 @@
 #ifndef GRNXX_ORDER_HPP
 #define GRNXX_ORDER_HPP
 
-#include <vector>
-
+#include "grnxx/array.hpp"
 #include "grnxx/types.hpp"
 
 namespace grnxx {
@@ -36,7 +35,7 @@ class OrderSet {
   }
 
  private:
-  std::vector<Order> orders_;
+  Array<Order> orders_;
 
   OrderSet();
 
@@ -93,7 +92,7 @@ class OrderSetBuilder {
 
  private:
   const Table *table_;
-  std::vector<Order> orders_;
+  Array<Order> orders_;
 
   OrderSetBuilder();
 };

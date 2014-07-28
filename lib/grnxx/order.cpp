@@ -10,13 +10,7 @@ OrderSet::~OrderSet() {}
 OrderSet::OrderSet() : orders_() {}
 
 bool OrderSet::append(Error *error, Order &&order) {
-  try {
-    orders_.push_back(std::move(order));
-    return true;
-  } catch (...) {
-    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
-    return false;
-  }
+  return orders_.push_back(error, std::move(order));
 }
 
 unique_ptr<OrderSetBuilder> OrderSetBuilder::create(Error *error,
@@ -35,13 +29,7 @@ OrderSetBuilder::~OrderSetBuilder() {}
 bool OrderSetBuilder::append(Error *error,
                              unique_ptr<Expression> &&expression,
                              OrderType type) {
-  try {
-    orders_.push_back(Order(std::move(expression), type));
-    return true;
-  } catch (...) {
-    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
-    return false;
-  }
+  return orders_.push_back(error, Order(std::move(expression), type));
 }
 
 void OrderSetBuilder::clear() {
