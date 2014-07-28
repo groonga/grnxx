@@ -185,11 +185,8 @@ unique_ptr<ColumnImpl<T>> ColumnImpl<T>::create(Error *error,
                                TypeTraits<T>::data_type(), options)) {
     return nullptr;
   }
-  try {
-    column->values_.resize(table->max_row_id() + 1,
-                           TypeTraits<T>::default_value());
-  } catch (...) {
-    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+  if (!column->values_.resize(error, table->max_row_id() + 1,
+                              TypeTraits<T>::default_value())) {
     return nullptr;
   }
   return column;
@@ -201,11 +198,7 @@ ColumnImpl<T>::~ColumnImpl() {}
 template <typename T>
 bool ColumnImpl<T>::set_default_value(Error *error, Int row_id) {
   if (row_id >= values_.size()) {
-    try {
-      values_.resize(row_id + 1, TypeTraits<T>::default_value());
-      return true;
-    } catch (...) {
-      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    if (!values_.resize(error, row_id + 1, TypeTraits<T>::default_value())) {
       return false;
     }
   }
@@ -263,10 +256,7 @@ unique_ptr<ColumnImpl<Text>> ColumnImpl<Text>::create(
   if (!column->initialize_base(error, table, name, TEXT_DATA, options)) {
     return nullptr;
   }
-  try {
-    column->values_.resize(table->max_row_id() + 1);
-  } catch (...) {
-    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+  if (!column->values_.resize(error, table->max_row_id() + 1)) {
     return nullptr;
   }
   return column;
@@ -276,11 +266,7 @@ ColumnImpl<Text>::~ColumnImpl() {}
 
 bool ColumnImpl<Text>::set_default_value(Error *error, Int row_id) {
   if (row_id >= values_.size()) {
-    try {
-      values_.resize(row_id + 1);
-      return true;
-    } catch (...) {
-      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    if (!values_.resize(error, row_id + 1)) {
       return false;
     }
   }

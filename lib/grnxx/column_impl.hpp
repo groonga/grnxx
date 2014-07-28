@@ -1,8 +1,7 @@
 #ifndef GRNXX_COLUMN_BASE_HPP
 #define GRNXX_COLUMN_BASE_HPP
 
-#include <vector>
-
+#include "grnxx/array.hpp"
 #include "grnxx/column.hpp"
 
 namespace grnxx {
@@ -40,7 +39,7 @@ class ColumnImpl : public Column {
   }
 
  protected:
-  std::vector<T> values_;
+  Array<T> values_;
 
   ColumnImpl();
 };
@@ -79,7 +78,7 @@ class ColumnImpl<Text> : public Column {
 
  protected:
   // TODO: std::string should not be used.
-  std::vector<std::string> values_;
+  Array<std::string> values_;
 
   ColumnImpl();
 };
