@@ -403,6 +403,7 @@ struct SorterOptions {
 // Database temporary object types.
 class Datum;
 class Cursor;
+class RecordSubset;
 class RecordSet;
 class Expression;
 class ExpressionNode;
