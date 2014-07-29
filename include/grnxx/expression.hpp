@@ -108,9 +108,13 @@ class Expression {
   // Returns true on success.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
+//  template <typename T>
+//  bool evaluate(Error *error,
+//                const RecordSet &record_set,
+//                Array<T> *result_set);
   template <typename T>
   bool evaluate(Error *error,
-                const RecordSet &record_set,
+                const RecordSubset &record_set,
                 Array<T> *result_set);
 
  private:

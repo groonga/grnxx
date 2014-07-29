@@ -58,7 +58,7 @@ class ExpressionNode {
   // Returns true on success.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
-  virtual bool evaluate(Error *error, const RecordSet &record_set) = 0;
+  virtual bool evaluate(Error *error, const RecordSubset &record_set) = 0;
 };
 
 namespace {
@@ -76,7 +76,7 @@ class Node : public ExpressionNode {
   virtual bool filter(Error *error, RecordSet *record_set);
   virtual bool adjust(Error *error, RecordSet *record_set);
 
-  virtual bool evaluate(Error *error, const RecordSet &record_set);
+  virtual bool evaluate(Error *error, const RecordSubset &record_set);
 
   T get(Int i) const {
     return values_[i];
@@ -127,7 +127,7 @@ bool Node<Float>::adjust(Error *error, RecordSet *record_set) {
 }
 
 template <typename T>
-bool Node<T>::evaluate(Error *error, const RecordSet &record_set) {
+bool Node<T>::evaluate(Error *error, const RecordSubset &record_set) {
   // TODO: This should be a pure virtual function.
   GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
   return false;
@@ -145,14 +145,14 @@ class DatumNode : public Node<T> {
     return DATUM_NODE;
   }
 
-  bool evaluate(Error *error, const RecordSet &record_set);
+  bool evaluate(Error *error, const RecordSubset &record_set);
 
  private:
   T datum_;
 };
 
 template <typename T>
-bool DatumNode<T>::evaluate(Error *error, const RecordSet &record_set) {
+bool DatumNode<T>::evaluate(Error *error, const RecordSubset &record_set) {
   if (static_cast<size_t>(record_set.size()) <= this->values_.size()) {
     // The buffer is already filled and there is nothing to do.
     return true;
@@ -172,13 +172,13 @@ class DatumNode<Text> : public Node<Text> {
     return DATUM_NODE;
   }
 
-  bool evaluate(Error *error, const RecordSet &record_set);
+  bool evaluate(Error *error, const RecordSubset &record_set);
 
  private:
   std::string datum_;
 };
 
-bool DatumNode<Text>::evaluate(Error *error, const RecordSet &record_set) {
+bool DatumNode<Text>::evaluate(Error *error, const RecordSubset &record_set) {
   if (static_cast<size_t>(record_set.size()) <= this->values_.size()) {
     // The buffer is already filled and there is nothing to do.
     return true;
@@ -198,7 +198,7 @@ class RowIDNode : public Node<Int> {
     return ROW_ID_NODE;
   }
 
-  bool evaluate(Error *error, const RecordSet &record_set) {
+  bool evaluate(Error *error, const RecordSubset &record_set) {
     if (!this->values_.resize(error, record_set.size())) {
       return false;
     }
@@ -220,7 +220,7 @@ class ScoreNode : public Node<Float> {
     return SCORE_NODE;
   }
 
-  bool evaluate(Error *error, const RecordSet &record_set) {
+  bool evaluate(Error *error, const RecordSubset &record_set) {
     if (!this->values_.resize(error, record_set.size())) {
       return false;
     }
@@ -245,7 +245,7 @@ class ColumnNode : public Node<T> {
     return COLUMN_NODE;
   }
 
-  bool evaluate(Error *error, const RecordSet &record_set) {
+  bool evaluate(Error *error, const RecordSubset &record_set) {
     if (!this->values_.resize(error, record_set.size())) {
       return false;
     }
@@ -424,7 +424,7 @@ class BinaryNode : public Node<typename Op::Result> {
     return OPERATOR_NODE;
   }
 
-  bool evaluate(Error *error, const RecordSet &record_set);
+  bool evaluate(Error *error, const RecordSubset &record_set);
 
  private:
   Op operator_;
@@ -433,7 +433,7 @@ class BinaryNode : public Node<typename Op::Result> {
 };
 
 template <typename Op>
-bool BinaryNode<Op>::evaluate(Error *error, const RecordSet &record_set) {
+bool BinaryNode<Op>::evaluate(Error *error, const RecordSubset &record_set) {
   try {
     this->values_.resize(error, record_set.size());
   } catch (...) {
@@ -466,7 +466,7 @@ class LogicalAndNode : public Node<Bool> {
 
   bool filter(Error *error, RecordSet *record_set);
 
-  bool evaluate(Error *error, const RecordSet &record_set);
+  bool evaluate(Error *error, const RecordSubset &record_set);
 
  private:
   unique_ptr<Node<Bool>> lhs_;
@@ -478,7 +478,7 @@ bool LogicalAndNode::filter(Error *error, RecordSet *record_set) {
   return lhs_->filter(error, record_set) && rhs_->filter(error, record_set);
 }
 
-bool LogicalAndNode::evaluate(Error *error, const RecordSet &record_set) {
+bool LogicalAndNode::evaluate(Error *error, const RecordSubset &record_set) {
   if (!this->values_.resize(error, record_set.size())) {
     return false;
   }
@@ -521,7 +521,7 @@ class LogicalOrNode : public Node<Bool> {
 
   bool filter(Error *error, RecordSet *record_set);
 
-  bool evaluate(Error *error, const RecordSet &record_set);
+  bool evaluate(Error *error, const RecordSubset &record_set);
 
  private:
   unique_ptr<Node<Bool>> lhs_;
@@ -605,7 +605,7 @@ bool LogicalOrNode::filter(Error *error, RecordSet *record_set) {
   return record_set->resize(error, left_count + right_count);
 }
 
-bool LogicalOrNode::evaluate(Error *error, const RecordSet &record_set) {
+bool LogicalOrNode::evaluate(Error *error, const RecordSubset &record_set) {
   // TODO: This logic should be tested.
   if (!this->values_.resize(error, record_set.size())) {
     return false;
@@ -664,7 +664,7 @@ bool Expression::adjust(Error *error, RecordSet *record_set) {
 
 template <typename T>
 bool Expression::evaluate(Error *error,
-                          const RecordSet &record_set,
+                          const RecordSubset &record_set,
                           Array<T> *result_set) {
   Node<T> *node = static_cast<Node<T> *>(root_.get());
   if (!node->evaluate(error, record_set)) {
@@ -680,22 +680,22 @@ bool Expression::evaluate(Error *error,
 }
 
 template bool Expression::evaluate(Error *error,
-                                   const RecordSet &record_set,
+                                   const RecordSubset &record_set,
                                    Array<Bool> *result_set);
 template bool Expression::evaluate(Error *error,
-                                   const RecordSet &record_set,
+                                   const RecordSubset &record_set,
                                    Array<Int> *result_set);
 template bool Expression::evaluate(Error *error,
-                                   const RecordSet &record_set,
+                                   const RecordSubset &record_set,
                                    Array<Float> *result_set);
 template bool Expression::evaluate(Error *error,
-                                   const RecordSet &record_set,
+                                   const RecordSubset &record_set,
                                    Array<Time> *result_set);
 template bool Expression::evaluate(Error *error,
-                                   const RecordSet &record_set,
+                                   const RecordSubset &record_set,
                                    Array<GeoPoint> *result_set);
 template bool Expression::evaluate(Error *error,
-                                   const RecordSet &record_set,
+                                   const RecordSubset &record_set,
                                    Array<Text> *result_set);
 
 Expression::Expression(const Table *table, unique_ptr<ExpressionNode> &&root)
