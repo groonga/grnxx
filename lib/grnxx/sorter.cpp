@@ -1,5 +1,7 @@
 #include "grnxx/sorter.hpp"
 
+#include <cmath>
+
 #include "grnxx/error.hpp"
 #include "grnxx/expression.hpp"
 #include "grnxx/order.hpp"
@@ -44,6 +46,20 @@ template <typename T>
 struct RegularComparer {
   using Value = T;
   bool operator()(Value lhs, Value rhs) const {
+    return lhs < rhs;
+  }
+};
+
+template <>
+struct RegularComparer<Float> {
+  using Value = Float;
+  bool operator()(Value lhs, Value rhs) const {
+    // Numbers are prior to NaN.
+    if (std::isnan(lhs)) {
+      return false;
+    } else if (std::isnan(rhs)) {
+      return true;
+    }
     return lhs < rhs;
   }
 };
