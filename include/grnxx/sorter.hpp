@@ -17,7 +17,7 @@ class Sorter {
   static unique_ptr<Sorter> create(
       Error *error,
       unique_ptr<OrderSet> &&order_set,
-      const SorterOptions &options);
+      const SorterOptions &options = SorterOptions());
 
   // Set the target record set.
   //
