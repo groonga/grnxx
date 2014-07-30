@@ -842,36 +842,44 @@ void test_sorter() {
   auto table = db->create_table(&error, "Table");
   assert(table);
 
+  auto bool_column = table->create_column(&error, "BoolColumn",
+                                          grnxx::BOOL_DATA);
+  assert(bool_column);
+
   auto int_column = table->create_column(&error, "IntColumn",
                                          grnxx::INT_DATA);
   assert(int_column);
 
   // 擬似乱数生成器を使って [0, 64) に収まる 1024 個の整数を登録する．
-  std::vector<grnxx::Int> values(1024);
+  constexpr size_t NUM_VALUES = 1024;
+  std::vector<grnxx::Bool> bool_values(NUM_VALUES);
+  std::vector<grnxx::Int> int_values(NUM_VALUES);
   std::mt19937_64 mersenne_twister;
-  for (size_t i = 0; i < values.size(); ++i) {
+  for (size_t i = 0; i < bool_values.size(); ++i) {
     grnxx::Int row_id;
     assert(table->insert_row(&error, grnxx::NULL_ROW_ID,
                              grnxx::Datum(), &row_id));
-    values[i] = mersenne_twister() % 64;
-    assert(int_column->set(&error, row_id, values[i]));
+    bool_values[i] = (mersenne_twister() & 1) != 0;
+    int_values[i] = mersenne_twister() % 64;
+    assert(bool_column->set(&error, row_id, grnxx::Bool(bool_values[i])));
+    assert(int_column->set(&error, row_id, int_values[i]));
   }
 
   grnxx::RecordSet record_set;
   auto cursor = table->create_cursor(&error);
   assert(cursor);
   assert(cursor->read_all(&error, &record_set) ==
-         static_cast<grnxx::Int>(values.size()));
-  assert(record_set.size() == static_cast<grnxx::Int>(values.size()));
+         static_cast<grnxx::Int>(int_values.size()));
+  assert(record_set.size() == static_cast<grnxx::Int>(int_values.size()));
 
-  // IntColumn 昇順，行 ID 昇順に整列する．
+  // BoolColumn 昇順，行 ID 昇順に整列する．
   auto order_set_builder =
       grnxx::OrderSetBuilder::create(&error, table);
   assert(order_set_builder);
 
   auto expression_builder =
       grnxx::ExpressionBuilder::create(&error, table);
-  assert(expression_builder->push_column(&error, "IntColumn"));
+  assert(expression_builder->push_column(&error, "BoolColumn"));
   auto expression = expression_builder->release(&error);
   assert(expression);
   assert(order_set_builder->append(&error, std::move(expression)));
@@ -888,13 +896,85 @@ void test_sorter() {
   assert(sorter);
 
   assert(sorter->sort(&error, &record_set));
-  assert(record_set.size() == static_cast<grnxx::Int>(values.size()));
+  assert(record_set.size() == static_cast<grnxx::Int>(int_values.size()));
 
   for (grnxx::Int i = 1; i < record_set.size(); ++i) {
     grnxx::Int lhs_id = record_set.get_row_id(i - 1) - 1;
     grnxx::Int rhs_id = record_set.get_row_id(i) - 1;
-    grnxx::Int lhs_value = values[lhs_id];
-    grnxx::Int rhs_value = values[rhs_id];
+    grnxx::Bool lhs_value = bool_values[lhs_id];
+    grnxx::Bool rhs_value = bool_values[rhs_id];
+    assert(!lhs_value || rhs_value);
+    if (lhs_value == rhs_value) {
+      assert(lhs_id < rhs_id);
+    }
+  }
+
+  // BoolColumn 降順，行 ID 降順に整列する．
+  order_set_builder = grnxx::OrderSetBuilder::create(&error, table);
+  assert(order_set_builder);
+
+  expression_builder = grnxx::ExpressionBuilder::create(&error, table);
+  assert(expression_builder->push_column(&error, "BoolColumn"));
+  expression = expression_builder->release(&error);
+  assert(expression);
+  assert(order_set_builder->append(&error, std::move(expression),
+                                   grnxx::REVERSE_ORDER));
+
+  assert(expression_builder->push_column(&error, "_id"));
+  expression = expression_builder->release(&error);
+  assert(expression);
+  assert(order_set_builder->append(&error, std::move(expression),
+                                   grnxx::REVERSE_ORDER));
+
+  order_set = order_set_builder->release(&error);
+  assert(order_set);
+
+  sorter = grnxx::Sorter::create(&error, std::move(order_set));
+  assert(sorter);
+
+  assert(sorter->sort(&error, &record_set));
+  assert(record_set.size() == static_cast<grnxx::Int>(int_values.size()));
+
+  for (grnxx::Int i = 1; i < record_set.size(); ++i) {
+    grnxx::Int lhs_id = record_set.get_row_id(i - 1) - 1;
+    grnxx::Int rhs_id = record_set.get_row_id(i) - 1;
+    grnxx::Bool lhs_value = bool_values[lhs_id];
+    grnxx::Bool rhs_value = bool_values[rhs_id];
+    assert(lhs_value || !rhs_value);
+    if (lhs_value == rhs_value) {
+      assert(lhs_id > rhs_id);
+    }
+  }
+
+  // IntColumn 昇順，行 ID 昇順に整列する．
+  order_set_builder = grnxx::OrderSetBuilder::create(&error, table);
+  assert(order_set_builder);
+
+  expression_builder = grnxx::ExpressionBuilder::create(&error, table);
+  assert(expression_builder->push_column(&error, "IntColumn"));
+  expression = expression_builder->release(&error);
+  assert(expression);
+  assert(order_set_builder->append(&error, std::move(expression)));
+
+  assert(expression_builder->push_column(&error, "_id"));
+  expression = expression_builder->release(&error);
+  assert(expression);
+  assert(order_set_builder->append(&error, std::move(expression)));
+
+  order_set = order_set_builder->release(&error);
+  assert(order_set);
+
+  sorter = grnxx::Sorter::create(&error, std::move(order_set));
+  assert(sorter);
+
+  assert(sorter->sort(&error, &record_set));
+  assert(record_set.size() == static_cast<grnxx::Int>(int_values.size()));
+
+  for (grnxx::Int i = 1; i < record_set.size(); ++i) {
+    grnxx::Int lhs_id = record_set.get_row_id(i - 1) - 1;
+    grnxx::Int rhs_id = record_set.get_row_id(i) - 1;
+    grnxx::Int lhs_value = int_values[lhs_id];
+    grnxx::Int rhs_value = int_values[rhs_id];
     assert(lhs_value <= rhs_value);
     if (lhs_value == rhs_value) {
       assert(lhs_id < rhs_id);
@@ -921,13 +1001,13 @@ void test_sorter() {
   assert(sorter);
 
   assert(sorter->sort(&error, &record_set));
-  assert(record_set.size() == static_cast<grnxx::Int>(values.size()));
+  assert(record_set.size() == static_cast<grnxx::Int>(int_values.size()));
 
   for (grnxx::Int i = 1; i < record_set.size(); ++i) {
     grnxx::Int lhs_id = record_set.get_row_id(i - 1) - 1;
     grnxx::Int rhs_id = record_set.get_row_id(i) - 1;
-    grnxx::Int lhs_value = values[lhs_id];
-    grnxx::Int rhs_value = values[rhs_id];
+    grnxx::Int lhs_value = int_values[lhs_id];
+    grnxx::Int rhs_value = int_values[rhs_id];
     assert(lhs_value >= rhs_value);
     if (lhs_value == rhs_value) {
       assert(lhs_id > rhs_id);
