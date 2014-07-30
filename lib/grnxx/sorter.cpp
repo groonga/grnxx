@@ -67,6 +67,8 @@ struct ReverseComparer {
   }
 };
 
+// -- Node<T> --
+
 template <typename T>
 class Node : public SorterNode {
  public:
@@ -310,23 +312,103 @@ void Node<T>::move_pivot_first(RecordSubset records, Value *values) {
   }
 }
 
+// -- BoolNode<T> --
+
+struct RegularIsPrior {
+  bool operator()(Bool arg) const {
+    return !arg;
+  }
+};
+
+struct ReverseIsPrior {
+  bool operator()(Bool arg) const {
+    return arg;
+  }
+};
+
+template <typename T>
+class BoolNode : public SorterNode {
+ public:
+  using IsPrior = T;
+
+  explicit BoolNode(Order &&order)
+      : SorterNode(),
+        order_(std::move(order)),
+        values_(),
+        is_prior_() {}
+  ~BoolNode() {}
+
+  bool sort(Error *error, RecordSubset records, Int begin, Int end);
+
+ private:
+  Order order_;
+  Array<Bool> values_;
+  IsPrior is_prior_;
+};
+
+template <typename T>
+bool BoolNode<T>::sort(Error *error, RecordSubset records,
+                       Int begin, Int end) {
+  if (!order_.expression->evaluate(error, records, &values_)) {
+    return false;
+  }
+  set_error(error);
+
+  // Move prior entries to left and others to right.
+  Int left = 0;
+  Int right = records.size();
+  while (left < right) {
+    if (is_prior_(values_[left])) {
+      ++left;
+    } else {
+      // Note that values_[left] will not be used again.
+      --right;
+      values_[left] = values_[right];
+      records.swap(left, right);
+    }
+  }
+
+  // Now "left" equals to "right" and it points to the boundary.
+  // The left group is [0, left) and the right group is [left, records.size()).
+  if (this->next_) {
+    // Apply the next sort condition if blocks contain 2 or more records.
+    if ((left >= 2) && (begin < left)) {
+      if (!this->next_->sort(error, records.subset(0, left),
+                             begin, (end < left) ? end : left)) {
+        return false;
+      }
+    }
+    if (((records.size() - left) >= 2) && (end > left)) {
+      if (begin < left) {
+        begin = 0;
+      } else {
+        begin -= left;
+      }
+      end -= left;
+      if (!this->next_->sort(error, records.subset(left), begin, end)) {
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
 }  // namespace
 
 unique_ptr<SorterNode> SorterNode::create(Error *error, Order &&order) {
   unique_ptr<SorterNode> node;
   switch (order.expression->data_type()) {
-    // TODO: Bool does not support comparison operators <, >.
-    //       Also, Bool does not support pointer.
-//    case BOOL_DATA: {
-//      if (order.type == REGULAR_ORDER) {
-//        node.reset(new (nothrow) Node<RegularComparer<Bool>>(
-//            std::move(order)));
-//      } else {
-//        node.reset(new (nothrow) Node<ReverseComparer<Bool>>(
-//            std::move(order)));
-//      }
-//      break;
-//    }
+    case BOOL_DATA: {
+      if (order.type == REGULAR_ORDER) {
+        node.reset(new (nothrow) BoolNode<RegularIsPrior>(
+            std::move(order)));
+      } else {
+        node.reset(new (nothrow) BoolNode<ReverseIsPrior>(
+            std::move(order)));
+      }
+      break;
+    }
     case INT_DATA: {
       if (order.type == REGULAR_ORDER) {
         node.reset(new (nothrow) Node<RegularComparer<Int>>(
