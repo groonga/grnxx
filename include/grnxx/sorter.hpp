@@ -55,8 +55,10 @@ class Sorter {
   bool sort(Error *error, RecordSet *record_set);
 
  private:
-  RecordSet *record_set_;
   unique_ptr<SorterNode> head_;
+  RecordSet *record_set_;
+  Int offset_;
+  Int limit_;
 
   Sorter();
 };
