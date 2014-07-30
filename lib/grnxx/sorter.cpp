@@ -69,7 +69,7 @@ class Node : public SorterNode {
         prior_to_() {}
   ~Node() {}
 
-  bool sort(Error *error, RecordSubset subset, Int begin, Int end);
+  bool sort(Error *error, RecordSubset records, Int begin, Int end);
 
  private:
   Order order_;
@@ -92,12 +92,12 @@ class Node : public SorterNode {
 };
 
 template <typename T>
-bool Node<T>::sort(Error *error, RecordSubset subset, Int begin, Int end) {
-  if (!order_.expression->evaluate(error, subset, &values_)) {
+bool Node<T>::sort(Error *error, RecordSubset records, Int begin, Int end) {
+  if (!order_.expression->evaluate(error, records, &values_)) {
     return false;
   }
   set_error(error);
-  return quick_sort(subset, values_.data(), begin, end);
+  return quick_sort(records, values_.data(), begin, end);
 }
 
 template <typename T>
@@ -198,7 +198,7 @@ bool Node<T>::quick_sort(RecordSubset records, Value *values,
       if ((end > right) && ((records.size() - right) >= 2)) {
         Int next_begin = (begin < right) ? 0 : (begin - right);
         Int next_end = end - right;
-        if (!quick_sort(records.subset(right, records.size() - right),
+        if (!quick_sort(records.subset(right),
                         values + right, next_begin, next_end)) {
           return false;
         }
@@ -249,7 +249,7 @@ bool Node<T>::insertion_sort(RecordSubset records, Value *values) {
     }
     if ((records.size() - begin) >= 2) {
       if (!this->next_->sort(this->error_,
-                             records.subset(begin, records.size() - begin),
+                             records.subset(begin),
                              0, records.size() - begin)) {
         return false;
       }
