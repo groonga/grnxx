@@ -17,6 +17,7 @@
 */
 #include <cassert>
 #include <iostream>
+#include <random>
 
 #include "grnxx/column.hpp"
 #include "grnxx/cursor.hpp"
@@ -24,7 +25,9 @@
 #include "grnxx/db.hpp"
 #include "grnxx/error.hpp"
 #include "grnxx/expression.hpp"
+#include "grnxx/order.hpp"
 #include "grnxx/record.hpp"
+#include "grnxx/sorter.hpp"
 #include "grnxx/table.hpp"
 
 namespace {
@@ -759,6 +762,73 @@ void test_expression() {
   assert(result_set[1] == 556);
 }
 
+void test_sorter() {
+  grnxx::Error error;
+
+  auto db = grnxx::open_db(&error, "");
+  assert(db);
+
+  auto table = db->create_table(&error, "Table");
+  assert(table);
+
+  auto int_column = table->create_column(&error, "IntColumn",
+                                         grnxx::INT_DATA);
+  assert(int_column);
+
+  std::vector<grnxx::Int> values(1024);
+  std::mt19937_64 mersenne_twister;
+  for (size_t i = 0; i < values.size(); ++i) {
+    grnxx::Int row_id;
+    assert(table->insert_row(&error, grnxx::NULL_ROW_ID,
+                             grnxx::Datum(), &row_id));
+    values[i] = mersenne_twister() % 64;
+    assert(int_column->set(&error, row_id, values[i]));
+  }
+
+  grnxx::RecordSet record_set;
+  auto cursor = table->create_cursor(&error);
+  assert(cursor);
+  assert(cursor->read_all(&error, &record_set) ==
+         static_cast<grnxx::Int>(values.size()));
+  assert(record_set.size() == static_cast<grnxx::Int>(values.size()));
+
+  auto order_set_builder =
+      grnxx::OrderSetBuilder::create(&error, table);
+  assert(order_set_builder);
+
+  auto expression_builder =
+      grnxx::ExpressionBuilder::create(&error, table);
+  assert(expression_builder->push_column(&error, "IntColumn"));
+  auto expression = expression_builder->release(&error);
+  assert(expression);
+  assert(order_set_builder->append(&error, std::move(expression)));
+
+  assert(expression_builder->push_column(&error, "_id"));
+  expression = expression_builder->release(&error);
+  assert(expression);
+  assert(order_set_builder->append(&error, std::move(expression)));
+
+  auto order_set = order_set_builder->release(&error);
+  assert(order_set);
+
+  auto sorter = grnxx::Sorter::create(&error, std::move(order_set));
+  assert(sorter);
+
+  assert(sorter->sort(&error, &record_set));
+  assert(record_set.size() == static_cast<grnxx::Int>(values.size()));
+
+  for (grnxx::Int i = 1; i < record_set.size(); ++i) {
+    grnxx::Int lhs_id = record_set.get_row_id(i - 1) - 1;
+    grnxx::Int rhs_id = record_set.get_row_id(i) - 1;
+    grnxx::Int lhs_value = values[lhs_id];
+    grnxx::Int rhs_value = values[rhs_id];
+    assert(lhs_value <= rhs_value);
+    if (lhs_value == rhs_value) {
+      assert(lhs_id < rhs_id);
+    }
+  }
+}
+
 }  // namespace
 
 int main() {
@@ -767,6 +837,7 @@ int main() {
   test_bitmap();
   test_column();
   test_expression();
+  test_sorter();
 
   return 0;
 }
