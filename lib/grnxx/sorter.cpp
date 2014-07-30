@@ -43,7 +43,7 @@ namespace {
 template <typename T>
 struct RegularComparer {
   using Value = T;
-  bool operator()(T lhs, T rhs) const {
+  bool operator()(Value lhs, Value rhs) const {
     return lhs < rhs;
   }
 };
@@ -51,8 +51,8 @@ struct RegularComparer {
 template <typename T>
 struct ReverseComparer {
   using Value = T;
-  bool operator()(T lhs, T rhs) const {
-    return rhs < lhs;
+  bool operator()(Value lhs, Value rhs) const {
+    return RegularComparer<T>()(rhs, lhs);
   }
 };
 
