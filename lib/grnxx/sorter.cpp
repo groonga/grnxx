@@ -147,14 +147,14 @@ bool Node<T>::quick_sort(RecordSubset records, Value *values,
       ++left;
     }
 
-    // 左端の値を境界の左に移動する．
+    // Move left pivot-equivalent entries to the left side of the boundary.
     while (pivot_left > 0) {
       --pivot_left;
       --left;
       std::swap(values[pivot_left], values[left]);
       records.swap(pivot_left, left);
     }
-    // 右端の値を境界の右に移動する．
+    // Move right pivot-equivalent entries to the right side of the boundary.
     while (pivot_right < records.size()) {
       std::swap(values[pivot_right], values[right]);
       records.swap(pivot_right, right);
@@ -162,7 +162,7 @@ bool Node<T>::quick_sort(RecordSubset records, Value *values,
       ++right;
     }
 
-    // 枢軸と同値の範囲 [left, right) には次の検索条件を適用する．
+    // Apply the next sort condition to the pivot-equivalent records.
     if (this->next_) {
       if (((right - left) >= 2) && (begin < right) && (end > left)) {
         Int next_begin = (begin < left) ? 0 : (begin - left);
@@ -175,8 +175,11 @@ bool Node<T>::quick_sort(RecordSubset records, Value *values,
       }
     }
 
-    // 再帰呼び出しの深さを抑えるため，左側 [0, left) と右側 [right, records.size()) の
-    // 小さい方を再帰呼び出しで処理し，大きい方を次のループで処理する．
+    // There are the left group and the right group.
+    // A recursive call is used for sorting the smaller group.
+    // The recursion depth is less than log_2(n) where n is the number of
+    // records.
+    // The next loop of the current call is used for sorting the larger group.
     if (left < (records.size() - right)) {
       if ((begin < left) && (left >= 2)) {
         Int next_end = (end < left) ? end : left;
