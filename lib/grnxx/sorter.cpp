@@ -389,6 +389,8 @@ unique_ptr<Sorter> Sorter::create(
     sorter->head_ = std::move(node);
   }
   order_set.reset();
+  sorter->offset_ = options.offset;
+  sorter->limit_ = options.limit;
   return sorter;
 }
 
