@@ -827,6 +827,38 @@ void test_sorter() {
       assert(lhs_id < rhs_id);
     }
   }
+
+  assert(expression_builder->push_column(&error, "IntColumn"));
+  expression = expression_builder->release(&error);
+  assert(expression);
+  assert(order_set_builder->append(&error, std::move(expression),
+                                   grnxx::REVERSE_ORDER));
+
+  assert(expression_builder->push_column(&error, "_id"));
+  expression = expression_builder->release(&error);
+  assert(expression);
+  assert(order_set_builder->append(&error, std::move(expression),
+                                   grnxx::REVERSE_ORDER));
+
+  order_set = order_set_builder->release(&error);
+  assert(order_set);
+
+  sorter = grnxx::Sorter::create(&error, std::move(order_set));
+  assert(sorter);
+
+  assert(sorter->sort(&error, &record_set));
+  assert(record_set.size() == static_cast<grnxx::Int>(values.size()));
+
+  for (grnxx::Int i = 1; i < record_set.size(); ++i) {
+    grnxx::Int lhs_id = record_set.get_row_id(i - 1) - 1;
+    grnxx::Int rhs_id = record_set.get_row_id(i) - 1;
+    grnxx::Int lhs_value = values[lhs_id];
+    grnxx::Int rhs_value = values[rhs_id];
+    assert(lhs_value >= rhs_value);
+    if (lhs_value == rhs_value) {
+      assert(lhs_id > rhs_id);
+    }
+  }
 }
 
 }  // namespace
