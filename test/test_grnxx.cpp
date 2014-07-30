@@ -775,6 +775,7 @@ void test_sorter() {
                                          grnxx::INT_DATA);
   assert(int_column);
 
+  // 擬似乱数生成器を使って [0, 64) に収まる 1024 個の整数を登録する．
   std::vector<grnxx::Int> values(1024);
   std::mt19937_64 mersenne_twister;
   for (size_t i = 0; i < values.size(); ++i) {
@@ -792,6 +793,7 @@ void test_sorter() {
          static_cast<grnxx::Int>(values.size()));
   assert(record_set.size() == static_cast<grnxx::Int>(values.size()));
 
+  // IntColumn 昇順，行 ID 昇順に整列する．
   auto order_set_builder =
       grnxx::OrderSetBuilder::create(&error, table);
   assert(order_set_builder);
@@ -828,6 +830,7 @@ void test_sorter() {
     }
   }
 
+  // IntColumn 降順，行 ID 降順に整列する．
   assert(expression_builder->push_column(&error, "IntColumn"));
   expression = expression_builder->release(&error);
   assert(expression);
