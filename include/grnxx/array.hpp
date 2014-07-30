@@ -140,6 +140,14 @@ class BoolReference {
     }
     return *this;
   }
+  BoolReference operator=(BoolReference rhs) {
+    if (rhs) {
+      *block_ |= mask_;
+    } else {
+      *block_ &= ~mask_;
+    }
+    return *this;
+  }
 
  private:
   uint64_t *block_;
