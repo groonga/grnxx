@@ -48,6 +48,17 @@ struct RegularComparer {
   }
 };
 
+template <>
+struct RegularComparer<GeoPoint> {
+  using Value = GeoPoint;
+  bool operator()(Value lhs, Value rhs) const {
+    if (lhs.latitude() != rhs.latitude()) {
+      return lhs.latitude() < rhs.latitude();
+    }
+    return lhs.longitude() < rhs.longitude();
+  }
+};
+
 template <typename T>
 struct ReverseComparer {
   using Value = T;
@@ -342,6 +353,16 @@ unique_ptr<SorterNode> SorterNode::create(Error *error, Order &&order) {
             std::move(order)));
       } else {
         node.reset(new (nothrow) Node<ReverseComparer<Time>>(
+            std::move(order)));
+      }
+      break;
+    }
+    case GEO_POINT_DATA: {
+      if (order.type == REGULAR_ORDER) {
+        node.reset(new (nothrow) Node<RegularComparer<GeoPoint>>(
+            std::move(order)));
+      } else {
+        node.reset(new (nothrow) Node<ReverseComparer<GeoPoint>>(
             std::move(order)));
       }
       break;
