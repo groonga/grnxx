@@ -13,16 +13,16 @@ enum OperatorType {
 
 //  BITWISE_NOT_OPERATOR,  // For Int.
 
-//  POSITIVE_OPERATOR,  // For Int, Float.
-//  NEGATIVE_OPERATOR,  // For Int, Float.
+  POSITIVE_OPERATOR,  // For Int, Float.
+  NEGATIVE_OPERATOR,  // For Int, Float.
 
   // Typecast operators.
-//  BOOL_OPERATOR,
-//  INT_OPERATOR,
-//  FLOAT_OPERATOR,
-//  TIME_OPERATOR,
-//  GEO_POINT_OPERATOR,
-//  TEXT_OPERATOR,
+//  TO_BOOL_OPERATOR,
+  TO_INT_OPERATOR,
+  TO_FLOAT_OPERATOR,
+//  TO_TIME_OPERATOR,
+//  TO_GEO_POINT_OPERATOR,
+//  TO_TEXT_OPERATOR,
 
   // -- Binary operators --
 
@@ -186,6 +186,14 @@ class ExpressionBuilder {
 
   explicit ExpressionBuilder(const Table *table);
 
+  // Push a positive operator.
+  bool push_positive_operator(Error *error);
+  // Push a negative operator.
+  bool push_negative_operator(Error *error);
+  // Push a typecast operator to Int.
+  bool push_to_int_operator(Error *error);
+  // Push a typecast operator to Float.
+  bool push_to_float_operator(Error *error);
   // Push an operator &&.
   bool push_logical_and_operator(Error *error);
   // Push an operator ||.

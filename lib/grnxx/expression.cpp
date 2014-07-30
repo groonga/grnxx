@@ -261,6 +261,74 @@ class ColumnNode : public Node<T> {
 
 // -- OperatorNode --
 
+// ---- UnaryNode ----
+
+struct Negative {
+  template <typename T>
+  struct Functor {
+    using Arg = T;
+    using Result = T;
+    Result operator()(Arg arg) const {
+      return -arg;
+    };
+  };
+};
+
+template <typename T>
+struct Typecast {
+  template <typename U>
+  struct Functor {
+    using Arg = U;
+    using Result = T;
+    Result operator()(Arg arg) const {
+      return static_cast<Result>(arg);
+    };
+  };
+};
+
+template <typename T>
+class UnaryNode : public Node<typename T::Result> {
+ public:
+  using Operator = T;
+  using Arg = typename Operator::Arg;
+
+  UnaryNode(Operator op,
+            unique_ptr<ExpressionNode> &&arg)
+      : Node<typename Operator::Result>(),
+        operator_(op),
+        arg_(static_cast<Node<Arg> *>(arg.release())) {}
+  virtual ~UnaryNode() {}
+
+  NodeType node_type() const {
+    return OPERATOR_NODE;
+  }
+
+  bool evaluate(Error *error, const RecordSubset &record_set);
+
+ private:
+  Operator operator_;
+  unique_ptr<Node<Arg>> arg_;
+};
+
+template <typename T>
+bool UnaryNode<T>::evaluate(Error *error, const RecordSubset &record_set) {
+  try {
+    this->values_.resize(error, record_set.size());
+  } catch (...) {
+    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    return false;
+  }
+  if (!arg_->evaluate(error, record_set)) {
+    return false;
+  }
+  for (Int i = 0; i < record_set.size(); ++i) {
+    this->values_[i] = operator_(arg_->get(i));
+  }
+  return true;
+}
+
+// ---- BinaryNode ----
+
 struct Equal {
   template <typename T>
   struct Functor {
@@ -820,6 +888,18 @@ bool ExpressionBuilder::push_column(Error *error, String name) {
 bool ExpressionBuilder::push_operator(Error *error,
                                       OperatorType operator_type) {
   switch (operator_type) {
+    case POSITIVE_OPERATOR: {
+      return push_positive_operator(error);
+    }
+    case NEGATIVE_OPERATOR: {
+      return push_negative_operator(error);
+    }
+    case TO_INT_OPERATOR: {
+      return push_to_int_operator(error);
+    }
+    case TO_FLOAT_OPERATOR: {
+      return push_to_float_operator(error);
+    }
     case LOGICAL_AND_OPERATOR: {
       return push_logical_and_operator(error);
     }
@@ -885,6 +965,128 @@ unique_ptr<Expression> ExpressionBuilder::release(Error *error) {
 }
 
 ExpressionBuilder::ExpressionBuilder(const Table *table) : table_(table) {}
+
+bool ExpressionBuilder::push_positive_operator(Error *error) {
+  if (stack_.size() < 1) {
+    // TODO: Define a better error code.
+    GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Not enough operands");
+    return false;
+  }
+  auto &arg = stack_[stack_.size() - 1];
+  switch (arg->data_type()) {
+    case INT_DATA:
+    case FLOAT_DATA: {
+      // Nothing to do because this operator does nothing.
+      return true;
+    }
+    default: {
+      // TODO: Define a better error code.
+      GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Wrong type");
+      return false;
+    }
+  }
+}
+
+bool ExpressionBuilder::push_negative_operator(Error *error) {
+  if (stack_.size() < 1) {
+    // TODO: Define a better error code.
+    GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Not enough operands");
+    return false;
+  }
+  unique_ptr<ExpressionNode> node;
+  auto &arg = stack_[stack_.size() - 1];
+  switch (arg->data_type()) {
+    case INT_DATA: {
+      Negative::Functor<Int> functor;
+      node.reset(
+          new (nothrow) UnaryNode<decltype(functor)>(functor, std::move(arg)));
+      break;
+    }
+    case FLOAT_DATA: {
+      Negative::Functor<Float> functor;
+      node.reset(
+          new (nothrow) UnaryNode<decltype(functor)>(functor, std::move(arg)));
+      break;
+    }
+    default: {
+      // TODO: Define a better error code.
+      GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Wrong type");
+      return false;
+    }
+  }
+  if (!node) {
+    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    return false;
+  }
+  stack_.back() = std::move(node);
+  return true;
+}
+
+bool ExpressionBuilder::push_to_int_operator(Error *error) {
+  if (stack_.size() < 1) {
+    // TODO: Define a better error code.
+    GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Not enough operands");
+    return false;
+  }
+  unique_ptr<ExpressionNode> node;
+  auto &arg = stack_[stack_.size() - 1];
+  switch (arg->data_type()) {
+    case INT_DATA: {
+      // Nothing to do because this operator does nothing.
+      return true;
+    }
+    case FLOAT_DATA: {
+      Typecast<Int>::Functor<Float> functor;
+      node.reset(
+          new (nothrow) UnaryNode<decltype(functor)>(functor, std::move(arg)));
+      break;
+    }
+    default: {
+      // TODO: Define a better error code.
+      GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Wrong type");
+      return false;
+    }
+  }
+  if (!node) {
+    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    return false;
+  }
+  stack_.back() = std::move(node);
+  return true;
+}
+
+bool ExpressionBuilder::push_to_float_operator(Error *error) {
+  if (stack_.size() < 1) {
+    // TODO: Define a better error code.
+    GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Not enough operands");
+    return false;
+  }
+  unique_ptr<ExpressionNode> node;
+  auto &arg = stack_[stack_.size() - 1];
+  switch (arg->data_type()) {
+    case INT_DATA: {
+      Typecast<Float>::Functor<Int> functor;
+      node.reset(
+          new (nothrow) UnaryNode<decltype(functor)>(functor, std::move(arg)));
+      break;
+    }
+    case FLOAT_DATA: {
+      // Nothing to do because this operator does nothing.
+      return true;
+    }
+    default: {
+      // TODO: Define a better error code.
+      GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Wrong type");
+      return false;
+    }
+  }
+  if (!node) {
+    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    return false;
+  }
+  stack_.back() = std::move(node);
+  return true;
+}
 
 bool ExpressionBuilder::push_logical_and_operator(Error *error) {
   if (stack_.size() < 2) {
