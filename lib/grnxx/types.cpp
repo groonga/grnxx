@@ -51,4 +51,8 @@ CursorOptions::CursorOptions()
       limit(numeric_limits<Int>::max()),
       order_type(REGULAR_ORDER) {}
 
+SorterOptions::SorterOptions()
+    : offset(0),
+      limit(numeric_limits<Int>::max()) {}
+
 }  // namespace grnxx
