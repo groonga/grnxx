@@ -312,9 +312,7 @@ class UnaryNode : public Node<typename T::Result> {
 
 template <typename T>
 bool UnaryNode<T>::evaluate(Error *error, const RecordSubset &record_set) {
-  try {
-    this->values_.resize(error, record_set.size());
-  } catch (...) {
+  if (!this->values_.resize(error, record_set.size())) {
     GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
     return false;
   }
@@ -502,9 +500,7 @@ class BinaryNode : public Node<typename Op::Result> {
 
 template <typename Op>
 bool BinaryNode<Op>::evaluate(Error *error, const RecordSubset &record_set) {
-  try {
-    this->values_.resize(error, record_set.size());
-  } catch (...) {
+  if (!this->values_.resize(error, record_set.size())) {
     GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
     return false;
   }
