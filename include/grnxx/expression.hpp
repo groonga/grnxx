@@ -88,7 +88,7 @@ class Expression {
   // Returns true on success.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
-  bool filter(Error *error, RecordSet *record_set);
+  bool filter(Error *error, RecordSet *record_set, Int offset = 0);
 
   // Adjust scores of records.
   //
