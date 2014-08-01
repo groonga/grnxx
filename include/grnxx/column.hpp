@@ -180,10 +180,10 @@ class Column {
   // Returns true on success.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
-  virtual bool set_default_value(Error *error, Int row_id);
+  virtual bool set_default_value(Error *error, Int row_id) = 0;
 
   // Unset the value.
-  virtual void unset(Int row_id);
+  virtual void unset(Int row_id) = 0;
 
   friend class Table;
 };

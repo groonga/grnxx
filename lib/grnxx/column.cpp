@@ -134,16 +134,6 @@ bool Column::set_initial_key(Error *error, Int row_id, const Datum &key) {
   return false;
 }
 
-bool Column::set_default_value(Error *error, Int row_id) {
-  // TODO: This function should be a pure virtual function.
-  GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not suported yet");
-  return false;
-}
-
-void Column::unset(Int row_id) {
-  // TODO: This function should be a pure virtual function.
-}
-
 // -- ColumnImpl<T> --
 
 template <typename T>
