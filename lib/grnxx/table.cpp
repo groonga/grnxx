@@ -543,25 +543,30 @@ bool Table::reserve_bit(Error *error, Int i) {
     GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Invalid argument");
     return false;
   }
-  // TODO: Error handling.
+  // Resize the bitmap if required.
   size_t block_id = i / 64;
   if (block_id >= bitmap_.size()) {
-    bitmap_.resize(error, block_id + 1, 0);
+    if (!bitmap_.resize(error, block_id + 1, 0)) {
+      return false;
+    }
   }
+  // Resize the existing bitmap indexes if required.
   for (Int index_id = 0; index_id < bitmap_indexes_.size(); ++index_id) {
     block_id /= 64;
     if (block_id >= bitmap_indexes_[index_id].size()) {
-      bitmap_indexes_[index_id].resize(error, block_id + 1, 0);
-    } else {
-      block_id = 0;
-      break;
+      if (!bitmap_indexes_[index_id].resize(error, block_id + 1, 0)) {
+        return false;
+      }
     }
   }
+  // Add bitmap indexes if requires.
   Int depth = bitmap_indexes_.size();
   while (block_id > 0) {
     block_id /= 64;
-    bitmap_indexes_.resize(error, depth + 1);
-    bitmap_indexes_[depth].resize(error, block_id + 1, 0);
+    if (!bitmap_indexes_.resize(error, depth + 1) ||
+        !bitmap_indexes_[depth].resize(error, block_id + 1, 0)) {
+      return false;
+    }
     if (depth == 0) {
       bitmap_indexes_[depth][0] = bitmap_[0] != 0;
     } else {
