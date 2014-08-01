@@ -168,14 +168,6 @@ class Table {
       Error *error,
       const CursorOptions &options = CursorOptions()) const;
 
-  // Create an object to build ordering information.
-  //
-  // Returns a pointer to the builder on success.
-  // On failure, returns nullptr and stores error information into "*error" if
-  // "error" != nullptr.
-//  unique_ptr<OrderBuilder> create_order_builder(
-//      Error *error) const;
-
   // Create an object to build pipelines.
   //
   // Returns a pointer to the builder on success.
