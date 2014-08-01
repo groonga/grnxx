@@ -49,7 +49,7 @@ class ExpressionNode {
   // Returns true on success.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
-  virtual bool adjust(Error *error, RecordSet *record_set) = 0;
+  virtual bool adjust(Error *error, RecordSubset record_set) = 0;
 
   // Evaluate the expression subtree.
   //
@@ -74,7 +74,7 @@ class Node : public ExpressionNode {
   }
 
   virtual bool filter(Error *error, RecordSet *record_set);
-  virtual bool adjust(Error *error, RecordSet *record_set);
+  virtual bool adjust(Error *error, RecordSubset record_set);
 
   virtual bool evaluate(Error *error, const RecordSubset &record_set) = 0;
 
@@ -109,19 +109,19 @@ bool Node<Bool>::filter(Error *error, RecordSet *record_set) {
 }
 
 template <typename T>
-bool Node<T>::adjust(Error *error, RecordSet *record_set) {
+bool Node<T>::adjust(Error *error, RecordSubset record_set) {
   // Only Node<Float> supports filter().
   GRNXX_ERROR_SET(error, INVALID_OPERATION, "Invalid operation");
   return false;
 }
 
 template <>
-bool Node<Float>::adjust(Error *error, RecordSet *record_set) {
-  if (!evaluate(error, *record_set)) {
+bool Node<Float>::adjust(Error *error, RecordSubset record_set) {
+  if (!evaluate(error, record_set)) {
     return false;
   }
-  for (Int i = 0; i < record_set->size(); ++i) {
-    record_set->set_score(i, values_[i]);
+  for (Int i = 0; i < record_set.size(); ++i) {
+    record_set.set_score(i, values_[i]);
   }
   return true;
 }
@@ -715,8 +715,8 @@ bool Expression::filter(Error *error, RecordSet *record_set) {
   return root_->filter(error, record_set);
 }
 
-bool Expression::adjust(Error *error, RecordSet *record_set) {
-  return root_->adjust(error, record_set);
+bool Expression::adjust(Error *error, RecordSet *record_set, Int offset) {
+  return root_->adjust(error, record_set->subset(offset));
 }
 
 template <typename T>

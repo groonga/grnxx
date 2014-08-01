@@ -95,11 +95,12 @@ class Expression {
   //
   // Evaluates the expression for the given record set and replaces their
   // scores with the evaluation results.
+  // The first "offset" records are not modified.
   //
   // Returns true on success.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
-  bool adjust(Error *error, RecordSet *record_set);
+  bool adjust(Error *error, RecordSet *record_set, Int offset = 0);
 
   // Evaluate the expression.
   //
