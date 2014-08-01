@@ -96,9 +96,6 @@ class RecordSet {
     return records_.push_back(error, record);
   }
 
-  // TODO: The following const_cast can be removed if RecordSet does not
-  //       use Array<Record>.
-
   // Return a subset.
   RecordSubset subset(Int offset = 0) const {
     return RecordSubset(const_cast<Record *>(&records_[offset]),

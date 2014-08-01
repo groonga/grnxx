@@ -131,7 +131,6 @@ enum DataType {
   // Value: Latitude-longitude in milliseconds.
   // Default: (0, 0).
   GEO_POINT_DATA,
-  // TODO: Not supported yet.
   // Type: String.
   // Value: Byte string.
   // Default: "".

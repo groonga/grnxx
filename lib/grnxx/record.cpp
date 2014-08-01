@@ -4,6 +4,4 @@
 
 namespace grnxx {
 
-// TODO: RecordSet should be replaced with Array<Record>?
-
 }  // namespace
