@@ -76,15 +76,14 @@ class Expression {
   // Return the result data type.
   DataType data_type() const;
 
+  // TODO: If the given record set contains many records (e.g. 1,048,576), the
+  //       expression should be evaluated per block (e.g. 1,024).
+  //       The best block size is not clear.
+
   // Filter out false records.
   //
   // Evaluates the expression for the given record set and removes records
   // whose evaluation results are false.
-  //
-  // TODO: If there are many records, the filter should be applied per block.
-  //       The best block size is not clear.
-  //
-  // TODO: An interface to apply a filter to a part of "*record_set" is needed.
   //
   // Returns true on success.
   // On failure, returns false and stores error information into "*error" if
