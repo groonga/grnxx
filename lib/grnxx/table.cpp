@@ -539,8 +539,8 @@ Int Table::find_zero_bit() const {
 
 bool Table::reserve_bit(Error *error, Int i) {
   if (i > MAX_ROW_ID) {
-    // TODO: Define a better error code.
-    GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Invalid argument");
+    GRNXX_ERROR_SET(error, INVALID_ARGUMENT,
+                    "Invalid argument: i = %" PRIi64, i);
     return false;
   }
   // Resize the bitmap if required.

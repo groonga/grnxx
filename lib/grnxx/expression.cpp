@@ -76,7 +76,7 @@ class Node : public ExpressionNode {
   virtual bool filter(Error *error, RecordSet *record_set);
   virtual bool adjust(Error *error, RecordSet *record_set);
 
-  virtual bool evaluate(Error *error, const RecordSubset &record_set);
+  virtual bool evaluate(Error *error, const RecordSubset &record_set) = 0;
 
   T get(Int i) const {
     return values_[i];
@@ -88,8 +88,8 @@ class Node : public ExpressionNode {
 
 template <typename T>
 bool Node<T>::filter(Error *error, RecordSet *record_set) {
-  // TODO: Define "This type is not supported" error.
-  GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
+  // Only Node<Bool> supports filter().
+  GRNXX_ERROR_SET(error, INVALID_OPERATION, "Invalid operation");
   return false;
 }
 
@@ -110,8 +110,8 @@ bool Node<Bool>::filter(Error *error, RecordSet *record_set) {
 
 template <typename T>
 bool Node<T>::adjust(Error *error, RecordSet *record_set) {
-  // TODO: Define "This type is not supported" error.
-  GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
+  // Only Node<Float> supports filter().
+  GRNXX_ERROR_SET(error, INVALID_OPERATION, "Invalid operation");
   return false;
 }
 
@@ -124,13 +124,6 @@ bool Node<Float>::adjust(Error *error, RecordSet *record_set) {
     record_set->set_score(i, values_[i]);
   }
   return true;
-}
-
-template <typename T>
-bool Node<T>::evaluate(Error *error, const RecordSubset &record_set) {
-  // TODO: This should be a pure virtual function.
-  GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
-  return false;
 }
 
 // -- DatumNode --
@@ -964,8 +957,7 @@ ExpressionBuilder::ExpressionBuilder(const Table *table) : table_(table) {}
 
 bool ExpressionBuilder::push_positive_operator(Error *error) {
   if (stack_.size() < 1) {
-    // TODO: Define a better error code.
-    GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Not enough operands");
+    GRNXX_ERROR_SET(error, INVALID_OPERAND, "Not enough operands");
     return false;
   }
   auto &arg = stack_[stack_.size() - 1];
@@ -976,8 +968,7 @@ bool ExpressionBuilder::push_positive_operator(Error *error) {
       return true;
     }
     default: {
-      // TODO: Define a better error code.
-      GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Wrong type");
+      GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
       return false;
     }
   }
@@ -985,8 +976,7 @@ bool ExpressionBuilder::push_positive_operator(Error *error) {
 
 bool ExpressionBuilder::push_negative_operator(Error *error) {
   if (stack_.size() < 1) {
-    // TODO: Define a better error code.
-    GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Not enough operands");
+    GRNXX_ERROR_SET(error, INVALID_OPERAND, "Not enough operands");
     return false;
   }
   unique_ptr<ExpressionNode> node;
@@ -1005,8 +995,7 @@ bool ExpressionBuilder::push_negative_operator(Error *error) {
       break;
     }
     default: {
-      // TODO: Define a better error code.
-      GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Wrong type");
+      GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
       return false;
     }
   }
@@ -1020,8 +1009,7 @@ bool ExpressionBuilder::push_negative_operator(Error *error) {
 
 bool ExpressionBuilder::push_to_int_operator(Error *error) {
   if (stack_.size() < 1) {
-    // TODO: Define a better error code.
-    GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Not enough operands");
+    GRNXX_ERROR_SET(error, INVALID_OPERAND, "Not enough operands");
     return false;
   }
   unique_ptr<ExpressionNode> node;
@@ -1038,8 +1026,7 @@ bool ExpressionBuilder::push_to_int_operator(Error *error) {
       break;
     }
     default: {
-      // TODO: Define a better error code.
-      GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Wrong type");
+      GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
       return false;
     }
   }
@@ -1053,8 +1040,7 @@ bool ExpressionBuilder::push_to_int_operator(Error *error) {
 
 bool ExpressionBuilder::push_to_float_operator(Error *error) {
   if (stack_.size() < 1) {
-    // TODO: Define a better error code.
-    GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Not enough operands");
+    GRNXX_ERROR_SET(error, INVALID_OPERAND, "Not enough operands");
     return false;
   }
   unique_ptr<ExpressionNode> node;
@@ -1071,8 +1057,7 @@ bool ExpressionBuilder::push_to_float_operator(Error *error) {
       return true;
     }
     default: {
-      // TODO: Define a better error code.
-      GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Wrong type");
+      GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
       return false;
     }
   }
@@ -1086,16 +1071,14 @@ bool ExpressionBuilder::push_to_float_operator(Error *error) {
 
 bool ExpressionBuilder::push_logical_and_operator(Error *error) {
   if (stack_.size() < 2) {
-    // TODO: Define a better error code.
-    GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Not enough operands");
+    GRNXX_ERROR_SET(error, INVALID_OPERAND, "Not enough operands");
     return false;
   }
   auto &lhs = stack_[stack_.size() - 2];
   auto &rhs = stack_[stack_.size() - 1];
   if ((lhs->data_type() != BOOL_DATA) ||
       (rhs->data_type() != BOOL_DATA)) {
-    // TODO: Define a better error code.
-    GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Wrong type");
+    GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
     return false;
   }
   unique_ptr<ExpressionNode> node(
@@ -1111,16 +1094,14 @@ bool ExpressionBuilder::push_logical_and_operator(Error *error) {
 
 bool ExpressionBuilder::push_logical_or_operator(Error *error) {
   if (stack_.size() < 2) {
-    // TODO: Define a better error code.
-    GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Not enough operands");
+    GRNXX_ERROR_SET(error, INVALID_OPERAND, "Not enough operands");
     return false;
   }
   auto &lhs = stack_[stack_.size() - 2];
   auto &rhs = stack_[stack_.size() - 1];
   if ((lhs->data_type() != BOOL_DATA) ||
       (rhs->data_type() != BOOL_DATA)) {
-    // TODO: Define a better error code.
-    GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Wrong type");
+    GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
     return false;
   }
   unique_ptr<ExpressionNode> node(
@@ -1137,15 +1118,13 @@ bool ExpressionBuilder::push_logical_or_operator(Error *error) {
 template <typename T>
 bool ExpressionBuilder::push_equality_operator(Error *error) {
   if (stack_.size() < 2) {
-    // TODO: Define a better error code.
-    GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Not enough operands");
+    GRNXX_ERROR_SET(error, INVALID_OPERAND, "Not enough operands");
     return false;
   }
   auto &lhs = stack_[stack_.size() - 2];
   auto &rhs = stack_[stack_.size() - 1];
   if (lhs->data_type() != rhs->data_type()) {
-    // TODO: Define a better error code.
-    GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Type conflict");
+    GRNXX_ERROR_SET(error, INVALID_OPERAND, "Data type conflict");
     return false;
   }
   unique_ptr<ExpressionNode> node;
@@ -1204,15 +1183,13 @@ bool ExpressionBuilder::push_equality_operator(Error *error) {
 template <typename T>
 bool ExpressionBuilder::push_comparison_operator(Error *error) {
   if (stack_.size() < 2) {
-    // TODO: Define a better error code.
-    GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Not enough operands");
+    GRNXX_ERROR_SET(error, INVALID_OPERAND, "Not enough operands");
     return false;
   }
   auto &lhs = stack_[stack_.size() - 2];
   auto &rhs = stack_[stack_.size() - 1];
   if (lhs->data_type() != rhs->data_type()) {
-    // TODO: Define a better error code.
-    GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Type conflict");
+    GRNXX_ERROR_SET(error, INVALID_OPERAND, "Data type conflict");
     return false;
   }
   unique_ptr<ExpressionNode> node;
@@ -1259,15 +1236,13 @@ bool ExpressionBuilder::push_comparison_operator(Error *error) {
 template <typename T>
 bool ExpressionBuilder::push_bitwise_operator(Error *error) {
   if (stack_.size() < 2) {
-    // TODO: Define a better error code.
-    GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Not enough operands");
+    GRNXX_ERROR_SET(error, INVALID_OPERAND, "Not enough operands");
     return false;
   }
   auto &lhs = stack_[stack_.size() - 2];
   auto &rhs = stack_[stack_.size() - 1];
   if (lhs->data_type() != rhs->data_type()) {
-    // TODO: Define a better error code.
-    GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Type conflict");
+    GRNXX_ERROR_SET(error, INVALID_OPERAND, "Data type conflict");
     return false;
   }
   unique_ptr<ExpressionNode> node;
@@ -1284,7 +1259,6 @@ bool ExpressionBuilder::push_bitwise_operator(Error *error) {
           functor, std::move(lhs), std::move(rhs)));
       break;
     }
-    // TODO: Support other comparable types.
     default: {
       GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
       return false;
@@ -1302,15 +1276,13 @@ bool ExpressionBuilder::push_bitwise_operator(Error *error) {
 template <typename T>
 bool ExpressionBuilder::push_arithmetic_operator(Error *error) {
   if (stack_.size() < 2) {
-    // TODO: Define a better error code.
-    GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Not enough operands");
+    GRNXX_ERROR_SET(error, INVALID_OPERAND, "Not enough operands");
     return false;
   }
   auto &lhs = stack_[stack_.size() - 2];
   auto &rhs = stack_[stack_.size() - 1];
   if (lhs->data_type() != rhs->data_type()) {
-    // TODO: Define a better error code.
-    GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Type conflict");
+    GRNXX_ERROR_SET(error, INVALID_OPERAND, "Type conflict");
     return false;
   }
   unique_ptr<ExpressionNode> node;

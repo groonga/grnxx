@@ -16,6 +16,7 @@ enum ErrorCode {
   NO_KEY_COLUMN,      // The table has no key column.
   INVALID_ARGUMENT,   // Invalid argument.
   INVALID_OPERATION,  // Invalid operation.
+  INVALID_OPERAND,    // Invalid operand.
   NOT_SUPPORTED_YET   // The operation is not supported yet.
 };
 
