@@ -105,6 +105,8 @@ class Expression {
   //
   // The result is stored into "*results".
   //
+  // TODO: should append results to the end of "*results"?
+  //
   // Returns true on success.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
