@@ -791,10 +791,10 @@ unique_ptr<ExpressionBuilder> ExpressionBuilder::create(Error *error,
 ExpressionBuilder::~ExpressionBuilder() {}
 
 bool ExpressionBuilder::push_datum(Error *error, const Datum &datum) {
+  // Reserve a space for a new node.
   if (!stack_.reserve(error, stack_.size() + 1)) {
     return false;
   }
-  // TODO: DatumNode::create() should be provided to get error information.
   unique_ptr<ExpressionNode> node;
   switch (datum.type()) {
     case BOOL_DATA: {
@@ -831,11 +831,13 @@ bool ExpressionBuilder::push_datum(Error *error, const Datum &datum) {
     GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
     return false;
   }
-  stack_.push_back(error, std::move(node));
+  // This push_back() must not fail because a space is already reserved.
+  stack_.push_back(nullptr, std::move(node));
   return true;
 }
 
 bool ExpressionBuilder::push_column(Error *error, String name) {
+  // Reserve a space for a new node.
   if (!stack_.reserve(error, stack_.size() + 1)) {
     return false;
   }
@@ -849,7 +851,6 @@ bool ExpressionBuilder::push_column(Error *error, String name) {
     if (!column) {
       return false;
     }
-    // TODO: The following switch should be done in ColumnNode::create() or ...
     switch (column->data_type()) {
       case BOOL_DATA: {
         node.reset(new (nothrow) ColumnNode<Bool>(column));
@@ -876,7 +877,7 @@ bool ExpressionBuilder::push_column(Error *error, String name) {
         break;
       }
       default: {
-        // TODO: Not supported yet.
+        // TODO: Other types are not supported yet.
         GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
         return false;
       }
@@ -886,7 +887,8 @@ bool ExpressionBuilder::push_column(Error *error, String name) {
     GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
     return false;
   }
-  stack_.push_back(error, std::move(node));
+  // This push_back() must not fail because a space is already reserved.
+  stack_.push_back(nullptr, std::move(node));
   return true;
 }
 
