@@ -738,38 +738,38 @@ bool Expression::adjust(Error *error, RecordSet *record_set, Int offset) {
 template <typename T>
 bool Expression::evaluate(Error *error,
                           const RecordSubset &record_set,
-                          Array<T> *result_set) {
+                          Array<T> *results) {
   Node<T> *node = static_cast<Node<T> *>(root_.get());
   if (!node->evaluate(error, record_set)) {
     return false;
   }
-  if (!result_set->resize(error, record_set.size())) {
+  if (!results->resize(error, record_set.size())) {
     return false;
   }
-  for (Int i = 0; i < result_set->size(); ++i) {
-    (*result_set)[i] = node->get(i);
+  for (Int i = 0; i < results->size(); ++i) {
+    (*results)[i] = node->get(i);
   }
   return true;
 }
 
 template bool Expression::evaluate(Error *error,
                                    const RecordSubset &record_set,
-                                   Array<Bool> *result_set);
+                                   Array<Bool> *results);
 template bool Expression::evaluate(Error *error,
                                    const RecordSubset &record_set,
-                                   Array<Int> *result_set);
+                                   Array<Int> *results);
 template bool Expression::evaluate(Error *error,
                                    const RecordSubset &record_set,
-                                   Array<Float> *result_set);
+                                   Array<Float> *results);
 template bool Expression::evaluate(Error *error,
                                    const RecordSubset &record_set,
-                                   Array<Time> *result_set);
+                                   Array<Time> *results);
 template bool Expression::evaluate(Error *error,
                                    const RecordSubset &record_set,
-                                   Array<GeoPoint> *result_set);
+                                   Array<GeoPoint> *results);
 template bool Expression::evaluate(Error *error,
                                    const RecordSubset &record_set,
-                                   Array<Text> *result_set);
+                                   Array<Text> *results);
 
 Expression::Expression(const Table *table, unique_ptr<ExpressionNode> &&root)
     : table_(table),

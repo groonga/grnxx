@@ -103,7 +103,7 @@ class Expression {
 
   // Evaluate the expression.
   //
-  // The result is stored into "*result_set".
+  // The result is stored into "*results".
   //
   // Returns true on success.
   // On failure, returns false and stores error information into "*error" if
@@ -111,7 +111,7 @@ class Expression {
   template <typename T>
   bool evaluate(Error *error,
                 const RecordSubset &record_set,
-                Array<T> *result_set);
+                Array<T> *results);
 
  private:
   const Table *table_;
