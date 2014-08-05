@@ -1,5 +1,5 @@
-#ifndef GRNXX_COLUMN_BASE_HPP
-#define GRNXX_COLUMN_BASE_HPP
+#ifndef GRNXX_COLUMN_IMPL_HPP
+#define GRNXX_COLUMN_IMPL_HPP
 
 #include "grnxx/array.hpp"
 #include "grnxx/column.hpp"
@@ -85,4 +85,4 @@ class ColumnImpl<Text> : public Column {
 
 }  // namespace grnxx
 
-#endif  // GRNXX_COLUMN_BASE_HPP
+#endif  // GRNXX_COLUMN_IMPL_HPP
