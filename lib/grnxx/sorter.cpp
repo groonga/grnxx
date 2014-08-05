@@ -540,12 +540,19 @@ bool Sorter::finish(Error *error) {
   if (limit_ <= (record_set_->size() - offset_)) {
     end = offset_ + limit_;
   } else {
-    end = record_set_->size() - offset_;
+    end = record_set_->size();
   }
   if (record_set_->size() <= 1) {
     return true;
   }
-  return head_->sort(error, record_set_->subset(), begin, end);
+  if (!head_->sort(error, record_set_->subset(), begin, end)) {
+    return false;
+  }
+  for (Int i = begin, j = 0; i < end; ++i, ++j) {
+    record_set_->set(j, record_set_->get(i));
+  }
+  record_set_->resize(nullptr, end - begin);
+  return true;
 }
 
 bool Sorter::sort(Error *error, RecordSet *record_set) {
