@@ -105,15 +105,30 @@ class Expression {
   //
   // The result is stored into "*results".
   //
-  // TODO: should append results to the end of "*results"?
+  // Fails if "T" is different from the result data type.
   //
-  // Returns true on success.
+  // On success, returns true.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
   template <typename T>
   bool evaluate(Error *error,
                 const RecordSubset &record_set,
                 Array<T> *results);
+
+  // Evaluate the expression.
+  //
+  // The result is stored into "*results".
+  //
+  // Fails if the number of records is different from the size of "*results".
+  // Fails if "T" is different from the result data type.
+  //
+  // On success, returns true.
+  // On failure, returns false and stores error information into "*error" if
+  // "error" != nullptr.
+  template <typename T>
+  bool evaluate(Error *error,
+                const RecordSubset &record_set,
+                Subarray<T> *results);
 
  private:
   const Table *table_;

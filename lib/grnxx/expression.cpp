@@ -739,17 +739,15 @@ template <typename T>
 bool Expression::evaluate(Error *error,
                           const RecordSubset &record_set,
                           Array<T> *results) {
-  Node<T> *node = static_cast<Node<T> *>(root_.get());
-  if (!node->evaluate(error, record_set)) {
+  if (TypeTraits<T>::data_type() != data_type()) {
+    GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Invalid data type");
     return false;
   }
   if (!results->resize(error, record_set.size())) {
     return false;
   }
-  for (Int i = 0; i < results->size(); ++i) {
-    (*results)[i] = node->get(i);
-  }
-  return true;
+  Subarray<T> subarray = results->subarray();
+  return evaluate(error, record_set, &subarray);
 }
 
 template bool Expression::evaluate(Error *error,
@@ -770,6 +768,30 @@ template bool Expression::evaluate(Error *error,
 template bool Expression::evaluate(Error *error,
                                    const RecordSubset &record_set,
                                    Array<Text> *results);
+
+template <typename T>
+bool Expression::evaluate(Error *error,
+                          const RecordSubset &record_set,
+                          Subarray<T> *results) {
+  if (TypeTraits<T>::data_type() != data_type()) {
+    GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Invalid data type");
+    return false;
+  }
+  if (record_set.size() != results->size()) {
+    GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Size conflict: "
+                    "#records = %" PRIi64 ", #results = %" PRIi64,
+                    record_set.size(), results->size());
+    return false;
+  }
+  Node<T> *node = static_cast<Node<T> *>(root_.get());
+  if (!node->evaluate(error, record_set)) {
+    return false;
+  }
+  for (Int i = 0; i < results->size(); ++i) {
+    (*results)[i] = node->get(i);
+  }
+  return true;
+}
 
 Expression::Expression(const Table *table, unique_ptr<ExpressionNode> &&root)
     : table_(table),
