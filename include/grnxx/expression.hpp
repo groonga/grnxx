@@ -75,6 +75,11 @@ class Expression {
   }
   // Return the result data type.
   DataType data_type() const;
+  // Return the evaluation block size.
+  Int block_size() const {
+    // TODO: This value should be optimized.
+    return 1024;
+  }
 
   // TODO: If the given record set contains many records (e.g. 1,048,576), the
   //       expression should be evaluated per block (e.g. 1,024).
@@ -135,6 +140,11 @@ class Expression {
   unique_ptr<ExpressionNode> root_;
 
   Expression(const Table *table, unique_ptr<ExpressionNode> &&root);
+
+  template <typename T>
+  bool evaluate_block(Error *error,
+                      const RecordSubset &record_set,
+                      Subarray<T> *results);
 };
 
 class ExpressionBuilder {

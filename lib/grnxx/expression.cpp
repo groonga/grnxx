@@ -732,6 +732,13 @@ bool Expression::filter(Error *error, RecordSet *record_set, Int offset) {
 
 bool Expression::adjust(Error *error, RecordSet *record_set, Int offset) {
   RecordSubset subset = record_set->subset(offset);
+  while (subset.size() > block_size()) {
+    RecordSubset block = subset.subset(0, block_size());
+    if (!root_->adjust(error, &block)) {
+      return false;
+    }
+    subset = subset.subset(block_size());
+  }
   return root_->adjust(error, &subset);
 }
 
@@ -783,19 +790,36 @@ bool Expression::evaluate(Error *error,
                     record_set.size(), results->size());
     return false;
   }
-  Node<T> *node = static_cast<Node<T> *>(root_.get());
-  if (!node->evaluate(error, record_set)) {
-    return false;
+  RecordSubset input = record_set;
+  Subarray<T> output = *results;
+  while (input.size() > block_size()) {
+    RecordSubset subset = input.subset(0, block_size());
+    if (!evaluate_block(error, subset, &output)) {
+      return false;
+    }
+    input = input.subset(block_size());
+    output = output.subarray(block_size());
   }
-  for (Int i = 0; i < results->size(); ++i) {
-    (*results)[i] = node->get(i);
-  }
-  return true;
+  return evaluate_block(error, input, &output);
 }
 
 Expression::Expression(const Table *table, unique_ptr<ExpressionNode> &&root)
     : table_(table),
       root_(std::move(root)) {}
+
+template <typename T>
+bool Expression::evaluate_block(Error *error,
+                                const RecordSubset &record_set,
+                                Subarray<T> *results) {
+  Node<T> *node = static_cast<Node<T> *>(root_.get());
+  if (!node->evaluate(error, record_set)) {
+    return false;
+  }
+  for (Int i = 0; i < record_set.size(); ++i) {
+    (*results)[i] = node->get(i);
+  }
+  return true;
+}
 
 // -- ExpressionBuilder --
 
