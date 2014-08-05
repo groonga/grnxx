@@ -13,6 +13,38 @@ class ArrayErrorReporter {
 };
 
 template <typename T>
+class Subarray {
+ public:
+  Subarray() = default;
+  Subarray(T *values, Int size) : values_(values), size_(size) {}
+  Subarray(const Subarray &) = default;
+
+  Subarray &operator=(const Subarray &) = default;
+
+  Subarray subarray(Int offset = 0) const {
+    return Subarray(values_ + offset, size_ - offset);
+  }
+  Subarray subarray(Int offset, Int size) const {
+    return Subarray(values_ + offset, size);
+  }
+
+  T &operator[](Int i) {
+    return values_[i];
+  }
+  const T &operator[](Int i) const {
+    return values_[i];
+  }
+
+  Int size() const {
+    return size_;
+  }
+
+ private:
+  T *values_;
+  Int size_;
+};
+
+template <typename T>
 class Array {
  public:
   Array() : values_() {}
@@ -23,6 +55,13 @@ class Array {
   Array &operator=(Array &&array) {
     values_ = std::move(array.values_);
     return *this;
+  }
+
+  Subarray<T> subarray(Int offset = 0) const {
+    return Subarray<T>(const_cast<T *>(data()) + offset, size() - offset);
+  }
+  Subarray<T> subarray(Int offset, Int size) const {
+    return Subarray<T>(const_cast<T *>(data()) + offset, size);
   }
 
   T &operator[](Int i) {
@@ -161,7 +200,60 @@ inline bool operator!=(const BoolReference &lhs, Bool rhs) {
   return static_cast<Bool>(lhs) != rhs;
 }
 
-// Array<Bool> is specialized because a bit does not have its address.
+// Subarray<Bool> is specialized because a bit does not have its own unique
+// address and thus a pointer type for Bool is not a available.
+template <>
+class Subarray<Bool> {
+ public:
+  Subarray() = default;
+  Subarray(uint64_t *blocks, Int offset, Int size)
+      : blocks_(blocks),
+        offset_(static_cast<uint64_t>(offset)),
+        size_(static_cast<uint64_t>(size)) {}
+  Subarray(const Subarray &) = default;
+
+  Subarray &operator=(const Subarray &) = default;
+
+  Subarray subarray(Int offset = 0) const {
+    offset += static_cast<Int>(offset_);
+    return Subarray(blocks_ + (offset / 64), (offset % 64), size() - offset);
+  }
+  Subarray subarray(Int offset, Int size) const {
+    offset += static_cast<Int>(offset_);
+    return Subarray(blocks_ + (offset / 64), (offset % 64), size);
+  }
+
+  BoolReference operator[](Int i) {
+    i += static_cast<Int>(offset_);
+    return BoolReference(&blocks_[i / 64], uint64_t(1) << (i % 64));
+  }
+  Bool operator[](Int i) const {
+    i += static_cast<Int>(offset_);
+    return (blocks_[i / 64] & (uint64_t(1) << (i % 64))) != 0;
+  }
+
+  // TODO: For optimization.
+//  uint64_t *blocks() const {
+//    return blocks_;
+//  }
+//  Int offset() const {
+//    return static_cast<Int>(offset_);
+//  }
+
+  Int size() const {
+    return static_cast<Int>(size_);
+  }
+
+ private:
+  uint64_t *blocks_;
+  struct {
+    uint64_t offset_:16;
+    uint64_t size_:48;
+  };
+};
+
+// Array<Bool> is specialized because a bit does not have its own unique
+// address and thus a pointer type for Bool is not a available.
 template <>
 class Array<Bool> {
  public:
