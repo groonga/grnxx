@@ -10,7 +10,6 @@ namespace grnxx {
 class ArrayHelper {
  public:
   static void report_memory_error(Error *error);
-  static void report_empty_error(Error *error);
 };
 
 template <typename T>
