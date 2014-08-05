@@ -207,8 +207,8 @@ class Subarray<Bool> {
  public:
   Subarray() = default;
   Subarray(uint64_t *blocks, Int offset, Int size)
-      : blocks_(blocks),
-        offset_(static_cast<uint64_t>(offset)),
+      : blocks_(blocks + (offset / 64)),
+        offset_(static_cast<uint64_t>(offset % 64)),
         size_(static_cast<uint64_t>(size)) {}
   Subarray(const Subarray &) = default;
 
@@ -216,11 +216,11 @@ class Subarray<Bool> {
 
   Subarray subarray(Int offset = 0) const {
     offset += static_cast<Int>(offset_);
-    return Subarray(blocks_ + (offset / 64), (offset % 64), size() - offset);
+    return Subarray(blocks_, offset, size() - offset);
   }
   Subarray subarray(Int offset, Int size) const {
     offset += static_cast<Int>(offset_);
-    return Subarray(blocks_ + (offset / 64), (offset % 64), size);
+    return Subarray(blocks_, offset, size);
   }
 
   BoolReference operator[](Int i) {
@@ -265,6 +265,14 @@ class Array<Bool> {
   Array &operator=(Array &&array) {
     blocks_ = std::move(array.blocks_);
     return *this;
+  }
+
+  Subarray<Bool> subarray(Int offset = 0) const {
+    return Subarray<Bool>(const_cast<uint64_t *>(blocks()),
+                          offset, size() - offset);
+  }
+  Subarray<Bool> subarray(Int offset, Int size) const {
+    return Subarray<Bool>(const_cast<uint64_t *>(blocks()), offset, size);
   }
 
   BoolReference operator[](Int i) {
