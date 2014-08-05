@@ -184,6 +184,8 @@ class ExpressionBuilder {
 
   explicit ExpressionBuilder(const Table *table);
 
+  // Push a unary operator.
+  bool push_unary_operator(Error *error, OperatorType operator_type);
   // Push a positive operator.
   bool push_positive_operator(Error *error);
   // Push a negative operator.
@@ -192,6 +194,9 @@ class ExpressionBuilder {
   bool push_to_int_operator(Error *error);
   // Push a typecast operator to Float.
   bool push_to_float_operator(Error *error);
+
+  // Push a binary operator.
+  bool push_binary_operator(Error *error, OperatorType operator_type);
   // Push an operator &&.
   bool push_logical_and_operator(Error *error);
   // Push an operator ||.

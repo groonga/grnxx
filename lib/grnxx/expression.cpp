@@ -895,6 +895,59 @@ bool ExpressionBuilder::push_column(Error *error, String name) {
 bool ExpressionBuilder::push_operator(Error *error,
                                       OperatorType operator_type) {
   switch (operator_type) {
+    case POSITIVE_OPERATOR:
+    case NEGATIVE_OPERATOR:
+    case TO_INT_OPERATOR:
+    case TO_FLOAT_OPERATOR: {
+      return push_unary_operator(error, operator_type);
+    }
+    case LOGICAL_AND_OPERATOR:
+    case LOGICAL_OR_OPERATOR:
+    case EQUAL_OPERATOR:
+    case NOT_EQUAL_OPERATOR:
+    case LESS_OPERATOR:
+    case LESS_EQUAL_OPERATOR:
+    case GREATER_OPERATOR:
+    case GREATER_EQUAL_OPERATOR:
+    case BITWISE_AND_OPERATOR:
+    case BITWISE_OR_OPERATOR:
+    case BITWISE_XOR_OPERATOR:
+    case PLUS_OPERATOR:
+    case MINUS_OPERATOR:
+    case MULTIPLICATION_OPERATOR: {
+      return push_binary_operator(error, operator_type);
+    }
+    default: {
+      // TODO: Not supported yet.
+      GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
+      return false;
+    }
+  }
+}
+
+void ExpressionBuilder::clear() {
+  stack_.clear();
+}
+
+unique_ptr<Expression> ExpressionBuilder::release(Error *error) {
+  if (stack_.size() != 1) {
+    GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Incomplete expression");
+    return nullptr;
+  }
+  unique_ptr<ExpressionNode> root_node = std::move(stack_[0]);
+  stack_.clear();
+  return Expression::create(error, table_, std::move(root_node));
+}
+
+ExpressionBuilder::ExpressionBuilder(const Table *table) : table_(table) {}
+
+bool ExpressionBuilder::push_unary_operator(Error *error,
+                                            OperatorType operator_type) {
+  if (stack_.size() < 1) {
+    GRNXX_ERROR_SET(error, INVALID_OPERAND, "Not enough operands");
+    return false;
+  }
+  switch (operator_type) {
     case POSITIVE_OPERATOR: {
       return push_positive_operator(error);
     }
@@ -907,6 +960,21 @@ bool ExpressionBuilder::push_operator(Error *error,
     case TO_FLOAT_OPERATOR: {
       return push_to_float_operator(error);
     }
+    default: {
+      // TODO: Not supported yet.
+      GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
+      return false;
+    }
+  }
+}
+
+bool ExpressionBuilder::push_binary_operator(Error *error,
+                                             OperatorType operator_type) {
+  if (stack_.size() < 2) {
+    GRNXX_ERROR_SET(error, INVALID_OPERAND, "Not enough operands");
+    return false;
+  }
+  switch (operator_type) {
     case LOGICAL_AND_OPERATOR: {
       return push_logical_and_operator(error);
     }
@@ -957,27 +1025,7 @@ bool ExpressionBuilder::push_operator(Error *error,
   }
 }
 
-void ExpressionBuilder::clear() {
-  stack_.clear();
-}
-
-unique_ptr<Expression> ExpressionBuilder::release(Error *error) {
-  if (stack_.size() != 1) {
-    GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Incomplete expression");
-    return nullptr;
-  }
-  unique_ptr<ExpressionNode> root_node = std::move(stack_[0]);
-  stack_.clear();
-  return Expression::create(error, table_, std::move(root_node));
-}
-
-ExpressionBuilder::ExpressionBuilder(const Table *table) : table_(table) {}
-
 bool ExpressionBuilder::push_positive_operator(Error *error) {
-  if (stack_.size() < 1) {
-    GRNXX_ERROR_SET(error, INVALID_OPERAND, "Not enough operands");
-    return false;
-  }
   auto &arg = stack_[stack_.size() - 1];
   switch (arg->data_type()) {
     case INT_DATA:
@@ -993,10 +1041,6 @@ bool ExpressionBuilder::push_positive_operator(Error *error) {
 }
 
 bool ExpressionBuilder::push_negative_operator(Error *error) {
-  if (stack_.size() < 1) {
-    GRNXX_ERROR_SET(error, INVALID_OPERAND, "Not enough operands");
-    return false;
-  }
   unique_ptr<ExpressionNode> node;
   auto &arg = stack_[stack_.size() - 1];
   switch (arg->data_type()) {
@@ -1026,10 +1070,6 @@ bool ExpressionBuilder::push_negative_operator(Error *error) {
 }
 
 bool ExpressionBuilder::push_to_int_operator(Error *error) {
-  if (stack_.size() < 1) {
-    GRNXX_ERROR_SET(error, INVALID_OPERAND, "Not enough operands");
-    return false;
-  }
   unique_ptr<ExpressionNode> node;
   auto &arg = stack_[stack_.size() - 1];
   switch (arg->data_type()) {
@@ -1057,10 +1097,6 @@ bool ExpressionBuilder::push_to_int_operator(Error *error) {
 }
 
 bool ExpressionBuilder::push_to_float_operator(Error *error) {
-  if (stack_.size() < 1) {
-    GRNXX_ERROR_SET(error, INVALID_OPERAND, "Not enough operands");
-    return false;
-  }
   unique_ptr<ExpressionNode> node;
   auto &arg = stack_[stack_.size() - 1];
   switch (arg->data_type()) {
@@ -1088,10 +1124,6 @@ bool ExpressionBuilder::push_to_float_operator(Error *error) {
 }
 
 bool ExpressionBuilder::push_logical_and_operator(Error *error) {
-  if (stack_.size() < 2) {
-    GRNXX_ERROR_SET(error, INVALID_OPERAND, "Not enough operands");
-    return false;
-  }
   auto &lhs = stack_[stack_.size() - 2];
   auto &rhs = stack_[stack_.size() - 1];
   if ((lhs->data_type() != BOOL_DATA) ||
@@ -1111,10 +1143,6 @@ bool ExpressionBuilder::push_logical_and_operator(Error *error) {
 }
 
 bool ExpressionBuilder::push_logical_or_operator(Error *error) {
-  if (stack_.size() < 2) {
-    GRNXX_ERROR_SET(error, INVALID_OPERAND, "Not enough operands");
-    return false;
-  }
   auto &lhs = stack_[stack_.size() - 2];
   auto &rhs = stack_[stack_.size() - 1];
   if ((lhs->data_type() != BOOL_DATA) ||
@@ -1135,10 +1163,6 @@ bool ExpressionBuilder::push_logical_or_operator(Error *error) {
 
 template <typename T>
 bool ExpressionBuilder::push_equality_operator(Error *error) {
-  if (stack_.size() < 2) {
-    GRNXX_ERROR_SET(error, INVALID_OPERAND, "Not enough operands");
-    return false;
-  }
   auto &lhs = stack_[stack_.size() - 2];
   auto &rhs = stack_[stack_.size() - 1];
   if (lhs->data_type() != rhs->data_type()) {
@@ -1200,10 +1224,6 @@ bool ExpressionBuilder::push_equality_operator(Error *error) {
 
 template <typename T>
 bool ExpressionBuilder::push_comparison_operator(Error *error) {
-  if (stack_.size() < 2) {
-    GRNXX_ERROR_SET(error, INVALID_OPERAND, "Not enough operands");
-    return false;
-  }
   auto &lhs = stack_[stack_.size() - 2];
   auto &rhs = stack_[stack_.size() - 1];
   if (lhs->data_type() != rhs->data_type()) {
@@ -1253,10 +1273,6 @@ bool ExpressionBuilder::push_comparison_operator(Error *error) {
 
 template <typename T>
 bool ExpressionBuilder::push_bitwise_operator(Error *error) {
-  if (stack_.size() < 2) {
-    GRNXX_ERROR_SET(error, INVALID_OPERAND, "Not enough operands");
-    return false;
-  }
   auto &lhs = stack_[stack_.size() - 2];
   auto &rhs = stack_[stack_.size() - 1];
   if (lhs->data_type() != rhs->data_type()) {
@@ -1293,10 +1309,6 @@ bool ExpressionBuilder::push_bitwise_operator(Error *error) {
 
 template <typename T>
 bool ExpressionBuilder::push_arithmetic_operator(Error *error) {
-  if (stack_.size() < 2) {
-    GRNXX_ERROR_SET(error, INVALID_OPERAND, "Not enough operands");
-    return false;
-  }
   auto &lhs = stack_[stack_.size() - 2];
   auto &rhs = stack_[stack_.size() - 1];
   if (lhs->data_type() != rhs->data_type()) {
