@@ -7,7 +7,7 @@
 
 namespace grnxx {
 
-class ArrayHelper {
+class ArrayErrorReporter {
  public:
   static void report_memory_error(Error *error);
 };
@@ -64,7 +64,7 @@ class Array {
     values_.reserve(new_size);
     return true;
   } catch (...) {
-    ArrayHelper::report_memory_error(error);
+    ArrayErrorReporter::report_memory_error(error);
     return false;
   }
 
@@ -72,14 +72,14 @@ class Array {
     values_.resize(new_size);
     return true;
   } catch (...) {
-    ArrayHelper::report_memory_error(error);
+    ArrayErrorReporter::report_memory_error(error);
     return false;
   }
   bool resize(Error *error, Int new_size, const T &value) try {
     values_.resize(new_size, value);
     return true;
   } catch (...) {
-    ArrayHelper::report_memory_error(error);
+    ArrayErrorReporter::report_memory_error(error);
     return false;
   }
 
@@ -87,7 +87,7 @@ class Array {
     values_.shrink_to_fit();
     return true;
   } catch (...) {
-    ArrayHelper::report_memory_error(error);
+    ArrayErrorReporter::report_memory_error(error);
     return false;
   }
 
@@ -103,14 +103,14 @@ class Array {
     values_.push_back(value);
     return true;
   } catch (...) {
-    ArrayHelper::report_memory_error(error);
+    ArrayErrorReporter::report_memory_error(error);
     return false;
   }
   bool push_back(Error *error, T &&value) try {
     values_.push_back(std::move(value));
     return true;
   } catch (...) {
-    ArrayHelper::report_memory_error(error);
+    ArrayErrorReporter::report_memory_error(error);
     return false;
   }
   void pop_back() {

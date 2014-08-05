@@ -4,7 +4,7 @@
 
 namespace grnxx {
 
-void ArrayHelper::report_memory_error(Error *error) {
+void ArrayErrorReporter::report_memory_error(Error *error) {
   GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
 }
 
