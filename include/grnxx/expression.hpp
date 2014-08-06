@@ -81,10 +81,6 @@ class Expression {
     return 1024;
   }
 
-  // TODO: If the given record set contains many records (e.g. 1,048,576), the
-  //       expression should be evaluated per block (e.g. 1,024).
-  //       The best block size is not clear.
-
   // Filter out false records.
   //
   // Evaluates the expression for the given record set and removes records

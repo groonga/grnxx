@@ -31,15 +31,18 @@ class ExpressionNode {
   // Return the result data type.
   virtual DataType data_type() const = 0;
 
-  // Filter out false records.
+  // Extract true records.
   //
-  // Evaluates the expression for the given record set and removes records
-  // whose evaluation results are false.
+  // Evaluates the expression for "input_records" and appends records
+  // whose evaluation results are true into "*output_records".
+  // "*output_records" is truncated to the number of true records.
   //
   // Returns true on success.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
-  virtual bool filter(Error *error, RecordSubset *record_set) = 0;
+  virtual bool filter(Error *error,
+                      const RecordSubset &input_records,
+                      RecordSubset *output_records) = 0;
 
   // Adjust scores of records.
   //
@@ -73,7 +76,9 @@ class Node : public ExpressionNode {
     return TypeTraits<T>::data_type();
   }
 
-  virtual bool filter(Error *error, RecordSubset *record_set);
+  virtual bool filter(Error *error,
+                      const RecordSubset &input_records,
+                      RecordSubset *output_records);
   virtual bool adjust(Error *error, RecordSubset *record_set);
 
   virtual bool evaluate(Error *error, const RecordSubset &record_set) = 0;
@@ -87,31 +92,36 @@ class Node : public ExpressionNode {
 };
 
 template <typename T>
-bool Node<T>::filter(Error *error, RecordSubset *record_set) {
+bool Node<T>::filter(Error *error,
+                     const RecordSubset &input_records,
+                     RecordSubset *output_records) {
   // Only Node<Bool> supports filter().
   GRNXX_ERROR_SET(error, INVALID_OPERATION, "Invalid operation");
   return false;
 }
 
 template <>
-bool Node<Bool>::filter(Error *error, RecordSubset *record_set) {
-  if (!evaluate(error, *record_set)) {
+bool Node<Bool>::filter(Error *error,
+                        const RecordSubset &input_records,
+                        RecordSubset *output_records) {
+  if (!evaluate(error, input_records)) {
     return false;
   }
   Int dest = 0;
-  for (Int i = 0; i < record_set->size(); ++i) {
+  for (Int i = 0; i < input_records.size(); ++i) {
     if (values_[i]) {
-      record_set->set(dest, record_set->get(i));
+      output_records->set(dest, input_records.get(i));
       ++dest;
     }
   }
-  *record_set = record_set->subset(0, dest);
+  *output_records = output_records->subset(0, dest);
   return true;
 }
 
 template <typename T>
-bool Node<T>::adjust(Error *error, RecordSubset *record_set) {
-  // Only Node<Float> supports filter().
+bool Node<T>::adjust(Error *error,
+                     RecordSubset *record_set) {
+  // Only Node<Float> supports adjust().
   GRNXX_ERROR_SET(error, INVALID_OPERATION, "Invalid operation");
   return false;
 }
@@ -522,7 +532,9 @@ class LogicalAndNode : public Node<Bool> {
     return OPERATOR_NODE;
   }
 
-  bool filter(Error *error, RecordSubset *record_set);
+  bool filter(Error *error,
+              const RecordSubset &input_records,
+              RecordSubset *output_records);
 
   bool evaluate(Error *error, const RecordSubset &record_set);
 
@@ -532,8 +544,11 @@ class LogicalAndNode : public Node<Bool> {
   RecordSet temp_record_set_;
 };
 
-bool LogicalAndNode::filter(Error *error, RecordSubset *record_set) {
-  return lhs_->filter(error, record_set) && rhs_->filter(error, record_set);
+bool LogicalAndNode::filter(Error *error,
+                            const RecordSubset &input_records,
+                            RecordSubset *output_records) {
+  return lhs_->filter(error, input_records, output_records) &&
+         rhs_->filter(error, *output_records, output_records);
 }
 
 bool LogicalAndNode::evaluate(Error *error, const RecordSubset &record_set) {
@@ -577,7 +592,9 @@ class LogicalOrNode : public Node<Bool> {
     return OPERATOR_NODE;
   }
 
-  bool filter(Error *error, RecordSubset *record_set);
+  bool filter(Error *error,
+              const RecordSubset &input_records,
+              RecordSubset *output_records);
 
   bool evaluate(Error *error, const RecordSubset &record_set);
 
@@ -588,16 +605,18 @@ class LogicalOrNode : public Node<Bool> {
   RecordSet right_record_set_;
 };
 
-bool LogicalOrNode::filter(Error *error, RecordSubset *record_set) {
+bool LogicalOrNode::filter(Error *error,
+                           const RecordSubset &input_records,
+                           RecordSubset *output_records) {
   // Make a copy of the given record set and apply the left-filter to it.
-  if (!left_record_set_.resize(error, record_set->size())) {
+  if (!left_record_set_.resize(error, input_records.size())) {
     return false;
   }
-  for (Int i = 0; i < record_set->size(); ++i) {
-    left_record_set_.set(i, record_set->get(i));
+  for (Int i = 0; i < input_records.size(); ++i) {
+    left_record_set_.set(i, input_records.get(i));
   }
   RecordSubset left_record_subset = left_record_set_.subset();
-  if (!lhs_->filter(error, &left_record_subset)) {
+  if (!lhs_->filter(error, left_record_subset, &left_record_subset)) {
     return false;
   }
   if (!left_record_set_.resize(error, left_record_subset.size())) {
@@ -605,30 +624,38 @@ bool LogicalOrNode::filter(Error *error, RecordSubset *record_set) {
   }
   if (left_record_set_.size() == 0) {
     // There are no left-true records.
-    return rhs_->filter(error, record_set);
-  } else if (left_record_set_.size() == record_set->size()) {
+    return rhs_->filter(error, input_records, output_records);
+  } else if (left_record_set_.size() == input_records.size()) {
     // There are no left-false records.
     // This means that all the records pass through the filter.
+    if (&input_records != output_records) {
+      *output_records = output_records->subset(0, input_records.size());
+      for (Int i = 0; i < input_records.size(); ++i) {
+        output_records->set(i, input_records.get(i));
+      }
+    }
     return true;
   }
 
   // Enumerate left-false records and apply the right-filter to it.
   if (!right_record_set_.resize(error,
-                                record_set->size() - left_record_set_.size())) {
+                                input_records.size() -
+                                left_record_set_.size())) {
     return false;
   }
   Int left_count = 0;
   Int right_count = 0;
-  for (Int i = 0; i < record_set->size(); ++i) {
-    if (record_set->get_row_id(i) == left_record_set_.get_row_id((left_count))) {
+  for (Int i = 0; i < input_records.size(); ++i) {
+    if (input_records.get_row_id(i) ==
+        left_record_set_.get_row_id((left_count))) {
       ++left_count;
     } else {
-      right_record_set_.set(right_count, record_set->get(i));
+      right_record_set_.set(right_count, input_records.get(i));
       ++right_count;
     }
   }
   RecordSubset right_record_subset = right_record_set_.subset();
-  if (!rhs_->filter(error, &right_record_subset)) {
+  if (!rhs_->filter(error, right_record_subset, &right_record_subset)) {
     return false;
   }
   if (!right_record_set_.resize(error, right_record_subset.size())) {
@@ -636,14 +663,20 @@ bool LogicalOrNode::filter(Error *error, RecordSubset *record_set) {
   }
   if (right_record_set_.size() == 0) {
     // There are no right-true records.
-    *record_set = record_set->subset(0, left_record_set_.size());
-    for (Int i = 0; i < record_set->size(); ++i) {
-      record_set->set(i, left_record_set_.get(i));
+    *output_records = output_records->subset(0, left_record_set_.size());
+    for (Int i = 0; i < output_records->size(); ++i) {
+      output_records->set(i, left_record_set_.get(i));
     }
     return true;
   } else if (right_record_set_.size() == right_count) {
     // There are no right-false records.
     // This means that all the records pass through the filter.
+    if (&input_records != output_records) {
+      *output_records = output_records->subset(0, input_records.size());
+      for (Int i = 0; i < input_records.size(); ++i) {
+        output_records->set(i, input_records.get(i));
+      }
+    }
     return true;
   }
 
@@ -656,17 +689,18 @@ bool LogicalOrNode::filter(Error *error, RecordSubset *record_set) {
   // Merge the left-true records and the right-true records.
   left_count = 0;
   right_count = 0;
-  for (Int i = 0; i < record_set->size(); ++i) {
-    if (record_set->get(i).row_id == left_record_set_.get(left_count).row_id) {
-      record_set->set(left_count + right_count, record_set->get(i));
+  for (Int i = 0; i < input_records.size(); ++i) {
+    if (input_records.get(i).row_id ==
+        left_record_set_.get(left_count).row_id) {
+      output_records->set(left_count + right_count, input_records.get(i));
       ++left_count;
-    } else if (record_set->get(i).row_id ==
+    } else if (input_records.get(i).row_id ==
                right_record_set_.get(right_count).row_id) {
-      record_set->set(left_count + right_count, record_set->get(i));
+      output_records->set(left_count + right_count, input_records.get(i));
       ++right_count;
     }
   }
-  *record_set = record_set->subset(0, left_count + right_count);
+  *output_records = output_records->subset(0, left_count + right_count);
   return true;
 }
 
@@ -720,14 +754,31 @@ DataType Expression::data_type() const {
 }
 
 bool Expression::filter(Error *error, RecordSet *record_set, Int offset) {
-  RecordSubset subset = record_set->subset(offset);
-  if (!root_->filter(error, &subset)) {
+  RecordSubset input_subset = record_set->subset(offset);
+  RecordSubset output_subset = record_set->subset(offset);
+  while (input_subset.size() > block_size()) {
+    RecordSubset input_block = input_subset.subset(0, block_size());
+    if (input_subset.size() == output_subset.size()) {
+      if (!root_->filter(error, input_block, &input_block)) {
+        return false;
+      }
+      input_subset = input_subset.subset(block_size());
+      output_subset = output_subset.subset(input_block.size());
+    } else {
+      RecordSubset output_block = output_subset;
+      if (!root_->filter(error, input_block, &output_block)) {
+        return false;
+      }
+      input_subset = input_subset.subset(block_size());
+      output_subset = output_subset.subset(output_block.size());
+    }
+  }
+  RecordSubset output_block = output_subset;
+  if (!root_->filter(error, input_subset, &output_block)) {
     return false;
   }
-  if (!record_set->resize(error, offset + subset.size())) {
-    return false;
-  }
-  return true;
+  output_subset = output_subset.subset(output_block.size());
+  return record_set->resize(error, record_set->size() - output_subset.size());
 }
 
 bool Expression::adjust(Error *error, RecordSet *record_set, Int offset) {
