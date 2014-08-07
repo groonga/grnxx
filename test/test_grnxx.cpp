@@ -25,7 +25,6 @@
 #include "grnxx/db.hpp"
 #include "grnxx/error.hpp"
 #include "grnxx/expression.hpp"
-#include "grnxx/order.hpp"
 #include "grnxx/record.hpp"
 #include "grnxx/sorter.hpp"
 #include "grnxx/table.hpp"
@@ -873,26 +872,21 @@ void test_sorter() {
   assert(record_set.size() == static_cast<grnxx::Int>(int_values.size()));
 
   // BoolColumn 昇順，行 ID 昇順に整列する．
-  auto order_set_builder =
-      grnxx::OrderSetBuilder::create(&error, table);
-  assert(order_set_builder);
-
+  grnxx::Array<grnxx::SortOrder> orders;
+  assert(orders.resize(&error, 2));
   auto expression_builder =
       grnxx::ExpressionBuilder::create(&error, table);
   assert(expression_builder->push_column(&error, "BoolColumn"));
   auto expression = expression_builder->release(&error);
   assert(expression);
-  assert(order_set_builder->append(&error, std::move(expression)));
+  orders[0].expression = std::move(expression);
 
   assert(expression_builder->push_column(&error, "_id"));
   expression = expression_builder->release(&error);
   assert(expression);
-  assert(order_set_builder->append(&error, std::move(expression)));
+  orders[1].expression = std::move(expression);
 
-  auto order_set = order_set_builder->release(&error);
-  assert(order_set);
-
-  auto sorter = grnxx::Sorter::create(&error, std::move(order_set));
+  auto sorter = grnxx::Sorter::create(&error, std::move(orders));
   assert(sorter);
 
   assert(sorter->sort(&error, &record_set));
@@ -910,26 +904,21 @@ void test_sorter() {
   }
 
   // BoolColumn 降順，行 ID 降順に整列する．
-  order_set_builder = grnxx::OrderSetBuilder::create(&error, table);
-  assert(order_set_builder);
-
+  assert(orders.resize(&error, 2));
   expression_builder = grnxx::ExpressionBuilder::create(&error, table);
   assert(expression_builder->push_column(&error, "BoolColumn"));
   expression = expression_builder->release(&error);
   assert(expression);
-  assert(order_set_builder->append(&error, std::move(expression),
-                                   grnxx::REVERSE_ORDER));
+  orders[0].expression = std::move(expression);
+  orders[0].type = grnxx::REVERSE_ORDER;
 
   assert(expression_builder->push_column(&error, "_id"));
   expression = expression_builder->release(&error);
   assert(expression);
-  assert(order_set_builder->append(&error, std::move(expression),
-                                   grnxx::REVERSE_ORDER));
+  orders[1].expression = std::move(expression);
+  orders[1].type = grnxx::REVERSE_ORDER;
 
-  order_set = order_set_builder->release(&error);
-  assert(order_set);
-
-  sorter = grnxx::Sorter::create(&error, std::move(order_set));
+  sorter = grnxx::Sorter::create(&error, std::move(orders));
   assert(sorter);
 
   assert(sorter->sort(&error, &record_set));
@@ -947,24 +936,18 @@ void test_sorter() {
   }
 
   // IntColumn 昇順，行 ID 昇順に整列する．
-  order_set_builder = grnxx::OrderSetBuilder::create(&error, table);
-  assert(order_set_builder);
-
+  assert(orders.resize(&error, 2));
   expression_builder = grnxx::ExpressionBuilder::create(&error, table);
   assert(expression_builder->push_column(&error, "IntColumn"));
   expression = expression_builder->release(&error);
-  assert(expression);
-  assert(order_set_builder->append(&error, std::move(expression)));
+  orders[0].expression = std::move(expression);
 
   assert(expression_builder->push_column(&error, "_id"));
   expression = expression_builder->release(&error);
   assert(expression);
-  assert(order_set_builder->append(&error, std::move(expression)));
+  orders[1].expression = std::move(expression);
 
-  order_set = order_set_builder->release(&error);
-  assert(order_set);
-
-  sorter = grnxx::Sorter::create(&error, std::move(order_set));
+  sorter = grnxx::Sorter::create(&error, std::move(orders));
   assert(sorter);
 
   assert(sorter->sort(&error, &record_set));
@@ -982,22 +965,20 @@ void test_sorter() {
   }
 
   // IntColumn 降順，行 ID 降順に整列する．
+  assert(orders.resize(&error, 2));
   assert(expression_builder->push_column(&error, "IntColumn"));
   expression = expression_builder->release(&error);
   assert(expression);
-  assert(order_set_builder->append(&error, std::move(expression),
-                                   grnxx::REVERSE_ORDER));
+  orders[0].expression = std::move(expression);
+  orders[0].type = grnxx::REVERSE_ORDER;
 
   assert(expression_builder->push_column(&error, "_id"));
   expression = expression_builder->release(&error);
   assert(expression);
-  assert(order_set_builder->append(&error, std::move(expression),
-                                   grnxx::REVERSE_ORDER));
+  orders[1].expression = std::move(expression);
+  orders[1].type = grnxx::REVERSE_ORDER;
 
-  order_set = order_set_builder->release(&error);
-  assert(order_set);
-
-  sorter = grnxx::Sorter::create(&error, std::move(order_set));
+  sorter = grnxx::Sorter::create(&error, std::move(orders));
   assert(sorter);
 
   assert(sorter->sort(&error, &record_set));

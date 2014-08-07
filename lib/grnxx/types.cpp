@@ -1,5 +1,7 @@
 #include "grnxx/types.hpp"
 
+#include "grnxx/expression.hpp"
+
 namespace grnxx {
 
 void GeoPoint::fix(Int *latitude, Int *longitude) {

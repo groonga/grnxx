@@ -4,14 +4,25 @@
 
 #include "grnxx/error.hpp"
 #include "grnxx/expression.hpp"
-#include "grnxx/order.hpp"
 #include "grnxx/record.hpp"
 
 namespace grnxx {
 
+SortOrder::SortOrder() : expression(), type(REGULAR_ORDER) {}
+
+SortOrder::SortOrder(SortOrder &&order)
+    : expression(std::move(order.expression)),
+      type(order.type) {}
+
+SortOrder::SortOrder(unique_ptr<Expression> &&expression, OrderType type)
+    : expression(std::move(expression)),
+      type(type) {}
+
+SortOrder::~SortOrder() {}
+
 class SorterNode {
  public:
-  static unique_ptr<SorterNode> create(Error *error, Order &&order);
+  static unique_ptr<SorterNode> create(Error *error, SortOrder &&order);
 
   SorterNode() : next_(), error_(nullptr) {}
   virtual ~SorterNode() {}
@@ -91,7 +102,7 @@ class Node : public SorterNode {
   using PriorTo = T;
   using Value   = typename PriorTo::Value;
 
-  explicit Node(Order &&order)
+  explicit Node(SortOrder &&order)
       : SorterNode(),
         order_(std::move(order)),
         values_(),
@@ -101,7 +112,7 @@ class Node : public SorterNode {
   bool sort(Error *error, RecordSubset records, Int begin, Int end);
 
  private:
-  Order order_;
+  SortOrder order_;
   Array<Value> values_;
   PriorTo prior_to_;
 
@@ -347,7 +358,7 @@ class BoolNode : public SorterNode {
  public:
   using IsPrior = T;
 
-  explicit BoolNode(Order &&order)
+  explicit BoolNode(SortOrder &&order)
       : SorterNode(),
         order_(std::move(order)),
         values_(),
@@ -357,7 +368,7 @@ class BoolNode : public SorterNode {
   bool sort(Error *error, RecordSubset records, Int begin, Int end);
 
  private:
-  Order order_;
+  SortOrder order_;
   Array<Bool> values_;
   IsPrior is_prior_;
 };
@@ -412,7 +423,7 @@ bool BoolNode<T>::sort(Error *error, RecordSubset records,
 
 }  // namespace
 
-unique_ptr<SorterNode> SorterNode::create(Error *error, Order &&order) {
+unique_ptr<SorterNode> SorterNode::create(Error *error, SortOrder &&order) {
   unique_ptr<SorterNode> node;
   switch (order.expression->data_type()) {
     case BOOL_DATA: {
@@ -490,8 +501,28 @@ Sorter::~Sorter() {}
 
 unique_ptr<Sorter> Sorter::create(
     Error *error,
-    unique_ptr<OrderSet> &&order_set,
+    Array<SortOrder> &&orders,
     const SorterOptions &options) {
+  // Sorting require at least one sort order.
+  // Also, expressions must be valid and associated tables must be same.
+  if (orders.size() == 0) {
+    GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Empty sort order");
+    return nullptr;
+  }
+  for (Int i = 0; i < orders.size(); ++i) {
+    if (!orders[i].expression) {
+      GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Empty sort order");
+      return nullptr;
+    }
+  }
+  const Table *table = orders[0].expression->table();
+  for (Int i = 1; i < orders.size(); ++i) {
+    if (orders[i].expression->table() != table) {
+      GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Table conflict");
+      return nullptr;
+    }
+  }
+
   if ((options.offset < 0) || (options.limit < 0)) {
     GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Invalid argument");
     return nullptr;
@@ -501,16 +532,16 @@ unique_ptr<Sorter> Sorter::create(
     GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
     return nullptr;
   }
-  for (Int i = order_set->size() - 1; i >= 0; --i) {
+  for (Int i = orders.size() - 1; i >= 0; --i) {
     unique_ptr<SorterNode> node(
-        SorterNode::create(error, std::move(order_set->get(i))));
+        SorterNode::create(error, std::move(orders[i])));
     if (!node) {
       return nullptr;
     }
     node->set_next(std::move(sorter->head_));
     sorter->head_ = std::move(node);
   }
-  order_set.reset();
+  orders.clear();
   sorter->offset_ = options.offset;
   sorter->limit_ = options.limit;
   return sorter;

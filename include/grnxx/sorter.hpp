@@ -1,9 +1,21 @@
 #ifndef GRNXX_SORTER_HPP
 #define GRNXX_SORTER_HPP
 
+#include "grnxx/array.hpp"
 #include "grnxx/types.hpp"
 
 namespace grnxx {
+
+struct SortOrder {
+  unique_ptr<Expression> expression;
+  OrderType type;
+
+  SortOrder();
+  explicit SortOrder(unique_ptr<Expression> &&expression,
+                     OrderType type = REGULAR_ORDER);
+  SortOrder(SortOrder &&order);
+  ~SortOrder();
+};
 
 class Sorter {
  public:
@@ -16,7 +28,7 @@ class Sorter {
   // "error" != nullptr.
   static unique_ptr<Sorter> create(
       Error *error,
-      unique_ptr<OrderSet> &&order_set,
+      Array<SortOrder> &&orders,
       const SorterOptions &options = SorterOptions());
 
   // Set the target record set.
