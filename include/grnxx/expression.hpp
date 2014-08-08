@@ -129,7 +129,7 @@ class Expression {
   template <typename T>
   bool evaluate(Error *error,
                 const RecordSubset &record_set,
-                Subarray<T> *results);
+                ArrayRef<T> *results);
 
  private:
   const Table *table_;
@@ -140,7 +140,7 @@ class Expression {
   template <typename T>
   bool evaluate_block(Error *error,
                       const RecordSubset &record_set,
-                      Subarray<T> *results);
+                      ArrayRef<T> *results);
 };
 
 class ExpressionBuilder {

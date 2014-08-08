@@ -690,12 +690,12 @@ bool LogicalOrNode::filter(Error *error,
   left_count = 0;
   right_count = 0;
   for (Int i = 0; i < input_records.size(); ++i) {
-    if (input_records.get(i).row_id ==
-        left_record_set_.get(left_count).row_id) {
+    if (input_records.get_row_id(i) ==
+        left_record_set_.get_row_id(left_count)) {
       output_records->set(left_count + right_count, input_records.get(i));
       ++left_count;
-    } else if (input_records.get(i).row_id ==
-               right_record_set_.get(right_count).row_id) {
+    } else if (input_records.get_row_id(i) ==
+               right_record_set_.get_row_id(right_count)) {
       output_records->set(left_count + right_count, input_records.get(i));
       ++right_count;
     }
@@ -804,8 +804,8 @@ bool Expression::evaluate(Error *error,
   if (!results->resize(error, record_set.size())) {
     return false;
   }
-  Subarray<T> subarray = results->subarray();
-  return evaluate(error, record_set, &subarray);
+  ArrayRef<T> ref = results->ref();
+  return evaluate(error, record_set, &ref);
 }
 
 template bool Expression::evaluate(Error *error,
@@ -830,7 +830,7 @@ template bool Expression::evaluate(Error *error,
 template <typename T>
 bool Expression::evaluate(Error *error,
                           const RecordSubset &record_set,
-                          Subarray<T> *results) {
+                          ArrayRef<T> *results) {
   if (TypeTraits<T>::data_type() != data_type()) {
     GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Invalid data type");
     return false;
@@ -842,14 +842,14 @@ bool Expression::evaluate(Error *error,
     return false;
   }
   RecordSubset input = record_set;
-  Subarray<T> output = *results;
+  ArrayRef<T> output = *results;
   while (input.size() > block_size()) {
     RecordSubset subset = input.subset(0, block_size());
     if (!evaluate_block(error, subset, &output)) {
       return false;
     }
     input = input.subset(block_size());
-    output = output.subarray(block_size());
+    output = output.ref(block_size());
   }
   return evaluate_block(error, input, &output);
 }
@@ -861,7 +861,7 @@ Expression::Expression(const Table *table, unique_ptr<ExpressionNode> &&root)
 template <typename T>
 bool Expression::evaluate_block(Error *error,
                                 const RecordSubset &record_set,
-                                Subarray<T> *results) {
+                                ArrayRef<T> *results) {
   Node<T> *node = static_cast<Node<T> *>(root_.get());
   if (!node->evaluate(error, record_set)) {
     return false;

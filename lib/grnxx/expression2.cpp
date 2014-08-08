@@ -88,7 +88,7 @@ class TypedNode : public Node {
   // "error" != nullptr.
   virtual bool evaluate(Error *error,
                         const RecordSubset &records,
-                        Subarray<Value> *results) = 0;
+                        ArrayRef<Value> *results) = 0;
 };
 
 template <typename T>
@@ -109,7 +109,7 @@ bool TypedNode<Bool>::filter(Error *error,
   if (!results.resize(error, input_records.size())) {
     return false;
   }
-  Subarray<Bool> results_ref = results.subarray();
+  ArrayRef<Bool> results_ref = results.ref();
   if (!evaluate(error, input_records, &results_ref)) {
     return false;
   }
@@ -139,7 +139,7 @@ bool TypedNode<Float>::adjust(Error *error, RecordSubset *records) {
   if (!scores.resize(error, records->size())) {
     return false;
   }
-  Subarray<Float> scores_ref = scores.subarray();
+  ArrayRef<Float> scores_ref = scores.ref();
   if (!evaluate(error, *records, &scores_ref)) {
     return false;
   }
@@ -166,7 +166,7 @@ class DatumNode : public TypedNode<T> {
 
   bool evaluate(Error *error,
                 const RecordSubset &records,
-                Subarray<Value> *results);
+                ArrayRef<Value> *results);
 
  private:
   T datum_;
@@ -175,7 +175,7 @@ class DatumNode : public TypedNode<T> {
 template <typename T>
 bool DatumNode<T>::evaluate(Error *error,
                             const RecordSubset &records,
-                            Subarray<Value> *results) {
+                            ArrayRef<Value> *results) {
   for (Int i = 0; i < records.size(); ++i) {
     (*results)[i] = datum_;
   }
@@ -200,7 +200,7 @@ class DatumNode<Bool> : public TypedNode<Bool> {
               RecordSubset *output_records);
   bool evaluate(Error *error,
                 const RecordSubset &records,
-                Subarray<Bool> *results);
+                ArrayRef<Bool> *results);
 
  private:
   Bool datum_;
@@ -223,7 +223,7 @@ bool DatumNode<Bool>::filter(Error *error,
 
 bool DatumNode<Bool>::evaluate(Error *error,
                                const RecordSubset &records,
-                               Subarray<Bool> *results) {
+                               ArrayRef<Bool> *results) {
   // TODO: Fill results per 64 bits.
   for (Int i = 0; i < records.size(); ++i) {
     (*results)[i] = datum_;
@@ -247,7 +247,7 @@ class DatumNode<Float> : public TypedNode<Float> {
   bool adjust(Error *error, RecordSubset *records);
   bool evaluate(Error *error,
                 const RecordSubset &records,
-                Subarray<Float> *results);
+                ArrayRef<Float> *results);
 
  private:
   Float datum_;
@@ -262,7 +262,7 @@ bool DatumNode<Float>::adjust(Error *error, RecordSubset *records) {
 
 bool DatumNode<Float>::evaluate(Error *error,
                                 const RecordSubset &records,
-                                Subarray<Float> *results) {
+                                ArrayRef<Float> *results) {
   for (Int i = 0; i < records.size(); ++i) {
     (*results)[i] = datum_;
   }
@@ -285,7 +285,7 @@ class DatumNode<Text> : public TypedNode<Text> {
 
   bool evaluate(Error *error,
                 const RecordSubset &records,
-                Subarray<Text> *results);
+                ArrayRef<Text> *results);
 
  private:
   std::string datum_;
@@ -293,7 +293,7 @@ class DatumNode<Text> : public TypedNode<Text> {
 
 bool DatumNode<Text>::evaluate(Error *error,
                                const RecordSubset &records,
-                               Subarray<Text> *results) {
+                               ArrayRef<Text> *results) {
   Text datum = Text(datum_.data(), datum_.size());
   for (Int i = 0; i < records.size(); ++i) {
     (*results)[i] = datum;
@@ -316,12 +316,12 @@ class RowIDNode : public TypedNode<Int> {
 
   bool evaluate(Error *error,
                 const RecordSubset &records,
-                Subarray<Int> *results);
+                ArrayRef<Int> *results);
 };
 
 bool RowIDNode::evaluate(Error *error,
                          const RecordSubset &records,
-                         Subarray<Int> *results) {
+                         ArrayRef<Int> *results) {
   for (Int i = 0; i < records.size(); ++i) {
     (*results)[i] = records.get_row_id(i);
   }
@@ -343,7 +343,7 @@ class ScoreNode : public TypedNode<Float> {
   bool adjust(Error *error, RecordSubset *records);
   bool evaluate(Error *error,
                 const RecordSubset &records,
-                Subarray<Float> *results);
+                ArrayRef<Float> *results);
 };
 
 bool ScoreNode::adjust(Error *error, RecordSubset *records) {
@@ -353,7 +353,7 @@ bool ScoreNode::adjust(Error *error, RecordSubset *records) {
 
 bool ScoreNode::evaluate(Error *error,
                          const RecordSubset &records,
-                         Subarray<Float> *results) {
+                         ArrayRef<Float> *results) {
   for (Int i = 0; i < records.size(); ++i) {
     (*results)[i] = records.get_score(i);
   }
@@ -377,7 +377,7 @@ class ColumnNode : public TypedNode<T> {
 
   bool evaluate(Error *error,
                 const RecordSubset &records,
-                Subarray<Value> *results);
+                ArrayRef<Value> *results);
 
  private:
   const ColumnImpl<T> *column_;
@@ -386,7 +386,7 @@ class ColumnNode : public TypedNode<T> {
 template <typename T>
 bool ColumnNode<T>::evaluate(Error *error,
                              const RecordSubset &records,
-                             Subarray<Value> *results) {
+                             ArrayRef<Value> *results) {
   for (Int i = 0; i < records.size(); ++i) {
     (*results)[i] = column_->get(records.get_row_id(i));
   }
@@ -411,7 +411,7 @@ class ColumnNode<Bool> : public TypedNode<Bool> {
               RecordSubset *output_records);
   bool evaluate(Error *error,
                 const RecordSubset &records,
-                Subarray<Bool> *results);
+                ArrayRef<Bool> *results);
 
  private:
   const ColumnImpl<Bool> *column_;
@@ -433,7 +433,7 @@ bool ColumnNode<Bool>::filter(Error *error,
 
 bool ColumnNode<Bool>::evaluate(Error *error,
                                 const RecordSubset &records,
-                                Subarray<Bool> *results) {
+                                ArrayRef<Bool> *results) {
   for (Int i = 0; i < records.size(); ++i) {
     (*results)[i] = column_->get(records.get_row_id(i));
   }
@@ -456,7 +456,7 @@ class ColumnNode<Float> : public TypedNode<Float> {
   bool adjust(Error *error, RecordSubset *records);
   bool evaluate(Error *error,
                 const RecordSubset &records,
-                Subarray<Float> *results);
+                ArrayRef<Float> *results);
 
  private:
   const ColumnImpl<Float> *column_;
@@ -471,7 +471,7 @@ bool ColumnNode<Float>::adjust(Error *error, RecordSubset *records) {
 
 bool ColumnNode<Float>::evaluate(Error *error,
                                  const RecordSubset &records,
-                                 Subarray<Float> *results) {
+                                 ArrayRef<Float> *results) {
   for (Int i = 0; i < records.size(); ++i) {
     (*results)[i] = column_->get(records.get_row_id(i));
   }
@@ -512,16 +512,16 @@ bool fill_node_arg_values(Error *error, const RecordSubset &records,
   switch (arg->node_type()) {
     case DATUM_NODE: {
       if (old_size < records.size()) {
-        Subarray<T> subarray = arg_values->subarray(old_size);
-        if (!arg->evaluate(error, records.subset(old_size), &subarray)) {
+        ArrayRef<T> ref = arg_values->ref(old_size);
+        if (!arg->evaluate(error, records.subset(old_size), &ref)) {
           return false;
         }
       }
       break;
     }
     default: {
-      Subarray<T> subarray = arg_values->subarray(0, records.size());
-      if (!arg->evaluate(error, records, &subarray)) {
+      ArrayRef<T> ref = arg_values->ref(0, records.size());
+      if (!arg->evaluate(error, records, &ref)) {
         return false;
       }
     }
@@ -567,7 +567,7 @@ class LogicalNotNode : public UnaryNode<Bool, Bool> {
               RecordSubset *output_records);
   bool evaluate(Error *error,
                 const RecordSubset &records,
-                Subarray<Bool> *results);
+                ArrayRef<Bool> *results);
 
  private:
   RecordSet temp_records_;
@@ -607,7 +607,7 @@ bool LogicalNotNode::filter(Error *error,
 
 bool LogicalNotNode::evaluate(Error *error,
                               const RecordSubset &records,
-                              Subarray<Bool> *results) {
+                              ArrayRef<Bool> *results) {
   if (!arg_->evaluate(error, records, results)) {
     return false;
   }
@@ -633,7 +633,7 @@ class BitwiseNotNode : public UnaryNode<Bool, Bool> {
               RecordSubset *output_records);
   bool evaluate(Error *error,
                 const RecordSubset &records,
-                Subarray<Bool> *results);
+                ArrayRef<Bool> *results);
 };
 
 bool BitwiseNotNode::filter(Error *error,
@@ -655,7 +655,7 @@ bool BitwiseNotNode::filter(Error *error,
 
 bool BitwiseNotNode::evaluate(Error *error,
                               const RecordSubset &records,
-                              Subarray<Bool> *results) {
+                              ArrayRef<Bool> *results) {
   if (!arg_->evaluate(error, records, results)) {
     return false;
   }
@@ -722,7 +722,7 @@ class LogicalAndNode : public BinaryNode<Bool, Bool, Bool> {
               RecordSubset *output_records);
   bool evaluate(Error *error,
                 const RecordSubset &records,
-                Subarray<Bool> *results);
+                ArrayRef<Bool> *results);
 
  private:
   RecordSet temp_records_;
@@ -737,7 +737,7 @@ bool LogicalAndNode::filter(Error *error,
 
 bool LogicalAndNode::evaluate(Error *error,
                               const RecordSubset &records,
-                              Subarray<Bool> *results) {
+                              ArrayRef<Bool> *results) {
   // TODO
   return false;
 }
