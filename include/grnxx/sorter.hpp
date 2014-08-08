@@ -38,7 +38,7 @@ class Sorter {
   // On success, returns true.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
-  bool reset(Error *error, RecordSet *record_set);
+  bool reset(Error *error, Array<Record> *records);
 
   // Progress sorting.
   //
@@ -64,11 +64,11 @@ class Sorter {
   // On success, returns true.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
-  bool sort(Error *error, RecordSet *record_set);
+  bool sort(Error *error, Array<Record> *records);
 
  private:
   unique_ptr<SorterNode> head_;
-  RecordSet *record_set_;
+  Array<Record> *records_;
   Int offset_;
   Int limit_;
 

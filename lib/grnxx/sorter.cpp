@@ -4,7 +4,6 @@
 
 #include "grnxx/error.hpp"
 #include "grnxx/expression.hpp"
-#include "grnxx/record.hpp"
 
 namespace grnxx {
 
@@ -42,7 +41,7 @@ class SorterNode {
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
   virtual bool sort(Error *error,
-                    RecordSubset subset,
+                    ArrayRef<Record> ref,
                     Int begin,
                     Int end) = 0;
 
@@ -109,7 +108,7 @@ class Node : public SorterNode {
         prior_to_() {}
   ~Node() {}
 
-  bool sort(Error *error, RecordSubset records, Int begin, Int end);
+  bool sort(Error *error, ArrayRef<Record> records, Int begin, Int end);
 
  private:
   SortOrder order_;
@@ -119,20 +118,20 @@ class Node : public SorterNode {
   // Sort records with ternary quick sort.
   //
   // Switches to insertion sort when the sorting range becomes small enough.
-  bool quick_sort(RecordSubset records, Value *values,
+  bool quick_sort(ArrayRef<Record> records, Value *values,
                   Int begin, Int end);
 
   // Sort records with insertion sort.
   //
   // Insertion sort should be used when there few records.
-  bool insertion_sort(RecordSubset records, Value *values);
+  bool insertion_sort(ArrayRef<Record> records, Value *values);
 
   // Choose the pivot and move it to the front.
-  void move_pivot_first(RecordSubset records, Value *values);
+  void move_pivot_first(ArrayRef<Record> records, Value *values);
 };
 
 template <typename T>
-bool Node<T>::sort(Error *error, RecordSubset records, Int begin, Int end) {
+bool Node<T>::sort(Error *error, ArrayRef<Record> records, Int begin, Int end) {
   if (!order_.expression->evaluate(error, records, &values_)) {
     return false;
   }
@@ -141,7 +140,7 @@ bool Node<T>::sort(Error *error, RecordSubset records, Int begin, Int end) {
 }
 
 template <typename T>
-bool Node<T>::quick_sort(RecordSubset records, Value *values,
+bool Node<T>::quick_sort(ArrayRef<Record> records, Value *values,
                          Int begin, Int end) {
   // Use ternary quick sort if there are enough records.
   //
@@ -208,7 +207,7 @@ bool Node<T>::quick_sort(RecordSubset records, Value *values,
         Int next_begin = (begin < left) ? 0 : (begin - left);
         Int next_end = ((end > right) ? right : end) - left;
         if (!this->next_->sort(this->error_,
-                               records.subset(left, right - left),
+                               records.ref(left, right - left),
                                next_begin, next_end)) {
           return false;
         }
@@ -223,14 +222,14 @@ bool Node<T>::quick_sort(RecordSubset records, Value *values,
     if (left < (records.size() - right)) {
       if ((begin < left) && (left >= 2)) {
         Int next_end = (end < left) ? end : left;
-        if (!quick_sort(records.subset(0, left), values, begin, next_end)) {
+        if (!quick_sort(records.ref(0, left), values, begin, next_end)) {
           return false;
         }
       }
       if (end <= right) {
         return true;
       }
-      records = records.subset(right);
+      records = records.ref(right);
       values += right;
       begin -= right;
       if (begin < 0) {
@@ -241,7 +240,7 @@ bool Node<T>::quick_sort(RecordSubset records, Value *values,
       if ((end > right) && ((records.size() - right) >= 2)) {
         Int next_begin = (begin < right) ? 0 : (begin - right);
         Int next_end = end - right;
-        if (!quick_sort(records.subset(right),
+        if (!quick_sort(records.ref(right),
                         values + right, next_begin, next_end)) {
           return false;
         }
@@ -249,7 +248,7 @@ bool Node<T>::quick_sort(RecordSubset records, Value *values,
       if (begin >= left) {
         return true;
       }
-      records = records.subset(0, left);
+      records = records.ref(0, left);
       if (end > left) {
         end = left;
       }
@@ -263,7 +262,7 @@ bool Node<T>::quick_sort(RecordSubset records, Value *values,
 }
 
 template <typename T>
-bool Node<T>::insertion_sort(RecordSubset records, Value *values) {
+bool Node<T>::insertion_sort(ArrayRef<Record> records, Value *values) {
   for (Int i = 1; i < records.size(); ++i) {
     for (Int j = i; j > 0; --j) {
       if (prior_to_(values[j], values[j - 1])) {
@@ -282,7 +281,7 @@ bool Node<T>::insertion_sort(RecordSubset records, Value *values) {
       if (values[i] != values[begin]) {
         if ((i - begin) >= 2) {
           if (!this->next_->sort(this->error_,
-                                 records.subset(begin, i - begin),
+                                 records.ref(begin, i - begin),
                                  0, i - begin)) {
             return false;
           }
@@ -292,7 +291,7 @@ bool Node<T>::insertion_sort(RecordSubset records, Value *values) {
     }
     if ((records.size() - begin) >= 2) {
       if (!this->next_->sort(this->error_,
-                             records.subset(begin),
+                             records.ref(begin),
                              0, records.size() - begin)) {
         return false;
       }
@@ -302,7 +301,7 @@ bool Node<T>::insertion_sort(RecordSubset records, Value *values) {
 }
 
 template <typename T>
-void Node<T>::move_pivot_first(RecordSubset records, Value *values) {
+void Node<T>::move_pivot_first(ArrayRef<Record> records, Value *values) {
   // Choose the median from values[1], values[1 / size], and values[size - 2].
   // The reason why not using values[0] and values[size - 1] is to avoid the
   // worst case which occurs when the records are sorted in reverse order.
@@ -365,7 +364,7 @@ class BoolNode : public SorterNode {
         is_prior_() {}
   ~BoolNode() {}
 
-  bool sort(Error *error, RecordSubset records, Int begin, Int end);
+  bool sort(Error *error, ArrayRef<Record> records, Int begin, Int end);
 
  private:
   SortOrder order_;
@@ -374,7 +373,7 @@ class BoolNode : public SorterNode {
 };
 
 template <typename T>
-bool BoolNode<T>::sort(Error *error, RecordSubset records,
+bool BoolNode<T>::sort(Error *error, ArrayRef<Record> records,
                        Int begin, Int end) {
   if (!order_.expression->evaluate(error, records, &values_)) {
     return false;
@@ -400,7 +399,7 @@ bool BoolNode<T>::sort(Error *error, RecordSubset records,
   if (this->next_) {
     // Apply the next sort condition if blocks contain 2 or more records.
     if ((left >= 2) && (begin < left)) {
-      if (!this->next_->sort(error, records.subset(0, left),
+      if (!this->next_->sort(error, records.ref(0, left),
                              begin, (end < left) ? end : left)) {
         return false;
       }
@@ -412,7 +411,7 @@ bool BoolNode<T>::sort(Error *error, RecordSubset records,
         begin -= left;
       }
       end -= left;
-      if (!this->next_->sort(error, records.subset(left), begin, end)) {
+      if (!this->next_->sort(error, records.ref(left), begin, end)) {
         return false;
       }
     }
@@ -547,8 +546,8 @@ unique_ptr<Sorter> Sorter::create(
   return sorter;
 }
 
-bool Sorter::reset(Error *error, RecordSet *record_set) {
-  record_set_ = record_set;
+bool Sorter::reset(Error *error, Array<Record> *records) {
+  records_ = records;
   return true;
 }
 
@@ -558,41 +557,41 @@ bool Sorter::progress(Error *error) {
 }
 
 bool Sorter::finish(Error *error) {
-  if (!record_set_) {
+  if (!records_) {
     // Nothing to do.
     return true;
   }
-  if ((offset_ >= record_set_->size()) || (limit_ <= 0)) {
-    record_set_->clear();
+  if ((offset_ >= records_->size()) || (limit_ <= 0)) {
+    records_->clear();
     return true;
   }
   Int begin = offset_;
   Int end;
-  if (limit_ <= (record_set_->size() - offset_)) {
+  if (limit_ <= (records_->size() - offset_)) {
     end = offset_ + limit_;
   } else {
-    end = record_set_->size();
+    end = records_->size();
   }
-  if (record_set_->size() <= 1) {
+  if (records_->size() <= 1) {
     return true;
   }
-  if (!head_->sort(error, record_set_->subset(), begin, end)) {
+  if (!head_->sort(error, records_->ref(), begin, end)) {
     return false;
   }
   for (Int i = begin, j = 0; i < end; ++i, ++j) {
-    record_set_->set(j, record_set_->get(i));
+    records_->set(j, records_->get(i));
   }
-  record_set_->resize(nullptr, end - begin);
+  records_->resize(nullptr, end - begin);
   return true;
 }
 
-bool Sorter::sort(Error *error, RecordSet *record_set) {
-  return reset(error, record_set) && finish(error);
+bool Sorter::sort(Error *error, Array<Record> *records) {
+  return reset(error, records) && finish(error);
 }
 
 Sorter::Sorter()
     : head_(),
-      record_set_(nullptr),
+      records_(nullptr),
       offset_(0),
       limit_(0) {}
 

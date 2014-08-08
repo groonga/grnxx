@@ -25,7 +25,6 @@
 #include "grnxx/db.hpp"
 #include "grnxx/error.hpp"
 #include "grnxx/expression.hpp"
-#include "grnxx/record.hpp"
 #include "grnxx/sorter.hpp"
 #include "grnxx/table.hpp"
 
@@ -189,19 +188,19 @@ void test_table() {
   assert(cursor);
 
   // カーソルからレコードを読み出す．
-  grnxx::RecordSet record_set;
-  assert(cursor->read(&error, 0, &record_set) == 0);
+  grnxx::Array<grnxx::Record> records;
+  assert(cursor->read(&error, 0, &records) == 0);
 
-  assert(cursor->read(&error, 1, &record_set) == 1);
-  assert(record_set.size() == 1);
-  assert(record_set.get(0).row_id == 1);
+  assert(cursor->read(&error, 1, &records) == 1);
+  assert(records.size() == 1);
+  assert(records.get(0).row_id == 1);
 
-  assert(cursor->read(&error, 2, &record_set) == 1);
-  assert(record_set.size() == 2);
-  assert(record_set.get(0).row_id == 1);
-  assert(record_set.get(1).row_id == 3);
+  assert(cursor->read(&error, 2, &records) == 1);
+  assert(records.size() == 2);
+  assert(records.get(0).row_id == 1);
+  assert(records.get(1).row_id == 3);
 
-  record_set.clear();
+  records.clear();
 
   // 行 ID 降順のカーソルを作成する．
   grnxx::CursorOptions cursor_options;
@@ -209,24 +208,24 @@ void test_table() {
   cursor = table->create_cursor(&error, cursor_options);
   assert(cursor);
 
-  assert(cursor->read_all(&error, &record_set) == 2);
-  assert(record_set.size() == 2);
-  assert(record_set.get(0).row_id == 3);
-  assert(record_set.get(1).row_id == 1);
+  assert(cursor->read_all(&error, &records) == 2);
+  assert(records.size() == 2);
+  assert(records.get(0).row_id == 3);
+  assert(records.get(1).row_id == 1);
 
-  record_set.clear();
+  records.clear();
 
   cursor = table->create_cursor(&error, cursor_options);
   assert(cursor);
 
-  assert(cursor->read(&error, 1, &record_set) == 1);
-  assert(record_set.size() == 1);
-  assert(record_set.get(0).row_id == 3);
+  assert(cursor->read(&error, 1, &records) == 1);
+  assert(records.size() == 1);
+  assert(records.get(0).row_id == 3);
 
-  assert(cursor->read(&error, 2, &record_set) == 1);
-  assert(record_set.size() == 2);
-  assert(record_set.get(0).row_id == 3);
-  assert(record_set.get(1).row_id == 1);
+  assert(cursor->read(&error, 2, &records) == 1);
+  assert(records.size() == 2);
+  assert(records.get(0).row_id == 3);
+  assert(records.get(1).row_id == 1);
 }
 
 void test_bitmap() {
@@ -439,13 +438,13 @@ void test_expression() {
   assert(expression);
 
   // 恒真式のフィルタにかけても変化しないことを確認する．
-  grnxx::RecordSet record_set;
+  grnxx::Array<grnxx::Record> records;
   auto cursor = table->create_cursor(&error);
   assert(cursor);
-  assert(cursor->read_all(&error, &record_set) == 2);
+  assert(cursor->read_all(&error, &records) == 2);
 
-  assert(expression->filter(&error, &record_set));
-  assert(record_set.size() == 2);
+  assert(expression->filter(&error, &records));
+  assert(records.size() == 2);
 
   // 演算子を含む恒真式を作成する．
   assert(builder->push_datum(&error, grnxx::Int(100)));
@@ -454,8 +453,8 @@ void test_expression() {
   expression = builder->release(&error);
   assert(expression);
 
-  assert(expression->filter(&error, &record_set));
-  assert(record_set.size() == 2);
+  assert(expression->filter(&error, &records));
+  assert(records.size() == 2);
 
   // "BoolColumn" という名前のカラムに格納されている値を返すだけの式を作成する．
   assert(builder->push_column(&error, "BoolColumn"));
@@ -463,14 +462,14 @@ void test_expression() {
   assert(expression);
 
   // フィルタとして使ったときの結果を確認する．
-  assert(expression->filter(&error, &record_set));
-  assert(record_set.size() == 1);
-  assert(record_set.get(0).row_id == 2);
+  assert(expression->filter(&error, &records));
+  assert(records.size() == 1);
+  assert(records.get(0).row_id == 2);
 
-  record_set.clear();
+  records.clear();
   cursor = table->create_cursor(&error);
   assert(cursor);
-  assert(cursor->read_all(&error, &record_set) == 2);
+  assert(cursor->read_all(&error, &records) == 2);
 
   // "IntColumn" という名前のカラムに格納されている値が 123 のときだけ
   // 真になる式を作成する．
@@ -481,14 +480,14 @@ void test_expression() {
   assert(expression);
 
   // フィルタとして使ったときの結果を確認する．
-  assert(expression->filter(&error, &record_set));
-  assert(record_set.size() == 1);
-  assert(record_set.get(0).row_id == 1);
+  assert(expression->filter(&error, &records));
+  assert(records.size() == 1);
+  assert(records.get(0).row_id == 1);
 
-  record_set.clear();
+  records.clear();
   cursor = table->create_cursor(&error);
   assert(cursor);
-  assert(cursor->read_all(&error, &record_set) == 2);
+  assert(cursor->read_all(&error, &records) == 2);
 
   // "IntColumn" という名前のカラムに格納されている値が 123 でないときだけ
   // 真になる式を作成する．
@@ -499,14 +498,14 @@ void test_expression() {
   assert(expression);
 
   // フィルタとして使ったときの結果を確認する．
-  assert(expression->filter(&error, &record_set));
-  assert(record_set.size() == 1);
-  assert(record_set.get(0).row_id == 2);
+  assert(expression->filter(&error, &records));
+  assert(records.size() == 1);
+  assert(records.get(0).row_id == 2);
 
-  record_set.clear();
+  records.clear();
   cursor = table->create_cursor(&error);
   assert(cursor);
-  assert(cursor->read_all(&error, &record_set) == 2);
+  assert(cursor->read_all(&error, &records) == 2);
 
   // 大小関係による比較を試す．
   assert(builder->push_column(&error, "IntColumn"));
@@ -516,14 +515,14 @@ void test_expression() {
   assert(expression);
 
   // フィルタとして使ったときの結果を確認する．
-  assert(expression->filter(&error, &record_set));
-  assert(record_set.size() == 1);
-  assert(record_set.get(0).row_id == 1);
+  assert(expression->filter(&error, &records));
+  assert(records.size() == 1);
+  assert(records.get(0).row_id == 1);
 
-  record_set.clear();
+  records.clear();
   cursor = table->create_cursor(&error);
   assert(cursor);
-  assert(cursor->read_all(&error, &record_set) == 2);
+  assert(cursor->read_all(&error, &records) == 2);
 
   // 大小関係による比較を試す．
   assert(builder->push_column(&error, "TextColumn"));
@@ -533,14 +532,14 @@ void test_expression() {
   assert(expression);
 
   // フィルタとして使ったときの結果を確認する．
-  assert(expression->filter(&error, &record_set));
-  assert(record_set.size() == 1);
-  assert(record_set.get(0).row_id == 1);
+  assert(expression->filter(&error, &records));
+  assert(records.size() == 1);
+  assert(records.get(0).row_id == 1);
 
-  record_set.clear();
+  records.clear();
   cursor = table->create_cursor(&error);
   assert(cursor);
-  assert(cursor->read_all(&error, &record_set) == 2);
+  assert(cursor->read_all(&error, &records) == 2);
 
   // 大小関係による比較を試す．
   assert(builder->push_column(&error, "TextColumn"));
@@ -550,14 +549,14 @@ void test_expression() {
   assert(expression);
 
   // フィルタとして使ったときの結果を確認する．
-  assert(expression->filter(&error, &record_set));
-  assert(record_set.size() == 1);
-  assert(record_set.get(0).row_id == 2);
+  assert(expression->filter(&error, &records));
+  assert(records.size() == 1);
+  assert(records.get(0).row_id == 2);
 
-  record_set.clear();
+  records.clear();
   cursor = table->create_cursor(&error);
   assert(cursor);
-  assert(cursor->read_all(&error, &record_set) == 2);
+  assert(cursor->read_all(&error, &records) == 2);
 
   // 大小関係による比較を試す．
   assert(builder->push_column(&error, "IntColumn"));
@@ -567,14 +566,14 @@ void test_expression() {
   assert(expression);
 
   // フィルタとして使ったときの結果を確認する．
-  assert(expression->filter(&error, &record_set));
-  assert(record_set.size() == 1);
-  assert(record_set.get(0).row_id == 2);
+  assert(expression->filter(&error, &records));
+  assert(records.size() == 1);
+  assert(records.get(0).row_id == 2);
 
-  record_set.clear();
+  records.clear();
   cursor = table->create_cursor(&error);
   assert(cursor);
-  assert(cursor->read_all(&error, &record_set) == 2);
+  assert(cursor->read_all(&error, &records) == 2);
 
   // 論理演算を試す．
   assert(builder->push_column(&error, "FloatColumn"));
@@ -586,14 +585,14 @@ void test_expression() {
   assert(expression);
 
   // フィルタとして使ったときの結果を確認する．
-  assert(expression->filter(&error, &record_set));
-  assert(record_set.size() == 1);
-  assert(record_set.get(0).row_id == 2);
+  assert(expression->filter(&error, &records));
+  assert(records.size() == 1);
+  assert(records.get(0).row_id == 2);
 
-  record_set.clear();
+  records.clear();
   cursor = table->create_cursor(&error);
   assert(cursor);
-  assert(cursor->read_all(&error, &record_set) == 2);
+  assert(cursor->read_all(&error, &records) == 2);
 
   // 論理演算を試す．
   assert(builder->push_datum(&error, grnxx::Bool(false)));
@@ -603,14 +602,14 @@ void test_expression() {
   assert(expression);
 
   // フィルタとして使ったときの結果を確認する．
-  assert(expression->filter(&error, &record_set));
-  assert(record_set.size() == 1);
-  assert(record_set.get(0).row_id == 2);
+  assert(expression->filter(&error, &records));
+  assert(records.size() == 1);
+  assert(records.get(0).row_id == 2);
 
-  record_set.clear();
+  records.clear();
   cursor = table->create_cursor(&error);
   assert(cursor);
-  assert(cursor->read_all(&error, &record_set) == 2);
+  assert(cursor->read_all(&error, &records) == 2);
 
   // 符号（+）を試す．
   assert(builder->push_column(&error, "IntColumn"));
@@ -621,14 +620,14 @@ void test_expression() {
   assert(expression);
 
   // フィルタとして使ったときの結果を確認する．
-  assert(expression->filter(&error, &record_set));
-  assert(record_set.size() == 1);
-  assert(record_set.get(0).row_id == 1);
+  assert(expression->filter(&error, &records));
+  assert(records.size() == 1);
+  assert(records.get(0).row_id == 1);
 
-  record_set.clear();
+  records.clear();
   cursor = table->create_cursor(&error);
   assert(cursor);
-  assert(cursor->read_all(&error, &record_set) == 2);
+  assert(cursor->read_all(&error, &records) == 2);
 
   // 符号（-）を試す．
   assert(builder->push_column(&error, "IntColumn"));
@@ -639,14 +638,14 @@ void test_expression() {
   assert(expression);
 
   // フィルタとして使ったときの結果を確認する．
-  assert(expression->filter(&error, &record_set));
-  assert(record_set.size() == 1);
-  assert(record_set.get(0).row_id == 2);
+  assert(expression->filter(&error, &records));
+  assert(records.size() == 1);
+  assert(records.get(0).row_id == 2);
 
-  record_set.clear();
+  records.clear();
   cursor = table->create_cursor(&error);
   assert(cursor);
-  assert(cursor->read_all(&error, &record_set) == 2);
+  assert(cursor->read_all(&error, &records) == 2);
 
   // 型変換（整数）を試す．
   assert(builder->push_column(&error, "FloatColumn"));
@@ -657,13 +656,13 @@ void test_expression() {
   assert(expression);
 
   // フィルタとして使ったときの結果を確認する．
-  assert(expression->filter(&error, &record_set));
-  assert(record_set.size() == 2);
+  assert(expression->filter(&error, &records));
+  assert(records.size() == 2);
 
-  record_set.clear();
+  records.clear();
   cursor = table->create_cursor(&error);
   assert(cursor);
-  assert(cursor->read_all(&error, &record_set) == 2);
+  assert(cursor->read_all(&error, &records) == 2);
 
   // 型変換（浮動小数点数）を試す．
   assert(builder->push_column(&error, "IntColumn"));
@@ -674,14 +673,14 @@ void test_expression() {
   assert(expression);
 
   // フィルタとして使ったときの結果を確認する．
-  assert(expression->filter(&error, &record_set));
-  assert(record_set.size() == 1);
-  assert(record_set.get(0).row_id == 1);
+  assert(expression->filter(&error, &records));
+  assert(records.size() == 1);
+  assert(records.get(0).row_id == 1);
 
-  record_set.clear();
+  records.clear();
   cursor = table->create_cursor(&error);
   assert(cursor);
-  assert(cursor->read_all(&error, &record_set) == 2);
+  assert(cursor->read_all(&error, &records) == 2);
 
   // ビット論理積を試す．
   assert(builder->push_column(&error, "IntColumn"));
@@ -693,14 +692,14 @@ void test_expression() {
   assert(expression);
 
   // フィルタとして使ったときの結果を確認する．
-  assert(expression->filter(&error, &record_set));
-  assert(record_set.size() == 1);
-  assert(record_set.get(0).row_id == 2);
+  assert(expression->filter(&error, &records));
+  assert(records.size() == 1);
+  assert(records.get(0).row_id == 2);
 
-  record_set.clear();
+  records.clear();
   cursor = table->create_cursor(&error);
   assert(cursor);
-  assert(cursor->read_all(&error, &record_set) == 2);
+  assert(cursor->read_all(&error, &records) == 2);
 
   // ビット論理和を試す．
   assert(builder->push_column(&error, "IntColumn"));
@@ -712,14 +711,14 @@ void test_expression() {
   assert(expression);
 
   // フィルタとして使ったときの結果を確認する．
-  assert(expression->filter(&error, &record_set));
-  assert(record_set.size() == 1);
-  assert(record_set.get(0).row_id == 1);
+  assert(expression->filter(&error, &records));
+  assert(records.size() == 1);
+  assert(records.get(0).row_id == 1);
 
-  record_set.clear();
+  records.clear();
   cursor = table->create_cursor(&error);
   assert(cursor);
-  assert(cursor->read_all(&error, &record_set) == 2);
+  assert(cursor->read_all(&error, &records) == 2);
 
   // ビット排他的論理和を試す．
   assert(builder->push_column(&error, "IntColumn"));
@@ -731,14 +730,14 @@ void test_expression() {
   assert(expression);
 
   // フィルタとして使ったときの結果を確認する．
-  assert(expression->filter(&error, &record_set));
-  assert(record_set.size() == 1);
-  assert(record_set.get(0).row_id == 1);
+  assert(expression->filter(&error, &records));
+  assert(records.size() == 1);
+  assert(records.get(0).row_id == 1);
 
-  record_set.clear();
+  records.clear();
   cursor = table->create_cursor(&error);
   assert(cursor);
-  assert(cursor->read_all(&error, &record_set) == 2);
+  assert(cursor->read_all(&error, &records) == 2);
 
   // 加算を試す．
   assert(builder->push_column(&error, "IntColumn"));
@@ -750,14 +749,14 @@ void test_expression() {
   assert(expression);
 
   // フィルタとして使ったときの結果を確認する．
-  assert(expression->filter(&error, &record_set));
-  assert(record_set.size() == 1);
-  assert(record_set.get(0).row_id == 1);
+  assert(expression->filter(&error, &records));
+  assert(records.size() == 1);
+  assert(records.get(0).row_id == 1);
 
-  record_set.clear();
+  records.clear();
   cursor = table->create_cursor(&error);
   assert(cursor);
-  assert(cursor->read_all(&error, &record_set) == 2);
+  assert(cursor->read_all(&error, &records) == 2);
 
   // 減算を試す．
   assert(builder->push_column(&error, "FloatColumn"));
@@ -769,14 +768,14 @@ void test_expression() {
   assert(expression);
 
   // フィルタとして使ったときの結果を確認する．
-  assert(expression->filter(&error, &record_set));
-  assert(record_set.size() == 1);
-  assert(record_set.get(0).row_id == 2);
+  assert(expression->filter(&error, &records));
+  assert(records.size() == 1);
+  assert(records.get(0).row_id == 2);
 
-  record_set.clear();
+  records.clear();
   cursor = table->create_cursor(&error);
   assert(cursor);
-  assert(cursor->read_all(&error, &record_set) == 2);
+  assert(cursor->read_all(&error, &records) == 2);
 
   // 乗算を試す．
   assert(builder->push_column(&error, "IntColumn"));
@@ -788,14 +787,14 @@ void test_expression() {
   assert(expression);
 
   // フィルタとして使ったときの結果を確認する．
-  assert(expression->filter(&error, &record_set));
-  assert(record_set.size() == 1);
-  assert(record_set.get(0).row_id == 2);
+  assert(expression->filter(&error, &records));
+  assert(records.size() == 1);
+  assert(records.get(0).row_id == 2);
 
-  record_set.clear();
+  records.clear();
   cursor = table->create_cursor(&error);
   assert(cursor);
-  assert(cursor->read_all(&error, &record_set) == 2);
+  assert(cursor->read_all(&error, &records) == 2);
 
   // スコア計算を試す．
   assert(builder->push_column(&error, "_score"));
@@ -805,17 +804,17 @@ void test_expression() {
   assert(expression);
 
   // スコア調整に使ったときの結果を確認する．
-  assert(expression->adjust(&error, &record_set));
-  assert(record_set.size() == 2);
-  assert(record_set.get(0).row_id == 1);
-  assert(record_set.get(0).score == 1.0);
-  assert(record_set.get(1).row_id == 2);
-  assert(record_set.get(1).score == 1.0);
+  assert(expression->adjust(&error, &records));
+  assert(records.size() == 2);
+  assert(records.get(0).row_id == 1);
+  assert(records.get(0).score == 1.0);
+  assert(records.get(1).row_id == 2);
+  assert(records.get(1).score == 1.0);
 
-  record_set.clear();
+  records.clear();
   cursor = table->create_cursor(&error);
   assert(cursor);
-  assert(cursor->read_all(&error, &record_set) == 2);
+  assert(cursor->read_all(&error, &records) == 2);
 
   // 評価結果を取り出す．
   assert(builder->push_column(&error, "IntColumn"));
@@ -826,7 +825,7 @@ void test_expression() {
 
   // 評価結果を確認する．
   grnxx::Array<grnxx::Int> result_set;
-  assert(expression->evaluate(&error, record_set, &result_set));
+  assert(expression->evaluate(&error, records, &result_set));
   assert(result_set.size() == 2);
   assert(result_set[0] == 223);
   assert(result_set[1] == 556);
@@ -864,12 +863,12 @@ void test_sorter() {
     assert(int_column->set(&error, row_id, int_values[i]));
   }
 
-  grnxx::RecordSet record_set;
+  grnxx::Array<grnxx::Record> records;
   auto cursor = table->create_cursor(&error);
   assert(cursor);
-  assert(cursor->read_all(&error, &record_set) ==
+  assert(cursor->read_all(&error, &records) ==
          static_cast<grnxx::Int>(int_values.size()));
-  assert(record_set.size() == static_cast<grnxx::Int>(int_values.size()));
+  assert(records.size() == static_cast<grnxx::Int>(int_values.size()));
 
   // BoolColumn 昇順，行 ID 昇順に整列する．
   grnxx::Array<grnxx::SortOrder> orders;
@@ -889,12 +888,12 @@ void test_sorter() {
   auto sorter = grnxx::Sorter::create(&error, std::move(orders));
   assert(sorter);
 
-  assert(sorter->sort(&error, &record_set));
-  assert(record_set.size() == static_cast<grnxx::Int>(int_values.size()));
+  assert(sorter->sort(&error, &records));
+  assert(records.size() == static_cast<grnxx::Int>(int_values.size()));
 
-  for (grnxx::Int i = 1; i < record_set.size(); ++i) {
-    grnxx::Int lhs_id = record_set.get_row_id(i - 1) - 1;
-    grnxx::Int rhs_id = record_set.get_row_id(i) - 1;
+  for (grnxx::Int i = 1; i < records.size(); ++i) {
+    grnxx::Int lhs_id = records.get_row_id(i - 1) - 1;
+    grnxx::Int rhs_id = records.get_row_id(i) - 1;
     grnxx::Bool lhs_value = bool_values[lhs_id];
     grnxx::Bool rhs_value = bool_values[rhs_id];
     assert(!lhs_value || rhs_value);
@@ -921,12 +920,12 @@ void test_sorter() {
   sorter = grnxx::Sorter::create(&error, std::move(orders));
   assert(sorter);
 
-  assert(sorter->sort(&error, &record_set));
-  assert(record_set.size() == static_cast<grnxx::Int>(int_values.size()));
+  assert(sorter->sort(&error, &records));
+  assert(records.size() == static_cast<grnxx::Int>(int_values.size()));
 
-  for (grnxx::Int i = 1; i < record_set.size(); ++i) {
-    grnxx::Int lhs_id = record_set.get_row_id(i - 1) - 1;
-    grnxx::Int rhs_id = record_set.get_row_id(i) - 1;
+  for (grnxx::Int i = 1; i < records.size(); ++i) {
+    grnxx::Int lhs_id = records.get_row_id(i - 1) - 1;
+    grnxx::Int rhs_id = records.get_row_id(i) - 1;
     grnxx::Bool lhs_value = bool_values[lhs_id];
     grnxx::Bool rhs_value = bool_values[rhs_id];
     assert(lhs_value || !rhs_value);
@@ -950,12 +949,12 @@ void test_sorter() {
   sorter = grnxx::Sorter::create(&error, std::move(orders));
   assert(sorter);
 
-  assert(sorter->sort(&error, &record_set));
-  assert(record_set.size() == static_cast<grnxx::Int>(int_values.size()));
+  assert(sorter->sort(&error, &records));
+  assert(records.size() == static_cast<grnxx::Int>(int_values.size()));
 
-  for (grnxx::Int i = 1; i < record_set.size(); ++i) {
-    grnxx::Int lhs_id = record_set.get_row_id(i - 1) - 1;
-    grnxx::Int rhs_id = record_set.get_row_id(i) - 1;
+  for (grnxx::Int i = 1; i < records.size(); ++i) {
+    grnxx::Int lhs_id = records.get_row_id(i - 1) - 1;
+    grnxx::Int rhs_id = records.get_row_id(i) - 1;
     grnxx::Int lhs_value = int_values[lhs_id];
     grnxx::Int rhs_value = int_values[rhs_id];
     assert(lhs_value <= rhs_value);
@@ -981,12 +980,12 @@ void test_sorter() {
   sorter = grnxx::Sorter::create(&error, std::move(orders));
   assert(sorter);
 
-  assert(sorter->sort(&error, &record_set));
-  assert(record_set.size() == static_cast<grnxx::Int>(int_values.size()));
+  assert(sorter->sort(&error, &records));
+  assert(records.size() == static_cast<grnxx::Int>(int_values.size()));
 
-  for (grnxx::Int i = 1; i < record_set.size(); ++i) {
-    grnxx::Int lhs_id = record_set.get_row_id(i - 1) - 1;
-    grnxx::Int rhs_id = record_set.get_row_id(i) - 1;
+  for (grnxx::Int i = 1; i < records.size(); ++i) {
+    grnxx::Int lhs_id = records.get_row_id(i - 1) - 1;
+    grnxx::Int rhs_id = records.get_row_id(i) - 1;
     grnxx::Int lhs_value = int_values[lhs_id];
     grnxx::Int rhs_value = int_values[rhs_id];
     assert(lhs_value >= rhs_value);

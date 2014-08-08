@@ -64,6 +64,10 @@ class Array {
     return *this;
   }
 
+  operator ArrayRef<T>() const {
+    return ref();
+  }
+
   ArrayRef<T> ref(Int offset = 0) const {
     return ArrayRef<T>(const_cast<T *>(data()) + offset, size() - offset);
   }
@@ -294,6 +298,10 @@ class Array<Bool> {
     return *this;
   }
 
+  operator ArrayRef<Bool>() const {
+    return ref();
+  }
+
   ArrayRef<Bool> ref(Int offset = 0) const {
     return ArrayRef<Bool>(const_cast<uint64_t *>(blocks()),
                           offset, size() - offset);
@@ -406,6 +414,185 @@ class Array<Bool> {
  private:
   Array<uint64_t> blocks_;
   Int size_;
+};
+
+template <>
+class ArrayRef<Record> {
+ public:
+  ArrayRef() = default;
+  ArrayRef(Record *records, Int size) : records_(records), size_(size) {}
+  ArrayRef(const ArrayRef &) = default;
+
+  ArrayRef &operator=(const ArrayRef &) = default;
+
+  ArrayRef ref(Int offset = 0) const {
+    return ArrayRef(records_ + offset, size_ - offset);
+  }
+  ArrayRef ref(Int offset, Int size) const {
+    return ArrayRef(records_ + offset, size);
+  }
+
+  Record get(Int i) const {
+    return records_[i];
+  }
+  Int get_row_id(Int i) const {
+    return records_[i].row_id;
+  }
+  Float get_score(Int i) const {
+    return records_[i].score;
+  }
+  void set(Int i, Record record) {
+    records_[i] = record;
+  }
+  void set_row_id(Int i, Int row_id) {
+    records_[i].row_id = row_id;
+  }
+  void set_score(Int i, Float score) {
+    records_[i].score = score;
+  }
+
+  Record operator[](Int i) const {
+    return records_[i];
+  }
+
+  Int size() const {
+    return size_;
+  }
+
+  void swap(Int i, Int j) {
+    std::swap(records_[i], records_[j]);
+  }
+
+ private:
+  Record *records_;
+  Int size_;
+};
+
+template <>
+class Array<Record> {
+ public:
+  Array() : records_() {}
+  ~Array() {}
+
+  Array(Array &&array) : records_(std::move(array.records_)) {}
+
+  Array &operator=(Array &&array) {
+    records_ = std::move(array.records_);
+    return *this;
+  }
+
+  operator ArrayRef<Record>() const {
+    return ref();
+  }
+
+  ArrayRef<Record> ref(Int offset = 0) const {
+    return ArrayRef<Record>(
+        const_cast<Record *>(records_.data()) + offset, size() - offset);
+  }
+  ArrayRef<Record> ref(Int offset, Int size) const {
+    return ArrayRef<Record>(
+        const_cast<Record *>(records_.data()) + offset, size);
+  }
+
+  Record get(Int i) const {
+    return records_[i];
+  }
+  Int get_row_id(Int i) const {
+    return records_[i].row_id;
+  }
+  Float get_score(Int i) const {
+    return records_[i].score;
+  }
+  void set(Int i, Record record) {
+    records_[i] = record;
+  }
+  void set_row_id(Int i, Int row_id) {
+    records_[i].row_id = row_id;
+  }
+  void set_score(Int i, Float score) {
+    records_[i].score = score;
+  }
+
+  Record operator[](Int i) const {
+    return records_[static_cast<size_t>(i)];
+  }
+
+  Record front() const {
+    return records_.front();
+  }
+
+  Record back() const {
+    return records_.back();
+  }
+
+  Int size() const {
+    return static_cast<Int>(records_.size());
+  }
+  Int capacity() const {
+    return static_cast<Int>(records_.capacity());
+  }
+
+  bool reserve(Error *error, Int new_size) try {
+    records_.reserve(new_size);
+    return true;
+  } catch (...) {
+    ArrayErrorReporter::report_memory_error(error);
+    return false;
+  }
+
+  bool resize(Error *error, Int new_size) try {
+    records_.resize(new_size);
+    return true;
+  } catch (...) {
+    ArrayErrorReporter::report_memory_error(error);
+    return false;
+  }
+  bool resize(Error *error, Int new_size, Record record) try {
+    records_.resize(new_size, record);
+    return true;
+  } catch (...) {
+    ArrayErrorReporter::report_memory_error(error);
+    return false;
+  }
+
+  bool shrink_to_fit(Error *error) try {
+    records_.shrink_to_fit();
+    return true;
+  } catch (...) {
+    ArrayErrorReporter::report_memory_error(error);
+    return false;
+  }
+
+  void clear() {
+    records_.clear();
+  }
+
+  void erase(Int i) {
+    records_.erase(records_.begin() + i);
+  }
+
+  bool push_back(Error *error, Record record) try {
+    records_.push_back(record);
+    return true;
+  } catch (...) {
+    ArrayErrorReporter::report_memory_error(error);
+    return false;
+  }
+  void pop_back() {
+    records_.pop_back();
+  }
+
+  // TODO: For testing.
+  Record *data() const {
+    return const_cast<Record *>(records_.data());
+  }
+
+  void swap(Int i, Int j) {
+    std::swap(records_[i], records_[j]);
+  }
+
+ private:
+  std::vector<Record> records_;
 };
 
 }  // namespace grnxx

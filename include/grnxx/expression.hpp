@@ -89,7 +89,7 @@ class Expression {
   // Returns true on success.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
-  bool filter(Error *error, RecordSet *record_set, Int offset = 0);
+  bool filter(Error *error, Array<Record> *records, Int offset = 0);
 
   // Adjust scores of records.
   //
@@ -100,7 +100,7 @@ class Expression {
   // Returns true on success.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
-  bool adjust(Error *error, RecordSet *record_set, Int offset = 0);
+  bool adjust(Error *error, Array<Record> *records, Int offset = 0);
 
   // Evaluate the expression.
   //
@@ -113,7 +113,7 @@ class Expression {
   // "error" != nullptr.
   template <typename T>
   bool evaluate(Error *error,
-                const RecordSubset &record_set,
+                const ArrayRef<Record> &records,
                 Array<T> *results);
 
   // Evaluate the expression.
@@ -128,7 +128,7 @@ class Expression {
   // "error" != nullptr.
   template <typename T>
   bool evaluate(Error *error,
-                const RecordSubset &record_set,
+                const ArrayRef<Record> &records,
                 ArrayRef<T> *results);
 
  private:
@@ -139,7 +139,7 @@ class Expression {
 
   template <typename T>
   bool evaluate_block(Error *error,
-                      const RecordSubset &record_set,
+                      const ArrayRef<Record> &records,
                       ArrayRef<T> *results);
 };
 

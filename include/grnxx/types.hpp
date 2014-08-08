@@ -346,6 +346,14 @@ constexpr Int NULL_ROW_ID = 0;
 constexpr Int MIN_ROW_ID  = 1;
 constexpr Int MAX_ROW_ID  = (Int(1) << 40) - 1;
 
+struct Record {
+  Int row_id;
+  Float score;
+
+  Record() = default;
+  Record(Int row_id, Float score) : row_id(row_id), score(score) {}
+};
+
 enum IndexType {
   TREE_INDEX,
   HASH_INDEX
@@ -402,8 +410,6 @@ struct SorterOptions {
 // Database temporary object types.
 class Datum;
 class Cursor;
-class RecordSubset;
-class RecordSet;
 class Expression;
 class ExpressionNode;
 class ExpressionBuilder;
