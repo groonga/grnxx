@@ -174,45 +174,45 @@ class Array {
   std::vector<T> values_;
 };
 
-class BoolReference {
- public:
-  BoolReference(uint64_t *block, uint64_t mask)
-      : block_(block),
-        mask_(mask) {}
+//class BoolReference {
+// public:
+//  BoolReference(uint64_t *block, uint64_t mask)
+//      : block_(block),
+//        mask_(mask) {}
 
-  operator Bool() const {
-    return (*block_ & mask_) != 0;
-  }
+//  operator Bool() const {
+//    return (*block_ & mask_) != 0;
+//  }
 
-  BoolReference operator=(Bool rhs) {
-    if (rhs) {
-      *block_ |= mask_;
-    } else {
-      *block_ &= ~mask_;
-    }
-    return *this;
-  }
-  BoolReference operator=(BoolReference rhs) {
-    if (rhs) {
-      *block_ |= mask_;
-    } else {
-      *block_ &= ~mask_;
-    }
-    return *this;
-  }
+//  BoolReference operator=(Bool rhs) {
+//    if (rhs) {
+//      *block_ |= mask_;
+//    } else {
+//      *block_ &= ~mask_;
+//    }
+//    return *this;
+//  }
+//  BoolReference operator=(BoolReference rhs) {
+//    if (rhs) {
+//      *block_ |= mask_;
+//    } else {
+//      *block_ &= ~mask_;
+//    }
+//    return *this;
+//  }
 
- private:
-  uint64_t *block_;
-  uint64_t mask_;
-};
+// private:
+//  uint64_t *block_;
+//  uint64_t mask_;
+//};
 
-inline bool operator==(const BoolReference &lhs, Bool rhs) {
-  return static_cast<Bool>(lhs) == rhs;
-}
+//inline bool operator==(const BoolReference &lhs, Bool rhs) {
+//  return static_cast<Bool>(lhs) == rhs;
+//}
 
-inline bool operator!=(const BoolReference &lhs, Bool rhs) {
-  return static_cast<Bool>(lhs) != rhs;
-}
+//inline bool operator!=(const BoolReference &lhs, Bool rhs) {
+//  return static_cast<Bool>(lhs) != rhs;
+//}
 
 // ArrayRef<Bool> is specialized because a bit does not have its own unique
 // address and thus a pointer type for Bool is not available.
@@ -250,10 +250,10 @@ class ArrayRef<Bool> {
     }
   }
 
-  BoolReference operator[](Int i) {
-    i += static_cast<Int>(offset_);
-    return BoolReference(&blocks_[i / 64], uint64_t(1) << (i % 64));
-  }
+//  BoolReference operator[](Int i) {
+//    i += static_cast<Int>(offset_);
+//    return BoolReference(&blocks_[i / 64], uint64_t(1) << (i % 64));
+//  }
   Bool operator[](Int i) const {
     i += static_cast<Int>(offset_);
     return (blocks_[i / 64] & (uint64_t(1) << (i % 64))) != 0;
@@ -313,23 +313,23 @@ class Array<Bool> {
     }
   }
 
-  BoolReference operator[](Int i) {
-    return BoolReference(&blocks_[i / 64], uint64_t(1) << (i % 64));
-  }
+//  BoolReference operator[](Int i) {
+//    return BoolReference(&blocks_[i / 64], uint64_t(1) << (i % 64));
+//  }
   Bool operator[](Int i) const {
     return (blocks_[i / 64] & (uint64_t(1) << (i % 64))) != 0;
   }
 
-  BoolReference front() {
-    return BoolReference(&blocks_[0], 1);
-  }
+//  BoolReference front() {
+//    return BoolReference(&blocks_[0], 1);
+//  }
   Bool front() const {
     return (blocks_[0] & 1) != 0;
   }
 
-  BoolReference back() {
-    return operator[](size_ - 1);
-  }
+//  BoolReference back() {
+//    return operator[](size_ - 1);
+//  }
   Bool back() const {
     return operator[](size_ - 1);
   }

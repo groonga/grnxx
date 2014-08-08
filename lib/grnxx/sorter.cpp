@@ -390,7 +390,7 @@ bool BoolNode<T>::sort(Error *error, RecordSubset records,
     } else {
       // Note that values_[left] will not be used again.
       --right;
-      values_[left] = values_[right];
+      values_.set(left, values_[right]);
       records.swap(left, right);
     }
   }

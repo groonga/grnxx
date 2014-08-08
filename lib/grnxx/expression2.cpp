@@ -226,7 +226,7 @@ bool DatumNode<Bool>::evaluate(Error *error,
                                ArrayRef<Bool> *results) {
   // TODO: Fill results per 64 bits.
   for (Int i = 0; i < records.size(); ++i) {
-    (*results)[i] = datum_;
+    results->set(i, datum_);
   }
   return true;
 }
@@ -435,7 +435,7 @@ bool ColumnNode<Bool>::evaluate(Error *error,
                                 const RecordSubset &records,
                                 ArrayRef<Bool> *results) {
   for (Int i = 0; i < records.size(); ++i) {
-    (*results)[i] = column_->get(records.get_row_id(i));
+    results->set(i, column_->get(records.get_row_id(i)));
   }
   return true;
 }
@@ -614,7 +614,7 @@ bool LogicalNotNode::evaluate(Error *error,
   // TODO: Should be processed per 64 bits.
   //       Check the 64-bit boundary and do it!
   for (Int i = 0; i < results->size(); ++i) {
-    (*results)[i] = !(*results)[i];
+    results->set(i, !results->get(i));
   }
   return true;
 }
@@ -662,7 +662,7 @@ bool BitwiseNotNode::evaluate(Error *error,
   // TODO: Should be processed per 64 bits.
   //       Check the 64-bit boundary and do it!
   for (Int i = 0; i < results->size(); ++i) {
-    (*results)[i] = !(*results)[i];
+    results->set(i, !results->get(i));
   }
   return true;
 }

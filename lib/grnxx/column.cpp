@@ -148,7 +148,7 @@ bool ColumnImpl<T>::set(Error *error, Int row_id, const Datum &datum) {
   // Note that a Bool object does not have its own address.
   T value;
   datum.force(&value);
-  values_[row_id] = value;
+  values_.set(row_id, value);
   return true;
 }
 
@@ -192,13 +192,13 @@ bool ColumnImpl<T>::set_default_value(Error *error, Int row_id) {
       return false;
     }
   }
-  values_[row_id] = TypeTraits<T>::default_value();
+  values_.set(row_id, TypeTraits<T>::default_value());
   return true;
 }
 
 template <typename T>
 void ColumnImpl<T>::unset(Int row_id) {
-  values_[row_id] = TypeTraits<T>::default_value();
+  values_.set(row_id, TypeTraits<T>::default_value());
 }
 
 template <typename T>

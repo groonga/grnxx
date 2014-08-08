@@ -254,7 +254,7 @@ class ColumnNode : public Node<T> {
       return false;
     }
     for (Int i = 0; i < record_set.size(); ++i) {
-      this->values_[i] = column_->get(record_set.get_row_id(i));
+      this->values_.set(i, column_->get(record_set.get_row_id(i)));
     }
     return true;
   }
@@ -513,7 +513,7 @@ bool BinaryNode<Op>::evaluate(Error *error, const RecordSubset &record_set) {
     return false;
   }
   for (Int i = 0; i < record_set.size(); ++i) {
-    this->values_[i] = operator_(lhs_->get(i), rhs_->get(i));
+    this->values_.set(i, operator_(lhs_->get(i), rhs_->get(i)));
   }
   return true;
 }
@@ -572,7 +572,7 @@ bool LogicalAndNode::evaluate(Error *error, const RecordSubset &record_set) {
   }
   Int j = 0;
   for (Int i = 0; i < record_set.size(); ++i) {
-    this->values_[i] = lhs_->get(i) ? rhs_->get(j++) : false;
+    this->values_.set(i, lhs_->get(i) ? rhs_->get(j++) : false);
   }
   return true;
 }
@@ -726,7 +726,7 @@ bool LogicalOrNode::evaluate(Error *error, const RecordSubset &record_set) {
   }
   Int j = 0;
   for (Int i = 0; i < record_set.size(); ++i) {
-    this->values_[i] = lhs_->get(i) ? true : rhs_->get(j++);
+    this->values_.set(i, lhs_->get(i) ? true : rhs_->get(j++));
   }
   return true;
 }
@@ -867,7 +867,7 @@ bool Expression::evaluate_block(Error *error,
     return false;
   }
   for (Int i = 0; i < record_set.size(); ++i) {
-    (*results)[i] = node->get(i);
+    results->set(i, node->get(i));
   }
   return true;
 }
