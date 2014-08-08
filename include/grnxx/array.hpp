@@ -28,6 +28,13 @@ class ArrayRef {
     return ArrayRef(values_ + offset, size);
   }
 
+  T get(Int i) const {
+    return values_[i];
+  }
+  void set(Int i, T value) {
+    values_[i] = value;
+  }
+
   T &operator[](Int i) {
     return values_[i];
   }
@@ -62,6 +69,13 @@ class Array {
   }
   ArrayRef<T> ref(Int offset, Int size) const {
     return ArrayRef<T>(const_cast<T *>(data()) + offset, size);
+  }
+
+  T get(Int i) const {
+    return values_[i];
+  }
+  void set(Int i, T value) {
+    values_[i] = value;
   }
 
   T &operator[](Int i) {
@@ -223,6 +237,19 @@ class ArrayRef<Bool> {
     return ArrayRef(blocks_, offset, size);
   }
 
+  Bool get(Int i) const {
+    i += static_cast<Int>(offset_);
+    return (blocks_[i / 64] & (uint64_t(1) << (i % 64))) != 0;
+  }
+  void set(Int i, Bool value) {
+    i += static_cast<Int>(offset_);
+    if (value) {
+      blocks_[i / 64] |= uint64_t(1) << (i % 64);
+    } else {
+      blocks_[i / 64] &= ~(uint64_t(1) << (i % 64));
+    }
+  }
+
   BoolReference operator[](Int i) {
     i += static_cast<Int>(offset_);
     return BoolReference(&blocks_[i / 64], uint64_t(1) << (i % 64));
@@ -273,6 +300,17 @@ class Array<Bool> {
   }
   ArrayRef<Bool> ref(Int offset, Int size) const {
     return ArrayRef<Bool>(const_cast<uint64_t *>(blocks()), offset, size);
+  }
+
+  Bool get(Int i) const {
+    return (blocks_[i / 64] & (uint64_t(1) << (i % 64))) != 0;
+  }
+  void set(Int i, Bool value) {
+    if (value) {
+      blocks_[i / 64] |= uint64_t(1) << (i % 64);
+    } else {
+      blocks_[i / 64] &= ~(uint64_t(1) << (i % 64));
+    }
   }
 
   BoolReference operator[](Int i) {
