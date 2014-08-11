@@ -906,10 +906,189 @@ bool LogicalAndNode::evaluate(Error *error,
   return true;
 }
 
-// TODO: Other binary operators.
-//  // Logical operators.
-//  LOGICAL_OR_OPERATOR,   // For Bool.
+// ---- LogicalOrNode ----
 
+class LogicalOrNode : public BinaryNode<Bool, Bool, Bool> {
+ public:
+  using Value = Bool;
+  using Arg1 = Bool;
+  using Arg2 = Bool;
+
+  LogicalOrNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
+      : BinaryNode<Bool, Bool, Bool>(std::move(arg1), std::move(arg2)),
+        temp_records_() {}
+
+  bool filter(Error *error,
+              ArrayCRef<Record> input_records,
+              ArrayRef<Record> *output_records);
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Bool> results);
+
+ private:
+  Array<Record> temp_records_;
+};
+
+bool LogicalOrNode::filter(Error *error,
+                            ArrayCRef<Record> input_records,
+                            ArrayRef<Record> *output_records) {
+  // Apply the 1st argument filter to "input_records" and store the result into
+  // "temp_records_", Then, appends a sentinel to the end.
+  if (!temp_records_.resize(error, input_records.size() + 2)) {
+    return false;
+  }
+  ArrayRef<Record> ref1 = temp_records_;
+  if (!arg1_->filter(error, input_records, &ref1)) {
+    return false;
+  }
+  if (ref1.size() == 0) {
+    // There are no arg1-true records.
+    return arg2_->filter(error, input_records, output_records);
+  } else if (ref1.size() == temp_records_.size()) {
+    // There are no arg1-false records.
+    if (input_records != *output_records) {
+      for (Int i = 0; i < input_records.size(); ++i) {
+        output_records->set(i, input_records.get(i));
+      }
+    }
+    return true;
+  }
+  temp_records_.set_row_id(ref1.size(), NULL_ROW_ID);
+
+  // Append arg1-false records to the end of "temp_records_".
+  // Then, applies the 2nd argument filter to it and appends a sentinel.
+  ArrayRef<Record> ref2 =
+      temp_records_.ref(ref1.size() + 1, input_records.size() - ref1.size());
+  Int arg1_count = 0;
+  Int arg2_count = 0;
+  for (Int i = 0; i < input_records.size(); ++i) {
+    if (input_records.get_row_id(i) == ref1.get_row_id(arg1_count)) {
+      ++arg1_count;
+    } else {
+      ref2.set(arg2_count, input_records.get(i));
+      ++arg2_count;
+    }
+  }
+  if (!arg2_->filter(error, ref2, &ref2)) {
+    return false;
+  }
+  if (ref2.size() == 0) {
+    // There are no arg2-true records.
+    for (Int i = 0; i < ref1.size(); ++i) {
+      output_records->set(i, ref1.get(i));
+    }
+    *output_records = output_records->ref(0, ref1.size());
+    return true;
+  } else if (ref2.size() == arg2_count) {
+    // There are no arg2-false records.
+    if (input_records != *output_records) {
+      for (Int i = 0; i < input_records.size(); ++i) {
+        output_records->set(i, input_records.get(i));
+      }
+      *output_records = output_records->ref(0, input_records.size());
+    }
+    return true;
+  }
+  temp_records_.set_row_id(ref1.size() + 1 + ref2.size(), NULL_ROW_ID);
+
+  // Merge the arg1-true records and the arg2-true records.
+  arg1_count = 0;
+  arg2_count = 0;
+  for (Int i = 0; i < input_records.size(); ++i) {
+    if (input_records.get_row_id(i) == ref1.get_row_id(arg1_count)) {
+      output_records->set(arg1_count + arg2_count, input_records.get(i));
+      ++arg1_count;
+    } else if (input_records.get_row_id(i) == ref2.get_row_id(arg2_count)) {
+      output_records->set(arg1_count + arg2_count, input_records.get(i));
+      ++arg2_count;
+    }
+  }
+  *output_records = output_records->ref(0, arg1_count + arg2_count);
+  return true;
+}
+
+bool LogicalOrNode::evaluate(Error *error,
+                              ArrayCRef<Record> records,
+                              ArrayRef<Bool> results) {
+  // Apply the 1st argument filter to "records" and store the result into
+  // "temp_records_", Then, appends a sentinel to the end.
+  if (!temp_records_.resize(error, records.size() + 2)) {
+    return false;
+  }
+  ArrayRef<Record> ref1 = temp_records_;
+  if (!arg1_->filter(error, records, &ref1)) {
+    return false;
+  }
+  if (ref1.size() == 0) {
+    // There are no arg1-true records.
+    return arg2_->evaluate(error, records, results);
+  } else if (ref1.size() == temp_records_.size()) {
+    // There are no arg1-false records.
+    // TODO: Fill the array per 64 bits.
+    for (Int i = 0; i < records.size(); ++i) {
+      results.set(i, true);
+    }
+    return true;
+  }
+  temp_records_.set_row_id(ref1.size(), NULL_ROW_ID);
+
+  // Append arg1-false records to the end of "temp_records_".
+  // Then, applies the 2nd argument filter to it and appends a sentinel.
+  ArrayRef<Record> ref2 =
+      temp_records_.ref(ref1.size() + 1, records.size() - ref1.size());
+  Int arg1_count = 0;
+  Int arg2_count = 0;
+  for (Int i = 0; i < records.size(); ++i) {
+    if (records.get_row_id(i) == ref1.get_row_id(arg1_count)) {
+      ++arg1_count;
+    } else {
+      ref2.set(arg2_count, records.get(i));
+      ++arg2_count;
+    }
+  }
+  if (!arg2_->filter(error, ref2, &ref2)) {
+    return false;
+  }
+  if (ref2.size() == 0) {
+    // There are no arg2-true records.
+    arg1_count = 0;
+    for (Int i = 0; i < records.size(); ++i) {
+      if (records.get_row_id(i) == ref1.get_row_id(arg1_count)) {
+        results.set(i, true);
+        ++arg1_count;
+      } else {
+        results.set(i, false);
+      }
+    }
+    return true;
+  } else if (ref2.size() == arg2_count) {
+    // There are no arg2-false records.
+    // TODO: Fill the array per 64 bits.
+    for (Int i = 0; i < records.size(); ++i) {
+      results.set(i, true);
+    }
+    return true;
+  }
+  temp_records_.set_row_id(ref1.size() + 1 + ref2.size(), NULL_ROW_ID);
+
+  // Merge the arg1-true records and the arg2-true records.
+  arg1_count = 0;
+  arg2_count = 0;
+  for (Int i = 0; i < records.size(); ++i) {
+    if (records.get_row_id(i) == ref1.get_row_id(arg1_count)) {
+      results.set(i, true);
+      ++arg1_count;
+    } else if (records.get_row_id(i) == ref2.get_row_id(arg2_count)) {
+      results.set(i, true);
+      ++arg2_count;
+    } else {
+      results.set(i, false);
+    }
+  }
+  return true;
+}
+
+// TODO: Other binary operators.
 //  // Equality operators.
 //  EQUAL_OPERATOR,      // For any types.
 //  NOT_EQUAL_OPERATOR,  // For any types.
