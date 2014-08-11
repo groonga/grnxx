@@ -622,7 +622,10 @@ bool LogicalNotNode::evaluate(Error *error,
 
 // ---- BitwiseNotNode ----
 
-class BitwiseNotNode : public UnaryNode<Bool, Bool> {
+template <typename T> class BitwiseNotNode;
+
+template <>
+class BitwiseNotNode<Bool> : public UnaryNode<Bool, Bool> {
  public:
   using Value = Bool;
 
@@ -637,9 +640,9 @@ class BitwiseNotNode : public UnaryNode<Bool, Bool> {
                 ArrayRef<Bool> results);
 };
 
-bool BitwiseNotNode::filter(Error *error,
-                            ArrayCRef<Record> input_records,
-                            ArrayRef<Record> *output_records) {
+bool BitwiseNotNode<Bool>::filter(Error *error,
+                                  ArrayCRef<Record> input_records,
+                                  ArrayRef<Record> *output_records) {
   if (!fill_arg_values(error, input_records)) {
     return false;
   }
@@ -654,9 +657,9 @@ bool BitwiseNotNode::filter(Error *error,
   return true;
 }
 
-bool BitwiseNotNode::evaluate(Error *error,
-                              ArrayCRef<Record> records,
-                              ArrayRef<Bool> results) {
+bool BitwiseNotNode<Bool>::evaluate(Error *error,
+                                    ArrayCRef<Record> records,
+                                    ArrayRef<Bool> results) {
   if (!arg_->evaluate(error, records, results)) {
     return false;
   }
@@ -664,6 +667,31 @@ bool BitwiseNotNode::evaluate(Error *error,
   //       Check the 64-bit boundary and do it!
   for (Int i = 0; i < records.size(); ++i) {
     results.set(i, !results.get(i));
+  }
+  return true;
+}
+
+template <>
+class BitwiseNotNode<Int> : public UnaryNode<Int, Int> {
+ public:
+  using Value = Int;
+
+  explicit BitwiseNotNode(unique_ptr<Node> &&arg)
+      : UnaryNode<Int, Int>(std::move(arg)) {}
+
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Int> results);
+};
+
+bool BitwiseNotNode<Int>::evaluate(Error *error,
+                                   ArrayCRef<Record> records,
+                                   ArrayRef<Int> results) {
+  if (!arg_->evaluate(error, records, results)) {
+    return false;
+  }
+  for (Int i = 0; i < records.size(); ++i) {
+    results.set(i, ~results.get(i));
   }
   return true;
 }
