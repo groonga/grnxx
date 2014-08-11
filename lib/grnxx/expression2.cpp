@@ -599,13 +599,26 @@ bool LogicalNotNode::filter(Error *error,
 bool LogicalNotNode::evaluate(Error *error,
                               ArrayCRef<Record> records,
                               ArrayRef<Bool> *results) {
-  if (!arg_->evaluate(error, records, results)) {
+  // Apply an argument filter to "records" and store the result to
+  // "temp_records_". Then, appends a sentinel to the end.
+  if (!temp_records_.resize(error, records.size() + 1)) {
     return false;
   }
-  // TODO: Should be processed per 64 bits.
-  //       Check the 64-bit boundary and do it!
-  for (Int i = 0; i < results->size(); ++i) {
-    results->set(i, !results->get(i));
+  ArrayRef<Record> ref = temp_records_;
+  if (!arg_->filter(error, records, &ref)) {
+    return false;
+  }
+  temp_records_.set_row_id(ref.size(), NULL_ROW_ID);
+
+  // Compare records in "records" and "ref".
+  Int count = 0;
+  for (Int i = 0; i < records.size(); ++i) {
+    if (records.get_row_id(i) == ref.get_row_id(count)) {
+      results->set(i, false);
+      ++count;
+    } else {
+      results->set(i, true);
+    }
   }
   return true;
 }
