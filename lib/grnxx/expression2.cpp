@@ -810,7 +810,7 @@ class BinaryNode : public OperatorNode<T> {
   }
 };
 
-// ---- XXXNode ----
+// ---- LogicalAndNode ----
 
 class LogicalAndNode : public BinaryNode<Bool, Bool, Bool> {
  public:
@@ -843,8 +843,29 @@ bool LogicalAndNode::filter(Error *error,
 bool LogicalAndNode::evaluate(Error *error,
                               ArrayCRef<Record> records,
                               ArrayRef<Bool> *results) {
-  // TODO
-  return false;
+  // Apply argument filters to "records" and store the result to
+  // "temp_records_". Then, appends a sentinel to the end.
+  if (!temp_records_.resize(error, records.size() + 1)) {
+    return false;
+  }
+  ArrayRef<Record> ref = temp_records_;
+  if (!arg1_->filter(error, records, &ref) ||
+      !arg2_->filter(error, ref, &ref)) {
+    return false;
+  }
+  temp_records_.set_row_id(ref.size(), NULL_ROW_ID);
+
+  // Compare records in "records" and "ref".
+  Int count = 0;
+  for (Int i = 0; i < records.size(); ++i) {
+    if (records.get_row_id(i) == ref.get_row_id(count)) {
+      results->set(i, true);
+      ++count;
+    } else {
+      results->set(i, false);
+    }
+  }
+  return true;
 }
 
 // TODO: Other binary operators.
