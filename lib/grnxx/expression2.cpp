@@ -727,10 +727,57 @@ bool NegativeNode<Float>::evaluate(Error *error,
   return true;
 }
 
-// TODO: Other unary operators!
-//
-//TO_INT_OPERATOR    // For Float.
-//TO_FLOAT_OPERATOR  // For Int.
+// ---- ToIntNode ----
+
+class ToIntNode : public UnaryNode<Int, Float> {
+ public:
+  using Value = Int;
+
+  explicit ToIntNode(unique_ptr<Node> &&arg)
+      : UnaryNode<Int, Float>(std::move(arg)) {}
+
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Int> *results);
+};
+
+bool ToIntNode::evaluate(Error *error,
+                         ArrayCRef<Record> records,
+                         ArrayRef<Int> *results) {
+  if (!fill_arg_values(error, records)) {
+    return false;
+  }
+  for (Int i = 0; i < results->size(); ++i) {
+    results->set(i, static_cast<Int>(arg_values_[i]));
+  }
+  return true;
+}
+
+// ---- ToFloatNode ----
+
+class ToFloatNode : public UnaryNode<Float, Int> {
+ public:
+  using Value = Float;
+
+  explicit ToFloatNode(unique_ptr<Node> &&arg)
+      : UnaryNode<Float, Int>(std::move(arg)) {}
+
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Float> *results);
+};
+
+bool ToFloatNode::evaluate(Error *error,
+                           ArrayCRef<Record> records,
+                           ArrayRef<Float> *results) {
+  if (!fill_arg_values(error, records)) {
+    return false;
+  }
+  for (Int i = 0; i < results->size(); ++i) {
+    results->set(i, static_cast<Float>(arg_values_[i]));
+  }
+  return true;
+}
 
 // --- BinaryNode ---
 
