@@ -828,8 +828,8 @@ class BinaryNode : public OperatorNode<T> {
 
   BinaryNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
       : OperatorNode<Value>(),
-        arg1_(static_cast<TypedNode<Bool> *>(arg1.release())),
-        arg2_(static_cast<TypedNode<Bool> *>(arg2.release())),
+        arg1_(static_cast<TypedNode<Arg1> *>(arg1.release())),
+        arg2_(static_cast<TypedNode<Arg2> *>(arg2.release())),
         arg1_values_(),
         arg2_values_() {}
   virtual ~BinaryNode() {}
@@ -1088,22 +1088,160 @@ bool LogicalOrNode::evaluate(Error *error,
   return true;
 }
 
+// ---- ComparisonNode ----
+
+template <typename T>
+class ComparisonNode
+    : public BinaryNode<Bool, typename T::Arg, typename T::Arg> {
+ public:
+  using Comparer = T;
+  using Value = Bool;
+  using Arg1 = typename T::Arg;
+  using Arg2 = typename T::Arg;
+
+  ComparisonNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
+      : BinaryNode<Bool, Arg1, Arg2>(std::move(arg1), std::move(arg2)),
+        comparer_() {}
+
+  bool filter(Error *error,
+              ArrayCRef<Record> input_records,
+              ArrayRef<Record> *output_records);
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Bool> results);
+
+ protected:
+  Comparer comparer_;
+};
+
+template <typename T>
+bool ComparisonNode<T>::filter(Error *error,
+                               ArrayCRef<Record> input_records,
+                               ArrayRef<Record> *output_records) {
+  if (!this->fill_arg1_values(error, input_records) ||
+      !this->fill_arg2_values(error, input_records)) {
+    return false;
+  }
+  Int count = 0;
+  for (Int i = 0; i < input_records.size(); ++i) {
+    if (comparer_(this->arg1_values_[i], this->arg2_values_[i])) {
+      output_records->set(count, input_records.get(i));
+      ++count;
+    }
+  }
+  *output_records = output_records->ref(0, count);
+  return true;
+}
+
+template <typename T>
+bool ComparisonNode<T>::evaluate(Error *error,
+                                 ArrayCRef<Record> records,
+                                 ArrayRef<Bool> results) {
+  if (!this->fill_arg1_values(error, records) ||
+      !this->fill_arg2_values(error, records)) {
+    return false;
+  }
+  for (Int i = 0; i < records.size(); ++i) {
+    results.set(i, comparer_(this->arg1_values_[i], this->arg2_values_[i]));
+  }
+  return true;
+}
+
+// ----- EqualNode -----
+
+struct Equal {
+  template <typename T>
+  struct Comparer {
+    using Arg = T;
+    Bool operator()(Arg arg1, Arg arg2) const {
+      return arg1 == arg2;
+    }
+  };
+};
+
+template <typename T>
+using EqualNode = ComparisonNode<Equal::Comparer<T>>;
+
+// ----- NotEqualNode -----
+
+struct NotEqual {
+  template <typename T>
+  struct Comparer {
+    using Arg = T;
+    Bool operator()(Arg arg1, Arg arg2) const {
+      return arg1 != arg2;
+    }
+  };
+};
+
+template <typename T>
+using NotEqualNode = ComparisonNode<NotEqual::Comparer<T>>;
+
+// ----- LessNode -----
+
+struct Less {
+  template <typename T>
+  struct Comparer {
+    using Arg = T;
+    Bool operator()(Arg arg1, Arg arg2) const {
+      return arg1 < arg2;
+    }
+  };
+};
+
+template <typename T>
+using LessNode = ComparisonNode<Less::Comparer<T>>;
+
+// ----- LessEqualNode -----
+
+struct LessEqual {
+  template <typename T>
+  struct Comparer {
+    using Arg = T;
+    Bool operator()(Arg arg1, Arg arg2) const {
+      return arg1 <= arg2;
+    }
+  };
+};
+
+template <typename T>
+using LessEqualNode = ComparisonNode<LessEqual::Comparer<T>>;
+
+// ----- GreaterNode -----
+
+struct Greater {
+  template <typename T>
+  struct Comparer {
+    using Arg = T;
+    Bool operator()(Arg arg1, Arg arg2) const {
+      return arg1 > arg2;
+    }
+  };
+};
+
+template <typename T>
+using GreaterNode = ComparisonNode<Greater::Comparer<T>>;
+
+// ----- GreaterEqualNode -----
+
+struct GreaterEqual {
+  template <typename T>
+  struct Comparer {
+    using Arg = T;
+    Bool operator()(Arg arg1, Arg arg2) const {
+      return arg1 >= arg2;
+    }
+  };
+};
+
+template <typename T>
+using GreaterEqualNode = ComparisonNode<GreaterEqual::Comparer<T>>;
+
 // TODO: Other binary operators.
-//  // Equality operators.
-//  EQUAL_OPERATOR,      // For any types.
-//  NOT_EQUAL_OPERATOR,  // For any types.
-
-//  // Comparison operators.
-//  LESS_OPERATOR,           // Int, Float, Time.
-//  LESS_EQUAL_OPERATOR,     // Int, Float, Time.
-//  GREATER_OPERATOR,        // Int, Float, Time.
-//  GREATER_EQUAL_OPERATOR,  // Int, Float, Time.
-
 //  // Bitwise operators.
 //  BITWISE_AND_OPERATOR,  // For Bool, Int.
 //  BITWISE_OR_OPERATOR,   // For Bool, Int.
 //  BITWISE_XOR_OPERATOR,  // For Bool, Int.
-
 //  // Arithmetic operators.
 //  PLUS_OPERATOR,            // For Int, Float.
 //  MINUS_OPERATOR,           // For Int, Float.
