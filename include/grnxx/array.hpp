@@ -122,6 +122,10 @@ class ArrayRef {
     return size_;
   }
 
+  void swap(Int i, Int j) {
+    std::swap(values_[i], values_[j]);
+  }
+
  private:
   Value *values_;
   Int size_;
@@ -273,6 +277,10 @@ class Array {
   }
   void pop_back() {
     values_.pop_back();
+  }
+
+  void swap(Int i, Int j) {
+    std::swap(values_[i], values_[j]);
   }
 
  private:
@@ -480,6 +488,12 @@ class ArrayRef<Bool> {
     return static_cast<Int>(size_);
   }
 
+  void swap(Int i, Int j) {
+    Bool temp = get(i);
+    set(i, get(j));
+    set(j, temp);
+  }
+
  private:
   uint64_t *blocks_;
   struct {
@@ -632,6 +646,12 @@ class Array<Bool> {
       blocks_.pop_back();
     }
     --size_;
+  }
+
+  void swap(Int i, Int j) {
+    Bool temp = get(i);
+    set(i, get(j));
+    set(j, temp);
   }
 
  private:
