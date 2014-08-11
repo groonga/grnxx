@@ -1237,11 +1237,264 @@ struct GreaterEqual {
 template <typename T>
 using GreaterEqualNode = ComparisonNode<GreaterEqual::Comparer<T>>;
 
+// ---- BitwiseAndNode ----
+
+// TODO: BitwiseAnd/Or/XorNode should be implemented on the same base class?
+
+template <typename T> class BitwiseAndNode;
+
+template <>
+class BitwiseAndNode<Bool> : public BinaryNode<Bool, Bool, Bool> {
+ public:
+  using Value = Bool;
+  using Arg1 = Bool;
+  using Arg2 = Bool;
+
+  BitwiseAndNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
+      : BinaryNode<Bool, Arg1, Arg2>(std::move(arg1), std::move(arg2)) {}
+
+  bool filter(Error *error,
+              ArrayCRef<Record> input_records,
+              ArrayRef<Record> *output_records);
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Bool> results);
+};
+
+bool BitwiseAndNode<Bool>::filter(Error *error,
+                                  ArrayCRef<Record> input_records,
+                                  ArrayRef<Record> *output_records) {
+  if (!fill_arg1_values(error, input_records) ||
+      !fill_arg2_values(error, input_records)) {
+    return false;
+  }
+  Int count = 0;
+  for (Int i = 0; i < input_records.size(); ++i) {
+    if (this->arg1_values_[i] & this->arg2_values_[i]) {
+      output_records->set(count, input_records.get(i));
+      ++count;
+    }
+  }
+  *output_records = output_records->ref(0, count);
+  return true;
+}
+
+bool BitwiseAndNode<Bool>::evaluate(Error *error,
+                                    ArrayCRef<Record> records,
+                                    ArrayRef<Bool> results) {
+  if (!fill_arg1_values(error, records) ||
+      !fill_arg2_values(error, records)) {
+    return false;
+  }
+  // TODO: Should be processed per 64 bits.
+  //       Check the 64-bit boundary and do it!
+  for (Int i = 0; i < records.size(); ++i) {
+    results.set(i, this->arg1_values_[i] & this->arg2_values_[i]);
+  }
+  return true;
+}
+
+template <>
+class BitwiseAndNode<Int> : public BinaryNode<Bool, Int, Int> {
+ public:
+  using Value = Bool;
+  using Arg1 = Int;
+  using Arg2 = Int;
+
+  BitwiseAndNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
+      : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)) {}
+
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results);
+};
+
+bool BitwiseAndNode<Int>::evaluate(Error *error,
+                                   ArrayCRef<Record> records,
+                                   ArrayRef<Value> results) {
+  if (!fill_arg1_values(error, records) ||
+      !fill_arg2_values(error, records)) {
+    return false;
+  }
+  // TODO: Should be processed per 64 bits.
+  //       Check the 64-bit boundary and do it!
+  for (Int i = 0; i < records.size(); ++i) {
+    results.set(i, this->arg1_values_[i] & this->arg2_values_[i]);
+  }
+  return true;
+}
+
+// ---- BitwiseOrNode ----
+
+template <typename T> class BitwiseOrNode;
+
+template <>
+class BitwiseOrNode<Bool> : public BinaryNode<Bool, Bool, Bool> {
+ public:
+  using Value = Bool;
+  using Arg1 = Bool;
+  using Arg2 = Bool;
+
+  BitwiseOrNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
+      : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)) {}
+
+  bool filter(Error *error,
+              ArrayCRef<Record> input_records,
+              ArrayRef<Record> *output_records);
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results);
+};
+
+bool BitwiseOrNode<Bool>::filter(Error *error,
+                                 ArrayCRef<Record> input_records,
+                                 ArrayRef<Record> *output_records) {
+  if (!fill_arg1_values(error, input_records) ||
+      !fill_arg2_values(error, input_records)) {
+    return false;
+  }
+  Int count = 0;
+  for (Int i = 0; i < input_records.size(); ++i) {
+    if (this->arg1_values_[i] | this->arg2_values_[i]) {
+      output_records->set(count, input_records.get(i));
+      ++count;
+    }
+  }
+  *output_records = output_records->ref(0, count);
+  return true;
+}
+
+bool BitwiseOrNode<Bool>::evaluate(Error *error,
+                                   ArrayCRef<Record> records,
+                                   ArrayRef<Value> results) {
+  if (!fill_arg1_values(error, records) ||
+      !fill_arg2_values(error, records)) {
+    return false;
+  }
+  // TODO: Should be processed per 64 bits.
+  //       Check the 64-bit boundary and do it!
+  for (Int i = 0; i < records.size(); ++i) {
+    results.set(i, this->arg1_values_[i] | this->arg2_values_[i]);
+  }
+  return true;
+}
+
+template <>
+class BitwiseOrNode<Int> : public BinaryNode<Bool, Int, Int> {
+ public:
+  using Value = Bool;
+  using Arg1 = Int;
+  using Arg2 = Int;
+
+  BitwiseOrNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
+      : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)) {}
+
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results);
+};
+
+bool BitwiseOrNode<Int>::evaluate(Error *error,
+                                  ArrayCRef<Record> records,
+                                  ArrayRef<Value> results) {
+  if (!fill_arg1_values(error, records) ||
+      !fill_arg2_values(error, records)) {
+    return false;
+  }
+  // TODO: Should be processed per 64 bits.
+  //       Check the 64-bit boundary and do it!
+  for (Int i = 0; i < records.size(); ++i) {
+    results.set(i, this->arg1_values_[i] | this->arg2_values_[i]);
+  }
+  return true;
+}
+
+// ---- BitwiseXorNode ----
+
+template <typename T> class BitwiseXorNode;
+
+template <>
+class BitwiseXorNode<Bool> : public BinaryNode<Bool, Bool, Bool> {
+ public:
+  using Value = Bool;
+  using Arg1 = Bool;
+  using Arg2 = Bool;
+
+  BitwiseXorNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
+      : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)) {}
+
+  bool filter(Error *error,
+              ArrayCRef<Record> input_records,
+              ArrayRef<Record> *output_records);
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results);
+};
+
+bool BitwiseXorNode<Bool>::filter(Error *error,
+                                  ArrayCRef<Record> input_records,
+                                  ArrayRef<Record> *output_records) {
+  if (!fill_arg1_values(error, input_records) ||
+      !fill_arg2_values(error, input_records)) {
+    return false;
+  }
+  Int count = 0;
+  for (Int i = 0; i < input_records.size(); ++i) {
+    if (this->arg1_values_[i] ^ this->arg2_values_[i]) {
+      output_records->set(count, input_records.get(i));
+      ++count;
+    }
+  }
+  *output_records = output_records->ref(0, count);
+  return true;
+}
+
+bool BitwiseXorNode<Bool>::evaluate(Error *error,
+                                    ArrayCRef<Record> records,
+                                    ArrayRef<Value> results) {
+  if (!fill_arg1_values(error, records) ||
+      !fill_arg2_values(error, records)) {
+    return false;
+  }
+  // TODO: Should be processed per 64 bits.
+  //       Check the 64-bit boundary and do it!
+  for (Int i = 0; i < records.size(); ++i) {
+    results.set(i, this->arg1_values_[i] ^ this->arg2_values_[i]);
+  }
+  return true;
+}
+
+template <>
+class BitwiseXorNode<Int> : public BinaryNode<Bool, Int, Int> {
+ public:
+  using Value = Bool;
+  using Arg1 = Int;
+  using Arg2 = Int;
+
+  BitwiseXorNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
+      : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)) {}
+
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results);
+};
+
+bool BitwiseXorNode<Int>::evaluate(Error *error,
+                                   ArrayCRef<Record> records,
+                                   ArrayRef<Value> results) {
+  if (!fill_arg1_values(error, records) ||
+      !fill_arg2_values(error, records)) {
+    return false;
+  }
+  // TODO: Should be processed per 64 bits.
+  //       Check the 64-bit boundary and do it!
+  for (Int i = 0; i < records.size(); ++i) {
+    results.set(i, this->arg1_values_[i] ^ this->arg2_values_[i]);
+  }
+  return true;
+}
+
 // TODO: Other binary operators.
-//  // Bitwise operators.
-//  BITWISE_AND_OPERATOR,  // For Bool, Int.
-//  BITWISE_OR_OPERATOR,   // For Bool, Int.
-//  BITWISE_XOR_OPERATOR,  // For Bool, Int.
 //  // Arithmetic operators.
 //  PLUS_OPERATOR,            // For Int, Float.
 //  MINUS_OPERATOR,           // For Int, Float.
