@@ -17,6 +17,8 @@ enum ErrorCode {
   INVALID_ARGUMENT,   // Invalid argument.
   INVALID_OPERATION,  // Invalid operation.
   INVALID_OPERAND,    // Invalid operand.
+  DIVISION_BY_ZERO,   // Integer division by zero.
+  DIVISION_OVERFLOW,  // Overflow in integer division.
   NOT_SUPPORTED_YET   // The operation is not supported yet.
 };
 

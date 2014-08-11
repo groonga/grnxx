@@ -1494,13 +1494,343 @@ bool BitwiseXorNode<Int>::evaluate(Error *error,
   return true;
 }
 
-// TODO: Other binary operators.
-//  // Arithmetic operators.
-//  PLUS_OPERATOR,            // For Int, Float.
-//  MINUS_OPERATOR,           // For Int, Float.
-//  MULTIPLICATION_OPERATOR,  // For Int, Float.
-//  DIVISION_OPERATOR,        // For Int, Float.
-//  MODULUS_OPERATOR,         // For Int.
+// ---- PlusOperator ----
+
+template <typename T> class PlusNode;
+
+template <>
+class PlusNode<Int> : public BinaryNode<Int, Int, Int> {
+ public:
+  using Value = Int;
+  using Arg1 = Int;
+  using Arg2 = Int;
+
+  PlusNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
+      : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)) {}
+
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results);
+};
+
+bool PlusNode<Int>::evaluate(Error *error,
+                             ArrayCRef<Record> records,
+                             ArrayRef<Value> results) {
+  if (!fill_arg1_values(error, records) ||
+      !fill_arg2_values(error, records)) {
+    return false;
+  }
+  for (Int i = 0; i < records.size(); ++i) {
+    results.set(i, this->arg1_values_[i] + this->arg2_values_[i]);
+  }
+  return true;
+}
+
+template <>
+class PlusNode<Float> : public BinaryNode<Float, Float, Float> {
+ public:
+  using Value = Float;
+  using Arg1 = Float;
+  using Arg2 = Float;
+
+  PlusNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
+      : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)) {}
+
+  bool adjust(Error *error, ArrayRef<Record> records);
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results);
+};
+
+bool PlusNode<Float>::adjust(Error *error, ArrayRef<Record> records) {
+  if (!fill_arg1_values(error, records) ||
+      !fill_arg2_values(error, records)) {
+    return false;
+  }
+  for (Int i = 0; i < records.size(); ++i) {
+    records.set_score(i, this->arg1_values_[i] + this->arg2_values_[i]);
+  }
+  return true;
+}
+
+bool PlusNode<Float>::evaluate(Error *error,
+                               ArrayCRef<Record> records,
+                               ArrayRef<Value> results) {
+  if (!fill_arg1_values(error, records) ||
+      !fill_arg2_values(error, records)) {
+    return false;
+  }
+  for (Int i = 0; i < records.size(); ++i) {
+    results.set(i, this->arg1_values_[i] + this->arg2_values_[i]);
+  }
+  return true;
+}
+
+// ---- MinusOperator ----
+
+template <typename T> class MinusNode;
+
+template <>
+class MinusNode<Int> : public BinaryNode<Int, Int, Int> {
+ public:
+  using Value = Int;
+  using Arg1 = Int;
+  using Arg2 = Int;
+
+  MinusNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
+      : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)) {}
+
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results);
+};
+
+bool MinusNode<Int>::evaluate(Error *error,
+                              ArrayCRef<Record> records,
+                              ArrayRef<Value> results) {
+  if (!fill_arg1_values(error, records) ||
+      !fill_arg2_values(error, records)) {
+    return false;
+  }
+  for (Int i = 0; i < records.size(); ++i) {
+    results.set(i, this->arg1_values_[i] - this->arg2_values_[i]);
+  }
+  return true;
+}
+
+template <>
+class MinusNode<Float> : public BinaryNode<Float, Float, Float> {
+ public:
+  using Value = Float;
+  using Arg1 = Float;
+  using Arg2 = Float;
+
+  MinusNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
+      : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)) {}
+
+  bool adjust(Error *error, ArrayRef<Record> records);
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results);
+};
+
+bool MinusNode<Float>::adjust(Error *error, ArrayRef<Record> records) {
+  if (!fill_arg1_values(error, records) ||
+      !fill_arg2_values(error, records)) {
+    return false;
+  }
+  for (Int i = 0; i < records.size(); ++i) {
+    records.set_score(i, this->arg1_values_[i] - this->arg2_values_[i]);
+  }
+  return true;
+}
+
+bool MinusNode<Float>::evaluate(Error *error,
+                                ArrayCRef<Record> records,
+                                ArrayRef<Value> results) {
+  if (!fill_arg1_values(error, records) ||
+      !fill_arg2_values(error, records)) {
+    return false;
+  }
+  for (Int i = 0; i < records.size(); ++i) {
+    results.set(i, this->arg1_values_[i] - this->arg2_values_[i]);
+  }
+  return true;
+}
+
+// ---- MultiplicationOperator ----
+
+template <typename T> class MultiplicationNode;
+
+template <>
+class MultiplicationNode<Int> : public BinaryNode<Int, Int, Int> {
+ public:
+  using Value = Int;
+  using Arg1 = Int;
+  using Arg2 = Int;
+
+  MultiplicationNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
+      : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)) {}
+
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results);
+};
+
+bool MultiplicationNode<Int>::evaluate(Error *error,
+                                       ArrayCRef<Record> records,
+                                       ArrayRef<Value> results) {
+  if (!fill_arg1_values(error, records) ||
+      !fill_arg2_values(error, records)) {
+    return false;
+  }
+  for (Int i = 0; i < records.size(); ++i) {
+    results.set(i, this->arg1_values_[i] * this->arg2_values_[i]);
+  }
+  return true;
+}
+
+template <>
+class MultiplicationNode<Float> : public BinaryNode<Float, Float, Float> {
+ public:
+  using Value = Float;
+  using Arg1 = Float;
+  using Arg2 = Float;
+
+  MultiplicationNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
+      : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)) {}
+
+  bool adjust(Error *error, ArrayRef<Record> records);
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results);
+};
+
+bool MultiplicationNode<Float>::adjust(Error *error,
+                                       ArrayRef<Record> records) {
+  if (!fill_arg1_values(error, records) ||
+      !fill_arg2_values(error, records)) {
+    return false;
+  }
+  for (Int i = 0; i < records.size(); ++i) {
+    records.set_score(i, this->arg1_values_[i] * this->arg2_values_[i]);
+  }
+  return true;
+}
+
+bool MultiplicationNode<Float>::evaluate(Error *error,
+                                         ArrayCRef<Record> records,
+                                         ArrayRef<Value> results) {
+  if (!fill_arg1_values(error, records) ||
+      !fill_arg2_values(error, records)) {
+    return false;
+  }
+  for (Int i = 0; i < records.size(); ++i) {
+    results.set(i, this->arg1_values_[i] * this->arg2_values_[i]);
+  }
+  return true;
+}
+
+// ---- DivisionOperator ----
+
+template <typename T> class DivisionNode;
+
+template <>
+class DivisionNode<Int> : public BinaryNode<Int, Int, Int> {
+ public:
+  using Value = Int;
+  using Arg1 = Int;
+  using Arg2 = Int;
+
+  DivisionNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
+      : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)) {}
+
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results);
+};
+
+bool DivisionNode<Int>::evaluate(Error *error,
+                                 ArrayCRef<Record> records,
+                                 ArrayRef<Value> results) {
+  if (!fill_arg1_values(error, records) ||
+      !fill_arg2_values(error, records)) {
+    return false;
+  }
+  for (Int i = 0; i < records.size(); ++i) {
+    if (this->arg2_values_[i] == 0) {
+      GRNXX_ERROR_SET(error, DIVISION_BY_ZERO, "Division by zero");
+      return false;
+    } else if ((this->arg2_values_[i] == -1) &&
+               (this->arg1_values_[i] == numeric_limits<Int>::min())) {
+      GRNXX_ERROR_SET(error, DIVISION_OVERFLOW, "Division overflow");
+      return false;
+    }
+    results.set(i, this->arg1_values_[i] / this->arg2_values_[i]);
+  }
+  return true;
+}
+
+template <>
+class DivisionNode<Float> : public BinaryNode<Float, Float, Float> {
+ public:
+  using Value = Float;
+  using Arg1 = Float;
+  using Arg2 = Float;
+
+  DivisionNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
+      : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)) {}
+
+  bool adjust(Error *error, ArrayRef<Record> records);
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results);
+};
+
+bool DivisionNode<Float>::adjust(Error *error,
+                                 ArrayRef<Record> records) {
+  if (!fill_arg1_values(error, records) ||
+      !fill_arg2_values(error, records)) {
+    return false;
+  }
+  for (Int i = 0; i < records.size(); ++i) {
+    records.set_score(i, this->arg1_values_[i] / this->arg2_values_[i]);
+  }
+  return true;
+}
+
+bool DivisionNode<Float>::evaluate(Error *error,
+                                   ArrayCRef<Record> records,
+                                   ArrayRef<Value> results) {
+  if (!fill_arg1_values(error, records) ||
+      !fill_arg2_values(error, records)) {
+    return false;
+  }
+  for (Int i = 0; i < records.size(); ++i) {
+    results.set(i, this->arg1_values_[i] / this->arg2_values_[i]);
+  }
+  return true;
+}
+
+// ---- ModulusOperator ----
+
+template <typename T> class ModulusNode;
+
+template <>
+class ModulusNode<Int> : public BinaryNode<Int, Int, Int> {
+ public:
+  using Value = Int;
+  using Arg1 = Int;
+  using Arg2 = Int;
+
+  ModulusNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
+      : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)) {}
+
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results);
+};
+
+bool ModulusNode<Int>::evaluate(Error *error,
+                                ArrayCRef<Record> records,
+                                ArrayRef<Value> results) {
+  if (!fill_arg1_values(error, records) ||
+      !fill_arg2_values(error, records)) {
+    return false;
+  }
+  for (Int i = 0; i < records.size(); ++i) {
+    if (this->arg2_values_[i] == 0) {
+      GRNXX_ERROR_SET(error, DIVISION_BY_ZERO, "Division by zero");
+      return false;
+    } else if ((this->arg2_values_[i] == -1) &&
+               (this->arg1_values_[i] == numeric_limits<Int>::min())) {
+      GRNXX_ERROR_SET(error, DIVISION_OVERFLOW, "Division overflow");
+      return false;
+    }
+    results.set(i, this->arg1_values_[i] % this->arg2_values_[i]);
+  }
+  return true;
+}
 
 }  // namespace expression
 
