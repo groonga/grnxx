@@ -43,10 +43,6 @@ class Node {
   virtual bool filter(Error *error,
                       ArrayCRef<Record> input_records,
                       ArrayRef<Record> *output_records) = 0;
-  // TODO
-//  virtual bool filter(Error *error,
-//                      ArrayCRef<Record> input_records,
-//                      Array<Record> *output_records) = 0;
 
   // Adjust scores of records.
   //
@@ -538,7 +534,7 @@ class UnaryNode : public OperatorNode<T> {
 
   explicit UnaryNode(unique_ptr<Node> &&arg)
       : OperatorNode<Value>(),
-        arg_(static_cast<TypedNode<Bool> *>(arg.release())),
+        arg_(static_cast<TypedNode<Arg> *>(arg.release())),
         arg_values_() {}
   virtual ~UnaryNode() {}
 
@@ -575,16 +571,13 @@ class LogicalNotNode : public UnaryNode<Bool, Bool> {
 bool LogicalNotNode::filter(Error *error,
                             ArrayCRef<Record> input_records,
                             ArrayRef<Record> *output_records) {
-  // Create a copy of "input_records" and then apply a filter to it.
-  // Then, appends a sentinel to the end of the result.
+  // Apply an argument filter to "input_records" and store the result to
+  // "temp_records_". Then, appends a sentinel to the end.
   if (!temp_records_.resize(error, input_records.size() + 1)) {
     return false;
   }
-  for (Int i = 0; i < input_records.size(); ++i) {
-    temp_records_.set(i, input_records.get(i));
-  }
   ArrayRef<Record> ref = temp_records_;
-  if (!arg_->filter(error, ref, &ref)) {
+  if (!arg_->filter(error, input_records, &ref)) {
     return false;
   }
   temp_records_.set_row_id(ref.size(), NULL_ROW_ID);
@@ -593,11 +586,11 @@ bool LogicalNotNode::filter(Error *error,
   Int count = 0;
   for (Int i = 0, j = 0; i < input_records.size(); ++i) {
     if (input_records.get_row_id(i) == ref.get_row_id(j)) {
+      ++j;
       continue;
     }
     output_records->set(count, input_records.get(i));
     ++count;
-    ++j;
   }
   *output_records = output_records->ref(0, count);
   return true;
@@ -665,10 +658,77 @@ bool BitwiseNotNode::evaluate(Error *error,
   return true;
 }
 
+// ---- PositiveNode ----
+
+// Nothing to do.
+
+// ---- NegativeNode ----
+
+template <typename T> class NegativeNode;
+
+template <>
+class NegativeNode<Int> : public UnaryNode<Int, Int> {
+ public:
+  using Value = Int;
+
+  explicit NegativeNode(unique_ptr<Node> &&arg)
+      : UnaryNode<Int, Int>(std::move(arg)) {}
+
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Int> *results);
+};
+
+bool NegativeNode<Int>::evaluate(Error *error,
+                                 ArrayCRef<Record> records,
+                                 ArrayRef<Int> *results) {
+  if (!arg_->evaluate(error, records, results)) {
+    return false;
+  }
+  for (Int i = 0; i < results->size(); ++i) {
+    results->set(i, -results->get(i));
+  }
+  return true;
+}
+
+template <>
+class NegativeNode<Float> : public UnaryNode<Float, Float> {
+ public:
+  using Value = Float;
+
+  explicit NegativeNode(unique_ptr<Node> &&arg)
+      : UnaryNode<Float, Float>(std::move(arg)) {}
+
+  bool adjust(Error *error, ArrayRef<Record> *records);
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Float> *results);
+};
+
+bool NegativeNode<Float>::adjust(Error *error, ArrayRef<Record> *records) {
+  if (!fill_arg_values(error, *records)) {
+    return false;
+  }
+  for (Int i = 0; i < records->size(); ++i) {
+    records->set_score(i, arg_values_[i]);
+  }
+  return true;
+}
+
+bool NegativeNode<Float>::evaluate(Error *error,
+                                   ArrayCRef<Record> records,
+                                   ArrayRef<Float> *results) {
+  if (!arg_->evaluate(error, records, results)) {
+    return false;
+  }
+  for (Int i = 0; i < results->size(); ++i) {
+    results->set(i, -results->get(i));
+  }
+  return true;
+}
+
 // TODO: Other unary operators!
 //
-//POSITIVE_OPERATOR  // For Int, Float.
-//NEGATIVE_OPERATOR  // For Int, Float.
 //TO_INT_OPERATOR    // For Float.
 //TO_FLOAT_OPERATOR  // For Int.
 
