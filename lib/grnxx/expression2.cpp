@@ -71,8 +71,16 @@ class TypedNode : public Node {
 
   virtual bool filter(Error *error,
                       ArrayCRef<Record> input_records,
-                      ArrayRef<Record> *output_records);
-  virtual bool adjust(Error *error, ArrayRef<Record> records);
+                      ArrayRef<Record> *output_records) {
+    // Derived classes of TypedNode<Bool> should override this function.
+    GRNXX_ERROR_SET(error, INVALID_OPERATION, "Invalid operation");
+    return false;
+  }
+  virtual bool adjust(Error *error, ArrayRef<Record> records) {
+    // Derived classes of TypedNode<Float> should override this function.
+    GRNXX_ERROR_SET(error, INVALID_OPERATION, "Invalid operation");
+    return false;
+  }
 
   // Evaluate the expression subtree.
   //
@@ -85,15 +93,6 @@ class TypedNode : public Node {
                         ArrayCRef<Record> records,
                         ArrayRef<Value> results) = 0;
 };
-
-template <typename T>
-bool TypedNode<T>::filter(Error *error,
-                          ArrayCRef<Record> input_records,
-                          ArrayRef<Record> *output_records) {
-  // Only TypedNode<Bool> supports filter().
-  GRNXX_ERROR_SET(error, INVALID_OPERATION, "Invalid operation");
-  return false;
-}
 
 template <>
 bool TypedNode<Bool>::filter(Error *error,
@@ -116,14 +115,6 @@ bool TypedNode<Bool>::filter(Error *error,
   }
   *output_records = output_records->ref(0, count);
   return true;
-}
-
-template <typename T>
-bool TypedNode<T>::adjust(Error *error,
-                          ArrayRef<Record> records) {
-  // Only TypedNode<Float> supports adjust().
-  GRNXX_ERROR_SET(error, INVALID_OPERATION, "Invalid operation");
-  return false;
 }
 
 template <>
@@ -159,21 +150,16 @@ class DatumNode : public TypedNode<T> {
 
   bool evaluate(Error *error,
                 ArrayCRef<Record> records,
-                ArrayRef<Value> results);
+                ArrayRef<Value> results) {
+    for (Int i = 0; i < records.size(); ++i) {
+      results[i] = datum_;
+    }
+    return true;
+  }
 
  private:
   T datum_;
 };
-
-template <typename T>
-bool DatumNode<T>::evaluate(Error *error,
-                            ArrayCRef<Record> records,
-                            ArrayRef<Value> results) {
-  for (Int i = 0; i < records.size(); ++i) {
-    results[i] = datum_;
-  }
-  return true;
-}
 
 template <>
 class DatumNode<Bool> : public TypedNode<Bool> {
@@ -237,30 +223,24 @@ class DatumNode<Float> : public TypedNode<Float> {
     return DATUM_NODE;
   }
 
-  bool adjust(Error *error, ArrayRef<Record> records);
+  bool adjust(Error *error, ArrayRef<Record> records) {
+    for (Int i = 0; i < records.size(); ++i) {
+      records.set_score(i, datum_);
+    }
+    return true;
+  }
   bool evaluate(Error *error,
                 ArrayCRef<Record> records,
-                ArrayRef<Float> results);
+                ArrayRef<Float> results) {
+    for (Int i = 0; i < records.size(); ++i) {
+      results[i] = datum_;
+    }
+    return true;
+  }
 
  private:
   Float datum_;
 };
-
-bool DatumNode<Float>::adjust(Error *error, ArrayRef<Record> records) {
-  for (Int i = 0; i < records.size(); ++i) {
-    records.set_score(i, datum_);
-  }
-  return true;
-}
-
-bool DatumNode<Float>::evaluate(Error *error,
-                                ArrayCRef<Record> records,
-                                ArrayRef<Float> results) {
-  for (Int i = 0; i < records.size(); ++i) {
-    results[i] = datum_;
-  }
-  return true;
-}
 
 template <>
 class DatumNode<Text> : public TypedNode<Text> {
@@ -278,24 +258,19 @@ class DatumNode<Text> : public TypedNode<Text> {
 
   bool evaluate(Error *error,
                 ArrayCRef<Record> records,
-                ArrayRef<Value> results);
+                ArrayRef<Value> results) {
+    Text datum(datum_.data(), datum_.size());
+    for (Int i = 0; i < records.size(); ++i) {
+      results[i] = datum;
+    }
+    return true;
+  }
 
  private:
   std::string datum_;
 };
 
-bool DatumNode<Text>::evaluate(Error *error,
-                               ArrayCRef<Record> records,
-                               ArrayRef<Value> results) {
-  Text datum(datum_.data(), datum_.size());
-  for (Int i = 0; i < records.size(); ++i) {
-    results[i] = datum;
-  }
-  return true;
-}
-
 // -- RowIDNode --
-
 
 class RowIDNode : public TypedNode<Int> {
  public:
@@ -309,17 +284,13 @@ class RowIDNode : public TypedNode<Int> {
 
   bool evaluate(Error *error,
                 ArrayCRef<Record> records,
-                ArrayRef<Value> results);
-};
-
-bool RowIDNode::evaluate(Error *error,
-                         ArrayCRef<Record> records,
-                         ArrayRef<Value> results) {
-  for (Int i = 0; i < records.size(); ++i) {
-    results[i] = records.get_row_id(i);
+                ArrayRef<Value> results) {
+    for (Int i = 0; i < records.size(); ++i) {
+      results[i] = records.get_row_id(i);
+    }
+    return true;
   }
-  return true;
-}
+};
 
 // -- ScoreNode --
 
@@ -333,25 +304,19 @@ class ScoreNode : public TypedNode<Float> {
     return SCORE_NODE;
   }
 
-  bool adjust(Error *error, ArrayRef<Record> records);
+  bool adjust(Error *error, ArrayRef<Record> records) {
+    // Nothing to do.
+    return true;
+  }
   bool evaluate(Error *error,
                 ArrayCRef<Record> records,
-                ArrayRef<Value> results);
-};
-
-bool ScoreNode::adjust(Error *error, ArrayRef<Record> records) {
-  // Nothing to do.
-  return true;
-}
-
-bool ScoreNode::evaluate(Error *error,
-                         ArrayCRef<Record> records,
-                         ArrayRef<Value> results) {
-  for (Int i = 0; i < records.size(); ++i) {
-    results[i] = records.get_score(i);
+                ArrayRef<Value> results) {
+    for (Int i = 0; i < records.size(); ++i) {
+      results[i] = records.get_score(i);
+    }
+    return true;
   }
-  return true;
-}
+};
 
 // -- ColumnNode --
 
@@ -370,21 +335,16 @@ class ColumnNode : public TypedNode<T> {
 
   bool evaluate(Error *error,
                 ArrayCRef<Record> records,
-                ArrayRef<Value> results);
+                ArrayRef<Value> results) {
+    for (Int i = 0; i < records.size(); ++i) {
+      results[i] = column_->get(records.get_row_id(i));
+    }
+    return true;
+  }
 
  private:
   const ColumnImpl<T> *column_;
 };
-
-template <typename T>
-bool ColumnNode<T>::evaluate(Error *error,
-                             ArrayCRef<Record> records,
-                             ArrayRef<Value> results) {
-  for (Int i = 0; i < records.size(); ++i) {
-    results[i] = column_->get(records.get_row_id(i));
-  }
-  return true;
-}
 
 template <>
 class ColumnNode<Bool> : public TypedNode<Bool> {
@@ -404,7 +364,12 @@ class ColumnNode<Bool> : public TypedNode<Bool> {
               ArrayRef<Record> *output_records);
   bool evaluate(Error *error,
                 ArrayCRef<Record> records,
-                ArrayRef<Value> results);
+                ArrayRef<Value> results) {
+    for (Int i = 0; i < records.size(); ++i) {
+      results.set(i, column_->get(records.get_row_id(i)));
+    }
+    return true;
+  }
 
  private:
   const ColumnImpl<Value> *column_;
@@ -424,15 +389,6 @@ bool ColumnNode<Bool>::filter(Error *error,
   return true;
 }
 
-bool ColumnNode<Bool>::evaluate(Error *error,
-                                ArrayCRef<Record> records,
-                                ArrayRef<Value> results) {
-  for (Int i = 0; i < records.size(); ++i) {
-    results.set(i, column_->get(records.get_row_id(i)));
-  }
-  return true;
-}
-
 template <>
 class ColumnNode<Float> : public TypedNode<Float> {
  public:
@@ -446,30 +402,24 @@ class ColumnNode<Float> : public TypedNode<Float> {
     return COLUMN_NODE;
   }
 
-  bool adjust(Error *error, ArrayRef<Record> records);
+  bool adjust(Error *error, ArrayRef<Record> records) {
+    for (Int i = 0; i < records.size(); ++i) {
+      records.set_score(i, column_->get(records.get_row_id(i)));
+    }
+    return true;
+  }
   bool evaluate(Error *error,
                 ArrayCRef<Record> records,
-                ArrayRef<Value> results);
+                ArrayRef<Value> results) {
+    for (Int i = 0; i < records.size(); ++i) {
+      results[i] = column_->get(records.get_row_id(i));
+    }
+    return true;
+  }
 
  private:
   const ColumnImpl<Value> *column_;
 };
-
-bool ColumnNode<Float>::adjust(Error *error, ArrayRef<Record> records) {
-  for (Int i = 0; i < records.size(); ++i) {
-    records.set_score(i, column_->get(records.get_row_id(i)));
-  }
-  return true;
-}
-
-bool ColumnNode<Float>::evaluate(Error *error,
-                                 ArrayCRef<Record> records,
-                                 ArrayRef<Value> results) {
-  for (Int i = 0; i < records.size(); ++i) {
-    results[i] = column_->get(records.get_row_id(i));
-  }
-  return true;
-}
 
 // -- OperatorNode --
 
@@ -869,7 +819,10 @@ class LogicalAndNode : public BinaryNode<Bool, Bool, Bool> {
 
   bool filter(Error *error,
               ArrayCRef<Record> input_records,
-              ArrayRef<Record> *output_records);
+              ArrayRef<Record> *output_records) {
+    return arg1_->filter(error, input_records, output_records) &&
+           arg2_->filter(error, *output_records, output_records);
+  }
   bool evaluate(Error *error,
                 ArrayCRef<Record> records,
                 ArrayRef<Value> results);
@@ -877,13 +830,6 @@ class LogicalAndNode : public BinaryNode<Bool, Bool, Bool> {
  private:
   Array<Record> temp_records_;
 };
-
-bool LogicalAndNode::filter(Error *error,
-                            ArrayCRef<Record> input_records,
-                            ArrayRef<Record> *output_records) {
-  return arg1_->filter(error, input_records, output_records) &&
-         arg2_->filter(error, *output_records, output_records);
-}
 
 bool LogicalAndNode::evaluate(Error *error,
                               ArrayCRef<Record> records,
