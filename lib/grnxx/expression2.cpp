@@ -140,6 +140,14 @@ class DatumNode : public TypedNode<T> {
  public:
   using Value = T;
 
+  static unique_ptr<DatumNode> create(Error *error, Value datum) {
+    unique_ptr<DatumNode> node(new (nothrow) DatumNode(datum));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
   explicit DatumNode(Value datum)
       : TypedNode<Value>(),
         datum_(datum) {}
@@ -165,6 +173,14 @@ template <>
 class DatumNode<Bool> : public TypedNode<Bool> {
  public:
   using Value = Bool;
+
+  static unique_ptr<DatumNode> create(Error *error, Value datum) {
+    unique_ptr<DatumNode> node(new (nothrow) DatumNode(datum));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
 
   explicit DatumNode(Value datum)
       : TypedNode<Value>(),
@@ -215,7 +231,15 @@ class DatumNode<Float> : public TypedNode<Float> {
  public:
   using Value = Float;
 
-  explicit DatumNode(Float datum)
+  static unique_ptr<DatumNode> create(Error *error, Value datum) {
+    unique_ptr<DatumNode> node(new (nothrow) DatumNode(datum));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
+  explicit DatumNode(Value datum)
       : TypedNode<Float>(),
         datum_(datum) {}
 
@@ -231,7 +255,7 @@ class DatumNode<Float> : public TypedNode<Float> {
   }
   bool evaluate(Error *error,
                 ArrayCRef<Record> records,
-                ArrayRef<Float> results) {
+                ArrayRef<Value> results) {
     for (Int i = 0; i < records.size(); ++i) {
       results[i] = datum_;
     }
@@ -247,7 +271,13 @@ class DatumNode<Text> : public TypedNode<Text> {
  public:
   using Value = Text;
 
-  // TODO: This may throw an exception.
+  static unique_ptr<DatumNode> create(Error *error, Value datum) try {
+    return unique_ptr<DatumNode>(new DatumNode(datum));
+  } catch (...) {
+    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    return nullptr;
+  }
+
   explicit DatumNode(Value datum)
       : TypedNode<Value>(),
         datum_(datum.data(), datum.size()) {}
@@ -276,6 +306,14 @@ class RowIDNode : public TypedNode<Int> {
  public:
   using Value = Int;
 
+  static unique_ptr<RowIDNode> create(Error *error, Value datum) {
+    unique_ptr<RowIDNode> node(new (nothrow) RowIDNode);
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
   RowIDNode() : TypedNode<Value>() {}
 
   NodeType node_type() const {
@@ -297,6 +335,14 @@ class RowIDNode : public TypedNode<Int> {
 class ScoreNode : public TypedNode<Float> {
  public:
   using Value = Float;
+
+  static unique_ptr<ScoreNode> create(Error *error, Value datum) {
+    unique_ptr<ScoreNode> node(new (nothrow) ScoreNode);
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
 
   ScoreNode() : TypedNode<Value>() {}
 
@@ -325,6 +371,14 @@ class ColumnNode : public TypedNode<T> {
  public:
   using Value = T;
 
+  static unique_ptr<ColumnNode> create(Error *error, const Column *column) {
+    unique_ptr<ColumnNode> node(new (nothrow) ColumnNode(column));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
   explicit ColumnNode(const Column *column)
       : TypedNode<Value>(),
         column_(static_cast<const ColumnImpl<Value> *>(column)) {}
@@ -350,6 +404,14 @@ template <>
 class ColumnNode<Bool> : public TypedNode<Bool> {
  public:
   using Value = Bool;
+
+  static unique_ptr<ColumnNode> create(Error *error, const Column *column) {
+    unique_ptr<ColumnNode> node(new (nothrow) ColumnNode(column));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
 
   explicit ColumnNode(const Column *column)
       : TypedNode<Value>(),
@@ -393,6 +455,14 @@ template <>
 class ColumnNode<Float> : public TypedNode<Float> {
  public:
   using Value = Float;
+
+  static unique_ptr<ColumnNode> create(Error *error, const Column *column) {
+    unique_ptr<ColumnNode> node(new (nothrow) ColumnNode(column));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
 
   explicit ColumnNode(const Column *column)
       : TypedNode<Value>(),
@@ -501,6 +571,16 @@ class LogicalNotNode : public UnaryNode<Bool, Bool> {
   using Value = Bool;
   using Arg = Bool;
 
+  static unique_ptr<LogicalNotNode> create(Error *error,
+                                           unique_ptr<Node> &&arg) {
+    unique_ptr<LogicalNotNode> node(
+        new (nothrow) LogicalNotNode(std::move(arg)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
   explicit LogicalNotNode(unique_ptr<Node> &&arg)
       : UnaryNode<Value, Arg>(std::move(arg)),
         temp_records_() {}
@@ -581,6 +661,16 @@ class BitwiseNotNode<Bool> : public UnaryNode<Bool, Bool> {
   using Value = Bool;
   using Arg = Bool;
 
+  static unique_ptr<BitwiseNotNode> create(Error *error,
+                                           unique_ptr<Node> &&arg) {
+    unique_ptr<BitwiseNotNode> node(
+        new (nothrow) BitwiseNotNode(std::move(arg)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
   explicit BitwiseNotNode(unique_ptr<Node> &&arg)
       : UnaryNode<Value, Arg>(std::move(arg)) {}
 
@@ -629,6 +719,16 @@ class BitwiseNotNode<Int> : public UnaryNode<Int, Int> {
   using Value = Int;
   using Arg = Int;
 
+  static unique_ptr<BitwiseNotNode> create(Error *error,
+                                           unique_ptr<Node> &&arg) {
+    unique_ptr<BitwiseNotNode> node(
+        new (nothrow) BitwiseNotNode(std::move(arg)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
   explicit BitwiseNotNode(unique_ptr<Node> &&arg)
       : UnaryNode<Value, Arg>(std::move(arg)) {}
 
@@ -663,6 +763,15 @@ class NegativeNode<Int> : public UnaryNode<Int, Int> {
   using Value = Int;
   using Arg = Int;
 
+  static unique_ptr<NegativeNode> create(Error *error,
+                                         unique_ptr<Node> &&arg) {
+    unique_ptr<NegativeNode> node(new (nothrow) NegativeNode(std::move(arg)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
   explicit NegativeNode(unique_ptr<Node> &&arg)
       : UnaryNode<Value, Arg>(std::move(arg)) {}
 
@@ -688,6 +797,15 @@ class NegativeNode<Float> : public UnaryNode<Float, Float> {
  public:
   using Value = Float;
   using Arg = Float;
+
+  static unique_ptr<NegativeNode> create(Error *error,
+                                         unique_ptr<Node> &&arg) {
+    unique_ptr<NegativeNode> node(new (nothrow) NegativeNode(std::move(arg)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
 
   explicit NegativeNode(unique_ptr<Node> &&arg)
       : UnaryNode<Value, Arg>(std::move(arg)) {}
@@ -727,6 +845,14 @@ class ToIntNode : public UnaryNode<Int, Float> {
   using Value = Int;
   using Arg = Float;
 
+  static unique_ptr<ToIntNode> create(Error *error, unique_ptr<Node> &&arg) {
+    unique_ptr<ToIntNode> node(new (nothrow) ToIntNode(std::move(arg)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
   explicit ToIntNode(unique_ptr<Node> &&arg)
       : UnaryNode<Value, Arg>(std::move(arg)) {}
 
@@ -753,6 +879,14 @@ class ToFloatNode : public UnaryNode<Float, Int> {
  public:
   using Value = Float;
   using Arg = Int;
+
+  static unique_ptr<ToFloatNode> create(Error *error, unique_ptr<Node> &&arg) {
+    unique_ptr<ToFloatNode> node(new (nothrow) ToFloatNode(std::move(arg)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
 
   explicit ToFloatNode(unique_ptr<Node> &&arg)
       : UnaryNode<Value, Arg>(std::move(arg)) {}
@@ -813,6 +947,16 @@ class LogicalAndNode : public BinaryNode<Bool, Bool, Bool> {
   using Arg1 = Bool;
   using Arg2 = Bool;
 
+  static unique_ptr<LogicalAndNode> create(
+      Error *error, unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2) {
+    unique_ptr<LogicalAndNode> node(
+        new (nothrow) LogicalAndNode(std::move(arg1), std::move(arg2)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
   LogicalAndNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
       : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)),
         temp_records_() {}
@@ -866,6 +1010,16 @@ class LogicalOrNode : public BinaryNode<Bool, Bool, Bool> {
   using Value = Bool;
   using Arg1 = Bool;
   using Arg2 = Bool;
+
+  static unique_ptr<LogicalOrNode> create(
+      Error *error, unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2) {
+    unique_ptr<LogicalOrNode> node(
+        new (nothrow) LogicalOrNode(std::move(arg1), std::move(arg2)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
 
   LogicalOrNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
       : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)),
@@ -1052,6 +1206,16 @@ class ComparisonNode
   using Arg1 = typename T::Arg;
   using Arg2 = typename T::Arg;
 
+  static unique_ptr<ComparisonNode> create(
+      Error *error, unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2) {
+    unique_ptr<ComparisonNode> node(
+        new (nothrow) ComparisonNode(std::move(arg1), std::move(arg2)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
   ComparisonNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
       : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)),
         comparer_() {}
@@ -1203,6 +1367,16 @@ class BitwiseAndNode<Bool> : public BinaryNode<Bool, Bool, Bool> {
   using Arg1 = Bool;
   using Arg2 = Bool;
 
+  static unique_ptr<BitwiseAndNode> create(
+      Error *error, unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2) {
+    unique_ptr<BitwiseAndNode> node(
+        new (nothrow) BitwiseAndNode(std::move(arg1), std::move(arg2)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
   BitwiseAndNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
       : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)) {}
 
@@ -1254,6 +1428,16 @@ class BitwiseAndNode<Int> : public BinaryNode<Bool, Int, Int> {
   using Arg1 = Int;
   using Arg2 = Int;
 
+  static unique_ptr<BitwiseAndNode> create(
+      Error *error, unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2) {
+    unique_ptr<BitwiseAndNode> node(
+        new (nothrow) BitwiseAndNode(std::move(arg1), std::move(arg2)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
   BitwiseAndNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
       : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)) {}
 
@@ -1287,6 +1471,16 @@ class BitwiseOrNode<Bool> : public BinaryNode<Bool, Bool, Bool> {
   using Value = Bool;
   using Arg1 = Bool;
   using Arg2 = Bool;
+
+  static unique_ptr<BitwiseOrNode> create(
+      Error *error, unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2) {
+    unique_ptr<BitwiseOrNode> node(
+        new (nothrow) BitwiseOrNode(std::move(arg1), std::move(arg2)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
 
   BitwiseOrNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
       : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)) {}
@@ -1339,6 +1533,16 @@ class BitwiseOrNode<Int> : public BinaryNode<Bool, Int, Int> {
   using Arg1 = Int;
   using Arg2 = Int;
 
+  static unique_ptr<BitwiseOrNode> create(
+      Error *error, unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2) {
+    unique_ptr<BitwiseOrNode> node(
+        new (nothrow) BitwiseOrNode(std::move(arg1), std::move(arg2)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
   BitwiseOrNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
       : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)) {}
 
@@ -1372,6 +1576,16 @@ class BitwiseXorNode<Bool> : public BinaryNode<Bool, Bool, Bool> {
   using Value = Bool;
   using Arg1 = Bool;
   using Arg2 = Bool;
+
+  static unique_ptr<BitwiseXorNode> create(
+      Error *error, unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2) {
+    unique_ptr<BitwiseXorNode> node(
+        new (nothrow) BitwiseXorNode(std::move(arg1), std::move(arg2)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
 
   BitwiseXorNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
       : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)) {}
@@ -1424,6 +1638,16 @@ class BitwiseXorNode<Int> : public BinaryNode<Bool, Int, Int> {
   using Arg1 = Int;
   using Arg2 = Int;
 
+  static unique_ptr<BitwiseXorNode> create(
+      Error *error, unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2) {
+    unique_ptr<BitwiseXorNode> node(
+        new (nothrow) BitwiseXorNode(std::move(arg1), std::move(arg2)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
   BitwiseXorNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
       : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)) {}
 
@@ -1458,6 +1682,16 @@ class PlusNode<Int> : public BinaryNode<Int, Int, Int> {
   using Arg1 = Int;
   using Arg2 = Int;
 
+  static unique_ptr<PlusNode> create(
+      Error *error, unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2) {
+    unique_ptr<PlusNode> node(
+        new (nothrow) PlusNode(std::move(arg1), std::move(arg2)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
   PlusNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
       : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)) {}
 
@@ -1485,6 +1719,16 @@ class PlusNode<Float> : public BinaryNode<Float, Float, Float> {
   using Value = Float;
   using Arg1 = Float;
   using Arg2 = Float;
+
+  static unique_ptr<PlusNode> create(
+      Error *error, unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2) {
+    unique_ptr<PlusNode> node(
+        new (nothrow) PlusNode(std::move(arg1), std::move(arg2)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
 
   PlusNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
       : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)) {}
@@ -1530,6 +1774,16 @@ class MinusNode<Int> : public BinaryNode<Int, Int, Int> {
   using Arg1 = Int;
   using Arg2 = Int;
 
+  static unique_ptr<MinusNode> create(
+      Error *error, unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2) {
+    unique_ptr<MinusNode> node(
+        new (nothrow) MinusNode(std::move(arg1), std::move(arg2)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
   MinusNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
       : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)) {}
 
@@ -1557,6 +1811,16 @@ class MinusNode<Float> : public BinaryNode<Float, Float, Float> {
   using Value = Float;
   using Arg1 = Float;
   using Arg2 = Float;
+
+  static unique_ptr<MinusNode> create(
+      Error *error, unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2) {
+    unique_ptr<MinusNode> node(
+        new (nothrow) MinusNode(std::move(arg1), std::move(arg2)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
 
   MinusNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
       : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)) {}
@@ -1602,6 +1866,16 @@ class MultiplicationNode<Int> : public BinaryNode<Int, Int, Int> {
   using Arg1 = Int;
   using Arg2 = Int;
 
+  static unique_ptr<MultiplicationNode> create(
+      Error *error, unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2) {
+    unique_ptr<MultiplicationNode> node(
+        new (nothrow) MultiplicationNode(std::move(arg1), std::move(arg2)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
   MultiplicationNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
       : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)) {}
 
@@ -1629,6 +1903,16 @@ class MultiplicationNode<Float> : public BinaryNode<Float, Float, Float> {
   using Value = Float;
   using Arg1 = Float;
   using Arg2 = Float;
+
+  static unique_ptr<MultiplicationNode> create(
+      Error *error, unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2) {
+    unique_ptr<MultiplicationNode> node(
+        new (nothrow) MultiplicationNode(std::move(arg1), std::move(arg2)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
 
   MultiplicationNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
       : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)) {}
@@ -1675,6 +1959,16 @@ class DivisionNode<Int> : public BinaryNode<Int, Int, Int> {
   using Arg1 = Int;
   using Arg2 = Int;
 
+  static unique_ptr<DivisionNode> create(
+      Error *error, unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2) {
+    unique_ptr<DivisionNode> node(
+        new (nothrow) DivisionNode(std::move(arg1), std::move(arg2)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
   DivisionNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
       : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)) {}
 
@@ -1710,6 +2004,16 @@ class DivisionNode<Float> : public BinaryNode<Float, Float, Float> {
   using Value = Float;
   using Arg1 = Float;
   using Arg2 = Float;
+
+  static unique_ptr<DivisionNode> create(
+      Error *error, unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2) {
+    unique_ptr<DivisionNode> node(
+        new (nothrow) DivisionNode(std::move(arg1), std::move(arg2)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
 
   DivisionNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
       : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)) {}
@@ -1755,6 +2059,16 @@ class ModulusNode<Int> : public BinaryNode<Int, Int, Int> {
   using Value = Int;
   using Arg1 = Int;
   using Arg2 = Int;
+
+  static unique_ptr<ModulusNode> create(
+      Error *error, unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2) {
+    unique_ptr<ModulusNode> node(
+        new (nothrow) ModulusNode(std::move(arg1), std::move(arg2)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
 
   ModulusNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
       : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)) {}
