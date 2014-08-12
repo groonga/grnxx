@@ -397,6 +397,13 @@ struct CursorOptions {
   CursorOptions();
 };
 
+struct ExpressionOptions {
+  // Records are evaluated per block.
+  Int block_size;
+
+  ExpressionOptions();
+};
+
 struct SorterOptions {
   // The first "offset" records are skipped (default: 0).
   Int offset;
@@ -411,7 +418,6 @@ struct SorterOptions {
 class Datum;
 class Cursor;
 class Expression;
-class ExpressionNode;
 class ExpressionBuilder;
 class OrderSet;
 class OrderSetBuilder;

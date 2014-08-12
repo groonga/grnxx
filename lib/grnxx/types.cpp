@@ -53,6 +53,9 @@ CursorOptions::CursorOptions()
       limit(numeric_limits<Int>::max()),
       order_type(REGULAR_ORDER) {}
 
+ExpressionOptions::ExpressionOptions()
+    : block_size(1024) {}
+
 SorterOptions::SorterOptions()
     : offset(0),
       limit(numeric_limits<Int>::max()) {}

@@ -5,13 +5,20 @@
 #include "grnxx/types.hpp"
 
 namespace grnxx {
+namespace expression {
+
+class Node;
+
+}  // namespace expression
+
+using ExpressionNode = expression::Node;
 
 enum OperatorType {
   // -- Unary operators --
 
-//  LOGICAL_NOT_OPERATOR,  // For Bool.
+  LOGICAL_NOT_OPERATOR,  // For Bool.
 
-//  BITWISE_NOT_OPERATOR,  // For Int.
+  BITWISE_NOT_OPERATOR,  // For Int.
 
   POSITIVE_OPERATOR,  // For Int, Float.
   NEGATIVE_OPERATOR,  // For Int, Float.
@@ -35,10 +42,10 @@ enum OperatorType {
   NOT_EQUAL_OPERATOR,  // For any types.
 
   // Comparison operators.
-  LESS_OPERATOR,           // Int, Float, Time.
-  LESS_EQUAL_OPERATOR,     // Int, Float, Time.
-  GREATER_OPERATOR,        // Int, Float, Time.
-  GREATER_EQUAL_OPERATOR,  // Int, Float, Time.
+  LESS_OPERATOR,           // Int, Float, Time, Text.
+  LESS_EQUAL_OPERATOR,     // Int, Float, Time, Text.
+  GREATER_OPERATOR,        // Int, Float, Time, Text.
+  GREATER_EQUAL_OPERATOR,  // Int, Float, Time, Text.
 
   // Bitwise operators.
   BITWISE_AND_OPERATOR,  // For Bool, Int.
@@ -49,11 +56,13 @@ enum OperatorType {
   PLUS_OPERATOR,            // For Int, Float.
   MINUS_OPERATOR,           // For Int, Float.
   MULTIPLICATION_OPERATOR,  // For Int, Float.
-//  DIVISION_OPERATOR,        // For Int, Float.
-//  MODULUS_OPERATOR,         // For Int.
+  DIVISION_OPERATOR,        // For Int, Float.
+  MODULUS_OPERATOR,         // For Int.
 
   // Array operators.
 //  SUBSCRIPT_OPERATOR,
+
+  // -- Ternary operators --
 };
 
 class Expression {
@@ -68,34 +77,60 @@ class Expression {
   DataType data_type() const;
   // Return the evaluation block size.
   Int block_size() const {
-    // TODO: This value should be optimized.
-    return 1024;
+    return block_size_;
   }
 
   // Filter out false records.
   //
-  // Evaluates the expression for the given record set and removes records
-  // whose evaluation results are false.
+  // Evaluates the expression for "*records" and removes records whose
+  // evaluation results are false.
+  // Note that the first "offset" records are left without evaluation.
   //
-  // Returns true on success.
+  // On success, returns true.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
   bool filter(Error *error, Array<Record> *records, Int offset = 0);
 
+  // Extract true records.
+  //
+  // Evaluates the expression for "input_records" and copies records whose
+  // evaluation results are true into "*output_records".
+  // "*output_records" is truncated to fit the number of extracted records.
+  //
+  // Fails if "output_records->size()" is less than "input_records.size()".
+  //
+  // On success, returns true.
+  // On failure, returns false and stores error information into "*error" if
+  // "error" != nullptr.
+  bool filter(Error *error,
+              ArrayCRef<Record> input_records,
+              ArrayRef<Record> *output_records);
+
   // Adjust scores of records.
   //
-  // Evaluates the expression for the given record set and replaces their
-  // scores with the evaluation results.
-  // The first "offset" records are not modified.
+  // Evaluates the expression for "*records" and replaces the scores with
+  // the evaluation results.
+  // Note that the first "offset" records are not modified.
   //
-  // Returns true on success.
+  // On success, returns true.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
   bool adjust(Error *error, Array<Record> *records, Int offset = 0);
 
+  // Adjust scores of records.
+  //
+  // Evaluates the expression for "records" and replaces the scores with
+  // the evaluation results.
+  //
+  // On success, returns true.
+  // On failure, returns false and stores error information into "*error" if
+  // "error" != nullptr.
+  bool adjust(Error *error, ArrayRef<Record> records);
+
   // Evaluate the expression.
   //
-  // The result is stored into "*results".
+  // Evaluates the expression for "records" and stores the results into
+  // "*results".
   //
   // Fails if "T" is different from the result data type.
   //
@@ -104,27 +139,29 @@ class Expression {
   // "error" != nullptr.
   template <typename T>
   bool evaluate(Error *error,
-                const ArrayRef<Record> &records,
+                ArrayCRef<Record> records,
                 Array<T> *results);
 
   // Evaluate the expression.
   //
-  // The result is stored into "*results".
+  // Evaluates the expression for "records" and stores the results into
+  // "*results".
   //
-  // Fails if the number of records is different from the size of "*results".
   // Fails if "T" is different from the result data type.
+  // Fails if "results.size()" != "records.size()".
   //
   // On success, returns true.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
   template <typename T>
   bool evaluate(Error *error,
-                const ArrayRef<Record> &records,
-                ArrayRef<T> *results);
+                ArrayCRef<Record> records,
+                ArrayRef<T> results);
 
  private:
   const Table *table_;
   unique_ptr<ExpressionNode> root_;
+  Int block_size_;
 
   // Create an expression.
   //
@@ -133,14 +170,12 @@ class Expression {
   // "error" != nullptr.
   static unique_ptr<Expression> create(Error *error,
                                        const Table *table,
-                                       unique_ptr<ExpressionNode> &&root);
+                                       unique_ptr<ExpressionNode> &&root,
+                                       const ExpressionOptions &options);
 
-  Expression(const Table *table, unique_ptr<ExpressionNode> &&root);
-
-  template <typename T>
-  bool evaluate_block(Error *error,
-                      const ArrayRef<Record> &records,
-                      ArrayRef<T> *results);
+  Expression(const Table *table,
+             unique_ptr<ExpressionNode> &&root,
+             Int block_size);
 
   friend ExpressionBuilder;
 };
@@ -149,7 +184,7 @@ class ExpressionBuilder {
  public:
   // Create an object for building expressons.
   //
-  // Returns a poitner to the builder on success.
+  // On success, returns a poitner to the builder.
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
   static unique_ptr<ExpressionBuilder> create(Error *error,
@@ -157,13 +192,14 @@ class ExpressionBuilder {
 
   ~ExpressionBuilder();
 
+  // Return the target table.
   const Table *table() const {
     return table_;
   }
 
   // Push a datum.
   //
-  // Returns true on success.
+  // On success, returns true.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
   bool push_datum(Error *error, const Datum &datum);
@@ -173,7 +209,7 @@ class ExpressionBuilder {
   // If "name" == "_id", pushes a pseudo column associated with row IDs.
   // If "name" == "_score", pushes a pseudo column associated with scores.
   //
-  // Returns true on success.
+  // On success, returns true.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
   bool push_column(Error *error, String name);
@@ -182,24 +218,26 @@ class ExpressionBuilder {
   //
   // Pops operands and pushes an operator.
   // Fails if there are not enough operands.
-  // Fails if the combination of operands are invalid.
+  // Fails if the combination of operands is invalid.
   //
-  // Returns true on success.
+  // On success, returns true.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
   bool push_operator(Error *error, OperatorType operator_type);
 
-  // Clear the stack.
+  // Clear the internal stack.
   void clear();
 
-  // Complete building an expression and clear the builder.
+  // Complete building an expression and clear the internal stack.
   //
   // Fails if the stack is empty or contains more than one nodes.
   //
-  // Returns a poitner to the expression on success.
+  // On success, returns a pointer to the expression.
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
-  unique_ptr<Expression> release(Error *error);
+  unique_ptr<Expression> release(
+      Error *error,
+      const ExpressionOptions &options = ExpressionOptions());
 
  private:
   const Table *table_;
@@ -207,35 +245,55 @@ class ExpressionBuilder {
 
   explicit ExpressionBuilder(const Table *table);
 
+  // Create a node associated with a constant.
+  unique_ptr<ExpressionNode> create_datum_node(Error *error,
+                                               const Datum &datum);
+  // Create a node associated with a column.
+  unique_ptr<ExpressionNode> create_column_node(Error *error, String name);
+
   // Push a unary operator.
   bool push_unary_operator(Error *error, OperatorType operator_type);
-  // Push a positive operator.
-  bool push_positive_operator(Error *error);
-  // Push a negative operator.
-  bool push_negative_operator(Error *error);
-  // Push a typecast operator to Int.
-  bool push_to_int_operator(Error *error);
-  // Push a typecast operator to Float.
-  bool push_to_float_operator(Error *error);
-
   // Push a binary operator.
   bool push_binary_operator(Error *error, OperatorType operator_type);
-  // Push an operator &&.
-  bool push_logical_and_operator(Error *error);
-  // Push an operator ||.
-  bool push_logical_or_operator(Error *error);
-  // Push an operator == or !=.
+
+  // Create a node associated with a unary operator.
+  unique_ptr<ExpressionNode> create_unary_node(
+      Error *error,
+      OperatorType operator_type,
+      unique_ptr<ExpressionNode> &&arg);
+  // Create a node associated with a binary operator.
+  unique_ptr<ExpressionNode> create_binary_node(
+      Error *error,
+      OperatorType operator_type,
+      unique_ptr<ExpressionNode> &&arg1,
+      unique_ptr<ExpressionNode> &&arg2);
+
+  // Create a equality test node.
   template <typename T>
-  bool push_equality_operator(Error *error);
-  // Push an operator <, <=, >, or >=.
+  unique_ptr<ExpressionNode> create_equality_test_node(
+      Error *error,
+      unique_ptr<ExpressionNode> &&arg1,
+      unique_ptr<ExpressionNode> &&arg2);
+  // Create a comparison node.
   template <typename T>
-  bool push_comparison_operator(Error *error);
-  // Push an operator &, |, or ^.
+  unique_ptr<ExpressionNode> create_comparison_node(
+      Error *error,
+      unique_ptr<ExpressionNode> &&arg1,
+      unique_ptr<ExpressionNode> &&arg2);
+  // Create a bitwise node.
   template <typename T>
-  bool push_bitwise_operator(Error *error);
-  // Push an operator +, -, or *.
+  unique_ptr<ExpressionNode> create_bitwise_node(
+      Error *error,
+      OperatorType operator_type,
+      unique_ptr<ExpressionNode> &&arg1,
+      unique_ptr<ExpressionNode> &&arg2);
+  // Create an arithmetic node.
   template <typename T>
-  bool push_arithmetic_operator(Error *error);
+  unique_ptr<ExpressionNode> create_arithmetic_node(
+      Error *error,
+      OperatorType operator_type,
+      unique_ptr<ExpressionNode> &&arg1,
+      unique_ptr<ExpressionNode> &&arg2);
 };
 
 }  // namespace grnxx

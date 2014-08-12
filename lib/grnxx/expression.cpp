@@ -8,8 +8,9 @@
 #include <iostream>  // For debugging.
 
 namespace grnxx {
-namespace {
+namespace expression {
 
+// TODO: Only CONSTANT_NODE and VARIABLE_NODE are required?
 enum NodeType {
   DATUM_NODE,
   ROW_ID_NODE,
@@ -18,12 +19,12 @@ enum NodeType {
   OPERATOR_NODE
 };
 
-}  // namespace
+// -- Node --
 
-class ExpressionNode {
+class Node {
  public:
-  ExpressionNode() {}
-  virtual ~ExpressionNode() {}
+  Node() {}
+  virtual ~Node() {}
 
   // Return the node type.
   virtual NodeType node_type() const = 0;
@@ -36,11 +37,11 @@ class ExpressionNode {
   // whose evaluation results are true into "*output_records".
   // "*output_records" is truncated to the number of true records.
   //
-  // Returns true on success.
+  // On success, returns true.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
   virtual bool filter(Error *error,
-                      const ArrayRef<Record> &input_records,
+                      ArrayCRef<Record> input_records,
                       ArrayRef<Record> *output_records) = 0;
 
   // Adjust scores of records.
@@ -51,161 +52,336 @@ class ExpressionNode {
   // Returns true on success.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
-  virtual bool adjust(Error *error, ArrayRef<Record> *records) = 0;
+  virtual bool adjust(Error *error, ArrayRef<Record> records) = 0;
+};
+
+// -- TypedNode --
+
+template <typename T>
+class TypedNode : public Node {
+ public:
+  using Value = T;
+
+  TypedNode() : Node() {}
+  virtual ~TypedNode() {}
+
+  DataType data_type() const {
+    return TypeTraits<Value>::data_type();
+  }
+
+  bool filter(Error *error,
+              ArrayCRef<Record> input_records,
+              ArrayRef<Record> *output_records) {
+    // Other than TypedNode<Bool> don't support filter().
+    GRNXX_ERROR_SET(error, INVALID_OPERATION, "Invalid operation");
+    return false;
+  }
+
+  bool adjust(Error *error, ArrayRef<Record> records) {
+    // Other than TypedNode<Float> don't support adjust().
+    GRNXX_ERROR_SET(error, INVALID_OPERATION, "Invalid operation");
+    return false;
+  }
 
   // Evaluate the expression subtree.
   //
-  // The evaluation results are stored into each expression node.
+  // The evaluation results are stored into "*results".
   //
-  // Returns true on success.
+  // On success, returns true.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
-  virtual bool evaluate(Error *error, const ArrayRef<Record> &records) = 0;
+  virtual bool evaluate(Error *error,
+                        ArrayCRef<Record> records,
+                        ArrayRef<Value> results) = 0;
 };
 
-namespace {
-
-template <typename T>
-class Node : public ExpressionNode {
+template <>
+class TypedNode<Bool> : public Node {
  public:
-  Node() : ExpressionNode(), values_() {}
-  virtual ~Node() {}
+  using Value = Bool;
+
+  TypedNode() : Node() {}
+  virtual ~TypedNode() {}
 
   DataType data_type() const {
-    return TypeTraits<T>::data_type();
+    return TypeTraits<Value>::data_type();
   }
 
+  // Derived classes must override this member function.
   virtual bool filter(Error *error,
-                      const ArrayRef<Record> &input_records,
-                      ArrayRef<Record> *output_records);
-  virtual bool adjust(Error *error, ArrayRef<Record> *records);
+                      ArrayCRef<Record> input_records,
+                      ArrayRef<Record> *output_records) = 0;
 
-  virtual bool evaluate(Error *error, const ArrayRef<Record> &records) = 0;
-
-  T get(Int i) const {
-    return values_[i];
+  bool adjust(Error *error, ArrayRef<Record> records) {
+    // Other than TypedNode<Float> don't support adjust().
+    GRNXX_ERROR_SET(error, INVALID_OPERATION, "Invalid operation");
+    return false;
   }
 
- protected:
-  Array<T> values_;
+  virtual bool evaluate(Error *error,
+                        ArrayCRef<Record> records,
+                        ArrayRef<Value> results) = 0;
 };
 
-template <typename T>
-bool Node<T>::filter(Error *error,
-                     const ArrayRef<Record> &input_records,
-                     ArrayRef<Record> *output_records) {
-  // Only Node<Bool> supports filter().
-  GRNXX_ERROR_SET(error, INVALID_OPERATION, "Invalid operation");
-  return false;
-}
+//template <>
+//bool TypedNode<Bool>::filter(Error *error,
+//                             ArrayCRef<Record> input_records,
+//                             ArrayRef<Record> *output_records) {
+//  // TODO: This implementation should be overridden by derived classes.
+//  Array<Bool> results;
+//  if (!results.resize(error, input_records.size())) {
+//    return false;
+//  }
+//  if (!evaluate(error, input_records, results)) {
+//    return false;
+//  }
+//  Int count = 0;
+//  for (Int i = 0; i < input_records.size(); ++i) {
+//    if (results[i]) {
+//      output_records->set(count, input_records.get(i));
+//      ++count;
+//    }
+//  }
+//  *output_records = output_records->ref(0, count);
+//  return true;
+//}
 
 template <>
-bool Node<Bool>::filter(Error *error,
-                        const ArrayRef<Record> &input_records,
-                        ArrayRef<Record> *output_records) {
-  if (!evaluate(error, input_records)) {
+class TypedNode<Float> : public Node {
+ public:
+  using Value = Float;
+
+  TypedNode() : Node() {}
+  virtual ~TypedNode() {}
+
+  DataType data_type() const {
+    return TypeTraits<Value>::data_type();
+  }
+
+  bool filter(Error *error,
+              ArrayCRef<Record> input_records,
+              ArrayRef<Record> *output_records) {
+    // Other than TypedNode<Bool> don't support filter().
+    GRNXX_ERROR_SET(error, INVALID_OPERATION, "Invalid operation");
     return false;
   }
-  Int dest = 0;
-  for (Int i = 0; i < input_records.size(); ++i) {
-    if (values_[i]) {
-      output_records->set(dest, input_records.get(i));
-      ++dest;
-    }
-  }
-  *output_records = output_records->ref(0, dest);
-  return true;
-}
 
-template <typename T>
-bool Node<T>::adjust(Error *error, ArrayRef<Record> *records) {
-  // Only Node<Float> supports adjust().
-  GRNXX_ERROR_SET(error, INVALID_OPERATION, "Invalid operation");
-  return false;
-}
+  // Derived classes must override this member function.
+  virtual bool adjust(Error *error, ArrayRef<Record> records) = 0;
 
-template <>
-bool Node<Float>::adjust(Error *error, ArrayRef<Record> *records) {
-  if (!evaluate(error, *records)) {
-    return false;
-  }
-  for (Int i = 0; i < records->size(); ++i) {
-    records->set_score(i, values_[i]);
-  }
-  return true;
-}
+  virtual bool evaluate(Error *error,
+                        ArrayCRef<Record> records,
+                        ArrayRef<Value> results) = 0;
+};
+
+//template <>
+//bool TypedNode<Float>::adjust(Error *error, ArrayRef<Record> records) {
+//  // TODO: This implementation should be overridden by derived classes.
+//  Array<Float> scores;
+//  if (!scores.resize(error, records.size())) {
+//    return false;
+//  }
+//  if (!evaluate(error, records, scores)) {
+//    return false;
+//  }
+//  for (Int i = 0; i < records.size(); ++i) {
+//    records.set_score(i, scores[i]);
+//  }
+//  return true;
+//}
 
 // -- DatumNode --
 
 template <typename T>
-class DatumNode : public Node<T> {
+class DatumNode : public TypedNode<T> {
  public:
-  explicit DatumNode(T datum) : Node<T>(), datum_(datum) {}
-  virtual ~DatumNode() {}
+  using Value = T;
+
+  static unique_ptr<Node> create(Error *error, Value datum) {
+    unique_ptr<Node> node(new (nothrow) DatumNode(datum));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
+  explicit DatumNode(Value datum)
+      : TypedNode<Value>(),
+        datum_(datum) {}
 
   NodeType node_type() const {
     return DATUM_NODE;
   }
 
-  bool evaluate(Error *error, const ArrayRef<Record> &records);
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results) {
+    for (Int i = 0; i < records.size(); ++i) {
+      results[i] = datum_;
+    }
+    return true;
+  }
 
  private:
   T datum_;
 };
 
-template <typename T>
-bool DatumNode<T>::evaluate(Error *error, const ArrayRef<Record> &records) {
-  if (static_cast<size_t>(records.size()) <= this->values_.size()) {
-    // The buffer is already filled and there is nothing to do.
-    return true;
-  }
-  return this->values_.resize(error, records.size(), datum_);
-}
-
 template <>
-class DatumNode<Text> : public Node<Text> {
+class DatumNode<Bool> : public TypedNode<Bool> {
  public:
-  explicit DatumNode(Text datum)
-      : Node<Text>(),
-        datum_(datum.data(), datum.size()) {}
-  virtual ~DatumNode() {}
+  using Value = Bool;
+
+  static unique_ptr<Node> create(Error *error, Value datum) {
+    unique_ptr<Node> node(new (nothrow) DatumNode(datum));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
+  explicit DatumNode(Value datum)
+      : TypedNode<Value>(),
+        datum_(datum) {}
 
   NodeType node_type() const {
     return DATUM_NODE;
   }
 
-  bool evaluate(Error *error, const ArrayRef<Record> &records);
+  bool filter(Error *error,
+              ArrayCRef<Record> input_records,
+              ArrayRef<Record> *output_records);
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results);
+
+ private:
+  Value datum_;
+};
+
+bool DatumNode<Bool>::filter(Error *error,
+                             ArrayCRef<Record> input_records,
+                             ArrayRef<Record> *output_records) {
+  if (datum_) {
+    if (input_records != *output_records) {
+      for (Int i = 0; i < input_records.size(); ++i) {
+        output_records->set(i, input_records.get(i));
+      }
+    }
+  } else {
+    *output_records = output_records->ref(0, 0);
+  }
+  return true;
+}
+
+bool DatumNode<Bool>::evaluate(Error *error,
+                               ArrayCRef<Record> records,
+                               ArrayRef<Value> results) {
+  // TODO: Fill results per 64 bits.
+  for (Int i = 0; i < records.size(); ++i) {
+    results.set(i, datum_);
+  }
+  return true;
+}
+
+template <>
+class DatumNode<Float> : public TypedNode<Float> {
+ public:
+  using Value = Float;
+
+  static unique_ptr<Node> create(Error *error, Value datum) {
+    unique_ptr<Node> node(new (nothrow) DatumNode(datum));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
+  explicit DatumNode(Value datum)
+      : TypedNode<Float>(),
+        datum_(datum) {}
+
+  NodeType node_type() const {
+    return DATUM_NODE;
+  }
+
+  bool adjust(Error *error, ArrayRef<Record> records) {
+    for (Int i = 0; i < records.size(); ++i) {
+      records.set_score(i, datum_);
+    }
+    return true;
+  }
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results) {
+    for (Int i = 0; i < records.size(); ++i) {
+      results[i] = datum_;
+    }
+    return true;
+  }
+
+ private:
+  Float datum_;
+};
+
+template <>
+class DatumNode<Text> : public TypedNode<Text> {
+ public:
+  using Value = Text;
+
+  static unique_ptr<Node> create(Error *error, Value datum) try {
+    return unique_ptr<Node>(new DatumNode(datum));
+  } catch (...) {
+    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    return nullptr;
+  }
+
+  explicit DatumNode(Value datum)
+      : TypedNode<Value>(),
+        datum_(datum.data(), datum.size()) {}
+
+  NodeType node_type() const {
+    return DATUM_NODE;
+  }
+
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results) {
+    Text datum(datum_.data(), datum_.size());
+    for (Int i = 0; i < records.size(); ++i) {
+      results[i] = datum;
+    }
+    return true;
+  }
 
  private:
   std::string datum_;
 };
 
-bool DatumNode<Text>::evaluate(Error *error, const ArrayRef<Record> &records) {
-  if (static_cast<size_t>(records.size()) <= this->values_.size()) {
-    // The buffer is already filled and there is nothing to do.
-    return true;
-  }
-  return this->values_.resize(error, records.size(),
-                              Text(datum_.data(), datum_.size()));
-}
-
 // -- RowIDNode --
 
-class RowIDNode : public Node<Int> {
+class RowIDNode : public TypedNode<Int> {
  public:
-  RowIDNode() : Node<Int>() {}
-  ~RowIDNode() {}
+  using Value = Int;
+
+  static unique_ptr<Node> create(Error *error, Value datum) {
+    unique_ptr<Node> node(new (nothrow) RowIDNode);
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
+  RowIDNode() : TypedNode<Value>() {}
 
   NodeType node_type() const {
     return ROW_ID_NODE;
   }
 
-  bool evaluate(Error *error, const ArrayRef<Record> &records) {
-    if (!this->values_.resize(error, records.size())) {
-      return false;
-    }
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results) {
     for (Int i = 0; i < records.size(); ++i) {
-      this->values_[i] = records.get_row_id(i);
+      results[i] = records.get_row_id(i);
     }
     return true;
   }
@@ -213,21 +389,33 @@ class RowIDNode : public Node<Int> {
 
 // -- ScoreNode --
 
-class ScoreNode : public Node<Float> {
+class ScoreNode : public TypedNode<Float> {
  public:
-  ScoreNode() : Node<Float>() {}
-  ~ScoreNode() {}
+  using Value = Float;
+
+  static unique_ptr<Node> create(Error *error, Value datum) {
+    unique_ptr<Node> node(new (nothrow) ScoreNode);
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
+  ScoreNode() : TypedNode<Value>() {}
 
   NodeType node_type() const {
     return SCORE_NODE;
   }
 
-  bool evaluate(Error *error, const ArrayRef<Record> &records) {
-    if (!this->values_.resize(error, records.size())) {
-      return false;
-    }
+  bool adjust(Error *error, ArrayRef<Record> records) {
+    // Nothing to do.
+    return true;
+  }
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results) {
     for (Int i = 0; i < records.size(); ++i) {
-      this->values_[i] = records.get_score(i);
+      results[i] = records.get_score(i);
     }
     return true;
   }
@@ -236,23 +424,31 @@ class ScoreNode : public Node<Float> {
 // -- ColumnNode --
 
 template <typename T>
-class ColumnNode : public Node<T> {
+class ColumnNode : public TypedNode<T> {
  public:
+  using Value = T;
+
+  static unique_ptr<Node> create(Error *error, const Column *column) {
+    unique_ptr<Node> node(new (nothrow) ColumnNode(column));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
   explicit ColumnNode(const Column *column)
-      : Node<T>(),
-        column_(static_cast<const ColumnImpl<T> *>(column)) {}
-  virtual ~ColumnNode() {}
+      : TypedNode<Value>(),
+        column_(static_cast<const ColumnImpl<Value> *>(column)) {}
 
   NodeType node_type() const {
     return COLUMN_NODE;
   }
 
-  bool evaluate(Error *error, const ArrayRef<Record> &records) {
-    if (!this->values_.resize(error, records.size())) {
-      return false;
-    }
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results) {
     for (Int i = 0; i < records.size(); ++i) {
-      this->values_.set(i, column_->get(records.get_row_id(i)));
+      results[i] = column_->get(records.get_row_id(i));
     }
     return true;
   }
@@ -261,474 +457,1734 @@ class ColumnNode : public Node<T> {
   const ColumnImpl<T> *column_;
 };
 
-// -- OperatorNode --
-
-// ---- UnaryNode ----
-
-struct Negative {
-  template <typename T>
-  struct Functor {
-    using Arg = T;
-    using Result = T;
-    Result operator()(Arg arg) const {
-      return -arg;
-    };
-  };
-};
-
-template <typename T>
-struct Typecast {
-  template <typename U>
-  struct Functor {
-    using Arg = U;
-    using Result = T;
-    Result operator()(Arg arg) const {
-      return static_cast<Result>(arg);
-    };
-  };
-};
-
-template <typename T>
-class UnaryNode : public Node<typename T::Result> {
+template <>
+class ColumnNode<Bool> : public TypedNode<Bool> {
  public:
-  using Operator = T;
-  using Arg = typename Operator::Arg;
+  using Value = Bool;
 
-  UnaryNode(Operator op,
-            unique_ptr<ExpressionNode> &&arg)
-      : Node<typename Operator::Result>(),
-        operator_(op),
-        arg_(static_cast<Node<Arg> *>(arg.release())) {}
-  virtual ~UnaryNode() {}
+  static unique_ptr<Node> create(Error *error, const Column *column) {
+    unique_ptr<Node> node(new (nothrow) ColumnNode(column));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
+  explicit ColumnNode(const Column *column)
+      : TypedNode<Value>(),
+        column_(static_cast<const ColumnImpl<Value> *>(column)) {}
 
   NodeType node_type() const {
-    return OPERATOR_NODE;
-  }
-
-  bool evaluate(Error *error, const ArrayRef<Record> &records);
-
- private:
-  Operator operator_;
-  unique_ptr<Node<Arg>> arg_;
-};
-
-template <typename T>
-bool UnaryNode<T>::evaluate(Error *error, const ArrayRef<Record> &records) {
-  if (!this->values_.resize(error, records.size())) {
-    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
-    return false;
-  }
-  if (!arg_->evaluate(error, records)) {
-    return false;
-  }
-  for (Int i = 0; i < records.size(); ++i) {
-    this->values_[i] = operator_(arg_->get(i));
-  }
-  return true;
-}
-
-// ---- BinaryNode ----
-
-struct Equal {
-  template <typename T>
-  struct Functor {
-    using Arg1 = T;
-    using Arg2 = T;
-    using Result = Bool;
-    Bool operator()(Arg1 lhs, Arg2 rhs) const {
-      return lhs == rhs;
-    };
-  };
-};
-
-struct NotEqual {
-  template <typename T>
-  struct Functor {
-    using Arg1 = T;
-    using Arg2 = T;
-    using Result = Bool;
-    Bool operator()(Arg1 lhs, Arg2 rhs) const {
-      return lhs != rhs;
-    };
-  };
-};
-
-struct Less {
-  template <typename T>
-  struct Functor {
-    using Arg1 = T;
-    using Arg2 = T;
-    using Result = Bool;
-    Bool operator()(Arg1 lhs, Arg2 rhs) const {
-      return lhs < rhs;
-    };
-  };
-};
-
-struct LessEqual {
-  template <typename T>
-  struct Functor {
-    using Arg1 = T;
-    using Arg2 = T;
-    using Result = Bool;
-    Bool operator()(Arg1 lhs, Arg2 rhs) const {
-      return lhs <= rhs;
-    };
-  };
-};
-
-struct Greater {
-  template <typename T>
-  struct Functor {
-    using Arg1 = T;
-    using Arg2 = T;
-    using Result = Bool;
-    Bool operator()(Arg1 lhs, Arg2 rhs) const {
-      return lhs > rhs;
-    };
-  };
-};
-
-struct GreaterEqual {
-  template <typename T>
-  struct Functor {
-    using Arg1 = T;
-    using Arg2 = T;
-    using Result = Bool;
-    Bool operator()(Arg1 lhs, Arg2 rhs) const {
-      return lhs >= rhs;
-    };
-  };
-};
-
-struct BitwiseAnd {
-  template <typename T>
-  struct Functor {
-    using Arg1 = T;
-    using Arg2 = T;
-    using Result = T;
-    T operator()(Arg1 lhs, Arg2 rhs) const {
-      return lhs & rhs;
-    };
-  };
-};
-
-struct BitwiseOr {
-  template <typename T>
-  struct Functor {
-    using Arg1 = T;
-    using Arg2 = T;
-    using Result = T;
-    T operator()(Arg1 lhs, Arg2 rhs) const {
-      return lhs | rhs;
-    };
-  };
-};
-
-struct BitwiseXor {
-  template <typename T>
-  struct Functor {
-    using Arg1 = T;
-    using Arg2 = T;
-    using Result = T;
-    T operator()(Arg1 lhs, Arg2 rhs) const {
-      return lhs ^ rhs;
-    };
-  };
-};
-
-struct Plus {
-  template <typename T>
-  struct Functor {
-    using Arg1 = T;
-    using Arg2 = T;
-    using Result = T;
-    T operator()(Arg1 lhs, Arg2 rhs) const {
-      return lhs + rhs;
-    };
-  };
-};
-
-struct Minus {
-  template <typename T>
-  struct Functor {
-    using Arg1 = T;
-    using Arg2 = T;
-    using Result = T;
-    T operator()(Arg1 lhs, Arg2 rhs) const {
-      return lhs - rhs;
-    };
-  };
-};
-
-struct Multiplication {
-  template <typename T>
-  struct Functor {
-    using Arg1 = T;
-    using Arg2 = T;
-    using Result = T;
-    T operator()(Arg1 lhs, Arg2 rhs) const {
-      return lhs * rhs;
-    };
-  };
-};
-
-template <typename Op>
-class BinaryNode : public Node<typename Op::Result> {
- public:
-  using Arg1 = typename Op::Arg1;
-  using Arg2 = typename Op::Arg2;
-
-  BinaryNode(Op op,
-             unique_ptr<ExpressionNode> &&lhs,
-             unique_ptr<ExpressionNode> &&rhs)
-      : Node<typename Op::Result>(),
-        operator_(op),
-        lhs_(static_cast<Node<Arg1> *>(lhs.release())),
-        rhs_(static_cast<Node<Arg2> *>(rhs.release())) {}
-  virtual ~BinaryNode() {}
-
-  NodeType node_type() const {
-    return OPERATOR_NODE;
-  }
-
-  bool evaluate(Error *error, const ArrayRef<Record> &records);
-
- private:
-  Op operator_;
-  unique_ptr<Node<Arg1>> lhs_;
-  unique_ptr<Node<Arg2>> rhs_;
-};
-
-template <typename Op>
-bool BinaryNode<Op>::evaluate(Error *error, const ArrayRef<Record> &records) {
-  if (!this->values_.resize(error, records.size())) {
-    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
-    return false;
-  }
-  if (!lhs_->evaluate(error, records) ||
-      !rhs_->evaluate(error, records)) {
-    return false;
-  }
-  for (Int i = 0; i < records.size(); ++i) {
-    this->values_.set(i, operator_(lhs_->get(i), rhs_->get(i)));
-  }
-  return true;
-}
-
-class LogicalAndNode : public Node<Bool> {
- public:
-  LogicalAndNode(unique_ptr<ExpressionNode> &&lhs,
-                 unique_ptr<ExpressionNode> &&rhs)
-      : Node<Bool>(),
-        lhs_(static_cast<Node<Bool> *>(lhs.release())),
-        rhs_(static_cast<Node<Bool> *>(rhs.release())),
-        temp_records_() {}
-  virtual ~LogicalAndNode() {}
-
-  NodeType node_type() const {
-    return OPERATOR_NODE;
+    return COLUMN_NODE;
   }
 
   bool filter(Error *error,
-              const ArrayRef<Record> &input_records,
+              ArrayCRef<Record> input_records,
               ArrayRef<Record> *output_records);
-
-  bool evaluate(Error *error, const ArrayRef<Record> &records);
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results) {
+    for (Int i = 0; i < records.size(); ++i) {
+      results.set(i, column_->get(records.get_row_id(i)));
+    }
+    return true;
+  }
 
  private:
-  unique_ptr<Node<Bool>> lhs_;
-  unique_ptr<Node<Bool>> rhs_;
+  const ColumnImpl<Value> *column_;
+};
+
+bool ColumnNode<Bool>::filter(Error *error,
+                              ArrayCRef<Record> input_records,
+                              ArrayRef<Record> *output_records) {
+  Int dest = 0;
+  for (Int i = 0; i < input_records.size(); ++i) {
+    if (column_->get(input_records.get_row_id(i))) {
+      output_records->set(dest, input_records.get(i));
+      ++dest;
+    }
+  }
+  *output_records = output_records->ref(0, dest);
+  return true;
+}
+
+template <>
+class ColumnNode<Float> : public TypedNode<Float> {
+ public:
+  using Value = Float;
+
+  static unique_ptr<Node> create(Error *error, const Column *column) {
+    unique_ptr<Node> node(new (nothrow) ColumnNode(column));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
+  explicit ColumnNode(const Column *column)
+      : TypedNode<Value>(),
+        column_(static_cast<const ColumnImpl<Value> *>(column)) {}
+
+  NodeType node_type() const {
+    return COLUMN_NODE;
+  }
+
+  bool adjust(Error *error, ArrayRef<Record> records) {
+    for (Int i = 0; i < records.size(); ++i) {
+      records.set_score(i, column_->get(records.get_row_id(i)));
+    }
+    return true;
+  }
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results) {
+    for (Int i = 0; i < records.size(); ++i) {
+      results[i] = column_->get(records.get_row_id(i));
+    }
+    return true;
+  }
+
+ private:
+  const ColumnImpl<Value> *column_;
+};
+
+// -- OperatorNode --
+
+template <typename T>
+class OperatorNode : public TypedNode<T> {
+ public:
+  using Value = T;
+
+  OperatorNode() : TypedNode<Value>() {}
+  virtual ~OperatorNode() {}
+
+  NodeType node_type() const {
+    return OPERATOR_NODE;
+  }
+};
+
+// Evaluate "*arg" for "records".
+//
+// The evaluation results are stored into "*arg_values".
+//
+// On success, returns true.
+// On failure, returns false and stores error information into "*error" if
+// "error" != nullptr.
+template <typename T>
+bool fill_node_arg_values(Error *error, ArrayCRef<Record> records,
+                          TypedNode<T> *arg, Array<T> *arg_values) {
+  Int old_size = arg_values->size();
+  if (old_size < records.size()) {
+    if (!arg_values->resize(error, records.size())) {
+      return false;
+    }
+  }
+  switch (arg->node_type()) {
+    case DATUM_NODE: {
+      if (old_size < records.size()) {
+        if (!arg->evaluate(error, records.ref(old_size),
+                           arg_values->ref(old_size))) {
+          return false;
+        }
+      }
+      break;
+    }
+    default: {
+      if (!arg->evaluate(error, records, arg_values->ref(0, records.size()))) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+// --- UnaryNode ---
+
+template <typename T, typename U>
+class UnaryNode : public OperatorNode<T> {
+ public:
+  using Value = T;
+  using Arg = U;
+
+  explicit UnaryNode(unique_ptr<Node> &&arg)
+      : OperatorNode<Value>(),
+        arg_(static_cast<TypedNode<Arg> *>(arg.release())),
+        arg_values_() {}
+  virtual ~UnaryNode() {}
+
+ protected:
+  unique_ptr<TypedNode<Arg>> arg_;
+  Array<Arg> arg_values_;
+
+  bool fill_arg_values(Error *error, ArrayCRef<Record> records) {
+    return fill_node_arg_values(error, records, arg_.get(), &arg_values_);
+  }
+};
+
+// ---- LogicalNotNode ----
+
+class LogicalNotNode : public UnaryNode<Bool, Bool> {
+ public:
+  using Value = Bool;
+  using Arg = Bool;
+
+  static unique_ptr<Node> create(Error *error, unique_ptr<Node> &&arg) {
+    unique_ptr<Node> node(new (nothrow) LogicalNotNode(std::move(arg)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
+  explicit LogicalNotNode(unique_ptr<Node> &&arg)
+      : UnaryNode<Value, Arg>(std::move(arg)),
+        temp_records_() {}
+
+  bool filter(Error *error,
+              ArrayCRef<Record> input_records,
+              ArrayRef<Record> *output_records);
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results);
+
+ private:
   Array<Record> temp_records_;
 };
 
-bool LogicalAndNode::filter(Error *error,
-                            const ArrayRef<Record> &input_records,
+bool LogicalNotNode::filter(Error *error,
+                            ArrayCRef<Record> input_records,
                             ArrayRef<Record> *output_records) {
-  return lhs_->filter(error, input_records, output_records) &&
-         rhs_->filter(error, *output_records, output_records);
+  // Apply an argument filter to "input_records" and store the result to
+  // "temp_records_". Then, appends a sentinel to the end.
+  if (!temp_records_.resize(error, input_records.size() + 1)) {
+    return false;
+  }
+  ArrayRef<Record> ref = temp_records_;
+  if (!arg_->filter(error, input_records, &ref)) {
+    return false;
+  }
+  temp_records_.set_row_id(ref.size(), NULL_ROW_ID);
+
+  // Extract records which appear in "input_records" and don't appear in "ref".
+  Int count = 0;
+  for (Int i = 0, j = 0; i < input_records.size(); ++i) {
+    if (input_records.get_row_id(i) == ref.get_row_id(j)) {
+      ++j;
+      continue;
+    }
+    output_records->set(count, input_records.get(i));
+    ++count;
+  }
+  *output_records = output_records->ref(0, count);
+  return true;
 }
 
-bool LogicalAndNode::evaluate(Error *error, const ArrayRef<Record> &records) {
-  if (!this->values_.resize(error, records.size())) {
+bool LogicalNotNode::evaluate(Error *error,
+                              ArrayCRef<Record> records,
+                              ArrayRef<Value> results) {
+  // Apply an argument filter to "records" and store the result to
+  // "temp_records_". Then, appends a sentinel to the end.
+  if (!temp_records_.resize(error, records.size() + 1)) {
     return false;
   }
-  if (!lhs_->evaluate(error, records)) {
+  ArrayRef<Record> ref = temp_records_;
+  if (!arg_->filter(error, records, &ref)) {
     return false;
   }
-  // False records must not be evaluated for the 2nd argument.
-  temp_records_.clear();
+  temp_records_.set_row_id(ref.size(), NULL_ROW_ID);
+
+  // Compare records in "records" and "ref".
+  Int count = 0;
   for (Int i = 0; i < records.size(); ++i) {
-    if (lhs_->get(i)) {
-      if (!temp_records_.push_back(error, records.get(i))) {
-        return false;
-      }
+    if (records.get_row_id(i) == ref.get_row_id(count)) {
+      results.set(i, false);
+      ++count;
+    } else {
+      results.set(i, true);
     }
-  }
-  if (!rhs_->evaluate(error, temp_records_)) {
-    return false;
-  }
-  Int j = 0;
-  for (Int i = 0; i < records.size(); ++i) {
-    this->values_.set(i, lhs_->get(i) ? rhs_->get(j++) : false);
   }
   return true;
 }
 
-class LogicalOrNode : public Node<Bool> {
- public:
-  LogicalOrNode(unique_ptr<ExpressionNode> &&lhs,
-                 unique_ptr<ExpressionNode> &&rhs)
-      : Node<Bool>(),
-        lhs_(static_cast<Node<Bool> *>(lhs.release())),
-        rhs_(static_cast<Node<Bool> *>(rhs.release())),
-        left_records_(),
-        right_records_() {}
-  virtual ~LogicalOrNode() {}
+// ---- BitwiseNotNode ----
 
-  NodeType node_type() const {
-    return OPERATOR_NODE;
+template <typename T> class BitwiseNotNode;
+
+template <>
+class BitwiseNotNode<Bool> : public UnaryNode<Bool, Bool> {
+ public:
+  using Value = Bool;
+  using Arg = Bool;
+
+  static unique_ptr<Node> create(Error *error, unique_ptr<Node> &&arg) {
+    unique_ptr<Node> node(new (nothrow) BitwiseNotNode(std::move(arg)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
   }
 
-  bool filter(Error *error,
-              const ArrayRef<Record> &input_records,
-              ArrayRef<Record> *output_records);
+  explicit BitwiseNotNode(unique_ptr<Node> &&arg)
+      : UnaryNode<Value, Arg>(std::move(arg)) {}
 
-  bool evaluate(Error *error, const ArrayRef<Record> &records);
+  bool filter(Error *error,
+              ArrayCRef<Record> input_records,
+              ArrayRef<Record> *output_records);
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results);
+};
+
+bool BitwiseNotNode<Bool>::filter(Error *error,
+                                  ArrayCRef<Record> input_records,
+                                  ArrayRef<Record> *output_records) {
+  if (!fill_arg_values(error, input_records)) {
+    return false;
+  }
+  Int count = 0;
+  for (Int i = 0; i < input_records.size(); ++i) {
+    if (arg_values_[i]) {
+      output_records->set(count, input_records.get(i));
+      ++count;
+    }
+  }
+  *output_records = output_records->ref(0, count);
+  return true;
+}
+
+bool BitwiseNotNode<Bool>::evaluate(Error *error,
+                                    ArrayCRef<Record> records,
+                                    ArrayRef<Value> results) {
+  if (!arg_->evaluate(error, records, results)) {
+    return false;
+  }
+  // TODO: Should be processed per 64 bits.
+  //       Check the 64-bit boundary and do it!
+  for (Int i = 0; i < records.size(); ++i) {
+    results.set(i, !results.get(i));
+  }
+  return true;
+}
+
+template <>
+class BitwiseNotNode<Int> : public UnaryNode<Int, Int> {
+ public:
+  using Value = Int;
+  using Arg = Int;
+
+  static unique_ptr<Node> create(Error *error, unique_ptr<Node> &&arg) {
+    unique_ptr<Node> node(
+        new (nothrow) BitwiseNotNode(std::move(arg)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
+  explicit BitwiseNotNode(unique_ptr<Node> &&arg)
+      : UnaryNode<Value, Arg>(std::move(arg)) {}
+
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results);
+};
+
+bool BitwiseNotNode<Int>::evaluate(Error *error,
+                                   ArrayCRef<Record> records,
+                                   ArrayRef<Value> results) {
+  if (!arg_->evaluate(error, records, results)) {
+    return false;
+  }
+  for (Int i = 0; i < records.size(); ++i) {
+    results.set(i, ~results.get(i));
+  }
+  return true;
+}
+
+// ---- PositiveNode ----
+
+// Nothing to do.
+
+// ---- NegativeNode ----
+
+template <typename T> class NegativeNode;
+
+template <>
+class NegativeNode<Int> : public UnaryNode<Int, Int> {
+ public:
+  using Value = Int;
+  using Arg = Int;
+
+  static unique_ptr<Node> create(Error *error, unique_ptr<Node> &&arg) {
+    unique_ptr<Node> node(new (nothrow) NegativeNode(std::move(arg)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
+  explicit NegativeNode(unique_ptr<Node> &&arg)
+      : UnaryNode<Value, Arg>(std::move(arg)) {}
+
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results);
+};
+
+bool NegativeNode<Int>::evaluate(Error *error,
+                                 ArrayCRef<Record> records,
+                                 ArrayRef<Value> results) {
+  if (!arg_->evaluate(error, records, results)) {
+    return false;
+  }
+  for (Int i = 0; i < records.size(); ++i) {
+    results.set(i, -results.get(i));
+  }
+  return true;
+}
+
+template <>
+class NegativeNode<Float> : public UnaryNode<Float, Float> {
+ public:
+  using Value = Float;
+  using Arg = Float;
+
+  static unique_ptr<Node> create(Error *error, unique_ptr<Node> &&arg) {
+    unique_ptr<Node> node(new (nothrow) NegativeNode(std::move(arg)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
+  explicit NegativeNode(unique_ptr<Node> &&arg)
+      : UnaryNode<Value, Arg>(std::move(arg)) {}
+
+  bool adjust(Error *error, ArrayRef<Record> records);
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results);
+};
+
+bool NegativeNode<Float>::adjust(Error *error, ArrayRef<Record> records) {
+  if (!fill_arg_values(error, records)) {
+    return false;
+  }
+  for (Int i = 0; i < records.size(); ++i) {
+    records.set_score(i, arg_values_[i]);
+  }
+  return true;
+}
+
+bool NegativeNode<Float>::evaluate(Error *error,
+                                   ArrayCRef<Record> records,
+                                   ArrayRef<Value> results) {
+  if (!arg_->evaluate(error, records, results)) {
+    return false;
+  }
+  for (Int i = 0; i < records.size(); ++i) {
+    results.set(i, -results.get(i));
+  }
+  return true;
+}
+
+// ---- ToIntNode ----
+
+class ToIntNode : public UnaryNode<Int, Float> {
+ public:
+  using Value = Int;
+  using Arg = Float;
+
+  static unique_ptr<Node> create(Error *error, unique_ptr<Node> &&arg) {
+    unique_ptr<Node> node(new (nothrow) ToIntNode(std::move(arg)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
+  explicit ToIntNode(unique_ptr<Node> &&arg)
+      : UnaryNode<Value, Arg>(std::move(arg)) {}
+
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results);
+};
+
+bool ToIntNode::evaluate(Error *error,
+                         ArrayCRef<Record> records,
+                         ArrayRef<Value> results) {
+  if (!fill_arg_values(error, records)) {
+    return false;
+  }
+  for (Int i = 0; i < records.size(); ++i) {
+    results.set(i, static_cast<Value>(arg_values_[i]));
+  }
+  return true;
+}
+
+// ---- ToFloatNode ----
+
+class ToFloatNode : public UnaryNode<Float, Int> {
+ public:
+  using Value = Float;
+  using Arg = Int;
+
+  static unique_ptr<Node> create(Error *error, unique_ptr<Node> &&arg) {
+    unique_ptr<Node> node(new (nothrow) ToFloatNode(std::move(arg)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
+  explicit ToFloatNode(unique_ptr<Node> &&arg)
+      : UnaryNode<Value, Arg>(std::move(arg)) {}
+
+  bool adjust(Error *error, ArrayRef<Record> records);
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results);
+};
+
+bool ToFloatNode::adjust(Error *error, ArrayRef<Record> records) {
+  if (!fill_arg_values(error, records)) {
+    return false;
+  }
+  for (Int i = 0; i < records.size(); ++i) {
+    records.set_score(i, static_cast<Value>(arg_values_[i]));
+  }
+  return true;
+}
+
+bool ToFloatNode::evaluate(Error *error,
+                           ArrayCRef<Record> records,
+                           ArrayRef<Value> results) {
+  if (!fill_arg_values(error, records)) {
+    return false;
+  }
+  for (Int i = 0; i < records.size(); ++i) {
+    results.set(i, static_cast<Value>(arg_values_[i]));
+  }
+  return true;
+}
+
+// --- BinaryNode ---
+
+template <typename T, typename U, typename V>
+class BinaryNode : public OperatorNode<T> {
+ public:
+  using Value = T;
+  using Arg1 = U;
+  using Arg2 = V;
+
+  BinaryNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
+      : OperatorNode<Value>(),
+        arg1_(static_cast<TypedNode<Arg1> *>(arg1.release())),
+        arg2_(static_cast<TypedNode<Arg2> *>(arg2.release())),
+        arg1_values_(),
+        arg2_values_() {}
+  virtual ~BinaryNode() {}
+
+ protected:
+  unique_ptr<TypedNode<Arg1>> arg1_;
+  unique_ptr<TypedNode<Arg2>> arg2_;
+  Array<Arg1> arg1_values_;
+  Array<Arg2> arg2_values_;
+
+  bool fill_arg1_values(Error *error, ArrayCRef<Record> records) {
+    return fill_node_arg_values(error, records, arg1_.get(), &arg1_values_);
+  }
+  bool fill_arg2_values(Error *error, ArrayCRef<Record> records) {
+    return fill_node_arg_values(error, records, arg2_.get(), &arg2_values_);
+  }
+};
+
+// ---- LogicalAndNode ----
+
+class LogicalAndNode : public BinaryNode<Bool, Bool, Bool> {
+ public:
+  using Value = Bool;
+  using Arg1 = Bool;
+  using Arg2 = Bool;
+
+  static unique_ptr<Node> create(Error *error,
+                                 unique_ptr<Node> &&arg1,
+                                 unique_ptr<Node> &&arg2) {
+    unique_ptr<Node> node(
+        new (nothrow) LogicalAndNode(std::move(arg1), std::move(arg2)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
+  LogicalAndNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
+      : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)),
+        temp_records_() {}
+
+  bool filter(Error *error,
+              ArrayCRef<Record> input_records,
+              ArrayRef<Record> *output_records) {
+    return arg1_->filter(error, input_records, output_records) &&
+           arg2_->filter(error, *output_records, output_records);
+  }
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results);
 
  private:
-  unique_ptr<Node<Bool>> lhs_;
-  unique_ptr<Node<Bool>> rhs_;
-  Array<Record> left_records_;
-  Array<Record> right_records_;
+  Array<Record> temp_records_;
+};
+
+bool LogicalAndNode::evaluate(Error *error,
+                              ArrayCRef<Record> records,
+                              ArrayRef<Value> results) {
+  // Apply argument filters to "records" and store the result to
+  // "temp_records_". Then, appends a sentinel to the end.
+  if (!temp_records_.resize(error, records.size() + 1)) {
+    return false;
+  }
+  ArrayRef<Record> ref = temp_records_;
+  if (!arg1_->filter(error, records, &ref) ||
+      !arg2_->filter(error, ref, &ref)) {
+    return false;
+  }
+  temp_records_.set_row_id(ref.size(), NULL_ROW_ID);
+
+  // Compare records in "records" and "ref".
+  Int count = 0;
+  for (Int i = 0; i < records.size(); ++i) {
+    if (records.get_row_id(i) == ref.get_row_id(count)) {
+      results.set(i, true);
+      ++count;
+    } else {
+      results.set(i, false);
+    }
+  }
+  return true;
+}
+
+// ---- LogicalOrNode ----
+
+class LogicalOrNode : public BinaryNode<Bool, Bool, Bool> {
+ public:
+  using Value = Bool;
+  using Arg1 = Bool;
+  using Arg2 = Bool;
+
+  static unique_ptr<Node> create(Error *error,
+                                 unique_ptr<Node> &&arg1,
+                                 unique_ptr<Node> &&arg2) {
+    unique_ptr<Node> node(
+        new (nothrow) LogicalOrNode(std::move(arg1), std::move(arg2)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
+  LogicalOrNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
+      : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)),
+        temp_records_() {}
+
+  bool filter(Error *error,
+              ArrayCRef<Record> input_records,
+              ArrayRef<Record> *output_records);
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results);
+
+ private:
+  Array<Record> temp_records_;
 };
 
 bool LogicalOrNode::filter(Error *error,
-                           const ArrayRef<Record> &input_records,
-                           ArrayRef<Record> *output_records) {
-  // Make a copy of the given record set and apply the left-filter to it.
-  if (!left_records_.resize(error, input_records.size())) {
+                            ArrayCRef<Record> input_records,
+                            ArrayRef<Record> *output_records) {
+  // Apply the 1st argument filter to "input_records" and store the result into
+  // "temp_records_", Then, appends a sentinel to the end.
+  if (!temp_records_.resize(error, input_records.size() + 2)) {
     return false;
   }
-  for (Int i = 0; i < input_records.size(); ++i) {
-    left_records_.set(i, input_records.get(i));
-  }
-  ArrayRef<Record> left_record_ref = left_records_;
-  if (!lhs_->filter(error, left_record_ref, &left_record_ref)) {
+  ArrayRef<Record> ref1 = temp_records_;
+  if (!arg1_->filter(error, input_records, &ref1)) {
     return false;
   }
-  if (!left_records_.resize(error, left_record_ref.size())) {
-    return false;
-  }
-  if (left_records_.size() == 0) {
-    // There are no left-true records.
-    return rhs_->filter(error, input_records, output_records);
-  } else if (left_records_.size() == input_records.size()) {
-    // There are no left-false records.
-    // This means that all the records pass through the filter.
-    if (&input_records != output_records) {
-      *output_records = output_records->ref(0, input_records.size());
+  if (ref1.size() == 0) {
+    // There are no arg1-true records.
+    return arg2_->filter(error, input_records, output_records);
+  } else if (ref1.size() == temp_records_.size()) {
+    // There are no arg1-false records.
+    if (input_records != *output_records) {
       for (Int i = 0; i < input_records.size(); ++i) {
         output_records->set(i, input_records.get(i));
       }
     }
     return true;
   }
+  temp_records_.set_row_id(ref1.size(), NULL_ROW_ID);
 
-  // Enumerate left-false records and apply the right-filter to it.
-  if (!right_records_.resize(error,
-                             input_records.size() - left_records_.size())) {
-    return false;
-  }
-  Int left_count = 0;
-  Int right_count = 0;
+  // Append arg1-false records to the end of "temp_records_".
+  // Then, applies the 2nd argument filter to it and appends a sentinel.
+  ArrayRef<Record> ref2 =
+      temp_records_.ref(ref1.size() + 1, input_records.size() - ref1.size());
+  Int arg1_count = 0;
+  Int arg2_count = 0;
   for (Int i = 0; i < input_records.size(); ++i) {
-    if (input_records.get_row_id(i) ==
-        left_records_.get_row_id((left_count))) {
-      ++left_count;
+    if (input_records.get_row_id(i) == ref1.get_row_id(arg1_count)) {
+      ++arg1_count;
     } else {
-      right_records_.set(right_count, input_records.get(i));
-      ++right_count;
+      ref2.set(arg2_count, input_records.get(i));
+      ++arg2_count;
     }
   }
-  ArrayRef<Record> right_record_ref = right_records_;
-  if (!rhs_->filter(error, right_record_ref, &right_record_ref)) {
+  if (!arg2_->filter(error, ref2, &ref2)) {
     return false;
   }
-  if (!right_records_.resize(error, right_record_ref.size())) {
-    return false;
-  }
-  if (right_records_.size() == 0) {
-    // There are no right-true records.
-    *output_records = output_records->ref(0, left_records_.size());
-    for (Int i = 0; i < output_records->size(); ++i) {
-      output_records->set(i, left_records_.get(i));
+  if (ref2.size() == 0) {
+    // There are no arg2-true records.
+    for (Int i = 0; i < ref1.size(); ++i) {
+      output_records->set(i, ref1.get(i));
     }
+    *output_records = output_records->ref(0, ref1.size());
     return true;
-  } else if (right_records_.size() == right_count) {
-    // There are no right-false records.
-    // This means that all the records pass through the filter.
-    if (&input_records != output_records) {
-      *output_records = output_records->ref(0, input_records.size());
+  } else if (ref2.size() == arg2_count) {
+    // There are no arg2-false records.
+    if (input_records != *output_records) {
       for (Int i = 0; i < input_records.size(); ++i) {
         output_records->set(i, input_records.get(i));
       }
+      *output_records = output_records->ref(0, input_records.size());
     }
     return true;
   }
+  temp_records_.set_row_id(ref1.size() + 1 + ref2.size(), NULL_ROW_ID);
 
-  // Append sentinels.
-  if (!left_records_.push_back(error, Record(NULL_ROW_ID, 0.0)) ||
-      !right_records_.push_back(error, Record(NULL_ROW_ID, 0.0))) {
-    return false;
-  }
-
-  // Merge the left-true records and the right-true records.
-  left_count = 0;
-  right_count = 0;
+  // Merge the arg1-true records and the arg2-true records.
+  arg1_count = 0;
+  arg2_count = 0;
   for (Int i = 0; i < input_records.size(); ++i) {
-    if (input_records.get_row_id(i) ==
-        left_records_.get_row_id(left_count)) {
-      output_records->set(left_count + right_count, input_records.get(i));
-      ++left_count;
-    } else if (input_records.get_row_id(i) ==
-               right_records_.get_row_id(right_count)) {
-      output_records->set(left_count + right_count, input_records.get(i));
-      ++right_count;
+    if (input_records.get_row_id(i) == ref1.get_row_id(arg1_count)) {
+      output_records->set(arg1_count + arg2_count, input_records.get(i));
+      ++arg1_count;
+    } else if (input_records.get_row_id(i) == ref2.get_row_id(arg2_count)) {
+      output_records->set(arg1_count + arg2_count, input_records.get(i));
+      ++arg2_count;
     }
   }
-  *output_records = output_records->ref(0, left_count + right_count);
+  *output_records = output_records->ref(0, arg1_count + arg2_count);
   return true;
 }
 
-bool LogicalOrNode::evaluate(Error *error, const ArrayRef<Record> &records) {
-  // TODO: This logic should be tested.
-  if (!this->values_.resize(error, records.size())) {
+bool LogicalOrNode::evaluate(Error *error,
+                              ArrayCRef<Record> records,
+                              ArrayRef<Value> results) {
+  // Apply the 1st argument filter to "records" and store the result into
+  // "temp_records_", Then, appends a sentinel to the end.
+  if (!temp_records_.resize(error, records.size() + 2)) {
     return false;
   }
-  if (!lhs_->evaluate(error, records)) {
+  ArrayRef<Record> ref1 = temp_records_;
+  if (!arg1_->filter(error, records, &ref1)) {
     return false;
   }
-  // True records must not be evaluated for the 2nd argument.
-  left_records_.clear();
+  if (ref1.size() == 0) {
+    // There are no arg1-true records.
+    return arg2_->evaluate(error, records, results);
+  } else if (ref1.size() == temp_records_.size()) {
+    // There are no arg1-false records.
+    // TODO: Fill the array per 64 bits.
+    for (Int i = 0; i < records.size(); ++i) {
+      results.set(i, true);
+    }
+    return true;
+  }
+  temp_records_.set_row_id(ref1.size(), NULL_ROW_ID);
+
+  // Append arg1-false records to the end of "temp_records_".
+  // Then, applies the 2nd argument filter to it and appends a sentinel.
+  ArrayRef<Record> ref2 =
+      temp_records_.ref(ref1.size() + 1, records.size() - ref1.size());
+  Int arg1_count = 0;
+  Int arg2_count = 0;
   for (Int i = 0; i < records.size(); ++i) {
-    if (!lhs_->get(i)) {
-      if (!left_records_.push_back(error, records.get(i))) {
-        return false;
+    if (records.get_row_id(i) == ref1.get_row_id(arg1_count)) {
+      ++arg1_count;
+    } else {
+      ref2.set(arg2_count, records.get(i));
+      ++arg2_count;
+    }
+  }
+  if (!arg2_->filter(error, ref2, &ref2)) {
+    return false;
+  }
+  if (ref2.size() == 0) {
+    // There are no arg2-true records.
+    arg1_count = 0;
+    for (Int i = 0; i < records.size(); ++i) {
+      if (records.get_row_id(i) == ref1.get_row_id(arg1_count)) {
+        results.set(i, true);
+        ++arg1_count;
+      } else {
+        results.set(i, false);
       }
     }
+    return true;
+  } else if (ref2.size() == arg2_count) {
+    // There are no arg2-false records.
+    // TODO: Fill the array per 64 bits.
+    for (Int i = 0; i < records.size(); ++i) {
+      results.set(i, true);
+    }
+    return true;
   }
-  if (!rhs_->evaluate(error, left_records_)) {
-    return false;
-  }
-  Int j = 0;
+  temp_records_.set_row_id(ref1.size() + 1 + ref2.size(), NULL_ROW_ID);
+
+  // Merge the arg1-true records and the arg2-true records.
+  arg1_count = 0;
+  arg2_count = 0;
   for (Int i = 0; i < records.size(); ++i) {
-    this->values_.set(i, lhs_->get(i) ? true : rhs_->get(j++));
+    if (records.get_row_id(i) == ref1.get_row_id(arg1_count)) {
+      results.set(i, true);
+      ++arg1_count;
+    } else if (records.get_row_id(i) == ref2.get_row_id(arg2_count)) {
+      results.set(i, true);
+      ++arg2_count;
+    } else {
+      results.set(i, false);
+    }
   }
   return true;
 }
 
-}  // namespace
+// ---- ComparisonNode ----
+
+template <typename T>
+class ComparisonNode
+    : public BinaryNode<Bool, typename T::Arg, typename T::Arg> {
+ public:
+  using Comparer = T;
+  using Value = Bool;
+  using Arg1 = typename T::Arg;
+  using Arg2 = typename T::Arg;
+
+  static unique_ptr<Node> create(Error *error,
+                                 unique_ptr<Node> &&arg1,
+                                 unique_ptr<Node> &&arg2) {
+    unique_ptr<Node> node(
+        new (nothrow) ComparisonNode(std::move(arg1), std::move(arg2)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
+  ComparisonNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
+      : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)),
+        comparer_() {}
+
+  bool filter(Error *error,
+              ArrayCRef<Record> input_records,
+              ArrayRef<Record> *output_records);
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results);
+
+ protected:
+  Comparer comparer_;
+};
+
+template <typename T>
+bool ComparisonNode<T>::filter(Error *error,
+                               ArrayCRef<Record> input_records,
+                               ArrayRef<Record> *output_records) {
+  if (!this->fill_arg1_values(error, input_records) ||
+      !this->fill_arg2_values(error, input_records)) {
+    return false;
+  }
+  Int count = 0;
+  for (Int i = 0; i < input_records.size(); ++i) {
+    if (comparer_(this->arg1_values_[i], this->arg2_values_[i])) {
+      output_records->set(count, input_records.get(i));
+      ++count;
+    }
+  }
+  *output_records = output_records->ref(0, count);
+  return true;
+}
+
+template <typename T>
+bool ComparisonNode<T>::evaluate(Error *error,
+                                 ArrayCRef<Record> records,
+                                 ArrayRef<Value> results) {
+  if (!this->fill_arg1_values(error, records) ||
+      !this->fill_arg2_values(error, records)) {
+    return false;
+  }
+  for (Int i = 0; i < records.size(); ++i) {
+    results.set(i, comparer_(this->arg1_values_[i], this->arg2_values_[i]));
+  }
+  return true;
+}
+
+// ----- EqualNode -----
+
+// TODO: EqualNode for Bool should be specialized.
+
+struct Equal {
+  template <typename T>
+  struct Comparer {
+    using Arg = T;
+    Bool operator()(Arg arg1, Arg arg2) const {
+      return arg1 == arg2;
+    }
+  };
+};
+
+template <typename T>
+using EqualNode = ComparisonNode<Equal::Comparer<T>>;
+
+// ----- NotEqualNode -----
+
+// TODO: NotEqualNode for Bool should be specialized.
+
+struct NotEqual {
+  template <typename T>
+  struct Comparer {
+    using Arg = T;
+    Bool operator()(Arg arg1, Arg arg2) const {
+      return arg1 != arg2;
+    }
+  };
+};
+
+template <typename T>
+using NotEqualNode = ComparisonNode<NotEqual::Comparer<T>>;
+
+// ----- LessNode -----
+
+struct Less {
+  template <typename T>
+  struct Comparer {
+    using Arg = T;
+    Bool operator()(Arg arg1, Arg arg2) const {
+      return arg1 < arg2;
+    }
+  };
+};
+
+template <typename T>
+using LessNode = ComparisonNode<Less::Comparer<T>>;
+
+// ----- LessEqualNode -----
+
+struct LessEqual {
+  template <typename T>
+  struct Comparer {
+    using Arg = T;
+    Bool operator()(Arg arg1, Arg arg2) const {
+      return arg1 <= arg2;
+    }
+  };
+};
+
+template <typename T>
+using LessEqualNode = ComparisonNode<LessEqual::Comparer<T>>;
+
+// ----- GreaterNode -----
+
+struct Greater {
+  template <typename T>
+  struct Comparer {
+    using Arg = T;
+    Bool operator()(Arg arg1, Arg arg2) const {
+      return arg1 > arg2;
+    }
+  };
+};
+
+template <typename T>
+using GreaterNode = ComparisonNode<Greater::Comparer<T>>;
+
+// ----- GreaterEqualNode -----
+
+struct GreaterEqual {
+  template <typename T>
+  struct Comparer {
+    using Arg = T;
+    Bool operator()(Arg arg1, Arg arg2) const {
+      return arg1 >= arg2;
+    }
+  };
+};
+
+template <typename T>
+using GreaterEqualNode = ComparisonNode<GreaterEqual::Comparer<T>>;
+
+// ---- BitwiseAndNode ----
+
+// TODO: BitwiseAnd/Or/XorNode should be implemented on the same base class?
+
+template <typename T> class BitwiseAndNode;
+
+template <>
+class BitwiseAndNode<Bool> : public BinaryNode<Bool, Bool, Bool> {
+ public:
+  using Value = Bool;
+  using Arg1 = Bool;
+  using Arg2 = Bool;
+
+  static unique_ptr<Node> create(Error *error,
+                                 unique_ptr<Node> &&arg1,
+                                 unique_ptr<Node> &&arg2) {
+    unique_ptr<Node> node(
+        new (nothrow) BitwiseAndNode(std::move(arg1), std::move(arg2)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
+  BitwiseAndNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
+      : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)) {}
+
+  bool filter(Error *error,
+              ArrayCRef<Record> input_records,
+              ArrayRef<Record> *output_records);
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results);
+};
+
+bool BitwiseAndNode<Bool>::filter(Error *error,
+                                  ArrayCRef<Record> input_records,
+                                  ArrayRef<Record> *output_records) {
+  if (!fill_arg1_values(error, input_records) ||
+      !fill_arg2_values(error, input_records)) {
+    return false;
+  }
+  Int count = 0;
+  for (Int i = 0; i < input_records.size(); ++i) {
+    if (this->arg1_values_[i] & this->arg2_values_[i]) {
+      output_records->set(count, input_records.get(i));
+      ++count;
+    }
+  }
+  *output_records = output_records->ref(0, count);
+  return true;
+}
+
+bool BitwiseAndNode<Bool>::evaluate(Error *error,
+                                    ArrayCRef<Record> records,
+                                    ArrayRef<Value> results) {
+  if (!fill_arg1_values(error, records) ||
+      !fill_arg2_values(error, records)) {
+    return false;
+  }
+  // TODO: Should be processed per 64 bits.
+  //       Check the 64-bit boundary and do it!
+  for (Int i = 0; i < records.size(); ++i) {
+    results.set(i, this->arg1_values_[i] & this->arg2_values_[i]);
+  }
+  return true;
+}
+
+template <>
+class BitwiseAndNode<Int> : public BinaryNode<Int, Int, Int> {
+ public:
+  using Value = Int;
+  using Arg1 = Int;
+  using Arg2 = Int;
+
+  static unique_ptr<Node> create(Error *error,
+                                 unique_ptr<Node> &&arg1,
+                                 unique_ptr<Node> &&arg2) {
+    unique_ptr<Node> node(
+        new (nothrow) BitwiseAndNode(std::move(arg1), std::move(arg2)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
+  BitwiseAndNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
+      : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)) {}
+
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results);
+};
+
+bool BitwiseAndNode<Int>::evaluate(Error *error,
+                                   ArrayCRef<Record> records,
+                                   ArrayRef<Value> results) {
+  if (!fill_arg1_values(error, records) ||
+      !fill_arg2_values(error, records)) {
+    return false;
+  }
+  // TODO: Should be processed per 64 bits.
+  //       Check the 64-bit boundary and do it!
+  for (Int i = 0; i < records.size(); ++i) {
+    results.set(i, this->arg1_values_[i] & this->arg2_values_[i]);
+  }
+  return true;
+}
+
+// ---- BitwiseOrNode ----
+
+template <typename T> class BitwiseOrNode;
+
+template <>
+class BitwiseOrNode<Bool> : public BinaryNode<Bool, Bool, Bool> {
+ public:
+  using Value = Bool;
+  using Arg1 = Bool;
+  using Arg2 = Bool;
+
+  static unique_ptr<Node> create(Error *error,
+                                 unique_ptr<Node> &&arg1,
+                                 unique_ptr<Node> &&arg2) {
+    unique_ptr<Node> node(
+        new (nothrow) BitwiseOrNode(std::move(arg1), std::move(arg2)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
+  BitwiseOrNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
+      : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)) {}
+
+  bool filter(Error *error,
+              ArrayCRef<Record> input_records,
+              ArrayRef<Record> *output_records);
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results);
+};
+
+bool BitwiseOrNode<Bool>::filter(Error *error,
+                                 ArrayCRef<Record> input_records,
+                                 ArrayRef<Record> *output_records) {
+  if (!fill_arg1_values(error, input_records) ||
+      !fill_arg2_values(error, input_records)) {
+    return false;
+  }
+  Int count = 0;
+  for (Int i = 0; i < input_records.size(); ++i) {
+    if (this->arg1_values_[i] | this->arg2_values_[i]) {
+      output_records->set(count, input_records.get(i));
+      ++count;
+    }
+  }
+  *output_records = output_records->ref(0, count);
+  return true;
+}
+
+bool BitwiseOrNode<Bool>::evaluate(Error *error,
+                                   ArrayCRef<Record> records,
+                                   ArrayRef<Value> results) {
+  if (!fill_arg1_values(error, records) ||
+      !fill_arg2_values(error, records)) {
+    return false;
+  }
+  // TODO: Should be processed per 64 bits.
+  //       Check the 64-bit boundary and do it!
+  for (Int i = 0; i < records.size(); ++i) {
+    results.set(i, this->arg1_values_[i] | this->arg2_values_[i]);
+  }
+  return true;
+}
+
+template <>
+class BitwiseOrNode<Int> : public BinaryNode<Int, Int, Int> {
+ public:
+  using Value = Int;
+  using Arg1 = Int;
+  using Arg2 = Int;
+
+  static unique_ptr<Node> create(Error *error,
+                                 unique_ptr<Node> &&arg1,
+                                 unique_ptr<Node> &&arg2) {
+    unique_ptr<Node> node(
+        new (nothrow) BitwiseOrNode(std::move(arg1), std::move(arg2)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
+  BitwiseOrNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
+      : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)) {}
+
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results);
+};
+
+bool BitwiseOrNode<Int>::evaluate(Error *error,
+                                  ArrayCRef<Record> records,
+                                  ArrayRef<Value> results) {
+  if (!fill_arg1_values(error, records) ||
+      !fill_arg2_values(error, records)) {
+    return false;
+  }
+  // TODO: Should be processed per 64 bits.
+  //       Check the 64-bit boundary and do it!
+  for (Int i = 0; i < records.size(); ++i) {
+    results.set(i, this->arg1_values_[i] | this->arg2_values_[i]);
+  }
+  return true;
+}
+
+// ---- BitwiseXorNode ----
+
+template <typename T> class BitwiseXorNode;
+
+template <>
+class BitwiseXorNode<Bool> : public BinaryNode<Bool, Bool, Bool> {
+ public:
+  using Value = Bool;
+  using Arg1 = Bool;
+  using Arg2 = Bool;
+
+  static unique_ptr<Node> create(Error *error,
+                                 unique_ptr<Node> &&arg1,
+                                 unique_ptr<Node> &&arg2) {
+    unique_ptr<Node> node(
+        new (nothrow) BitwiseXorNode(std::move(arg1), std::move(arg2)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
+  BitwiseXorNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
+      : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)) {}
+
+  bool filter(Error *error,
+              ArrayCRef<Record> input_records,
+              ArrayRef<Record> *output_records);
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results);
+};
+
+bool BitwiseXorNode<Bool>::filter(Error *error,
+                                  ArrayCRef<Record> input_records,
+                                  ArrayRef<Record> *output_records) {
+  if (!fill_arg1_values(error, input_records) ||
+      !fill_arg2_values(error, input_records)) {
+    return false;
+  }
+  Int count = 0;
+  for (Int i = 0; i < input_records.size(); ++i) {
+    if (this->arg1_values_[i] ^ this->arg2_values_[i]) {
+      output_records->set(count, input_records.get(i));
+      ++count;
+    }
+  }
+  *output_records = output_records->ref(0, count);
+  return true;
+}
+
+bool BitwiseXorNode<Bool>::evaluate(Error *error,
+                                    ArrayCRef<Record> records,
+                                    ArrayRef<Value> results) {
+  if (!fill_arg1_values(error, records) ||
+      !fill_arg2_values(error, records)) {
+    return false;
+  }
+  // TODO: Should be processed per 64 bits.
+  //       Check the 64-bit boundary and do it!
+  for (Int i = 0; i < records.size(); ++i) {
+    results.set(i, this->arg1_values_[i] ^ this->arg2_values_[i]);
+  }
+  return true;
+}
+
+template <>
+class BitwiseXorNode<Int> : public BinaryNode<Int, Int, Int> {
+ public:
+  using Value = Int;
+  using Arg1 = Int;
+  using Arg2 = Int;
+
+  static unique_ptr<Node> create(Error *error,
+                                 unique_ptr<Node> &&arg1,
+                                 unique_ptr<Node> &&arg2) {
+    unique_ptr<Node> node(
+        new (nothrow) BitwiseXorNode(std::move(arg1), std::move(arg2)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
+  BitwiseXorNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
+      : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)) {}
+
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results);
+};
+
+bool BitwiseXorNode<Int>::evaluate(Error *error,
+                                   ArrayCRef<Record> records,
+                                   ArrayRef<Value> results) {
+  if (!fill_arg1_values(error, records) ||
+      !fill_arg2_values(error, records)) {
+    return false;
+  }
+  // TODO: Should be processed per 64 bits.
+  //       Check the 64-bit boundary and do it!
+  for (Int i = 0; i < records.size(); ++i) {
+    results.set(i, this->arg1_values_[i] ^ this->arg2_values_[i]);
+  }
+  return true;
+}
+
+// ---- PlusOperator ----
+
+template <typename T> class PlusNode;
+
+template <>
+class PlusNode<Int> : public BinaryNode<Int, Int, Int> {
+ public:
+  using Value = Int;
+  using Arg1 = Int;
+  using Arg2 = Int;
+
+  static unique_ptr<Node> create(Error *error,
+                                 unique_ptr<Node> &&arg1,
+                                 unique_ptr<Node> &&arg2) {
+    unique_ptr<Node> node(
+        new (nothrow) PlusNode(std::move(arg1), std::move(arg2)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
+  PlusNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
+      : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)) {}
+
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results);
+};
+
+bool PlusNode<Int>::evaluate(Error *error,
+                             ArrayCRef<Record> records,
+                             ArrayRef<Value> results) {
+  if (!fill_arg1_values(error, records) ||
+      !fill_arg2_values(error, records)) {
+    return false;
+  }
+  for (Int i = 0; i < records.size(); ++i) {
+    results.set(i, this->arg1_values_[i] + this->arg2_values_[i]);
+  }
+  return true;
+}
+
+template <>
+class PlusNode<Float> : public BinaryNode<Float, Float, Float> {
+ public:
+  using Value = Float;
+  using Arg1 = Float;
+  using Arg2 = Float;
+
+  static unique_ptr<Node> create(Error *error,
+                                 unique_ptr<Node> &&arg1,
+                                 unique_ptr<Node> &&arg2) {
+    unique_ptr<Node> node(
+        new (nothrow) PlusNode(std::move(arg1), std::move(arg2)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
+  PlusNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
+      : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)) {}
+
+  bool adjust(Error *error, ArrayRef<Record> records);
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results);
+};
+
+bool PlusNode<Float>::adjust(Error *error, ArrayRef<Record> records) {
+  if (!fill_arg1_values(error, records) ||
+      !fill_arg2_values(error, records)) {
+    return false;
+  }
+  for (Int i = 0; i < records.size(); ++i) {
+    records.set_score(i, this->arg1_values_[i] + this->arg2_values_[i]);
+  }
+  return true;
+}
+
+bool PlusNode<Float>::evaluate(Error *error,
+                               ArrayCRef<Record> records,
+                               ArrayRef<Value> results) {
+  if (!fill_arg1_values(error, records) ||
+      !fill_arg2_values(error, records)) {
+    return false;
+  }
+  for (Int i = 0; i < records.size(); ++i) {
+    results.set(i, this->arg1_values_[i] + this->arg2_values_[i]);
+  }
+  return true;
+}
+
+// ---- MinusOperator ----
+
+template <typename T> class MinusNode;
+
+template <>
+class MinusNode<Int> : public BinaryNode<Int, Int, Int> {
+ public:
+  using Value = Int;
+  using Arg1 = Int;
+  using Arg2 = Int;
+
+  static unique_ptr<Node> create(Error *error,
+                                 unique_ptr<Node> &&arg1,
+                                 unique_ptr<Node> &&arg2) {
+    unique_ptr<Node> node(
+        new (nothrow) MinusNode(std::move(arg1), std::move(arg2)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
+  MinusNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
+      : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)) {}
+
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results);
+};
+
+bool MinusNode<Int>::evaluate(Error *error,
+                              ArrayCRef<Record> records,
+                              ArrayRef<Value> results) {
+  if (!fill_arg1_values(error, records) ||
+      !fill_arg2_values(error, records)) {
+    return false;
+  }
+  for (Int i = 0; i < records.size(); ++i) {
+    results.set(i, this->arg1_values_[i] - this->arg2_values_[i]);
+  }
+  return true;
+}
+
+template <>
+class MinusNode<Float> : public BinaryNode<Float, Float, Float> {
+ public:
+  using Value = Float;
+  using Arg1 = Float;
+  using Arg2 = Float;
+
+  static unique_ptr<Node> create(Error *error,
+                                 unique_ptr<Node> &&arg1,
+                                 unique_ptr<Node> &&arg2) {
+    unique_ptr<Node> node(
+        new (nothrow) MinusNode(std::move(arg1), std::move(arg2)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
+  MinusNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
+      : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)) {}
+
+  bool adjust(Error *error, ArrayRef<Record> records);
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results);
+};
+
+bool MinusNode<Float>::adjust(Error *error, ArrayRef<Record> records) {
+  if (!fill_arg1_values(error, records) ||
+      !fill_arg2_values(error, records)) {
+    return false;
+  }
+  for (Int i = 0; i < records.size(); ++i) {
+    records.set_score(i, this->arg1_values_[i] - this->arg2_values_[i]);
+  }
+  return true;
+}
+
+bool MinusNode<Float>::evaluate(Error *error,
+                                ArrayCRef<Record> records,
+                                ArrayRef<Value> results) {
+  if (!fill_arg1_values(error, records) ||
+      !fill_arg2_values(error, records)) {
+    return false;
+  }
+  for (Int i = 0; i < records.size(); ++i) {
+    results.set(i, this->arg1_values_[i] - this->arg2_values_[i]);
+  }
+  return true;
+}
+
+// ---- MultiplicationOperator ----
+
+template <typename T> class MultiplicationNode;
+
+template <>
+class MultiplicationNode<Int> : public BinaryNode<Int, Int, Int> {
+ public:
+  using Value = Int;
+  using Arg1 = Int;
+  using Arg2 = Int;
+
+  static unique_ptr<Node> create(Error *error,
+                                 unique_ptr<Node> &&arg1,
+                                 unique_ptr<Node> &&arg2) {
+    unique_ptr<Node> node(
+        new (nothrow) MultiplicationNode(std::move(arg1), std::move(arg2)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
+  MultiplicationNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
+      : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)) {}
+
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results);
+};
+
+bool MultiplicationNode<Int>::evaluate(Error *error,
+                                       ArrayCRef<Record> records,
+                                       ArrayRef<Value> results) {
+  if (!fill_arg1_values(error, records) ||
+      !fill_arg2_values(error, records)) {
+    return false;
+  }
+  for (Int i = 0; i < records.size(); ++i) {
+    results.set(i, this->arg1_values_[i] * this->arg2_values_[i]);
+  }
+  return true;
+}
+
+template <>
+class MultiplicationNode<Float> : public BinaryNode<Float, Float, Float> {
+ public:
+  using Value = Float;
+  using Arg1 = Float;
+  using Arg2 = Float;
+
+  static unique_ptr<Node> create(Error *error,
+                                 unique_ptr<Node> &&arg1,
+                                 unique_ptr<Node> &&arg2) {
+    unique_ptr<Node> node(
+        new (nothrow) MultiplicationNode(std::move(arg1), std::move(arg2)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
+  MultiplicationNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
+      : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)) {}
+
+  bool adjust(Error *error, ArrayRef<Record> records);
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results);
+};
+
+bool MultiplicationNode<Float>::adjust(Error *error,
+                                       ArrayRef<Record> records) {
+  if (!fill_arg1_values(error, records) ||
+      !fill_arg2_values(error, records)) {
+    return false;
+  }
+  for (Int i = 0; i < records.size(); ++i) {
+    records.set_score(i, this->arg1_values_[i] * this->arg2_values_[i]);
+  }
+  return true;
+}
+
+bool MultiplicationNode<Float>::evaluate(Error *error,
+                                         ArrayCRef<Record> records,
+                                         ArrayRef<Value> results) {
+  if (!fill_arg1_values(error, records) ||
+      !fill_arg2_values(error, records)) {
+    return false;
+  }
+  for (Int i = 0; i < records.size(); ++i) {
+    results.set(i, this->arg1_values_[i] * this->arg2_values_[i]);
+  }
+  return true;
+}
+
+// ---- DivisionOperator ----
+
+template <typename T> class DivisionNode;
+
+template <>
+class DivisionNode<Int> : public BinaryNode<Int, Int, Int> {
+ public:
+  using Value = Int;
+  using Arg1 = Int;
+  using Arg2 = Int;
+
+  static unique_ptr<Node> create(Error *error,
+                                 unique_ptr<Node> &&arg1,
+                                 unique_ptr<Node> &&arg2) {
+    unique_ptr<Node> node(
+        new (nothrow) DivisionNode(std::move(arg1), std::move(arg2)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
+  DivisionNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
+      : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)) {}
+
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results);
+};
+
+bool DivisionNode<Int>::evaluate(Error *error,
+                                 ArrayCRef<Record> records,
+                                 ArrayRef<Value> results) {
+  if (!fill_arg1_values(error, records) ||
+      !fill_arg2_values(error, records)) {
+    return false;
+  }
+  for (Int i = 0; i < records.size(); ++i) {
+    if (this->arg2_values_[i] == 0) {
+      GRNXX_ERROR_SET(error, DIVISION_BY_ZERO, "Division by zero");
+      return false;
+    } else if ((this->arg2_values_[i] == -1) &&
+               (this->arg1_values_[i] == numeric_limits<Int>::min())) {
+      GRNXX_ERROR_SET(error, DIVISION_OVERFLOW, "Division overflow");
+      return false;
+    }
+    results.set(i, this->arg1_values_[i] / this->arg2_values_[i]);
+  }
+  return true;
+}
+
+template <>
+class DivisionNode<Float> : public BinaryNode<Float, Float, Float> {
+ public:
+  using Value = Float;
+  using Arg1 = Float;
+  using Arg2 = Float;
+
+  static unique_ptr<Node> create(Error *error,
+                                 unique_ptr<Node> &&arg1,
+                                 unique_ptr<Node> &&arg2) {
+    unique_ptr<Node> node(
+        new (nothrow) DivisionNode(std::move(arg1), std::move(arg2)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
+  DivisionNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
+      : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)) {}
+
+  bool adjust(Error *error, ArrayRef<Record> records);
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results);
+};
+
+bool DivisionNode<Float>::adjust(Error *error,
+                                 ArrayRef<Record> records) {
+  if (!fill_arg1_values(error, records) ||
+      !fill_arg2_values(error, records)) {
+    return false;
+  }
+  for (Int i = 0; i < records.size(); ++i) {
+    records.set_score(i, this->arg1_values_[i] / this->arg2_values_[i]);
+  }
+  return true;
+}
+
+bool DivisionNode<Float>::evaluate(Error *error,
+                                   ArrayCRef<Record> records,
+                                   ArrayRef<Value> results) {
+  if (!fill_arg1_values(error, records) ||
+      !fill_arg2_values(error, records)) {
+    return false;
+  }
+  for (Int i = 0; i < records.size(); ++i) {
+    results.set(i, this->arg1_values_[i] / this->arg2_values_[i]);
+  }
+  return true;
+}
+
+// ---- ModulusOperator ----
+
+template <typename T> class ModulusNode;
+
+template <>
+class ModulusNode<Int> : public BinaryNode<Int, Int, Int> {
+ public:
+  using Value = Int;
+  using Arg1 = Int;
+  using Arg2 = Int;
+
+  static unique_ptr<Node> create(Error *error,
+                                 unique_ptr<Node> &&arg1,
+                                 unique_ptr<Node> &&arg2) {
+    unique_ptr<Node> node(
+        new (nothrow) ModulusNode(std::move(arg1), std::move(arg2)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
+  ModulusNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
+      : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)) {}
+
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results);
+};
+
+bool ModulusNode<Int>::evaluate(Error *error,
+                                ArrayCRef<Record> records,
+                                ArrayRef<Value> results) {
+  if (!fill_arg1_values(error, records) ||
+      !fill_arg2_values(error, records)) {
+    return false;
+  }
+  for (Int i = 0; i < records.size(); ++i) {
+    if (this->arg2_values_[i] == 0) {
+      GRNXX_ERROR_SET(error, DIVISION_BY_ZERO, "Division by zero");
+      return false;
+    } else if ((this->arg2_values_[i] == -1) &&
+               (this->arg1_values_[i] == numeric_limits<Int>::min())) {
+      GRNXX_ERROR_SET(error, DIVISION_OVERFLOW, "Division overflow");
+      return false;
+    }
+    results.set(i, this->arg1_values_[i] % this->arg2_values_[i]);
+  }
+  return true;
+}
+
+}  // namespace expression
+
+using namespace expression;
 
 // -- Expression --
 
@@ -739,111 +2195,112 @@ DataType Expression::data_type() const {
 }
 
 bool Expression::filter(Error *error, Array<Record> *records, Int offset) {
-  ArrayRef<Record> input_ref = records->ref(offset);
-  ArrayRef<Record> output_ref = records->ref(offset);
-  while (input_ref.size() > block_size()) {
-    ArrayRef<Record> input_block = input_ref.ref(0, block_size());
-    if (input_ref.size() == output_ref.size()) {
-      if (!root_->filter(error, input_block, &input_block)) {
-        return false;
-      }
-      input_ref = input_ref.ref(block_size());
-      output_ref = output_ref.ref(input_block.size());
-    } else {
-      ArrayRef<Record> output_block = output_ref;
-      if (!root_->filter(error, input_block, &output_block)) {
-        return false;
-      }
-      input_ref = input_ref.ref(block_size());
-      output_ref = output_ref.ref(output_block.size());
-    }
-  }
-  ArrayRef<Record> output_block = output_ref;
-  if (!root_->filter(error, input_ref, &output_block)) {
+  ArrayRef<Record> output_records = records->ref();
+  if (!filter(error, *records, &output_records)) {
     return false;
   }
-  output_ref = output_ref.ref(output_block.size());
-  return records->resize(error, records->size() - output_ref.size());
+  return records->resize(error, output_records.size());
+}
+
+bool Expression::filter(Error *error,
+                        ArrayCRef<Record> input_records,
+                        ArrayRef<Record> *output_records) {
+  ArrayCRef<Record> input = input_records;
+  ArrayRef<Record> output = *output_records;
+  Int count = 0;
+  while (input.size() > block_size_) {
+    ArrayCRef<Record> input_block = input.ref(0, block_size_);
+    ArrayRef<Record> output_block = output.ref(0, block_size_);
+    if (!root_->filter(error, input_block, &output_block)) {
+      return false;
+    }
+    input = input.ref(block_size_);
+    output = output.ref(output_block.size());
+    count += output_block.size();
+  }
+  if (!root_->filter(error, input, &output)) {
+    return false;
+  }
+  count += output.size();
+  *output_records = output_records->ref(0, count);
+  return true;
 }
 
 bool Expression::adjust(Error *error, Array<Record> *records, Int offset) {
-  ArrayRef<Record> ref = records->ref(offset);
-  while (ref.size() > block_size()) {
-    ArrayRef<Record> block = ref.ref(0, block_size());
-    if (!root_->adjust(error, &block)) {
+  return adjust(error, records->ref(offset));
+}
+
+bool Expression::adjust(Error *error, ArrayRef<Record> records) {
+  while (records.size() > block_size_) {
+    if (!root_->adjust(error, records.ref(0, block_size_))) {
       return false;
     }
-    ref = ref.ref(block_size());
+    records = records.ref(block_size_);
   }
-  return root_->adjust(error, &ref);
+  return root_->adjust(error, records);
 }
 
 template <typename T>
 bool Expression::evaluate(Error *error,
-                          const ArrayRef<Record> &records,
+                          ArrayCRef<Record> records,
                           Array<T> *results) {
-  if (TypeTraits<T>::data_type() != data_type()) {
-    GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Invalid data type");
-    return false;
-  }
   if (!results->resize(error, records.size())) {
     return false;
   }
-  ArrayRef<T> ref = *results;
-  return evaluate(error, records, &ref);
+  return evaluate(error, records, results->ref());
 }
 
-template bool Expression::evaluate(Error *error,
-                                   const ArrayRef<Record> &records,
-                                   Array<Bool> *results);
-template bool Expression::evaluate(Error *error,
-                                   const ArrayRef<Record> &records,
-                                   Array<Int> *results);
-template bool Expression::evaluate(Error *error,
-                                   const ArrayRef<Record> &records,
-                                   Array<Float> *results);
-template bool Expression::evaluate(Error *error,
-                                   const ArrayRef<Record> &records,
-                                   Array<Time> *results);
-template bool Expression::evaluate(Error *error,
-                                   const ArrayRef<Record> &records,
-                                   Array<GeoPoint> *results);
-template bool Expression::evaluate(Error *error,
-                                   const ArrayRef<Record> &records,
-                                   Array<Text> *results);
+#define GRNXX_INSTANTIATE_EXPRESSION_EVALUATE(type) \
+  template bool Expression::evaluate(Error *error, \
+                                     ArrayCRef<Record> records, \
+                                     Array<type> *results)
+GRNXX_INSTANTIATE_EXPRESSION_EVALUATE(Bool);
+GRNXX_INSTANTIATE_EXPRESSION_EVALUATE(Int);
+GRNXX_INSTANTIATE_EXPRESSION_EVALUATE(Float);
+GRNXX_INSTANTIATE_EXPRESSION_EVALUATE(Time);
+GRNXX_INSTANTIATE_EXPRESSION_EVALUATE(GeoPoint);
+GRNXX_INSTANTIATE_EXPRESSION_EVALUATE(Text);
+#undef GRNXX_INSTANTIATE_EXPRESSION_EVALUATE
 
 template <typename T>
 bool Expression::evaluate(Error *error,
-                          const ArrayRef<Record> &records,
-                          ArrayRef<T> *results) {
+                          ArrayCRef<Record> records,
+                          ArrayRef<T> results) {
   if (TypeTraits<T>::data_type() != data_type()) {
     GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Invalid data type");
     return false;
   }
-  if (records.size() != results->size()) {
+  if (records.size() != results.size()) {
     GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Size conflict: "
                     "#records = %" PRIi64 ", #results = %" PRIi64,
-                    records.size(), results->size());
+                    records.size(), results.size());
     return false;
   }
-  ArrayRef<Record> input = records;
-  ArrayRef<T> output = *results;
-  while (input.size() > block_size()) {
-    ArrayRef<Record> ref = input.ref(0, block_size());
-    if (!evaluate_block(error, ref, &output)) {
+  auto typed_root = static_cast<TypedNode<T> *>(root_.get());
+  while (records.size() > block_size_) {
+    ArrayCRef<Record> input = records.ref(0, block_size_);
+    ArrayRef<T> output = results.ref(0, block_size_);
+    if (!typed_root->evaluate(error, input, output)) {
       return false;
     }
-    input = input.ref(block_size());
-    output = output.ref(block_size());
+    records = records.ref(block_size_);
+    results = results.ref(block_size_);
   }
-  return evaluate_block(error, input, &output);
+  return typed_root->evaluate(error, records, results);
 }
 
 unique_ptr<Expression> Expression::create(Error *error,
                                           const Table *table,
-                                          unique_ptr<ExpressionNode> &&root) {
+                                          unique_ptr<ExpressionNode> &&root,
+                                          const ExpressionOptions &options) {
+  if (options.block_size <= 0) {
+    GRNXX_ERROR_SET(error, INVALID_ARGUMENT,
+                    "Invalid argument: block_size = %" PRIi64,
+                    options.block_size);
+    return nullptr;
+  }
   unique_ptr<Expression> expression(
-      new (nothrow) Expression(table, std::move(root)));
+      new (nothrow) Expression(table, std::move(root), options.block_size));
   if (!expression) {
     GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
     return nullptr;
@@ -851,23 +2308,12 @@ unique_ptr<Expression> Expression::create(Error *error,
   return expression;
 }
 
-Expression::Expression(const Table *table, unique_ptr<ExpressionNode> &&root)
+Expression::Expression(const Table *table,
+                       unique_ptr<ExpressionNode> &&root,
+                       Int block_size)
     : table_(table),
-      root_(std::move(root)) {}
-
-template <typename T>
-bool Expression::evaluate_block(Error *error,
-                                const ArrayRef<Record> &records,
-                                ArrayRef<T> *results) {
-  Node<T> *node = static_cast<Node<T> *>(root_.get());
-  if (!node->evaluate(error, records)) {
-    return false;
-  }
-  for (Int i = 0; i < records.size(); ++i) {
-    results->set(i, node->get(i));
-  }
-  return true;
-}
+      root_(std::move(root)),
+      block_size_(block_size) {}
 
 // -- ExpressionBuilder --
 
@@ -889,40 +2335,8 @@ bool ExpressionBuilder::push_datum(Error *error, const Datum &datum) {
   if (!stack_.reserve(error, stack_.size() + 1)) {
     return false;
   }
-  unique_ptr<ExpressionNode> node;
-  switch (datum.type()) {
-    case BOOL_DATA: {
-      node.reset(new (nothrow) DatumNode<Bool>(datum.force_bool()));
-      break;
-    }
-    case INT_DATA: {
-      node.reset(new (nothrow) DatumNode<Int>(datum.force_int()));
-      break;
-    }
-    case FLOAT_DATA: {
-      node.reset(new (nothrow) DatumNode<Float>(datum.force_float()));
-      break;
-    }
-    case TIME_DATA: {
-      node.reset(new (nothrow) DatumNode<Time>(datum.force_time()));
-      break;
-    }
-    case GEO_POINT_DATA: {
-      node.reset(new (nothrow) DatumNode<GeoPoint>(datum.force_geo_point()));
-      break;
-    }
-    case TEXT_DATA: {
-      node.reset(new (nothrow) DatumNode<Text>(datum.force_text()));
-      break;
-    }
-    default: {
-      // TODO: Other types are not supported yet.
-      GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
-      return false;
-    }
-  }
+  unique_ptr<Node> node = create_datum_node(error, datum);
   if (!node) {
-    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
     return false;
   }
   // This push_back() must not fail because a space is already reserved.
@@ -935,50 +2349,8 @@ bool ExpressionBuilder::push_column(Error *error, String name) {
   if (!stack_.reserve(error, stack_.size() + 1)) {
     return false;
   }
-  unique_ptr<ExpressionNode> node;
-  if (name == "_id") {
-    node.reset(new (nothrow) RowIDNode());
-  } else if (name == "_score") {
-    node.reset(new (nothrow) ScoreNode());
-  } else {
-    Column *column = table_->find_column(error, name);
-    if (!column) {
-      return false;
-    }
-    switch (column->data_type()) {
-      case BOOL_DATA: {
-        node.reset(new (nothrow) ColumnNode<Bool>(column));
-        break;
-      }
-      case INT_DATA: {
-        node.reset(new (nothrow) ColumnNode<Int>(column));
-        break;
-      }
-      case FLOAT_DATA: {
-        node.reset(new (nothrow) ColumnNode<Float>(column));
-        break;
-      }
-      case TIME_DATA: {
-        node.reset(new (nothrow) ColumnNode<Time>(column));
-        break;
-      }
-      case GEO_POINT_DATA: {
-        node.reset(new (nothrow) ColumnNode<GeoPoint>(column));
-        break;
-      }
-      case TEXT_DATA: {
-        node.reset(new (nothrow) ColumnNode<Text>(column));
-        break;
-      }
-      default: {
-        // TODO: Other types are not supported yet.
-        GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
-        return false;
-      }
-    }
-  }
+  unique_ptr<ExpressionNode> node = create_column_node(error, name);
   if (!node) {
-    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
     return false;
   }
   // This push_back() must not fail because a space is already reserved.
@@ -989,6 +2361,8 @@ bool ExpressionBuilder::push_column(Error *error, String name) {
 bool ExpressionBuilder::push_operator(Error *error,
                                       OperatorType operator_type) {
   switch (operator_type) {
+    case LOGICAL_NOT_OPERATOR:
+    case BITWISE_NOT_OPERATOR:
     case POSITIVE_OPERATOR:
     case NEGATIVE_OPERATOR:
     case TO_INT_OPERATOR:
@@ -1008,7 +2382,9 @@ bool ExpressionBuilder::push_operator(Error *error,
     case BITWISE_XOR_OPERATOR:
     case PLUS_OPERATOR:
     case MINUS_OPERATOR:
-    case MULTIPLICATION_OPERATOR: {
+    case MULTIPLICATION_OPERATOR:
+    case DIVISION_OPERATOR:
+    case MODULUS_OPERATOR: {
       return push_binary_operator(error, operator_type);
     }
     default: {
@@ -1023,17 +2399,106 @@ void ExpressionBuilder::clear() {
   stack_.clear();
 }
 
-unique_ptr<Expression> ExpressionBuilder::release(Error *error) {
+unique_ptr<Expression> ExpressionBuilder::release(
+    Error *error,
+    const ExpressionOptions &options) {
   if (stack_.size() != 1) {
     GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Incomplete expression");
     return nullptr;
   }
-  unique_ptr<ExpressionNode> root_node = std::move(stack_[0]);
+  unique_ptr<ExpressionNode> root = std::move(stack_[0]);
   stack_.clear();
-  return Expression::create(error, table_, std::move(root_node));
+  return Expression::create(error, table_, std::move(root), options);
 }
 
-ExpressionBuilder::ExpressionBuilder(const Table *table) : table_(table) {}
+ExpressionBuilder::ExpressionBuilder(const Table *table)
+    : table_(table),
+      stack_() {}
+
+unique_ptr<ExpressionNode> ExpressionBuilder::create_datum_node(
+    Error *error,
+    const Datum &datum) {
+  switch (datum.type()) {
+    case BOOL_DATA: {
+      return DatumNode<Bool>::create(error, datum.force_bool());
+    }
+    case INT_DATA: {
+      return DatumNode<Int>::create(error, datum.force_int());
+    }
+    case FLOAT_DATA: {
+      return DatumNode<Float>::create(error, datum.force_float());
+    }
+    case TIME_DATA: {
+      return DatumNode<Time>::create(error, datum.force_time());
+    }
+    case GEO_POINT_DATA: {
+      return DatumNode<GeoPoint>::create(error, datum.force_geo_point());
+    }
+    case TEXT_DATA: {
+      return DatumNode<Text>::create(error, datum.force_text());
+    }
+    default: {
+      // TODO: Other types are not supported yet.
+      GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
+      return nullptr;
+    }
+  }
+}
+
+unique_ptr<ExpressionNode> ExpressionBuilder::create_column_node(
+    Error *error,
+    String name) {
+  if (name == "_id") {
+    // Create a node associated with row IDs of records.
+    unique_ptr<Node> node(new (nothrow) RowIDNode());
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+      return nullptr;
+    }
+    return node;
+  }
+
+  if (name == "_score") {
+    // Create a node associated with scores of records.
+    unique_ptr<Node> node(new (nothrow) ScoreNode());
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+      return nullptr;
+    }
+    return node;
+  }
+
+  // Create a node associated with a column.
+  Column *column = table_->find_column(error, name);
+  if (!column) {
+    return nullptr;
+  }
+  switch (column->data_type()) {
+    case BOOL_DATA: {
+      return ColumnNode<Bool>::create(error, column);
+    }
+    case INT_DATA: {
+      return ColumnNode<Int>::create(error, column);
+    }
+    case FLOAT_DATA: {
+      return ColumnNode<Float>::create(error, column);
+    }
+    case TIME_DATA: {
+      return ColumnNode<Time>::create(error, column);
+    }
+    case GEO_POINT_DATA: {
+      return ColumnNode<GeoPoint>::create(error, column);
+    }
+    case TEXT_DATA: {
+      return ColumnNode<Text>::create(error, column);
+    }
+    default: {
+      // TODO: Other types are not supported yet.
+      GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
+      return nullptr;
+    }
+  }
+}
 
 bool ExpressionBuilder::push_unary_operator(Error *error,
                                             OperatorType operator_type) {
@@ -1041,25 +2506,15 @@ bool ExpressionBuilder::push_unary_operator(Error *error,
     GRNXX_ERROR_SET(error, INVALID_OPERAND, "Not enough operands");
     return false;
   }
-  switch (operator_type) {
-    case POSITIVE_OPERATOR: {
-      return push_positive_operator(error);
-    }
-    case NEGATIVE_OPERATOR: {
-      return push_negative_operator(error);
-    }
-    case TO_INT_OPERATOR: {
-      return push_to_int_operator(error);
-    }
-    case TO_FLOAT_OPERATOR: {
-      return push_to_float_operator(error);
-    }
-    default: {
-      // TODO: Not supported yet.
-      GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
-      return false;
-    }
+  unique_ptr<Node> arg = std::move(stack_[stack_.size() - 1]);
+  stack_.resize(nullptr, stack_.size() - 1);
+  unique_ptr<Node> node =
+      create_unary_node(error, operator_type, std::move(arg));
+  if (!node) {
+    return false;
   }
+  stack_.push_back(error, std::move(node));
+  return true;
 }
 
 bool ExpressionBuilder::push_binary_operator(Error *error,
@@ -1068,373 +2523,324 @@ bool ExpressionBuilder::push_binary_operator(Error *error,
     GRNXX_ERROR_SET(error, INVALID_OPERAND, "Not enough operands");
     return false;
   }
+  unique_ptr<Node> arg1 = std::move(stack_[stack_.size() - 2]);
+  unique_ptr<Node> arg2 = std::move(stack_[stack_.size() - 1]);
+  stack_.resize(nullptr, stack_.size() - 2);
+  unique_ptr<Node> node = create_binary_node(error, operator_type,
+                                             std::move(arg1), std::move(arg2));
+  if (!node) {
+    return false;
+  }
+  stack_.push_back(nullptr, std::move(node));
+  return true;
+}
+
+unique_ptr<ExpressionNode> ExpressionBuilder::create_unary_node(
+    Error *error,
+    OperatorType operator_type,
+    unique_ptr<ExpressionNode> &&arg) {
   switch (operator_type) {
-    case LOGICAL_AND_OPERATOR: {
-      return push_logical_and_operator(error);
+    case LOGICAL_NOT_OPERATOR: {
+      if (arg->data_type() != BOOL_DATA) {
+        GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
+        return nullptr;
+      }
+      return LogicalNotNode::create(error, std::move(arg));
     }
-    case LOGICAL_OR_OPERATOR: {
-      return push_logical_or_operator(error);
+    case BITWISE_NOT_OPERATOR: {
+      switch (arg->data_type()) {
+        case BOOL_DATA: {
+          return BitwiseNotNode<Bool>::create(error, std::move(arg));
+        }
+        case FLOAT_DATA: {
+          return BitwiseNotNode<Int>::create(error, std::move(arg));
+        }
+        default: {
+          GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
+          return nullptr;
+        }
+      }
     }
-    case EQUAL_OPERATOR: {
-      return push_equality_operator<Equal>(error);
+    case POSITIVE_OPERATOR: {
+      if ((arg->data_type() != INT_DATA) && (arg->data_type() != FLOAT_DATA)) {
+        GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
+        return nullptr;
+      }
+      // Positive operator does nothing.
+      return std::move(arg);
     }
-    case NOT_EQUAL_OPERATOR: {
-      return push_equality_operator<NotEqual>(error);
+    case NEGATIVE_OPERATOR: {
+      switch (arg->data_type()) {
+        case INT_DATA: {
+          return NegativeNode<Int>::create(error, std::move(arg));
+        }
+        case FLOAT_DATA: {
+          return NegativeNode<Float>::create(error, std::move(arg));
+        }
+        default: {
+          GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
+          return nullptr;
+        }
+      }
     }
-    case LESS_OPERATOR: {
-      return push_comparison_operator<Less>(error);
+    case TO_INT_OPERATOR: {
+      if (arg->data_type() != FLOAT_DATA) {
+        GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
+        return nullptr;
+      }
+      return ToIntNode::create(error, std::move(arg));
     }
-    case LESS_EQUAL_OPERATOR: {
-      return push_comparison_operator<LessEqual>(error);
-    }
-    case GREATER_OPERATOR: {
-      return push_comparison_operator<Greater>(error);
-    }
-    case GREATER_EQUAL_OPERATOR: {
-      return push_comparison_operator<GreaterEqual>(error);
-    }
-    case BITWISE_AND_OPERATOR: {
-      return push_bitwise_operator<BitwiseAnd>(error);
-    }
-    case BITWISE_OR_OPERATOR: {
-      return push_bitwise_operator<BitwiseOr>(error);
-    }
-    case BITWISE_XOR_OPERATOR: {
-      return push_bitwise_operator<BitwiseXor>(error);
-    }
-    case PLUS_OPERATOR: {
-      return push_arithmetic_operator<Plus>(error);
-    }
-    case MINUS_OPERATOR: {
-      return push_arithmetic_operator<Minus>(error);
-    }
-    case MULTIPLICATION_OPERATOR: {
-      return push_arithmetic_operator<Multiplication>(error);
+    case TO_FLOAT_OPERATOR: {
+      if (arg->data_type() != INT_DATA) {
+        GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
+        return nullptr;
+      }
+      return ToFloatNode::create(error, std::move(arg));
     }
     default: {
       // TODO: Not supported yet.
       GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
-      return false;
+      return nullptr;
     }
   }
 }
 
-bool ExpressionBuilder::push_positive_operator(Error *error) {
-  auto &arg = stack_[stack_.size() - 1];
-  switch (arg->data_type()) {
-    case INT_DATA:
-    case FLOAT_DATA: {
-      // Nothing to do because this operator does nothing.
-      return true;
+unique_ptr<ExpressionNode> ExpressionBuilder::create_binary_node(
+    Error *error,
+    OperatorType operator_type,
+    unique_ptr<ExpressionNode> &&arg1,
+    unique_ptr<ExpressionNode> &&arg2) {
+  switch (operator_type) {
+    case LOGICAL_AND_OPERATOR: {
+      if ((arg1->data_type() != BOOL_DATA) ||
+          (arg2->data_type() != BOOL_DATA)) {
+        GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
+        return nullptr;
+      }
+      return LogicalAndNode::create(error, std::move(arg1), std::move(arg2));
+    }
+    case LOGICAL_OR_OPERATOR: {
+      if ((arg1->data_type() != BOOL_DATA) ||
+          (arg2->data_type() != BOOL_DATA)) {
+        GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
+        return nullptr;
+      }
+      return LogicalOrNode::create(error, std::move(arg1), std::move(arg2));
+    }
+    case EQUAL_OPERATOR: {
+      return create_equality_test_node<Equal>(
+          error, std::move(arg1), std::move(arg2));
+    }
+    case NOT_EQUAL_OPERATOR: {
+      return create_equality_test_node<NotEqual>(
+          error, std::move(arg1), std::move(arg2));
+    }
+    case LESS_OPERATOR: {
+      return create_comparison_node<Less>(
+          error, std::move(arg1), std::move(arg2));
+    }
+    case LESS_EQUAL_OPERATOR: {
+      return create_comparison_node<LessEqual>(
+          error, std::move(arg1), std::move(arg2));
+    }
+    case GREATER_OPERATOR: {
+      return create_comparison_node<Greater>(
+          error, std::move(arg1), std::move(arg2));
+    }
+    case GREATER_EQUAL_OPERATOR: {
+      return create_comparison_node<GreaterEqual>(
+          error, std::move(arg1), std::move(arg2));
+    }
+    case BITWISE_AND_OPERATOR:
+    case BITWISE_OR_OPERATOR:
+    case BITWISE_XOR_OPERATOR: {
+      switch (arg1->data_type()) {
+        case BOOL_DATA: {
+          return create_bitwise_node<Bool>(
+              error, operator_type, std::move(arg1), std::move(arg2));
+        }
+        case INT_DATA: {
+          return create_bitwise_node<Int>(
+              error, operator_type, std::move(arg1), std::move(arg2));
+        }
+        default: {
+          GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
+          return nullptr;
+        }
+      }
+    }
+    case PLUS_OPERATOR:
+    case MINUS_OPERATOR:
+    case MULTIPLICATION_OPERATOR:
+    case DIVISION_OPERATOR: {
+      switch (arg1->data_type()) {
+        case INT_DATA: {
+          return create_arithmetic_node<Int>(
+              error, operator_type, std::move(arg1), std::move(arg2));
+        }
+        case FLOAT_DATA: {
+          return create_arithmetic_node<Float>(
+              error, operator_type, std::move(arg1), std::move(arg2));
+        }
+        default: {
+          GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
+          return nullptr;
+        }
+      }
+    }
+    case MODULUS_OPERATOR: {
+      if ((arg1->data_type() != INT_DATA) ||
+          (arg2->data_type() != INT_DATA)) {
+        GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
+        return nullptr;
+      }
+      return ModulusNode<Int>::create(error, std::move(arg1), std::move(arg2));
     }
     default: {
-      GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
-      return false;
+      // TODO: Not supported yet.
+      GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
+      return nullptr;
     }
   }
-}
-
-bool ExpressionBuilder::push_negative_operator(Error *error) {
-  unique_ptr<ExpressionNode> node;
-  auto &arg = stack_[stack_.size() - 1];
-  switch (arg->data_type()) {
-    case INT_DATA: {
-      Negative::Functor<Int> functor;
-      node.reset(
-          new (nothrow) UnaryNode<decltype(functor)>(functor, std::move(arg)));
-      break;
-    }
-    case FLOAT_DATA: {
-      Negative::Functor<Float> functor;
-      node.reset(
-          new (nothrow) UnaryNode<decltype(functor)>(functor, std::move(arg)));
-      break;
-    }
-    default: {
-      GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
-      return false;
-    }
-  }
-  if (!node) {
-    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
-    return false;
-  }
-  stack_.back() = std::move(node);
-  return true;
-}
-
-bool ExpressionBuilder::push_to_int_operator(Error *error) {
-  unique_ptr<ExpressionNode> node;
-  auto &arg = stack_[stack_.size() - 1];
-  switch (arg->data_type()) {
-    case INT_DATA: {
-      // Nothing to do because this operator does nothing.
-      return true;
-    }
-    case FLOAT_DATA: {
-      Typecast<Int>::Functor<Float> functor;
-      node.reset(
-          new (nothrow) UnaryNode<decltype(functor)>(functor, std::move(arg)));
-      break;
-    }
-    default: {
-      GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
-      return false;
-    }
-  }
-  if (!node) {
-    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
-    return false;
-  }
-  stack_.back() = std::move(node);
-  return true;
-}
-
-bool ExpressionBuilder::push_to_float_operator(Error *error) {
-  unique_ptr<ExpressionNode> node;
-  auto &arg = stack_[stack_.size() - 1];
-  switch (arg->data_type()) {
-    case INT_DATA: {
-      Typecast<Float>::Functor<Int> functor;
-      node.reset(
-          new (nothrow) UnaryNode<decltype(functor)>(functor, std::move(arg)));
-      break;
-    }
-    case FLOAT_DATA: {
-      // Nothing to do because this operator does nothing.
-      return true;
-    }
-    default: {
-      GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
-      return false;
-    }
-  }
-  if (!node) {
-    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
-    return false;
-  }
-  stack_.back() = std::move(node);
-  return true;
-}
-
-bool ExpressionBuilder::push_logical_and_operator(Error *error) {
-  auto &lhs = stack_[stack_.size() - 2];
-  auto &rhs = stack_[stack_.size() - 1];
-  if ((lhs->data_type() != BOOL_DATA) ||
-      (rhs->data_type() != BOOL_DATA)) {
-    GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
-    return false;
-  }
-  unique_ptr<ExpressionNode> node(
-      new (nothrow) LogicalAndNode(std::move(lhs), std::move(rhs)));
-  if (!node) {
-    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
-    return false;
-  }
-  stack_.pop_back();
-  stack_.back() = std::move(node);
-  return true;
-}
-
-bool ExpressionBuilder::push_logical_or_operator(Error *error) {
-  auto &lhs = stack_[stack_.size() - 2];
-  auto &rhs = stack_[stack_.size() - 1];
-  if ((lhs->data_type() != BOOL_DATA) ||
-      (rhs->data_type() != BOOL_DATA)) {
-    GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
-    return false;
-  }
-  unique_ptr<ExpressionNode> node(
-      new (nothrow) LogicalOrNode(std::move(lhs), std::move(rhs)));
-  if (!node) {
-    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
-    return false;
-  }
-  stack_.pop_back();
-  stack_.back() = std::move(node);
-  return true;
 }
 
 template <typename T>
-bool ExpressionBuilder::push_equality_operator(Error *error) {
-  auto &lhs = stack_[stack_.size() - 2];
-  auto &rhs = stack_[stack_.size() - 1];
-  if (lhs->data_type() != rhs->data_type()) {
+unique_ptr<ExpressionNode> ExpressionBuilder::create_equality_test_node(
+    Error *error,
+    unique_ptr<ExpressionNode> &&arg1,
+    unique_ptr<ExpressionNode> &&arg2) {
+  if (arg1->data_type() != arg2->data_type()) {
     GRNXX_ERROR_SET(error, INVALID_OPERAND, "Data type conflict");
-    return false;
+    return nullptr;
   }
-  unique_ptr<ExpressionNode> node;
-  switch (lhs->data_type()) {
+  switch (arg1->data_type()) {
     case BOOL_DATA: {
-      typename T::template Functor<Bool> functor;
-      node.reset(new (nothrow) BinaryNode<decltype(functor)>(
-          functor, std::move(lhs), std::move(rhs)));
-      break;
+      return ComparisonNode<typename T:: template Comparer<Bool>>::create(
+          error, std::move(arg1), std::move(arg2));
     }
     case INT_DATA: {
-      typename T::template Functor<Int> functor;
-      node.reset(new (nothrow) BinaryNode<decltype(functor)>(
-          functor, std::move(lhs), std::move(rhs)));
-      break;
+      return ComparisonNode<typename T:: template Comparer<Int>>::create(
+          error, std::move(arg1), std::move(arg2));
     }
     case FLOAT_DATA: {
-      typename T::template Functor<Float> functor;
-      node.reset(new (nothrow) BinaryNode<decltype(functor)>(
-          functor, std::move(lhs), std::move(rhs)));
-      break;
+      return ComparisonNode<typename T:: template Comparer<Float>>::create(
+          error, std::move(arg1), std::move(arg2));
     }
     case TIME_DATA: {
-      typename T::template Functor<Time> functor;
-      node.reset(new (nothrow) BinaryNode<decltype(functor)>(
-          functor, std::move(lhs), std::move(rhs)));
-      break;
+      return ComparisonNode<typename T:: template Comparer<Time>>::create(
+          error, std::move(arg1), std::move(arg2));
     }
     case GEO_POINT_DATA: {
-      typename T::template Functor<GeoPoint> functor;
-      node.reset(new (nothrow) BinaryNode<decltype(functor)>(
-          functor, std::move(lhs), std::move(rhs)));
-      break;
+      return ComparisonNode<typename T:: template Comparer<GeoPoint>>::create(
+          error, std::move(arg1), std::move(arg2));
     }
     case TEXT_DATA: {
-      typename T::template Functor<Text> functor;
-      node.reset(new (nothrow) BinaryNode<decltype(functor)>(
-          functor, std::move(lhs), std::move(rhs)));
-      break;
+      return ComparisonNode<typename T:: template Comparer<Text>>::create(
+          error, std::move(arg1), std::move(arg2));
     }
     // TODO: Support other types.
     default: {
       GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
-      return false;
+      return nullptr;
     }
   }
-  if (!node) {
-    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
-    return false;
-  }
-  stack_.pop_back();
-  stack_.back() = std::move(node);
-  return true;
 }
 
 template <typename T>
-bool ExpressionBuilder::push_comparison_operator(Error *error) {
-  auto &lhs = stack_[stack_.size() - 2];
-  auto &rhs = stack_[stack_.size() - 1];
-  if (lhs->data_type() != rhs->data_type()) {
+unique_ptr<ExpressionNode> ExpressionBuilder::create_comparison_node(
+    Error *error,
+    unique_ptr<ExpressionNode> &&arg1,
+    unique_ptr<ExpressionNode> &&arg2) {
+  if (arg1->data_type() != arg2->data_type()) {
     GRNXX_ERROR_SET(error, INVALID_OPERAND, "Data type conflict");
-    return false;
+    return nullptr;
   }
-  unique_ptr<ExpressionNode> node;
-  switch (lhs->data_type()) {
+  switch (arg1->data_type()) {
     case INT_DATA: {
-      typename T::template Functor<Int> functor;
-      node.reset(new (nothrow) BinaryNode<decltype(functor)>(
-          functor, std::move(lhs), std::move(rhs)));
-      break;
+      return ComparisonNode<typename T:: template Comparer<Int>>::create(
+          error, std::move(arg1), std::move(arg2));
     }
     case FLOAT_DATA: {
-      typename T::template Functor<Float> functor;
-      node.reset(new (nothrow) BinaryNode<decltype(functor)>(
-          functor, std::move(lhs), std::move(rhs)));
-      break;
+      return ComparisonNode<typename T:: template Comparer<Float>>::create(
+          error, std::move(arg1), std::move(arg2));
     }
     case TIME_DATA: {
-      typename T::template Functor<Time> functor;
-      node.reset(new (nothrow) BinaryNode<decltype(functor)>(
-          functor, std::move(lhs), std::move(rhs)));
-      break;
+      return ComparisonNode<typename T:: template Comparer<Time>>::create(
+          error, std::move(arg1), std::move(arg2));
     }
     case TEXT_DATA: {
-      typename T::template Functor<Text> functor;
-      node.reset(new (nothrow) BinaryNode<decltype(functor)>(
-          functor, std::move(lhs), std::move(rhs)));
-      break;
+      return ComparisonNode<typename T:: template Comparer<Text>>::create(
+          error, std::move(arg1), std::move(arg2));
     }
-    // TODO: Support other comparable types.
     default: {
-      GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
-      return false;
+      GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
+      return nullptr;
     }
   }
-  if (!node) {
-    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
-    return false;
-  }
-  stack_.pop_back();
-  stack_.back() = std::move(node);
-  return true;
 }
 
 template <typename T>
-bool ExpressionBuilder::push_bitwise_operator(Error *error) {
-  auto &lhs = stack_[stack_.size() - 2];
-  auto &rhs = stack_[stack_.size() - 1];
-  if (lhs->data_type() != rhs->data_type()) {
+unique_ptr<ExpressionNode> ExpressionBuilder::create_bitwise_node(
+    Error *error,
+    OperatorType operator_type,
+    unique_ptr<ExpressionNode> &&arg1,
+    unique_ptr<ExpressionNode> &&arg2) {
+  if (arg1->data_type() != arg2->data_type()) {
     GRNXX_ERROR_SET(error, INVALID_OPERAND, "Data type conflict");
-    return false;
+    return nullptr;
   }
-  unique_ptr<ExpressionNode> node;
-  switch (lhs->data_type()) {
-    case BOOL_DATA: {
-      typename T::template Functor<Bool> functor;
-      node.reset(new (nothrow) BinaryNode<decltype(functor)>(
-          functor, std::move(lhs), std::move(rhs)));
-      break;
+  switch (operator_type) {
+    case BITWISE_AND_OPERATOR: {
+      return BitwiseAndNode<T>::create(
+          error, std::move(arg1), std::move(arg2));
     }
-    case INT_DATA: {
-      typename T::template Functor<Int> functor;
-      node.reset(new (nothrow) BinaryNode<decltype(functor)>(
-          functor, std::move(lhs), std::move(rhs)));
-      break;
+    case BITWISE_OR_OPERATOR: {
+      return BitwiseOrNode<T>::create(
+          error, std::move(arg1), std::move(arg2));
+    }
+    case BITWISE_XOR_OPERATOR: {
+      return BitwiseXorNode<T>::create(
+          error, std::move(arg1), std::move(arg2));
     }
     default: {
-      GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
-      return false;
+      GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Invalid operator");
+      return nullptr;
     }
   }
-  if (!node) {
-    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
-    return false;
-  }
-  stack_.pop_back();
-  stack_.back() = std::move(node);
-  return true;
 }
 
 template <typename T>
-bool ExpressionBuilder::push_arithmetic_operator(Error *error) {
-  auto &lhs = stack_[stack_.size() - 2];
-  auto &rhs = stack_[stack_.size() - 1];
-  if (lhs->data_type() != rhs->data_type()) {
-    GRNXX_ERROR_SET(error, INVALID_OPERAND, "Type conflict");
-    return false;
+unique_ptr<ExpressionNode> ExpressionBuilder::create_arithmetic_node(
+    Error *error,
+    OperatorType operator_type,
+    unique_ptr<ExpressionNode> &&arg1,
+    unique_ptr<ExpressionNode> &&arg2) {
+  if (arg1->data_type() != arg2->data_type()) {
+    GRNXX_ERROR_SET(error, INVALID_OPERAND, "Data type conflict");
+    return nullptr;
   }
-  unique_ptr<ExpressionNode> node;
-  switch (lhs->data_type()) {
-    case INT_DATA: {
-      typename T::template Functor<Int> functor;
-      node.reset(new (nothrow) BinaryNode<decltype(functor)>(
-          functor, std::move(lhs), std::move(rhs)));
-      break;
+  switch (operator_type) {
+    case PLUS_OPERATOR: {
+      return PlusNode<T>::create(
+          error, std::move(arg1), std::move(arg2));
     }
-    case FLOAT_DATA: {
-      typename T::template Functor<Float> functor;
-      node.reset(new (nothrow) BinaryNode<decltype(functor)>(
-          functor, std::move(lhs), std::move(rhs)));
-      break;
+    case MINUS_OPERATOR: {
+      return MinusNode<T>::create(
+          error, std::move(arg1), std::move(arg2));
+    }
+    case MULTIPLICATION_OPERATOR: {
+      return MultiplicationNode<T>::create(
+          error, std::move(arg1), std::move(arg2));
+    }
+    case DIVISION_OPERATOR: {
+      return DivisionNode<T>::create(
+          error, std::move(arg1), std::move(arg2));
     }
     default: {
-      GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
-      return false;
+      GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
+      return nullptr;
     }
   }
-  if (!node) {
-    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
-    return false;
-  }
-  stack_.pop_back();
-  stack_.back() = std::move(node);
-  return true;
 }
 
 }  // namespace grnxx
