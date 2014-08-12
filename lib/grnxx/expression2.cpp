@@ -72,12 +72,13 @@ class TypedNode : public Node {
   virtual bool filter(Error *error,
                       ArrayCRef<Record> input_records,
                       ArrayRef<Record> *output_records) {
-    // Derived classes of TypedNode<Bool> should override this function.
+    // Other than TypedNode<Bool> don't support filter().
     GRNXX_ERROR_SET(error, INVALID_OPERATION, "Invalid operation");
     return false;
   }
+
   virtual bool adjust(Error *error, ArrayRef<Record> records) {
-    // Derived classes of TypedNode<Float> should override this function.
+    // Other than TypedNode<Float> don't support adjust().
     GRNXX_ERROR_SET(error, INVALID_OPERATION, "Invalid operation");
     return false;
   }
@@ -95,43 +96,99 @@ class TypedNode : public Node {
 };
 
 template <>
-bool TypedNode<Bool>::filter(Error *error,
-                             ArrayCRef<Record> input_records,
-                             ArrayRef<Record> *output_records) {
-  // TODO: This implementation should be overridden by derived classes.
-  Array<Bool> results;
-  if (!results.resize(error, input_records.size())) {
+class TypedNode<Bool> : public Node {
+ public:
+  using Value = Bool;
+
+  TypedNode() : Node() {}
+  virtual ~TypedNode() {}
+
+  DataType data_type() const {
+    return TypeTraits<Value>::data_type();
+  }
+
+  // Derived classes must override this member function.
+  virtual bool filter(Error *error,
+                      ArrayCRef<Record> input_records,
+                      ArrayRef<Record> *output_records) = 0;
+
+  virtual bool adjust(Error *error, ArrayRef<Record> records) {
+    // Other than TypedNode<Float> don't support adjust().
+    GRNXX_ERROR_SET(error, INVALID_OPERATION, "Invalid operation");
     return false;
   }
-  if (!evaluate(error, input_records, results)) {
-    return false;
-  }
-  Int count = 0;
-  for (Int i = 0; i < input_records.size(); ++i) {
-    if (results[i]) {
-      output_records->set(count, input_records.get(i));
-      ++count;
-    }
-  }
-  *output_records = output_records->ref(0, count);
-  return true;
-}
+
+  virtual bool evaluate(Error *error,
+                        ArrayCRef<Record> records,
+                        ArrayRef<Value> results) = 0;
+};
+
+//template <>
+//bool TypedNode<Bool>::filter(Error *error,
+//                             ArrayCRef<Record> input_records,
+//                             ArrayRef<Record> *output_records) {
+//  // TODO: This implementation should be overridden by derived classes.
+//  Array<Bool> results;
+//  if (!results.resize(error, input_records.size())) {
+//    return false;
+//  }
+//  if (!evaluate(error, input_records, results)) {
+//    return false;
+//  }
+//  Int count = 0;
+//  for (Int i = 0; i < input_records.size(); ++i) {
+//    if (results[i]) {
+//      output_records->set(count, input_records.get(i));
+//      ++count;
+//    }
+//  }
+//  *output_records = output_records->ref(0, count);
+//  return true;
+//}
 
 template <>
-bool TypedNode<Float>::adjust(Error *error, ArrayRef<Record> records) {
-  // TODO: This implementation should be overridden by derived classes.
-  Array<Float> scores;
-  if (!scores.resize(error, records.size())) {
+class TypedNode<Float> : public Node {
+ public:
+  using Value = Float;
+
+  TypedNode() : Node() {}
+  virtual ~TypedNode() {}
+
+  DataType data_type() const {
+    return TypeTraits<Value>::data_type();
+  }
+
+  virtual bool filter(Error *error,
+                      ArrayCRef<Record> input_records,
+                      ArrayRef<Record> *output_records) {
+    // Other than TypedNode<Bool> don't support filter().
+    GRNXX_ERROR_SET(error, INVALID_OPERATION, "Invalid operation");
     return false;
   }
-  if (!evaluate(error, records, scores)) {
-    return false;
-  }
-  for (Int i = 0; i < records.size(); ++i) {
-    records.set_score(i, scores[i]);
-  }
-  return true;
-}
+
+  // Derived classes must override this member function.
+  virtual bool adjust(Error *error, ArrayRef<Record> records) = 0;
+
+  virtual bool evaluate(Error *error,
+                        ArrayCRef<Record> records,
+                        ArrayRef<Value> results) = 0;
+};
+
+//template <>
+//bool TypedNode<Float>::adjust(Error *error, ArrayRef<Record> records) {
+//  // TODO: This implementation should be overridden by derived classes.
+//  Array<Float> scores;
+//  if (!scores.resize(error, records.size())) {
+//    return false;
+//  }
+//  if (!evaluate(error, records, scores)) {
+//    return false;
+//  }
+//  for (Int i = 0; i < records.size(); ++i) {
+//    records.set_score(i, scores[i]);
+//  }
+//  return true;
+//}
 
 // -- DatumNode --
 
@@ -891,10 +948,21 @@ class ToFloatNode : public UnaryNode<Float, Int> {
   explicit ToFloatNode(unique_ptr<Node> &&arg)
       : UnaryNode<Value, Arg>(std::move(arg)) {}
 
+  bool adjust(Error *error, ArrayRef<Record> records);
   bool evaluate(Error *error,
                 ArrayCRef<Record> records,
                 ArrayRef<Value> results);
 };
+
+bool ToFloatNode::adjust(Error *error, ArrayRef<Record> records) {
+  if (!fill_arg_values(error, records)) {
+    return false;
+  }
+  for (Int i = 0; i < records.size(); ++i) {
+    records.set_score(i, static_cast<Value>(arg_values_[i]));
+  }
+  return true;
+}
 
 bool ToFloatNode::evaluate(Error *error,
                            ArrayCRef<Record> records,
@@ -1422,9 +1490,9 @@ bool BitwiseAndNode<Bool>::evaluate(Error *error,
 }
 
 template <>
-class BitwiseAndNode<Int> : public BinaryNode<Bool, Int, Int> {
+class BitwiseAndNode<Int> : public BinaryNode<Int, Int, Int> {
  public:
-  using Value = Bool;
+  using Value = Int;
   using Arg1 = Int;
   using Arg2 = Int;
 
@@ -1527,9 +1595,9 @@ bool BitwiseOrNode<Bool>::evaluate(Error *error,
 }
 
 template <>
-class BitwiseOrNode<Int> : public BinaryNode<Bool, Int, Int> {
+class BitwiseOrNode<Int> : public BinaryNode<Int, Int, Int> {
  public:
-  using Value = Bool;
+  using Value = Int;
   using Arg1 = Int;
   using Arg2 = Int;
 
@@ -1632,9 +1700,9 @@ bool BitwiseXorNode<Bool>::evaluate(Error *error,
 }
 
 template <>
-class BitwiseXorNode<Int> : public BinaryNode<Bool, Int, Int> {
+class BitwiseXorNode<Int> : public BinaryNode<Int, Int, Int> {
  public:
-  using Value = Bool;
+  using Value = Int;
   using Arg1 = Int;
   using Arg2 = Int;
 
