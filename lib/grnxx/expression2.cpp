@@ -1015,8 +1015,9 @@ class LogicalAndNode : public BinaryNode<Bool, Bool, Bool> {
   using Arg1 = Bool;
   using Arg2 = Bool;
 
-  static unique_ptr<LogicalAndNode> create(
-      Error *error, unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2) {
+  static unique_ptr<LogicalAndNode> create(Error *error,
+                                           unique_ptr<Node> &&arg1,
+                                           unique_ptr<Node> &&arg2) {
     unique_ptr<LogicalAndNode> node(
         new (nothrow) LogicalAndNode(std::move(arg1), std::move(arg2)));
     if (!node) {
@@ -1079,8 +1080,9 @@ class LogicalOrNode : public BinaryNode<Bool, Bool, Bool> {
   using Arg1 = Bool;
   using Arg2 = Bool;
 
-  static unique_ptr<LogicalOrNode> create(
-      Error *error, unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2) {
+  static unique_ptr<LogicalOrNode> create(Error *error,
+                                          unique_ptr<Node> &&arg1,
+                                          unique_ptr<Node> &&arg2) {
     unique_ptr<LogicalOrNode> node(
         new (nothrow) LogicalOrNode(std::move(arg1), std::move(arg2)));
     if (!node) {
@@ -1274,8 +1276,9 @@ class ComparisonNode
   using Arg1 = typename T::Arg;
   using Arg2 = typename T::Arg;
 
-  static unique_ptr<ComparisonNode> create(
-      Error *error, unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2) {
+  static unique_ptr<ComparisonNode> create(Error *error,
+                                           unique_ptr<Node> &&arg1,
+                                           unique_ptr<Node> &&arg2) {
     unique_ptr<ComparisonNode> node(
         new (nothrow) ComparisonNode(std::move(arg1), std::move(arg2)));
     if (!node) {
@@ -1435,8 +1438,9 @@ class BitwiseAndNode<Bool> : public BinaryNode<Bool, Bool, Bool> {
   using Arg1 = Bool;
   using Arg2 = Bool;
 
-  static unique_ptr<BitwiseAndNode> create(
-      Error *error, unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2) {
+  static unique_ptr<BitwiseAndNode> create(Error *error,
+                                           unique_ptr<Node> &&arg1,
+                                           unique_ptr<Node> &&arg2) {
     unique_ptr<BitwiseAndNode> node(
         new (nothrow) BitwiseAndNode(std::move(arg1), std::move(arg2)));
     if (!node) {
@@ -1496,8 +1500,9 @@ class BitwiseAndNode<Int> : public BinaryNode<Int, Int, Int> {
   using Arg1 = Int;
   using Arg2 = Int;
 
-  static unique_ptr<BitwiseAndNode> create(
-      Error *error, unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2) {
+  static unique_ptr<BitwiseAndNode> create(Error *error,
+                                           unique_ptr<Node> &&arg1,
+                                           unique_ptr<Node> &&arg2) {
     unique_ptr<BitwiseAndNode> node(
         new (nothrow) BitwiseAndNode(std::move(arg1), std::move(arg2)));
     if (!node) {
@@ -1540,8 +1545,9 @@ class BitwiseOrNode<Bool> : public BinaryNode<Bool, Bool, Bool> {
   using Arg1 = Bool;
   using Arg2 = Bool;
 
-  static unique_ptr<BitwiseOrNode> create(
-      Error *error, unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2) {
+  static unique_ptr<BitwiseOrNode> create(Error *error,
+                                          unique_ptr<Node> &&arg1,
+                                          unique_ptr<Node> &&arg2) {
     unique_ptr<BitwiseOrNode> node(
         new (nothrow) BitwiseOrNode(std::move(arg1), std::move(arg2)));
     if (!node) {
@@ -1601,8 +1607,9 @@ class BitwiseOrNode<Int> : public BinaryNode<Int, Int, Int> {
   using Arg1 = Int;
   using Arg2 = Int;
 
-  static unique_ptr<BitwiseOrNode> create(
-      Error *error, unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2) {
+  static unique_ptr<BitwiseOrNode> create(Error *error,
+                                          unique_ptr<Node> &&arg1,
+                                          unique_ptr<Node> &&arg2) {
     unique_ptr<BitwiseOrNode> node(
         new (nothrow) BitwiseOrNode(std::move(arg1), std::move(arg2)));
     if (!node) {
@@ -1645,8 +1652,9 @@ class BitwiseXorNode<Bool> : public BinaryNode<Bool, Bool, Bool> {
   using Arg1 = Bool;
   using Arg2 = Bool;
 
-  static unique_ptr<BitwiseXorNode> create(
-      Error *error, unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2) {
+  static unique_ptr<BitwiseXorNode> create(Error *error,
+                                           unique_ptr<Node> &&arg1,
+                                           unique_ptr<Node> &&arg2) {
     unique_ptr<BitwiseXorNode> node(
         new (nothrow) BitwiseXorNode(std::move(arg1), std::move(arg2)));
     if (!node) {
@@ -1706,8 +1714,9 @@ class BitwiseXorNode<Int> : public BinaryNode<Int, Int, Int> {
   using Arg1 = Int;
   using Arg2 = Int;
 
-  static unique_ptr<BitwiseXorNode> create(
-      Error *error, unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2) {
+  static unique_ptr<BitwiseXorNode> create(Error *error,
+                                           unique_ptr<Node> &&arg1,
+                                           unique_ptr<Node> &&arg2) {
     unique_ptr<BitwiseXorNode> node(
         new (nothrow) BitwiseXorNode(std::move(arg1), std::move(arg2)));
     if (!node) {
@@ -1750,8 +1759,9 @@ class PlusNode<Int> : public BinaryNode<Int, Int, Int> {
   using Arg1 = Int;
   using Arg2 = Int;
 
-  static unique_ptr<PlusNode> create(
-      Error *error, unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2) {
+  static unique_ptr<PlusNode> create(Error *error,
+                                     unique_ptr<Node> &&arg1,
+                                     unique_ptr<Node> &&arg2) {
     unique_ptr<PlusNode> node(
         new (nothrow) PlusNode(std::move(arg1), std::move(arg2)));
     if (!node) {
@@ -1788,8 +1798,9 @@ class PlusNode<Float> : public BinaryNode<Float, Float, Float> {
   using Arg1 = Float;
   using Arg2 = Float;
 
-  static unique_ptr<PlusNode> create(
-      Error *error, unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2) {
+  static unique_ptr<PlusNode> create(Error *error,
+                                     unique_ptr<Node> &&arg1,
+                                     unique_ptr<Node> &&arg2) {
     unique_ptr<PlusNode> node(
         new (nothrow) PlusNode(std::move(arg1), std::move(arg2)));
     if (!node) {
@@ -1842,8 +1853,9 @@ class MinusNode<Int> : public BinaryNode<Int, Int, Int> {
   using Arg1 = Int;
   using Arg2 = Int;
 
-  static unique_ptr<MinusNode> create(
-      Error *error, unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2) {
+  static unique_ptr<MinusNode> create(Error *error,
+                                      unique_ptr<Node> &&arg1,
+                                      unique_ptr<Node> &&arg2) {
     unique_ptr<MinusNode> node(
         new (nothrow) MinusNode(std::move(arg1), std::move(arg2)));
     if (!node) {
@@ -1880,8 +1892,9 @@ class MinusNode<Float> : public BinaryNode<Float, Float, Float> {
   using Arg1 = Float;
   using Arg2 = Float;
 
-  static unique_ptr<MinusNode> create(
-      Error *error, unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2) {
+  static unique_ptr<MinusNode> create(Error *error,
+                                      unique_ptr<Node> &&arg1,
+                                      unique_ptr<Node> &&arg2) {
     unique_ptr<MinusNode> node(
         new (nothrow) MinusNode(std::move(arg1), std::move(arg2)));
     if (!node) {
@@ -1934,8 +1947,9 @@ class MultiplicationNode<Int> : public BinaryNode<Int, Int, Int> {
   using Arg1 = Int;
   using Arg2 = Int;
 
-  static unique_ptr<MultiplicationNode> create(
-      Error *error, unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2) {
+  static unique_ptr<MultiplicationNode> create(Error *error,
+                                               unique_ptr<Node> &&arg1,
+                                               unique_ptr<Node> &&arg2) {
     unique_ptr<MultiplicationNode> node(
         new (nothrow) MultiplicationNode(std::move(arg1), std::move(arg2)));
     if (!node) {
@@ -1972,8 +1986,9 @@ class MultiplicationNode<Float> : public BinaryNode<Float, Float, Float> {
   using Arg1 = Float;
   using Arg2 = Float;
 
-  static unique_ptr<MultiplicationNode> create(
-      Error *error, unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2) {
+  static unique_ptr<MultiplicationNode> create(Error *error,
+                                               unique_ptr<Node> &&arg1,
+                                               unique_ptr<Node> &&arg2) {
     unique_ptr<MultiplicationNode> node(
         new (nothrow) MultiplicationNode(std::move(arg1), std::move(arg2)));
     if (!node) {
@@ -2027,8 +2042,9 @@ class DivisionNode<Int> : public BinaryNode<Int, Int, Int> {
   using Arg1 = Int;
   using Arg2 = Int;
 
-  static unique_ptr<DivisionNode> create(
-      Error *error, unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2) {
+  static unique_ptr<DivisionNode> create(Error *error,
+                                         unique_ptr<Node> &&arg1,
+                                         unique_ptr<Node> &&arg2) {
     unique_ptr<DivisionNode> node(
         new (nothrow) DivisionNode(std::move(arg1), std::move(arg2)));
     if (!node) {
@@ -2073,8 +2089,9 @@ class DivisionNode<Float> : public BinaryNode<Float, Float, Float> {
   using Arg1 = Float;
   using Arg2 = Float;
 
-  static unique_ptr<DivisionNode> create(
-      Error *error, unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2) {
+  static unique_ptr<DivisionNode> create(Error *error,
+                                         unique_ptr<Node> &&arg1,
+                                         unique_ptr<Node> &&arg2) {
     unique_ptr<DivisionNode> node(
         new (nothrow) DivisionNode(std::move(arg1), std::move(arg2)));
     if (!node) {
@@ -2128,8 +2145,9 @@ class ModulusNode<Int> : public BinaryNode<Int, Int, Int> {
   using Arg1 = Int;
   using Arg2 = Int;
 
-  static unique_ptr<ModulusNode> create(
-      Error *error, unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2) {
+  static unique_ptr<ModulusNode> create(Error *error,
+                                        unique_ptr<Node> &&arg1,
+                                        unique_ptr<Node> &&arg2) {
     unique_ptr<ModulusNode> node(
         new (nothrow) ModulusNode(std::move(arg1), std::move(arg2)));
     if (!node) {
