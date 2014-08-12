@@ -732,18 +732,6 @@ bool LogicalOrNode::evaluate(Error *error, const ArrayRef<Record> &records) {
 
 // -- Expression --
 
-unique_ptr<Expression> Expression::create(Error *error,
-                                          const Table *table,
-                                          unique_ptr<ExpressionNode> &&root) {
-  unique_ptr<Expression> expression(
-      new (nothrow) Expression(table, std::move(root)));
-  if (!expression) {
-    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
-    return nullptr;
-  }
-  return expression;
-}
-
 Expression::~Expression() {}
 
 DataType Expression::data_type() const {
@@ -849,6 +837,18 @@ bool Expression::evaluate(Error *error,
     output = output.ref(block_size());
   }
   return evaluate_block(error, input, &output);
+}
+
+unique_ptr<Expression> Expression::create(Error *error,
+                                          const Table *table,
+                                          unique_ptr<ExpressionNode> &&root) {
+  unique_ptr<Expression> expression(
+      new (nothrow) Expression(table, std::move(root)));
+  if (!expression) {
+    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    return nullptr;
+  }
+  return expression;
 }
 
 Expression::Expression(const Table *table, unique_ptr<ExpressionNode> &&root)

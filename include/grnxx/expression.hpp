@@ -58,15 +58,6 @@ enum OperatorType {
 
 class Expression {
  public:
-  // Create an expression.
-  //
-  // Returns a poitner to the builder on success.
-  // On failure, returns nullptr and stores error information into "*error" if
-  // "error" != nullptr.
-  static unique_ptr<Expression> create(Error *error,
-                                       const Table *table,
-                                       unique_ptr<ExpressionNode> &&root);
-
   ~Expression();
 
   // Return the associated table.
@@ -135,12 +126,23 @@ class Expression {
   const Table *table_;
   unique_ptr<ExpressionNode> root_;
 
+  // Create an expression.
+  //
+  // On success, returns a poitner to the expression.
+  // On failure, returns nullptr and stores error information into "*error" if
+  // "error" != nullptr.
+  static unique_ptr<Expression> create(Error *error,
+                                       const Table *table,
+                                       unique_ptr<ExpressionNode> &&root);
+
   Expression(const Table *table, unique_ptr<ExpressionNode> &&root);
 
   template <typename T>
   bool evaluate_block(Error *error,
                       const ArrayRef<Record> &records,
                       ArrayRef<T> *results);
+
+  friend ExpressionBuilder;
 };
 
 class ExpressionBuilder {
