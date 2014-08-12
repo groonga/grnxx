@@ -69,15 +69,15 @@ class TypedNode : public Node {
     return TypeTraits<Value>::data_type();
   }
 
-  virtual bool filter(Error *error,
-                      ArrayCRef<Record> input_records,
-                      ArrayRef<Record> *output_records) {
+  bool filter(Error *error,
+              ArrayCRef<Record> input_records,
+              ArrayRef<Record> *output_records) {
     // Other than TypedNode<Bool> don't support filter().
     GRNXX_ERROR_SET(error, INVALID_OPERATION, "Invalid operation");
     return false;
   }
 
-  virtual bool adjust(Error *error, ArrayRef<Record> records) {
+  bool adjust(Error *error, ArrayRef<Record> records) {
     // Other than TypedNode<Float> don't support adjust().
     GRNXX_ERROR_SET(error, INVALID_OPERATION, "Invalid operation");
     return false;
@@ -112,7 +112,7 @@ class TypedNode<Bool> : public Node {
                       ArrayCRef<Record> input_records,
                       ArrayRef<Record> *output_records) = 0;
 
-  virtual bool adjust(Error *error, ArrayRef<Record> records) {
+  bool adjust(Error *error, ArrayRef<Record> records) {
     // Other than TypedNode<Float> don't support adjust().
     GRNXX_ERROR_SET(error, INVALID_OPERATION, "Invalid operation");
     return false;
@@ -158,9 +158,9 @@ class TypedNode<Float> : public Node {
     return TypeTraits<Value>::data_type();
   }
 
-  virtual bool filter(Error *error,
-                      ArrayCRef<Record> input_records,
-                      ArrayRef<Record> *output_records) {
+  bool filter(Error *error,
+              ArrayCRef<Record> input_records,
+              ArrayRef<Record> *output_records) {
     // Other than TypedNode<Bool> don't support filter().
     GRNXX_ERROR_SET(error, INVALID_OPERATION, "Invalid operation");
     return false;
