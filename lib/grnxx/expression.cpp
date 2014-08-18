@@ -867,11 +867,11 @@ class NegativeNode<Float> : public UnaryNode<Float, Float> {
 };
 
 bool NegativeNode<Float>::adjust(Error *error, ArrayRef<Record> records) {
-  if (!fill_arg_values(error, records)) {
+  if (!arg_->adjust(error, records)) {
     return false;
   }
   for (Int i = 0; i < records.size(); ++i) {
-    records.set_score(i, arg_values_[i]);
+    records.set_score(i, -records.get_score(i));
   }
   return true;
 }
