@@ -403,9 +403,95 @@ void test_bitwise_not() {
 }
 
 void test_positive() {
+  grnxx::Error error;
+
+  // Create an object for building expressions.
+  auto builder = grnxx::ExpressionBuilder::create(&error, test.table);
+  assert(builder);
+
+  // Test an expression (+Int).
+  assert(builder->push_column(&error, "Int"));
+  assert(builder->push_operator(&error, grnxx::POSITIVE_OPERATOR));
+  auto expression = builder->release(&error);
+  assert(expression);
+
+  grnxx::Array<grnxx::Record> records;
+  auto cursor = test.table->create_cursor(&error);
+  assert(cursor);
+  assert(cursor->read_all(&error, &records) == test.table->num_rows());
+
+  grnxx::Array<grnxx::Int> int_results;
+  assert(expression->evaluate(&error, records, &int_results));
+  assert(int_results.size() == test.table->num_rows());
+  for (grnxx::Int i = 0; i < int_results.size(); ++i) {
+    grnxx::Int row_id = records.get_row_id(i);
+    assert(int_results[i] == test.int_values[row_id]);
+  }
+
+  // Test an expression (+Float).
+  assert(builder->push_column(&error, "Float"));
+  assert(builder->push_operator(&error, grnxx::POSITIVE_OPERATOR));
+  expression = builder->release(&error);
+  assert(expression);
+
+  records.clear();
+  cursor = test.table->create_cursor(&error);
+  assert(cursor);
+  assert(cursor->read_all(&error, &records) == test.table->num_rows());
+
+  grnxx::Array<grnxx::Float> float_results;
+  assert(expression->evaluate(&error, records, &float_results));
+  assert(float_results.size() == test.table->num_rows());
+  for (grnxx::Int i = 0; i < float_results.size(); ++i) {
+    grnxx::Int row_id = records.get_row_id(i);
+    assert(float_results[i] == test.float_values[row_id]);
+  }
 }
 
 void test_negative() {
+  grnxx::Error error;
+
+  // Create an object for building expressions.
+  auto builder = grnxx::ExpressionBuilder::create(&error, test.table);
+  assert(builder);
+
+  // Test an expression (-Int).
+  assert(builder->push_column(&error, "Int"));
+  assert(builder->push_operator(&error, grnxx::NEGATIVE_OPERATOR));
+  auto expression = builder->release(&error);
+  assert(expression);
+
+  grnxx::Array<grnxx::Record> records;
+  auto cursor = test.table->create_cursor(&error);
+  assert(cursor);
+  assert(cursor->read_all(&error, &records) == test.table->num_rows());
+
+  grnxx::Array<grnxx::Int> int_results;
+  assert(expression->evaluate(&error, records, &int_results));
+  assert(int_results.size() == test.table->num_rows());
+  for (grnxx::Int i = 0; i < int_results.size(); ++i) {
+    grnxx::Int row_id = records.get_row_id(i);
+    assert(int_results[i] == -test.int_values[row_id]);
+  }
+
+  // Test an expression (-Float).
+  assert(builder->push_column(&error, "Float"));
+  assert(builder->push_operator(&error, grnxx::NEGATIVE_OPERATOR));
+  expression = builder->release(&error);
+  assert(expression);
+
+  records.clear();
+  cursor = test.table->create_cursor(&error);
+  assert(cursor);
+  assert(cursor->read_all(&error, &records) == test.table->num_rows());
+
+  grnxx::Array<grnxx::Float> float_results;
+  assert(expression->evaluate(&error, records, &float_results));
+  assert(float_results.size() == test.table->num_rows());
+  for (grnxx::Int i = 0; i < float_results.size(); ++i) {
+    grnxx::Int row_id = records.get_row_id(i);
+    assert(float_results[i] == -test.float_values[row_id]);
+  }
 }
 
 void test_expression() {
