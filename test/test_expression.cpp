@@ -63,6 +63,10 @@ void init_test() {
   assert(text_column);
 
   // Generate random values.
+  // Bool: true or false.
+  // Int: [0, 100).
+  // Float: [0.0, 1.0].
+  // Text: length = [1, 4], byte = ['0', '9'].
   constexpr grnxx::Int NUM_ROWS = 1 << 16;
   std::mt19937_64 mersenne_twister;
   assert(test.bool_values.resize(&error, NUM_ROWS + 1));
@@ -303,6 +307,105 @@ void test_column() {
   for (grnxx::Int i = 0; i < records.size(); ++i) {
     assert(records.get_score(i) == 0.0);
   }
+}
+
+void test_logical_not() {
+  grnxx::Error error;
+
+  // Create an object for building expressions.
+  auto builder = grnxx::ExpressionBuilder::create(&error, test.table);
+  assert(builder);
+
+  // Test an expression (!Bool).
+  assert(builder->push_column(&error, "Bool"));
+  assert(builder->push_operator(&error, grnxx::LOGICAL_NOT_OPERATOR));
+  auto expression = builder->release(&error);
+  assert(expression);
+
+  grnxx::Array<grnxx::Record> records;
+  auto cursor = test.table->create_cursor(&error);
+  assert(cursor);
+  assert(cursor->read_all(&error, &records) == test.table->num_rows());
+
+  grnxx::Array<grnxx::Bool> bool_results;
+  assert(expression->evaluate(&error, records, &bool_results));
+  assert(bool_results.size() == test.table->num_rows());
+  for (grnxx::Int i = 0; i < bool_results.size(); ++i) {
+    grnxx::Int row_id = records.get_row_id(i);
+    assert(bool_results[i] == !test.bool_values[row_id]);
+  }
+
+  assert(expression->filter(&error, &records));
+  grnxx::Int count = 0;
+  for (grnxx::Int i = 1; i < test.bool_values.size(); ++i) {
+    if (!test.bool_values[i]) {
+      assert(records.get_row_id(count) == i);
+      ++count;
+    }
+  }
+  assert(records.size() == count);
+}
+
+void test_bitwise_not() {
+  grnxx::Error error;
+
+  // Create an object for building expressions.
+  auto builder = grnxx::ExpressionBuilder::create(&error, test.table);
+  assert(builder);
+
+  // Test an expression (~Bool).
+  assert(builder->push_column(&error, "Bool"));
+  assert(builder->push_operator(&error, grnxx::BITWISE_NOT_OPERATOR));
+  auto expression = builder->release(&error);
+  assert(expression);
+
+  grnxx::Array<grnxx::Record> records;
+  auto cursor = test.table->create_cursor(&error);
+  assert(cursor);
+  assert(cursor->read_all(&error, &records) == test.table->num_rows());
+
+  grnxx::Array<grnxx::Bool> bool_results;
+  assert(expression->evaluate(&error, records, &bool_results));
+  assert(bool_results.size() == test.table->num_rows());
+  for (grnxx::Int i = 0; i < bool_results.size(); ++i) {
+    grnxx::Int row_id = records.get_row_id(i);
+    assert(bool_results[i] == !test.bool_values[row_id]);
+  }
+
+  assert(expression->filter(&error, &records));
+  grnxx::Int count = 0;
+  for (grnxx::Int i = 1; i < test.bool_values.size(); ++i) {
+    if (!test.bool_values[i]) {
+      assert(records.get_row_id(count) == i);
+      ++count;
+    }
+  }
+  assert(records.size() == count);
+
+  // Test an expression (~Int).
+  assert(builder->push_column(&error, "Int"));
+  assert(builder->push_operator(&error, grnxx::BITWISE_NOT_OPERATOR));
+  expression = builder->release(&error);
+  assert(expression);
+
+  records.clear();
+  cursor = test.table->create_cursor(&error);
+  assert(cursor);
+  assert(cursor->read_all(&error, &records) == test.table->num_rows());
+
+  grnxx::Array<grnxx::Int> int_results;
+  assert(expression->evaluate(&error, records, &int_results));
+  assert(int_results.size() == test.table->num_rows());
+  for (grnxx::Int i = 0; i < int_results.size(); ++i) {
+    grnxx::Int row_id = records.get_row_id(i);
+    assert(int_results[i] == ~test.int_values[row_id]);
+  }
+}
+
+void test_positive() {
+}
+
+void test_negative() {
 }
 
 void test_expression() {
@@ -738,6 +841,10 @@ int main() {
   init_test();
   test_constant();
   test_column();
+  test_logical_not();
+  test_bitwise_not();
+  test_positive();
+  test_negative();
   test_expression();
   return 0;
 }
