@@ -18,7 +18,7 @@ enum OperatorType {
 
   LOGICAL_NOT_OPERATOR,  // For Bool.
 
-  BITWISE_NOT_OPERATOR,  // For Int.
+  BITWISE_NOT_OPERATOR,  // For Bool, Int.
 
   POSITIVE_OPERATOR,  // For Int, Float.
   NEGATIVE_OPERATOR,  // For Int, Float.
