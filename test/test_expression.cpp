@@ -1899,6 +1899,135 @@ void test_modulus() {
   }
 }
 
+void test_sequential_filter() {
+  grnxx::Error error;
+
+  // Create an object for building expressions.
+  auto builder = grnxx::ExpressionBuilder::create(&error, test.table);
+  assert(builder);
+
+  // Test an expression ((Int + Int2) < 100).
+  assert(builder->push_column(&error, "Int"));
+  assert(builder->push_column(&error, "Int2"));
+  assert(builder->push_operator(&error, grnxx::PLUS_OPERATOR));
+  assert(builder->push_datum(&error, grnxx::Int(100)));
+  assert(builder->push_operator(&error, grnxx::LESS_OPERATOR));
+  auto expression = builder->release(&error);
+  assert(expression);
+
+  auto cursor = test.table->create_cursor(&error);
+  assert(cursor);
+
+  // Read and filter records block by block.
+  grnxx::Array<grnxx::Record> records;
+  grnxx::Int offset = 0;
+  for ( ; ; ) {
+    grnxx::Int num_new_records = cursor->read(&error, 1024, &records);
+    assert(num_new_records != -1);
+    assert((offset + num_new_records) == records.size());
+    if (num_new_records == 0) {
+      break;
+    }
+    assert(expression->filter(&error, &records, offset));
+    offset = records.size();
+  }
+
+  grnxx::Int count = 0;
+  for (grnxx::Int i = 1; i < test.bool_values.size(); ++i) {
+    if ((test.int_values[i] + test.int2_values[i]) < 100) {
+      assert(records.get_row_id(count) == i);
+      ++count;
+    }
+  }
+  assert(records.size() == count);
+}
+
+void test_sequential_adjust() {
+  grnxx::Error error;
+
+  // Create an object for building expressions.
+  auto builder = grnxx::ExpressionBuilder::create(&error, test.table);
+  assert(builder);
+
+  // Test an expression (Float(Int) + Float).
+  assert(builder->push_column(&error, "Int"));
+  assert(builder->push_operator(&error, grnxx::TO_FLOAT_OPERATOR));
+  assert(builder->push_column(&error, "Float"));
+  assert(builder->push_operator(&error, grnxx::PLUS_OPERATOR));
+  auto expression = builder->release(&error);
+  assert(expression);
+
+  auto cursor = test.table->create_cursor(&error);
+  assert(cursor);
+
+  // Read and adjust records block by block.
+  grnxx::Array<grnxx::Record> records;
+  grnxx::Int offset = 0;
+  for ( ; ; ) {
+    grnxx::Int num_new_records = cursor->read(&error, 1024, &records);
+    assert(num_new_records != -1);
+    assert((offset + num_new_records) == records.size());
+    if (num_new_records == 0) {
+      break;
+    }
+    assert(expression->adjust(&error, &records, offset));
+    offset += num_new_records;
+  }
+
+  assert(records.size() == test.table->num_rows());
+  for (grnxx::Int i = 0; i < records.size(); ++i) {
+    grnxx::Int row_id = records.get_row_id(i);
+    assert(records.get_score(i) ==
+           (test.int_values[row_id] + test.float_values[row_id]));
+  }
+}
+
+void test_sequential_evaluate() {
+  grnxx::Error error;
+
+  // Create an object for building expressions.
+  auto builder = grnxx::ExpressionBuilder::create(&error, test.table);
+  assert(builder);
+
+  // Test an expression (Int + Int(Float * 100.0)).
+  assert(builder->push_column(&error, "Int"));
+  assert(builder->push_column(&error, "Float"));
+  assert(builder->push_datum(&error, 100.0));
+  assert(builder->push_operator(&error, grnxx::MULTIPLICATION_OPERATOR));
+  assert(builder->push_operator(&error, grnxx::TO_INT_OPERATOR));
+  assert(builder->push_operator(&error, grnxx::PLUS_OPERATOR));
+  auto expression = builder->release(&error);
+  assert(expression);
+
+  auto cursor = test.table->create_cursor(&error);
+  assert(cursor);
+
+  // Read and evaluate records block by block.
+  grnxx::Array<grnxx::Record> records;
+  grnxx::Array<grnxx::Int> results;
+  grnxx::Int offset = 0;
+  for ( ; ; ) {
+    grnxx::Int num_new_records = cursor->read(&error, 1024, &records);
+    assert(num_new_records != -1);
+    assert((offset + num_new_records) == records.size());
+    if (num_new_records == 0) {
+      break;
+    }
+    assert(results.resize(&error, offset + num_new_records));
+    assert(expression->evaluate(&error, records.ref(offset),
+                                results.ref(offset)));
+    offset += num_new_records;
+  }
+
+  assert(records.size() == test.table->num_rows());
+  for (grnxx::Int i = 0; i < records.size(); ++i) {
+    grnxx::Int row_id = records.get_row_id(i);
+    assert(results[i] ==
+           (test.int_values[row_id] +
+            static_cast<grnxx::Int>(test.float_values[row_id] * 100.0)));
+  }
+}
+
 int main() {
   init_test();
 
@@ -1931,6 +2060,11 @@ int main() {
   test_multiplication();
   test_division();
   test_modulus();
+
+  // Test sequential operations.
+  test_sequential_filter();
+  test_sequential_adjust();
+  test_sequential_evaluate();
 
   return 0;
 }
