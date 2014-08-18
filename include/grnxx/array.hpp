@@ -917,11 +917,6 @@ class Array<Record> {
     records_.pop_back();
   }
 
-  // TODO: For testing.
-  Record *data() const {
-    return const_cast<Record *>(records_.data());
-  }
-
   void swap(Int i, Int j) {
     std::swap(records_[i], records_[j]);
   }
