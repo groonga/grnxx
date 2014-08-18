@@ -29,6 +29,10 @@ oprofile_data/
 src/grnxx
 stamp-h1
 test/*.trs
-test/test_grnxx
+test/test_db
+test/test_table
+test/test_column
+test/test_expression
+test/test_sorter
 test/benchmark_grnxx
 test-driver
