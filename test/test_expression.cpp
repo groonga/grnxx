@@ -494,6 +494,63 @@ void test_negative() {
   }
 }
 
+void test_to_int() {
+  grnxx::Error error;
+
+  // Create an object for building expressions.
+  auto builder = grnxx::ExpressionBuilder::create(&error, test.table);
+  assert(builder);
+
+  // Test an expression (Int(Float)).
+  assert(builder->push_column(&error, "Float"));
+  assert(builder->push_operator(&error, grnxx::TO_INT_OPERATOR));
+  auto expression = builder->release(&error);
+  assert(expression);
+
+  grnxx::Array<grnxx::Record> records;
+  auto cursor = test.table->create_cursor(&error);
+  assert(cursor);
+  assert(cursor->read_all(&error, &records) == test.table->num_rows());
+
+  grnxx::Array<grnxx::Int> int_results;
+  assert(expression->evaluate(&error, records, &int_results));
+  assert(int_results.size() == test.table->num_rows());
+  for (grnxx::Int i = 0; i < int_results.size(); ++i) {
+    grnxx::Int row_id = records.get_row_id(i);
+    assert(int_results[i] ==
+           static_cast<grnxx::Int>(test.float_values[row_id]));
+  }
+}
+
+void test_to_float() {
+  grnxx::Error error;
+
+  // Create an object for building expressions.
+  auto builder = grnxx::ExpressionBuilder::create(&error, test.table);
+  assert(builder);
+
+  // Test an expression (Float(Int)).
+  assert(builder->push_column(&error, "Int"));
+  assert(builder->push_operator(&error, grnxx::TO_FLOAT_OPERATOR));
+  auto expression = builder->release(&error);
+  assert(expression);
+
+  grnxx::Array<grnxx::Record> records;
+  auto cursor = test.table->create_cursor(&error);
+  assert(cursor);
+  assert(cursor->read_all(&error, &records) == test.table->num_rows());
+
+  grnxx::Array<grnxx::Float> float_results;
+  assert(expression->evaluate(&error, records, &float_results));
+  assert(float_results.size() == test.table->num_rows());
+  for (grnxx::Int i = 0; i < float_results.size(); ++i) {
+    grnxx::Int row_id = records.get_row_id(i);
+    assert(float_results[i] ==
+           static_cast<grnxx::Float>(test.int_values[row_id]));
+  }
+}
+
+// TODO: To be removed.
 void test_expression() {
   grnxx::Error error;
 
@@ -925,12 +982,22 @@ void test_expression() {
 
 int main() {
   init_test();
+
+  // Data.
   test_constant();
   test_column();
+
+  // Unary operators.
   test_logical_not();
   test_bitwise_not();
   test_positive();
   test_negative();
+  test_to_int();
+  test_to_float();
+
+  // TODO: Binary operators.
+
+  // TODO: To be removed.
   test_expression();
   return 0;
 }
