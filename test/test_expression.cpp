@@ -31,10 +31,15 @@ struct {
   grnxx::unique_ptr<grnxx::DB> db;
   grnxx::Table *table;
   grnxx::Array<grnxx::Bool> bool_values;
+  grnxx::Array<grnxx::Bool> bool2_values;
   grnxx::Array<grnxx::Int> int_values;
+  grnxx::Array<grnxx::Int> int2_values;
   grnxx::Array<grnxx::Float> float_values;
+  grnxx::Array<grnxx::Float> float2_values;
   grnxx::Array<grnxx::Text> text_values;
+  grnxx::Array<grnxx::Text> text2_values;
   grnxx::Array<std::string> text_bodies;
+  grnxx::Array<std::string> text2_bodies;
 } test;
 
 void init_test() {
@@ -49,18 +54,29 @@ void init_test() {
   assert(test.table);
 
   // Create columns for Bool, Int, Float, and Text values.
-  auto bool_column =
-      test.table->create_column(&error, "Bool", grnxx::BOOL_DATA);
+  grnxx::DataType data_type = grnxx::BOOL_DATA;
+  auto bool_column = test.table->create_column(&error, "Bool", data_type);
+  auto bool2_column = test.table->create_column(&error, "Bool2", data_type);
   assert(bool_column);
-  auto int_column =
-      test.table->create_column(&error, "Int", grnxx::INT_DATA);
+  assert(bool2_column);
+
+  data_type = grnxx::INT_DATA;
+  auto int_column = test.table->create_column(&error, "Int", data_type);
+  auto int2_column = test.table->create_column(&error, "Int2", data_type);
   assert(int_column);
-  auto float_column =
-      test.table->create_column(&error, "Float", grnxx::FLOAT_DATA);
+  assert(int2_column);
+
+  data_type = grnxx::FLOAT_DATA;
+  auto float_column = test.table->create_column(&error, "Float", data_type);
+  auto float2_column = test.table->create_column(&error, "Float2", data_type);
   assert(float_column);
-  auto text_column =
-      test.table->create_column(&error, "Text", grnxx::TEXT_DATA);
+  assert(float2_column);
+
+  data_type = grnxx::TEXT_DATA;
+  auto text_column = test.table->create_column(&error, "Text", data_type);
+  auto text2_column = test.table->create_column(&error, "Text2", data_type);
   assert(text_column);
+  assert(text2_column);
 
   // Generate random values.
   // Bool: true or false.
@@ -68,33 +84,59 @@ void init_test() {
   // Float: [0.0, 1.0].
   // Text: length = [1, 4], byte = ['0', '9'].
   constexpr grnxx::Int NUM_ROWS = 1 << 16;
+  constexpr grnxx::Int MIN_LENGTH = 1;
+  constexpr grnxx::Int MAX_LENGTH = 4;
   std::mt19937_64 mersenne_twister;
   assert(test.bool_values.resize(&error, NUM_ROWS + 1));
+  assert(test.bool2_values.resize(&error, NUM_ROWS + 1));
   assert(test.int_values.resize(&error, NUM_ROWS + 1));
+  assert(test.int2_values.resize(&error, NUM_ROWS + 1));
   assert(test.float_values.resize(&error, NUM_ROWS + 1));
+  assert(test.float2_values.resize(&error, NUM_ROWS + 1));
   assert(test.text_values.resize(&error, NUM_ROWS + 1));
+  assert(test.text2_values.resize(&error, NUM_ROWS + 1));
   assert(test.text_bodies.resize(&error, NUM_ROWS + 1));
+  assert(test.text2_bodies.resize(&error, NUM_ROWS + 1));
   for (grnxx::Int i = 1; i <= NUM_ROWS; ++i) {
     test.bool_values.set(i, (mersenne_twister() & 1) != 0);
-    test.int_values.set(i, mersenne_twister() % 100);
-    test.float_values.set(i, 1.0 * mersenne_twister() / mersenne_twister.max());
+    test.bool2_values.set(i, (mersenne_twister() & 1) != 0);
 
-    grnxx::Int length = (mersenne_twister() % 4) + 1;
+    test.int_values.set(i, mersenne_twister() % 100);
+    test.int2_values.set(i, mersenne_twister() % 100);
+
+    constexpr auto MAX_VALUE = mersenne_twister.max();
+    test.float_values.set(i, 1.0 * mersenne_twister() / MAX_VALUE);
+    test.float2_values.set(i, 1.0 * mersenne_twister() / MAX_VALUE);
+
+    grnxx::Int length =
+        (mersenne_twister() % (MAX_LENGTH - MIN_LENGTH)) + MIN_LENGTH;
     test.text_bodies[i].resize(length);
     for (grnxx::Int j = 0; j < length; ++j) {
       test.text_bodies[i][j] = '0' + (mersenne_twister() % 10);
     }
     test.text_values.set(i, grnxx::Text(test.text_bodies[i].data(), length));
+
+    length = (mersenne_twister() % (MAX_LENGTH - MIN_LENGTH)) + MIN_LENGTH;
+    test.text2_bodies[i].resize(length);
+    for (grnxx::Int j = 0; j < length; ++j) {
+      test.text2_bodies[i][j] = '0' + (mersenne_twister() % 10);
+    }
+    test.text2_values.set(i, grnxx::Text(test.text2_bodies[i].data(), length));
   }
 
+  // Store generated values into columns.
   for (grnxx::Int i = 1; i <= NUM_ROWS; ++i) {
     grnxx::Int row_id;
     assert(test.table->insert_row(&error, grnxx::NULL_ROW_ID,
                                   grnxx::Datum(), &row_id));
     assert(bool_column->set(&error, row_id, test.bool_values[i]));
+    assert(bool2_column->set(&error, row_id, test.bool2_values[i]));
     assert(int_column->set(&error, row_id, test.int_values[i]));
+    assert(int2_column->set(&error, row_id, test.int2_values[i]));
     assert(float_column->set(&error, row_id, test.float_values[i]));
+    assert(float2_column->set(&error, row_id, test.float2_values[i]));
     assert(text_column->set(&error, row_id, test.text_values[i]));
+    assert(text2_column->set(&error, row_id, test.text2_values[i]));
   }
 }
 
@@ -550,6 +592,84 @@ void test_to_float() {
   }
 }
 
+void test_logical_and() {
+  grnxx::Error error;
+
+  // Create an object for building expressions.
+  auto builder = grnxx::ExpressionBuilder::create(&error, test.table);
+  assert(builder);
+
+  // Test an expression (Bool && Bool2).
+  assert(builder->push_column(&error, "Bool"));
+  assert(builder->push_column(&error, "Bool2"));
+  assert(builder->push_operator(&error, grnxx::LOGICAL_AND_OPERATOR));
+  auto expression = builder->release(&error);
+  assert(expression);
+
+  grnxx::Array<grnxx::Record> records;
+  auto cursor = test.table->create_cursor(&error);
+  assert(cursor);
+  assert(cursor->read_all(&error, &records) == test.table->num_rows());
+
+  grnxx::Array<grnxx::Bool> bool_results;
+  assert(expression->evaluate(&error, records, &bool_results));
+  assert(bool_results.size() == test.table->num_rows());
+  for (grnxx::Int i = 0; i < bool_results.size(); ++i) {
+    grnxx::Int row_id = records.get_row_id(i);
+    assert(bool_results[i] ==
+           (test.bool_values[row_id] && test.bool2_values[row_id]));
+  }
+
+  assert(expression->filter(&error, &records));
+  grnxx::Int count = 0;
+  for (grnxx::Int i = 1; i < test.bool_values.size(); ++i) {
+    if (test.bool_values[i] && test.bool2_values[i]) {
+      assert(records.get_row_id(count) == i);
+      ++count;
+    }
+  }
+  assert(records.size() == count);
+}
+
+void test_logical_or() {
+  grnxx::Error error;
+
+  // Create an object for building expressions.
+  auto builder = grnxx::ExpressionBuilder::create(&error, test.table);
+  assert(builder);
+
+  // Test an expression (Bool && Bool2).
+  assert(builder->push_column(&error, "Bool"));
+  assert(builder->push_column(&error, "Bool2"));
+  assert(builder->push_operator(&error, grnxx::LOGICAL_OR_OPERATOR));
+  auto expression = builder->release(&error);
+  assert(expression);
+
+  grnxx::Array<grnxx::Record> records;
+  auto cursor = test.table->create_cursor(&error);
+  assert(cursor);
+  assert(cursor->read_all(&error, &records) == test.table->num_rows());
+
+  grnxx::Array<grnxx::Bool> bool_results;
+  assert(expression->evaluate(&error, records, &bool_results));
+  assert(bool_results.size() == test.table->num_rows());
+  for (grnxx::Int i = 0; i < bool_results.size(); ++i) {
+    grnxx::Int row_id = records.get_row_id(i);
+    assert(bool_results[i] ==
+           (test.bool_values[row_id] || test.bool2_values[row_id]));
+  }
+
+  assert(expression->filter(&error, &records));
+  grnxx::Int count = 0;
+  for (grnxx::Int i = 1; i < test.bool_values.size(); ++i) {
+    if (test.bool_values[i] || test.bool2_values[i]) {
+      assert(records.get_row_id(count) == i);
+      ++count;
+    }
+  }
+  assert(records.size() == count);
+}
+
 // TODO: To be removed.
 void test_expression() {
   grnxx::Error error;
@@ -995,7 +1115,23 @@ int main() {
   test_to_int();
   test_to_float();
 
-  // TODO: Binary operators.
+  // Binary operators.
+  test_logical_and();
+  test_logical_or();
+//  test_equal();
+//  test_not_equal();
+//  test_less();
+//  test_less_equal();
+//  test_greater();
+//  test_greater_equal();
+//  test_bitwise_and();
+//  test_bitwise_or();
+//  test_bitwise_xor();
+//  test_plus();
+//  test_minus();
+//  test_multiplication();
+//  test_division();
+//  test_modulus();
 
   // TODO: To be removed.
   test_expression();
