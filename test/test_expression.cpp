@@ -49,17 +49,17 @@ void init_test() {
   assert(test.table);
 
   // Create columns for Bool, Int, Float, and Text values.
-  auto bool_column = test.table->create_column(&error, "BoolColumn",
-                                          grnxx::BOOL_DATA);
+  auto bool_column =
+      test.table->create_column(&error, "Bool", grnxx::BOOL_DATA);
   assert(bool_column);
-  auto int_column = test.table->create_column(&error, "IntColumn",
-                                         grnxx::INT_DATA);
+  auto int_column =
+      test.table->create_column(&error, "Int", grnxx::INT_DATA);
   assert(int_column);
-  auto float_column = test.table->create_column(&error, "FloatColumn",
-                                           grnxx::FLOAT_DATA);
+  auto float_column =
+      test.table->create_column(&error, "Float", grnxx::FLOAT_DATA);
   assert(float_column);
-  auto text_column = test.table->create_column(&error, "TextColumn",
-                                           grnxx::TEXT_DATA);
+  auto text_column =
+      test.table->create_column(&error, "Text", grnxx::TEXT_DATA);
   assert(text_column);
 
   // Generate random values.
@@ -81,6 +81,16 @@ void init_test() {
       test.text_bodies[i][j] = '0' + (mersenne_twister() % 10);
     }
     test.text_values.set(i, grnxx::Text(test.text_bodies[i].data(), length));
+  }
+
+  for (grnxx::Int i = 1; i <= NUM_ROWS; ++i) {
+    grnxx::Int row_id;
+    assert(test.table->insert_row(&error, grnxx::NULL_ROW_ID,
+                                  grnxx::Datum(), &row_id));
+    assert(bool_column->set(&error, row_id, test.bool_values[i]));
+    assert(int_column->set(&error, row_id, test.int_values[i]));
+    assert(float_column->set(&error, row_id, test.float_values[i]));
+    assert(text_column->set(&error, row_id, test.text_values[i]));
   }
 }
 
@@ -149,6 +159,77 @@ void test_constant() {
   assert(text_results.size() == test.table->num_rows());
   for (grnxx::Int i = 0; i < text_results.size(); ++i) {
     assert(text_results[i] == "ABC");
+  }
+}
+
+void test_column() {
+  grnxx::Error error;
+
+  // Create an object for building expressions.
+  auto builder = grnxx::ExpressionBuilder::create(&error, test.table);
+  assert(builder);
+
+  // Test an expression (Bool).
+  assert(builder->push_column(&error, "Bool"));
+  auto expression = builder->release(&error);
+  assert(expression);
+
+  grnxx::Array<grnxx::Record> records;
+  auto cursor = test.table->create_cursor(&error);
+  assert(cursor);
+  assert(cursor->read_all(&error, &records) == test.table->num_rows());
+
+  assert(expression->filter(&error, &records));
+  grnxx::Int count = 0;
+  for (grnxx::Int i = 1; i < test.bool_values.size(); ++i) {
+    if (test.bool_values[i]) {
+      assert(records.get_row_id(count) == i);
+      ++count;
+    }
+  }
+  assert(records.size() == count);
+
+  // Test an expression (Int).
+  assert(builder->push_column(&error, "Int"));
+  expression = builder->release(&error);
+  assert(expression);
+
+  records.clear();
+  cursor = test.table->create_cursor(&error);
+  assert(cursor);
+  assert(cursor->read_all(&error, &records) == test.table->num_rows());
+
+  grnxx::Array<grnxx::Int> int_results;
+  assert(expression->evaluate(&error, records, &int_results));
+  assert(int_results.size() == test.table->num_rows());
+  for (grnxx::Int i = 0; i < int_results.size(); ++i) {
+    grnxx::Int row_id = records.get_row_id(i);
+    assert(int_results[i] == test.int_values[row_id]);
+  }
+
+  // Test an expression (Float).
+  assert(builder->push_column(&error, "Float"));
+  expression = builder->release(&error);
+  assert(expression);
+
+  assert(expression->adjust(&error, &records));
+  assert(records.size() == test.table->num_rows());
+  for (grnxx::Int i = 0; i < records.size(); ++i) {
+    grnxx::Int row_id = records.get_row_id(i);
+    assert(records.get_score(i) == test.float_values[row_id]);
+  }
+
+  // Test an expression (Text).
+  assert(builder->push_column(&error, "Text"));
+  expression = builder->release(&error);
+  assert(expression);
+
+  grnxx::Array<grnxx::Text> text_results;
+  assert(expression->evaluate(&error, records, &text_results));
+  assert(text_results.size() == test.table->num_rows());
+  for (grnxx::Int i = 0; i < text_results.size(); ++i) {
+    grnxx::Int row_id = records.get_row_id(i);
+    assert(text_results[i] == test.text_values[row_id]);
   }
 }
 
@@ -584,6 +665,7 @@ void test_expression() {
 int main() {
   init_test();
   test_constant();
+  test_column();
   test_expression();
   return 0;
 }
