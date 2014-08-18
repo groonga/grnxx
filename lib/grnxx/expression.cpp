@@ -743,7 +743,7 @@ bool BitwiseNotNode<Bool>::filter(Error *error,
   }
   Int count = 0;
   for (Int i = 0; i < input_records.size(); ++i) {
-    if (arg_values_[i]) {
+    if (!arg_values_[i]) {
       output_records->set(count, input_records.get(i));
       ++count;
     }
