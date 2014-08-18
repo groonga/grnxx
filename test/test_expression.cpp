@@ -488,6 +488,13 @@ void test_positive() {
     grnxx::Int row_id = records.get_row_id(i);
     assert(float_results[i] == test.float_values[row_id]);
   }
+
+  assert(expression->adjust(&error, &records));
+  assert(records.size() == test.table->num_rows());
+  for (grnxx::Int i = 0; i < records.size(); ++i) {
+    grnxx::Int row_id = records.get_row_id(i);
+    assert(records.get_score(i) == test.float_values[row_id]);
+  }
 }
 
 void test_negative() {
@@ -533,6 +540,13 @@ void test_negative() {
   for (grnxx::Int i = 0; i < float_results.size(); ++i) {
     grnxx::Int row_id = records.get_row_id(i);
     assert(float_results[i] == -test.float_values[row_id]);
+  }
+
+  assert(expression->adjust(&error, &records));
+  assert(records.size() == test.table->num_rows());
+  for (grnxx::Int i = 0; i < records.size(); ++i) {
+    grnxx::Int row_id = records.get_row_id(i);
+    assert(records.get_score(i) == -test.float_values[row_id]);
   }
 }
 
@@ -588,6 +602,14 @@ void test_to_float() {
   for (grnxx::Int i = 0; i < float_results.size(); ++i) {
     grnxx::Int row_id = records.get_row_id(i);
     assert(float_results[i] ==
+           static_cast<grnxx::Float>(test.int_values[row_id]));
+  }
+
+  assert(expression->adjust(&error, &records));
+  assert(records.size() == test.table->num_rows());
+  for (grnxx::Int i = 0; i < records.size(); ++i) {
+    grnxx::Int row_id = records.get_row_id(i);
+    assert(records.get_score(i) ==
            static_cast<grnxx::Float>(test.int_values[row_id]));
   }
 }
@@ -1628,6 +1650,14 @@ void test_plus() {
     assert(float_results[i] ==
            (test.float_values[row_id] + test.float2_values[row_id]));
   }
+
+  assert(expression->adjust(&error, &records));
+  assert(records.size() == test.table->num_rows());
+  for (grnxx::Int i = 0; i < records.size(); ++i) {
+    grnxx::Int row_id = records.get_row_id(i);
+    assert(records.get_score(i) ==
+           (test.float_values[row_id] + test.float2_values[row_id]));
+  }
 }
 
 void test_minus() {
@@ -1678,6 +1708,14 @@ void test_minus() {
     assert(float_results[i] ==
            (test.float_values[row_id] - test.float2_values[row_id]));
   }
+
+  assert(expression->adjust(&error, &records));
+  assert(records.size() == test.table->num_rows());
+  for (grnxx::Int i = 0; i < records.size(); ++i) {
+    grnxx::Int row_id = records.get_row_id(i);
+    assert(records.get_score(i) ==
+           (test.float_values[row_id] - test.float2_values[row_id]));
+  }
 }
 
 void test_multiplication() {
@@ -1726,6 +1764,14 @@ void test_multiplication() {
   for (grnxx::Int i = 0; i < float_results.size(); ++i) {
     grnxx::Int row_id = records.get_row_id(i);
     assert(float_results[i] ==
+           (test.float_values[row_id] * test.float2_values[row_id]));
+  }
+
+  assert(expression->adjust(&error, &records));
+  assert(records.size() == test.table->num_rows());
+  for (grnxx::Int i = 0; i < records.size(); ++i) {
+    grnxx::Int row_id = records.get_row_id(i);
+    assert(records.get_score(i) ==
            (test.float_values[row_id] * test.float2_values[row_id]));
   }
 }
@@ -1794,6 +1840,14 @@ void test_division() {
   for (grnxx::Int i = 0; i < float_results.size(); ++i) {
     grnxx::Int row_id = records.get_row_id(i);
     assert(float_results[i] ==
+           (test.float_values[row_id] / test.float2_values[row_id]));
+  }
+
+  assert(expression->adjust(&error, &records));
+  assert(records.size() == test.table->num_rows());
+  for (grnxx::Int i = 0; i < records.size(); ++i) {
+    grnxx::Int row_id = records.get_row_id(i);
+    assert(records.get_score(i) ==
            (test.float_values[row_id] / test.float2_values[row_id]));
   }
 }
