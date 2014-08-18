@@ -2552,7 +2552,7 @@ unique_ptr<ExpressionNode> ExpressionBuilder::create_unary_node(
         case BOOL_DATA: {
           return BitwiseNotNode<Bool>::create(error, std::move(arg));
         }
-        case FLOAT_DATA: {
+        case INT_DATA: {
           return BitwiseNotNode<Int>::create(error, std::move(arg));
         }
         default: {
