@@ -419,8 +419,6 @@ class Datum;
 class Cursor;
 class Expression;
 class ExpressionBuilder;
-class OrderSet;
-class OrderSetBuilder;
 class SorterNode;
 class Sorter;
 
