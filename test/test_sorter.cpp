@@ -88,6 +88,7 @@ void test_sorter() {
 
   auto sorter = grnxx::Sorter::create(&error, std::move(orders));
   assert(sorter);
+  assert(sorter->table() == table);
 
   assert(sorter->sort(&error, &records));
   assert(records.size() == static_cast<grnxx::Int>(int_values.size()));

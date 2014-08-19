@@ -531,6 +531,7 @@ unique_ptr<Sorter> Sorter::create(
     GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
     return nullptr;
   }
+  sorter->table_ = table;
   for (Int i = orders.size() - 1; i >= 0; --i) {
     unique_ptr<SorterNode> node(
         SorterNode::create(error, std::move(orders[i])));
@@ -590,7 +591,8 @@ bool Sorter::sort(Error *error, Array<Record> *records) {
 }
 
 Sorter::Sorter()
-    : head_(),
+    : table_(nullptr),
+      head_(),
       records_(nullptr),
       offset_(0),
       limit_(0) {}

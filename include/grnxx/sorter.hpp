@@ -21,6 +21,11 @@ class Sorter {
  public:
   ~Sorter();
 
+  // Return the associated table.
+  const Table *table() const {
+    return table_;
+  }
+
   // Create an object for sorting records.
   //
   // On success, returns a poitner to the sorter.
@@ -67,6 +72,7 @@ class Sorter {
   bool sort(Error *error, Array<Record> *records);
 
  private:
+  const Table *table_;
   unique_ptr<SorterNode> head_;
   Array<Record> *records_;
   Int offset_;
