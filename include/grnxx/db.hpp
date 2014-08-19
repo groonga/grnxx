@@ -11,7 +11,7 @@ class DB {
   ~DB();
 
   // Return the number of tables.
-  size_t num_tables() const {
+  Int num_tables() const {
     return tables_.size();
   }
 
@@ -63,7 +63,7 @@ class DB {
   // Returns a pointer to the table on success.
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
-  Table *get_table(size_t table_id) const {
+  Table *get_table(Int table_id) const {
     return tables_[table_id].get();
   }
 
@@ -97,7 +97,7 @@ class DB {
   // "error" != nullptr.
   Table *find_table_with_id(Error *error,
                             String name,
-                            size_t *table_id) const;
+                            Int *table_id) const;
 
   friend unique_ptr<DB> open_db(Error *error,
                                 String path,

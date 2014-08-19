@@ -32,7 +32,7 @@ class Column {
     return has_key_attribute_;
   }
   // Return the number of indexes.
-  size_t num_indexes() const {
+  Int num_indexes() const {
     // TODO: Index is not supported yet.
     return 0;
   }
@@ -88,7 +88,7 @@ class Column {
   // Returns a pointer to the index on success.
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
-  Index *get_index(size_t index_id) const {
+  Index *get_index(Int index_id) const {
     // TODO: Not supported yet.
     return nullptr;
   }

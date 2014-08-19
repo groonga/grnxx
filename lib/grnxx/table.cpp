@@ -254,7 +254,7 @@ Column *Table::create_column(Error *error,
 }
 
 bool Table::remove_column(Error *error, String name) {
-  size_t column_id;
+  Int column_id;
   if (!find_column_with_id(error, name, &column_id)) {
     return false;
   }
@@ -271,7 +271,7 @@ bool Table::remove_column(Error *error, String name) {
 bool Table::rename_column(Error *error,
                           String name,
                           String new_name) {
-  size_t column_id;
+  Int column_id;
   if (!find_column_with_id(error, name, &column_id)) {
     return false;
   }
@@ -290,13 +290,13 @@ bool Table::rename_column(Error *error,
 bool Table::reorder_column(Error *error,
                            String name,
                            String prev_name) {
-  size_t column_id;
+  Int column_id;
   if (!find_column_with_id(error, name, &column_id)) {
     return false;
   }
-  size_t new_column_id = 0;
+  Int new_column_id = 0;
   if (prev_name.size() != 0) {
-    size_t prev_column_id;
+    Int prev_column_id;
     if (!find_column_with_id(error, prev_name, &prev_column_id)) {
       return false;
     }
@@ -316,7 +316,7 @@ bool Table::reorder_column(Error *error,
 }
 
 Column *Table::find_column(Error *error, String name) const {
-  for (size_t column_id = 0; column_id < num_columns(); ++column_id) {
+  for (Int column_id = 0; column_id < num_columns(); ++column_id) {
     if (name == columns_[column_id]->name()) {
       return columns_[column_id].get();
     }
@@ -392,14 +392,14 @@ bool Table::insert_row(Error *error,
 
   if (next_row_id > max_row_id()) {
     // Fill non-key column values with the default values.
-    for (size_t column_id = 0; column_id < num_columns(); ++column_id) {
+    for (Int column_id = 0; column_id < num_columns(); ++column_id) {
       if (columns_[column_id].get() != key_column()) {
         if (!columns_[column_id]->set_default_value(error, next_row_id)) {
           // Rollback the insertion.
           if (key_column()) {
             key_column_->unset(next_row_id);
           }
-          for (size_t i = 0; i < column_id; ++i) {
+          for (Int i = 0; i < column_id; ++i) {
             if (columns_[i].get() != key_column()) {
               columns_[i]->unset(next_row_id);
             }
@@ -422,7 +422,7 @@ bool Table::remove_row(Error *error, Int row_id) {
     return false;
   }
   // TODO: Check removability and unset column values.
-  for (size_t column_id = 0; column_id < num_columns(); ++column_id) {
+  for (Int column_id = 0; column_id < num_columns(); ++column_id) {
     columns_[column_id]->unset(row_id);
   }
   unset_bit(row_id);
@@ -530,7 +530,7 @@ Int Table::find_zero_bit() const {
     return max_row_id() + 1;
   }
   Int pos = 0;
-  for (size_t i = bitmap_indexes_.size(); i > 0; ) {
+  for (Int i = bitmap_indexes_.size(); i > 0; ) {
     pos = (pos * 64) + ::__builtin_ctzll(~bitmap_indexes_[--i][pos]);
   }
   return (pos * 64) + ::__builtin_ctzll(~bitmap_[pos]);
@@ -543,7 +543,7 @@ bool Table::reserve_bit(Error *error, Int i) {
     return false;
   }
   // Resize the bitmap if required.
-  size_t block_id = i / 64;
+  Int block_id = i / 64;
   if (block_id >= bitmap_.size()) {
     if (!bitmap_.resize(error, block_id + 1, 0)) {
       return false;
@@ -586,7 +586,7 @@ bool Table::is_removable() {
 
 Column *Table::find_column_with_id(Error *error,
                                    String name,
-                                   size_t *column_id) const {
+                                   Int *column_id) const {
   for (Int i = 0; i < num_columns(); ++i) {
     if (name == columns_[i]->name()) {
       if (column_id != nullptr) {

@@ -20,7 +20,7 @@ class Table {
     return name_.ref();
   }
   // Return the number of columns.
-  size_t num_columns() const {
+  Int num_columns() const {
     return columns_.size();
   }
   // Return the key column, or nullptr if the table has no key column.
@@ -85,7 +85,7 @@ class Table {
   // Returns a pointer to the column on success.
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
-  Column *get_column(size_t column_id) const {
+  Column *get_column(Int column_id) const {
     return columns_[column_id].get();
   }
 
@@ -247,7 +247,7 @@ class Table {
   // "error" != nullptr.
   Column *find_column_with_id(Error *error,
                               String name,
-                              size_t *column_id) const;
+                              Int *column_id) const;
 
   friend class DB;
   friend class TableCursor;

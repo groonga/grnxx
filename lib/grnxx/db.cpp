@@ -29,7 +29,7 @@ Table *DB::create_table(Error *error,
 }
 
 bool DB::remove_table(Error *error, String name) {
-  size_t table_id;
+  Int table_id;
   if (!find_table_with_id(error, name, &table_id)) {
     return false;
   }
@@ -46,7 +46,7 @@ bool DB::remove_table(Error *error, String name) {
 bool DB::rename_table(Error *error,
                       String name,
                       String new_name) {
-  size_t table_id;
+  Int table_id;
   if (!find_table_with_id(error, name, &table_id)) {
     return false;
   }
@@ -65,13 +65,13 @@ bool DB::rename_table(Error *error,
 bool DB::reorder_table(Error *error,
                        String name,
                        String prev_name) {
-  size_t table_id;
+  Int table_id;
   if (!find_table_with_id(error, name, &table_id)) {
     return false;
   }
-  size_t new_table_id = 0;
+  Int new_table_id = 0;
   if (prev_name.size() != 0) {
-    size_t prev_table_id;
+    Int prev_table_id;
     if (!find_table_with_id(error, prev_name, &prev_table_id)) {
       return false;
     }
@@ -91,7 +91,7 @@ bool DB::reorder_table(Error *error,
 }
 
 Table *DB::find_table(Error *error, String name) const {
-  for (size_t table_id = 0; table_id < num_tables(); ++table_id) {
+  for (Int table_id = 0; table_id < num_tables(); ++table_id) {
     if (name == tables_[table_id]->name()) {
       return tables_[table_id].get();
     }
@@ -113,8 +113,8 @@ DB::DB() : tables_() {}
 
 Table *DB::find_table_with_id(Error *error,
                               String name,
-                              size_t *table_id) const {
-  for (size_t i = 0; i < num_tables(); ++i) {
+                              Int *table_id) const {
+  for (Int i = 0; i < num_tables(); ++i) {
     if (name == tables_[i]->name()) {
       if (table_id != nullptr) {
         *table_id = i;
