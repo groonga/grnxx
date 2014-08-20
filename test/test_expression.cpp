@@ -2028,6 +2028,44 @@ void test_sequential_evaluate() {
   }
 }
 
+void test_partial_filter() {
+  grnxx::Error error;
+
+  // Create an object for building expressions.
+  auto builder = grnxx::ExpressionBuilder::create(&error, test.table);
+  assert(builder);
+
+  // Test an expression ((Float * Float2) > 0.25).
+  assert(builder->push_column(&error, "Float"));
+  assert(builder->push_column(&error, "Float2"));
+  assert(builder->push_operator(&error, grnxx::MULTIPLICATION_OPERATOR));
+  assert(builder->push_datum(&error, grnxx::Float(0.25)));
+  assert(builder->push_operator(&error, grnxx::GREATER_OPERATOR));
+  auto expression = builder->release(&error);
+  assert(expression);
+
+  // Read all records.
+  auto cursor = test.table->create_cursor(&error);
+  assert(cursor);
+  grnxx::Array<grnxx::Record> records;
+  assert(cursor->read_all(&error, &records) == test.table->num_rows());
+
+  // Extract a part of true records.
+  constexpr grnxx::Int OFFSET = 12345;
+  constexpr grnxx::Int LIMIT = 5000;
+  assert(expression->filter(&error, &records, 0, OFFSET, LIMIT));
+  assert(records.size() == 5000);
+  grnxx::Int count = 0;
+  for (grnxx::Int i = 1; i < test.bool_values.size(); ++i) {
+    if ((test.float_values[i] * test.float2_values[i]) > 0.25) {
+      if ((count >= OFFSET) && (count < (OFFSET + LIMIT))) {
+        assert(records.get_row_id(count - OFFSET) == i);
+      }
+      ++count;
+    }
+  }
+}
+
 int main() {
   init_test();
 
@@ -2065,6 +2103,9 @@ int main() {
   test_sequential_filter();
   test_sequential_adjust();
   test_sequential_evaluate();
+
+  // Test partial filtering.
+  test_partial_filter();
 
   return 0;
 }
