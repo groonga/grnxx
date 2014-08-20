@@ -14,9 +14,6 @@ class Node;
 
 using PipelineNode = pipeline::Node;
 
-struct PipelineOptions {
-};
-
 class Pipeline {
  public:
   ~Pipeline();
@@ -77,7 +74,8 @@ class PipelineBuilder {
   // "error" != nullptr.
   bool push_filter(Error *error,
                    unique_ptr<Expression> &&expression,
-                   Int offset, Int limit);
+                   Int offset = 0,
+                   Int limit = numeric_limits<Int>::max());
 
   // Push an adjuster.
   //
@@ -106,7 +104,9 @@ class PipelineBuilder {
   // On success, returns a pointer to the expression.
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
-  unique_ptr<Pipeline> release(Error *error, const PipelineOptions &options);
+  unique_ptr<Pipeline> release(
+      Error *error,
+      const PipelineOptions &options = PipelineOptions());
 
  private:
   const Table *table_;

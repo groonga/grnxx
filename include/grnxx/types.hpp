@@ -416,6 +416,10 @@ struct SorterOptions {
   SorterOptions();
 };
 
+struct PipelineOptions {
+  PipelineOptions();
+};
+
 // Database temporary object types.
 class Datum;
 class Cursor;

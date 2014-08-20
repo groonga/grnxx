@@ -60,6 +60,8 @@ SorterOptions::SorterOptions()
     : offset(0),
       limit(numeric_limits<Int>::max()) {}
 
+PipelineOptions::PipelineOptions() {}
+
 SortOrder::SortOrder() : expression(), type(REGULAR_ORDER) {}
 
 SortOrder::SortOrder(SortOrder &&order)
