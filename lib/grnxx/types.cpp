@@ -60,4 +60,16 @@ SorterOptions::SorterOptions()
     : offset(0),
       limit(numeric_limits<Int>::max()) {}
 
+SortOrder::SortOrder() : expression(), type(REGULAR_ORDER) {}
+
+SortOrder::SortOrder(SortOrder &&order)
+    : expression(std::move(order.expression)),
+      type(order.type) {}
+
+SortOrder::SortOrder(unique_ptr<Expression> &&expression, OrderType type)
+    : expression(std::move(expression)),
+      type(type) {}
+
+SortOrder::~SortOrder() {}
+
 }  // namespace grnxx

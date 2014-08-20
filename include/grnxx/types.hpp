@@ -419,8 +419,18 @@ class Datum;
 class Cursor;
 class Expression;
 class ExpressionBuilder;
-class SorterNode;
 class Sorter;
+
+struct SortOrder {
+  unique_ptr<Expression> expression;
+  OrderType type;
+
+  SortOrder();
+  explicit SortOrder(unique_ptr<Expression> &&expression,
+                     OrderType type = REGULAR_ORDER);
+  SortOrder(SortOrder &&order);
+  ~SortOrder();
+};
 
 }  // namespace grnxx
 

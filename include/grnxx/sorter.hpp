@@ -5,17 +5,13 @@
 #include "grnxx/types.hpp"
 
 namespace grnxx {
+namespace sorter {
 
-struct SortOrder {
-  unique_ptr<Expression> expression;
-  OrderType type;
+class Node;
 
-  SortOrder();
-  explicit SortOrder(unique_ptr<Expression> &&expression,
-                     OrderType type = REGULAR_ORDER);
-  SortOrder(SortOrder &&order);
-  ~SortOrder();
-};
+}  // namespace sorter
+
+using SorterNode = sorter::Node;
 
 class Sorter {
  public:
