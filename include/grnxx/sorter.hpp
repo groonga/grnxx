@@ -11,10 +11,10 @@ class Node;
 
 }  // namespace sorter
 
-using SorterNode = sorter::Node;
-
 class Sorter {
  public:
+  using Node = sorter::Node;
+
   ~Sorter();
 
   // Return the associated table.
@@ -69,7 +69,7 @@ class Sorter {
 
  private:
   const Table *table_;
-  unique_ptr<SorterNode> head_;
+  unique_ptr<Node> head_;
   Array<Record> *records_;
   Int offset_;
   Int limit_;

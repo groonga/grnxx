@@ -8,6 +8,7 @@ pkginclude_HEADERS =	\
 	expression.hpp	\
 	index.hpp	\
 	library.hpp	\
+	pipeline.hpp	\
 	sorter.hpp	\
 	table.hpp	\
 	types.hpp

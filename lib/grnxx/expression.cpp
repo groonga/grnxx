@@ -2333,7 +2333,7 @@ bool Expression::evaluate(Error *error,
 
 unique_ptr<Expression> Expression::create(Error *error,
                                           const Table *table,
-                                          unique_ptr<ExpressionNode> &&root,
+                                          unique_ptr<Node> &&root,
                                           const ExpressionOptions &options) {
   if (options.block_size <= 0) {
     GRNXX_ERROR_SET(error, INVALID_ARGUMENT,
@@ -2351,7 +2351,7 @@ unique_ptr<Expression> Expression::create(Error *error,
 }
 
 Expression::Expression(const Table *table,
-                       unique_ptr<ExpressionNode> &&root,
+                       unique_ptr<Node> &&root,
                        Int block_size)
     : table_(table),
       root_(std::move(root)),
@@ -2391,7 +2391,7 @@ bool ExpressionBuilder::push_column(Error *error, String name) {
   if (!stack_.reserve(error, stack_.size() + 1)) {
     return false;
   }
-  unique_ptr<ExpressionNode> node = create_column_node(error, name);
+  unique_ptr<Node> node = create_column_node(error, name);
   if (!node) {
     return false;
   }
@@ -2448,7 +2448,7 @@ unique_ptr<Expression> ExpressionBuilder::release(
     GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Incomplete expression");
     return nullptr;
   }
-  unique_ptr<ExpressionNode> root = std::move(stack_[0]);
+  unique_ptr<Node> root = std::move(stack_[0]);
   stack_.clear();
   return Expression::create(error, table_, std::move(root), options);
 }
@@ -2457,7 +2457,7 @@ ExpressionBuilder::ExpressionBuilder(const Table *table)
     : table_(table),
       stack_() {}
 
-unique_ptr<ExpressionNode> ExpressionBuilder::create_datum_node(
+unique_ptr<Node> ExpressionBuilder::create_datum_node(
     Error *error,
     const Datum &datum) {
   switch (datum.type()) {
@@ -2487,7 +2487,7 @@ unique_ptr<ExpressionNode> ExpressionBuilder::create_datum_node(
   }
 }
 
-unique_ptr<ExpressionNode> ExpressionBuilder::create_column_node(
+unique_ptr<Node> ExpressionBuilder::create_column_node(
     Error *error,
     String name) {
   if (name == "_id") {
@@ -2577,10 +2577,10 @@ bool ExpressionBuilder::push_binary_operator(Error *error,
   return true;
 }
 
-unique_ptr<ExpressionNode> ExpressionBuilder::create_unary_node(
+unique_ptr<Node> ExpressionBuilder::create_unary_node(
     Error *error,
     OperatorType operator_type,
-    unique_ptr<ExpressionNode> &&arg) {
+    unique_ptr<Node> &&arg) {
   switch (operator_type) {
     case LOGICAL_NOT_OPERATOR: {
       if (arg->data_type() != BOOL_DATA) {
@@ -2647,11 +2647,11 @@ unique_ptr<ExpressionNode> ExpressionBuilder::create_unary_node(
   }
 }
 
-unique_ptr<ExpressionNode> ExpressionBuilder::create_binary_node(
+unique_ptr<Node> ExpressionBuilder::create_binary_node(
     Error *error,
     OperatorType operator_type,
-    unique_ptr<ExpressionNode> &&arg1,
-    unique_ptr<ExpressionNode> &&arg2) {
+    unique_ptr<Node> &&arg1,
+    unique_ptr<Node> &&arg2) {
   switch (operator_type) {
     case LOGICAL_AND_OPERATOR: {
       if ((arg1->data_type() != BOOL_DATA) ||
@@ -2747,10 +2747,10 @@ unique_ptr<ExpressionNode> ExpressionBuilder::create_binary_node(
 }
 
 template <typename T>
-unique_ptr<ExpressionNode> ExpressionBuilder::create_equality_test_node(
+unique_ptr<Node> ExpressionBuilder::create_equality_test_node(
     Error *error,
-    unique_ptr<ExpressionNode> &&arg1,
-    unique_ptr<ExpressionNode> &&arg2) {
+    unique_ptr<Node> &&arg1,
+    unique_ptr<Node> &&arg2) {
   if (arg1->data_type() != arg2->data_type()) {
     GRNXX_ERROR_SET(error, INVALID_OPERAND, "Data type conflict");
     return nullptr;
@@ -2789,10 +2789,10 @@ unique_ptr<ExpressionNode> ExpressionBuilder::create_equality_test_node(
 }
 
 template <typename T>
-unique_ptr<ExpressionNode> ExpressionBuilder::create_comparison_node(
+unique_ptr<Node> ExpressionBuilder::create_comparison_node(
     Error *error,
-    unique_ptr<ExpressionNode> &&arg1,
-    unique_ptr<ExpressionNode> &&arg2) {
+    unique_ptr<Node> &&arg1,
+    unique_ptr<Node> &&arg2) {
   if (arg1->data_type() != arg2->data_type()) {
     GRNXX_ERROR_SET(error, INVALID_OPERAND, "Data type conflict");
     return nullptr;
@@ -2822,11 +2822,11 @@ unique_ptr<ExpressionNode> ExpressionBuilder::create_comparison_node(
 }
 
 template <typename T>
-unique_ptr<ExpressionNode> ExpressionBuilder::create_bitwise_node(
+unique_ptr<Node> ExpressionBuilder::create_bitwise_node(
     Error *error,
     OperatorType operator_type,
-    unique_ptr<ExpressionNode> &&arg1,
-    unique_ptr<ExpressionNode> &&arg2) {
+    unique_ptr<Node> &&arg1,
+    unique_ptr<Node> &&arg2) {
   if (arg1->data_type() != arg2->data_type()) {
     GRNXX_ERROR_SET(error, INVALID_OPERAND, "Data type conflict");
     return nullptr;
@@ -2852,11 +2852,11 @@ unique_ptr<ExpressionNode> ExpressionBuilder::create_bitwise_node(
 }
 
 template <typename T>
-unique_ptr<ExpressionNode> ExpressionBuilder::create_arithmetic_node(
+unique_ptr<Node> ExpressionBuilder::create_arithmetic_node(
     Error *error,
     OperatorType operator_type,
-    unique_ptr<ExpressionNode> &&arg1,
-    unique_ptr<ExpressionNode> &&arg2) {
+    unique_ptr<Node> &&arg1,
+    unique_ptr<Node> &&arg2) {
   if (arg1->data_type() != arg2->data_type()) {
     GRNXX_ERROR_SET(error, INVALID_OPERAND, "Data type conflict");
     return nullptr;

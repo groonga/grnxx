@@ -443,8 +443,8 @@ struct ReverseComparer {
 
 using namespace sorter;
 
-unique_ptr<SorterNode> SorterNode::create(Error *error, SortOrder &&order) {
-  unique_ptr<SorterNode> node;
+unique_ptr<Node> Node::create(Error *error, SortOrder &&order) {
+  unique_ptr<Node> node;
   switch (order.expression->data_type()) {
     case BOOL_DATA: {
       if (order.type == REGULAR_ORDER) {
@@ -554,8 +554,7 @@ unique_ptr<Sorter> Sorter::create(
   }
   sorter->table_ = table;
   for (Int i = orders.size() - 1; i >= 0; --i) {
-    unique_ptr<SorterNode> node(
-        SorterNode::create(error, std::move(orders[i])));
+    unique_ptr<Node> node(Node::create(error, std::move(orders[i])));
     if (!node) {
       return nullptr;
     }

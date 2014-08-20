@@ -11,8 +11,6 @@ class Node;
 
 }  // namespace expression
 
-using ExpressionNode = expression::Node;
-
 enum OperatorType {
   // -- Unary operators --
 
@@ -67,6 +65,8 @@ enum OperatorType {
 
 class Expression {
  public:
+  using Node = expression::Node;
+
   ~Expression();
 
   // Return the associated table.
@@ -180,7 +180,7 @@ class Expression {
 
  private:
   const Table *table_;
-  unique_ptr<ExpressionNode> root_;
+  unique_ptr<Node> root_;
   Int block_size_;
 
   // Create an expression.
@@ -190,11 +190,11 @@ class Expression {
   // "error" != nullptr.
   static unique_ptr<Expression> create(Error *error,
                                        const Table *table,
-                                       unique_ptr<ExpressionNode> &&root,
+                                       unique_ptr<Node> &&root,
                                        const ExpressionOptions &options);
 
   Expression(const Table *table,
-             unique_ptr<ExpressionNode> &&root,
+             unique_ptr<Node> &&root,
              Int block_size);
 
   friend ExpressionBuilder;
@@ -202,6 +202,8 @@ class Expression {
 
 class ExpressionBuilder {
  public:
+  using Node = expression::Node;
+
   // Create an object for building expressons.
   //
   // On success, returns a poitner to the builder.
@@ -261,15 +263,14 @@ class ExpressionBuilder {
 
  private:
   const Table *table_;
-  Array<unique_ptr<ExpressionNode>> stack_;
+  Array<unique_ptr<Node>> stack_;
 
   explicit ExpressionBuilder(const Table *table);
 
   // Create a node associated with a constant.
-  unique_ptr<ExpressionNode> create_datum_node(Error *error,
-                                               const Datum &datum);
+  unique_ptr<Node> create_datum_node(Error *error, const Datum &datum);
   // Create a node associated with a column.
-  unique_ptr<ExpressionNode> create_column_node(Error *error, String name);
+  unique_ptr<Node> create_column_node(Error *error, String name);
 
   // Push a unary operator.
   bool push_unary_operator(Error *error, OperatorType operator_type);
@@ -277,43 +278,43 @@ class ExpressionBuilder {
   bool push_binary_operator(Error *error, OperatorType operator_type);
 
   // Create a node associated with a unary operator.
-  unique_ptr<ExpressionNode> create_unary_node(
+  unique_ptr<Node> create_unary_node(
       Error *error,
       OperatorType operator_type,
-      unique_ptr<ExpressionNode> &&arg);
+      unique_ptr<Node> &&arg);
   // Create a node associated with a binary operator.
-  unique_ptr<ExpressionNode> create_binary_node(
+  unique_ptr<Node> create_binary_node(
       Error *error,
       OperatorType operator_type,
-      unique_ptr<ExpressionNode> &&arg1,
-      unique_ptr<ExpressionNode> &&arg2);
+      unique_ptr<Node> &&arg1,
+      unique_ptr<Node> &&arg2);
 
   // Create a equality test node.
   template <typename T>
-  unique_ptr<ExpressionNode> create_equality_test_node(
+  unique_ptr<Node> create_equality_test_node(
       Error *error,
-      unique_ptr<ExpressionNode> &&arg1,
-      unique_ptr<ExpressionNode> &&arg2);
+      unique_ptr<Node> &&arg1,
+      unique_ptr<Node> &&arg2);
   // Create a comparison node.
   template <typename T>
-  unique_ptr<ExpressionNode> create_comparison_node(
+  unique_ptr<Node> create_comparison_node(
       Error *error,
-      unique_ptr<ExpressionNode> &&arg1,
-      unique_ptr<ExpressionNode> &&arg2);
+      unique_ptr<Node> &&arg1,
+      unique_ptr<Node> &&arg2);
   // Create a bitwise node.
   template <typename T>
-  unique_ptr<ExpressionNode> create_bitwise_node(
+  unique_ptr<Node> create_bitwise_node(
       Error *error,
       OperatorType operator_type,
-      unique_ptr<ExpressionNode> &&arg1,
-      unique_ptr<ExpressionNode> &&arg2);
+      unique_ptr<Node> &&arg1,
+      unique_ptr<Node> &&arg2);
   // Create an arithmetic node.
   template <typename T>
-  unique_ptr<ExpressionNode> create_arithmetic_node(
+  unique_ptr<Node> create_arithmetic_node(
       Error *error,
       OperatorType operator_type,
-      unique_ptr<ExpressionNode> &&arg1,
-      unique_ptr<ExpressionNode> &&arg2);
+      unique_ptr<Node> &&arg1,
+      unique_ptr<Node> &&arg2);
 };
 
 }  // namespace grnxx

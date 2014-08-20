@@ -17,6 +17,7 @@ libgrnxx_la_SOURCES =			\
 	index.cpp			\
 	library.cpp			\
 	name.cpp			\
+	pipeline.cpp			\
 	sorter.cpp			\
 	table.cpp			\
 	types.cpp
