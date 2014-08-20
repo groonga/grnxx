@@ -352,6 +352,8 @@ struct Record {
 
   Record() = default;
   Record(Int row_id, Float score) : row_id(row_id), score(score) {}
+
+  Record &operator=(const Record &) & = default;
 };
 
 enum IndexType {
