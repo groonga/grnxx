@@ -2194,12 +2194,54 @@ DataType Expression::data_type() const {
   return root_->data_type();
 }
 
-bool Expression::filter(Error *error, Array<Record> *records, Int offset) {
-  ArrayRef<Record> output_records = records->ref();
-  if (!filter(error, *records, &output_records)) {
-    return false;
+//bool Expression::filter(Error *error, Array<Record> *records, Int offset) {
+//  ArrayRef<Record> output_records = records->ref();
+//  if (!filter(error, *records, &output_records)) {
+//    return false;
+//  }
+//  return records->resize(error, output_records.size());
+//}
+
+bool Expression::filter(Error *error,
+                        Array<Record> *records,
+                        Int input_offset,
+                        Int output_offset,
+                        Int output_limit) {
+  ArrayCRef<Record> input = records->ref(input_offset);
+  ArrayRef<Record> output = records->ref(input_offset);
+  Int count = 0;
+  while ((input.size() > 0) && (output_limit > 0)) {
+    Int next_size = (input.size() < block_size_) ? input.size() : block_size_;
+    ArrayCRef<Record> next_input = input.ref(0, next_size);
+    ArrayRef<Record> next_output = output.ref(0, next_size);
+    if (!root_->filter(error, next_input, &next_output)) {
+      return false;
+    }
+    input = input.ref(next_size);
+
+    if (output_offset > 0) {
+      if (output_offset >= next_output.size()) {
+        output_offset -= next_output.size();
+        next_output = next_output.ref(0, 0);
+      } else {
+        for (Int i = output_offset; i < next_output.size(); ++i) {
+          next_output.set(i - output_offset, next_output[i]);
+        }
+        next_output = next_output.ref(0, next_output.size() - output_offset);
+        output_offset = 0;
+      }
+    }
+    if (next_output.size() > output_limit) {
+      next_output = next_output.ref(0, output_limit);
+    }
+    output_limit -= next_output.size();
+
+    output = output.ref(next_output.size());
+    count += next_output.size();
   }
-  return records->resize(error, output_records.size());
+  records->resize(nullptr, input_offset + count);
+  return true;
+
 }
 
 bool Expression::filter(Error *error,

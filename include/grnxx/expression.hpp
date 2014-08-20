@@ -80,16 +80,36 @@ class Expression {
     return block_size_;
   }
 
+  // TODO: The following interface is not yet fixed.
+
+//  // Filter out false records.
+//  //
+//  // Evaluates the expression for "*records" and removes records whose
+//  // evaluation results are false.
+//  // Note that the first "offset" records are left without evaluation.
+//  //
+//  // On success, returns true.
+//  // On failure, returns false and stores error information into "*error" if
+//  // "error" != nullptr.
+//  bool filter(Error *error, Array<Record> *records, Int offset = 0);
+
   // Filter out false records.
   //
   // Evaluates the expression for "*records" and removes records whose
   // evaluation results are false.
-  // Note that the first "offset" records are left without evaluation.
+  //
+  // Note that the first "input_offset" records in "*records" are left as is
+  // without evaluation.
+  // Also note that the first "output_offset" true records are removed and
+  // the number of output records is at most "output_limit".
   //
   // On success, returns true.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
-  bool filter(Error *error, Array<Record> *records, Int offset = 0);
+  bool filter(Error *error, Array<Record> *records,
+              Int input_offset = 0,
+              Int output_offset = 0,
+              Int output_limit = numeric_limits<Int>::max());
 
   // Extract true records.
   //
