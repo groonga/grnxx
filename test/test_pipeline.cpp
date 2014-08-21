@@ -161,6 +161,45 @@ void test_filter() {
     }
   }
   assert(records.size() == count);
+
+  // Create a cursor which reads all the records.
+  cursor = test.table->create_cursor(&error);
+  assert(cursor);
+  assert(pipeline_builder->push_cursor(&error, std::move(cursor)));
+
+  // Create a filter (Bool && (Int < 50)).
+  constexpr grnxx::Int FILTER_OFFSET = 1234;
+  constexpr grnxx::Int FILTER_LIMIT  = 2345;
+  assert(expression_builder->push_column(&error, "Bool"));
+  assert(expression_builder->push_column(&error, "Int"));
+  assert(expression_builder->push_datum(&error, grnxx::Int(50)));
+  assert(expression_builder->push_operator(&error, grnxx::LESS_OPERATOR));
+  assert(expression_builder->push_operator(&error,
+                                           grnxx::LOGICAL_AND_OPERATOR));
+  expression = expression_builder->release(&error);
+  assert(expression);
+  assert(pipeline_builder->push_filter(&error, std::move(expression),
+                                       FILTER_OFFSET, FILTER_LIMIT));
+
+  // Complete a pipeline.
+  pipeline = pipeline_builder->release(&error);
+  assert(pipeline);
+
+  // Read records through the pipeline.
+  records.clear();
+  assert(pipeline->flush(&error, &records));
+  assert(records.size() == FILTER_LIMIT);
+
+  count = 0;
+  for (grnxx::Int i = 1; i < test.bool_values.size(); ++i) {
+    if (test.bool_values[i] && (test.int_values[i] < 50)) {
+      if ((count >= FILTER_OFFSET) &&
+          (count < (FILTER_OFFSET + FILTER_LIMIT))) {
+        assert(records.get_row_id(count - FILTER_OFFSET) == i);
+        ++count;
+      }
+    }
+  }
 }
 
 void test_adjuster() {
