@@ -139,6 +139,20 @@ struct ReverseIsPrior {
 // ---- QuickSortNode ----
 
 template <typename T>
+struct Equal {
+  bool operator()(T lhs, T rhs) const {
+    return lhs == rhs;
+  }
+};
+
+template <>
+struct Equal<Float> {
+  bool operator()(Float lhs, Float rhs) const {
+    return (lhs == rhs) || (std::isnan(lhs) && std::isnan(rhs));
+  }
+};
+
+template <typename T>
 class QuickSortNode : public TypedNode<typename T::Value> {
  public:
   using Comparer = T;
@@ -216,7 +230,7 @@ bool QuickSortNode<T>::quick_sort(Error *error,
       while (left < right) {
         if (comparer_(pivot, values[left])) {
           break;
-        } else if (pivot == values[left]) {
+        } else if (Equal<Value>()(pivot, values[left])) {
           std::swap(values[left], values[pivot_left]);
           records.swap(left, pivot_left);
           ++pivot_left;
@@ -227,7 +241,7 @@ bool QuickSortNode<T>::quick_sort(Error *error,
         --right;
         if (comparer_(values[right], pivot)) {
           break;
-        } else if (values[right] == pivot) {
+        } else if (Equal<Value>()(values[right], pivot)) {
           --pivot_right;
           std::swap(values[right], values[pivot_right]);
           records.swap(right, pivot_right);
@@ -335,7 +349,7 @@ bool QuickSortNode<T>::insertion_sort(Error *error,
   if (this->next_) {
     Int begin = 0;
     for (Int i = 1; i < records.size(); ++i) {
-      if (values[i] != values[begin]) {
+      if (!Equal<Value>()(values[i], values[begin])) {
         if ((i - begin) >= 2) {
           if (!this->next_->sort(error, records.ref(begin, i - begin),
                                  0, i - begin)) {
