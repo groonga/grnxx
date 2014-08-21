@@ -48,7 +48,7 @@ void init_test() {
   test.table = test.db->create_table(&error, "Table");
   assert(test.table);
 
-  // Create columns for Bool, Int, Float, and Text values.
+  // Create columns for Bool, Int, and Float values.
   grnxx::DataType data_type = grnxx::BOOL_DATA;
   auto bool_column = test.table->create_column(&error, "Bool", data_type);
   assert(bool_column);
@@ -243,7 +243,7 @@ void test_sorter() {
   assert(expression);
   assert(pipeline_builder->push_adjuster(&error, std::move(expression)));
 
-  // Create a sorter.
+  // Create a sorter (Int, _id).
   grnxx::Array<grnxx::SortOrder> orders;
   assert(orders.resize(&error, 2));
   assert(expression_builder->push_column(&error, "Int"));
