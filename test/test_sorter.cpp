@@ -83,8 +83,12 @@ void init_test() {
   for (grnxx::Int i = 1; i <= NUM_ROWS; ++i) {
     test.bool_values.set(i, (mersenne_twister() & 1) != 0);
     test.int_values.set(i, mersenne_twister() % 100);
-    constexpr auto MAX_VALUE = mersenne_twister.max();
-    test.float_values.set(i, 1.0 * mersenne_twister() / MAX_VALUE);
+    if ((mersenne_twister() % 16) == 0) {
+      test.float_values.set(i, std::numeric_limits<grnxx::Float>::quiet_NaN());
+    } else {
+      constexpr auto MAX_VALUE = mersenne_twister.max();
+      test.float_values.set(i, 1.0 * mersenne_twister() / MAX_VALUE);
+    }
     grnxx::Int length =
         (mersenne_twister() % (MAX_LENGTH - MIN_LENGTH)) + MIN_LENGTH;
     test.text_bodies[i].resize(length);
@@ -262,6 +266,24 @@ void test_int() {
   }
 }
 
+struct LessEqual {
+  bool operator()(grnxx::Float lhs, grnxx::Float rhs) const {
+    // Numbers are prior to NaN.
+    if (std::isnan(rhs)) {
+      return true;
+    } else if (std::isnan(lhs)) {
+      return false;
+    }
+    return lhs <= rhs;
+  }
+};
+
+struct Equal {
+  bool operator()(grnxx::Float lhs, grnxx::Float rhs) const {
+    return (lhs == rhs) || (std::isnan(lhs) && std::isnan(rhs));
+  }
+};
+
 void test_float() {
   grnxx::Error error;
 
@@ -292,7 +314,7 @@ void test_float() {
     grnxx::Int rhs_row_id = records.get_row_id(i);
     grnxx::Float lhs_value = test.float_values[lhs_row_id];
     grnxx::Float rhs_value = test.float_values[rhs_row_id];
-    assert(lhs_value <= rhs_value);
+    assert(LessEqual()(lhs_value, rhs_value));
   }
 
   // Create a reverse sorter.
@@ -310,7 +332,7 @@ void test_float() {
     grnxx::Int rhs_row_id = records.get_row_id(i);
     grnxx::Float lhs_value = test.float_values[lhs_row_id];
     grnxx::Float rhs_value = test.float_values[rhs_row_id];
-    assert(lhs_value >= rhs_value);
+    assert(LessEqual()(rhs_value, lhs_value));
   }
 
   // Create a multiple order sorter.
@@ -333,8 +355,8 @@ void test_float() {
     grnxx::Int rhs_row_id = records.get_row_id(i);
     grnxx::Float lhs_value = test.float_values[lhs_row_id];
     grnxx::Float rhs_value = test.float_values[rhs_row_id];
-    assert(lhs_value <= rhs_value);
-    if (lhs_value == rhs_value) {
+    assert(LessEqual()(lhs_value, rhs_value));
+    if (Equal()(lhs_value, rhs_value)) {
       assert(lhs_row_id < rhs_row_id);
     }
   }
