@@ -78,18 +78,37 @@ class FilterNode : public Node {
 Int FilterNode::read_next(Error *error, Array<Record> *records) {
   // TODO: The following threshold (1024) should be optimized.
   Int offset = records->size();
-  for ( ; ; ) {
+  while (limit_ > 0) {
     Int count = arg_->read_next(error, records);
     if (count == -1) {
       return -1;
     } else if (count == 0) {
       break;
     }
-    // TODO: offset and limit are not supported yet.
-    if (!expression_->filter(error, records, offset)) {
+    ArrayRef<Record> ref = records->ref(records->size() - count, count);
+    if (!expression_->filter(error, ref, &ref)) {
       return -1;
     }
-    if (records->size() - offset) {
+    if (offset_ > 0) {
+      if (offset_ >= ref.size()) {
+        offset_ -= ref.size();
+        ref = ref.ref(0, 0);
+      } else {
+        for (Int i = offset_; i < ref.size(); ++i) {
+          ref.set(i - offset_, ref[i]);
+        }
+        ref = ref.ref(0, ref.size() - offset_);
+        offset_ = 0;
+      }
+    }
+    if (ref.size() > limit_) {
+      ref = ref.ref(0, limit_);
+    }
+    limit_ -= ref.size();
+    if (!records->resize(error, records->size() - count + ref.size())) {
+      return -1;
+    }
+    if ((records->size() - offset) >= 1024) {
       break;
     }
   }
