@@ -214,13 +214,29 @@ bool ColumnImpl<Text>::set(Error *error, Int row_id, const Datum &datum) {
   if (!table_->test_row(error, row_id)) {
     return false;
   }
-  // Note that a Bool object does not have its own address.
   Text value = datum.force_text();
-  try {
-    std::string internal_value(value.data(), value.size());
-    values_[row_id] = std::move(internal_value);
-  } catch (...) {
-    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+  if (value.size() == 0) {
+    headers_[row_id] = 0;
+    return true;
+  }
+  Int offset = bodies_.size();
+  if (value.size() < 0xFFFF) {
+    if (!bodies_.resize(error, offset + value.size())) {
+      return false;
+    }
+    std::memcpy(&bodies_[offset], value.data(), value.size());
+    headers_[row_id] = (offset << 16) | value.size();
+  } else {
+    // The size of a long text is stored in front of the body.
+    if ((offset % sizeof(Int)) != 0) {
+      offset += sizeof(Int) - (offset % sizeof(Int));
+    }
+    if (!bodies_.resize(error, offset + sizeof(Int) + value.size())) {
+      return false;
+    }
+    *reinterpret_cast<Int *>(&bodies_[offset]) = value.size();
+    std::memcpy(&bodies_[offset + sizeof(Int)], value.data(), value.size());
+    headers_[row_id] = (offset << 16) | 0xFFFF;
   }
   return true;
 }
@@ -229,7 +245,7 @@ bool ColumnImpl<Text>::get(Error *error, Int row_id, Datum *datum) const {
   if (!table_->test_row(error, row_id)) {
     return false;
   }
-  *datum = Text(values_[row_id].data(), values_[row_id].size());
+  *datum = get(row_id);
   return true;
 }
 
@@ -246,7 +262,7 @@ unique_ptr<ColumnImpl<Text>> ColumnImpl<Text>::create(
   if (!column->initialize_base(error, table, name, TEXT_DATA, options)) {
     return nullptr;
   }
-  if (!column->values_.resize(error, table->max_row_id() + 1)) {
+  if (!column->headers_.resize(error, table->max_row_id() + 1, 0)) {
     return nullptr;
   }
   return column;
@@ -255,19 +271,19 @@ unique_ptr<ColumnImpl<Text>> ColumnImpl<Text>::create(
 ColumnImpl<Text>::~ColumnImpl() {}
 
 bool ColumnImpl<Text>::set_default_value(Error *error, Int row_id) {
-  if (row_id >= values_.size()) {
-    if (!values_.resize(error, row_id + 1)) {
+  if (row_id >= headers_.size()) {
+    if (!headers_.resize(error, row_id + 1)) {
       return false;
     }
   }
-  values_[row_id].clear();
+  headers_[row_id] = 0;
   return true;
 }
 
 void ColumnImpl<Text>::unset(Int row_id) {
-  values_[row_id].clear();
+  headers_[row_id] = 0;
 }
 
-ColumnImpl<Text>::ColumnImpl() : Column(), values_() {}
+ColumnImpl<Text>::ColumnImpl() : Column(), headers_(), bodies_() {}
 
 }  // namespace grnxx

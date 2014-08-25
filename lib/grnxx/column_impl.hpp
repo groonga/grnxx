@@ -73,12 +73,23 @@ class ColumnImpl<Text> : public Column {
   //
   // Assumes that "row_id" is valid. Otherwise, the result is undefined.
   Text get(Int row_id) const {
-    return Text(values_[row_id].data(), values_[row_id].size());
+    Int size = static_cast<Int>(headers_[row_id] & 0xFFFF);
+    if (size == 0) {
+      return Text("", 0);
+    }
+    Int offset = static_cast<Int>(headers_[row_id] >> 16);
+    if (size < 0xFFFF) {
+      return Text(&bodies_[offset], size);
+    } else {
+      // The size of a long text is stored in front of the body.
+      size = *reinterpret_cast<const Int *>(&bodies_[offset]);
+      return String(&bodies_[offset + sizeof(Int)], size);
+    }
   }
 
  protected:
-  // TODO: std::string should not be used.
-  Array<std::string> values_;
+  Array<uint64_t> headers_;
+  Array<char> bodies_;
 
   ColumnImpl();
 };
