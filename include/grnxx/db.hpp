@@ -17,7 +17,7 @@ class DB {
 
   // Create a table with "name" and "options".
   //
-  // Returns a pointer to the table on success.
+  // On success, returns a pointer to the table.
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
   Table *create_table(Error *error,
@@ -26,7 +26,7 @@ class DB {
 
   // Remove a table named "name".
   //
-  // Returns true on success.
+  // On success, returns true.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
   //
@@ -35,7 +35,7 @@ class DB {
 
   // Rename a table named "name" to "new_name".
   //
-  // Returns true on success.
+  // On success, returns true.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
   bool rename_table(Error *error,
@@ -44,12 +44,12 @@ class DB {
 
   // Change the order of tables.
   //
-  // Moves a table named "name" to the head if "prev_name" is nullptr or an
-  // empty string.
-  // Does nothing if "name" == "prev_name".
-  // Moves a table named "name" to next to a table named "prev_name".
+  // If "prev_name" is an empty string, moves a table named "name" to the head.
+  // If "name" == "prev_name", does nothing.
+  // Otherwise, moves a table named "name" to next to a table named
+  // "prev_name".
   //
-  // Returns true on success.
+  // On success, returns true.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
   bool reorder_table(Error *error,
@@ -60,7 +60,7 @@ class DB {
   //
   // If "table_id" is invalid, the result is undefined.
   //
-  // Returns a pointer to the table on success.
+  // On success, returns a pointer to the table.
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
   Table *get_table(Int table_id) const {
@@ -69,16 +69,19 @@ class DB {
 
   // Find a table named "name".
   //
-  // Returns a pointer to the table on success.
+  // On success, returns a pointer to the table.
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
   Table *find_table(Error *error, String name) const;
 
+  // TODO: Not supported yet.
+  //
   // Save the database into a file.
+  //
   // If "path" is nullptr or an empty string, saves the database into its
   // associated file.
   //
-  // Returns true on success.
+  // On success, returns true.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
   bool save(Error *error,
@@ -92,7 +95,7 @@ class DB {
 
   // Find a table with its ID.
   //
-  // Returns a pointer to the table on success.
+  // On success, returns a pointer to the table.
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
   Table *find_table_with_id(Error *error,
@@ -108,16 +111,20 @@ class DB {
 //
 // If "path" is nullptr or an empty string, creates a temporary database.
 //
-// Returns a pointer to the database on success.
+// TODO: A named database is not supoprted yet.
+//
+// On success, returns a pointer to the database.
 // On failure, returns nullptr and stores error information into "*error" if
 // "error" != nullptr.
 unique_ptr<DB> open_db(Error *error,
                        String path,
                        const DBOptions &options = DBOptions());
 
+// TODO: Not supported yet.
+//
 // Remove a database identified by "path".
 //
-// Returns true on success.
+// On success, returns true.
 // On failure, returns false and stores error information into "*error" if
 // "error" != nullptr.
 bool remove_db(Error *error,
