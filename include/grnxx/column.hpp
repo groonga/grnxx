@@ -39,7 +39,7 @@ class Column {
 
   // Create an index with "name", "index_type", and "index_options".
   //
-  // Returns a pointer to the index on success.
+  // On success, returns a pointer to the index.
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
   virtual Index *create_index(
@@ -50,7 +50,7 @@ class Column {
 
   // Remove an index named "name".
   //
-  // Returns true on success.
+  // On success, returns true.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
   //
@@ -59,7 +59,7 @@ class Column {
 
   // Rename an index named "name" to "new_name".
   //
-  // Returns true on success.
+  // On success, returns true.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
   bool rename_index(Error *error,
@@ -68,13 +68,13 @@ class Column {
 
   // Change the order of indexes.
   //
-  // Moves an index named "name" to the head if "prev_name" is
-  // nullptr or an empty string.
-  // Does nothing if "name" == "prev_name".
-  // Moves an index named "name" to next to an index named
+  // If "prev_name" is  an empty string, moves an index named "name" to the
+  // head.
+  // If "name" == "prev_name", does nothing.
+  // Otherwise, moves an index named "name" to next to an index named
   // "prev_name".
   //
-  // Returns true on success.
+  // On success, returns true.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
   bool reorder_index(Error *error,
@@ -85,7 +85,7 @@ class Column {
   //
   // If "index_id" is invalid, the result is undefined.
   //
-  // Returns a pointer to the index on success.
+  // On success, returns a pointer to the index.
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
   Index *get_index(Int index_id) const {
@@ -95,14 +95,14 @@ class Column {
 
   // Find an index named "name".
   //
-  // Returns a pointer to the index on success.
+  // On success, returns a pointer to the index.
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
   Index *find_index(Error *error, String name) const;
 
   // Set a value.
   //
-  // Returns true on success.
+  // On success, returns true.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
   virtual bool set(Error *error, Int row_id, const Datum &datum);
@@ -111,14 +111,14 @@ class Column {
   //
   // Stores a value identified by "row_id" into "*datum".
   //
-  // Returns true on success.
+  // On success, returns true.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
   virtual bool get(Error *error, Int row_id, Datum *datum) const;
 
   // Create a cursor to get records.
   //
-  // Returns a pointer to the cursor on success.
+  // On success, returns a pointer to the cursor.
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
   virtual unique_ptr<Cursor> create_cursor(
@@ -136,7 +136,7 @@ class Column {
 
   // Initialize the base members.
   //
-  // Returns true on success.
+  // On success, returns true.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
   bool initialize_base(Error *error,
@@ -148,7 +148,7 @@ class Column {
  private:
   // Create a new column.
   //
-  // Returns a pointer to the column on success.
+  // On success, returns a pointer to the column.
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
   static unique_ptr<Column> create(
@@ -160,7 +160,7 @@ class Column {
 
   // Change the column name.
   //
-  // Returns true on success.
+  // On success, returns true.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
   bool rename(Error *error, String new_name);
@@ -170,14 +170,14 @@ class Column {
 
   // Set the initial key.
   //
-  // Returns true on success.
+  // On success, returns true.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
   virtual bool set_initial_key(Error *error, Int row_id, const Datum &key);
 
   // Set the default value.
   //
-  // Returns true on success.
+  // On success, returns true.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
   virtual bool set_default_value(Error *error, Int row_id) = 0;
