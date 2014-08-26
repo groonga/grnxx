@@ -38,7 +38,7 @@ class Table {
 
   // Create a column with "name", "data_type", and "options".
   //
-  // Returns a pointer to the table on success.
+  // On success, returns a pointer to the column.
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
   Column *create_column(Error *error,
@@ -48,7 +48,7 @@ class Table {
 
   // Remove a column named "name".
   //
-  // Returns true on success.
+  // On success, returns true.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
   //
@@ -57,7 +57,7 @@ class Table {
 
   // Rename a column named "name" to "new_name".
   //
-  // Returns true on success.
+  // On success, returns true.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
   bool rename_column(Error *error,
@@ -66,12 +66,13 @@ class Table {
 
   // Change the order of columns.
   //
-  // Moves a column named "name" to the head if "prev_name" is nullptr or an
-  // empty string.
-  // Does nothing if "name" == "prev_name".
-  // Moves a column named "name" to next to a column named "prev_name".
+  // If "prev_name" is an empty string, moves a column named "name" to the
+  // head.
+  // If "name" == "prev_name", does nothing.
+  // Otherwise, moves a column named "name" to next to a column named
+  // "prev_name".
   //
-  // Returns true on success.
+  // On success, returns true.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
   bool reorder_column(Error *error,
@@ -82,7 +83,7 @@ class Table {
   //
   // If "column_id" is invalid, the result is undefined.
   //
-  // Returns a pointer to the column on success.
+  // On success, returns a pointer to the column.
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
   Column *get_column(Int column_id) const {
@@ -91,7 +92,7 @@ class Table {
 
   // Find a column named "name".
   //
-  // Returns a pointer to the column on success.
+  // On success, returns a pointer to the column.
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
   Column *find_column(Error *error, String name) const;
@@ -100,7 +101,7 @@ class Table {
   //
   // Fails if the table already has a key column.
   //
-  // Returns true on success.
+  // On success, returns true.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
   bool set_key_column(Error *error, String name);
@@ -109,7 +110,7 @@ class Table {
   //
   // Fails if the table does not have a key column.
   //
-  // Returns true on success.
+  // On success, returns true.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
   bool unset_key_column(Error *error);
@@ -128,7 +129,7 @@ class Table {
   // On failure, if "request_row_id" or "key" matches an existing row,
   // stores the matched row ID into "*result_row_id".
   //
-  // Returns true on success.
+  // On success, returns true.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
   bool insert_row(Error *error,
@@ -138,7 +139,7 @@ class Table {
 
   // Remove a row identified by "row_id".
   //
-  // Returns true on success.
+  // On success, returns true.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
   bool remove_row(Error *error, Int row_id);
@@ -154,14 +155,14 @@ class Table {
   //
   // Fails if the table does not have a key column.
   //
-  // Returns the row ID on success.
+  // On success, returns the row ID.
   // On failure, returns NULL_ROW_ID and stores error information into
   // "*error" if "error" != nullptr.
   Int find_row(Error *error, const Datum &key) const;
 
   // Create a cursor to get records.
   //
-  // Returns a pointer to the cursor on success.
+  // On success, returns a pointer to the cursor.
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
   unique_ptr<Cursor> create_cursor(
@@ -170,7 +171,7 @@ class Table {
 
   // Create an object to build pipelines.
   //
-  // Returns a pointer to the builder on success.
+  // On success, returns a pointer to the builder.
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
 //  unique_ptr<PipelineBuilder> create_pipeline_builder(
@@ -202,7 +203,7 @@ class Table {
 
   // Create a new table.
   //
-  // Returns a pointer to the table on success.
+  // On success, returns a pointer to the table.
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
   static unique_ptr<Table> create(
@@ -232,7 +233,7 @@ class Table {
 
   // Change the table name.
   //
-  // Returns true on success.
+  // On success, returns true.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
   bool rename(Error *error, String new_name);
@@ -242,7 +243,7 @@ class Table {
 
   // Find a column with its ID.
   //
-  // Returns a pointer to the column on success.
+  // On success, returns a pointer to the column.
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
   Column *find_column_with_id(Error *error,
