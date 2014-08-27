@@ -2299,7 +2299,6 @@ bool Expression::evaluate(Error *error,
 GRNXX_INSTANTIATE_EXPRESSION_EVALUATE(Bool);
 GRNXX_INSTANTIATE_EXPRESSION_EVALUATE(Int);
 GRNXX_INSTANTIATE_EXPRESSION_EVALUATE(Float);
-GRNXX_INSTANTIATE_EXPRESSION_EVALUATE(Time);
 GRNXX_INSTANTIATE_EXPRESSION_EVALUATE(GeoPoint);
 GRNXX_INSTANTIATE_EXPRESSION_EVALUATE(Text);
 #undef GRNXX_INSTANTIATE_EXPRESSION_EVALUATE
@@ -2470,9 +2469,6 @@ unique_ptr<Node> ExpressionBuilder::create_datum_node(
     case FLOAT_DATA: {
       return DatumNode<Float>::create(error, datum.force_float());
     }
-    case TIME_DATA: {
-      return DatumNode<Time>::create(error, datum.force_time());
-    }
     case GEO_POINT_DATA: {
       return DatumNode<GeoPoint>::create(error, datum.force_geo_point());
     }
@@ -2524,9 +2520,6 @@ unique_ptr<Node> ExpressionBuilder::create_column_node(
     }
     case FLOAT_DATA: {
       return ColumnNode<Float>::create(error, column);
-    }
-    case TIME_DATA: {
-      return ColumnNode<Time>::create(error, column);
     }
     case GEO_POINT_DATA: {
       return ColumnNode<GeoPoint>::create(error, column);
@@ -2768,10 +2761,6 @@ unique_ptr<Node> ExpressionBuilder::create_equality_test_node(
       return ComparisonNode<typename T:: template Comparer<Float>>::create(
           error, std::move(arg1), std::move(arg2));
     }
-    case TIME_DATA: {
-      return ComparisonNode<typename T:: template Comparer<Time>>::create(
-          error, std::move(arg1), std::move(arg2));
-    }
     case GEO_POINT_DATA: {
       return ComparisonNode<typename T:: template Comparer<GeoPoint>>::create(
           error, std::move(arg1), std::move(arg2));
@@ -2804,10 +2793,6 @@ unique_ptr<Node> ExpressionBuilder::create_comparison_node(
     }
     case FLOAT_DATA: {
       return ComparisonNode<typename T:: template Comparer<Float>>::create(
-          error, std::move(arg1), std::move(arg2));
-    }
-    case TIME_DATA: {
-      return ComparisonNode<typename T:: template Comparer<Time>>::create(
           error, std::move(arg1), std::move(arg2));
     }
     case TEXT_DATA: {

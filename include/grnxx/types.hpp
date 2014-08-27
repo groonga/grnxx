@@ -61,10 +61,6 @@ enum DataType {
   // Value: Double precision (64-bit) floating point number.
   // Default: 0.0.
   FLOAT_DATA,
-  // Type: Time.
-  // Value: Microseconds since the Unix epoch (1970-01-01 00:00:00 UTC).
-  // Default: The Unix epoch.
-  TIME_DATA,
   // Type: GeoPoint.
   // Value: Latitude-longitude in milliseconds.
   // Default: (0, 0).
@@ -89,7 +85,6 @@ enum DataType {
   BOOL_VECTOR_DATA,
   INT_VECTOR_DATA,
   FLOAT_VECTOR_DATA,
-  TIME_VECTOR_DATA,
   GEO_POINT_VECTOR_DATA,
   TEXT_VECTOR_DATA,
   ROW_REF_VECTOR_DATA
@@ -100,50 +95,6 @@ using Bool  = bool;
 using Int   = int64_t;
 
 using Float = double;
-
-class Time {
- public:
-  // The default constructor does nothing.
-  Time() = default;
-
-  explicit Time(Int tick_count) : tick_count_(tick_count) {}
-
-  void set_tick_count(Int tick_count) {
-    tick_count_ = tick_count;
-  }
-
-  Int tick_count() const {
-    return tick_count_;
-  }
-
- private:
-  Int tick_count_;  // Microseconds since the Unix epoch
-                    // (1970-01-01 00:00:00 UTC).
-};
-
-inline bool operator==(Time lhs, Time rhs) {
-  return lhs.tick_count() == rhs.tick_count();
-}
-
-inline bool operator!=(Time lhs, Time rhs) {
-  return lhs.tick_count() != rhs.tick_count();
-}
-
-inline bool operator<(Time lhs, Time rhs) {
-  return lhs.tick_count() < rhs.tick_count();
-}
-
-inline bool operator>(Time lhs, Time rhs) {
-  return lhs.tick_count() > rhs.tick_count();
-}
-
-inline bool operator<=(Time lhs, Time rhs) {
-  return lhs.tick_count() <= rhs.tick_count();
-}
-
-inline bool operator>=(Time lhs, Time rhs) {
-  return lhs.tick_count() >= rhs.tick_count();
-}
 
 class GeoPoint {
  public:
@@ -314,14 +265,6 @@ template <> struct TypeTraits <Float> {
   }
   static Float default_value() {
     return 0.0;
-  }
-};
-template <> struct TypeTraits <Time> {
-  static DataType data_type() {
-    return TIME_DATA;
-  }
-  static Time default_value() {
-    return Time(0);
   }
 };
 template <> struct TypeTraits <GeoPoint> {

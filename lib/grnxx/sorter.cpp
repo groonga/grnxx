@@ -490,16 +490,6 @@ unique_ptr<Node> Node::create(Error *error, SortOrder &&order) {
       }
       break;
     }
-    case TIME_DATA: {
-      if (order.type == REGULAR_ORDER) {
-        node.reset(new (nothrow) QuickSortNode<RegularComparer<Time>>(
-            std::move(order)));
-      } else {
-        node.reset(new (nothrow) QuickSortNode<ReverseComparer<Time>>(
-            std::move(order)));
-      }
-      break;
-    }
     case GEO_POINT_DATA: {
       if (order.type == REGULAR_ORDER) {
         node.reset(new (nothrow) QuickSortNode<RegularComparer<GeoPoint>>(

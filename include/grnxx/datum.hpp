@@ -19,9 +19,6 @@ class Datum {
   Datum(Float value)
       : type_(FLOAT_DATA),
         float_(value) {}
-  Datum(Time value)
-      : type_(TIME_DATA),
-        time_(value) {}
   Datum(GeoPoint value)
       : type_(GEO_POINT_DATA),
         geo_point_(value) {}
@@ -44,9 +41,6 @@ class Datum {
   Float force_float() const {
     return float_;
   }
-  Time force_time() const {
-    return time_;
-  }
   GeoPoint force_geo_point() const {
     return geo_point_;
   }
@@ -64,9 +58,6 @@ class Datum {
   void force(Float *value) const {
     *value = float_;
   }
-  void force(Time *value) const {
-    *value = time_;
-  }
   void force(GeoPoint *value) const {
     *value = geo_point_;
   }
@@ -80,7 +71,6 @@ class Datum {
     Bool bool_;
     Int int_;
     Float float_;
-    Time time_;
     GeoPoint geo_point_;
     String text_;
   };

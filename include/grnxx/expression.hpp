@@ -25,7 +25,6 @@ enum OperatorType {
 //  TO_BOOL_OPERATOR,
   TO_INT_OPERATOR,
   TO_FLOAT_OPERATOR,
-//  TO_TIME_OPERATOR,
 //  TO_GEO_POINT_OPERATOR,
 //  TO_TEXT_OPERATOR,
 
@@ -40,10 +39,10 @@ enum OperatorType {
   NOT_EQUAL_OPERATOR,  // For any types.
 
   // Comparison operators.
-  LESS_OPERATOR,           // Int, Float, Time, Text.
-  LESS_EQUAL_OPERATOR,     // Int, Float, Time, Text.
-  GREATER_OPERATOR,        // Int, Float, Time, Text.
-  GREATER_EQUAL_OPERATOR,  // Int, Float, Time, Text.
+  LESS_OPERATOR,           // Int, Float, Text.
+  LESS_EQUAL_OPERATOR,     // Int, Float, Text.
+  GREATER_OPERATOR,        // Int, Float, Text.
+  GREATER_EQUAL_OPERATOR,  // Int, Float, Text.
 
   // Bitwise operators.
   BITWISE_AND_OPERATOR,  // For Bool, Int.
