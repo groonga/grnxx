@@ -88,6 +88,9 @@ unique_ptr<Column> Column::create(Error *error,
     case TEXT_DATA: {
       return ColumnImpl<Text>::create(error, table, name, options);
     }
+    case VECTOR_BOOL_DATA: {
+      return ColumnImpl<Vector<Bool>>::create(error, table, name, options);
+    }
     default: {
       // TODO: Other data types are not supported yet.
       GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not suported yet");

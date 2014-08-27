@@ -3,6 +3,7 @@
 
 #include <cinttypes>
 #include <cstring>
+#include <initializer_list>
 #include <limits>
 #include <memory>
 
@@ -82,12 +83,12 @@ enum DataType {
   // Type: Vector.
   // Value: Vector of above data types.
   // Default: {}.
-  BOOL_VECTOR_DATA,
-  INT_VECTOR_DATA,
-  FLOAT_VECTOR_DATA,
-  GEO_POINT_VECTOR_DATA,
-  TEXT_VECTOR_DATA,
-  ROW_REF_VECTOR_DATA
+  VECTOR_BOOL_DATA,
+  VECTOR_INT_DATA,
+  VECTOR_FLOAT_DATA,
+  VECTOR_GEO_POINT_DATA,
+  VECTOR_TEXT_DATA,
+  VECTOR_ROW_REF_DATA
 };
 
 using Bool  = bool;
@@ -210,36 +211,83 @@ inline bool operator>=(String lhs, String rhs) {
 
 using Text = String;
 
-class RowRef {
+template <typename T> class Vector;
+
+// A Vector<Bool> contains at most 58 Bool values.
+template <>
+class Vector<Bool> {
  public:
-  // The default constructor does nothing.
-  RowRef() = default;
-
-  // Set the table and the row ID.
-  RowRef(Table *table, Int row_id) : table_(table), row_id_(row_id) {}
-
-  // Set the table.
-  void set_table(Table *table) {
-    table_ = table;
+  Vector() = default;
+  Vector(std::initializer_list<Bool> bits) : data_(0) {
+    uint64_t size = static_cast<uint64_t>(bits.size());
+    if (size > 58) {
+      size = 58;
+    }
+    uint64_t i = 0;
+    for (auto it = bits.begin(); it != bits.end(); ++it) {
+      if (*it) {
+        data_ |= uint64_t(1) << i;
+      }
+      ++i;
+    }
+    data_ |= size << 58;
   }
-  // Set the row ID.
-  void set_row_id(Int row_id) {
-    row_id_ = row_id;
+  Vector(uint64_t bits, Int size)
+      : data_((bits & mask(size)) |
+              (static_cast<uint64_t>(std::min(size, Int(58))) << 58)) {}
+  Vector(const Vector &) = default;
+
+  Vector &operator=(const Vector &) = default;
+
+  // Return the number of Bool values.
+  Int size() const {
+    return static_cast<Int>(data_ >> 58);
+  }
+  // Return the "i"-th Bool value.
+  //
+  // If "i" is invalid, the result is undefined.
+  Bool get(Int i) const {
+    return (data_ & (uint64_t(1) << i)) != 0;
+  }
+  // Set the "i"-th Bool value.
+  //
+  // If "i" is invalid, the result is undefined.
+  void set(Int i, Bool value) {
+    if (value) {
+      data_ |= uint64_t(1) << i;
+    } else {
+      data_ &= ~(uint64_t(1) << i);
+    }
   }
 
-  // Return the table.
-  Table *table() const {
-    return table_;
+  // Return the "i"-th Bool value.
+  //
+  // If "i" is invalid, the result is undefined.
+  Bool operator[](Int i) const {
+    return get(i);
   }
-  // Return the row ID.
-  Int row_id() const {
-    return row_id_;
+
+  // Return the set of Bool values.
+  uint64_t bits() const {
+    return data_ & mask(58);
   }
 
  private:
-  Table *table_;  // Target table.
-  Int row_id_;  // Row ID number.
+  uint64_t data_;
+
+  static uint64_t mask(Int size) {
+    return (uint64_t(1) << size) - 1;
+  }
 };
+
+inline Bool operator==(Vector<Bool> lhs, Vector<Bool> rhs) {
+  return (lhs.size() == rhs.size()) &&
+         ((lhs.bits() ^ rhs.bits()) == 0);
+}
+inline Bool operator!=(Vector<Bool> lhs, Vector<Bool> rhs) {
+  return (lhs.size() == rhs.size()) ||
+         ((lhs.bits() ^ rhs.bits()) != 0);
+}
 
 // Type information.
 template <typename T> struct TypeTraits;
@@ -281,6 +329,14 @@ template <> struct TypeTraits <Text> {
   }
   static Text default_value() {
     return Text("", 0);
+  }
+};
+template <> struct TypeTraits <Vector<Bool>> {
+  static DataType data_type() {
+    return VECTOR_BOOL_DATA;
+  }
+  static Vector<Bool> default_value() {
+    return Vector<Bool>(0, 0);
   }
 };
 
