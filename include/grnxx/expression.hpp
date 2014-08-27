@@ -57,7 +57,7 @@ enum OperatorType {
   MODULUS_OPERATOR,         // For Int.
 
   // Array operators.
-//  SUBSCRIPT_OPERATOR,
+  SUBSCRIPT_OPERATOR,
 
   // -- Ternary operators --
 };
@@ -312,6 +312,11 @@ class ExpressionBuilder {
   unique_ptr<Node> create_arithmetic_node(
       Error *error,
       OperatorType operator_type,
+      unique_ptr<Node> &&arg1,
+      unique_ptr<Node> &&arg2);
+  // Create a subscript node.
+  unique_ptr<Node> create_subscript_node(
+      Error *error,
       unique_ptr<Node> &&arg1,
       unique_ptr<Node> &&arg2);
 };

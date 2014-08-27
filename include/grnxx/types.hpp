@@ -83,12 +83,12 @@ enum DataType {
   // Type: Vector.
   // Value: Vector of above data types.
   // Default: {}.
-  VECTOR_BOOL_DATA,
-  VECTOR_INT_DATA,
-  VECTOR_FLOAT_DATA,
-  VECTOR_GEO_POINT_DATA,
-  VECTOR_TEXT_DATA,
-  VECTOR_ROW_REF_DATA
+  BOOL_VECTOR_DATA,
+  INT_VECTOR_DATA,
+  FLOAT_VECTOR_DATA,
+  GEO_POINT_VECTOR_DATA,
+  TEXT_VECTOR_DATA,
+  ROW_REF_VECTOR_DATA
 };
 
 using Bool  = bool;
@@ -289,6 +289,8 @@ inline Bool operator!=(Vector<Bool> lhs, Vector<Bool> rhs) {
          ((lhs.bits() ^ rhs.bits()) != 0);
 }
 
+using BoolVector = Vector<Bool>;
+
 // Type information.
 template <typename T> struct TypeTraits;
 template <> struct TypeTraits <Bool> {
@@ -333,7 +335,7 @@ template <> struct TypeTraits <Text> {
 };
 template <> struct TypeTraits <Vector<Bool>> {
   static DataType data_type() {
-    return VECTOR_BOOL_DATA;
+    return BOOL_VECTOR_DATA;
   }
   static Vector<Bool> default_value() {
     return Vector<Bool>(0, 0);

@@ -87,14 +87,14 @@ void test_column() {
 
   // Create a column named "VectorBoolColumn".
   // The column stores Text values.
-  auto vector_bool_column = table->create_column(&error, "VectorBoolColumn",
-                                                 grnxx::VECTOR_BOOL_DATA);
-  assert(vector_bool_column);
-  assert(vector_bool_column->table() == table);
-  assert(vector_bool_column->name() == "VectorBoolColumn");
-  assert(vector_bool_column->data_type() == grnxx::VECTOR_BOOL_DATA);
-  assert(!vector_bool_column->has_key_attribute());
-  assert(vector_bool_column->num_indexes() == 0);
+  auto bool_vector_column = table->create_column(&error, "VectorBoolColumn",
+                                                 grnxx::BOOL_VECTOR_DATA);
+  assert(bool_vector_column);
+  assert(bool_vector_column->table() == table);
+  assert(bool_vector_column->name() == "VectorBoolColumn");
+  assert(bool_vector_column->data_type() == grnxx::BOOL_VECTOR_DATA);
+  assert(!bool_vector_column->has_key_attribute());
+  assert(bool_vector_column->num_indexes() == 0);
 
   grnxx::Datum datum;
 
@@ -115,16 +115,16 @@ void test_column() {
   assert(datum.type() == grnxx::TEXT_DATA);
   assert(datum.force_text() == "");
 
-  assert(vector_bool_column->get(&error, 1, &datum));
-  assert(datum.type() == grnxx::VECTOR_BOOL_DATA);
-  assert(datum.force_vector_bool() == grnxx::Vector<grnxx::Bool>{});
+  assert(bool_vector_column->get(&error, 1, &datum));
+  assert(datum.type() == grnxx::BOOL_VECTOR_DATA);
+  assert(datum.force_bool_vector() == grnxx::Vector<grnxx::Bool>{});
 
   // Set and get values.
   assert(bool_column->set(&error, 1, grnxx::Bool(true)));
   assert(int_column->set(&error, 1, grnxx::Int(123)));
   assert(float_column->set(&error, 1, grnxx::Float(0.25)));
   assert(text_column->set(&error, 1, grnxx::Text("Hello, world!")));
-  assert(vector_bool_column->set(&error, 1,
+  assert(bool_vector_column->set(&error, 1,
          grnxx::Vector<grnxx::Bool>{ true, false, true }));
 
   assert(bool_column->get(&error, 1, &datum));
@@ -143,9 +143,9 @@ void test_column() {
   assert(datum.type() == grnxx::TEXT_DATA);
   assert(datum.force_text() == "Hello, world!");
 
-  assert(vector_bool_column->get(&error, 1, &datum));
-  assert(datum.type() == grnxx::VECTOR_BOOL_DATA);
-  assert((datum.force_vector_bool() ==
+  assert(bool_vector_column->get(&error, 1, &datum));
+  assert(datum.type() == grnxx::BOOL_VECTOR_DATA);
+  assert((datum.force_bool_vector() ==
           grnxx::Vector<grnxx::Bool>{ true, false, true }));
 }
 

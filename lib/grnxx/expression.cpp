@@ -2182,6 +2182,108 @@ bool ModulusNode<Int>::evaluate(Error *error,
   return true;
 }
 
+// ---- SubscriptOperator ----
+
+template <typename T>
+class SubscriptNode : public BinaryNode<T, Vector<T>, Int> {
+ public:
+  using Value = T;
+  using Arg1 = Vector<T>;
+  using Arg2 = Int;
+
+  static unique_ptr<Node> create(Error *error,
+                                 unique_ptr<Node> &&arg1,
+                                 unique_ptr<Node> &&arg2) {
+    unique_ptr<Node> node(
+        new (nothrow) SubscriptNode(std::move(arg1), std::move(arg2)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
+  SubscriptNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
+      : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)) {}
+
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results);
+};
+
+template <typename T>
+bool SubscriptNode<T>::evaluate(Error *error,
+                                ArrayCRef<Record> records,
+                                ArrayRef<Value> results) {
+  if (!this->fill_arg1_values(error, records) ||
+      !this->fill_arg2_values(error, records)) {
+    return false;
+  }
+  for (Int i = 0; i < records.size(); ++i) {
+    results.set(i, this->arg1_values_[i][this->arg2_values_[i]]);
+  }
+  return true;
+}
+
+template <>
+class SubscriptNode<Bool> : public BinaryNode<Bool, Vector<Bool>, Int> {
+ public:
+  using Value = Bool;
+  using Arg1 = Vector<Bool>;
+  using Arg2 = Int;
+
+  static unique_ptr<Node> create(Error *error,
+                                 unique_ptr<Node> &&arg1,
+                                 unique_ptr<Node> &&arg2) {
+    unique_ptr<Node> node(
+        new (nothrow) SubscriptNode(std::move(arg1), std::move(arg2)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
+  SubscriptNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
+      : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)) {}
+
+  bool filter(Error *error,
+              ArrayCRef<Record> input_records,
+              ArrayRef<Record> *output_records);
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results);
+};
+
+bool SubscriptNode<Bool>::filter(Error *error,
+                                 ArrayCRef<Record> input_records,
+                                 ArrayRef<Record> *output_records) {
+  if (!this->fill_arg1_values(error, input_records) ||
+      !this->fill_arg2_values(error, input_records)) {
+    return false;
+  }
+  Int count = 0;
+  for (Int i = 0; i < input_records.size(); ++i) {
+    if (this->arg1_values_[i][this->arg2_values_[i]]) {
+      output_records->set(count, input_records.get(i));
+      ++count;
+    }
+  }
+  *output_records = output_records->ref(0, count);
+  return true;
+}
+
+bool SubscriptNode<Bool>::evaluate(Error *error,
+                                   ArrayCRef<Record> records,
+                                   ArrayRef<Value> results) {
+  if (!this->fill_arg1_values(error, records) ||
+      !this->fill_arg2_values(error, records)) {
+    return false;
+  }
+  for (Int i = 0; i < records.size(); ++i) {
+    results.set(i, this->arg1_values_[i][this->arg2_values_[i]]);
+  }
+  return true;
+}
+
 }  // namespace expression
 
 using namespace expression;
@@ -2301,6 +2403,7 @@ GRNXX_INSTANTIATE_EXPRESSION_EVALUATE(Int);
 GRNXX_INSTANTIATE_EXPRESSION_EVALUATE(Float);
 GRNXX_INSTANTIATE_EXPRESSION_EVALUATE(GeoPoint);
 GRNXX_INSTANTIATE_EXPRESSION_EVALUATE(Text);
+GRNXX_INSTANTIATE_EXPRESSION_EVALUATE(Vector<Bool>);
 #undef GRNXX_INSTANTIATE_EXPRESSION_EVALUATE
 
 template <typename T>
@@ -2475,6 +2578,9 @@ unique_ptr<Node> ExpressionBuilder::create_datum_node(
     case TEXT_DATA: {
       return DatumNode<Text>::create(error, datum.force_text());
     }
+    case BOOL_VECTOR_DATA: {
+      return DatumNode<Vector<Bool>>::create(error, datum.force_bool_vector());
+    }
     default: {
       // TODO: Other types are not supported yet.
       GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
@@ -2526,6 +2632,9 @@ unique_ptr<Node> ExpressionBuilder::create_column_node(
     }
     case TEXT_DATA: {
       return ColumnNode<Text>::create(error, column);
+    }
+    case BOOL_VECTOR_DATA: {
+      return ColumnNode<Vector<Bool>>::create(error, column);
     }
     default: {
       // TODO: Other types are not supported yet.
@@ -2731,6 +2840,10 @@ unique_ptr<Node> ExpressionBuilder::create_binary_node(
       }
       return ModulusNode<Int>::create(error, std::move(arg1), std::move(arg2));
     }
+    case SUBSCRIPT_OPERATOR: {
+      return create_subscript_node(
+          error, std::move(arg1), std::move(arg2));
+    }
     default: {
       // TODO: Not supported yet.
       GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
@@ -2767,6 +2880,10 @@ unique_ptr<Node> ExpressionBuilder::create_equality_test_node(
     }
     case TEXT_DATA: {
       return ComparisonNode<typename T:: template Comparer<Text>>::create(
+          error, std::move(arg1), std::move(arg2));
+    }
+    case BOOL_VECTOR_DATA: {
+      return ComparisonNode<typename T:: template Comparer<Vector<Bool>>>::create(
           error, std::move(arg1), std::move(arg2));
     }
     // TODO: Support other types.
@@ -2861,6 +2978,26 @@ unique_ptr<Node> ExpressionBuilder::create_arithmetic_node(
     }
     case DIVISION_OPERATOR: {
       return DivisionNode<T>::create(
+          error, std::move(arg1), std::move(arg2));
+    }
+    default: {
+      GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
+      return nullptr;
+    }
+  }
+}
+
+unique_ptr<Node> ExpressionBuilder::create_subscript_node(
+    Error *error,
+    unique_ptr<Node> &&arg1,
+    unique_ptr<Node> &&arg2) {
+  if (arg2->data_type() != INT_DATA) {
+    GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
+    return nullptr;
+  }
+  switch (arg1->data_type()) {
+    case BOOL_VECTOR_DATA: {
+      return SubscriptNode<Bool>::create(
           error, std::move(arg1), std::move(arg2));
     }
     default: {

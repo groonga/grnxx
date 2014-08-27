@@ -40,6 +40,8 @@ struct {
   grnxx::Array<grnxx::Text> text2_values;
   grnxx::Array<std::string> text_bodies;
   grnxx::Array<std::string> text2_bodies;
+  grnxx::Array<grnxx::Vector<grnxx::Bool>> bool_vector_values;
+  grnxx::Array<grnxx::Vector<grnxx::Bool>> bool_vector2_values;
 } test;
 
 void init_test() {
@@ -78,6 +80,14 @@ void init_test() {
   assert(text_column);
   assert(text2_column);
 
+  data_type = grnxx::BOOL_VECTOR_DATA;
+  auto bool_vector_column =
+      test.table->create_column(&error, "BoolVector", data_type);
+  auto bool_vector2_column =
+      test.table->create_column(&error, "BoolVector2", data_type);
+  assert(bool_vector_column);
+  assert(bool_vector2_column);
+
   // Generate random values.
   // Bool: true or false.
   // Int: [0, 100).
@@ -97,6 +107,8 @@ void init_test() {
   assert(test.text2_values.resize(&error, NUM_ROWS + 1));
   assert(test.text_bodies.resize(&error, NUM_ROWS + 1));
   assert(test.text2_bodies.resize(&error, NUM_ROWS + 1));
+  assert(test.bool_vector_values.resize(&error, NUM_ROWS + 1));
+  assert(test.bool_vector2_values.resize(&error, NUM_ROWS + 1));
   for (grnxx::Int i = 1; i <= NUM_ROWS; ++i) {
     test.bool_values.set(i, (mersenne_twister() & 1) != 0);
     test.bool2_values.set(i, (mersenne_twister() & 1) != 0);
@@ -122,6 +134,13 @@ void init_test() {
       test.text2_bodies[i][j] = '0' + (mersenne_twister() % 10);
     }
     test.text2_values.set(i, grnxx::Text(test.text2_bodies[i].data(), length));
+
+    grnxx::uint64_t bits = mersenne_twister();
+    grnxx::Int size = mersenne_twister() % 59;
+    test.bool_vector_values.set(i, grnxx::Vector<grnxx::Bool>(bits, size));
+    bits = mersenne_twister();
+    size = mersenne_twister() % 59;
+    test.bool_vector2_values.set(i, grnxx::Vector<grnxx::Bool>(bits, size));
   }
 
   // Store generated values into columns.
@@ -137,6 +156,10 @@ void init_test() {
     assert(float2_column->set(&error, row_id, test.float2_values[i]));
     assert(text_column->set(&error, row_id, test.text_values[i]));
     assert(text2_column->set(&error, row_id, test.text2_values[i]));
+    assert(bool_vector_column->set(&error, row_id,
+                                   test.bool_vector_values[i]));
+    assert(bool_vector2_column->set(&error, row_id,
+                                    test.bool_vector2_values[i]));
   }
 }
 
@@ -226,6 +249,20 @@ void test_constant() {
   assert(text_results.size() == test.table->num_rows());
   for (grnxx::Int i = 0; i < text_results.size(); ++i) {
     assert(text_results[i] == "ABC");
+  }
+
+  // Test an expression ({ true, false, true }).
+  assert(builder->push_datum(
+      &error, grnxx::Vector<grnxx::Bool>({ true, false, true })));
+  expression = builder->release(&error);
+  assert(expression);
+
+  grnxx::Array<grnxx::Vector<grnxx::Bool>> bool_vector_results;
+  assert(expression->evaluate(&error, records, &bool_vector_results));
+  assert(bool_vector_results.size() == test.table->num_rows());
+  for (grnxx::Int i = 0; i < bool_vector_results.size(); ++i) {
+    assert(bool_vector_results[i] ==
+           grnxx::Vector<grnxx::Bool>({ true, false, true }));
   }
 }
 
@@ -318,6 +355,24 @@ void test_column() {
   for (grnxx::Int i = 0; i < text_results.size(); ++i) {
     grnxx::Int row_id = records.get_row_id(i);
     assert(text_results[i] == test.text_values[row_id]);
+  }
+
+  // Test an expression (BoolVector).
+  assert(builder->push_column(&error, "BoolVector"));
+  expression = builder->release(&error);
+  assert(expression);
+
+  records.clear();
+  cursor = test.table->create_cursor(&error);
+  assert(cursor);
+  assert(cursor->read_all(&error, &records) == test.table->num_rows());
+
+  grnxx::Array<grnxx::Vector<grnxx::Bool>> bool_vector_results;
+  assert(expression->evaluate(&error, records, &bool_vector_results));
+  assert(bool_vector_results.size() == test.table->num_rows());
+  for (grnxx::Int i = 0; i < bool_vector_results.size(); ++i) {
+    grnxx::Int row_id = records.get_row_id(i);
+    assert(bool_vector_results[i] == test.bool_vector_values[row_id]);
   }
 
   // Test and expression (_id).
@@ -822,6 +877,37 @@ void test_equal() {
     }
   }
   assert(records.size() == count);
+
+  // Test an expression (BoolVector == BoolVector2).
+  assert(builder->push_column(&error, "BoolVector"));
+  assert(builder->push_column(&error, "BoolVector2"));
+  assert(builder->push_operator(&error, grnxx::EQUAL_OPERATOR));
+  expression = builder->release(&error);
+  assert(expression);
+
+  records.clear();
+  cursor = test.table->create_cursor(&error);
+  assert(cursor);
+  assert(cursor->read_all(&error, &records) == test.table->num_rows());
+
+  results.clear();
+  assert(expression->evaluate(&error, records, &results));
+  assert(results.size() == test.table->num_rows());
+  for (grnxx::Int i = 0; i < results.size(); ++i) {
+    grnxx::Int row_id = records.get_row_id(i);
+    assert(results[i] == (test.bool_vector_values[row_id] ==
+                          test.bool_vector2_values[row_id]));
+  }
+
+  assert(expression->filter(&error, &records));
+  count = 0;
+  for (grnxx::Int i = 1; i < test.bool_vector_values.size(); ++i) {
+    if (test.bool_vector_values[i] == test.bool_vector2_values[i]) {
+      assert(records.get_row_id(count) == i);
+      ++count;
+    }
+  }
+  assert(records.size() == count);
 }
 
 void test_not_equal() {
@@ -949,6 +1035,37 @@ void test_not_equal() {
   count = 0;
   for (grnxx::Int i = 1; i < test.text_values.size(); ++i) {
     if (test.text_values[i] != test.text2_values[i]) {
+      assert(records.get_row_id(count) == i);
+      ++count;
+    }
+  }
+  assert(records.size() == count);
+
+  // Test an expression (BoolVector != BoolVector2).
+  assert(builder->push_column(&error, "BoolVector"));
+  assert(builder->push_column(&error, "BoolVector2"));
+  assert(builder->push_operator(&error, grnxx::NOT_EQUAL_OPERATOR));
+  expression = builder->release(&error);
+  assert(expression);
+
+  records.clear();
+  cursor = test.table->create_cursor(&error);
+  assert(cursor);
+  assert(cursor->read_all(&error, &records) == test.table->num_rows());
+
+  results.clear();
+  assert(expression->evaluate(&error, records, &results));
+  assert(results.size() == test.table->num_rows());
+  for (grnxx::Int i = 0; i < results.size(); ++i) {
+    grnxx::Int row_id = records.get_row_id(i);
+    assert(results[i] == (test.bool_vector_values[row_id] !=
+                          test.bool_vector2_values[row_id]));
+  }
+
+  assert(expression->filter(&error, &records));
+  count = 0;
+  for (grnxx::Int i = 1; i < test.bool_vector_values.size(); ++i) {
+    if (test.bool_vector_values[i] != test.bool_vector2_values[i]) {
       assert(records.get_row_id(count) == i);
       ++count;
     }

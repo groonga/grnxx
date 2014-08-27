@@ -88,7 +88,7 @@ unique_ptr<Column> Column::create(Error *error,
     case TEXT_DATA: {
       return ColumnImpl<Text>::create(error, table, name, options);
     }
-    case VECTOR_BOOL_DATA: {
+    case BOOL_VECTOR_DATA: {
       return ColumnImpl<Vector<Bool>>::create(error, table, name, options);
     }
     default: {
