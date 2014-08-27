@@ -40,8 +40,8 @@ struct {
   grnxx::Array<grnxx::Text> text2_values;
   grnxx::Array<std::string> text_bodies;
   grnxx::Array<std::string> text2_bodies;
-  grnxx::Array<grnxx::Vector<grnxx::Bool>> bool_vector_values;
-  grnxx::Array<grnxx::Vector<grnxx::Bool>> bool_vector2_values;
+  grnxx::Array<grnxx::BoolVector> bool_vector_values;
+  grnxx::Array<grnxx::BoolVector> bool_vector2_values;
 } test;
 
 void init_test() {
@@ -137,10 +137,10 @@ void init_test() {
 
     grnxx::uint64_t bits = mersenne_twister();
     grnxx::Int size = mersenne_twister() % 59;
-    test.bool_vector_values.set(i, grnxx::Vector<grnxx::Bool>(bits, size));
+    test.bool_vector_values.set(i, grnxx::BoolVector(bits, size));
     bits = mersenne_twister();
     size = mersenne_twister() % 59;
-    test.bool_vector2_values.set(i, grnxx::Vector<grnxx::Bool>(bits, size));
+    test.bool_vector2_values.set(i, grnxx::BoolVector(bits, size));
   }
 
   // Store generated values into columns.
@@ -253,16 +253,16 @@ void test_constant() {
 
   // Test an expression ({ true, false, true }).
   assert(builder->push_datum(
-      &error, grnxx::Vector<grnxx::Bool>({ true, false, true })));
+      &error, grnxx::BoolVector({ true, false, true })));
   expression = builder->release(&error);
   assert(expression);
 
-  grnxx::Array<grnxx::Vector<grnxx::Bool>> bool_vector_results;
+  grnxx::Array<grnxx::BoolVector> bool_vector_results;
   assert(expression->evaluate(&error, records, &bool_vector_results));
   assert(bool_vector_results.size() == test.table->num_rows());
   for (grnxx::Int i = 0; i < bool_vector_results.size(); ++i) {
     assert(bool_vector_results[i] ==
-           grnxx::Vector<grnxx::Bool>({ true, false, true }));
+           grnxx::BoolVector({ true, false, true }));
   }
 }
 
@@ -367,7 +367,7 @@ void test_column() {
   assert(cursor);
   assert(cursor->read_all(&error, &records) == test.table->num_rows());
 
-  grnxx::Array<grnxx::Vector<grnxx::Bool>> bool_vector_results;
+  grnxx::Array<grnxx::BoolVector> bool_vector_results;
   assert(expression->evaluate(&error, records, &bool_vector_results));
   assert(bool_vector_results.size() == test.table->num_rows());
   for (grnxx::Int i = 0; i < bool_vector_results.size(); ++i) {
