@@ -2016,6 +2016,53 @@ void test_modulus() {
   }
 }
 
+void test_subscript() {
+  grnxx::Error error;
+
+  // Create an object for building expressions.
+  auto builder = grnxx::ExpressionBuilder::create(&error, test.table);
+  assert(builder);
+
+  // Test an expression (Int % Int2).
+  // An error occurs because of division by zero.
+  assert(builder->push_column(&error, "Int"));
+  assert(builder->push_column(&error, "Int2"));
+  assert(builder->push_operator(&error, grnxx::MODULUS_OPERATOR));
+  auto expression = builder->release(&error);
+  assert(expression);
+
+  grnxx::Array<grnxx::Record> records;
+  auto cursor = test.table->create_cursor(&error);
+  assert(cursor);
+  assert(cursor->read_all(&error, &records) == test.table->num_rows());
+
+  grnxx::Array<grnxx::Int> int_results;
+  assert(!expression->evaluate(&error, records, &int_results));
+
+  // Test an expression (Int % (Int2 + 1)).
+  assert(builder->push_column(&error, "Int"));
+  assert(builder->push_column(&error, "Int2"));
+  assert(builder->push_datum(&error, grnxx::Int(1)));
+  assert(builder->push_operator(&error, grnxx::PLUS_OPERATOR));
+  assert(builder->push_operator(&error, grnxx::MODULUS_OPERATOR));
+  expression = builder->release(&error);
+  assert(expression);
+
+  records.clear();
+  cursor = test.table->create_cursor(&error);
+  assert(cursor);
+  assert(cursor->read_all(&error, &records) == test.table->num_rows());
+
+  int_results.clear();
+  assert(expression->evaluate(&error, records, &int_results));
+  assert(int_results.size() == test.table->num_rows());
+  for (grnxx::Int i = 0; i < int_results.size(); ++i) {
+    grnxx::Int row_id = records.get_row_id(i);
+    assert(int_results[i] ==
+           (test.int_values[row_id] % (test.int2_values[row_id] + 1)));
+  }
+}
+
 void test_sequential_filter() {
   grnxx::Error error;
 
@@ -2215,6 +2262,7 @@ int main() {
   test_multiplication();
   test_division();
   test_modulus();
+  test_subscript();
 
   // Test sequential operations.
   test_sequential_filter();
