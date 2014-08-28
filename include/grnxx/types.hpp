@@ -407,6 +407,22 @@ template <> struct TypeTraits <Vector<Bool>> {
     return Vector<Bool>(0, 0);
   }
 };
+template <> struct TypeTraits <Vector<Int>> {
+  static DataType data_type() {
+    return INT_VECTOR_DATA;
+  }
+  static Vector<Int> default_value() {
+    return Vector<Int>(nullptr, 0);
+  }
+};
+template <> struct TypeTraits <Vector<Float>> {
+  static DataType data_type() {
+    return FLOAT_VECTOR_DATA;
+  }
+  static Vector<Float> default_value() {
+    return Vector<Float>(nullptr, 0);
+  }
+};
 
 // Zero is reserved for representing a null reference.
 constexpr Int NULL_ROW_ID = 0;
