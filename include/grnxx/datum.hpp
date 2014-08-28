@@ -28,6 +28,12 @@ class Datum {
   Datum(Vector<Bool> value)
       : type_(BOOL_VECTOR_DATA),
         bool_vector_(value) {}
+  Datum(Vector<Int> value)
+      : type_(INT_VECTOR_DATA),
+        int_vector_(value) {}
+  Datum(Vector<Float> value)
+      : type_(FLOAT_VECTOR_DATA),
+        float_vector_(value) {}
 
   // Return the data type.
   DataType type() const {
@@ -53,6 +59,12 @@ class Datum {
   Vector<Bool> force_bool_vector() const {
     return bool_vector_;
   }
+  Vector<Int> force_int_vector() const {
+    return int_vector_;
+  }
+  Vector<Float> force_float_vector() const {
+    return float_vector_;
+  }
 
   // Force the specified interpretation.
   void force(Bool *value) const {
@@ -73,6 +85,12 @@ class Datum {
   void force(Vector<Bool> *value) const {
     *value = bool_vector_;
   }
+  void force(Vector<Int> *value) const {
+    *value = int_vector_;
+  }
+  void force(Vector<Float> *value) const {
+    *value = float_vector_;
+  }
 
  private:
   DataType type_;
@@ -83,6 +101,8 @@ class Datum {
     GeoPoint geo_point_;
     String text_;
     Vector<Bool> bool_vector_;
+    Vector<Int> int_vector_;
+    Vector<Float> float_vector_;
   };
 };
 
