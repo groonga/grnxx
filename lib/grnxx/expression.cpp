@@ -2610,7 +2610,8 @@ bool ExpressionBuilder::push_operator(Error *error,
     case MINUS_OPERATOR:
     case MULTIPLICATION_OPERATOR:
     case DIVISION_OPERATOR:
-    case MODULUS_OPERATOR: {
+    case MODULUS_OPERATOR:
+    case SUBSCRIPT_OPERATOR: {
       return push_binary_operator(error, operator_type);
     }
     default: {
@@ -2935,8 +2936,7 @@ unique_ptr<Node> ExpressionBuilder::create_binary_node(
       return ModulusNode<Int>::create(error, std::move(arg1), std::move(arg2));
     }
     case SUBSCRIPT_OPERATOR: {
-      return create_subscript_node(
-          error, std::move(arg1), std::move(arg2));
+      return create_subscript_node(error, std::move(arg1), std::move(arg2));
     }
     default: {
       // TODO: Not supported yet.
