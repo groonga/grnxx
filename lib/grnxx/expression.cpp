@@ -2219,7 +2219,13 @@ bool SubscriptNode<T>::evaluate(Error *error,
     return false;
   }
   for (Int i = 0; i < records.size(); ++i) {
-    results.set(i, this->arg1_values_[i][this->arg2_values_[i]]);
+    auto arg1_value = this->arg1_values_[i];
+    auto arg2_value = this->arg2_values_[i];
+    if (arg2_value < arg1_value.size()) {
+      results.set(i, arg1_value[arg2_value]);
+    } else {
+      results.set(i, TypeTraits<T>::default_value());
+    }
   }
   return true;
 }
@@ -2262,9 +2268,13 @@ bool SubscriptNode<Bool>::filter(Error *error,
   }
   Int count = 0;
   for (Int i = 0; i < input_records.size(); ++i) {
-    if (this->arg1_values_[i][this->arg2_values_[i]]) {
-      output_records->set(count, input_records.get(i));
-      ++count;
+    auto arg1_value = this->arg1_values_[i];
+    auto arg2_value = this->arg2_values_[i];
+    if (arg2_value < arg1_value.size()) {
+      if (arg1_value[arg2_value]) {
+        output_records->set(count, input_records.get(i));
+        ++count;
+      }
     }
   }
   *output_records = output_records->ref(0, count);
@@ -2279,7 +2289,77 @@ bool SubscriptNode<Bool>::evaluate(Error *error,
     return false;
   }
   for (Int i = 0; i < records.size(); ++i) {
-    results.set(i, this->arg1_values_[i][this->arg2_values_[i]]);
+    auto arg1_value = this->arg1_values_[i];
+    auto arg2_value = this->arg2_values_[i];
+    if (arg2_value < arg1_value.size()) {
+      results.set(i, arg1_value[arg2_value]);
+    } else {
+      results.set(i, TypeTraits<Bool>::default_value());
+    }
+  }
+  return true;
+}
+
+template <>
+class SubscriptNode<Float> : public BinaryNode<Float, Vector<Float>, Int> {
+ public:
+  using Value = Float;
+  using Arg1 = Vector<Float>;
+  using Arg2 = Int;
+
+  static unique_ptr<Node> create(Error *error,
+                                 unique_ptr<Node> &&arg1,
+                                 unique_ptr<Node> &&arg2) {
+    unique_ptr<Node> node(
+        new (nothrow) SubscriptNode(std::move(arg1), std::move(arg2)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
+  SubscriptNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
+      : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)) {}
+
+  bool adjust(Error *error, ArrayRef<Record> records);
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results);
+};
+
+bool SubscriptNode<Float>::adjust(Error *error,
+                                  ArrayRef<Record> records) {
+  if (!fill_arg1_values(error, records) ||
+      !fill_arg2_values(error, records)) {
+    return false;
+  }
+  for (Int i = 0; i < records.size(); ++i) {
+    auto arg1_value = this->arg1_values_[i];
+    auto arg2_value = this->arg2_values_[i];
+    if (arg2_value < arg1_value.size()) {
+      records.set_score(i, arg1_value[arg2_value]);
+    } else {
+      records.set_score(i, TypeTraits<Float>::default_value());
+    }
+  }
+  return true;
+}
+
+bool SubscriptNode<Float>::evaluate(Error *error,
+                                    ArrayCRef<Record> records,
+                                    ArrayRef<Value> results) {
+  if (!this->fill_arg1_values(error, records) ||
+      !this->fill_arg2_values(error, records)) {
+    return false;
+  }
+  for (Int i = 0; i < records.size(); ++i) {
+    auto arg1_value = this->arg1_values_[i];
+    auto arg2_value = this->arg2_values_[i];
+    if (arg2_value < arg1_value.size()) {
+      results.set(i, arg1_value[arg2_value]);
+    } else {
+      results.set(i, TypeTraits<Float>::default_value());
+    }
   }
   return true;
 }
@@ -2404,6 +2484,8 @@ GRNXX_INSTANTIATE_EXPRESSION_EVALUATE(Float);
 GRNXX_INSTANTIATE_EXPRESSION_EVALUATE(GeoPoint);
 GRNXX_INSTANTIATE_EXPRESSION_EVALUATE(Text);
 GRNXX_INSTANTIATE_EXPRESSION_EVALUATE(Vector<Bool>);
+GRNXX_INSTANTIATE_EXPRESSION_EVALUATE(Vector<Int>);
+GRNXX_INSTANTIATE_EXPRESSION_EVALUATE(Vector<Float>);
 #undef GRNXX_INSTANTIATE_EXPRESSION_EVALUATE
 
 template <typename T>
@@ -2581,6 +2663,12 @@ unique_ptr<Node> ExpressionBuilder::create_datum_node(
     case BOOL_VECTOR_DATA: {
       return DatumNode<Vector<Bool>>::create(error, datum.force_bool_vector());
     }
+    case INT_VECTOR_DATA: {
+      return DatumNode<Vector<Int>>::create(error, datum.force_int_vector());
+    }
+    case FLOAT_VECTOR_DATA: {
+      return DatumNode<Vector<Float>>::create(error, datum.force_float_vector());
+    }
     default: {
       // TODO: Other types are not supported yet.
       GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
@@ -2635,6 +2723,12 @@ unique_ptr<Node> ExpressionBuilder::create_column_node(
     }
     case BOOL_VECTOR_DATA: {
       return ColumnNode<Vector<Bool>>::create(error, column);
+    }
+    case INT_VECTOR_DATA: {
+      return ColumnNode<Vector<Int>>::create(error, column);
+    }
+    case FLOAT_VECTOR_DATA: {
+      return ColumnNode<Vector<Float>>::create(error, column);
     }
     default: {
       // TODO: Other types are not supported yet.
@@ -2883,7 +2977,18 @@ unique_ptr<Node> ExpressionBuilder::create_equality_test_node(
           error, std::move(arg1), std::move(arg2));
     }
     case BOOL_VECTOR_DATA: {
-      return ComparisonNode<typename T:: template Comparer<Vector<Bool>>>::create(
+      typedef typename T:: template Comparer<Vector<Bool>> Functor;
+      return ComparisonNode<Functor>::create(
+          error, std::move(arg1), std::move(arg2));
+    }
+    case INT_VECTOR_DATA: {
+      typedef typename T:: template Comparer<Vector<Int>> Functor;
+      return ComparisonNode<Functor>::create(
+          error, std::move(arg1), std::move(arg2));
+    }
+    case FLOAT_VECTOR_DATA: {
+      typedef typename T:: template Comparer<Vector<Float>> Functor;
+      return ComparisonNode<Functor>::create(
           error, std::move(arg1), std::move(arg2));
     }
     // TODO: Support other types.
@@ -2998,6 +3103,14 @@ unique_ptr<Node> ExpressionBuilder::create_subscript_node(
   switch (arg1->data_type()) {
     case BOOL_VECTOR_DATA: {
       return SubscriptNode<Bool>::create(
+          error, std::move(arg1), std::move(arg2));
+    }
+    case INT_VECTOR_DATA: {
+      return SubscriptNode<Int>::create(
+          error, std::move(arg1), std::move(arg2));
+    }
+    case FLOAT_VECTOR_DATA: {
+      return SubscriptNode<Float>::create(
           error, std::move(arg1), std::move(arg2));
     }
     default: {
