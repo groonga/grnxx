@@ -42,6 +42,14 @@ struct {
   grnxx::Array<std::string> text2_bodies;
   grnxx::Array<grnxx::BoolVector> bool_vector_values;
   grnxx::Array<grnxx::BoolVector> bool_vector2_values;
+  grnxx::Array<grnxx::IntVector> int_vector_values;
+  grnxx::Array<grnxx::IntVector> int_vector2_values;
+  grnxx::Array<grnxx::Array<grnxx::Int>> int_vector_bodies;
+  grnxx::Array<grnxx::Array<grnxx::Int>> int_vector2_bodies;
+  grnxx::Array<grnxx::FloatVector> float_vector_values;
+  grnxx::Array<grnxx::FloatVector> float_vector2_values;
+  grnxx::Array<grnxx::Array<grnxx::Float>> float_vector_bodies;
+  grnxx::Array<grnxx::Array<grnxx::Float>> float_vector2_bodies;
 } test;
 
 void init_test() {
@@ -88,14 +96,34 @@ void init_test() {
   assert(bool_vector_column);
   assert(bool_vector2_column);
 
+  data_type = grnxx::INT_VECTOR_DATA;
+  auto int_vector_column =
+      test.table->create_column(&error, "IntVector", data_type);
+  auto int_vector2_column =
+      test.table->create_column(&error, "IntVector2", data_type);
+  assert(int_vector_column);
+  assert(int_vector2_column);
+
+  data_type = grnxx::FLOAT_VECTOR_DATA;
+  auto float_vector_column =
+      test.table->create_column(&error, "FloatVector", data_type);
+  auto float_vector2_column =
+      test.table->create_column(&error, "FloatVector2", data_type);
+  assert(float_vector_column);
+  assert(float_vector2_column);
+
   // Generate random values.
   // Bool: true or false.
   // Int: [0, 100).
   // Float: [0.0, 1.0].
-  // Text: length = [1, 4], byte = ['0', '9'].
+  // Text: byte = ['0', '9'], length = [1, 4].
+  // BoolVector: value = true or false, size = [0, 58].
+  // IntVector: value = [0, 100), size = [0, 4].
+  // FloatVector: value = [0.0, 1.0), size = [0, 4].
   constexpr grnxx::Int NUM_ROWS = 1 << 16;
   constexpr grnxx::Int MIN_LENGTH = 1;
   constexpr grnxx::Int MAX_LENGTH = 4;
+  constexpr grnxx::Int MAX_SIZE = 4;
   std::mt19937_64 mersenne_twister;
   assert(test.bool_values.resize(&error, NUM_ROWS + 1));
   assert(test.bool2_values.resize(&error, NUM_ROWS + 1));
@@ -109,6 +137,14 @@ void init_test() {
   assert(test.text2_bodies.resize(&error, NUM_ROWS + 1));
   assert(test.bool_vector_values.resize(&error, NUM_ROWS + 1));
   assert(test.bool_vector2_values.resize(&error, NUM_ROWS + 1));
+  assert(test.int_vector_values.resize(&error, NUM_ROWS + 1));
+  assert(test.int_vector2_values.resize(&error, NUM_ROWS + 1));
+  assert(test.int_vector_bodies.resize(&error, NUM_ROWS + 1));
+  assert(test.int_vector2_bodies.resize(&error, NUM_ROWS + 1));
+  assert(test.float_vector_values.resize(&error, NUM_ROWS + 1));
+  assert(test.float_vector2_values.resize(&error, NUM_ROWS + 1));
+  assert(test.float_vector_bodies.resize(&error, NUM_ROWS + 1));
+  assert(test.float_vector2_bodies.resize(&error, NUM_ROWS + 1));
   for (grnxx::Int i = 1; i <= NUM_ROWS; ++i) {
     test.bool_values.set(i, (mersenne_twister() & 1) != 0);
     test.bool2_values.set(i, (mersenne_twister() & 1) != 0);
@@ -141,6 +177,36 @@ void init_test() {
     bits = mersenne_twister();
     size = mersenne_twister() % 59;
     test.bool_vector2_values.set(i, grnxx::BoolVector(bits, size));
+
+    size = mersenne_twister() % (MAX_SIZE + 1);
+    assert(test.int_vector_bodies[i].resize(&error, size));
+    for (grnxx::Int j = 0; j < size; ++j) {
+      test.int_vector_bodies[i][j] = mersenne_twister() % 100;
+    }
+    test.int_vector_values.set(
+        i, grnxx::IntVector(test.int_vector_bodies[i].data(), size));
+    size = mersenne_twister() % (MAX_SIZE + 1);
+    assert(test.int_vector2_bodies[i].resize(&error, size));
+    for (grnxx::Int j = 0; j < size; ++j) {
+      test.int_vector2_bodies[i][j] = mersenne_twister() % 100;
+    }
+    test.int_vector_values.set(
+        i, grnxx::IntVector(test.int_vector2_bodies[i].data(), size));
+
+    size = mersenne_twister() % (MAX_SIZE + 1);
+    assert(test.float_vector_bodies[i].resize(&error, size));
+    for (grnxx::Int j = 0; j < size; ++j) {
+      test.float_vector_bodies[i][j] = (mersenne_twister() % 100) / 100.0;
+    }
+    test.float_vector_values.set(
+        i, grnxx::FloatVector(test.float_vector_bodies[i].data(), size));
+    size = mersenne_twister() % (MAX_SIZE + 1);
+    assert(test.float_vector2_bodies[i].resize(&error, size));
+    for (grnxx::Int j = 0; j < size; ++j) {
+      test.float_vector2_bodies[i][j] = (mersenne_twister() % 100) / 100.0;
+    }
+    test.float_vector_values.set(
+        i, grnxx::FloatVector(test.float_vector2_bodies[i].data(), size));
   }
 
   // Store generated values into columns.
@@ -160,6 +226,14 @@ void init_test() {
                                    test.bool_vector_values[i]));
     assert(bool_vector2_column->set(&error, row_id,
                                     test.bool_vector2_values[i]));
+    assert(int_vector_column->set(&error, row_id,
+                                  test.int_vector_values[i]));
+    assert(int_vector2_column->set(&error, row_id,
+                                   test.int_vector2_values[i]));
+    assert(float_vector_column->set(&error, row_id,
+                                    test.float_vector_values[i]));
+    assert(float_vector2_column->set(&error, row_id,
+                                     test.float_vector2_values[i]));
   }
 }
 
@@ -263,6 +337,32 @@ void test_constant() {
   for (grnxx::Int i = 0; i < bool_vector_results.size(); ++i) {
     assert(bool_vector_results[i] ==
            grnxx::BoolVector({ true, false, true }));
+  }
+
+  // Test an expression ({ 123, -456, 789 }).
+  grnxx::Int int_values[] = { 123, -456, 789 };
+  assert(builder->push_datum(&error, grnxx::IntVector(int_values, 3)));
+  expression = builder->release(&error);
+  assert(expression);
+
+  grnxx::Array<grnxx::IntVector> int_vector_results;
+  assert(expression->evaluate(&error, records, &int_vector_results));
+  assert(int_vector_results.size() == test.table->num_rows());
+  for (grnxx::Int i = 0; i < int_vector_results.size(); ++i) {
+    assert(int_vector_results[i] == grnxx::IntVector(int_values, 3));
+  }
+
+  // Test an expression ({ 1.25, -4.5, 6.75 }).
+  grnxx::Float float_values[] = { 1.25, -4.5, 6.75 };
+  assert(builder->push_datum(&error, grnxx::FloatVector(float_values, 3)));
+  expression = builder->release(&error);
+  assert(expression);
+
+  grnxx::Array<grnxx::FloatVector> float_vector_results;
+  assert(expression->evaluate(&error, records, &float_vector_results));
+  assert(float_vector_results.size() == test.table->num_rows());
+  for (grnxx::Int i = 0; i < float_vector_results.size(); ++i) {
+    assert(float_vector_results[i] == grnxx::FloatVector(float_values, 3));
   }
 }
 
@@ -373,6 +473,42 @@ void test_column() {
   for (grnxx::Int i = 0; i < bool_vector_results.size(); ++i) {
     grnxx::Int row_id = records.get_row_id(i);
     assert(bool_vector_results[i] == test.bool_vector_values[row_id]);
+  }
+
+  // Test an expression (IntVector).
+  assert(builder->push_column(&error, "IntVector"));
+  expression = builder->release(&error);
+  assert(expression);
+
+  records.clear();
+  cursor = test.table->create_cursor(&error);
+  assert(cursor);
+  assert(cursor->read_all(&error, &records) == test.table->num_rows());
+
+  grnxx::Array<grnxx::IntVector> int_vector_results;
+  assert(expression->evaluate(&error, records, &int_vector_results));
+  assert(int_vector_results.size() == test.table->num_rows());
+  for (grnxx::Int i = 0; i < int_vector_results.size(); ++i) {
+    grnxx::Int row_id = records.get_row_id(i);
+    assert(int_vector_results[i] == test.int_vector_values[row_id]);
+  }
+
+  // Test an expression (FloatVector).
+  assert(builder->push_column(&error, "FloatVector"));
+  expression = builder->release(&error);
+  assert(expression);
+
+  records.clear();
+  cursor = test.table->create_cursor(&error);
+  assert(cursor);
+  assert(cursor->read_all(&error, &records) == test.table->num_rows());
+
+  grnxx::Array<grnxx::FloatVector> float_vector_results;
+  assert(expression->evaluate(&error, records, &float_vector_results));
+  assert(float_vector_results.size() == test.table->num_rows());
+  for (grnxx::Int i = 0; i < float_vector_results.size(); ++i) {
+    grnxx::Int row_id = records.get_row_id(i);
+    assert(float_vector_results[i] == test.float_vector_values[row_id]);
   }
 
   // Test and expression (_id).
@@ -908,6 +1044,68 @@ void test_equal() {
     }
   }
   assert(records.size() == count);
+
+  // Test an expression (IntVector == IntVector2).
+  assert(builder->push_column(&error, "IntVector"));
+  assert(builder->push_column(&error, "IntVector2"));
+  assert(builder->push_operator(&error, grnxx::EQUAL_OPERATOR));
+  expression = builder->release(&error);
+  assert(expression);
+
+  records.clear();
+  cursor = test.table->create_cursor(&error);
+  assert(cursor);
+  assert(cursor->read_all(&error, &records) == test.table->num_rows());
+
+  results.clear();
+  assert(expression->evaluate(&error, records, &results));
+  assert(results.size() == test.table->num_rows());
+  for (grnxx::Int i = 0; i < results.size(); ++i) {
+    grnxx::Int row_id = records.get_row_id(i);
+    assert(results[i] == (test.int_vector_values[row_id] ==
+                          test.int_vector2_values[row_id]));
+  }
+
+  assert(expression->filter(&error, &records));
+  count = 0;
+  for (grnxx::Int i = 1; i < test.int_vector_values.size(); ++i) {
+    if (test.int_vector_values[i] == test.int_vector2_values[i]) {
+      assert(records.get_row_id(count) == i);
+      ++count;
+    }
+  }
+  assert(records.size() == count);
+
+  // Test an expression (FloatVector == FloatVector2).
+  assert(builder->push_column(&error, "FloatVector"));
+  assert(builder->push_column(&error, "FloatVector2"));
+  assert(builder->push_operator(&error, grnxx::EQUAL_OPERATOR));
+  expression = builder->release(&error);
+  assert(expression);
+
+  records.clear();
+  cursor = test.table->create_cursor(&error);
+  assert(cursor);
+  assert(cursor->read_all(&error, &records) == test.table->num_rows());
+
+  results.clear();
+  assert(expression->evaluate(&error, records, &results));
+  assert(results.size() == test.table->num_rows());
+  for (grnxx::Int i = 0; i < results.size(); ++i) {
+    grnxx::Int row_id = records.get_row_id(i);
+    assert(results[i] == (test.float_vector_values[row_id] ==
+                          test.float_vector2_values[row_id]));
+  }
+
+  assert(expression->filter(&error, &records));
+  count = 0;
+  for (grnxx::Int i = 1; i < test.float_vector_values.size(); ++i) {
+    if (test.float_vector_values[i] == test.float_vector2_values[i]) {
+      assert(records.get_row_id(count) == i);
+      ++count;
+    }
+  }
+  assert(records.size() == count);
 }
 
 void test_not_equal() {
@@ -1066,6 +1264,68 @@ void test_not_equal() {
   count = 0;
   for (grnxx::Int i = 1; i < test.bool_vector_values.size(); ++i) {
     if (test.bool_vector_values[i] != test.bool_vector2_values[i]) {
+      assert(records.get_row_id(count) == i);
+      ++count;
+    }
+  }
+  assert(records.size() == count);
+
+  // Test an expression (IntVector != IntVector2).
+  assert(builder->push_column(&error, "IntVector"));
+  assert(builder->push_column(&error, "IntVector2"));
+  assert(builder->push_operator(&error, grnxx::NOT_EQUAL_OPERATOR));
+  expression = builder->release(&error);
+  assert(expression);
+
+  records.clear();
+  cursor = test.table->create_cursor(&error);
+  assert(cursor);
+  assert(cursor->read_all(&error, &records) == test.table->num_rows());
+
+  results.clear();
+  assert(expression->evaluate(&error, records, &results));
+  assert(results.size() == test.table->num_rows());
+  for (grnxx::Int i = 0; i < results.size(); ++i) {
+    grnxx::Int row_id = records.get_row_id(i);
+    assert(results[i] == (test.int_vector_values[row_id] !=
+                          test.int_vector2_values[row_id]));
+  }
+
+  assert(expression->filter(&error, &records));
+  count = 0;
+  for (grnxx::Int i = 1; i < test.int_vector_values.size(); ++i) {
+    if (test.int_vector_values[i] != test.int_vector2_values[i]) {
+      assert(records.get_row_id(count) == i);
+      ++count;
+    }
+  }
+  assert(records.size() == count);
+
+  // Test an expression (FloatVector != FloatVector2).
+  assert(builder->push_column(&error, "FloatVector"));
+  assert(builder->push_column(&error, "FloatVector2"));
+  assert(builder->push_operator(&error, grnxx::NOT_EQUAL_OPERATOR));
+  expression = builder->release(&error);
+  assert(expression);
+
+  records.clear();
+  cursor = test.table->create_cursor(&error);
+  assert(cursor);
+  assert(cursor->read_all(&error, &records) == test.table->num_rows());
+
+  results.clear();
+  assert(expression->evaluate(&error, records, &results));
+  assert(results.size() == test.table->num_rows());
+  for (grnxx::Int i = 0; i < results.size(); ++i) {
+    grnxx::Int row_id = records.get_row_id(i);
+    assert(results[i] == (test.float_vector_values[row_id] !=
+                          test.float_vector2_values[row_id]));
+  }
+
+  assert(expression->filter(&error, &records));
+  count = 0;
+  for (grnxx::Int i = 1; i < test.float_vector_values.size(); ++i) {
+    if (test.float_vector_values[i] != test.float_vector2_values[i]) {
       assert(records.get_row_id(count) == i);
       ++count;
     }
@@ -2023,11 +2283,10 @@ void test_subscript() {
   auto builder = grnxx::ExpressionBuilder::create(&error, test.table);
   assert(builder);
 
-  // Test an expression (Int % Int2).
-  // An error occurs because of division by zero.
+  // Test an expression (BoolVector[Int]).
+  assert(builder->push_column(&error, "BoolVector"));
   assert(builder->push_column(&error, "Int"));
-  assert(builder->push_column(&error, "Int2"));
-  assert(builder->push_operator(&error, grnxx::MODULUS_OPERATOR));
+  assert(builder->push_operator(&error, grnxx::SUBSCRIPT_OPERATOR));
   auto expression = builder->release(&error);
   assert(expression);
 
@@ -2036,15 +2295,38 @@ void test_subscript() {
   assert(cursor);
   assert(cursor->read_all(&error, &records) == test.table->num_rows());
 
-  grnxx::Array<grnxx::Int> int_results;
-  assert(!expression->evaluate(&error, records, &int_results));
+  grnxx::Array<grnxx::Bool> bool_results;
+  assert(expression->evaluate(&error, records, &bool_results));
+  assert(bool_results.size() == test.table->num_rows());
+  for (grnxx::Int i = 0; i < bool_results.size(); ++i) {
+    grnxx::Int row_id = records.get_row_id(i);
+    const auto int_value = test.int_values[row_id];
+    const auto &bool_vector_value = test.bool_vector_values[row_id];
+    if (int_value < bool_vector_value.size()) {
+      assert(bool_results[i] == bool_vector_value[int_value]);
+    } else {
+      assert(bool_results[i] == 0);
+    }
+  }
 
-  // Test an expression (Int % (Int2 + 1)).
+  assert(expression->filter(&error, &records));
+  grnxx::Int count = 0;
+  for (grnxx::Int i = 1; i < test.int_values.size(); ++i) {
+    const auto int_value = test.int_values[i];
+    const auto &bool_vector_value = test.bool_vector_values[i];
+    if (int_value < bool_vector_value.size()) {
+      if (bool_vector_value[int_value]) {
+        assert(records.get_row_id(count) == i);
+        ++count;
+      }
+    }
+  }
+  assert(records.size() == count);
+
+  // Test an expression (IntVector[Int]).
+  assert(builder->push_column(&error, "IntVector"));
   assert(builder->push_column(&error, "Int"));
-  assert(builder->push_column(&error, "Int2"));
-  assert(builder->push_datum(&error, grnxx::Int(1)));
-  assert(builder->push_operator(&error, grnxx::PLUS_OPERATOR));
-  assert(builder->push_operator(&error, grnxx::MODULUS_OPERATOR));
+  assert(builder->push_operator(&error, grnxx::SUBSCRIPT_OPERATOR));
   expression = builder->release(&error);
   assert(expression);
 
@@ -2053,13 +2335,57 @@ void test_subscript() {
   assert(cursor);
   assert(cursor->read_all(&error, &records) == test.table->num_rows());
 
-  int_results.clear();
+  grnxx::Array<grnxx::Int> int_results;
   assert(expression->evaluate(&error, records, &int_results));
   assert(int_results.size() == test.table->num_rows());
   for (grnxx::Int i = 0; i < int_results.size(); ++i) {
     grnxx::Int row_id = records.get_row_id(i);
-    assert(int_results[i] ==
-           (test.int_values[row_id] % (test.int2_values[row_id] + 1)));
+    const auto int_value = test.int_values[row_id];
+    const auto &int_vector_value = test.int_vector_values[row_id];
+    if (int_value < int_vector_value.size()) {
+      assert(int_results[i] == int_vector_value[int_value]);
+    } else {
+      assert(int_results[i] == 0);
+    }
+  }
+
+  // Test an expression (FloatVector[Int]).
+  assert(builder->push_column(&error, "FloatVector"));
+  assert(builder->push_column(&error, "Int"));
+  assert(builder->push_operator(&error, grnxx::SUBSCRIPT_OPERATOR));
+  expression = builder->release(&error);
+  assert(expression);
+
+  records.clear();
+  cursor = test.table->create_cursor(&error);
+  assert(cursor);
+  assert(cursor->read_all(&error, &records) == test.table->num_rows());
+
+  grnxx::Array<grnxx::Float> float_results;
+  assert(expression->evaluate(&error, records, &float_results));
+  assert(float_results.size() == test.table->num_rows());
+  for (grnxx::Int i = 0; i < float_results.size(); ++i) {
+    grnxx::Int row_id = records.get_row_id(i);
+    const auto int_value = test.int_values[row_id];
+    const auto &float_vector_value = test.float_vector_values[row_id];
+    if (int_value < float_vector_value.size()) {
+      assert(float_results[i] == float_vector_value[int_value]);
+    } else {
+      assert(float_results[i] == 0);
+    }
+  }
+
+  assert(expression->adjust(&error, &records));
+  assert(records.size() == test.table->num_rows());
+  for (grnxx::Int i = 0; i < records.size(); ++i) {
+    grnxx::Int row_id = records.get_row_id(i);
+    const auto int_value = test.int_values[row_id];
+    const auto &float_vector_value = test.float_vector_values[row_id];
+    if (int_value < float_vector_value.size()) {
+      assert(records.get_score(i) == float_vector_value[int_value]);
+    } else {
+      assert(records.get_score(i) == 0);
+    }
   }
 }
 
