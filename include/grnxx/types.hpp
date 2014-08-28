@@ -321,6 +321,29 @@ class Vector<Int> {
   Int size_;
 };
 
+inline Bool operator==(Vector<Int> lhs, Vector<Int> rhs) {
+  if (lhs.size() != rhs.size()) {
+    return false;
+  }
+  for (Int i = 0; i < lhs.size(); ++i) {
+    if (lhs[i] != rhs[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+inline Bool operator!=(Vector<Int> lhs, Vector<Int> rhs) {
+  if (lhs.size() != rhs.size()) {
+    return true;
+  }
+  for (Int i = 0; i < lhs.size(); ++i) {
+    if (lhs[i] != rhs[i]) {
+      return true;
+    }
+  }
+  return false;
+}
+
 template <>
 class Vector<Float> {
  public:
@@ -352,6 +375,29 @@ class Vector<Float> {
   const Float *data_;
   Int size_;
 };
+
+inline Bool operator==(Vector<Float> lhs, Vector<Float> rhs) {
+  if (lhs.size() != rhs.size()) {
+    return false;
+  }
+  for (Int i = 0; i < lhs.size(); ++i) {
+    if (lhs[i] != rhs[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+inline Bool operator!=(Vector<Float> lhs, Vector<Float> rhs) {
+  if (lhs.size() != rhs.size()) {
+    return true;
+  }
+  for (Int i = 0; i < lhs.size(); ++i) {
+    if (lhs[i] != rhs[i]) {
+      return true;
+    }
+  }
+  return false;
+}
 
 using BoolVector  = Vector<Bool>;
 using IntVector   = Vector<Int>;
