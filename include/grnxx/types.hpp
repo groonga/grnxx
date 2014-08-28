@@ -289,7 +289,73 @@ inline Bool operator!=(Vector<Bool> lhs, Vector<Bool> rhs) {
          ((lhs.bits() ^ rhs.bits()) != 0);
 }
 
-using BoolVector = Vector<Bool>;
+template <>
+class Vector<Int> {
+ public:
+  Vector() = default;
+  Vector(const Int *data, Int size) : data_(data), size_(size) {}
+  Vector(const Vector &) = default;
+
+  Vector &operator=(const Vector &) = default;
+
+  // Return the number of Int values.
+  Int size() const {
+    return size_;
+  }
+  // Return the "i"-th Int value.
+  //
+  // If "i" is invalid, the result is undefined.
+  Int get(Int i) const {
+    return data_[i];
+  }
+
+  // Return the "i"-th Int value.
+  //
+  // If "i" is invalid, the result is undefined.
+  Int operator[](Int i) const {
+    return get(i);
+  }
+
+ private:
+  const Int *data_;
+  Int size_;
+};
+
+template <>
+class Vector<Float> {
+ public:
+  Vector() = default;
+  Vector(const Float *data, Int size) : data_(data), size_(size) {}
+  Vector(const Vector &) = default;
+
+  Vector &operator=(const Vector &) = default;
+
+  // Return the number of Float values.
+  Int size() const {
+    return size_;
+  }
+  // Return the "i"-th Float value.
+  //
+  // If "i" is invalid, the result is undefined.
+  Float get(Int i) const {
+    return data_[i];
+  }
+
+  // Return the "i"-th Float value.
+  //
+  // If "i" is invalid, the result is undefined.
+  Float operator[](Int i) const {
+    return get(i);
+  }
+
+ private:
+  const Float *data_;
+  Int size_;
+};
+
+using BoolVector  = Vector<Bool>;
+using IntVector   = Vector<Int>;
+using FloatVector = Vector<Float>;
 
 // Type information.
 template <typename T> struct TypeTraits;
