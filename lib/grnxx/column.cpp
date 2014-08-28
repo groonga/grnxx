@@ -91,6 +91,12 @@ unique_ptr<Column> Column::create(Error *error,
     case BOOL_VECTOR_DATA: {
       return ColumnImpl<Vector<Bool>>::create(error, table, name, options);
     }
+    case INT_VECTOR_DATA: {
+      return ColumnImpl<Vector<Int>>::create(error, table, name, options);
+    }
+    case FLOAT_VECTOR_DATA: {
+      return ColumnImpl<Vector<Float>>::create(error, table, name, options);
+    }
     default: {
       // TODO: Other data types are not supported yet.
       GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not suported yet");
@@ -285,5 +291,177 @@ void ColumnImpl<Text>::unset(Int row_id) {
 }
 
 ColumnImpl<Text>::ColumnImpl() : Column(), headers_(), bodies_() {}
+
+// -- ColumnImpl<Vector<Int>> --
+
+bool ColumnImpl<Vector<Int>>::set(Error *error, Int row_id,
+                                  const Datum &datum) {
+  if (datum.type() != INT_VECTOR_DATA) {
+    GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Wrong data type");
+    return false;
+  }
+  if (!table_->test_row(error, row_id)) {
+    return false;
+  }
+  Vector<Int> value = datum.force_int_vector();
+  if (value.size() == 0) {
+    headers_[row_id] = 0;
+    return true;
+  }
+  Int offset = bodies_.size();
+  if (value.size() < 0xFFFF) {
+    if (!bodies_.resize(error, offset + value.size())) {
+      return false;
+    }
+    for (Int i = 0; i < value.size(); ++i) {
+      bodies_[offset + i] = value[i];
+    }
+    headers_[row_id] = (offset << 16) | value.size();
+  } else {
+    // The size of a long vector is stored in front of the body.
+    if (!bodies_.resize(error, offset + 1 + value.size())) {
+      return false;
+    }
+    bodies_[offset] = value.size();
+    for (Int i = 0; i < value.size(); ++i) {
+      bodies_[offset + 1 + i] = value[i];
+    }
+    headers_[row_id] = (offset << 16) | 0xFFFF;
+  }
+  return true;
+}
+
+bool ColumnImpl<Vector<Int>>::get(Error *error, Int row_id,
+                                  Datum *datum) const {
+  if (!table_->test_row(error, row_id)) {
+    return false;
+  }
+  *datum = get(row_id);
+  return true;
+}
+
+unique_ptr<ColumnImpl<Vector<Int>>> ColumnImpl<Vector<Int>>::create(
+    Error *error,
+    Table *table,
+    String name,
+    const ColumnOptions &options) {
+  unique_ptr<ColumnImpl> column(new (nothrow) ColumnImpl);
+  if (!column) {
+    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    return nullptr;
+  }
+  if (!column->initialize_base(error, table, name, INT_VECTOR_DATA, options)) {
+    return nullptr;
+  }
+  if (!column->headers_.resize(error, table->max_row_id() + 1, 0)) {
+    return nullptr;
+  }
+  return column;
+}
+
+ColumnImpl<Vector<Int>>::~ColumnImpl() {}
+
+bool ColumnImpl<Vector<Int>>::set_default_value(Error *error, Int row_id) {
+  if (row_id >= headers_.size()) {
+    if (!headers_.resize(error, row_id + 1)) {
+      return false;
+    }
+  }
+  headers_[row_id] = 0;
+  return true;
+}
+
+void ColumnImpl<Vector<Int>>::unset(Int row_id) {
+  headers_[row_id] = 0;
+}
+
+ColumnImpl<Vector<Int>>::ColumnImpl() : Column(), headers_(), bodies_() {}
+
+// -- ColumnImpl<Vector<Float>> --
+
+bool ColumnImpl<Vector<Float>>::set(Error *error, Int row_id,
+                                    const Datum &datum) {
+  if (datum.type() != FLOAT_VECTOR_DATA) {
+    GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Wrong data type");
+    return false;
+  }
+  if (!table_->test_row(error, row_id)) {
+    return false;
+  }
+  Vector<Float> value = datum.force_float_vector();
+  if (value.size() == 0) {
+    headers_[row_id] = 0;
+    return true;
+  }
+  Int offset = bodies_.size();
+  if (value.size() < 0xFFFF) {
+    if (!bodies_.resize(error, offset + value.size())) {
+      return false;
+    }
+    for (Int i = 0; i < value.size(); ++i) {
+      bodies_[offset + i] = value[i];
+    }
+    headers_[row_id] = (offset << 16) | value.size();
+  } else {
+    // The size of a long vector is stored in front of the body.
+    if (!bodies_.resize(error, offset + 1 + value.size())) {
+      return false;
+    }
+    Int size_for_copy = value.size();
+    std::memcpy(&bodies_[offset], &size_for_copy, sizeof(Int));
+    for (Int i = 0; i < value.size(); ++i) {
+      bodies_[offset + 1 + i] = value[i];
+    }
+    headers_[row_id] = (offset << 16) | 0xFFFF;
+  }
+  return true;
+}
+
+bool ColumnImpl<Vector<Float>>::get(Error *error, Int row_id,
+                                    Datum *datum) const {
+  if (!table_->test_row(error, row_id)) {
+    return false;
+  }
+  *datum = get(row_id);
+  return true;
+}
+
+unique_ptr<ColumnImpl<Vector<Float>>> ColumnImpl<Vector<Float>>::create(
+    Error *error,
+    Table *table,
+    String name,
+    const ColumnOptions &options) {
+  unique_ptr<ColumnImpl> column(new (nothrow) ColumnImpl);
+  if (!column) {
+    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    return nullptr;
+  }
+  if (!column->initialize_base(error, table, name,
+                               FLOAT_VECTOR_DATA, options)) {
+    return nullptr;
+  }
+  if (!column->headers_.resize(error, table->max_row_id() + 1, 0)) {
+    return nullptr;
+  }
+  return column;
+}
+
+ColumnImpl<Vector<Float>>::~ColumnImpl() {}
+
+bool ColumnImpl<Vector<Float>>::set_default_value(Error *error, Int row_id) {
+  if (row_id >= headers_.size()) {
+    if (!headers_.resize(error, row_id + 1)) {
+      return false;
+    }
+  }
+  headers_[row_id] = 0;
+  return true;
+}
+
+void ColumnImpl<Vector<Float>>::unset(Int row_id) {
+  headers_[row_id] = 0;
+}
+
+ColumnImpl<Vector<Float>>::ColumnImpl() : Column(), headers_(), bodies_() {}
 
 }  // namespace grnxx
