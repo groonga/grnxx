@@ -44,7 +44,7 @@ DBOptions::DBOptions() {}
 
 TableOptions::TableOptions() {}
 
-ColumnOptions::ColumnOptions() {}
+ColumnOptions::ColumnOptions() : ref_table_name("") {}
 
 IndexOptions::IndexOptions() {}
 

@@ -3,6 +3,7 @@
 #include "grnxx/column_impl.hpp"
 #include "grnxx/cursor.hpp"
 #include "grnxx/datum.hpp"
+#include "grnxx/db.hpp"
 #include "grnxx/error.hpp"
 #include "grnxx/table.hpp"
 
@@ -122,6 +123,15 @@ bool Column::initialize_base(Error *error,
     return false;
   }
   data_type_ = data_type;
+  if (data_type == INT_DATA) {
+    if (options.ref_table_name.size() != 0) {
+      auto ref_table = table->db()->find_table(error, options.ref_table_name);
+      if (!ref_table) {
+        return false;
+      }
+      ref_table_ = ref_table;
+    }
+  }
   return true;
 }
 
@@ -209,6 +219,72 @@ void ColumnImpl<T>::unset(Int row_id) {
 
 template <typename T>
 ColumnImpl<T>::ColumnImpl() : Column(), values_() {}
+
+// -- ColumnImpl<Int> --
+
+bool ColumnImpl<Int>::set(Error *error, Int row_id, const Datum &datum) {
+  if (datum.type() != INT_DATA) {
+    GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Wrong data type");
+    return false;
+  }
+  if (!table_->test_row(error, row_id)) {
+    return false;
+  }
+  if (ref_table_) {
+    if (!ref_table_->test_row(error, datum.force_int())) {
+      return false;
+    }
+  }
+  // Note that a Bool object does not have its own address.
+  values_.set(row_id, datum.force_int());
+  return true;
+}
+
+bool ColumnImpl<Int>::get(Error *error, Int row_id, Datum *datum) const {
+  if (!table_->test_row(error, row_id)) {
+    return false;
+  }
+  *datum = values_[row_id];
+  return true;
+}
+
+unique_ptr<ColumnImpl<Int>> ColumnImpl<Int>::create(
+    Error *error,
+    Table *table,
+    String name,
+    const ColumnOptions &options) {
+  unique_ptr<ColumnImpl> column(new (nothrow) ColumnImpl);
+  if (!column) {
+    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    return nullptr;
+  }
+  if (!column->initialize_base(error, table, name, INT_DATA, options)) {
+    return nullptr;
+  }
+  if (!column->values_.resize(error, table->max_row_id() + 1,
+                              TypeTraits<Int>::default_value())) {
+    return nullptr;
+  }
+  return column;
+}
+
+ColumnImpl<Int>::~ColumnImpl() {}
+
+bool ColumnImpl<Int>::set_default_value(Error *error, Int row_id) {
+  if (row_id >= values_.size()) {
+    if (!values_.resize(error, row_id + 1, TypeTraits<Int>::default_value())) {
+      return false;
+    }
+  }
+  values_.set(row_id, TypeTraits<Int>::default_value());
+  return true;
+}
+
+void ColumnImpl<Int>::unset(Int row_id) {
+  values_.set(row_id, TypeTraits<Int>::default_value());
+}
+
+ColumnImpl<Int>::ColumnImpl() : Column(), values_() {}
 
 // -- ColumnImpl<Text> --
 
