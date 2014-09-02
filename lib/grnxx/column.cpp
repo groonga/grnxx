@@ -101,6 +101,9 @@ unique_ptr<Column> Column::create(Error *error,
     case GEO_POINT_VECTOR_DATA: {
       return ColumnImpl<Vector<GeoPoint>>::create(error, table, name, options);
     }
+    case TEXT_VECTOR_DATA: {
+      return ColumnImpl<Vector<Text>>::create(error, table, name, options);
+    }
     default: {
       // TODO: Other data types are not supported yet.
       GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not suported yet");
@@ -546,7 +549,7 @@ ColumnImpl<Vector<Float>>::ColumnImpl() : Column(), headers_(), bodies_() {}
 // -- ColumnImpl<Vector<GeoPoint>> --
 
 bool ColumnImpl<Vector<GeoPoint>>::set(Error *error, Int row_id,
-                                    const Datum &datum) {
+                                       const Datum &datum) {
   if (datum.type() != GEO_POINT_VECTOR_DATA) {
     GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Wrong data type");
     return false;
@@ -630,5 +633,96 @@ void ColumnImpl<Vector<GeoPoint>>::unset(Int row_id) {
 }
 
 ColumnImpl<Vector<GeoPoint>>::ColumnImpl() : Column(), headers_(), bodies_() {}
+
+// -- ColumnImpl<Vector<Text>> --
+
+bool ColumnImpl<Vector<Text>>::set(Error *error, Int row_id,
+                                   const Datum &datum) {
+  if (datum.type() != TEXT_VECTOR_DATA) {
+    GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Wrong data type");
+    return false;
+  }
+  if (!table_->test_row(error, row_id)) {
+    return false;
+  }
+  Vector<Text> value = datum.force_text_vector();
+  if (value.size() == 0) {
+    headers_[row_id] = Header{ 0, 0 };
+    return true;
+  }
+  Int text_headers_offset = text_headers_.size();
+  if (!text_headers_.resize(error, text_headers_offset + value.size())) {
+    return false;
+  }
+  Int total_size = 0;
+  for (Int i = 0; i < value.size(); ++i) {
+    total_size += value[i].size();
+  }
+  Int bodies_offset = bodies_.size();
+  if (!bodies_.resize(error, bodies_offset + total_size)) {
+    return false;
+  }
+  headers_[row_id] = Header{ text_headers_offset, value.size() };
+  for (Int i = 0; i < value.size(); ++i) {
+    text_headers_[text_headers_offset + i].offset = bodies_offset;
+    text_headers_[text_headers_offset + i].size = value[i].size();
+    std::memcpy(&bodies_[bodies_offset], value[i].data(), value[i].size());
+    bodies_offset += value[i].size();
+  }
+  return true;
+}
+
+bool ColumnImpl<Vector<Text>>::get(Error *error, Int row_id,
+                                   Datum *datum) const {
+  if (!table_->test_row(error, row_id)) {
+    return false;
+  }
+  *datum = get(row_id);
+  return true;
+}
+
+unique_ptr<ColumnImpl<Vector<Text>>> ColumnImpl<Vector<Text>>::create(
+    Error *error,
+    Table *table,
+    String name,
+    const ColumnOptions &options) {
+  unique_ptr<ColumnImpl> column(new (nothrow) ColumnImpl);
+  if (!column) {
+    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    return nullptr;
+  }
+  if (!column->initialize_base(error, table, name,
+                               TEXT_VECTOR_DATA, options)) {
+    return nullptr;
+  }
+  if (!column->headers_.resize(error, table->max_row_id() + 1,
+                               Header{ 0, 0 })) {
+    return nullptr;
+  }
+  return column;
+}
+
+ColumnImpl<Vector<Text>>::~ColumnImpl() {}
+
+bool ColumnImpl<Vector<Text>>::set_default_value(Error *error,
+                                                     Int row_id) {
+  if (row_id >= headers_.size()) {
+    if (!headers_.resize(error, row_id + 1)) {
+      return false;
+    }
+  }
+  headers_[row_id] = Header{ 0, 0 };
+  return true;
+}
+
+void ColumnImpl<Vector<Text>>::unset(Int row_id) {
+  headers_[row_id] = Header{ 0, 0 };
+}
+
+ColumnImpl<Vector<Text>>::ColumnImpl()
+    : Column(),
+      headers_(),
+      text_headers_(),
+      bodies_() {}
 
 }  // namespace grnxx

@@ -2487,6 +2487,7 @@ GRNXX_INSTANTIATE_EXPRESSION_EVALUATE(Vector<Bool>);
 GRNXX_INSTANTIATE_EXPRESSION_EVALUATE(Vector<Int>);
 GRNXX_INSTANTIATE_EXPRESSION_EVALUATE(Vector<Float>);
 GRNXX_INSTANTIATE_EXPRESSION_EVALUATE(Vector<GeoPoint>);
+GRNXX_INSTANTIATE_EXPRESSION_EVALUATE(Vector<Text>);
 #undef GRNXX_INSTANTIATE_EXPRESSION_EVALUATE
 
 template <typename T>
@@ -2672,6 +2673,10 @@ unique_ptr<Node> ExpressionBuilder::create_datum_node(
       return DatumNode<Vector<Float>>::create(error,
                                               datum.force_float_vector());
     }
+    case TEXT_VECTOR_DATA: {
+      return DatumNode<Vector<Text>>::create(error,
+                                             datum.force_text_vector());
+    }
     case GEO_POINT_VECTOR_DATA: {
       return DatumNode<Vector<GeoPoint>>::create(
           error, datum.force_geo_point_vector());
@@ -2739,6 +2744,9 @@ unique_ptr<Node> ExpressionBuilder::create_column_node(
     }
     case GEO_POINT_VECTOR_DATA: {
       return ColumnNode<Vector<GeoPoint>>::create(error, column);
+    }
+    case TEXT_VECTOR_DATA: {
+      return ColumnNode<Vector<Text>>::create(error, column);
     }
     default: {
       // TODO: Other types are not supported yet.
@@ -3005,6 +3013,11 @@ unique_ptr<Node> ExpressionBuilder::create_equality_test_node(
       return ComparisonNode<Functor>::create(
           error, std::move(arg1), std::move(arg2));
     }
+    case TEXT_VECTOR_DATA: {
+      typedef typename T:: template Comparer<Vector<Text>> Functor;
+      return ComparisonNode<Functor>::create(
+          error, std::move(arg1), std::move(arg2));
+    }
     // TODO: Support other types.
     default: {
       GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
@@ -3129,6 +3142,10 @@ unique_ptr<Node> ExpressionBuilder::create_subscript_node(
     }
     case GEO_POINT_VECTOR_DATA: {
       return SubscriptNode<GeoPoint>::create(
+          error, std::move(arg1), std::move(arg2));
+    }
+    case TEXT_VECTOR_DATA: {
+      return SubscriptNode<Text>::create(
           error, std::move(arg1), std::move(arg2));
     }
     default: {

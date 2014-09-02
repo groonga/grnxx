@@ -454,10 +454,90 @@ inline Bool operator!=(Vector<GeoPoint> lhs, Vector<GeoPoint> rhs) {
   return false;
 }
 
+// TODO: Improve the implementation of Vector<Text>.
+template <>
+class Vector<Text> {
+ public:
+  Vector() = default;
+  Vector(const Text *data, Int size)
+      : is_direct_(1),
+        size_(size),
+        data_(data) {}
+  Vector(const void *headers, const char *bodies, Int size)
+      : is_direct_(0),
+        size_(size),
+        headers_(static_cast<const Header *>(headers)),
+        bodies_(bodies) {}
+  Vector(const Vector &) = default;
+
+  Vector &operator=(const Vector &) = default;
+
+  // Return the number of Text values.
+  Int size() const {
+    return static_cast<Int>(size_);
+  }
+  // Return the "i"-th Text value.
+  //
+  // If "i" is invalid, the result is undefined.
+  Text get(Int i) const {
+    if (is_direct_) {
+      return data_[i];
+    } else {
+      return Text(&bodies_[headers_[i].offset], headers_[i].size);
+    }
+  }
+
+  // Return the "i"-th Text value.
+  //
+  // If "i" is invalid, the result is undefined.
+  Text operator[](Int i) const {
+    return get(i);
+  }
+
+ private:
+  struct Header {
+    Int offset;
+    Int size;
+  };
+  bool is_direct_;
+  Int size_;
+  union {
+    const Text *data_;
+    struct {
+      const Header *headers_;
+      const char *bodies_;
+    };
+  };
+};
+
+inline Bool operator==(Vector<Text> lhs, Vector<Text> rhs) {
+  if (lhs.size() != rhs.size()) {
+    return false;
+  }
+  for (Int i = 0; i < lhs.size(); ++i) {
+    if (lhs[i] != rhs[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+inline Bool operator!=(Vector<Text> lhs, Vector<Text> rhs) {
+  if (lhs.size() != rhs.size()) {
+    return true;
+  }
+  for (Int i = 0; i < lhs.size(); ++i) {
+    if (lhs[i] != rhs[i]) {
+      return true;
+    }
+  }
+  return false;
+}
+
 using BoolVector     = Vector<Bool>;
 using IntVector      = Vector<Int>;
 using FloatVector    = Vector<Float>;
 using GeoPointVector = Vector<GeoPoint>;
+using TextVector     = Vector<Text>;
 
 // Type information.
 template <typename T> struct TypeTraits;
@@ -531,6 +611,14 @@ template <> struct TypeTraits <Vector<GeoPoint>> {
   }
   static Vector<GeoPoint> default_value() {
     return Vector<GeoPoint>(nullptr, 0);
+  }
+};
+template <> struct TypeTraits <Vector<Text>> {
+  static DataType data_type() {
+    return TEXT_VECTOR_DATA;
+  }
+  static Vector<Text> default_value() {
+    return Vector<Text>(nullptr, 0);
   }
 };
 

@@ -282,6 +282,52 @@ class ColumnImpl<Vector<GeoPoint>> : public Column {
   ColumnImpl();
 };
 
+// TODO: Improve the implementation.
+template <>
+class ColumnImpl<Vector<Text>> : public Column {
+ public:
+  // -- Public API --
+
+  bool set(Error *error, Int row_id, const Datum &datum);
+  bool get(Error *error, Int row_id, Datum *datum) const;
+
+  // -- Internal API --
+
+  // Create a new column.
+  //
+  // Returns a pointer to the column on success.
+  // On failure, returns nullptr and stores error information into "*error" if
+  // "error" != nullptr.
+  static unique_ptr<ColumnImpl> create(Error *error,
+                                       Table *table,
+                                       String name,
+                                       const ColumnOptions &options);
+
+  ~ColumnImpl();
+
+  bool set_default_value(Error *error, Int row_id);
+  void unset(Int row_id);
+
+  // Return a value identified by "row_id".
+  //
+  // Assumes that "row_id" is valid. Otherwise, the result is undefined.
+  Vector<Text> get(Int row_id) const {
+    return Vector<Text>(&text_headers_[headers_[row_id].offset],
+                        bodies_.data(), headers_[row_id].size);
+  }
+
+ protected:
+  struct Header {
+    Int offset;
+    Int size;
+  };
+  Array<Header> headers_;
+  Array<Header> text_headers_;
+  Array<char> bodies_;
+
+  ColumnImpl();
+};
+
 }  // namespace grnxx
 
 #endif  // GRNXX_COLUMN_IMPL_HPP
