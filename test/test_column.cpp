@@ -140,6 +140,17 @@ void test_column() {
   assert(!geo_point_vector_column->has_key_attribute());
   assert(geo_point_vector_column->num_indexes() == 0);
 
+  // Create a column named "TextVectorColumn".
+  // The column stores Text values.
+  auto text_vector_column = table->create_column(&error, "TextVectorColumn",
+                                                 grnxx::TEXT_VECTOR_DATA);
+  assert(text_vector_column);
+  assert(text_vector_column->table() == table);
+  assert(text_vector_column->name() == "TextVectorColumn");
+  assert(text_vector_column->data_type() == grnxx::TEXT_VECTOR_DATA);
+  assert(!text_vector_column->has_key_attribute());
+  assert(text_vector_column->num_indexes() == 0);
+
   grnxx::Datum datum;
 
   // Check that the default values are stored.
@@ -179,6 +190,10 @@ void test_column() {
   assert(datum.type() == grnxx::GEO_POINT_VECTOR_DATA);
   assert(datum.force_geo_point_vector() == grnxx::GeoPointVector(nullptr, 0));
 
+  assert(text_vector_column->get(&error, 1, &datum));
+  assert(datum.type() == grnxx::TEXT_VECTOR_DATA);
+  assert(datum.force_text_vector() == grnxx::TextVector(nullptr, 0));
+
   // Set and get values.
   assert(bool_column->set(&error, 1, grnxx::Bool(true)));
   assert(int_column->set(&error, 1, grnxx::Int(123)));
@@ -198,6 +213,9 @@ void test_column() {
   };
   assert(geo_point_vector_column->set(
       &error, 1, grnxx::GeoPointVector(geo_point_vector_value, 3)));
+  grnxx::Text text_vector_value[] = { "abc", "DEF", "ghi" };
+  assert(text_vector_column->set(&error, 1,
+                                 grnxx::TextVector(text_vector_value, 3)));
 
   assert(bool_column->get(&error, 1, &datum));
   assert(datum.type() == grnxx::BOOL_DATA);
@@ -238,6 +256,11 @@ void test_column() {
   assert(datum.type() == grnxx::GEO_POINT_VECTOR_DATA);
   assert(datum.force_geo_point_vector() ==
          grnxx::GeoPointVector(geo_point_vector_value, 3));
+
+  assert(text_vector_column->get(&error, 1, &datum));
+  assert(datum.type() == grnxx::TEXT_VECTOR_DATA);
+  assert(datum.force_text_vector() ==
+         grnxx::TextVector(text_vector_value, 3));
 }
 
 int main() {
