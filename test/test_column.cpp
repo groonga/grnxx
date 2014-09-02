@@ -74,6 +74,17 @@ void test_column() {
   assert(!float_column->has_key_attribute());
   assert(float_column->num_indexes() == 0);
 
+  // Create a column named "GeoPointColumn".
+  // The column stores GeoPoint values.
+  auto geo_point_column = table->create_column(&error, "GeoPointColumn",
+                                               grnxx::GEO_POINT_DATA);
+  assert(geo_point_column);
+  assert(geo_point_column->table() == table);
+  assert(geo_point_column->name() == "GeoPointColumn");
+  assert(geo_point_column->data_type() == grnxx::GEO_POINT_DATA);
+  assert(!geo_point_column->has_key_attribute());
+  assert(geo_point_column->num_indexes() == 0);
+
   // Create a column named "TextColumn".
   // The column stores Text values.
   auto text_column = table->create_column(&error, "TextColumn",
@@ -118,6 +129,17 @@ void test_column() {
   assert(!float_vector_column->has_key_attribute());
   assert(float_vector_column->num_indexes() == 0);
 
+  // Create a column named "GeoPointVectorColumn".
+  // The column stores Text values.
+  auto geo_point_vector_column = table->create_column(
+      &error, "GeoPointVectorColumn", grnxx::GEO_POINT_VECTOR_DATA);
+  assert(geo_point_vector_column);
+  assert(geo_point_vector_column->table() == table);
+  assert(geo_point_vector_column->name() == "GeoPointVectorColumn");
+  assert(geo_point_vector_column->data_type() == grnxx::GEO_POINT_VECTOR_DATA);
+  assert(!geo_point_vector_column->has_key_attribute());
+  assert(geo_point_vector_column->num_indexes() == 0);
+
   grnxx::Datum datum;
 
   // Check that the default values are stored.
@@ -132,6 +154,10 @@ void test_column() {
   assert(float_column->get(&error, 1, &datum));
   assert(datum.type() == grnxx::FLOAT_DATA);
   assert(datum.force_float() == 0.0);
+
+  assert(geo_point_column->get(&error, 1, &datum));
+  assert(datum.type() == grnxx::GEO_POINT_DATA);
+  assert(datum.force_geo_point() == grnxx::GeoPoint(0, 0));
 
   assert(text_column->get(&error, 1, &datum));
   assert(datum.type() == grnxx::TEXT_DATA);
@@ -149,10 +175,15 @@ void test_column() {
   assert(datum.type() == grnxx::FLOAT_VECTOR_DATA);
   assert(datum.force_float_vector() == grnxx::FloatVector(nullptr, 0));
 
+  assert(geo_point_vector_column->get(&error, 1, &datum));
+  assert(datum.type() == grnxx::GEO_POINT_VECTOR_DATA);
+  assert(datum.force_geo_point_vector() == grnxx::GeoPointVector(nullptr, 0));
+
   // Set and get values.
   assert(bool_column->set(&error, 1, grnxx::Bool(true)));
   assert(int_column->set(&error, 1, grnxx::Int(123)));
   assert(float_column->set(&error, 1, grnxx::Float(0.25)));
+  assert(geo_point_column->set(&error, 1, grnxx::GeoPoint(123, 456)));
   assert(text_column->set(&error, 1, grnxx::Text("Hello, world!")));
   assert(bool_vector_column->set(&error, 1,
                                  grnxx::BoolVector{ true, false, true }));
@@ -162,6 +193,11 @@ void test_column() {
   grnxx::Float float_vector_value[] = { 1.23, -4.56, 7.89 };
   assert(float_vector_column->set(&error, 1,
                                   grnxx::FloatVector(float_vector_value, 3)));
+  grnxx::GeoPoint geo_point_vector_value[] = {
+    { 123, 456 }, { 789, 123 }, { 456, 789 }
+  };
+  assert(geo_point_vector_column->set(
+      &error, 1, grnxx::GeoPointVector(geo_point_vector_value, 3)));
 
   assert(bool_column->get(&error, 1, &datum));
   assert(datum.type() == grnxx::BOOL_DATA);
@@ -174,6 +210,10 @@ void test_column() {
   assert(float_column->get(&error, 1, &datum));
   assert(datum.type() == grnxx::FLOAT_DATA);
   assert(datum.force_float() == 0.25);
+
+  assert(geo_point_column->get(&error, 1, &datum));
+  assert(datum.type() == grnxx::GEO_POINT_DATA);
+  assert(datum.force_geo_point() == grnxx::GeoPoint(123, 456));
 
   assert(text_column->get(&error, 1, &datum));
   assert(datum.type() == grnxx::TEXT_DATA);
@@ -193,6 +233,11 @@ void test_column() {
   assert(datum.type() == grnxx::FLOAT_VECTOR_DATA);
   assert(datum.force_float_vector() ==
          grnxx::FloatVector(float_vector_value, 3));
+
+  assert(geo_point_vector_column->get(&error, 1, &datum));
+  assert(datum.type() == grnxx::GEO_POINT_VECTOR_DATA);
+  assert(datum.force_geo_point_vector() ==
+         grnxx::GeoPointVector(geo_point_vector_value, 3));
 }
 
 int main() {

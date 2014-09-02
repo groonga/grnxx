@@ -36,6 +36,8 @@ struct {
   grnxx::Array<grnxx::Int> int2_values;
   grnxx::Array<grnxx::Float> float_values;
   grnxx::Array<grnxx::Float> float2_values;
+  grnxx::Array<grnxx::GeoPoint> geo_point_values;
+  grnxx::Array<grnxx::GeoPoint> geo_point2_values;
   grnxx::Array<grnxx::Text> text_values;
   grnxx::Array<grnxx::Text> text2_values;
   grnxx::Array<std::string> text_bodies;
@@ -50,6 +52,10 @@ struct {
   grnxx::Array<grnxx::FloatVector> float_vector2_values;
   grnxx::Array<grnxx::Array<grnxx::Float>> float_vector_bodies;
   grnxx::Array<grnxx::Array<grnxx::Float>> float_vector2_bodies;
+  grnxx::Array<grnxx::GeoPointVector> geo_point_vector_values;
+  grnxx::Array<grnxx::GeoPointVector> geo_point_vector2_values;
+  grnxx::Array<grnxx::Array<grnxx::GeoPoint>> geo_point_vector_bodies;
+  grnxx::Array<grnxx::Array<grnxx::GeoPoint>> geo_point_vector2_bodies;
 } test;
 
 void init_test() {
@@ -82,6 +88,14 @@ void init_test() {
   assert(float_column);
   assert(float2_column);
 
+  data_type = grnxx::GEO_POINT_DATA;
+  auto geo_point_column =
+      test.table->create_column(&error, "GeoPoint", data_type);
+  auto geo_point2_column =
+      test.table->create_column(&error, "GeoPoint2", data_type);
+  assert(geo_point_column);
+  assert(geo_point2_column);
+
   data_type = grnxx::TEXT_DATA;
   auto text_column = test.table->create_column(&error, "Text", data_type);
   auto text2_column = test.table->create_column(&error, "Text2", data_type);
@@ -112,14 +126,24 @@ void init_test() {
   assert(float_vector_column);
   assert(float_vector2_column);
 
+  data_type = grnxx::GEO_POINT_VECTOR_DATA;
+  auto geo_point_vector_column =
+      test.table->create_column(&error, "GeoPointVector", data_type);
+  auto geo_point_vector2_column =
+      test.table->create_column(&error, "GeoPointVector2", data_type);
+  assert(geo_point_vector_column);
+  assert(geo_point_vector2_column);
+
   // Generate random values.
   // Bool: true or false.
   // Int: [0, 100).
   // Float: [0.0, 1.0].
+  // GeoPoint: { [0, 100), [0, 100) }.
   // Text: byte = ['0', '9'], length = [1, 4].
   // BoolVector: value = true or false, size = [0, 58].
   // IntVector: value = [0, 100), size = [0, 4].
   // FloatVector: value = [0.0, 1.0), size = [0, 4].
+  // GeoPointVector: value = { [0, 100), [0, 100) }, size = [0, 4].
   constexpr grnxx::Int NUM_ROWS = 1 << 16;
   constexpr grnxx::Int MIN_LENGTH = 1;
   constexpr grnxx::Int MAX_LENGTH = 4;
@@ -131,6 +155,8 @@ void init_test() {
   assert(test.int2_values.resize(&error, NUM_ROWS + 1));
   assert(test.float_values.resize(&error, NUM_ROWS + 1));
   assert(test.float2_values.resize(&error, NUM_ROWS + 1));
+  assert(test.geo_point_values.resize(&error, NUM_ROWS + 1));
+  assert(test.geo_point2_values.resize(&error, NUM_ROWS + 1));
   assert(test.text_values.resize(&error, NUM_ROWS + 1));
   assert(test.text2_values.resize(&error, NUM_ROWS + 1));
   assert(test.text_bodies.resize(&error, NUM_ROWS + 1));
@@ -145,6 +171,10 @@ void init_test() {
   assert(test.float_vector2_values.resize(&error, NUM_ROWS + 1));
   assert(test.float_vector_bodies.resize(&error, NUM_ROWS + 1));
   assert(test.float_vector2_bodies.resize(&error, NUM_ROWS + 1));
+  assert(test.geo_point_vector_values.resize(&error, NUM_ROWS + 1));
+  assert(test.geo_point_vector2_values.resize(&error, NUM_ROWS + 1));
+  assert(test.geo_point_vector_bodies.resize(&error, NUM_ROWS + 1));
+  assert(test.geo_point_vector2_bodies.resize(&error, NUM_ROWS + 1));
   for (grnxx::Int i = 1; i <= NUM_ROWS; ++i) {
     test.bool_values.set(i, (mersenne_twister() & 1) != 0);
     test.bool2_values.set(i, (mersenne_twister() & 1) != 0);
@@ -155,6 +185,11 @@ void init_test() {
     constexpr auto MAX_VALUE = mersenne_twister.max();
     test.float_values.set(i, 1.0 * mersenne_twister() / MAX_VALUE);
     test.float2_values.set(i, 1.0 * mersenne_twister() / MAX_VALUE);
+
+    test.geo_point_values.set(
+        i, grnxx::GeoPoint(mersenne_twister() % 100, mersenne_twister() % 100));
+    test.geo_point2_values.set(
+        i, grnxx::GeoPoint(mersenne_twister() % 100, mersenne_twister() % 100));
 
     grnxx::Int length =
         (mersenne_twister() % (MAX_LENGTH - MIN_LENGTH)) + MIN_LENGTH;
@@ -207,6 +242,23 @@ void init_test() {
     }
     test.float_vector2_values.set(
         i, grnxx::FloatVector(test.float_vector2_bodies[i].data(), size));
+
+    size = mersenne_twister() % (MAX_SIZE + 1);
+    assert(test.geo_point_vector_bodies[i].resize(&error, size));
+    for (grnxx::Int j = 0; j < size; ++j) {
+      test.geo_point_vector_bodies[i][j] =
+          grnxx::GeoPoint(mersenne_twister() % 100, mersenne_twister() % 100);
+    }
+    test.geo_point_vector_values.set(
+        i, grnxx::GeoPointVector(test.geo_point_vector_bodies[i].data(), size));
+    size = mersenne_twister() % (MAX_SIZE + 1);
+    assert(test.geo_point_vector2_bodies[i].resize(&error, size));
+    for (grnxx::Int j = 0; j < size; ++j) {
+      test.geo_point_vector2_bodies[i][j] =
+          grnxx::GeoPoint(mersenne_twister() % 100, mersenne_twister() % 100);
+    }
+    test.geo_point_vector2_values.set(
+        i, grnxx::GeoPointVector(test.geo_point_vector2_bodies[i].data(), size));
   }
 
   // Store generated values into columns.
@@ -220,6 +272,8 @@ void init_test() {
     assert(int2_column->set(&error, row_id, test.int2_values[i]));
     assert(float_column->set(&error, row_id, test.float_values[i]));
     assert(float2_column->set(&error, row_id, test.float2_values[i]));
+    assert(geo_point_column->set(&error, row_id, test.geo_point_values[i]));
+    assert(geo_point2_column->set(&error, row_id, test.geo_point2_values[i]));
     assert(text_column->set(&error, row_id, test.text_values[i]));
     assert(text2_column->set(&error, row_id, test.text2_values[i]));
     assert(bool_vector_column->set(&error, row_id,
@@ -234,6 +288,10 @@ void init_test() {
                                     test.float_vector_values[i]));
     assert(float_vector2_column->set(&error, row_id,
                                      test.float_vector2_values[i]));
+    assert(geo_point_vector_column->set(&error, row_id,
+                                        test.geo_point_vector_values[i]));
+    assert(geo_point_vector2_column->set(&error, row_id,
+                                         test.geo_point_vector2_values[i]));
   }
 }
 
@@ -313,6 +371,18 @@ void test_constant() {
     assert(records.get_score(i) == 1.25);
   }
 
+  // Test an expression ({ 123, 456 }).
+  assert(builder->push_datum(&error, grnxx::GeoPoint(123, 456)));
+  expression = builder->release(&error);
+  assert(expression);
+
+  grnxx::Array<grnxx::GeoPoint> geo_point_results;
+  assert(expression->evaluate(&error, records, &geo_point_results));
+  assert(geo_point_results.size() == test.table->num_rows());
+  for (grnxx::Int i = 0; i < geo_point_results.size(); ++i) {
+    assert(geo_point_results[i] == grnxx::GeoPoint(123, 456));
+  }
+
   // Test an expression ("ABC").
   assert(builder->push_datum(&error, grnxx::Text("ABC")));
   expression = builder->release(&error);
@@ -363,6 +433,23 @@ void test_constant() {
   assert(float_vector_results.size() == test.table->num_rows());
   for (grnxx::Int i = 0; i < float_vector_results.size(); ++i) {
     assert(float_vector_results[i] == grnxx::FloatVector(float_values, 3));
+  }
+
+  // Test an expression ({{ 123, 456 }, { 789, 123 }, { 456, 789 }}).
+  grnxx::GeoPoint geo_point_values[] = {
+    { 123, 456 }, { 789, 123 }, { 456, 789 }
+  };
+  assert(builder->push_datum(
+      &error, grnxx::GeoPointVector(geo_point_values, 3)));
+  expression = builder->release(&error);
+  assert(expression);
+
+  grnxx::Array<grnxx::GeoPointVector> geo_point_vector_results;
+  assert(expression->evaluate(&error, records, &geo_point_vector_results));
+  assert(geo_point_vector_results.size() == test.table->num_rows());
+  for (grnxx::Int i = 0; i < geo_point_vector_results.size(); ++i) {
+    assert(geo_point_vector_results[i] ==
+           grnxx::GeoPointVector(geo_point_values, 3));
   }
 }
 
@@ -439,6 +526,19 @@ void test_column() {
     assert(records.get_score(i) == test.float_values[row_id]);
   }
 
+  // Test an expression (GeoPoint).
+  assert(builder->push_column(&error, "GeoPoint"));
+  expression = builder->release(&error);
+  assert(expression);
+
+  grnxx::Array<grnxx::GeoPoint> geo_point_results;
+  assert(expression->evaluate(&error, records, &geo_point_results));
+  assert(geo_point_results.size() == test.table->num_rows());
+  for (grnxx::Int i = 0; i < geo_point_results.size(); ++i) {
+    grnxx::Int row_id = records.get_row_id(i);
+    assert(geo_point_results[i] == test.geo_point_values[row_id]);
+  }
+
   // Test an expression (Text).
   assert(builder->push_column(&error, "Text"));
   expression = builder->release(&error);
@@ -509,6 +609,24 @@ void test_column() {
   for (grnxx::Int i = 0; i < float_vector_results.size(); ++i) {
     grnxx::Int row_id = records.get_row_id(i);
     assert(float_vector_results[i] == test.float_vector_values[row_id]);
+  }
+
+  // Test an expression (GeoPointVector).
+  assert(builder->push_column(&error, "GeoPointVector"));
+  expression = builder->release(&error);
+  assert(expression);
+
+  records.clear();
+  cursor = test.table->create_cursor(&error);
+  assert(cursor);
+  assert(cursor->read_all(&error, &records) == test.table->num_rows());
+
+  grnxx::Array<grnxx::GeoPointVector> geo_point_vector_results;
+  assert(expression->evaluate(&error, records, &geo_point_vector_results));
+  assert(geo_point_vector_results.size() == test.table->num_rows());
+  for (grnxx::Int i = 0; i < geo_point_vector_results.size(); ++i) {
+    grnxx::Int row_id = records.get_row_id(i);
+    assert(geo_point_vector_results[i] == test.geo_point_vector_values[row_id]);
   }
 
   // Test and expression (_id).
@@ -983,6 +1101,37 @@ void test_equal() {
   }
   assert(records.size() == count);
 
+  // Test an expression (GeoPoint == GeoPoint2).
+  assert(builder->push_column(&error, "GeoPoint"));
+  assert(builder->push_column(&error, "GeoPoint2"));
+  assert(builder->push_operator(&error, grnxx::EQUAL_OPERATOR));
+  expression = builder->release(&error);
+  assert(expression);
+
+  records.clear();
+  cursor = test.table->create_cursor(&error);
+  assert(cursor);
+  assert(cursor->read_all(&error, &records) == test.table->num_rows());
+
+  results.clear();
+  assert(expression->evaluate(&error, records, &results));
+  assert(results.size() == test.table->num_rows());
+  for (grnxx::Int i = 0; i < results.size(); ++i) {
+    grnxx::Int row_id = records.get_row_id(i);
+    assert(results[i] ==
+           (test.geo_point_values[row_id] == test.geo_point2_values[row_id]));
+  }
+
+  assert(expression->filter(&error, &records));
+  count = 0;
+  for (grnxx::Int i = 1; i < test.geo_point_values.size(); ++i) {
+    if (test.geo_point_values[i] == test.geo_point2_values[i]) {
+      assert(records.get_row_id(count) == i);
+      ++count;
+    }
+  }
+  assert(records.size() == count);
+
   // Test an expression (Text == Text2).
   assert(builder->push_column(&error, "Text"));
   assert(builder->push_column(&error, "Text2"));
@@ -1106,6 +1255,37 @@ void test_equal() {
     }
   }
   assert(records.size() == count);
+
+  // Test an expression (GeoPointVector == GeoPointVector2).
+  assert(builder->push_column(&error, "GeoPointVector"));
+  assert(builder->push_column(&error, "GeoPointVector2"));
+  assert(builder->push_operator(&error, grnxx::EQUAL_OPERATOR));
+  expression = builder->release(&error);
+  assert(expression);
+
+  records.clear();
+  cursor = test.table->create_cursor(&error);
+  assert(cursor);
+  assert(cursor->read_all(&error, &records) == test.table->num_rows());
+
+  results.clear();
+  assert(expression->evaluate(&error, records, &results));
+  assert(results.size() == test.table->num_rows());
+  for (grnxx::Int i = 0; i < results.size(); ++i) {
+    grnxx::Int row_id = records.get_row_id(i);
+    assert(results[i] == (test.geo_point_vector_values[row_id] ==
+                          test.geo_point_vector2_values[row_id]));
+  }
+
+  assert(expression->filter(&error, &records));
+  count = 0;
+  for (grnxx::Int i = 1; i < test.geo_point_vector_values.size(); ++i) {
+    if (test.geo_point_vector_values[i] == test.geo_point_vector2_values[i]) {
+      assert(records.get_row_id(count) == i);
+      ++count;
+    }
+  }
+  assert(records.size() == count);
 }
 
 void test_not_equal() {
@@ -1202,6 +1382,37 @@ void test_not_equal() {
   count = 0;
   for (grnxx::Int i = 1; i < test.float_values.size(); ++i) {
     if (test.float_values[i] != test.float2_values[i]) {
+      assert(records.get_row_id(count) == i);
+      ++count;
+    }
+  }
+  assert(records.size() == count);
+
+  // Test an expression (GeoPoint != GeoPoint2).
+  assert(builder->push_column(&error, "GeoPoint"));
+  assert(builder->push_column(&error, "GeoPoint2"));
+  assert(builder->push_operator(&error, grnxx::NOT_EQUAL_OPERATOR));
+  expression = builder->release(&error);
+  assert(expression);
+
+  records.clear();
+  cursor = test.table->create_cursor(&error);
+  assert(cursor);
+  assert(cursor->read_all(&error, &records) == test.table->num_rows());
+
+  results.clear();
+  assert(expression->evaluate(&error, records, &results));
+  assert(results.size() == test.table->num_rows());
+  for (grnxx::Int i = 0; i < results.size(); ++i) {
+    grnxx::Int row_id = records.get_row_id(i);
+    assert(results[i] == (test.geo_point_values[row_id] !=
+                          test.geo_point2_values[row_id]));
+  }
+
+  assert(expression->filter(&error, &records));
+  count = 0;
+  for (grnxx::Int i = 1; i < test.geo_point_values.size(); ++i) {
+    if (test.geo_point_values[i] != test.geo_point2_values[i]) {
       assert(records.get_row_id(count) == i);
       ++count;
     }
@@ -1326,6 +1537,37 @@ void test_not_equal() {
   count = 0;
   for (grnxx::Int i = 1; i < test.float_vector_values.size(); ++i) {
     if (test.float_vector_values[i] != test.float_vector2_values[i]) {
+      assert(records.get_row_id(count) == i);
+      ++count;
+    }
+  }
+  assert(records.size() == count);
+
+  // Test an expression (GeoPointVector != GeoPointVector2).
+  assert(builder->push_column(&error, "GeoPointVector"));
+  assert(builder->push_column(&error, "GeoPointVector2"));
+  assert(builder->push_operator(&error, grnxx::NOT_EQUAL_OPERATOR));
+  expression = builder->release(&error);
+  assert(expression);
+
+  records.clear();
+  cursor = test.table->create_cursor(&error);
+  assert(cursor);
+  assert(cursor->read_all(&error, &records) == test.table->num_rows());
+
+  results.clear();
+  assert(expression->evaluate(&error, records, &results));
+  assert(results.size() == test.table->num_rows());
+  for (grnxx::Int i = 0; i < results.size(); ++i) {
+    grnxx::Int row_id = records.get_row_id(i);
+    assert(results[i] == (test.geo_point_vector_values[row_id] !=
+                          test.geo_point_vector2_values[row_id]));
+  }
+
+  assert(expression->filter(&error, &records));
+  count = 0;
+  for (grnxx::Int i = 1; i < test.geo_point_vector_values.size(); ++i) {
+    if (test.geo_point_vector_values[i] != test.geo_point_vector2_values[i]) {
       assert(records.get_row_id(count) == i);
       ++count;
     }
@@ -2384,7 +2626,33 @@ void test_subscript() {
     if (int_value < float_vector_value.size()) {
       assert(records.get_score(i) == float_vector_value[int_value]);
     } else {
-      assert(records.get_score(i) == 0);
+      assert(records.get_score(i) == 0.0);
+    }
+  }
+
+  // Test an expression (GeoPointVector[Int]).
+  assert(builder->push_column(&error, "GeoPointVector"));
+  assert(builder->push_column(&error, "Int"));
+  assert(builder->push_operator(&error, grnxx::SUBSCRIPT_OPERATOR));
+  expression = builder->release(&error);
+  assert(expression);
+
+  records.clear();
+  cursor = test.table->create_cursor(&error);
+  assert(cursor);
+  assert(cursor->read_all(&error, &records) == test.table->num_rows());
+
+  grnxx::Array<grnxx::GeoPoint> geo_point_results;
+  assert(expression->evaluate(&error, records, &geo_point_results));
+  assert(geo_point_results.size() == test.table->num_rows());
+  for (grnxx::Int i = 0; i < geo_point_results.size(); ++i) {
+    grnxx::Int row_id = records.get_row_id(i);
+    const auto int_value = test.int_values[row_id];
+    const auto &geo_point_vector_value = test.geo_point_vector_values[row_id];
+    if (int_value < geo_point_vector_value.size()) {
+      assert(geo_point_results[i] == geo_point_vector_value[int_value]);
+    } else {
+      assert(geo_point_results[i] == grnxx::GeoPoint(0, 0));
     }
   }
 }
