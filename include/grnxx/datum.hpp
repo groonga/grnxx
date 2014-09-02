@@ -34,6 +34,9 @@ class Datum {
   Datum(Vector<Float> value)
       : type_(FLOAT_VECTOR_DATA),
         float_vector_(value) {}
+  Datum(Vector<GeoPoint> value)
+      : type_(GEO_POINT_VECTOR_DATA),
+        geo_point_vector_(value) {}
 
   // Return the data type.
   DataType type() const {
@@ -65,6 +68,9 @@ class Datum {
   Vector<Float> force_float_vector() const {
     return float_vector_;
   }
+  Vector<GeoPoint> force_geo_point_vector() const {
+    return geo_point_vector_;
+  }
 
   // Force the specified interpretation.
   void force(Bool *value) const {
@@ -91,6 +97,9 @@ class Datum {
   void force(Vector<Float> *value) const {
     *value = float_vector_;
   }
+  void force(Vector<GeoPoint> *value) const {
+    *value = geo_point_vector_;
+  }
 
  private:
   DataType type_;
@@ -103,6 +112,7 @@ class Datum {
     Vector<Bool> bool_vector_;
     Vector<Int> int_vector_;
     Vector<Float> float_vector_;
+    Vector<GeoPoint> geo_point_vector_;
   };
 };
 

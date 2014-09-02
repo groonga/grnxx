@@ -399,9 +399,65 @@ inline Bool operator!=(Vector<Float> lhs, Vector<Float> rhs) {
   return false;
 }
 
-using BoolVector  = Vector<Bool>;
-using IntVector   = Vector<Int>;
-using FloatVector = Vector<Float>;
+template <>
+class Vector<GeoPoint> {
+ public:
+  Vector() = default;
+  Vector(const GeoPoint *data, Int size) : data_(data), size_(size) {}
+  Vector(const Vector &) = default;
+
+  Vector &operator=(const Vector &) = default;
+
+  // Return the number of GeoPoint values.
+  Int size() const {
+    return size_;
+  }
+  // Return the "i"-th GeoPoint value.
+  //
+  // If "i" is invalid, the result is undefined.
+  GeoPoint get(Int i) const {
+    return data_[i];
+  }
+
+  // Return the "i"-th GeoPoint value.
+  //
+  // If "i" is invalid, the result is undefined.
+  GeoPoint operator[](Int i) const {
+    return get(i);
+  }
+
+ private:
+  const GeoPoint *data_;
+  Int size_;
+};
+
+inline Bool operator==(Vector<GeoPoint> lhs, Vector<GeoPoint> rhs) {
+  if (lhs.size() != rhs.size()) {
+    return false;
+  }
+  for (Int i = 0; i < lhs.size(); ++i) {
+    if (lhs[i] != rhs[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+inline Bool operator!=(Vector<GeoPoint> lhs, Vector<GeoPoint> rhs) {
+  if (lhs.size() != rhs.size()) {
+    return true;
+  }
+  for (Int i = 0; i < lhs.size(); ++i) {
+    if (lhs[i] != rhs[i]) {
+      return true;
+    }
+  }
+  return false;
+}
+
+using BoolVector     = Vector<Bool>;
+using IntVector      = Vector<Int>;
+using FloatVector    = Vector<Float>;
+using GeoPointVector = Vector<GeoPoint>;
 
 // Type information.
 template <typename T> struct TypeTraits;
@@ -467,6 +523,14 @@ template <> struct TypeTraits <Vector<Float>> {
   }
   static Vector<Float> default_value() {
     return Vector<Float>(nullptr, 0);
+  }
+};
+template <> struct TypeTraits <Vector<GeoPoint>> {
+  static DataType data_type() {
+    return GEO_POINT_VECTOR_DATA;
+  }
+  static Vector<GeoPoint> default_value() {
+    return Vector<GeoPoint>(nullptr, 0);
   }
 };
 
