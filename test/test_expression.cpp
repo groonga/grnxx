@@ -63,7 +63,7 @@ void init_test() {
   test.table = test.db->create_table(&error, "Table");
   assert(test.table);
 
-  // Create columns for Bool, Int, Float, and Text values.
+  // Create columns for various data types.
   grnxx::DataType data_type = grnxx::BOOL_DATA;
   auto bool_column = test.table->create_column(&error, "Bool", data_type);
   auto bool2_column = test.table->create_column(&error, "Bool2", data_type);
@@ -190,7 +190,7 @@ void init_test() {
     for (grnxx::Int j = 0; j < size; ++j) {
       test.int_vector2_bodies[i][j] = mersenne_twister() % 100;
     }
-    test.int_vector_values.set(
+    test.int_vector2_values.set(
         i, grnxx::IntVector(test.int_vector2_bodies[i].data(), size));
 
     size = mersenne_twister() % (MAX_SIZE + 1);
@@ -205,7 +205,7 @@ void init_test() {
     for (grnxx::Int j = 0; j < size; ++j) {
       test.float_vector2_bodies[i][j] = (mersenne_twister() % 100) / 100.0;
     }
-    test.float_vector_values.set(
+    test.float_vector2_values.set(
         i, grnxx::FloatVector(test.float_vector2_bodies[i].data(), size));
   }
 
