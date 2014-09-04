@@ -190,7 +190,7 @@ class ExpressionBuilder {
  public:
   using Node = expression::Node;
 
-  // Create an object for building expressons.
+  // Create an object for building expressions.
   //
   // On success, returns a poitner to the builder.
   // On failure, returns nullptr and stores error information into "*error" if
