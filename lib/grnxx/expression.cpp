@@ -30,6 +30,8 @@ class Node {
   virtual NodeType node_type() const = 0;
   // Return the result data type.
   virtual DataType data_type() const = 0;
+  // Return the reference table.
+  virtual const Table *ref_table() const = 0;
 
   // Extract true records.
   //
@@ -68,6 +70,9 @@ class TypedNode : public Node {
   DataType data_type() const {
     return TypeTraits<Value>::data_type();
   }
+  const Table *ref_table() const {
+    return nullptr;
+  }
 
   bool filter(Error *error,
               ArrayCRef<Record> input_records,
@@ -105,6 +110,9 @@ class TypedNode<Bool> : public Node {
 
   DataType data_type() const {
     return TypeTraits<Value>::data_type();
+  }
+  const Table *ref_table() const {
+    return nullptr;
   }
 
   // Derived classes must override this member function.
@@ -147,6 +155,52 @@ class TypedNode<Bool> : public Node {
 //}
 
 template <>
+class TypedNode<Int> : public Node {
+ public:
+  using Value = Int;
+
+  explicit TypedNode(const Table *ref_table = nullptr)
+      : Node(),
+        ref_table_(ref_table) {}
+  virtual ~TypedNode() {}
+
+  DataType data_type() const {
+    return TypeTraits<Value>::data_type();
+  }
+  const Table *ref_table() const {
+    return ref_table_;
+  }
+
+  bool filter(Error *error,
+              ArrayCRef<Record> input_records,
+              ArrayRef<Record> *output_records) {
+    // Other than TypedNode<Bool> don't support filter().
+    GRNXX_ERROR_SET(error, INVALID_OPERATION, "Invalid operation");
+    return false;
+  }
+
+  bool adjust(Error *error, ArrayRef<Record> records) {
+    // Other than TypedNode<Float> don't support adjust().
+    GRNXX_ERROR_SET(error, INVALID_OPERATION, "Invalid operation");
+    return false;
+  }
+
+  // Evaluate the expression subtree.
+  //
+  // The evaluation results are stored into "*results".
+  //
+  // On success, returns true.
+  // On failure, returns false and stores error information into "*error" if
+  // "error" != nullptr.
+  virtual bool evaluate(Error *error,
+                        ArrayCRef<Record> records,
+                        ArrayRef<Value> results) = 0;
+
+ protected:
+  const Table *ref_table_;
+};
+
+template <>
 class TypedNode<Float> : public Node {
  public:
   using Value = Float;
@@ -156,6 +210,9 @@ class TypedNode<Float> : public Node {
 
   DataType data_type() const {
     return TypeTraits<Value>::data_type();
+  }
+  const Table *ref_table() const {
+    return nullptr;
   }
 
   bool filter(Error *error,
@@ -507,6 +564,40 @@ bool ColumnNode<Bool>::filter(Error *error,
   *output_records = output_records->ref(0, dest);
   return true;
 }
+
+template <>
+class ColumnNode<Int> : public TypedNode<Int> {
+ public:
+  using Value = Int;
+
+  static unique_ptr<Node> create(Error *error, const Column *column) {
+    unique_ptr<Node> node(new (nothrow) ColumnNode(column));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
+  explicit ColumnNode(const Column *column)
+      : TypedNode<Value>(column->ref_table()),
+        column_(static_cast<const ColumnImpl<Value> *>(column)) {}
+
+  NodeType node_type() const {
+    return COLUMN_NODE;
+  }
+
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results) {
+    for (Int i = 0; i < records.size(); ++i) {
+      results[i] = column_->get(records.get_row_id(i));
+    }
+    return true;
+  }
+
+ private:
+  const ColumnImpl<Value> *column_;
+};
 
 template <>
 class ColumnNode<Float> : public TypedNode<Float> {
