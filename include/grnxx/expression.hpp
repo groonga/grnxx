@@ -8,6 +8,7 @@ namespace grnxx {
 namespace expression {
 
 class Node;
+class Builder;
 
 }  // namespace expression
 
@@ -189,6 +190,7 @@ class Expression {
 class ExpressionBuilder {
  public:
   using Node = expression::Node;
+  using Builder = expression::Builder;
 
   // Create an object for building expressions.
   //
@@ -249,63 +251,9 @@ class ExpressionBuilder {
 
  private:
   const Table *table_;
-  Array<unique_ptr<Node>> stack_;
+  Array<unique_ptr<Builder>> builders_;
 
   explicit ExpressionBuilder(const Table *table);
-
-  // Create a node associated with a constant.
-  unique_ptr<Node> create_datum_node(Error *error, const Datum &datum);
-  // Create a node associated with a column.
-  unique_ptr<Node> create_column_node(Error *error, String name);
-
-  // Push a unary operator.
-  bool push_unary_operator(Error *error, OperatorType operator_type);
-  // Push a binary operator.
-  bool push_binary_operator(Error *error, OperatorType operator_type);
-
-  // Create a node associated with a unary operator.
-  unique_ptr<Node> create_unary_node(
-      Error *error,
-      OperatorType operator_type,
-      unique_ptr<Node> &&arg);
-  // Create a node associated with a binary operator.
-  unique_ptr<Node> create_binary_node(
-      Error *error,
-      OperatorType operator_type,
-      unique_ptr<Node> &&arg1,
-      unique_ptr<Node> &&arg2);
-
-  // Create a equality test node.
-  template <typename T>
-  unique_ptr<Node> create_equality_test_node(
-      Error *error,
-      unique_ptr<Node> &&arg1,
-      unique_ptr<Node> &&arg2);
-  // Create a comparison node.
-  template <typename T>
-  unique_ptr<Node> create_comparison_node(
-      Error *error,
-      unique_ptr<Node> &&arg1,
-      unique_ptr<Node> &&arg2);
-  // Create a bitwise node.
-  template <typename T>
-  unique_ptr<Node> create_bitwise_node(
-      Error *error,
-      OperatorType operator_type,
-      unique_ptr<Node> &&arg1,
-      unique_ptr<Node> &&arg2);
-  // Create an arithmetic node.
-  template <typename T>
-  unique_ptr<Node> create_arithmetic_node(
-      Error *error,
-      OperatorType operator_type,
-      unique_ptr<Node> &&arg1,
-      unique_ptr<Node> &&arg2);
-  // Create a subscript node.
-  unique_ptr<Node> create_subscript_node(
-      Error *error,
-      unique_ptr<Node> &&arg1,
-      unique_ptr<Node> &&arg2);
 };
 
 }  // namespace grnxx

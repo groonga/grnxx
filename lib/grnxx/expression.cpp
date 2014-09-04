@@ -2364,6 +2364,721 @@ bool SubscriptNode<Float>::evaluate(Error *error,
   return true;
 }
 
+class Builder {
+ public:
+  // Create an object for building an expression.
+  //
+  // On success, returns a poitner to the builder.
+  // On failure, returns nullptr and stores error information into "*error" if
+  // "error" != nullptr.
+  static unique_ptr<Builder> create(Error *error, const Table *table);
+
+  ~Builder() {}
+
+  // Return the target table.
+  const Table *table() const {
+    return table_;
+  }
+
+  // Push a datum.
+  //
+  // On success, returns true.
+  // On failure, returns false and stores error information into "*error" if
+  // "error" != nullptr.
+  bool push_datum(Error *error, const Datum &datum);
+
+  // Push a column.
+  //
+  // If "name" == "_id", pushes a pseudo column associated with row IDs.
+  // If "name" == "_score", pushes a pseudo column associated with scores.
+  //
+  // On success, returns true.
+  // On failure, returns false and stores error information into "*error" if
+  // "error" != nullptr.
+  bool push_column(Error *error, String name);
+
+  // Push an operator.
+  //
+  // Pops operands and pushes an operator.
+  // Fails if there are not enough operands.
+  // Fails if the combination of operands is invalid.
+  //
+  // On success, returns true.
+  // On failure, returns false and stores error information into "*error" if
+  // "error" != nullptr.
+  bool push_operator(Error *error, OperatorType operator_type);
+
+  // Clear the internal stack.
+  void clear();
+
+  // Complete building an expression and clear the internal stack.
+  //
+  // Fails if the stack is empty or contains more than one nodes.
+  //
+  // On success, returns a pointer to the expression root node.
+  // On failure, returns nullptr and stores error information into "*error" if
+  // "error" != nullptr.
+  unique_ptr<Node> release(Error *error);
+
+ private:
+  const Table *table_;
+  Array<unique_ptr<Node>> stack_;
+
+  Builder(const Table *table) : table_(table), stack_() {}
+
+  // Create a node associated with a constant.
+  unique_ptr<Node> create_datum_node(Error *error, const Datum &datum);
+  // Create a node associated with a column.
+  unique_ptr<Node> create_column_node(Error *error, String name);
+
+  // Push a unary operator.
+  bool push_unary_operator(Error *error, OperatorType operator_type);
+  // Push a binary operator.
+  bool push_binary_operator(Error *error, OperatorType operator_type);
+
+  // Create a node associated with a unary operator.
+  unique_ptr<Node> create_unary_node(
+      Error *error,
+      OperatorType operator_type,
+      unique_ptr<Node> &&arg);
+  // Create a node associated with a binary operator.
+  unique_ptr<Node> create_binary_node(
+      Error *error,
+      OperatorType operator_type,
+      unique_ptr<Node> &&arg1,
+      unique_ptr<Node> &&arg2);
+
+  // Create a equality test node.
+  template <typename T>
+  unique_ptr<Node> create_equality_test_node(
+      Error *error,
+      unique_ptr<Node> &&arg1,
+      unique_ptr<Node> &&arg2);
+  // Create a comparison node.
+  template <typename T>
+  unique_ptr<Node> create_comparison_node(
+      Error *error,
+      unique_ptr<Node> &&arg1,
+      unique_ptr<Node> &&arg2);
+  // Create a bitwise node.
+  template <typename T>
+  unique_ptr<Node> create_bitwise_node(
+      Error *error,
+      OperatorType operator_type,
+      unique_ptr<Node> &&arg1,
+      unique_ptr<Node> &&arg2);
+  // Create an arithmetic node.
+  template <typename T>
+  unique_ptr<Node> create_arithmetic_node(
+      Error *error,
+      OperatorType operator_type,
+      unique_ptr<Node> &&arg1,
+      unique_ptr<Node> &&arg2);
+  // Create a subscript node.
+  unique_ptr<Node> create_subscript_node(
+      Error *error,
+      unique_ptr<Node> &&arg1,
+      unique_ptr<Node> &&arg2);
+};
+
+
+unique_ptr<Builder> Builder::create(Error *error, const Table *table) {
+  unique_ptr<Builder> builder(new (nothrow) Builder(table));
+  if (!builder) {
+    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    return nullptr;
+  }
+  return builder;
+}
+
+bool Builder::push_datum(Error *error, const Datum &datum) {
+  // Reserve a space for a new node.
+  if (!stack_.reserve(error, stack_.size() + 1)) {
+    return false;
+  }
+  unique_ptr<Node> node = create_datum_node(error, datum);
+  if (!node) {
+    return false;
+  }
+  // This push_back() must not fail because a space is already reserved.
+  stack_.push_back(nullptr, std::move(node));
+  return true;
+}
+
+bool Builder::push_column(Error *error, String name) {
+  // Reserve a space for a new node.
+  if (!stack_.reserve(error, stack_.size() + 1)) {
+    return false;
+  }
+  unique_ptr<Node> node = create_column_node(error, name);
+  if (!node) {
+    return false;
+  }
+  // This push_back() must not fail because a space is already reserved.
+  stack_.push_back(nullptr, std::move(node));
+  return true;
+}
+
+bool Builder::push_operator(Error *error, OperatorType operator_type) {
+  switch (operator_type) {
+    case LOGICAL_NOT_OPERATOR:
+    case BITWISE_NOT_OPERATOR:
+    case POSITIVE_OPERATOR:
+    case NEGATIVE_OPERATOR:
+    case TO_INT_OPERATOR:
+    case TO_FLOAT_OPERATOR: {
+      return push_unary_operator(error, operator_type);
+    }
+    case LOGICAL_AND_OPERATOR:
+    case LOGICAL_OR_OPERATOR:
+    case EQUAL_OPERATOR:
+    case NOT_EQUAL_OPERATOR:
+    case LESS_OPERATOR:
+    case LESS_EQUAL_OPERATOR:
+    case GREATER_OPERATOR:
+    case GREATER_EQUAL_OPERATOR:
+    case BITWISE_AND_OPERATOR:
+    case BITWISE_OR_OPERATOR:
+    case BITWISE_XOR_OPERATOR:
+    case PLUS_OPERATOR:
+    case MINUS_OPERATOR:
+    case MULTIPLICATION_OPERATOR:
+    case DIVISION_OPERATOR:
+    case MODULUS_OPERATOR:
+    case SUBSCRIPT_OPERATOR: {
+      return push_binary_operator(error, operator_type);
+    }
+    default: {
+      // TODO: Not supported yet.
+      GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
+      return false;
+    }
+  }
+}
+
+void Builder::clear() {
+  stack_.clear();
+}
+
+unique_ptr<Node> Builder::release(Error *error) {
+  if (stack_.size() != 1) {
+    GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Incomplete expression");
+    return nullptr;
+  }
+  unique_ptr<Node> root = std::move(stack_[0]);
+  stack_.clear();
+  return root;
+}
+
+unique_ptr<Node> Builder::create_datum_node(
+    Error *error,
+    const Datum &datum) {
+  switch (datum.type()) {
+    case BOOL_DATA: {
+      return DatumNode<Bool>::create(error, datum.force_bool());
+    }
+    case INT_DATA: {
+      return DatumNode<Int>::create(error, datum.force_int());
+    }
+    case FLOAT_DATA: {
+      return DatumNode<Float>::create(error, datum.force_float());
+    }
+    case GEO_POINT_DATA: {
+      return DatumNode<GeoPoint>::create(error, datum.force_geo_point());
+    }
+    case TEXT_DATA: {
+      return DatumNode<Text>::create(error, datum.force_text());
+    }
+    case BOOL_VECTOR_DATA: {
+      return DatumNode<Vector<Bool>>::create(error, datum.force_bool_vector());
+    }
+    case INT_VECTOR_DATA: {
+      return DatumNode<Vector<Int>>::create(error, datum.force_int_vector());
+    }
+    case FLOAT_VECTOR_DATA: {
+      return DatumNode<Vector<Float>>::create(error,
+                                              datum.force_float_vector());
+    }
+    case TEXT_VECTOR_DATA: {
+      return DatumNode<Vector<Text>>::create(error,
+                                             datum.force_text_vector());
+    }
+    case GEO_POINT_VECTOR_DATA: {
+      return DatumNode<Vector<GeoPoint>>::create(
+          error, datum.force_geo_point_vector());
+    }
+    default: {
+      // TODO: Other types are not supported yet.
+      GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
+      return nullptr;
+    }
+  }
+}
+
+unique_ptr<Node> Builder::create_column_node(
+    Error *error,
+    String name) {
+  if (name == "_id") {
+    // Create a node associated with row IDs of records.
+    unique_ptr<Node> node(new (nothrow) RowIDNode());
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+      return nullptr;
+    }
+    return node;
+  }
+
+  if (name == "_score") {
+    // Create a node associated with scores of records.
+    unique_ptr<Node> node(new (nothrow) ScoreNode());
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+      return nullptr;
+    }
+    return node;
+  }
+
+  // Create a node associated with a column.
+  Column *column = table_->find_column(error, name);
+  if (!column) {
+    return nullptr;
+  }
+  switch (column->data_type()) {
+    case BOOL_DATA: {
+      return ColumnNode<Bool>::create(error, column);
+    }
+    case INT_DATA: {
+      return ColumnNode<Int>::create(error, column);
+    }
+    case FLOAT_DATA: {
+      return ColumnNode<Float>::create(error, column);
+    }
+    case GEO_POINT_DATA: {
+      return ColumnNode<GeoPoint>::create(error, column);
+    }
+    case TEXT_DATA: {
+      return ColumnNode<Text>::create(error, column);
+    }
+    case BOOL_VECTOR_DATA: {
+      return ColumnNode<Vector<Bool>>::create(error, column);
+    }
+    case INT_VECTOR_DATA: {
+      return ColumnNode<Vector<Int>>::create(error, column);
+    }
+    case FLOAT_VECTOR_DATA: {
+      return ColumnNode<Vector<Float>>::create(error, column);
+    }
+    case GEO_POINT_VECTOR_DATA: {
+      return ColumnNode<Vector<GeoPoint>>::create(error, column);
+    }
+    case TEXT_VECTOR_DATA: {
+      return ColumnNode<Vector<Text>>::create(error, column);
+    }
+    default: {
+      // TODO: Other types are not supported yet.
+      GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
+      return nullptr;
+    }
+  }
+}
+
+bool Builder::push_unary_operator(Error *error, OperatorType operator_type) {
+  if (stack_.size() < 1) {
+    GRNXX_ERROR_SET(error, INVALID_OPERAND, "Not enough operands");
+    return false;
+  }
+  unique_ptr<Node> arg = std::move(stack_[stack_.size() - 1]);
+  stack_.resize(nullptr, stack_.size() - 1);
+  unique_ptr<Node> node =
+      create_unary_node(error, operator_type, std::move(arg));
+  if (!node) {
+    return false;
+  }
+  stack_.push_back(error, std::move(node));
+  return true;
+}
+
+bool Builder::push_binary_operator(Error *error, OperatorType operator_type) {
+  if (stack_.size() < 2) {
+    GRNXX_ERROR_SET(error, INVALID_OPERAND, "Not enough operands");
+    return false;
+  }
+  unique_ptr<Node> arg1 = std::move(stack_[stack_.size() - 2]);
+  unique_ptr<Node> arg2 = std::move(stack_[stack_.size() - 1]);
+  stack_.resize(nullptr, stack_.size() - 2);
+  unique_ptr<Node> node = create_binary_node(error, operator_type,
+                                             std::move(arg1), std::move(arg2));
+  if (!node) {
+    return false;
+  }
+  stack_.push_back(nullptr, std::move(node));
+  return true;
+}
+
+unique_ptr<Node> Builder::create_unary_node(
+    Error *error,
+    OperatorType operator_type,
+    unique_ptr<Node> &&arg) {
+  switch (operator_type) {
+    case LOGICAL_NOT_OPERATOR: {
+      if (arg->data_type() != BOOL_DATA) {
+        GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
+        return nullptr;
+      }
+      return LogicalNotNode::create(error, std::move(arg));
+    }
+    case BITWISE_NOT_OPERATOR: {
+      switch (arg->data_type()) {
+        case BOOL_DATA: {
+          return BitwiseNotNode<Bool>::create(error, std::move(arg));
+        }
+        case INT_DATA: {
+          return BitwiseNotNode<Int>::create(error, std::move(arg));
+        }
+        default: {
+          GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
+          return nullptr;
+        }
+      }
+    }
+    case POSITIVE_OPERATOR: {
+      if ((arg->data_type() != INT_DATA) && (arg->data_type() != FLOAT_DATA)) {
+        GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
+        return nullptr;
+      }
+      // Positive operator does nothing.
+      return std::move(arg);
+    }
+    case NEGATIVE_OPERATOR: {
+      switch (arg->data_type()) {
+        case INT_DATA: {
+          return NegativeNode<Int>::create(error, std::move(arg));
+        }
+        case FLOAT_DATA: {
+          return NegativeNode<Float>::create(error, std::move(arg));
+        }
+        default: {
+          GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
+          return nullptr;
+        }
+      }
+    }
+    case TO_INT_OPERATOR: {
+      if (arg->data_type() != FLOAT_DATA) {
+        GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
+        return nullptr;
+      }
+      return ToIntNode::create(error, std::move(arg));
+    }
+    case TO_FLOAT_OPERATOR: {
+      if (arg->data_type() != INT_DATA) {
+        GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
+        return nullptr;
+      }
+      return ToFloatNode::create(error, std::move(arg));
+    }
+    default: {
+      // TODO: Not supported yet.
+      GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
+      return nullptr;
+    }
+  }
+}
+
+unique_ptr<Node> Builder::create_binary_node(
+    Error *error,
+    OperatorType operator_type,
+    unique_ptr<Node> &&arg1,
+    unique_ptr<Node> &&arg2) {
+  switch (operator_type) {
+    case LOGICAL_AND_OPERATOR: {
+      if ((arg1->data_type() != BOOL_DATA) ||
+          (arg2->data_type() != BOOL_DATA)) {
+        GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
+        return nullptr;
+      }
+      return LogicalAndNode::create(error, std::move(arg1), std::move(arg2));
+    }
+    case LOGICAL_OR_OPERATOR: {
+      if ((arg1->data_type() != BOOL_DATA) ||
+          (arg2->data_type() != BOOL_DATA)) {
+        GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
+        return nullptr;
+      }
+      return LogicalOrNode::create(error, std::move(arg1), std::move(arg2));
+    }
+    case EQUAL_OPERATOR: {
+      return create_equality_test_node<Equal>(
+          error, std::move(arg1), std::move(arg2));
+    }
+    case NOT_EQUAL_OPERATOR: {
+      return create_equality_test_node<NotEqual>(
+          error, std::move(arg1), std::move(arg2));
+    }
+    case LESS_OPERATOR: {
+      return create_comparison_node<Less>(
+          error, std::move(arg1), std::move(arg2));
+    }
+    case LESS_EQUAL_OPERATOR: {
+      return create_comparison_node<LessEqual>(
+          error, std::move(arg1), std::move(arg2));
+    }
+    case GREATER_OPERATOR: {
+      return create_comparison_node<Greater>(
+          error, std::move(arg1), std::move(arg2));
+    }
+    case GREATER_EQUAL_OPERATOR: {
+      return create_comparison_node<GreaterEqual>(
+          error, std::move(arg1), std::move(arg2));
+    }
+    case BITWISE_AND_OPERATOR:
+    case BITWISE_OR_OPERATOR:
+    case BITWISE_XOR_OPERATOR: {
+      switch (arg1->data_type()) {
+        case BOOL_DATA: {
+          return create_bitwise_node<Bool>(
+              error, operator_type, std::move(arg1), std::move(arg2));
+        }
+        case INT_DATA: {
+          return create_bitwise_node<Int>(
+              error, operator_type, std::move(arg1), std::move(arg2));
+        }
+        default: {
+          GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
+          return nullptr;
+        }
+      }
+    }
+    case PLUS_OPERATOR:
+    case MINUS_OPERATOR:
+    case MULTIPLICATION_OPERATOR:
+    case DIVISION_OPERATOR: {
+      switch (arg1->data_type()) {
+        case INT_DATA: {
+          return create_arithmetic_node<Int>(
+              error, operator_type, std::move(arg1), std::move(arg2));
+        }
+        case FLOAT_DATA: {
+          return create_arithmetic_node<Float>(
+              error, operator_type, std::move(arg1), std::move(arg2));
+        }
+        default: {
+          GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
+          return nullptr;
+        }
+      }
+    }
+    case MODULUS_OPERATOR: {
+      if ((arg1->data_type() != INT_DATA) ||
+          (arg2->data_type() != INT_DATA)) {
+        GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
+        return nullptr;
+      }
+      return ModulusNode<Int>::create(error, std::move(arg1), std::move(arg2));
+    }
+    case SUBSCRIPT_OPERATOR: {
+      return create_subscript_node(error, std::move(arg1), std::move(arg2));
+    }
+    default: {
+      // TODO: Not supported yet.
+      GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
+      return nullptr;
+    }
+  }
+}
+
+template <typename T>
+unique_ptr<Node> Builder::create_equality_test_node(
+    Error *error,
+    unique_ptr<Node> &&arg1,
+    unique_ptr<Node> &&arg2) {
+  if (arg1->data_type() != arg2->data_type()) {
+    GRNXX_ERROR_SET(error, INVALID_OPERAND, "Data type conflict");
+    return nullptr;
+  }
+  switch (arg1->data_type()) {
+    case BOOL_DATA: {
+      return ComparisonNode<typename T:: template Comparer<Bool>>::create(
+          error, std::move(arg1), std::move(arg2));
+    }
+    case INT_DATA: {
+      return ComparisonNode<typename T:: template Comparer<Int>>::create(
+          error, std::move(arg1), std::move(arg2));
+    }
+    case FLOAT_DATA: {
+      return ComparisonNode<typename T:: template Comparer<Float>>::create(
+          error, std::move(arg1), std::move(arg2));
+    }
+    case GEO_POINT_DATA: {
+      return ComparisonNode<typename T:: template Comparer<GeoPoint>>::create(
+          error, std::move(arg1), std::move(arg2));
+    }
+    case TEXT_DATA: {
+      return ComparisonNode<typename T:: template Comparer<Text>>::create(
+          error, std::move(arg1), std::move(arg2));
+    }
+    case BOOL_VECTOR_DATA: {
+      typedef typename T:: template Comparer<Vector<Bool>> Functor;
+      return ComparisonNode<Functor>::create(
+          error, std::move(arg1), std::move(arg2));
+    }
+    case INT_VECTOR_DATA: {
+      typedef typename T:: template Comparer<Vector<Int>> Functor;
+      return ComparisonNode<Functor>::create(
+          error, std::move(arg1), std::move(arg2));
+    }
+    case FLOAT_VECTOR_DATA: {
+      typedef typename T:: template Comparer<Vector<Float>> Functor;
+      return ComparisonNode<Functor>::create(
+          error, std::move(arg1), std::move(arg2));
+    }
+    case GEO_POINT_VECTOR_DATA: {
+      typedef typename T:: template Comparer<Vector<GeoPoint>> Functor;
+      return ComparisonNode<Functor>::create(
+          error, std::move(arg1), std::move(arg2));
+    }
+    case TEXT_VECTOR_DATA: {
+      typedef typename T:: template Comparer<Vector<Text>> Functor;
+      return ComparisonNode<Functor>::create(
+          error, std::move(arg1), std::move(arg2));
+    }
+    // TODO: Support other types.
+    default: {
+      GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
+      return nullptr;
+    }
+  }
+}
+
+template <typename T>
+unique_ptr<Node> Builder::create_comparison_node(
+    Error *error,
+    unique_ptr<Node> &&arg1,
+    unique_ptr<Node> &&arg2) {
+  if (arg1->data_type() != arg2->data_type()) {
+    GRNXX_ERROR_SET(error, INVALID_OPERAND, "Data type conflict");
+    return nullptr;
+  }
+  switch (arg1->data_type()) {
+    case INT_DATA: {
+      return ComparisonNode<typename T:: template Comparer<Int>>::create(
+          error, std::move(arg1), std::move(arg2));
+    }
+    case FLOAT_DATA: {
+      return ComparisonNode<typename T:: template Comparer<Float>>::create(
+          error, std::move(arg1), std::move(arg2));
+    }
+    case TEXT_DATA: {
+      return ComparisonNode<typename T:: template Comparer<Text>>::create(
+          error, std::move(arg1), std::move(arg2));
+    }
+    default: {
+      GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
+      return nullptr;
+    }
+  }
+}
+
+template <typename T>
+unique_ptr<Node> Builder::create_bitwise_node(
+    Error *error,
+    OperatorType operator_type,
+    unique_ptr<Node> &&arg1,
+    unique_ptr<Node> &&arg2) {
+  if (arg1->data_type() != arg2->data_type()) {
+    GRNXX_ERROR_SET(error, INVALID_OPERAND, "Data type conflict");
+    return nullptr;
+  }
+  switch (operator_type) {
+    case BITWISE_AND_OPERATOR: {
+      return BitwiseAndNode<T>::create(
+          error, std::move(arg1), std::move(arg2));
+    }
+    case BITWISE_OR_OPERATOR: {
+      return BitwiseOrNode<T>::create(
+          error, std::move(arg1), std::move(arg2));
+    }
+    case BITWISE_XOR_OPERATOR: {
+      return BitwiseXorNode<T>::create(
+          error, std::move(arg1), std::move(arg2));
+    }
+    default: {
+      GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Invalid operator");
+      return nullptr;
+    }
+  }
+}
+
+template <typename T>
+unique_ptr<Node> Builder::create_arithmetic_node(
+    Error *error,
+    OperatorType operator_type,
+    unique_ptr<Node> &&arg1,
+    unique_ptr<Node> &&arg2) {
+  if (arg1->data_type() != arg2->data_type()) {
+    GRNXX_ERROR_SET(error, INVALID_OPERAND, "Data type conflict");
+    return nullptr;
+  }
+  switch (operator_type) {
+    case PLUS_OPERATOR: {
+      return PlusNode<T>::create(
+          error, std::move(arg1), std::move(arg2));
+    }
+    case MINUS_OPERATOR: {
+      return MinusNode<T>::create(
+          error, std::move(arg1), std::move(arg2));
+    }
+    case MULTIPLICATION_OPERATOR: {
+      return MultiplicationNode<T>::create(
+          error, std::move(arg1), std::move(arg2));
+    }
+    case DIVISION_OPERATOR: {
+      return DivisionNode<T>::create(
+          error, std::move(arg1), std::move(arg2));
+    }
+    default: {
+      GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
+      return nullptr;
+    }
+  }
+}
+
+unique_ptr<Node> Builder::create_subscript_node(
+    Error *error,
+    unique_ptr<Node> &&arg1,
+    unique_ptr<Node> &&arg2) {
+  if (arg2->data_type() != INT_DATA) {
+    GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
+    return nullptr;
+  }
+  switch (arg1->data_type()) {
+    case BOOL_VECTOR_DATA: {
+      return SubscriptNode<Bool>::create(
+          error, std::move(arg1), std::move(arg2));
+    }
+    case INT_VECTOR_DATA: {
+      return SubscriptNode<Int>::create(
+          error, std::move(arg1), std::move(arg2));
+    }
+    case FLOAT_VECTOR_DATA: {
+      return SubscriptNode<Float>::create(
+          error, std::move(arg1), std::move(arg2));
+    }
+    case GEO_POINT_VECTOR_DATA: {
+      return SubscriptNode<GeoPoint>::create(
+          error, std::move(arg1), std::move(arg2));
+    }
+    case TEXT_VECTOR_DATA: {
+      return SubscriptNode<Text>::create(
+          error, std::move(arg1), std::move(arg2));
+    }
+    default: {
+      GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
+      return nullptr;
+    }
+  }
+}
+
 }  // namespace expression
 
 using namespace expression;
@@ -2553,606 +3268,51 @@ unique_ptr<ExpressionBuilder> ExpressionBuilder::create(Error *error,
     GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
     return nullptr;
   }
+  unique_ptr<Builder> internal_builder = Builder::create(error, table);
+  if (!internal_builder) {
+    return nullptr;
+  }
+  if (!builder->builders_.push_back(error, std::move(internal_builder))) {
+    return nullptr;
+  }
   return builder;
 }
 
 ExpressionBuilder::~ExpressionBuilder() {}
 
 bool ExpressionBuilder::push_datum(Error *error, const Datum &datum) {
-  // Reserve a space for a new node.
-  if (!stack_.reserve(error, stack_.size() + 1)) {
-    return false;
-  }
-  unique_ptr<Node> node = create_datum_node(error, datum);
-  if (!node) {
-    return false;
-  }
-  // This push_back() must not fail because a space is already reserved.
-  stack_.push_back(nullptr, std::move(node));
-  return true;
+  return builders_.back()->push_datum(error, datum);
 }
 
 bool ExpressionBuilder::push_column(Error *error, String name) {
-  // Reserve a space for a new node.
-  if (!stack_.reserve(error, stack_.size() + 1)) {
-    return false;
-  }
-  unique_ptr<Node> node = create_column_node(error, name);
-  if (!node) {
-    return false;
-  }
-  // This push_back() must not fail because a space is already reserved.
-  stack_.push_back(nullptr, std::move(node));
-  return true;
+  return builders_.back()->push_column(error, name);
 }
 
 bool ExpressionBuilder::push_operator(Error *error,
                                       OperatorType operator_type) {
-  switch (operator_type) {
-    case LOGICAL_NOT_OPERATOR:
-    case BITWISE_NOT_OPERATOR:
-    case POSITIVE_OPERATOR:
-    case NEGATIVE_OPERATOR:
-    case TO_INT_OPERATOR:
-    case TO_FLOAT_OPERATOR: {
-      return push_unary_operator(error, operator_type);
-    }
-    case LOGICAL_AND_OPERATOR:
-    case LOGICAL_OR_OPERATOR:
-    case EQUAL_OPERATOR:
-    case NOT_EQUAL_OPERATOR:
-    case LESS_OPERATOR:
-    case LESS_EQUAL_OPERATOR:
-    case GREATER_OPERATOR:
-    case GREATER_EQUAL_OPERATOR:
-    case BITWISE_AND_OPERATOR:
-    case BITWISE_OR_OPERATOR:
-    case BITWISE_XOR_OPERATOR:
-    case PLUS_OPERATOR:
-    case MINUS_OPERATOR:
-    case MULTIPLICATION_OPERATOR:
-    case DIVISION_OPERATOR:
-    case MODULUS_OPERATOR:
-    case SUBSCRIPT_OPERATOR: {
-      return push_binary_operator(error, operator_type);
-    }
-    default: {
-      // TODO: Not supported yet.
-      GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
-      return false;
-    }
-  }
+  return builders_.back()->push_operator(error, operator_type);
 }
 
 void ExpressionBuilder::clear() {
-  stack_.clear();
+  builders_.clear();
 }
 
 unique_ptr<Expression> ExpressionBuilder::release(
     Error *error,
     const ExpressionOptions &options) {
-  if (stack_.size() != 1) {
+  if (builders_.size() != 1) {
     GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Incomplete expression");
     return nullptr;
   }
-  unique_ptr<Node> root = std::move(stack_[0]);
-  stack_.clear();
+  unique_ptr<Node> root = builders_[0]->release(error);
+  if (!root) {
+    return nullptr;
+  }
   return Expression::create(error, table_, std::move(root), options);
 }
 
 ExpressionBuilder::ExpressionBuilder(const Table *table)
     : table_(table),
-      stack_() {}
-
-unique_ptr<Node> ExpressionBuilder::create_datum_node(
-    Error *error,
-    const Datum &datum) {
-  switch (datum.type()) {
-    case BOOL_DATA: {
-      return DatumNode<Bool>::create(error, datum.force_bool());
-    }
-    case INT_DATA: {
-      return DatumNode<Int>::create(error, datum.force_int());
-    }
-    case FLOAT_DATA: {
-      return DatumNode<Float>::create(error, datum.force_float());
-    }
-    case GEO_POINT_DATA: {
-      return DatumNode<GeoPoint>::create(error, datum.force_geo_point());
-    }
-    case TEXT_DATA: {
-      return DatumNode<Text>::create(error, datum.force_text());
-    }
-    case BOOL_VECTOR_DATA: {
-      return DatumNode<Vector<Bool>>::create(error, datum.force_bool_vector());
-    }
-    case INT_VECTOR_DATA: {
-      return DatumNode<Vector<Int>>::create(error, datum.force_int_vector());
-    }
-    case FLOAT_VECTOR_DATA: {
-      return DatumNode<Vector<Float>>::create(error,
-                                              datum.force_float_vector());
-    }
-    case TEXT_VECTOR_DATA: {
-      return DatumNode<Vector<Text>>::create(error,
-                                             datum.force_text_vector());
-    }
-    case GEO_POINT_VECTOR_DATA: {
-      return DatumNode<Vector<GeoPoint>>::create(
-          error, datum.force_geo_point_vector());
-    }
-    default: {
-      // TODO: Other types are not supported yet.
-      GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
-      return nullptr;
-    }
-  }
-}
-
-unique_ptr<Node> ExpressionBuilder::create_column_node(
-    Error *error,
-    String name) {
-  if (name == "_id") {
-    // Create a node associated with row IDs of records.
-    unique_ptr<Node> node(new (nothrow) RowIDNode());
-    if (!node) {
-      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
-      return nullptr;
-    }
-    return node;
-  }
-
-  if (name == "_score") {
-    // Create a node associated with scores of records.
-    unique_ptr<Node> node(new (nothrow) ScoreNode());
-    if (!node) {
-      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
-      return nullptr;
-    }
-    return node;
-  }
-
-  // Create a node associated with a column.
-  Column *column = table_->find_column(error, name);
-  if (!column) {
-    return nullptr;
-  }
-  switch (column->data_type()) {
-    case BOOL_DATA: {
-      return ColumnNode<Bool>::create(error, column);
-    }
-    case INT_DATA: {
-      return ColumnNode<Int>::create(error, column);
-    }
-    case FLOAT_DATA: {
-      return ColumnNode<Float>::create(error, column);
-    }
-    case GEO_POINT_DATA: {
-      return ColumnNode<GeoPoint>::create(error, column);
-    }
-    case TEXT_DATA: {
-      return ColumnNode<Text>::create(error, column);
-    }
-    case BOOL_VECTOR_DATA: {
-      return ColumnNode<Vector<Bool>>::create(error, column);
-    }
-    case INT_VECTOR_DATA: {
-      return ColumnNode<Vector<Int>>::create(error, column);
-    }
-    case FLOAT_VECTOR_DATA: {
-      return ColumnNode<Vector<Float>>::create(error, column);
-    }
-    case GEO_POINT_VECTOR_DATA: {
-      return ColumnNode<Vector<GeoPoint>>::create(error, column);
-    }
-    case TEXT_VECTOR_DATA: {
-      return ColumnNode<Vector<Text>>::create(error, column);
-    }
-    default: {
-      // TODO: Other types are not supported yet.
-      GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
-      return nullptr;
-    }
-  }
-}
-
-bool ExpressionBuilder::push_unary_operator(Error *error,
-                                            OperatorType operator_type) {
-  if (stack_.size() < 1) {
-    GRNXX_ERROR_SET(error, INVALID_OPERAND, "Not enough operands");
-    return false;
-  }
-  unique_ptr<Node> arg = std::move(stack_[stack_.size() - 1]);
-  stack_.resize(nullptr, stack_.size() - 1);
-  unique_ptr<Node> node =
-      create_unary_node(error, operator_type, std::move(arg));
-  if (!node) {
-    return false;
-  }
-  stack_.push_back(error, std::move(node));
-  return true;
-}
-
-bool ExpressionBuilder::push_binary_operator(Error *error,
-                                             OperatorType operator_type) {
-  if (stack_.size() < 2) {
-    GRNXX_ERROR_SET(error, INVALID_OPERAND, "Not enough operands");
-    return false;
-  }
-  unique_ptr<Node> arg1 = std::move(stack_[stack_.size() - 2]);
-  unique_ptr<Node> arg2 = std::move(stack_[stack_.size() - 1]);
-  stack_.resize(nullptr, stack_.size() - 2);
-  unique_ptr<Node> node = create_binary_node(error, operator_type,
-                                             std::move(arg1), std::move(arg2));
-  if (!node) {
-    return false;
-  }
-  stack_.push_back(nullptr, std::move(node));
-  return true;
-}
-
-unique_ptr<Node> ExpressionBuilder::create_unary_node(
-    Error *error,
-    OperatorType operator_type,
-    unique_ptr<Node> &&arg) {
-  switch (operator_type) {
-    case LOGICAL_NOT_OPERATOR: {
-      if (arg->data_type() != BOOL_DATA) {
-        GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
-        return nullptr;
-      }
-      return LogicalNotNode::create(error, std::move(arg));
-    }
-    case BITWISE_NOT_OPERATOR: {
-      switch (arg->data_type()) {
-        case BOOL_DATA: {
-          return BitwiseNotNode<Bool>::create(error, std::move(arg));
-        }
-        case INT_DATA: {
-          return BitwiseNotNode<Int>::create(error, std::move(arg));
-        }
-        default: {
-          GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
-          return nullptr;
-        }
-      }
-    }
-    case POSITIVE_OPERATOR: {
-      if ((arg->data_type() != INT_DATA) && (arg->data_type() != FLOAT_DATA)) {
-        GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
-        return nullptr;
-      }
-      // Positive operator does nothing.
-      return std::move(arg);
-    }
-    case NEGATIVE_OPERATOR: {
-      switch (arg->data_type()) {
-        case INT_DATA: {
-          return NegativeNode<Int>::create(error, std::move(arg));
-        }
-        case FLOAT_DATA: {
-          return NegativeNode<Float>::create(error, std::move(arg));
-        }
-        default: {
-          GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
-          return nullptr;
-        }
-      }
-    }
-    case TO_INT_OPERATOR: {
-      if (arg->data_type() != FLOAT_DATA) {
-        GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
-        return nullptr;
-      }
-      return ToIntNode::create(error, std::move(arg));
-    }
-    case TO_FLOAT_OPERATOR: {
-      if (arg->data_type() != INT_DATA) {
-        GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
-        return nullptr;
-      }
-      return ToFloatNode::create(error, std::move(arg));
-    }
-    default: {
-      // TODO: Not supported yet.
-      GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
-      return nullptr;
-    }
-  }
-}
-
-unique_ptr<Node> ExpressionBuilder::create_binary_node(
-    Error *error,
-    OperatorType operator_type,
-    unique_ptr<Node> &&arg1,
-    unique_ptr<Node> &&arg2) {
-  switch (operator_type) {
-    case LOGICAL_AND_OPERATOR: {
-      if ((arg1->data_type() != BOOL_DATA) ||
-          (arg2->data_type() != BOOL_DATA)) {
-        GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
-        return nullptr;
-      }
-      return LogicalAndNode::create(error, std::move(arg1), std::move(arg2));
-    }
-    case LOGICAL_OR_OPERATOR: {
-      if ((arg1->data_type() != BOOL_DATA) ||
-          (arg2->data_type() != BOOL_DATA)) {
-        GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
-        return nullptr;
-      }
-      return LogicalOrNode::create(error, std::move(arg1), std::move(arg2));
-    }
-    case EQUAL_OPERATOR: {
-      return create_equality_test_node<Equal>(
-          error, std::move(arg1), std::move(arg2));
-    }
-    case NOT_EQUAL_OPERATOR: {
-      return create_equality_test_node<NotEqual>(
-          error, std::move(arg1), std::move(arg2));
-    }
-    case LESS_OPERATOR: {
-      return create_comparison_node<Less>(
-          error, std::move(arg1), std::move(arg2));
-    }
-    case LESS_EQUAL_OPERATOR: {
-      return create_comparison_node<LessEqual>(
-          error, std::move(arg1), std::move(arg2));
-    }
-    case GREATER_OPERATOR: {
-      return create_comparison_node<Greater>(
-          error, std::move(arg1), std::move(arg2));
-    }
-    case GREATER_EQUAL_OPERATOR: {
-      return create_comparison_node<GreaterEqual>(
-          error, std::move(arg1), std::move(arg2));
-    }
-    case BITWISE_AND_OPERATOR:
-    case BITWISE_OR_OPERATOR:
-    case BITWISE_XOR_OPERATOR: {
-      switch (arg1->data_type()) {
-        case BOOL_DATA: {
-          return create_bitwise_node<Bool>(
-              error, operator_type, std::move(arg1), std::move(arg2));
-        }
-        case INT_DATA: {
-          return create_bitwise_node<Int>(
-              error, operator_type, std::move(arg1), std::move(arg2));
-        }
-        default: {
-          GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
-          return nullptr;
-        }
-      }
-    }
-    case PLUS_OPERATOR:
-    case MINUS_OPERATOR:
-    case MULTIPLICATION_OPERATOR:
-    case DIVISION_OPERATOR: {
-      switch (arg1->data_type()) {
-        case INT_DATA: {
-          return create_arithmetic_node<Int>(
-              error, operator_type, std::move(arg1), std::move(arg2));
-        }
-        case FLOAT_DATA: {
-          return create_arithmetic_node<Float>(
-              error, operator_type, std::move(arg1), std::move(arg2));
-        }
-        default: {
-          GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
-          return nullptr;
-        }
-      }
-    }
-    case MODULUS_OPERATOR: {
-      if ((arg1->data_type() != INT_DATA) ||
-          (arg2->data_type() != INT_DATA)) {
-        GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
-        return nullptr;
-      }
-      return ModulusNode<Int>::create(error, std::move(arg1), std::move(arg2));
-    }
-    case SUBSCRIPT_OPERATOR: {
-      return create_subscript_node(error, std::move(arg1), std::move(arg2));
-    }
-    default: {
-      // TODO: Not supported yet.
-      GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
-      return nullptr;
-    }
-  }
-}
-
-template <typename T>
-unique_ptr<Node> ExpressionBuilder::create_equality_test_node(
-    Error *error,
-    unique_ptr<Node> &&arg1,
-    unique_ptr<Node> &&arg2) {
-  if (arg1->data_type() != arg2->data_type()) {
-    GRNXX_ERROR_SET(error, INVALID_OPERAND, "Data type conflict");
-    return nullptr;
-  }
-  switch (arg1->data_type()) {
-    case BOOL_DATA: {
-      return ComparisonNode<typename T:: template Comparer<Bool>>::create(
-          error, std::move(arg1), std::move(arg2));
-    }
-    case INT_DATA: {
-      return ComparisonNode<typename T:: template Comparer<Int>>::create(
-          error, std::move(arg1), std::move(arg2));
-    }
-    case FLOAT_DATA: {
-      return ComparisonNode<typename T:: template Comparer<Float>>::create(
-          error, std::move(arg1), std::move(arg2));
-    }
-    case GEO_POINT_DATA: {
-      return ComparisonNode<typename T:: template Comparer<GeoPoint>>::create(
-          error, std::move(arg1), std::move(arg2));
-    }
-    case TEXT_DATA: {
-      return ComparisonNode<typename T:: template Comparer<Text>>::create(
-          error, std::move(arg1), std::move(arg2));
-    }
-    case BOOL_VECTOR_DATA: {
-      typedef typename T:: template Comparer<Vector<Bool>> Functor;
-      return ComparisonNode<Functor>::create(
-          error, std::move(arg1), std::move(arg2));
-    }
-    case INT_VECTOR_DATA: {
-      typedef typename T:: template Comparer<Vector<Int>> Functor;
-      return ComparisonNode<Functor>::create(
-          error, std::move(arg1), std::move(arg2));
-    }
-    case FLOAT_VECTOR_DATA: {
-      typedef typename T:: template Comparer<Vector<Float>> Functor;
-      return ComparisonNode<Functor>::create(
-          error, std::move(arg1), std::move(arg2));
-    }
-    case GEO_POINT_VECTOR_DATA: {
-      typedef typename T:: template Comparer<Vector<GeoPoint>> Functor;
-      return ComparisonNode<Functor>::create(
-          error, std::move(arg1), std::move(arg2));
-    }
-    case TEXT_VECTOR_DATA: {
-      typedef typename T:: template Comparer<Vector<Text>> Functor;
-      return ComparisonNode<Functor>::create(
-          error, std::move(arg1), std::move(arg2));
-    }
-    // TODO: Support other types.
-    default: {
-      GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
-      return nullptr;
-    }
-  }
-}
-
-template <typename T>
-unique_ptr<Node> ExpressionBuilder::create_comparison_node(
-    Error *error,
-    unique_ptr<Node> &&arg1,
-    unique_ptr<Node> &&arg2) {
-  if (arg1->data_type() != arg2->data_type()) {
-    GRNXX_ERROR_SET(error, INVALID_OPERAND, "Data type conflict");
-    return nullptr;
-  }
-  switch (arg1->data_type()) {
-    case INT_DATA: {
-      return ComparisonNode<typename T:: template Comparer<Int>>::create(
-          error, std::move(arg1), std::move(arg2));
-    }
-    case FLOAT_DATA: {
-      return ComparisonNode<typename T:: template Comparer<Float>>::create(
-          error, std::move(arg1), std::move(arg2));
-    }
-    case TEXT_DATA: {
-      return ComparisonNode<typename T:: template Comparer<Text>>::create(
-          error, std::move(arg1), std::move(arg2));
-    }
-    default: {
-      GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
-      return nullptr;
-    }
-  }
-}
-
-template <typename T>
-unique_ptr<Node> ExpressionBuilder::create_bitwise_node(
-    Error *error,
-    OperatorType operator_type,
-    unique_ptr<Node> &&arg1,
-    unique_ptr<Node> &&arg2) {
-  if (arg1->data_type() != arg2->data_type()) {
-    GRNXX_ERROR_SET(error, INVALID_OPERAND, "Data type conflict");
-    return nullptr;
-  }
-  switch (operator_type) {
-    case BITWISE_AND_OPERATOR: {
-      return BitwiseAndNode<T>::create(
-          error, std::move(arg1), std::move(arg2));
-    }
-    case BITWISE_OR_OPERATOR: {
-      return BitwiseOrNode<T>::create(
-          error, std::move(arg1), std::move(arg2));
-    }
-    case BITWISE_XOR_OPERATOR: {
-      return BitwiseXorNode<T>::create(
-          error, std::move(arg1), std::move(arg2));
-    }
-    default: {
-      GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Invalid operator");
-      return nullptr;
-    }
-  }
-}
-
-template <typename T>
-unique_ptr<Node> ExpressionBuilder::create_arithmetic_node(
-    Error *error,
-    OperatorType operator_type,
-    unique_ptr<Node> &&arg1,
-    unique_ptr<Node> &&arg2) {
-  if (arg1->data_type() != arg2->data_type()) {
-    GRNXX_ERROR_SET(error, INVALID_OPERAND, "Data type conflict");
-    return nullptr;
-  }
-  switch (operator_type) {
-    case PLUS_OPERATOR: {
-      return PlusNode<T>::create(
-          error, std::move(arg1), std::move(arg2));
-    }
-    case MINUS_OPERATOR: {
-      return MinusNode<T>::create(
-          error, std::move(arg1), std::move(arg2));
-    }
-    case MULTIPLICATION_OPERATOR: {
-      return MultiplicationNode<T>::create(
-          error, std::move(arg1), std::move(arg2));
-    }
-    case DIVISION_OPERATOR: {
-      return DivisionNode<T>::create(
-          error, std::move(arg1), std::move(arg2));
-    }
-    default: {
-      GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
-      return nullptr;
-    }
-  }
-}
-
-unique_ptr<Node> ExpressionBuilder::create_subscript_node(
-    Error *error,
-    unique_ptr<Node> &&arg1,
-    unique_ptr<Node> &&arg2) {
-  if (arg2->data_type() != INT_DATA) {
-    GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
-    return nullptr;
-  }
-  switch (arg1->data_type()) {
-    case BOOL_VECTOR_DATA: {
-      return SubscriptNode<Bool>::create(
-          error, std::move(arg1), std::move(arg2));
-    }
-    case INT_VECTOR_DATA: {
-      return SubscriptNode<Int>::create(
-          error, std::move(arg1), std::move(arg2));
-    }
-    case FLOAT_VECTOR_DATA: {
-      return SubscriptNode<Float>::create(
-          error, std::move(arg1), std::move(arg2));
-    }
-    case GEO_POINT_VECTOR_DATA: {
-      return SubscriptNode<GeoPoint>::create(
-          error, std::move(arg1), std::move(arg2));
-    }
-    case TEXT_VECTOR_DATA: {
-      return SubscriptNode<Text>::create(
-          error, std::move(arg1), std::move(arg2));
-    }
-    default: {
-      GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
-      return nullptr;
-    }
-  }
-}
+      builders_() {}
 
 }  // namespace grnxx
