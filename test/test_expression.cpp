@@ -62,6 +62,8 @@ struct {
   grnxx::Array<grnxx::TextVector> text_vector2_values;
   grnxx::Array<grnxx::Array<grnxx::Text>> text_vector_bodies;
   grnxx::Array<grnxx::Array<grnxx::Text>> text_vector2_bodies;
+  grnxx::Array<grnxx::Int> ref_values;
+  grnxx::Array<grnxx::Int> ref2_values;
 } test;
 
 void generate_text(grnxx::Int min_size, grnxx::Int max_size,
@@ -157,6 +159,16 @@ void init_test() {
   assert(text_vector_column);
   assert(text_vector2_column);
 
+  data_type = grnxx::INT_DATA;
+  grnxx::ColumnOptions options;
+  options.ref_table_name = "Table";
+  auto ref_column =
+      test.table->create_column(&error, "Ref", data_type, options);
+  auto ref2_column =
+      test.table->create_column(&error, "Ref2", data_type, options);
+  assert(ref_column);
+  assert(ref2_column);
+
   // Generate random values.
   // Bool: true or false.
   // Int: [0, 100).
@@ -202,6 +214,9 @@ void init_test() {
   assert(test.text_vector2_values.resize(&error, NUM_ROWS + 1));
   assert(test.text_vector_bodies.resize(&error, NUM_ROWS + 1));
   assert(test.text_vector2_bodies.resize(&error, NUM_ROWS + 1));
+  assert(test.ref_values.resize(&error, NUM_ROWS + 1));
+  assert(test.ref2_values.resize(&error, NUM_ROWS + 1));
+
   for (grnxx::Int i = 1; i <= NUM_ROWS; ++i) {
     test.bool_values.set(i, (mersenne_twister() & 1) != 0);
     test.bool2_values.set(i, (mersenne_twister() & 1) != 0);
@@ -296,6 +311,9 @@ void init_test() {
     }
     test.text_vector2_values.set(
         i, grnxx::TextVector(test.text_vector2_bodies[i].data(), size));
+
+    test.ref_values.set(i, 1 + (mersenne_twister() % NUM_ROWS));
+    test.ref2_values.set(i, 1 + (mersenne_twister() % NUM_ROWS));
   }
 
   // Store generated values into columns.
@@ -303,6 +321,8 @@ void init_test() {
     grnxx::Int row_id;
     assert(test.table->insert_row(&error, grnxx::NULL_ROW_ID,
                                   grnxx::Datum(), &row_id));
+    assert(row_id == i);
+
     assert(bool_column->set(&error, row_id, test.bool_values[i]));
     assert(bool2_column->set(&error, row_id, test.bool2_values[i]));
     assert(int_column->set(&error, row_id, test.int_values[i]));
@@ -333,6 +353,11 @@ void init_test() {
                                    test.text_vector_values[i]));
     assert(text_vector2_column->set(&error, row_id,
                                     test.text_vector2_values[i]));
+  }
+
+  for (grnxx::Int i = 1; i <= NUM_ROWS; ++i) {
+    assert(ref_column->set(&error, i, test.ref_values[i]));
+    assert(ref2_column->set(&error, i, test.ref2_values[i]));
   }
 }
 
@@ -729,6 +754,24 @@ void test_column() {
   assert(records.size() == test.table->num_rows());
   for (grnxx::Int i = 0; i < records.size(); ++i) {
     assert(records.get_score(i) == 0.0);
+  }
+
+  // Test an expression (Ref).
+  assert(builder->push_column(&error, "Ref"));
+  expression = builder->release(&error);
+  assert(expression);
+
+  records.clear();
+  cursor = test.table->create_cursor(&error);
+  assert(cursor);
+  assert(cursor->read_all(&error, &records) == test.table->num_rows());
+
+  grnxx::Array<grnxx::Int> ref_results;
+  assert(expression->evaluate(&error, records, &ref_results));
+  assert(ref_results.size() == test.table->num_rows());
+  for (grnxx::Int i = 0; i < ref_results.size(); ++i) {
+    grnxx::Int row_id = records.get_row_id(i);
+    assert(ref_results[i] == test.ref_values[row_id]);
   }
 }
 
@@ -2817,6 +2860,107 @@ void test_subscript() {
   }
 }
 
+void test_subexpression() {
+  grnxx::Error error;
+
+  // Create an object for building expressions.
+  auto builder = grnxx::ExpressionBuilder::create(&error, test.table);
+  assert(builder);
+
+  // Test an expression (Ref.Bool).
+  assert(builder->push_column(&error, "Ref"));
+  assert(builder->begin_subexpression(&error));
+  assert(builder->push_column(&error, "Bool"));
+  assert(builder->end_subexpression(&error));
+  auto expression = builder->release(&error);
+  assert(expression);
+
+  grnxx::Array<grnxx::Record> records;
+  auto cursor = test.table->create_cursor(&error);
+  assert(cursor);
+  assert(cursor->read_all(&error, &records) == test.table->num_rows());
+
+  grnxx::Array<grnxx::Bool> bool_results;
+  assert(expression->evaluate(&error, records, &bool_results));
+  assert(bool_results.size() == test.table->num_rows());
+  for (grnxx::Int i = 0; i < bool_results.size(); ++i) {
+    grnxx::Int row_id = records.get_row_id(i);
+    const auto ref_value = test.ref_values[row_id];
+    const auto bool_value = test.bool_values[ref_value];
+    assert(bool_results[i] == bool_value);
+  }
+
+  assert(expression->filter(&error, &records));
+  grnxx::Int count = 0;
+  for (grnxx::Int i = 1; i < test.ref_values.size(); ++i) {
+    const auto ref_value = test.ref_values[i];
+    const auto bool_value = test.bool_values[ref_value];
+    if (bool_value) {
+      assert(records.get_row_id(count) == i);
+      ++count;
+    }
+  }
+  assert(records.size() == count);
+
+  // Test an expression (Ref.Float).
+  assert(builder->push_column(&error, "Ref"));
+  assert(builder->begin_subexpression(&error));
+  assert(builder->push_column(&error, "Float"));
+  assert(builder->end_subexpression(&error));
+  expression = builder->release(&error);
+  assert(expression);
+
+  records.clear();
+  cursor = test.table->create_cursor(&error);
+  assert(cursor);
+  assert(cursor->read_all(&error, &records) == test.table->num_rows());
+
+  grnxx::Array<grnxx::Float> float_results;
+  assert(expression->evaluate(&error, records, &float_results));
+  assert(float_results.size() == test.table->num_rows());
+  for (grnxx::Int i = 0; i < float_results.size(); ++i) {
+    grnxx::Int row_id = records.get_row_id(i);
+    const auto ref_value = test.ref_values[row_id];
+    const auto float_value = test.float_values[ref_value];
+    assert(float_results[i] == float_value);
+  }
+
+  assert(expression->adjust(&error, &records));
+  for (grnxx::Int i = 0; i < float_results.size(); ++i) {
+    grnxx::Int row_id = records.get_row_id(i);
+    const auto ref_value = test.ref_values[row_id];
+    const auto float_value = test.float_values[ref_value];
+    assert(records.get_score(i) == float_value);
+  }
+
+  // Test an expression (Ref.Ref.Text).
+  assert(builder->push_column(&error, "Ref"));
+  assert(builder->begin_subexpression(&error));
+  assert(builder->push_column(&error, "Ref"));
+  assert(builder->begin_subexpression(&error));
+  assert(builder->push_column(&error, "Text"));
+  assert(builder->end_subexpression(&error));
+  assert(builder->end_subexpression(&error));
+  expression = builder->release(&error);
+  assert(expression);
+
+  records.clear();
+  cursor = test.table->create_cursor(&error);
+  assert(cursor);
+  assert(cursor->read_all(&error, &records) == test.table->num_rows());
+
+  grnxx::Array<grnxx::Text> text_results;
+  assert(expression->evaluate(&error, records, &text_results));
+  assert(text_results.size() == test.table->num_rows());
+  for (grnxx::Int i = 0; i < text_results.size(); ++i) {
+    grnxx::Int row_id = records.get_row_id(i);
+    const auto ref_value = test.ref_values[row_id];
+    const auto ref_ref_value = test.ref_values[ref_value];
+    const auto text_value = test.text_values[ref_ref_value];
+    assert(text_results[i] == text_value);
+  }
+}
+
 void test_sequential_filter() {
   grnxx::Error error;
 
@@ -3017,6 +3161,9 @@ int main() {
   test_division();
   test_modulus();
   test_subscript();
+
+  // Subexpression.
+  test_subexpression();
 
   // Test sequential operations.
   test_sequential_filter();
