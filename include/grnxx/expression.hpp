@@ -79,19 +79,6 @@ class Expression {
     return block_size_;
   }
 
-  // TODO: The following interface is not yet fixed.
-
-//  // Filter out false records.
-//  //
-//  // Evaluates the expression for "*records" and removes records whose
-//  // evaluation results are false.
-//  // Note that the first "offset" records are left without evaluation.
-//  //
-//  // On success, returns true.
-//  // On failure, returns false and stores error information into "*error" if
-//  // "error" != nullptr.
-//  bool filter(Error *error, Array<Record> *records, Int offset = 0);
-
   // Filter out false records.
   //
   // Evaluates the expression for "*records" and removes records whose
