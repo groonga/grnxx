@@ -235,6 +235,20 @@ class ExpressionBuilder {
   // "error" != nullptr.
   bool push_operator(Error *error, OperatorType operator_type);
 
+  // Begin a subexpression.
+  //
+  // On success, returns true.
+  // On failure, returns false and stores error information into "*error" if
+  // "error" != nullptr.
+  bool begin_subexpression(Error *error);
+
+  // End a subexpression.
+  //
+  // On success, returns true.
+  // On failure, returns false and stores error information into "*error" if
+  // "error" != nullptr.
+  bool end_subexpression(Error *error);
+
   // Clear the internal stack.
   void clear();
 

@@ -3293,6 +3293,16 @@ bool ExpressionBuilder::push_operator(Error *error,
   return builders_.back()->push_operator(error, operator_type);
 }
 
+bool ExpressionBuilder::begin_subexpression(Error *error) {
+  GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
+  return false;
+}
+
+bool ExpressionBuilder::end_subexpression(Error *error) {
+  GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
+  return false;
+}
+
 void ExpressionBuilder::clear() {
   builders_.clear();
 }
