@@ -2455,6 +2455,202 @@ bool SubscriptNode<Float>::evaluate(Error *error,
   return true;
 }
 
+// ---- ReferenceNode ----
+
+template <typename T>
+class ReferenceNode : public BinaryNode<T, Int, T> {
+ public:
+  using Value = T;
+  using Arg1 = Int;
+  using Arg2 = T;
+
+  static unique_ptr<Node> create(Error *error,
+                                 unique_ptr<Node> &&arg1,
+                                 unique_ptr<Node> &&arg2) {
+    unique_ptr<Node> node(
+        new (nothrow) ReferenceNode(std::move(arg1), std::move(arg2)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
+  ReferenceNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
+      : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)),
+        temp_records_() {}
+
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results);
+
+ private:
+  Array<Record> temp_records_;
+};
+
+template <typename T>
+bool ReferenceNode<T>::evaluate(Error *error,
+                                ArrayCRef<Record> records,
+                                ArrayRef<Value> results) {
+  if (!this->fill_arg1_values(error, records)) {
+    return false;
+  }
+  if (!temp_records_.resize(error, records.size())) {
+    return false;
+  }
+  for (Int i = 0; i < records.size(); ++i) {
+    temp_records_.set_row_id(i, this->arg1_values_[i]);
+    temp_records_.set_score(i, records.get_score(i));
+  }
+  return this->arg2_->evaluate(error, temp_records_, results);
+}
+
+template <>
+class ReferenceNode<Bool> : public BinaryNode<Bool, Int, Bool> {
+ public:
+  using Value = Bool;
+  using Arg1 = Int;
+  using Arg2 = Bool;
+
+  static unique_ptr<Node> create(Error *error,
+                                 unique_ptr<Node> &&arg1,
+                                 unique_ptr<Node> &&arg2) {
+    unique_ptr<Node> node(
+        new (nothrow) ReferenceNode(std::move(arg1), std::move(arg2)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
+  ReferenceNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
+      : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)),
+        temp_records_() {}
+
+  bool filter(Error *error,
+              ArrayCRef<Record> input_records,
+              ArrayRef<Record> *output_records);
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results);
+
+ private:
+  Array<Record> temp_records_;
+};
+
+bool ReferenceNode<Bool>::filter(Error *error,
+                                 ArrayCRef<Record> input_records,
+                                 ArrayRef<Record> *output_records) {
+  if (!this->fill_arg1_values(error, input_records)) {
+    return false;
+  }
+  if (!temp_records_.resize(error, input_records.size())) {
+    return false;
+  }
+  for (Int i = 0; i < input_records.size(); ++i) {
+    temp_records_.set_row_id(i, this->arg1_values_[i]);
+    temp_records_.set_score(i, input_records.get_score(i));
+  }
+  auto ref = temp_records_.ref();
+  if (!this->arg2_->filter(error, ref, &ref)) {
+    return false;
+  }
+  Int count = 0;
+  for (Int i = 0; i < input_records.size(); ++i) {
+    if (this->arg1_values_[i] == ref.get_row_id(count)) {
+      output_records->set(count, input_records[i]);
+      ++count;
+    }
+  }
+  *output_records = output_records->ref(0, count);
+  return true;
+}
+
+bool ReferenceNode<Bool>::evaluate(Error *error,
+                                   ArrayCRef<Record> records,
+                                   ArrayRef<Value> results) {
+  if (!this->fill_arg1_values(error, records)) {
+    return false;
+  }
+  if (!temp_records_.resize(error, records.size())) {
+    return false;
+  }
+  for (Int i = 0; i < records.size(); ++i) {
+    temp_records_.set_row_id(i, this->arg1_values_[i]);
+    temp_records_.set_score(i, records.get_score(i));
+  }
+  return this->arg2_->evaluate(error, temp_records_, results);
+}
+
+template <>
+class ReferenceNode<Float> : public BinaryNode<Float, Int, Float> {
+ public:
+  using Value = Float;
+  using Arg1 = Int;
+  using Arg2 = Float;
+
+  static unique_ptr<Node> create(Error *error,
+                                 unique_ptr<Node> &&arg1,
+                                 unique_ptr<Node> &&arg2) {
+    unique_ptr<Node> node(
+        new (nothrow) ReferenceNode(std::move(arg1), std::move(arg2)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
+  ReferenceNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
+      : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)),
+        temp_records_() {}
+
+  bool adjust(Error *error, ArrayRef<Record> records);
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results);
+
+ private:
+  Array<Record> temp_records_;
+};
+
+bool ReferenceNode<Float>::adjust(Error *error,
+                                  ArrayRef<Record> records) {
+  if (!this->fill_arg1_values(error, records)) {
+    return false;
+  }
+  if (!temp_records_.resize(error, records.size())) {
+    return false;
+  }
+  for (Int i = 0; i < records.size(); ++i) {
+    temp_records_.set_row_id(i, this->arg1_values_[i]);
+    temp_records_.set_score(i, records.get_score(i));
+  }
+  if (!this->arg2_->adjust(error, temp_records_)) {
+    return false;
+  }
+  for (Int i = 0; i < records.size(); ++i) {
+    records.set_score(i, temp_records_.get_score(i));
+  }
+  return true;
+}
+
+bool ReferenceNode<Float>::evaluate(Error *error,
+                                    ArrayCRef<Record> records,
+                                    ArrayRef<Value> results) {
+  if (!this->fill_arg1_values(error, records)) {
+    return false;
+  }
+  if (!temp_records_.resize(error, records.size())) {
+    return false;
+  }
+  for (Int i = 0; i < records.size(); ++i) {
+    temp_records_.set_row_id(i, this->arg1_values_[i]);
+    temp_records_.set_score(i, records.get_score(i));
+  }
+  return this->arg2_->evaluate(error, temp_records_, results);
+}
+
+// -- Builder --
+
 class Builder {
  public:
   // Create an object for building an expression.
@@ -2469,6 +2665,10 @@ class Builder {
   // Return the target table.
   const Table *table() const {
     return table_;
+  }
+  // Return the latest node.
+  const Node *latest_node() const {
+    return (stack_.size() != 0) ? stack_.back().get() : nullptr;
   }
 
   // Push a datum.
@@ -2498,6 +2698,20 @@ class Builder {
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
   bool push_operator(Error *error, OperatorType operator_type);
+
+  // Push a node.
+  //
+  // On success, returns true.
+  // On failure, returns false and stores error information into "*error" if
+  // "error" != nullptr.
+  bool push_node(Error *error, unique_ptr<Node> &&node);
+
+  // Push a reference operator.
+  //
+  // On success, returns true.
+  // On failure, returns false and stores error information into "*error" if
+  // "error" != nullptr.
+  bool push_reference(Error *error);
 
   // Clear the internal stack.
   void clear();
@@ -2567,6 +2781,12 @@ class Builder {
       unique_ptr<Node> &&arg2);
   // Create a subscript node.
   unique_ptr<Node> create_subscript_node(
+      Error *error,
+      unique_ptr<Node> &&arg1,
+      unique_ptr<Node> &&arg2);
+
+  // Create a reference node.
+  unique_ptr<Node> create_reference_node(
       Error *error,
       unique_ptr<Node> &&arg1,
       unique_ptr<Node> &&arg2);
@@ -2645,6 +2865,27 @@ bool Builder::push_operator(Error *error, OperatorType operator_type) {
       return false;
     }
   }
+}
+
+bool Builder::push_node(Error *error, unique_ptr<Node> &&node) {
+  return stack_.push_back(error, std::move(node));
+}
+
+bool Builder::push_reference(Error *error) {
+  if (stack_.size() < 2) {
+    GRNXX_ERROR_SET(error, INVALID_OPERAND, "Not enough operands");
+    return false;
+  }
+  unique_ptr<Node> arg1 = std::move(stack_[stack_.size() - 2]);
+  unique_ptr<Node> arg2 = std::move(stack_[stack_.size() - 1]);
+  stack_.resize(nullptr, stack_.size() - 2);
+  unique_ptr<Node> node =
+      create_reference_node(error, std::move(arg1), std::move(arg2));
+  if (!node) {
+    return false;
+  }
+  stack_.push_back(nullptr, std::move(node));
+  return true;
 }
 
 void Builder::clear() {
@@ -3170,6 +3411,58 @@ unique_ptr<Node> Builder::create_subscript_node(
   }
 }
 
+unique_ptr<Node> Builder::create_reference_node(
+    Error *error,
+    unique_ptr<Node> &&arg1,
+    unique_ptr<Node> &&arg2) {
+  switch (arg2->data_type()) {
+    case BOOL_DATA: {
+      return ReferenceNode<Bool>::create(
+          error, std::move(arg1), std::move(arg2));
+    }
+    case INT_DATA: {
+      return ReferenceNode<Int>::create(
+          error, std::move(arg1), std::move(arg2));
+    }
+    case FLOAT_DATA: {
+      return ReferenceNode<Float>::create(
+          error, std::move(arg1), std::move(arg2));
+    }
+    case GEO_POINT_DATA: {
+      return ReferenceNode<GeoPoint>::create(
+          error, std::move(arg1), std::move(arg2));
+    }
+    case TEXT_DATA: {
+      return ReferenceNode<Text>::create(
+          error, std::move(arg1), std::move(arg2));
+    }
+    case BOOL_VECTOR_DATA: {
+      return ReferenceNode<Vector<Bool>>::create(
+          error, std::move(arg1), std::move(arg2));
+    }
+    case INT_VECTOR_DATA: {
+      return ReferenceNode<Vector<Int>>::create(
+          error, std::move(arg1), std::move(arg2));
+    }
+    case FLOAT_VECTOR_DATA: {
+      return ReferenceNode<Vector<Float>>::create(
+          error, std::move(arg1), std::move(arg2));
+    }
+    case GEO_POINT_VECTOR_DATA: {
+      return ReferenceNode<Vector<GeoPoint>>::create(
+          error, std::move(arg1), std::move(arg2));
+    }
+    case TEXT_VECTOR_DATA: {
+      return ReferenceNode<Vector<Text>>::create(
+          error, std::move(arg1), std::move(arg2));
+    }
+    default: {
+      GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
+      return nullptr;
+    }
+  }
+}
+
 }  // namespace expression
 
 using namespace expression;
@@ -3385,13 +3678,46 @@ bool ExpressionBuilder::push_operator(Error *error,
 }
 
 bool ExpressionBuilder::begin_subexpression(Error *error) {
-  GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
-  return false;
+  const Node *latest_node = builders_.back()->latest_node();
+std::cerr << "LINE: " << __LINE__ << std::endl;
+  if (!latest_node) {
+    GRNXX_ERROR_SET(error, INVALID_OPERAND, "Not enough operands");
+    return false;
+  }
+std::cerr << "LINE: " << __LINE__ << std::endl;
+  if (!latest_node->ref_table()) {
+    GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
+    return false;
+  }
+std::cerr << "LINE: " << __LINE__ << std::endl;
+  unique_ptr<Builder> subexpression_builder =
+      Builder::create(error, latest_node->ref_table());
+std::cerr << "LINE: " << __LINE__ << std::endl;
+  if (!subexpression_builder) {
+    return false;
+  }
+std::cerr << "LINE: " << __LINE__ << std::endl;
+  if (!builders_.push_back(error, std::move(subexpression_builder))) {
+    return false;
+  }
+std::cerr << "LINE: " << __LINE__ << std::endl;
+  return true;
 }
 
 bool ExpressionBuilder::end_subexpression(Error *error) {
-  GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
-  return false;
+  if (builders_.size() <= 1) {
+    GRNXX_ERROR_SET(error, INVALID_OPERATION, "Subexpression not found");
+    return false;
+  }
+  unique_ptr<Node> node = builders_.back()->release(error);
+  if (!node) {
+    return false;
+  }
+  builders_.pop_back();
+  if (!builders_.back()->push_node(error, std::move(node))) {
+    return false;
+  }
+  return builders_.back()->push_reference(error);
 }
 
 void ExpressionBuilder::clear() {
