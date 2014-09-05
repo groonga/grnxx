@@ -338,4 +338,4 @@ class Array<Bool> {
 
 }  // namespace grnxx
 
-#endif  // GRNXX_ARRAY_HPP
+#endif  // GRNXX_ARRAY_BOOL_HPP
