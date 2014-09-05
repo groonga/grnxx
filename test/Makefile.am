@@ -1,4 +1,5 @@
 TESTS =					\
+	test_array			\
 	test_db				\
 	test_table			\
 	test_column			\
@@ -8,6 +9,9 @@ TESTS =					\
 	benchmark_grnxx
 
 check_PROGRAMS = $(TESTS)
+
+test_array_SOURCES = test_array.cpp
+test_array_LDADD = $(top_srcdir)/lib/grnxx/libgrnxx.la
 
 test_db_SOURCES = test_db.cpp
 test_db_LDADD = $(top_srcdir)/lib/grnxx/libgrnxx.la
