@@ -1,3 +1,6 @@
+SUBDIRS =		\
+	array
+
 pkginclude_HEADERS =	\
 	array.hpp	\
 	column.hpp	\

@@ -52,6 +52,7 @@ AC_CHECK_LIB([rt], [clock_gettime])
 AC_CONFIG_FILES([Makefile
                  include/Makefile
                  include/grnxx/Makefile
+                 include/grnxx/array/Makefile
                  lib/Makefile
                  lib/grnxx/Makefile
                  src/Makefile
