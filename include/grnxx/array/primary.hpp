@@ -143,13 +143,23 @@ class Array {
  public:
   using Value = T;
 
-  Array() : values_() {}
+  Array() : buf_(), size_(0), capacity_(0) {}
   ~Array() {}
 
-  Array(Array &&array) : values_(std::move(array.values_)) {}
+  Array(Array &&array)
+      : buf_(std::move(array.buf_)),
+        size_(array.size_),
+        capacity_(array.capacity_) {
+    array.size_ = 0;
+    array.capacity_ = 0;
+  }
 
   Array &operator=(Array &&array) {
-    values_ = std::move(array.values_);
+    buf_ = std::move(array.buf_);
+    size_ = array.size_;
+    capacity_ = array.capacity_;
+    array.size_ = 0;
+    array.capacity_ = 0;
     return *this;
   }
 
@@ -158,127 +168,173 @@ class Array {
   }
 
   ArrayCRef<Value> ref(Int offset = 0) const {
-    return ArrayCRef<Value>(values_.data() + offset, size() - offset);
+    return ArrayCRef<Value>(data() + offset, size_ - offset);
   }
   ArrayCRef<Value> ref(Int offset, Int size) const {
-    return ArrayCRef<Value>(values_.data() + offset, size);
+    return ArrayCRef<Value>(data() + offset, size);
   }
 
   ArrayRef<Value> ref(Int offset = 0) {
-    return ArrayRef<Value>(values_.data() + offset, size() - offset);
+    return ArrayRef<Value>(data() + offset, size_ - offset);
   }
   ArrayRef<Value> ref(Int offset, Int size) {
-    return ArrayRef<Value>(values_.data() + offset, size);
+    return ArrayRef<Value>(data() + offset, size);
   }
 
   const Value &get(Int i) const {
-    return values_[i];
+    return data()[i];
   }
   void set(Int i, const Value &value) {
-    values_[i] = value;
+    data()[i] = value;
   }
   void set(Int i, Value &&value) {
-    values_[i] = value;
+    data()[i] = std::move(value);
   }
 
   Value &operator[](Int i) {
-    return values_[static_cast<size_t>(i)];
+    return data()[i];
   }
   const Value &operator[](Int i) const {
-    return values_[static_cast<size_t>(i)];
+    return data()[i];
   }
 
   Value &front() {
-    return values_.front();
+    return *data();
   }
   const Value &front() const {
-    return values_.front();
+    return *data();
   }
 
   Value &back() {
-    return values_.back();
+    return data()[size_ - 1];
   }
   const Value &back() const {
-    return values_.back();
+    return data()[size_ - 1];
   }
 
   Value *data() {
-    return values_.data();
+    return reinterpret_cast<Value *>(buf_.get());
   }
   const Value *data() const {
-    return values_.data();
+    return reinterpret_cast<const Value *>(buf_.get());
   }
 
   Int size() const {
-    return static_cast<Int>(values_.size());
+    return size_;
   }
   Int capacity() const {
-    return static_cast<Int>(values_.capacity());
+    return capacity_;
   }
 
-  bool reserve(Error *error, Int new_size) try {
-    values_.reserve(new_size);
-    return true;
-  } catch (...) {
-    ArrayErrorReporter::report_memory_error(error);
-    return false;
+  bool reserve(Error *error, Int new_size) {
+    if (new_size <= capacity_) {
+      return true;
+    }
+    return resize_buf(error, new_size);
   }
 
-  bool resize(Error *error, Int new_size) try {
-    values_.resize(new_size);
+  bool resize(Error *error, Int new_size) {
+    if (new_size > capacity_) {
+      if (!resize_buf(error, new_size)) {
+        return false;
+      }
+    }
+    for (Int i = new_size; i < size_; ++i) {
+      data()[i].~Value();
+    }
+    for (Int i = size_; i < new_size; ++i) {
+      new (&data()[i]) Value;
+    }
+    size_ = new_size;
     return true;
-  } catch (...) {
-    ArrayErrorReporter::report_memory_error(error);
-    return false;
   }
-  bool resize(Error *error, Int new_size, const Value &value) try {
-    values_.resize(new_size, value);
+  bool resize(Error *error, Int new_size, const Value &value) {
+    if (new_size > capacity_) {
+      if (!resize_buf(error, new_size)) {
+        return false;
+      }
+    }
+    for (Int i = new_size; i < size_; ++i) {
+      data()[i].~Value();
+    }
+    for (Int i = size_; i < new_size; ++i) {
+      new (&data()[i]) Value(value);
+    }
+    size_ = new_size;
     return true;
-  } catch (...) {
-    ArrayErrorReporter::report_memory_error(error);
-    return false;
-  }
-
-  bool shrink_to_fit(Error *error) try {
-    values_.shrink_to_fit();
-    return true;
-  } catch (...) {
-    ArrayErrorReporter::report_memory_error(error);
-    return false;
   }
 
   void clear() {
-    values_.clear();
+    for (Int i = 0; i < size_; ++i) {
+      data()[i].~Value();
+    }
+    size_ = 0;
   }
 
   void erase(Int i) {
-    values_.erase(values_.begin() + i);
+    for (Int j = i + 1; j < size_; ++j) {
+      data()[j - 1] = std::move(data()[j]);
+    }
+    data()[size_ - 1].~Value();
+    --size_;
   }
 
-  bool push_back(Error *error, const Value &value) try {
-    values_.push_back(value);
+  bool push_back(Error *error, const Value &value) {
+    if (size_ == capacity_) {
+      if (!resize_buf(error, size_ + 1)) {
+        return false;
+      }
+    }
+    new (&data()[size_]) Value(value);
+    ++size_;
     return true;
-  } catch (...) {
-    ArrayErrorReporter::report_memory_error(error);
-    return false;
   }
-  bool push_back(Error *error, Value &&value) try {
-    values_.push_back(std::move(value));
+  bool push_back(Error *error, Value &&value) {
+    if (size_ == capacity_) {
+      if (!resize_buf(error, size_ + 1)) {
+        return false;
+      }
+    }
+    new (&data()[size_]) Value(std::move(value));
+    ++size_;
     return true;
-  } catch (...) {
-    ArrayErrorReporter::report_memory_error(error);
-    return false;
   }
   void pop_back() {
-    values_.pop_back();
+    data()[size_ - 1].~Value();
+    --size_;
   }
 
   void swap(Int i, Int j) {
-    std::swap(values_[i], values_[j]);
+    Value temp = std::move(data()[i]);
+    data()[i] = std::move(data()[j]);
+    data()[j] = std::move(temp);
   }
 
  private:
-  std::vector<Value> values_;
+  unique_ptr<char[]> buf_;
+  Int size_;
+  Int capacity_;
+
+  // Assume new_size > capacity_.
+  bool resize_buf(Error *error, Int new_size) {
+    Int new_capacity = capacity_ * 2;
+    if (new_size > new_capacity) {
+      new_capacity = new_size;
+    }
+    Int new_buf_size = sizeof(Value) * new_capacity;
+    unique_ptr<char[]> new_buf(new (nothrow) char[new_buf_size]);
+    if (!new_buf) {
+      ArrayErrorReporter::report_memory_error(error);
+      return false;
+    }
+    Value *new_values = reinterpret_cast<Value *>(new_buf.get());
+    for (Int i = 0; i < size_; ++i) {
+      new (&new_values[i]) Value(std::move(data()[i]));
+    }
+    buf_ = std::move(new_buf);
+    capacity_ = new_capacity;
+    return true;
+  }
 };
 
 }  // namespace grnxx
