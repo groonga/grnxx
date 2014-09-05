@@ -5,6 +5,10 @@
 
 namespace grnxx {
 
+template <typename T> class ArrayCRef;
+template <typename T> class ArrayRef;
+template <typename T> class Array;
+
 // ArrayCRef<Bool> is specialized because each Bool value does not have its own
 // unique address and thus a pointer type for Bool is not available.
 template <>
