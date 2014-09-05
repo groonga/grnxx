@@ -76,6 +76,13 @@ void test_bool() {
   for (grnxx::Int i = 0; i < NUM_ROWS; ++i) {
     assert(array[i] == values[i]);
   }
+
+  grnxx::Array<grnxx::Bool> array2;
+  array2 = std::move(array);
+  assert(array.size() == 0);
+  assert(array.capacity() == 0);
+  assert(array2.size() == NUM_ROWS);
+  assert(array2.capacity() == NUM_ROWS);
 }
 
 int main() {
