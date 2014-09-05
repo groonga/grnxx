@@ -750,7 +750,7 @@ bool LogicalNotNode::filter(Error *error,
   if (!temp_records_.resize(error, input_records.size() + 1)) {
     return false;
   }
-  ArrayRef<Record> ref = temp_records_;
+  ArrayRef<Record> ref = temp_records_.ref();
   if (!arg_->filter(error, input_records, &ref)) {
     return false;
   }
@@ -778,7 +778,7 @@ bool LogicalNotNode::evaluate(Error *error,
   if (!temp_records_.resize(error, records.size() + 1)) {
     return false;
   }
-  ArrayRef<Record> ref = temp_records_;
+  ArrayRef<Record> ref = temp_records_.ref();
   if (!arg_->filter(error, records, &ref)) {
     return false;
   }
@@ -1136,7 +1136,7 @@ bool LogicalAndNode::evaluate(Error *error,
   if (!temp_records_.resize(error, records.size() + 1)) {
     return false;
   }
-  ArrayRef<Record> ref = temp_records_;
+  ArrayRef<Record> ref = temp_records_.ref();
   if (!arg1_->filter(error, records, &ref) ||
       !arg2_->filter(error, ref, &ref)) {
     return false;
@@ -1198,7 +1198,7 @@ bool LogicalOrNode::filter(Error *error,
   if (!temp_records_.resize(error, input_records.size() + 2)) {
     return false;
   }
-  ArrayRef<Record> ref1 = temp_records_;
+  ArrayRef<Record> ref1 = temp_records_.ref();
   if (!arg1_->filter(error, input_records, &ref1)) {
     return false;
   }
@@ -1276,7 +1276,7 @@ bool LogicalOrNode::evaluate(Error *error,
   if (!temp_records_.resize(error, records.size() + 2)) {
     return false;
   }
-  ArrayRef<Record> ref1 = temp_records_;
+  ArrayRef<Record> ref1 = temp_records_.ref();
   if (!arg1_->filter(error, records, &ref1)) {
     return false;
   }
@@ -2624,7 +2624,7 @@ bool ReferenceNode<Float>::adjust(Error *error,
     temp_records_.set_row_id(i, this->arg1_values_[i]);
     temp_records_.set_score(i, records.get_score(i));
   }
-  if (!this->arg2_->adjust(error, temp_records_)) {
+  if (!this->arg2_->adjust(error, temp_records_.ref())) {
     return false;
   }
   for (Int i = 0; i < records.size(); ++i) {
