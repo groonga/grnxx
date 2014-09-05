@@ -27,4 +27,24 @@ bool Array<Bool>::resize_blocks(Error *error, Int new_size) {
   return true;
 }
 
+bool Array<Record>::resize_buf(Error *error, Int new_size) {
+  Int new_capacity = capacity_ * 2;
+  if (new_size > new_capacity) {
+    new_capacity = new_size;
+  }
+  Int new_buf_size = sizeof(Value) * new_capacity;
+  unique_ptr<char[]> new_buf(new (nothrow) char[new_buf_size]);
+  if (!new_buf) {
+    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    return false;
+  }
+  Value *new_values = reinterpret_cast<Value *>(new_buf.get());
+  for (Int i = 0; i < size_; ++i) {
+    new (&new_values[i]) Value(std::move(data()[i]));
+  }
+  buf_ = std::move(new_buf);
+  capacity_ = new_capacity;
+  return true;
+}
+
 }  // namespace grnxx
