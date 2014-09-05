@@ -3679,28 +3679,22 @@ bool ExpressionBuilder::push_operator(Error *error,
 
 bool ExpressionBuilder::begin_subexpression(Error *error) {
   const Node *latest_node = builders_.back()->latest_node();
-std::cerr << "LINE: " << __LINE__ << std::endl;
   if (!latest_node) {
     GRNXX_ERROR_SET(error, INVALID_OPERAND, "Not enough operands");
     return false;
   }
-std::cerr << "LINE: " << __LINE__ << std::endl;
   if (!latest_node->ref_table()) {
     GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
     return false;
   }
-std::cerr << "LINE: " << __LINE__ << std::endl;
   unique_ptr<Builder> subexpression_builder =
       Builder::create(error, latest_node->ref_table());
-std::cerr << "LINE: " << __LINE__ << std::endl;
   if (!subexpression_builder) {
     return false;
   }
-std::cerr << "LINE: " << __LINE__ << std::endl;
   if (!builders_.push_back(error, std::move(subexpression_builder))) {
     return false;
   }
-std::cerr << "LINE: " << __LINE__ << std::endl;
   return true;
 }
 
