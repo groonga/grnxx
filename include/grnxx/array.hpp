@@ -351,12 +351,10 @@ class ArrayCRef<Bool> {
   }
 
   ArrayCRef ref(Int offset = 0) const {
-    offset += static_cast<Int>(offset_);
-    return ArrayCRef(blocks_, offset, size() - offset);
+    return ArrayCRef(blocks_, offset + offset_, size() - offset);
   }
   ArrayCRef ref(Int offset, Int size) const {
-    offset += static_cast<Int>(offset_);
-    return ArrayCRef(blocks_, offset, size);
+    return ArrayCRef(blocks_, offset + offset_, size);
   }
 
   Value get(Int i) const {
@@ -437,21 +435,17 @@ class ArrayRef<Bool> {
   }
 
   ArrayCRef<Value> ref(Int offset = 0) const {
-    offset += static_cast<Int>(offset_);
-    return ArrayCRef<Value>(blocks_, offset, size() - offset);
+    return ArrayCRef<Value>(blocks_, offset + offset_, size() - offset);
   }
   ArrayCRef<Value> ref(Int offset, Int size) const {
-    offset += static_cast<Int>(offset_);
-    return ArrayCRef<Value>(blocks_, offset, size);
+    return ArrayCRef<Value>(blocks_, offset + offset_, size);
   }
 
   ArrayRef ref(Int offset = 0) {
-    offset += static_cast<Int>(offset_);
-    return ArrayRef(blocks_, offset, size() - offset);
+    return ArrayRef(blocks_, offset + offset_, size() - offset);
   }
   ArrayRef ref(Int offset, Int size) {
-    offset += static_cast<Int>(offset_);
-    return ArrayRef(blocks_, offset, size);
+    return ArrayRef(blocks_, offset + offset_, size);
   }
 
   Value get(Int i) const {
