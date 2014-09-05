@@ -18,12 +18,12 @@ class ArrayCRef<Bool> {
 
   ArrayCRef &operator=(const ArrayCRef &) = default;
 
-  bool operator==(ArrayCRef<Value> rhs) const {
+  bool operator==(const ArrayCRef<Value> &rhs) const {
     return (blocks_ == rhs.blocks_) &&
            (offset_ == rhs.offset_) &&
            (size_ == rhs.size_);
   }
-  bool operator!=(ArrayCRef<Value> rhs) const {
+  bool operator!=(const ArrayCRef<Value> &rhs) const {
     return (blocks_ != rhs.blocks_) ||
            (offset_ != rhs.offset_) ||
            (size_ != rhs.size_);
@@ -84,23 +84,23 @@ class ArrayRef<Bool> {
 
   ArrayRef &operator=(const ArrayRef &) = default;
 
-  bool operator==(ArrayCRef<Value> rhs) const {
+  bool operator==(const ArrayCRef<Value> &rhs) const {
     return (blocks_ == rhs.blocks_) &&
            (offset_ == rhs.offset_) &&
            (size_ == rhs.size_);
   }
-  bool operator==(ArrayRef<Value> rhs) const {
+  bool operator==(const ArrayRef<Value> &rhs) const {
     return (blocks_ == rhs.blocks_) &&
            (offset_ == rhs.offset_) &&
            (size_ == rhs.size_);
   }
 
-  bool operator!=(ArrayCRef<Value> rhs) const {
+  bool operator!=(const ArrayCRef<Value> &rhs) const {
     return (blocks_ != rhs.blocks_) ||
            (offset_ != rhs.offset_) ||
            (size_ != rhs.size_);
   }
-  bool operator!=(ArrayRef<Value> rhs) const {
+  bool operator!=(const ArrayRef<Value> &rhs) const {
     return (blocks_ == rhs.blocks_) ||
            (offset_ == rhs.offset_) ||
            (size_ == rhs.size_);
