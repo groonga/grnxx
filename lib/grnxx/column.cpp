@@ -14,11 +14,24 @@ Column::~Column() {}
 
 Index *Column::create_index(Error *error,
                             String name,
-                            IndexType index_type,
-                            const IndexOptions &index_options) {
-  // TODO: Index is not supported yet.
-  GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not suported yet");
-  return nullptr;
+                            IndexType type,
+                            const IndexOptions &options) {
+  if (find_index(nullptr, name)) {
+    GRNXX_ERROR_SET(error, ALREADY_EXISTS,
+                    "Index already exists: name = \"%.*s\"",
+                    static_cast<int>(name.size()), name.data());
+    return nullptr;
+  }
+  if (!indexes_.reserve(error, indexes_.size() + 1)) {
+    return nullptr;
+  }
+  unique_ptr<Index> new_index =
+      Index::create(error, this, name, type, options);
+  if (!new_index) {
+    return nullptr;
+  }
+  indexes_.push_back(error, std::move(new_index));
+  return indexes_.back().get();
 }
 
 bool Column::remove_index(Error *error, String name) {
@@ -300,6 +313,21 @@ bool ColumnImpl<Int>::set(Error *error, Int row_id, const Datum &datum) {
     }
   }
   // Note that a Bool object does not have its own address.
+  Int old_value = get(row_id);
+  Int new_value = datum.force_int();
+  if (new_value != old_value) {
+    for (Int i = 0; i < num_indexes(); ++i) {
+      if (!indexes_[i]->insert(error, row_id, datum)) {
+        for (Int j = 0; j < i; ++i) {
+          indexes_[j]->remove(nullptr, row_id, datum);
+        }
+        return false;
+      }
+    }
+    for (Int i = 0; i < num_indexes(); ++i) {
+      indexes_[i]->remove(nullptr, row_id, old_value);
+    }
+  }
   values_.set(row_id, datum.force_int());
   return true;
 }
@@ -340,11 +368,23 @@ bool ColumnImpl<Int>::set_default_value(Error *error, Int row_id) {
       return false;
     }
   }
-  values_.set(row_id, TypeTraits<Int>::default_value());
+  Int value = TypeTraits<Int>::default_value();
+  for (Int i = 0; i < num_indexes(); ++i) {
+    if (!indexes_[i]->insert(error, row_id, value)) {
+      for (Int j = 0; j < i; ++j) {
+        indexes_[j]->remove(nullptr, row_id, value);
+      }
+      return false;
+    }
+  }
+  values_.set(row_id, value);
   return true;
 }
 
 void ColumnImpl<Int>::unset(Int row_id) {
+  for (Int i = 0; i < num_indexes(); ++i) {
+    indexes_[i]->remove(nullptr, row_id, get(row_id));
+  }
   values_.set(row_id, TypeTraits<Int>::default_value());
 }
 

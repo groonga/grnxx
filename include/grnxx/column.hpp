@@ -45,8 +45,8 @@ class Column {
   virtual Index *create_index(
       Error *error,
       String name,
-      IndexType index_type,
-      const IndexOptions &index_options = IndexOptions());
+      IndexType type,
+      const IndexOptions &options = IndexOptions());
 
   // Remove an index named "name".
   //

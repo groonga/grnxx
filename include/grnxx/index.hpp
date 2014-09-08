@@ -32,11 +32,38 @@ class Index {
       Error *error,
       const CursorOptions &options = CursorOptions()) const;
 
- private:
+  // Insert a new entry.
+  //
+  // On success, returns true.
+  // On failure, returns false and stores error information into "*error" if
+  // "error" != nullptr.
+  virtual bool insert(Error *error, Int row_id, const Datum &value) = 0;
+  // Insert an entry.
+  //
+  // On success, returns true.
+  // On failure, returns false and stores error information into "*error" if
+  // "error" != nullptr.
+  virtual bool remove(Error *error, Int row_id, const Datum &value) = 0;
+
+ protected:
   Column *column_;
   Name name_;
   IndexType type_;
 
+  Index();
+
+  // Initialize the base members.
+  //
+  // On success, returns true.
+  // On failure, returns false and stores error information into "*error" if
+  // "error" != nullptr.
+  bool initialize_base(Error *error,
+                       Column *column,
+                       String name,
+                       IndexType type,
+                       const IndexOptions &options = IndexOptions());
+
+ private:
   // Create a new index.
   //
   // Returns a pointer to the index on success.
@@ -48,8 +75,6 @@ class Index {
       String name,
       IndexType type,
       const IndexOptions &options = IndexOptions());
-
-  Index();
 
   // Change the index name.
   //
