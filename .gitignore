@@ -33,6 +33,7 @@ test/test_array
 test/test_db
 test/test_table
 test/test_column
+test/test_index
 test/test_expression
 test/test_sorter
 test/test_pipeline
