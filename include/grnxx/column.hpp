@@ -1,6 +1,7 @@
 #ifndef GRNXX_COLUMN_HPP
 #define GRNXX_COLUMN_HPP
 
+#include "grnxx/array.hpp"
 #include "grnxx/name.hpp"
 #include "grnxx/types.hpp"
 
@@ -33,8 +34,7 @@ class Column {
   }
   // Return the number of indexes.
   Int num_indexes() const {
-    // TODO: Index is not supported yet.
-    return 0;
+    return indexes_.size();
   }
 
   // Create an index with "name", "index_type", and "index_options".
@@ -89,8 +89,7 @@ class Column {
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
   Index *get_index(Int index_id) const {
-    // TODO: Not supported yet.
-    return nullptr;
+    return indexes_[index_id].get();
   }
 
   // Find an index named "name".
@@ -131,6 +130,7 @@ class Column {
   DataType data_type_;
   Table *ref_table_;
   bool has_key_attribute_;
+  Array<unique_ptr<Index>> indexes_;
 
   Column();
 
@@ -184,6 +184,15 @@ class Column {
 
   // Unset the value.
   virtual void unset(Int row_id) = 0;
+
+  // Find an index with its ID.
+  //
+  // On success, returns a pointer to the index.
+  // On failure, returns nullptr and stores error information into "*error" if
+  // "error" != nullptr.
+  Index *find_index_with_id(Error *error,
+                            String name,
+                            Int *column_id) const;
 
   friend class Table;
 };

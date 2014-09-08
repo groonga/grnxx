@@ -5,6 +5,7 @@
 #include "grnxx/datum.hpp"
 #include "grnxx/db.hpp"
 #include "grnxx/error.hpp"
+#include "grnxx/index.hpp"
 #include "grnxx/table.hpp"
 
 namespace grnxx {
@@ -21,30 +22,73 @@ Index *Column::create_index(Error *error,
 }
 
 bool Column::remove_index(Error *error, String name) {
-  // TODO: Index is not supported yet.
-  GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not suported yet");
-  return false;
+  Int index_id;
+  if (!find_index_with_id(error, name, &index_id)) {
+    return false;
+  }
+  if (!indexes_[index_id]->is_removable()) {
+    GRNXX_ERROR_SET(error, NOT_REMOVABLE,
+                    "Index is not removable: name = \"%.*s\"",
+                    static_cast<int>(name.size()), name.data());
+    return false;
+  }
+  indexes_.erase(index_id);
+  return true;
 }
 
 bool Column::rename_index(Error *error,
                           String name,
                           String new_name) {
-  // TODO: Index is not supported yet.
-  GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not suported yet");
-  return false;
+  Int index_id;
+  if (!find_index_with_id(error, name, &index_id)) {
+    return false;
+  }
+  if (name == new_name) {
+    return true;
+  }
+  if (find_index(nullptr, new_name)) {
+    GRNXX_ERROR_SET(error, ALREADY_EXISTS,
+                    "Index already exists: new_name = \"%.*s\"",
+                    static_cast<int>(new_name.size()), new_name.data());
+    return false;
+  }
+  return indexes_[index_id]->rename(error, new_name);
 }
 
 bool Column::reorder_index(Error *error,
                            String name,
                            String prev_name) {
-  // TODO: Index is not supported yet.
-  GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not suported yet");
-  return false;
+  Int index_id;
+  if (!find_index_with_id(error, name, &index_id)) {
+    return false;
+  }
+  Int new_index_id = 0;
+  if (prev_name.size() != 0) {
+    Int prev_index_id;
+    if (!find_index_with_id(error, prev_name, &prev_index_id)) {
+      return false;
+    }
+    if (index_id <= prev_index_id) {
+      new_index_id = prev_index_id;
+    } else {
+      new_index_id = prev_index_id + 1;
+    }
+  }
+  for ( ; index_id < new_index_id; ++index_id) {
+    std::swap(indexes_[index_id], indexes_[index_id + 1]);
+  }
+  for ( ; index_id > new_index_id; --index_id) {
+    std::swap(indexes_[index_id], indexes_[index_id - 1]);
+  }
+  return true;
 }
 
 Index *Column::find_index(Error *error, String name) const {
-  // TODO: Index is not supported yet.
-  GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not suported yet");
+  for (Int index_id = 0; index_id < num_indexes(); ++index_id) {
+    if (name == indexes_[index_id]->name()) {
+      return indexes_[index_id].get();
+    }
+  }
   return nullptr;
 }
 
@@ -152,6 +196,22 @@ bool Column::set_initial_key(Error *error, Int row_id, const Datum &key) {
   // TODO: Key column is not supported yet.
   GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not suported yet");
   return false;
+}
+
+Index *Column::find_index_with_id(Error *error,
+                                  String name,
+                                  Int *index_id) const {
+  for (Int i = 0; i < num_indexes(); ++i) {
+    if (name == indexes_[i]->name()) {
+      if (index_id != nullptr) {
+        *index_id = i;
+      }
+      return indexes_[i].get();
+    }
+  }
+  GRNXX_ERROR_SET(error, NOT_FOUND, "Index not found: name = \"%.*s\"",
+                  static_cast<int>(name.size()), name.data());
+  return nullptr;
 }
 
 // -- ColumnImpl<T> --
