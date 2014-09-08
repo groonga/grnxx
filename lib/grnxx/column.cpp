@@ -49,13 +49,11 @@ Index *Column::find_index(Error *error, String name) const {
 }
 
 bool Column::set(Error *error, Int row_id, const Datum &datum) {
-  // TODO: Index is not supported yet.
   GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not suported yet");
   return false;
 }
 
 bool Column::get(Error *error, Int row_id, Datum *datum) const {
-  // TODO: Index is not supported yet.
   GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not suported yet");
   return false;
 }
