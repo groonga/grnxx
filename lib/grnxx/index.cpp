@@ -15,6 +15,7 @@ Index::~Index() {}
 
 unique_ptr<Cursor> Index::create_cursor(
     Error *error,
+    const IndexRange &range,
     const CursorOptions &options) const {
   GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supoprted yet");
   return nullptr;
@@ -179,10 +180,51 @@ TreeIndex<Int>::~TreeIndex() {}
 
 unique_ptr<Cursor> TreeIndex<Int>::create_cursor(
     Error *error,
+    const IndexRange &range,
     const CursorOptions &options) const {
+  Int lower_bound_value = numeric_limits<Int>::min();
+  if (range.has_lower_bound()) {
+    const EndPoint &lower_bound = range.lower_bound();
+    if (lower_bound.value.type() != INT_DATA) {
+      GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Data type conflict");
+      return nullptr;
+    }
+    lower_bound_value = lower_bound.value.force_int();
+    if (lower_bound.type == EXCLUSIVE_END_POINT) {
+      if (lower_bound_value == numeric_limits<Int>::max()) {
+        // TODO: Invalid range.
+        return nullptr;
+      }
+      ++lower_bound_value;
+    }
+  }
+
+  Int upper_bound_value = numeric_limits<Int>::max();
+  if (range.has_upper_bound()) {
+    const EndPoint &upper_bound = range.upper_bound();
+    if (upper_bound.value.type() != INT_DATA) {
+      GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Data type conflict");
+      return nullptr;
+    }
+    upper_bound_value = upper_bound.value.force_int();
+    if (upper_bound.type == EXCLUSIVE_END_POINT) {
+      if (upper_bound_value == numeric_limits<Int>::min()) {
+        // TODO: Invalid range.
+        return nullptr;
+      }
+      --upper_bound_value;
+    }
+  }
+
+  if (lower_bound_value > upper_bound_value) {
+    // TODO: Invalid range.
+    return nullptr;
+  }
+
+  auto begin = map_.lower_bound(lower_bound_value);
+  auto end = map_.upper_bound(upper_bound_value);
   unique_ptr<Cursor> cursor(
-      new (nothrow) TreeIndexCursor<Int>(column_->table(),
-                                         map_.begin(), map_.end()));
+      new (nothrow) TreeIndexCursor<Int>(column_->table(), begin, end));
   if (!cursor) {
     GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
     return nullptr;

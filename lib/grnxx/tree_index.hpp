@@ -28,7 +28,8 @@ class TreeIndex<Int> : public Index {
 
   unique_ptr<Cursor> create_cursor(
       Error *error,
-      const CursorOptions &options = CursorOptions()) const;
+      const IndexRange &range,
+      const CursorOptions &options) const;
 
   bool insert(Error *error, Int row_id, const Datum &value);
   bool remove(Error *error, Int row_id, const Datum &value);

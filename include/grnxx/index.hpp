@@ -1,10 +1,70 @@
 #ifndef GRNXX_INDEX_HPP
 #define GRNXX_INDEX_HPP
 
+#include "grnxx/datum.hpp"
 #include "grnxx/name.hpp"
 #include "grnxx/types.hpp"
 
 namespace grnxx {
+
+enum EndPointType {
+  INCLUSIVE_END_POINT,
+  EXCLUSIVE_END_POINT
+};
+
+struct EndPoint {
+  Datum value;
+  EndPointType type;
+};
+
+class IndexRange {
+ public:
+  IndexRange()
+      : has_lower_bound_(false),
+        has_upper_bound_(false),
+        lower_bound_(),
+        upper_bound_() {}
+
+  bool has_lower_bound() const {
+    return has_lower_bound_;
+  }
+  bool has_upper_bound() const {
+    return has_upper_bound_;
+  }
+
+  const EndPoint &lower_bound() const {
+    return lower_bound_;
+  }
+  const EndPoint &upper_bound() const {
+    return upper_bound_;
+  }
+
+  void set_lower_bound(const Datum &value,
+                       EndPointType type = INCLUSIVE_END_POINT) {
+    has_lower_bound_ = true;
+    lower_bound_.value = value;
+    lower_bound_.type = type;
+  }
+  void set_upper_bound(const Datum &value,
+                       EndPointType type = INCLUSIVE_END_POINT) {
+    has_upper_bound_ = true;
+    upper_bound_.value = value;
+    upper_bound_.type = type;
+  }
+
+  void unset_lower_bound() {
+    has_lower_bound_ = false;
+  }
+  void unset_upper_bound() {
+    has_lower_bound_ = false;
+  }
+
+ private:
+  bool has_lower_bound_;
+  bool has_upper_bound_;
+  EndPoint lower_bound_;
+  EndPoint upper_bound_;
+};
 
 class Index {
  public:
@@ -30,6 +90,7 @@ class Index {
   // "error" != nullptr.
   virtual unique_ptr<Cursor> create_cursor(
       Error *error,
+      const IndexRange &range = IndexRange(),
       const CursorOptions &options = CursorOptions()) const;
 
   // Insert a new entry.
