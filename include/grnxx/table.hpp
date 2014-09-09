@@ -169,14 +169,6 @@ class Table {
       Error *error,
       const CursorOptions &options = CursorOptions()) const;
 
-  // Create an object to build pipelines.
-  //
-  // On success, returns a pointer to the builder.
-  // On failure, returns nullptr and stores error information into "*error" if
-  // "error" != nullptr.
-//  unique_ptr<PipelineBuilder> create_pipeline_builder(
-//      Error *error) const;
-
   // TODO: Grouping (drilldown).
   //
   // 分類器を作成する．
