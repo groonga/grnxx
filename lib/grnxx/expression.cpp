@@ -205,7 +205,7 @@ class TypedNode<Float> : public Node {
  public:
   using Value = Float;
 
-  TypedNode() : Node() {}
+  TypedNode() : Node(), scores_() {}
   virtual ~TypedNode() {}
 
   DataType data_type() const {
@@ -224,28 +224,29 @@ class TypedNode<Float> : public Node {
   }
 
   // Derived classes must override this member function.
-  virtual bool adjust(Error *error, ArrayRef<Record> records) = 0;
+  virtual bool adjust(Error *error, ArrayRef<Record> records);
 
   virtual bool evaluate(Error *error,
                         ArrayCRef<Record> records,
                         ArrayRef<Value> results) = 0;
+
+ private:
+  Array<Float> scores_;
 };
 
-//template <>
-//bool TypedNode<Float>::adjust(Error *error, ArrayRef<Record> records) {
-//  // TODO: This implementation should be overridden by derived classes.
-//  Array<Float> scores;
-//  if (!scores.resize(error, records.size())) {
-//    return false;
-//  }
-//  if (!evaluate(error, records, scores)) {
-//    return false;
-//  }
-//  for (Int i = 0; i < records.size(); ++i) {
-//    records.set_score(i, scores[i]);
-//  }
-//  return true;
-//}
+bool TypedNode<Float>::adjust(Error *error, ArrayRef<Record> records) {
+  // TODO: This implementation should be overridden by derived classes.
+  if (!scores_.resize(error, records.size())) {
+    return false;
+  }
+  if (!evaluate(error, records, scores_.ref())) {
+    return false;
+  }
+  for (Int i = 0; i < records.size(); ++i) {
+    records.set_score(i, scores_[i]);
+  }
+  return true;
+}
 
 // -- DatumNode --
 
