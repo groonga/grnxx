@@ -56,7 +56,8 @@ AC_CONFIG_FILES([Makefile
                  lib/Makefile
                  lib/grnxx/Makefile
                  src/Makefile
-                 test/Makefile])
+                 test/Makefile
+                 benchmark/Makefile])
 AC_OUTPUT
 
 echo

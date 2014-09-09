@@ -15,6 +15,9 @@ Makefile
 Makefile.in
 aclocal.m4
 autom4te.cache/
+benchmark/*.trs
+benchmark/benchmark_adjuster
+benchmark/benchmark_dummy
 compile
 config.*
 configure
@@ -37,5 +40,4 @@ test/test_index
 test/test_expression
 test/test_sorter
 test/test_pipeline
-test/benchmark_grnxx
 test-driver

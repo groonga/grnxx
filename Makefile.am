@@ -1,6 +1,11 @@
 ACLOCAL_AMFLAGS = -I m4
 
-SUBDIRS = include lib src test
+SUBDIRS =		\
+	include		\
+	lib		\
+	src		\
+	test		\
+	benchmark
 
 EXTRA_DIST =			\
 	COPYING-GPL-3.0		\

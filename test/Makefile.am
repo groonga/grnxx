@@ -1,13 +1,12 @@
-TESTS =					\
-	test_array			\
-	test_db				\
-	test_table			\
-	test_column			\
-	test_index			\
-	test_expression			\
-	test_sorter			\
-	test_pipeline			\
-	benchmark_grnxx
+TESTS =				\
+	test_array		\
+	test_db			\
+	test_table		\
+	test_column		\
+	test_index		\
+	test_expression		\
+	test_sorter		\
+	test_pipeline
 
 check_PROGRAMS = $(TESTS)
 
@@ -34,6 +33,3 @@ test_sorter_LDADD = $(top_srcdir)/lib/grnxx/libgrnxx.la
 
 test_pipeline_SOURCES = test_pipeline.cpp
 test_pipeline_LDADD = $(top_srcdir)/lib/grnxx/libgrnxx.la
-
-benchmark_grnxx_SOURCES = benchmark_grnxx.cpp
-benchmark_grnxx_LDADD = $(top_srcdir)/lib/grnxx/libgrnxx.la
