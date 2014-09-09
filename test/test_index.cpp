@@ -210,12 +210,74 @@ void test_remove() {
   }
 }
 
+void test_range() {
+  constexpr grnxx::Int NUM_ROWS = 1 << 16;
+
+  grnxx::Error error;
+
+  // Create a database with the default options.
+  auto db = grnxx::open_db(&error, "");
+  assert(db);
+
+  // Create a table with the default options.
+  auto table = db->create_table(&error, "Table");
+  assert(table);
+
+  // Create a column.
+  auto column = table->create_column(&error, "Int", grnxx::INT_DATA);
+  assert(column);
+
+  // Create an index.
+  auto index = column->create_index(&error, "Index", grnxx::TREE_INDEX);
+  assert(index);
+
+  // Generate random values.
+  // Int: [0, 100).
+  grnxx::Array<grnxx::Int> values;
+  assert(values.resize(&error, NUM_ROWS + 1));
+  for (grnxx::Int i = 1; i <= NUM_ROWS; ++i) {
+    values.set(i, mersenne_twister() % 100);
+  }
+
+  // Store generated values into columns.
+  for (grnxx::Int i = 1; i <= NUM_ROWS; ++i) {
+    grnxx::Int row_id;
+    assert(table->insert_row(&error, grnxx::NULL_ROW_ID,
+                             grnxx::Datum(), &row_id));
+    assert(row_id == i);
+    assert(column->set(&error, row_id, values[i]));
+  }
+
+  // Create a cursor.
+  grnxx::IndexRange range;
+  range.set_lower_bound(grnxx::Int(10), grnxx::INCLUSIVE_END_POINT);
+  range.set_upper_bound(grnxx::Int(90), grnxx::EXCLUSIVE_END_POINT);
+  auto cursor = index->create_cursor(&error, range);
+  assert(cursor);
+
+  grnxx::Array<grnxx::Record> records;
+  assert(cursor->read_all(&error, &records) != -1);
+  for (grnxx::Int i = 1; i < records.size(); ++i) {
+    assert(values[records.get_row_id(i)] <= values[records.get_row_id(i)]);
+  }
+
+  grnxx::Int count = 0;
+  for (grnxx::Int i = 1; i <= NUM_ROWS; ++i) {
+    if ((values[i] >= 10) && (values[i] < 90)) {
+      ++count;
+    }
+  }
+  assert(count == records.size());
+}
+
 int main() {
   test_index();
 
   test_set_and_index();
   test_index_and_set();
   test_remove();
+
+  test_range();
 
   return 0;
 }
