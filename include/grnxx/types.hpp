@@ -84,6 +84,7 @@ enum DataType {
 using Bool  = bool;
 
 using Int   = int64_t;
+using UInt  = uint64_t;
 
 using Float = double;
 
@@ -209,22 +210,22 @@ class Vector<Bool> {
  public:
   Vector() = default;
   Vector(std::initializer_list<Bool> bits) : data_(0) {
-    uint64_t size = static_cast<uint64_t>(bits.size());
+    UInt size = static_cast<UInt>(bits.size());
     if (size > 58) {
       size = 58;
     }
-    uint64_t i = 0;
+    UInt i = 0;
     for (auto it = bits.begin(); it != bits.end(); ++it) {
       if (*it) {
-        data_ |= uint64_t(1) << i;
+        data_ |= UInt(1) << i;
       }
       ++i;
     }
     data_ |= size << 58;
   }
-  Vector(uint64_t bits, Int size)
+  Vector(UInt bits, Int size)
       : data_((bits & mask(size)) |
-              (static_cast<uint64_t>(std::min(size, Int(58))) << 58)) {}
+              (static_cast<UInt>(std::min(size, Int(58))) << 58)) {}
   Vector(const Vector &) = default;
 
   Vector &operator=(const Vector &) = default;
@@ -237,16 +238,16 @@ class Vector<Bool> {
   //
   // If "i" is invalid, the result is undefined.
   Bool get(Int i) const {
-    return (data_ & (uint64_t(1) << i)) != 0;
+    return (data_ & (UInt(1) << i)) != 0;
   }
   // Set the "i"-th Bool value.
   //
   // If "i" is invalid, the result is undefined.
   void set(Int i, Bool value) {
     if (value) {
-      data_ |= uint64_t(1) << i;
+      data_ |= UInt(1) << i;
     } else {
-      data_ &= ~(uint64_t(1) << i);
+      data_ &= ~(UInt(1) << i);
     }
   }
 
@@ -258,15 +259,15 @@ class Vector<Bool> {
   }
 
   // Return the set of Bool values.
-  uint64_t bits() const {
+  UInt bits() const {
     return data_ & mask(58);
   }
 
  private:
-  uint64_t data_;
+  UInt data_;
 
-  static uint64_t mask(Int size) {
-    return (uint64_t(1) << size) - 1;
+  static UInt mask(Int size) {
+    return (UInt(1) << size) - 1;
   }
 };
 

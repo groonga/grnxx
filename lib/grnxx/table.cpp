@@ -498,12 +498,12 @@ Table::Table()
       bitmap_indexes_() {}
 
 void Table::set_bit(Int i) {
-  bitmap_[i / 64] |= uint64_t(1) << (i % 64);
-  if (bitmap_[i / 64] == ~uint64_t(0)) {
+  bitmap_[i / 64] |= UInt(1) << (i % 64);
+  if (bitmap_[i / 64] == ~UInt(0)) {
     for (Int index_id = 0; index_id < bitmap_indexes_.size(); ++index_id) {
       i /= 64;
-      bitmap_indexes_[index_id][i / 64] |= uint64_t(1) << (i % 64);
-      if (bitmap_indexes_[index_id][i / 64] != ~uint64_t(0)) {
+      bitmap_indexes_[index_id][i / 64] |= UInt(1) << (i % 64);
+      if (bitmap_indexes_[index_id][i / 64] != ~UInt(0)) {
         break;
       }
     }
@@ -511,13 +511,13 @@ void Table::set_bit(Int i) {
 }
 
 void Table::unset_bit(Int i) {
-  bool is_full = bitmap_[i / 64] == ~uint64_t(0);
-  bitmap_[i / 64] &= ~(uint64_t(1) << (i % 64));
+  bool is_full = bitmap_[i / 64] == ~UInt(0);
+  bitmap_[i / 64] &= ~(UInt(1) << (i % 64));
   if (is_full) {
     for (Int index_id = 0; index_id < bitmap_indexes_.size(); ++index_id) {
       i /= 64;
-      is_full = bitmap_indexes_[index_id][i / 64] == ~uint64_t(0);
-      bitmap_indexes_[index_id][i / 64] &= ~(uint64_t(1) << (i % 64));
+      is_full = bitmap_indexes_[index_id][i / 64] == ~UInt(0);
+      bitmap_indexes_[index_id][i / 64] &= ~(UInt(1) << (i % 64));
       if (!is_full) {
         break;
       }

@@ -15,7 +15,7 @@ template <>
 class ArrayCRef<Bool> {
  public:
   using Value = Bool;
-  using Block = uint64_t;
+  using Block = UInt;
 
   ArrayCRef() = default;
   ArrayCRef(const ArrayCRef &) = default;
@@ -81,7 +81,7 @@ template <>
 class ArrayRef<Bool> {
  public:
   using Value = Bool;
-  using Block = uint64_t;
+  using Block = UInt;
 
   ArrayRef() = default;
   ArrayRef(const ArrayRef &) = default;
@@ -185,7 +185,7 @@ template <>
 class Array<Bool> {
  public:
   using Value = Bool;
-  using Block = uint64_t;
+  using Block = UInt;
 
   Array() : blocks_(), size_(0), capacity_(0) {}
   ~Array() {}

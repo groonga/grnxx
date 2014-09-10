@@ -190,8 +190,8 @@ class Table {
   Column *key_column_;
   Int num_rows_;
   Int max_row_id_;
-  Array<uint64_t> bitmap_;
-  Array<Array<uint64_t>> bitmap_indexes_;
+  Array<UInt> bitmap_;
+  Array<Array<UInt>> bitmap_indexes_;
 
   // Create a new table.
   //

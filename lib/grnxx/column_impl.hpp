@@ -126,7 +126,7 @@ class ColumnImpl<Text> : public Column {
   }
 
  protected:
-  Array<uint64_t> headers_;
+  Array<UInt> headers_;
   Array<char> bodies_;
 
   ColumnImpl();
@@ -176,7 +176,7 @@ class ColumnImpl<Vector<Int>> : public Column {
   }
 
  protected:
-  Array<uint64_t> headers_;
+  Array<UInt> headers_;
   Array<Int> bodies_;
 
   ColumnImpl();
@@ -226,7 +226,7 @@ class ColumnImpl<Vector<Float>> : public Column {
   }
 
  protected:
-  Array<uint64_t> headers_;
+  Array<UInt> headers_;
   Array<Float> bodies_;
 
   ColumnImpl();
@@ -276,7 +276,7 @@ class ColumnImpl<Vector<GeoPoint>> : public Column {
   }
 
  protected:
-  Array<uint64_t> headers_;
+  Array<UInt> headers_;
   Array<GeoPoint> bodies_;
 
   ColumnImpl();
