@@ -15,8 +15,8 @@ void print_version() {
   std::cout << std::endl;
 }
 
-void print_usage(int argc, char *argv[]) {
-  std::cout << "Usage: " << argv[0] << " [OPTION]...\n\n"
+void print_usage(const char *name) {
+  std::cout << "Usage: " << name << " [OPTION]...\n\n"
                "Options:\n"
                "  -h, --help:     print this help\n"
                "  -v, --version:  print grnxx version\n"
@@ -36,7 +36,7 @@ int main(int argc, char *argv[]) {
                                 long_options, nullptr)) != -1) {
     switch (value) {
       case 'h': {
-        print_usage(argc, argv);
+        print_usage(argv[0]);
         return 0;
       }
       case 'v': {
@@ -44,7 +44,7 @@ int main(int argc, char *argv[]) {
         return 0;
       }
       default: {
-        print_usage(argc, argv);
+        print_usage(argv[0]);
         return 1;
       }
     }
