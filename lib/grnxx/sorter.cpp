@@ -571,12 +571,12 @@ unique_ptr<Sorter> Sorter::create(
   return sorter;
 }
 
-bool Sorter::reset(Error *error, Array<Record> *records) {
+bool Sorter::reset(Error *, Array<Record> *records) {
   records_ = records;
   return true;
 }
 
-bool Sorter::progress(Error *error) {
+bool Sorter::progress(Error *) {
   // TODO: Incremental sorting is not supported yet.
   return true;
 }
