@@ -207,15 +207,16 @@ class ExpressionBuilder {
     return table_;
   }
 
-  // Push a datum.
+  // Push a node associated with a constant.
   //
   // On success, returns true.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
   bool push_datum(Error *error, const Datum &datum);
 
-  // Push a column.
+  // Push a node associated with a column.
   //
+  // TODO: "_id" and "_score" will be obsolete.
   // If "name" == "_id", pushes a pseudo column associated with row IDs.
   // If "name" == "_score", pushes a pseudo column associated with scores.
   //
@@ -224,7 +225,7 @@ class ExpressionBuilder {
   // "error" != nullptr.
   bool push_column(Error *error, String name);
 
-  // Push an operator.
+  // Push a node associated with an operator.
   //
   // Pops operands and pushes an operator.
   // Fails if there are not enough operands.
