@@ -102,8 +102,8 @@ Table *DB::find_table(Error *error, String name) const {
 }
 
 bool DB::save(Error *error,
-              String path,
-              const DBOptions &options) const {
+              String,
+              const DBOptions &) const {
   // TODO: Named DB is not supported yet.
   GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
   return false;
@@ -129,7 +129,7 @@ Table *DB::find_table_with_id(Error *error,
 
 unique_ptr<DB> open_db(Error *error,
                        String path,
-                       const DBOptions &options) {
+                       const DBOptions &) {
   if (path.size() != 0) {
     // TODO: Named DB is not supported yet.
     GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
@@ -143,7 +143,7 @@ unique_ptr<DB> open_db(Error *error,
   return db;
 }
 
-bool remove_db(Error *error, String path, const DBOptions &options) {
+bool remove_db(Error *error, String, const DBOptions &) {
   // TODO: Named DB is not supported yet.
   GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
   return false;
