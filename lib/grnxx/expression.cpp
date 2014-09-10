@@ -2679,6 +2679,20 @@ class Builder {
   // "error" != nullptr.
   bool push_datum(Error *error, const Datum &datum);
 
+  // Push a node associated with row IDs of Records.
+  //
+  // On success, returns true.
+  // On failure, returns false and stores error information into "*error" if
+  // "error" != nullptr.
+  bool push_row_id(Error *error);
+
+  // Push a node associated with scores of Records.
+  //
+  // On success, returns true.
+  // On failure, returns false and stores error information into "*error" if
+  // "error" != nullptr.
+  bool push_score(Error *error);
+
   // Push a column.
   //
   // If "name" == "_id", pushes a pseudo column associated with row IDs.
@@ -2793,7 +2807,6 @@ class Builder {
       unique_ptr<Node> &&arg2);
 };
 
-
 unique_ptr<Builder> Builder::create(Error *error, const Table *table) {
   unique_ptr<Builder> builder(new (nothrow) Builder(table));
   if (!builder) {
@@ -2809,6 +2822,34 @@ bool Builder::push_datum(Error *error, const Datum &datum) {
     return false;
   }
   unique_ptr<Node> node = create_datum_node(error, datum);
+  if (!node) {
+    return false;
+  }
+  // This push_back() must not fail because a space is already reserved.
+  stack_.push_back(nullptr, std::move(node));
+  return true;
+}
+
+bool Builder::push_row_id(Error *error) {
+  // Reserve a space for a new node.
+  if (!stack_.reserve(error, stack_.size() + 1)) {
+    return false;
+  }
+  unique_ptr<Node> node(RowIDNode::create(error));
+  if (!node) {
+    return false;
+  }
+  // This push_back() must not fail because a space is already reserved.
+  stack_.push_back(nullptr, std::move(node));
+  return true;
+}
+
+bool Builder::push_score(Error *error) {
+  // Reserve a space for a new node.
+  if (!stack_.reserve(error, stack_.size() + 1)) {
+    return false;
+  }
+  unique_ptr<Node> node(ScoreNode::create(error));
   if (!node) {
     return false;
   }
@@ -3681,6 +3722,14 @@ ExpressionBuilder::~ExpressionBuilder() {}
 
 bool ExpressionBuilder::push_datum(Error *error, const Datum &datum) {
   return builders_.back()->push_datum(error, datum);
+}
+
+bool ExpressionBuilder::push_row_id(Error *error) {
+  return builders_.back()->push_row_id(error);
+}
+
+bool ExpressionBuilder::push_score(Error *error) {
+  return builders_.back()->push_score(error);
 }
 
 bool ExpressionBuilder::push_column(Error *error, String name) {

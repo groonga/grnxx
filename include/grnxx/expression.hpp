@@ -214,6 +214,20 @@ class ExpressionBuilder {
   // "error" != nullptr.
   bool push_datum(Error *error, const Datum &datum);
 
+  // Push a node associated with row IDs of Records.
+  //
+  // On success, returns true.
+  // On failure, returns false and stores error information into "*error" if
+  // "error" != nullptr.
+  bool push_row_id(Error *error);
+
+  // Push a node associated with scores of Records.
+  //
+  // On success, returns true.
+  // On failure, returns false and stores error information into "*error" if
+  // "error" != nullptr.
+  bool push_score(Error *error);
+
   // Push a node associated with a column.
   //
   // TODO: "_id" and "_score" will be obsolete.
