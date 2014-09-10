@@ -326,7 +326,7 @@ Column *Table::find_column(Error *error, String name) const {
   return nullptr;
 }
 
-bool Table::set_key_column(Error *error, String name) {
+bool Table::set_key_column(Error *error, String) {
   if (key_column_) {
     GRNXX_ERROR_SET(error, ALREADY_EXISTS, "Key column already exists");
     return false;
@@ -454,7 +454,7 @@ bool Table::test_row(Error *error, Int row_id) const {
   return true;
 }
 
-Int Table::find_row(Error *error, const Datum &key) const {
+Int Table::find_row(Error *error, const Datum &) const {
   if (!key_column_) {
     GRNXX_ERROR_SET(error, NO_KEY_COLUMN, "No key column");
     return NULL_ROW_ID;
@@ -472,7 +472,7 @@ unique_ptr<Cursor> Table::create_cursor(
 unique_ptr<Table> Table::create(Error *error,
                                 DB *db,
                                 String name,
-                                const TableOptions &options) {
+                                const TableOptions &) {
   unique_ptr<Table> table(new Table);
   table->db_ = db;
   if (!table->name_.assign(error, name)) {
