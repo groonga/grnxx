@@ -75,14 +75,14 @@ class TypedNode : public Node {
   }
 
   bool filter(Error *error,
-              ArrayCRef<Record> input_records,
-              ArrayRef<Record> *output_records) {
+              ArrayCRef<Record>,
+              ArrayRef<Record> *) {
     // Other than TypedNode<Bool> don't support filter().
     GRNXX_ERROR_SET(error, INVALID_OPERATION, "Invalid operation");
     return false;
   }
 
-  bool adjust(Error *error, ArrayRef<Record> records) {
+  bool adjust(Error *error, ArrayRef<Record>) {
     // Other than TypedNode<Float> don't support adjust().
     GRNXX_ERROR_SET(error, INVALID_OPERATION, "Invalid operation");
     return false;
@@ -120,7 +120,7 @@ class TypedNode<Bool> : public Node {
                       ArrayCRef<Record> input_records,
                       ArrayRef<Record> *output_records) = 0;
 
-  bool adjust(Error *error, ArrayRef<Record> records) {
+  bool adjust(Error *error, ArrayRef<Record>) {
     // Other than TypedNode<Float> don't support adjust().
     GRNXX_ERROR_SET(error, INVALID_OPERATION, "Invalid operation");
     return false;
@@ -172,14 +172,14 @@ class TypedNode<Int> : public Node {
   }
 
   bool filter(Error *error,
-              ArrayCRef<Record> input_records,
-              ArrayRef<Record> *output_records) {
+              ArrayCRef<Record>,
+              ArrayRef<Record> *) {
     // Other than TypedNode<Bool> don't support filter().
     GRNXX_ERROR_SET(error, INVALID_OPERATION, "Invalid operation");
     return false;
   }
 
-  bool adjust(Error *error, ArrayRef<Record> records) {
+  bool adjust(Error *error, ArrayRef<Record>) {
     // Other than TypedNode<Float> don't support adjust().
     GRNXX_ERROR_SET(error, INVALID_OPERATION, "Invalid operation");
     return false;
@@ -216,8 +216,8 @@ class TypedNode<Float> : public Node {
   }
 
   bool filter(Error *error,
-              ArrayCRef<Record> input_records,
-              ArrayRef<Record> *output_records) {
+              ArrayCRef<Record>,
+              ArrayRef<Record> *) {
     // Other than TypedNode<Bool> don't support filter().
     GRNXX_ERROR_SET(error, INVALID_OPERATION, "Invalid operation");
     return false;
@@ -271,7 +271,7 @@ class DatumNode : public TypedNode<T> {
     return DATUM_NODE;
   }
 
-  bool evaluate(Error *error,
+  bool evaluate(Error *,
                 ArrayCRef<Record> records,
                 ArrayRef<Value> results) {
     for (Int i = 0; i < records.size(); ++i) {
@@ -316,7 +316,7 @@ class DatumNode<Bool> : public TypedNode<Bool> {
   Value datum_;
 };
 
-bool DatumNode<Bool>::filter(Error *error,
+bool DatumNode<Bool>::filter(Error *,
                              ArrayCRef<Record> input_records,
                              ArrayRef<Record> *output_records) {
   if (datum_) {
@@ -331,7 +331,7 @@ bool DatumNode<Bool>::filter(Error *error,
   return true;
 }
 
-bool DatumNode<Bool>::evaluate(Error *error,
+bool DatumNode<Bool>::evaluate(Error *,
                                ArrayCRef<Record> records,
                                ArrayRef<Value> results) {
   // TODO: Fill results per 64 bits.
@@ -362,13 +362,13 @@ class DatumNode<Float> : public TypedNode<Float> {
     return DATUM_NODE;
   }
 
-  bool adjust(Error *error, ArrayRef<Record> records) {
+  bool adjust(Error *, ArrayRef<Record> records) {
     for (Int i = 0; i < records.size(); ++i) {
       records.set_score(i, datum_);
     }
     return true;
   }
-  bool evaluate(Error *error,
+  bool evaluate(Error *,
                 ArrayCRef<Record> records,
                 ArrayRef<Value> results) {
     for (Int i = 0; i < records.size(); ++i) {
@@ -401,7 +401,7 @@ class DatumNode<Text> : public TypedNode<Text> {
     return DATUM_NODE;
   }
 
-  bool evaluate(Error *error,
+  bool evaluate(Error *,
                 ArrayCRef<Record> records,
                 ArrayRef<Value> results) {
     Text datum(datum_.data(), datum_.size());
@@ -421,7 +421,7 @@ class RowIDNode : public TypedNode<Int> {
  public:
   using Value = Int;
 
-  static unique_ptr<Node> create(Error *error, Value datum) {
+  static unique_ptr<Node> create(Error *error) {
     unique_ptr<Node> node(new (nothrow) RowIDNode);
     if (!node) {
       GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
@@ -435,7 +435,7 @@ class RowIDNode : public TypedNode<Int> {
     return ROW_ID_NODE;
   }
 
-  bool evaluate(Error *error,
+  bool evaluate(Error *,
                 ArrayCRef<Record> records,
                 ArrayRef<Value> results) {
     for (Int i = 0; i < records.size(); ++i) {
@@ -451,7 +451,7 @@ class ScoreNode : public TypedNode<Float> {
  public:
   using Value = Float;
 
-  static unique_ptr<Node> create(Error *error, Value datum) {
+  static unique_ptr<Node> create(Error *error) {
     unique_ptr<Node> node(new (nothrow) ScoreNode);
     if (!node) {
       GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
@@ -465,11 +465,11 @@ class ScoreNode : public TypedNode<Float> {
     return SCORE_NODE;
   }
 
-  bool adjust(Error *error, ArrayRef<Record> records) {
+  bool adjust(Error *, ArrayRef<Record>) {
     // Nothing to do.
     return true;
   }
-  bool evaluate(Error *error,
+  bool evaluate(Error *,
                 ArrayCRef<Record> records,
                 ArrayRef<Value> results) {
     for (Int i = 0; i < records.size(); ++i) {
@@ -502,7 +502,7 @@ class ColumnNode : public TypedNode<T> {
     return COLUMN_NODE;
   }
 
-  bool evaluate(Error *error,
+  bool evaluate(Error *,
                 ArrayCRef<Record> records,
                 ArrayRef<Value> results) {
     for (Int i = 0; i < records.size(); ++i) {
@@ -539,7 +539,7 @@ class ColumnNode<Bool> : public TypedNode<Bool> {
   bool filter(Error *error,
               ArrayCRef<Record> input_records,
               ArrayRef<Record> *output_records);
-  bool evaluate(Error *error,
+  bool evaluate(Error *,
                 ArrayCRef<Record> records,
                 ArrayRef<Value> results) {
     for (Int i = 0; i < records.size(); ++i) {
@@ -552,7 +552,7 @@ class ColumnNode<Bool> : public TypedNode<Bool> {
   const ColumnImpl<Value> *column_;
 };
 
-bool ColumnNode<Bool>::filter(Error *error,
+bool ColumnNode<Bool>::filter(Error *,
                               ArrayCRef<Record> input_records,
                               ArrayRef<Record> *output_records) {
   Int dest = 0;
@@ -587,7 +587,7 @@ class ColumnNode<Int> : public TypedNode<Int> {
     return COLUMN_NODE;
   }
 
-  bool evaluate(Error *error,
+  bool evaluate(Error *,
                 ArrayCRef<Record> records,
                 ArrayRef<Value> results) {
     for (Int i = 0; i < records.size(); ++i) {
@@ -621,13 +621,13 @@ class ColumnNode<Float> : public TypedNode<Float> {
     return COLUMN_NODE;
   }
 
-  bool adjust(Error *error, ArrayRef<Record> records) {
+  bool adjust(Error *, ArrayRef<Record> records) {
     for (Int i = 0; i < records.size(); ++i) {
       records.set_score(i, column_->get(records.get_row_id(i)));
     }
     return true;
   }
-  bool evaluate(Error *error,
+  bool evaluate(Error *,
                 ArrayCRef<Record> records,
                 ArrayRef<Value> results) {
     for (Int i = 0; i < records.size(); ++i) {
@@ -2953,9 +2953,8 @@ unique_ptr<Node> Builder::create_column_node(
     String name) {
   if (name == "_id") {
     // Create a node associated with row IDs of records.
-    unique_ptr<Node> node(new (nothrow) RowIDNode());
+    unique_ptr<Node> node(RowIDNode::create(error));
     if (!node) {
-      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
       return nullptr;
     }
     return node;
@@ -2963,9 +2962,8 @@ unique_ptr<Node> Builder::create_column_node(
 
   if (name == "_score") {
     // Create a node associated with scores of records.
-    unique_ptr<Node> node(new (nothrow) ScoreNode());
+    unique_ptr<Node> node(ScoreNode::create(error));
     if (!node) {
-      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
       return nullptr;
     }
     return node;
