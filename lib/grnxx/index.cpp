@@ -15,8 +15,8 @@ Index::~Index() {}
 
 unique_ptr<Cursor> Index::create_cursor(
     Error *error,
-    const IndexRange &range,
-    const CursorOptions &options) const {
+    const IndexRange &,
+    const CursorOptions &) const {
   GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supoprted yet");
   return nullptr;
 }
@@ -30,7 +30,7 @@ bool Index::initialize_base(Error *error,
                             Column *column,
                             String name,
                             IndexType type,
-                            const IndexOptions &options) {
+                            const IndexOptions &) {
   column_ = column;
   if (!name_.assign(error, name)) {
     return false;
@@ -181,7 +181,7 @@ TreeIndex<Int>::~TreeIndex() {}
 unique_ptr<Cursor> TreeIndex<Int>::create_cursor(
     Error *error,
     const IndexRange &range,
-    const CursorOptions &options) const {
+    const CursorOptions &) const {
   Int lower_bound_value = numeric_limits<Int>::min();
   if (range.has_lower_bound()) {
     const EndPoint &lower_bound = range.lower_bound();
@@ -232,7 +232,7 @@ unique_ptr<Cursor> TreeIndex<Int>::create_cursor(
   return cursor;
 }
 
-bool TreeIndex<Int>::insert(Error *error, Int row_id, const Datum &value) {
+bool TreeIndex<Int>::insert(Error *, Int row_id, const Datum &value) {
   auto result = map_[value.force_int()].insert(row_id);
   if (!result.second) {
     // Already exists.
@@ -241,7 +241,7 @@ bool TreeIndex<Int>::insert(Error *error, Int row_id, const Datum &value) {
   return true;
 }
 
-bool TreeIndex<Int>::remove(Error *error, Int row_id, const Datum &value) {
+bool TreeIndex<Int>::remove(Error *, Int row_id, const Datum &value) {
   auto map_it = map_.find(value.force_int());
   if (map_it == map_.end()) {
     return false;
