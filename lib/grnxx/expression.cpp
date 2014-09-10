@@ -3615,6 +3615,22 @@ bool Expression::evaluate(Error *error,
   return typed_root->evaluate(error, records, results);
 }
 
+#define GRNXX_INSTANTIATE_EXPRESSION_EVALUATE(type) \
+  template bool Expression::evaluate(Error *error, \
+                                     ArrayCRef<Record> records, \
+                                     ArrayRef<type> results)
+GRNXX_INSTANTIATE_EXPRESSION_EVALUATE(Bool);
+GRNXX_INSTANTIATE_EXPRESSION_EVALUATE(Int);
+GRNXX_INSTANTIATE_EXPRESSION_EVALUATE(Float);
+GRNXX_INSTANTIATE_EXPRESSION_EVALUATE(GeoPoint);
+GRNXX_INSTANTIATE_EXPRESSION_EVALUATE(Text);
+GRNXX_INSTANTIATE_EXPRESSION_EVALUATE(Vector<Bool>);
+GRNXX_INSTANTIATE_EXPRESSION_EVALUATE(Vector<Int>);
+GRNXX_INSTANTIATE_EXPRESSION_EVALUATE(Vector<Float>);
+GRNXX_INSTANTIATE_EXPRESSION_EVALUATE(Vector<GeoPoint>);
+GRNXX_INSTANTIATE_EXPRESSION_EVALUATE(Vector<Text>);
+#undef GRNXX_INSTANTIATE_EXPRESSION_EVALUATE
+
 unique_ptr<Expression> Expression::create(Error *error,
                                           const Table *table,
                                           unique_ptr<Node> &&root,
