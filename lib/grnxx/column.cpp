@@ -102,22 +102,23 @@ Index *Column::find_index(Error *error, String name) const {
       return indexes_[index_id].get();
     }
   }
+  GRNXX_ERROR_SET(error, NOT_FOUND, "Index not found");
   return nullptr;
 }
 
-bool Column::set(Error *error, Int row_id, const Datum &datum) {
+bool Column::set(Error *error, Int, const Datum &) {
   GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not suported yet");
   return false;
 }
 
-bool Column::get(Error *error, Int row_id, Datum *datum) const {
+bool Column::get(Error *error, Int, Datum *) const {
   GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not suported yet");
   return false;
 }
 
 unique_ptr<Cursor> Column::create_cursor(
     Error *error,
-    const CursorOptions &options) const {
+    const CursorOptions &) const {
   // TODO: Cursor is not supported yet.
   GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not suported yet");
   return nullptr;
@@ -205,7 +206,7 @@ bool Column::is_removable() {
   return true;
 }
 
-bool Column::set_initial_key(Error *error, Int row_id, const Datum &key) {
+bool Column::set_initial_key(Error *error, Int, const Datum &) {
   // TODO: Key column is not supported yet.
   GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not suported yet");
   return false;
