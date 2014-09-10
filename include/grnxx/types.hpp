@@ -70,11 +70,6 @@ enum DataType {
   // Value: Byte string.
   // Default: "".
   TEXT_DATA,
-  // TODO: Not supported yet.
-  // Type: Reference.
-  // Value: Reference to a row.
-  // Default: NULL.
-  ROW_REF_DATA,
 
   // TODO: Not supported yet.
   //       Data types for I/O are required.
@@ -88,7 +83,6 @@ enum DataType {
   FLOAT_VECTOR_DATA,
   GEO_POINT_VECTOR_DATA,
   TEXT_VECTOR_DATA,
-  ROW_REF_VECTOR_DATA
 };
 
 using Bool  = bool;
