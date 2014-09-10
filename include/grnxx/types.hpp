@@ -71,10 +71,6 @@ enum DataType {
   // Default: "".
   TEXT_DATA,
 
-  // TODO: Not supported yet.
-  //       Data types for I/O are required.
-  //       BOOL_VECTOR and TEXT_VECTOR are the problem.
-  //
   // Type: Vector.
   // Value: Vector of above data types.
   // Default: {}.
