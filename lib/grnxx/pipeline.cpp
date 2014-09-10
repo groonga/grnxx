@@ -185,7 +185,7 @@ bool Pipeline::flush(Error *error, Array<Record> *records) {
 unique_ptr<Pipeline> Pipeline::create(Error *error,
                                       const Table *table,
                                       unique_ptr<PipelineNode> &&root,
-                                      const PipelineOptions &options) {
+                                      const PipelineOptions &) {
   unique_ptr<Pipeline> pipeline(
       new (nothrow) Pipeline(table, std::move(root)));
   if (!pipeline) {
