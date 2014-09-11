@@ -1,7 +1,6 @@
 #ifndef GRNXX_COLUMN_HPP
 #define GRNXX_COLUMN_HPP
 
-#include "grnxx/array.hpp"
 #include "grnxx/name.hpp"
 #include "grnxx/types.hpp"
 

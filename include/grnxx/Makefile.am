@@ -1,9 +1,7 @@
 SUBDIRS =		\
-	array		\
 	types
 
 pkginclude_HEADERS =	\
-	array.hpp	\
 	column.hpp	\
 	cursor.hpp	\
 	db.hpp		\

@@ -1,7 +1,6 @@
 #ifndef GRNXX_EXPRESSION_HPP
 #define GRNXX_EXPRESSION_HPP
 
-#include "grnxx/array.hpp"
 #include "grnxx/types.hpp"
 
 namespace grnxx {

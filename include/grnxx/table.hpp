@@ -1,7 +1,6 @@
 #ifndef GRNXX_TABLE_HPP
 #define GRNXX_TABLE_HPP
 
-#include "grnxx/array.hpp"
 #include "grnxx/name.hpp"
 #include "grnxx/types.hpp"
 

@@ -1,7 +1,9 @@
-#ifndef GRNXX_ARRAY_BOOL_HPP
-#define GRNXX_ARRAY_BOOL_HPP
+#ifndef GRNXX_TYPES_ARRAY_BOOL_HPP
+#define GRNXX_TYPES_ARRAY_BOOL_HPP
 
-#include "grnxx/types.hpp"
+#include "grnxx/types/base_types.hpp"
+// TODO: Error will be provided in grnxx/types/error.hpp
+#include "grnxx/types/forward.hpp"
 
 namespace grnxx {
 
@@ -342,4 +344,4 @@ class Array<Bool> {
 
 }  // namespace grnxx
 
-#endif  // GRNXX_ARRAY_BOOL_HPP
+#endif  // GRNXX_TYPES_ARRAY_BOOL_HPP

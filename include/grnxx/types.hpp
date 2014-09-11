@@ -1,6 +1,7 @@
 #ifndef GRNXX_TYPES_HPP
 #define GRNXX_TYPES_HPP
 
+#include "grnxx/types/array.hpp"
 #include "grnxx/types/base_types.hpp"
 #include "grnxx/types/constants.hpp"
 #include "grnxx/types/data_types.hpp"
@@ -13,16 +14,6 @@
 #include "grnxx/types/vector.hpp"
 
 namespace grnxx {
-
-struct Record {
-  Int row_id;
-  Float score;
-
-  Record() = default;
-  Record(Int row_id, Float score) : row_id(row_id), score(score) {}
-
-  Record &operator=(const Record &) & = default;
-};
 
 struct SortOrder {
   unique_ptr<Expression> expression;

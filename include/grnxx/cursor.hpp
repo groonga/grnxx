@@ -1,7 +1,6 @@
 #ifndef GRNXX_CURSOR_HPP
 #define GRNXX_CURSOR_HPP
 
-#include "grnxx/array.hpp"
 #include "grnxx/types.hpp"
 
 namespace grnxx {

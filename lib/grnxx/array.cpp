@@ -1,4 +1,4 @@
-#include "grnxx/array.hpp"
+#include "grnxx/types.hpp"
 
 #include "grnxx/error.hpp"
 

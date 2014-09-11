@@ -1,7 +1,6 @@
 #ifndef GRNXX_PIPELINE_HPP
 #define GRNXX_PIPELINE_HPP
 
-#include "grnxx/array.hpp"
 #include "grnxx/sorter.hpp"
 #include "grnxx/types.hpp"
 

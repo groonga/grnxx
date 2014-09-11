@@ -1,7 +1,6 @@
 #ifndef GRNXX_SORTER_HPP
 #define GRNXX_SORTER_HPP
 
-#include "grnxx/array.hpp"
 #include "grnxx/types.hpp"
 
 namespace grnxx {

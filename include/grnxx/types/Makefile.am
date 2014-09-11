@@ -1,5 +1,9 @@
+SUBDIRS =		\
+	array
+
 pkgincludedir = ${includedir}/${PACKAGE}/types
 pkginclude_HEADERS =	\
+	array.hpp	\
 	base_types.hpp	\
 	constants.hpp	\
 	datum.hpp	\

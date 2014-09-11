@@ -1,7 +1,6 @@
 #ifndef GRNXX_DB_HPP
 #define GRNXX_DB_HPP
 
-#include "grnxx/array.hpp"
 #include "grnxx/types.hpp"
 
 namespace grnxx {

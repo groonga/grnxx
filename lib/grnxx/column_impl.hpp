@@ -1,7 +1,6 @@
 #ifndef GRNXX_COLUMN_IMPL_HPP
 #define GRNXX_COLUMN_IMPL_HPP
 
-#include "grnxx/array.hpp"
 #include "grnxx/column.hpp"
 
 namespace grnxx {

@@ -1,23 +1,21 @@
-#ifndef GRNXX_ARRAY_PRIMARY_HPP
-#define GRNXX_ARRAY_PRIMARY_HPP
+#ifndef GRNXX_TYPES_ARRAY_RECORD_HPP
+#define GRNXX_TYPES_ARRAY_RECORD_HPP
 
-#include "grnxx/types.hpp"
+#include "grnxx/types/base_types.hpp"
+#include "grnxx/types/data_types.hpp"
+// TODO: Error will be provided in grnxx/types/error.hpp
+#include "grnxx/types/forward.hpp"
 
 namespace grnxx {
-
-class ArrayErrorReporter {
- public:
-  static void report_memory_error(Error *error);
-};
 
 template <typename T> class ArrayCRef;
 template <typename T> class ArrayRef;
 template <typename T> class Array;
 
-template <typename T>
-class ArrayCRef {
+template <>
+class ArrayCRef<Record> {
  public:
-  using Value = T;
+  using Value = Record;
 
   ArrayCRef() = default;
   ArrayCRef(const ArrayCRef &) = default;
@@ -41,6 +39,12 @@ class ArrayCRef {
   const Value &get(Int i) const {
     return values_[i];
   }
+  Int get_row_id(Int i) const {
+    return values_[i].row_id;
+  }
+  Float get_score(Int i) const {
+    return values_[i].score;
+  }
 
   const Value &operator[](Int i) const {
     return values_[i];
@@ -60,10 +64,10 @@ class ArrayCRef {
   friend class Array<Value>;
 };
 
-template <typename T>
-class ArrayRef {
+template <>
+class ArrayRef<Record> {
  public:
-  using Value = T;
+  using Value = Record;
 
   ArrayRef() = default;
   ArrayRef(const ArrayRef &) = default;
@@ -105,16 +109,22 @@ class ArrayRef {
   const Value &get(Int i) const {
     return values_[i];
   }
+  Int get_row_id(Int i) const {
+    return values_[i].row_id;
+  }
+  Float get_score(Int i) const {
+    return values_[i].score;
+  }
   void set(Int i, const Value &value) {
     values_[i] = value;
   }
-  void set(Int i, Value &&value) {
-    values_[i] = std::move(value);
+  void set_row_id(Int i, Int row_id) {
+    values_[i].row_id = row_id;
+  }
+  void set_score(Int i, Float score) {
+    values_[i].score = score;
   }
 
-  Value &operator[](Int i) {
-    return values_[i];
-  }
   const Value &operator[](Int i) const {
     return values_[i];
   }
@@ -124,9 +134,9 @@ class ArrayRef {
   }
 
   void swap(Int i, Int j) {
-    Value temp = std::move(values_[i]);
-    values_[i] = std::move(values_[j]);
-    values_[j] = std::move(temp);
+    Value temp = values_[i];
+    values_[i] = values_[j];
+    values_[j] = temp;
   }
 
  private:
@@ -138,10 +148,10 @@ class ArrayRef {
   friend class Array<Value>;
 };
 
-template <typename T>
-class Array {
+template <>
+class Array<Record> {
  public:
-  using Value = T;
+  using Value = Record;
 
   Array() : buf_(), size_(0), capacity_(0) {}
   ~Array() {}
@@ -184,39 +194,32 @@ class Array {
   const Value &get(Int i) const {
     return data()[i];
   }
+  Int get_row_id(Int i) const {
+    return data()[i].row_id;
+  }
+  Float get_score(Int i) const {
+    return data()[i].score;
+  }
   void set(Int i, const Value &value) {
     data()[i] = value;
   }
-  void set(Int i, Value &&value) {
-    data()[i] = std::move(value);
+  void set_row_id(Int i, Int row_id) {
+    data()[i].row_id = row_id;
+  }
+  void set_score(Int i, Float score) {
+    data()[i].score = score;
   }
 
-  Value &operator[](Int i) {
-    return data()[i];
-  }
   const Value &operator[](Int i) const {
     return data()[i];
   }
 
-  Value &front() {
-    return *data();
-  }
   const Value &front() const {
     return *data();
   }
 
-  Value &back() {
-    return data()[size_ - 1];
-  }
   const Value &back() const {
     return data()[size_ - 1];
-  }
-
-  Value *data() {
-    return reinterpret_cast<Value *>(buf_.get());
-  }
-  const Value *data() const {
-    return reinterpret_cast<const Value *>(buf_.get());
   }
 
   Int size() const {
@@ -271,14 +274,6 @@ class Array {
     size_ = 0;
   }
 
-  void erase(Int i) {
-    for (Int j = i + 1; j < size_; ++j) {
-      data()[j - 1] = std::move(data()[j]);
-    }
-    data()[size_ - 1].~Value();
-    --size_;
-  }
-
   bool push_back(Error *error, const Value &value) {
     if (size_ == capacity_) {
       if (!resize_buf(error, size_ + 1)) {
@@ -289,25 +284,15 @@ class Array {
     ++size_;
     return true;
   }
-  bool push_back(Error *error, Value &&value) {
-    if (size_ == capacity_) {
-      if (!resize_buf(error, size_ + 1)) {
-        return false;
-      }
-    }
-    new (&data()[size_]) Value(std::move(value));
-    ++size_;
-    return true;
-  }
   void pop_back() {
     data()[size_ - 1].~Value();
     --size_;
   }
 
   void swap(Int i, Int j) {
-    Value temp = std::move(data()[i]);
-    data()[i] = std::move(data()[j]);
-    data()[j] = std::move(temp);
+    Value temp = data()[i];
+    data()[i] = data()[j];
+    data()[j] = temp;
   }
 
  private:
@@ -315,28 +300,17 @@ class Array {
   Int size_;
   Int capacity_;
 
-  // Assume new_size > capacity_.
-  bool resize_buf(Error *error, Int new_size) {
-    Int new_capacity = capacity_ * 2;
-    if (new_size > new_capacity) {
-      new_capacity = new_size;
-    }
-    Int new_buf_size = sizeof(Value) * new_capacity;
-    unique_ptr<char[]> new_buf(new (nothrow) char[new_buf_size]);
-    if (!new_buf) {
-      ArrayErrorReporter::report_memory_error(error);
-      return false;
-    }
-    Value *new_values = reinterpret_cast<Value *>(new_buf.get());
-    for (Int i = 0; i < size_; ++i) {
-      new (&new_values[i]) Value(std::move(data()[i]));
-    }
-    buf_ = std::move(new_buf);
-    capacity_ = new_capacity;
-    return true;
+  Value *data() {
+    return reinterpret_cast<Value *>(buf_.get());
   }
+  const Value *data() const {
+    return reinterpret_cast<const Value *>(buf_.get());
+  }
+
+  // Assume new_size > capacity_.
+  bool resize_buf(Error *error, Int new_size);
 };
 
 }  // namespace grnxx
 
-#endif  // GRNXX_ARRAY_PRIMARY_HPP
+#endif  // GRNXX_TYPES_ARRAY_RECORD_HPP

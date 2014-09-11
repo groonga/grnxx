@@ -23,6 +23,16 @@ using FloatVector    = Vector<Float>;
 using GeoPointVector = Vector<GeoPoint>;
 using TextVector     = Vector<Text>;
 
+struct Record {
+  Int row_id;
+  Float score;
+
+  Record() = default;
+  Record(Int row_id, Float score) : row_id(row_id), score(score) {}
+
+  Record &operator=(const Record &) & = default;
+};
+
 }  // namespace grnxx
 
 #endif  // GRNXX_TYPES_DATA_TYPES_HPP
