@@ -2,7 +2,6 @@
 
 #include "grnxx/column_impl.hpp"
 #include "grnxx/cursor.hpp"
-#include "grnxx/datum.hpp"
 #include "grnxx/db.hpp"
 #include "grnxx/error.hpp"
 #include "grnxx/index.hpp"

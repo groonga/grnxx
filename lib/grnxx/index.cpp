@@ -3,7 +3,6 @@
 #include "grnxx/column.hpp"
 #include "grnxx/column_impl.hpp"
 #include "grnxx/cursor.hpp"
-#include "grnxx/datum.hpp"
 #include "grnxx/table.hpp"
 #include "grnxx/tree_index.hpp"
 

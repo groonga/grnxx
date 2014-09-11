@@ -1,7 +1,6 @@
 #ifndef GRNXX_INDEX_HPP
 #define GRNXX_INDEX_HPP
 
-#include "grnxx/datum.hpp"
 #include "grnxx/name.hpp"
 #include "grnxx/types.hpp"
 

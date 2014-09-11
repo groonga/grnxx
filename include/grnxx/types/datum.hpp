@@ -1,7 +1,12 @@
-#ifndef GRNXX_DATUM_HPP
-#define GRNXX_DATUM_HPP
+#ifndef GRNXX_TYPES_DATUM_HPP
+#define GRNXX_TYPES_DATUM_HPP
 
-#include "grnxx/types.hpp"
+#include "grnxx/types/base_types.hpp"
+#include "grnxx/types/constants.hpp"
+#include "grnxx/types/data_types.hpp"
+#include "grnxx/types/geo_point.hpp"
+#include "grnxx/types/string.hpp"
+#include "grnxx/types/vector.hpp"
 
 namespace grnxx {
 
@@ -128,4 +133,4 @@ class Datum {
 
 }  // namespace grnxx
 
-#endif  // GRNXX_DATUM_HPP
+#endif  // GRNXX_TYPES_DATUM_HPP
