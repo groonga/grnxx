@@ -3,18 +3,11 @@
 
 namespace grnxx {
 
-// TODO: Error should be provided in types.hpp.
-
-// Error information.
-class Error;
-
 // Database persistent object types.
 class DB;
 class Table;
 class Column;
 class Index;
-
-// TODO: Datum should be provided in types.hpp.
 
 // Database temporary object types.
 class Datum;

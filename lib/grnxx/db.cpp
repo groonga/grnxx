@@ -1,6 +1,5 @@
 #include "grnxx/db.hpp"
 
-#include "grnxx/error.hpp"
 #include "grnxx/table.hpp"
 
 namespace grnxx {

@@ -8,6 +8,7 @@ pkginclude_HEADERS =	\
 	constants.hpp	\
 	datum.hpp	\
 	data_types.hpp	\
+	error.hpp	\
 	forward.hpp	\
 	geo_point.hpp	\
 	options.hpp	\

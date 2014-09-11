@@ -1,7 +1,5 @@
 #include "grnxx/types.hpp"
 
-#include "grnxx/error.hpp"
-
 namespace grnxx {
 
 void ArrayErrorReporter::report_memory_error(Error *error) {

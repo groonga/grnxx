@@ -1,7 +1,7 @@
-#ifndef GRNXX_ERROR_HPP
-#define GRNXX_ERROR_HPP
+#ifndef GRNXX_TYPES_ERROR_HPP
+#define GRNXX_TYPES_ERROR_HPP
 
-#include "grnxx/types.hpp"
+#include "grnxx/types/base_types.hpp"
 
 namespace grnxx {
 
@@ -82,7 +82,7 @@ class Error {
       __attribute__ ((format (printf, 2, 3)));
 
  private:
-  static constexpr Int MESSAGE_BUF_SIZE = 256;
+  static constexpr size_t MESSAGE_BUF_SIZE = 256;
 
   ErrorCode code_;
   int line_;
@@ -101,4 +101,4 @@ class Error {
                             (error)->set_function(__PRETTY_FUNCTION__), \
                             (error)->set_message(format, ## __VA_ARGS__)))
 
-#endif  // GRNXX_ERROR_HPP
+#endif  // GRNXX_TYPES_ERROR_HPP

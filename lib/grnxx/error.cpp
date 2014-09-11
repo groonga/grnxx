@@ -1,4 +1,4 @@
-#include "grnxx/error.hpp"
+#include "grnxx/types.hpp"
 
 #include <cstdio>
 #include <cstdarg>

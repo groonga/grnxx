@@ -1,7 +1,6 @@
 #ifndef GRNXX_NAME_HPP
 #define GRNXX_NAME_HPP
 
-#include "grnxx/error.hpp"
 #include "grnxx/types.hpp"
 
 namespace grnxx {

@@ -20,7 +20,6 @@
 #include <random>
 #include <vector>
 
-#include "grnxx/error.hpp"
 #include "grnxx/types.hpp"
 
 std::mt19937_64 mersenne_twister;

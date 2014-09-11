@@ -19,7 +19,6 @@
 #include <iostream>
 
 #include "grnxx/db.hpp"
-#include "grnxx/error.hpp"
 #include "grnxx/table.hpp"
 
 void test_db() {

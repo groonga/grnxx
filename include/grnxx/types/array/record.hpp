@@ -3,8 +3,7 @@
 
 #include "grnxx/types/base_types.hpp"
 #include "grnxx/types/data_types.hpp"
-// TODO: Error will be provided in grnxx/types/error.hpp
-#include "grnxx/types/forward.hpp"
+#include "grnxx/types/error.hpp"
 
 namespace grnxx {
 

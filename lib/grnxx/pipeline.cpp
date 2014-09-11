@@ -1,7 +1,6 @@
 #include "grnxx/pipeline.hpp"
 
 #include "grnxx/cursor.hpp"
-#include "grnxx/error.hpp"
 #include "grnxx/expression.hpp"
 
 namespace grnxx {

@@ -23,7 +23,6 @@
 #include "grnxx/column.hpp"
 #include "grnxx/cursor.hpp"
 #include "grnxx/db.hpp"
-#include "grnxx/error.hpp"
 #include "grnxx/expression.hpp"
 #include "grnxx/pipeline.hpp"
 #include "grnxx/sorter.hpp"

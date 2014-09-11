@@ -6,6 +6,7 @@
 #include "grnxx/types/constants.hpp"
 #include "grnxx/types/data_types.hpp"
 #include "grnxx/types/datum.hpp"
+#include "grnxx/types/error.hpp"
 #include "grnxx/types/forward.hpp"
 #include "grnxx/types/geo_point.hpp"
 #include "grnxx/types/options.hpp"

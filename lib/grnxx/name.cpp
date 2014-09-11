@@ -1,7 +1,5 @@
 #include "grnxx/name.hpp"
 
-#include "grnxx/error.hpp"
-
 namespace grnxx {
 namespace {
 

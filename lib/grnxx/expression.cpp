@@ -1,7 +1,6 @@
 #include "grnxx/expression.hpp"
 
 #include "grnxx/column_impl.hpp"
-#include "grnxx/error.hpp"
 #include "grnxx/table.hpp"
 
 #include <iostream>  // For debugging.

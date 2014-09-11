@@ -2,7 +2,6 @@
 
 #include <cmath>
 
-#include "grnxx/error.hpp"
 #include "grnxx/expression.hpp"
 
 namespace grnxx {
