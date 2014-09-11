@@ -171,7 +171,7 @@ unique_ptr<Column> Column::create(Error *error,
 Column::Column()
     : table_(nullptr),
       name_(),
-      data_type_(INVALID_DATA),
+      data_type_(),
       ref_table_(nullptr),
       has_key_attribute_(false) {}
 

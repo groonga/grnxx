@@ -53,6 +53,7 @@ AC_CONFIG_FILES([Makefile
                  include/Makefile
                  include/grnxx/Makefile
                  include/grnxx/array/Makefile
+                 include/grnxx/types/Makefile
                  lib/Makefile
                  lib/grnxx/Makefile
                  src/Makefile

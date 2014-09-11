@@ -1,5 +1,6 @@
 SUBDIRS =		\
-	array
+	array		\
+	types
 
 pkginclude_HEADERS =	\
 	array.hpp	\
