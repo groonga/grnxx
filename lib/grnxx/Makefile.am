@@ -26,6 +26,7 @@ libgrnxx_includedir = ${includedir}/grnxx
 libgrnxx_include_HEADERS =		\
 	column_impl.hpp			\
 	name.hpp			\
+	tree_index.hpp			\
 	version.h
 
 EXTRA_DIST = version.sh
