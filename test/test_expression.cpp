@@ -3008,7 +3008,7 @@ void test_subexpression() {
     assert(records.get_score(i) == float_value);
   }
 
-  // Test an expression (Ref.Ref.Text).
+  // Test an expression (Ref.(Ref.Text)).
   assert(builder->push_column(&error, "Ref"));
   assert(builder->begin_subexpression(&error));
   assert(builder->push_column(&error, "Ref"));
