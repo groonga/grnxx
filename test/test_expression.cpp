@@ -62,6 +62,10 @@ struct {
   grnxx::Array<grnxx::Array<grnxx::Text>> text_vector2_bodies;
   grnxx::Array<grnxx::Int> ref_values;
   grnxx::Array<grnxx::Int> ref2_values;
+  grnxx::Array<grnxx::IntVector> ref_vector_values;
+  grnxx::Array<grnxx::IntVector> ref_vector2_values;
+  grnxx::Array<grnxx::Array<grnxx::Int>> ref_vector_bodies;
+  grnxx::Array<grnxx::Array<grnxx::Int>> ref_vector2_bodies;
 } test;
 
 void generate_text(grnxx::Int min_size, grnxx::Int max_size,
@@ -167,6 +171,14 @@ void init_test() {
   assert(ref_column);
   assert(ref2_column);
 
+  data_type = grnxx::INT_VECTOR_DATA;
+  auto ref_vector_column =
+      test.table->create_column(&error, "RefVector", data_type, options);
+  auto ref_vector2_column =
+      test.table->create_column(&error, "RefVector2", data_type, options);
+  assert(ref_vector_column);
+  assert(ref_vector2_column);
+
   // Generate random values.
   // Bool: true or false.
   // Int: [0, 100).
@@ -214,6 +226,10 @@ void init_test() {
   assert(test.text_vector2_bodies.resize(&error, NUM_ROWS + 1));
   assert(test.ref_values.resize(&error, NUM_ROWS + 1));
   assert(test.ref2_values.resize(&error, NUM_ROWS + 1));
+  assert(test.ref_vector_values.resize(&error, NUM_ROWS + 1));
+  assert(test.ref_vector2_values.resize(&error, NUM_ROWS + 1));
+  assert(test.ref_vector_bodies.resize(&error, NUM_ROWS + 1));
+  assert(test.ref_vector2_bodies.resize(&error, NUM_ROWS + 1));
 
   for (grnxx::Int i = 1; i <= NUM_ROWS; ++i) {
     test.bool_values.set(i, (mersenne_twister() & 1) != 0);
@@ -312,6 +328,21 @@ void init_test() {
 
     test.ref_values.set(i, 1 + (mersenne_twister() % NUM_ROWS));
     test.ref2_values.set(i, 1 + (mersenne_twister() % NUM_ROWS));
+
+    size = mersenne_twister() % (MAX_SIZE + 1);
+    assert(test.ref_vector_bodies[i].resize(&error, size));
+    for (grnxx::Int j = 0; j < size; ++j) {
+      test.ref_vector_bodies[i][j] = 1 + (mersenne_twister() % NUM_ROWS);
+    }
+    test.ref_vector_values.set(
+        i, grnxx::IntVector(test.ref_vector_bodies[i].data(), size));
+    size = mersenne_twister() % (MAX_SIZE + 1);
+    assert(test.ref_vector2_bodies[i].resize(&error, size));
+    for (grnxx::Int j = 0; j < size; ++j) {
+      test.ref_vector2_bodies[i][j] = 1 + (mersenne_twister() % NUM_ROWS);
+    }
+    test.ref_vector2_values.set(
+        i, grnxx::IntVector(test.ref_vector2_bodies[i].data(), size));
   }
 
   // Store generated values into columns.
@@ -356,6 +387,8 @@ void init_test() {
   for (grnxx::Int i = 1; i <= NUM_ROWS; ++i) {
     assert(ref_column->set(&error, i, test.ref_values[i]));
     assert(ref2_column->set(&error, i, test.ref2_values[i]));
+    assert(ref_vector_column->set(&error, i, test.ref_vector_values[i]));
+    assert(ref_vector2_column->set(&error, i, test.ref_vector2_values[i]));
   }
 }
 
@@ -796,6 +829,24 @@ void test_column() {
   for (grnxx::Int i = 0; i < ref_results.size(); ++i) {
     grnxx::Int row_id = records.get_row_id(i);
     assert(ref_results[i] == test.ref_values[row_id]);
+  }
+
+  // Test an expression (RefVector).
+  assert(builder->push_column(&error, "RefVector"));
+  expression = builder->release(&error);
+  assert(expression);
+
+  records.clear();
+  cursor = test.table->create_cursor(&error);
+  assert(cursor);
+  assert(cursor->read_all(&error, &records) == test.table->num_rows());
+
+  grnxx::Array<grnxx::IntVector> ref_vector_results;
+  assert(expression->evaluate(&error, records, &ref_vector_results));
+  assert(ref_vector_results.size() == test.table->num_rows());
+  for (grnxx::Int i = 0; i < ref_vector_results.size(); ++i) {
+    grnxx::Int row_id = records.get_row_id(i);
+    assert(ref_vector_results[i] == test.ref_vector_values[row_id]);
   }
 }
 
@@ -2982,6 +3033,33 @@ void test_subexpression() {
     const auto ref_ref_value = test.ref_values[ref_value];
     const auto text_value = test.text_values[ref_ref_value];
     assert(text_results[i] == text_value);
+  }
+
+  // Test an expression (RefVector.Int).
+  assert(builder->push_column(&error, "RefVector"));
+  assert(builder->begin_subexpression(&error));
+  assert(builder->push_column(&error, "Int"));
+  assert(builder->end_subexpression(&error));
+  expression = builder->release(&error);
+  assert(expression);
+
+  records.clear();
+  cursor = test.table->create_cursor(&error);
+  assert(cursor);
+  assert(cursor->read_all(&error, &records) == test.table->num_rows());
+
+  grnxx::Array<grnxx::IntVector> int_vector_results;
+  assert(expression->evaluate(&error, records, &int_vector_results));
+  assert(int_vector_results.size() == test.table->num_rows());
+  for (grnxx::Int i = 0; i < int_vector_results.size(); ++i) {
+    grnxx::Int row_id = records.get_row_id(i);
+    const auto ref_vector_value = test.ref_vector_values[row_id];
+    assert(int_vector_results[i].size() == ref_vector_value.size());
+    for (grnxx::Int j = 0; j < ref_vector_value.size(); ++j) {
+      grnxx::Int ref_value = ref_vector_value[j];
+      const auto int_value = test.int_values[ref_value];
+      assert(int_vector_results[i][j] == int_value);
+    }
   }
 }
 
