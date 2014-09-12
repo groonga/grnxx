@@ -3035,6 +3035,33 @@ void test_subexpression() {
     assert(text_results[i] == text_value);
   }
 
+  // Test an expression ((Ref.Ref).Int).
+  assert(builder->push_column(&error, "Ref"));
+  assert(builder->begin_subexpression(&error));
+  assert(builder->push_column(&error, "Ref"));
+  assert(builder->end_subexpression(&error));
+  assert(builder->begin_subexpression(&error));
+  assert(builder->push_column(&error, "Int"));
+  assert(builder->end_subexpression(&error));
+  expression = builder->release(&error);
+  assert(expression);
+
+  records.clear();
+  cursor = test.table->create_cursor(&error);
+  assert(cursor);
+  assert(cursor->read_all(&error, &records) == test.table->num_rows());
+
+  grnxx::Array<grnxx::Int> int_results;
+  assert(expression->evaluate(&error, records, &int_results));
+  assert(int_results.size() == test.table->num_rows());
+  for (grnxx::Int i = 0; i < int_results.size(); ++i) {
+    grnxx::Int row_id = records.get_row_id(i);
+    const auto ref_value = test.ref_values[row_id];
+    const auto ref_ref_value = test.ref_values[ref_value];
+    const auto int_value = test.int_values[ref_ref_value];
+    assert(int_results[i] == int_value);
+  }
+
   // Test an expression (RefVector.Int).
   assert(builder->push_column(&error, "RefVector"));
   assert(builder->begin_subexpression(&error));
