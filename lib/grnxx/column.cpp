@@ -183,7 +183,7 @@ bool Column::initialize_base(Error *error,
     return false;
   }
   data_type_ = data_type;
-  if (data_type == INT_DATA) {
+  if ((data_type == INT_DATA) || (data_type == INT_VECTOR_DATA)) {
     if (options.ref_table_name.size() != 0) {
       auto ref_table = table->db()->find_table(error, options.ref_table_name);
       if (!ref_table) {
@@ -486,6 +486,13 @@ bool ColumnImpl<Vector<Int>>::set(Error *error, Int row_id,
   if (value.size() == 0) {
     headers_[row_id] = 0;
     return true;
+  }
+  if (ref_table_) {
+    for (Int i = 0; i < value.size(); ++i) {
+      if (!ref_table_->test_row(error, value[i])) {
+        return false;
+      }
+    }
   }
   Int offset = bodies_.size();
   if (value.size() < 0xFFFF) {
