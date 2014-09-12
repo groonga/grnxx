@@ -246,6 +246,50 @@ bool TypedNode<Float>::adjust(Error *error, ArrayRef<Record> records) {
   return true;
 }
 
+template <>
+class TypedNode<Vector<Int>> : public Node {
+ public:
+  using Value = Vector<Int>;
+
+  explicit TypedNode(const Table *ref_table = nullptr)
+      : Node(),
+        ref_table_(ref_table) {}
+  virtual ~TypedNode() {}
+
+  DataType data_type() const {
+    return TypeTraits<Value>::data_type();
+  }
+  const Table *ref_table() const {
+    return ref_table_;
+  }
+
+  bool filter(Error *error, ArrayCRef<Record>, ArrayRef<Record> *) {
+    // Other than TypedNode<Bool> don't support filter().
+    GRNXX_ERROR_SET(error, INVALID_OPERATION, "Invalid operation");
+    return false;
+  }
+
+  bool adjust(Error *error, ArrayRef<Record>) {
+    // Other than TypedNode<Float> don't support adjust().
+    GRNXX_ERROR_SET(error, INVALID_OPERATION, "Invalid operation");
+    return false;
+  }
+
+  // Evaluate the expression subtree.
+  //
+  // The evaluation results are stored into "*results".
+  //
+  // On success, returns true.
+  // On failure, returns false and stores error information into "*error" if
+  // "error" != nullptr.
+  virtual bool evaluate(Error *error,
+                        ArrayCRef<Record> records,
+                        ArrayRef<Value> results) = 0;
+
+ protected:
+  const Table *ref_table_;
+};
+
 // -- DatumNode --
 
 template <typename T>
@@ -625,6 +669,40 @@ class ColumnNode<Float> : public TypedNode<Float> {
     }
     return true;
   }
+  bool evaluate(Error *,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results) {
+    for (Int i = 0; i < records.size(); ++i) {
+      results[i] = column_->get(records.get_row_id(i));
+    }
+    return true;
+  }
+
+ private:
+  const ColumnImpl<Value> *column_;
+};
+
+template <>
+class ColumnNode<Vector<Int>> : public TypedNode<Vector<Int>> {
+ public:
+  using Value = Vector<Int>;
+
+  static unique_ptr<Node> create(Error *error, const Column *column) {
+    unique_ptr<Node> node(new (nothrow) ColumnNode(column));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
+  explicit ColumnNode(const Column *column)
+      : TypedNode<Value>(column->ref_table()),
+        column_(static_cast<const ColumnImpl<Value> *>(column)) {}
+
+  NodeType node_type() const {
+    return COLUMN_NODE;
+  }
+
   bool evaluate(Error *,
                 ArrayCRef<Record> records,
                 ArrayRef<Value> results) {
@@ -2648,6 +2726,82 @@ bool ReferenceNode<Float>::evaluate(Error *error,
   return this->arg2_->evaluate(error, temp_records_, results);
 }
 
+// ---- ReferenceVectorNode ----
+
+template <typename T>
+class ReferenceVectorNode
+    : public BinaryNode<Vector<T>, Vector<Int>, T> {
+ public:
+  using Value = Vector<T>;
+  using Arg1 = Vector<Int>;
+  using Arg2 = T;
+
+  static unique_ptr<Node> create(Error *error,
+                                 unique_ptr<Node> &&arg1,
+                                 unique_ptr<Node> &&arg2) {
+    unique_ptr<Node> node(
+        new (nothrow) ReferenceVectorNode(std::move(arg1), std::move(arg2)));
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    }
+    return node;
+  }
+
+  ReferenceVectorNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
+      : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)),
+        temp_records_() {}
+
+  bool evaluate(Error *error,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results);
+
+ private:
+  Array<Record> temp_records_;
+  Array<Array<Arg2>> result_blocks_;
+};
+
+template <typename T>
+bool ReferenceVectorNode<T>::evaluate(Error *error,
+                                      ArrayCRef<Record> records,
+                                      ArrayRef<Value> results) {
+  if (!this->fill_arg1_values(error, records)) {
+    return false;
+  }
+  Int total_size = 0;
+  for (Int i = 0; i < records.size(); ++i) {
+    total_size += this->arg1_values_[i].size();
+  }
+  if (!temp_records_.resize(error, total_size)) {
+    return false;
+  }
+  Array<Arg2> result_block;
+  if (!result_block.resize(error, total_size)) {
+    return false;
+  }
+  Int count = 0;
+  for (Int i = 0; i < records.size(); ++i) {
+    Float score = records.get_score(i);
+    for (Int j = 0; j < this->arg1_values_[i].size(); ++j) {
+      temp_records_.set(count, Record(this->arg1_values_[i][j], score));
+      ++count;
+    }
+  }
+  // TODO: evaluate() should be called for each block of "temp_records_".
+  if (!this->arg2_->evaluate(error, temp_records_, result_block.ref())) {
+    return false;
+  }
+  Int offset = 0;
+  for (Int i = 0; i < records.size(); ++i) {
+    Int size = this->arg1_values_[i].size();
+    results[i] = Value(&result_block[offset], size);
+    offset += size;
+  }
+  if (!result_blocks_.push_back(error, std::move(result_block))) {
+    return false;
+  }
+  return true;
+}
+
 // -- Builder --
 
 class Builder {
@@ -3453,46 +3607,85 @@ unique_ptr<Node> Builder::create_reference_node(
     Error *error,
     unique_ptr<Node> &&arg1,
     unique_ptr<Node> &&arg2) {
-  switch (arg2->data_type()) {
-    case BOOL_DATA: {
-      return ReferenceNode<Bool>::create(
-          error, std::move(arg1), std::move(arg2));
-    }
+  switch (arg1->data_type()) {
     case INT_DATA: {
-      return ReferenceNode<Int>::create(
-          error, std::move(arg1), std::move(arg2));
-    }
-    case FLOAT_DATA: {
-      return ReferenceNode<Float>::create(
-          error, std::move(arg1), std::move(arg2));
-    }
-    case GEO_POINT_DATA: {
-      return ReferenceNode<GeoPoint>::create(
-          error, std::move(arg1), std::move(arg2));
-    }
-    case TEXT_DATA: {
-      return ReferenceNode<Text>::create(
-          error, std::move(arg1), std::move(arg2));
-    }
-    case BOOL_VECTOR_DATA: {
-      return ReferenceNode<Vector<Bool>>::create(
-          error, std::move(arg1), std::move(arg2));
+      switch (arg2->data_type()) {
+        case BOOL_DATA: {
+          return ReferenceNode<Bool>::create(
+              error, std::move(arg1), std::move(arg2));
+        }
+        case INT_DATA: {
+          return ReferenceNode<Int>::create(
+              error, std::move(arg1), std::move(arg2));
+        }
+        case FLOAT_DATA: {
+          return ReferenceNode<Float>::create(
+              error, std::move(arg1), std::move(arg2));
+        }
+        case GEO_POINT_DATA: {
+          return ReferenceNode<GeoPoint>::create(
+              error, std::move(arg1), std::move(arg2));
+        }
+        case TEXT_DATA: {
+          return ReferenceNode<Text>::create(
+              error, std::move(arg1), std::move(arg2));
+        }
+        case BOOL_VECTOR_DATA: {
+          return ReferenceNode<Vector<Bool>>::create(
+              error, std::move(arg1), std::move(arg2));
+        }
+        case INT_VECTOR_DATA: {
+          return ReferenceNode<Vector<Int>>::create(
+              error, std::move(arg1), std::move(arg2));
+        }
+        case FLOAT_VECTOR_DATA: {
+          return ReferenceNode<Vector<Float>>::create(
+              error, std::move(arg1), std::move(arg2));
+        }
+        case GEO_POINT_VECTOR_DATA: {
+          return ReferenceNode<Vector<GeoPoint>>::create(
+              error, std::move(arg1), std::move(arg2));
+        }
+        case TEXT_VECTOR_DATA: {
+          return ReferenceNode<Vector<Text>>::create(
+              error, std::move(arg1), std::move(arg2));
+        }
+        default: {
+          GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
+          return nullptr;
+        }
+      }
     }
     case INT_VECTOR_DATA: {
-      return ReferenceNode<Vector<Int>>::create(
-          error, std::move(arg1), std::move(arg2));
-    }
-    case FLOAT_VECTOR_DATA: {
-      return ReferenceNode<Vector<Float>>::create(
-          error, std::move(arg1), std::move(arg2));
-    }
-    case GEO_POINT_VECTOR_DATA: {
-      return ReferenceNode<Vector<GeoPoint>>::create(
-          error, std::move(arg1), std::move(arg2));
-    }
-    case TEXT_VECTOR_DATA: {
-      return ReferenceNode<Vector<Text>>::create(
-          error, std::move(arg1), std::move(arg2));
+      switch (arg2->data_type()) {
+        case BOOL_DATA: {
+          // TODO: Not supported yet.
+//          return ReferenceVectorNode<Bool>::create(
+//              error, std::move(arg1), std::move(arg2));
+          GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
+          return nullptr;
+        }
+        case INT_DATA: {
+          return ReferenceVectorNode<Int>::create(
+              error, std::move(arg1), std::move(arg2));
+        }
+        case FLOAT_DATA: {
+          return ReferenceVectorNode<Float>::create(
+              error, std::move(arg1), std::move(arg2));
+        }
+        case GEO_POINT_DATA: {
+          return ReferenceVectorNode<GeoPoint>::create(
+              error, std::move(arg1), std::move(arg2));
+        }
+        case TEXT_DATA: {
+          return ReferenceVectorNode<Text>::create(
+              error, std::move(arg1), std::move(arg2));
+        }
+        default: {
+          GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
+          return nullptr;
+        }
+      }
     }
     default: {
       GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
