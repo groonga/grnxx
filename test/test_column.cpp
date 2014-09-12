@@ -63,20 +63,6 @@ void test_column() {
   assert(!int_column->has_key_attribute());
   assert(int_column->num_indexes() == 0);
 
-  // Create a column named "RefColumn".
-  // The column stores Int values.
-  grnxx::ColumnOptions options;
-  options.ref_table_name = "Table";
-  auto ref_column = table->create_column(&error, "RefColumn",
-                                         grnxx::INT_DATA, options);
-  assert(ref_column);
-  assert(ref_column->table() == table);
-  assert(ref_column->name() == "RefColumn");
-  assert(ref_column->data_type() == grnxx::INT_DATA);
-  assert(ref_column->ref_table());
-  assert(!ref_column->has_key_attribute());
-  assert(ref_column->num_indexes() == 0);
-
   // Create a column named "FloatColumn".
   // The column stores Float values.
   auto float_column = table->create_column(&error, "FloatColumn",
@@ -173,6 +159,34 @@ void test_column() {
   assert(!text_vector_column->has_key_attribute());
   assert(text_vector_column->num_indexes() == 0);
 
+  // Create a column named "RefColumn".
+  // The column stores Int values.
+  grnxx::ColumnOptions options;
+  options.ref_table_name = "Table";
+  auto ref_column = table->create_column(&error, "RefColumn",
+                                         grnxx::INT_DATA, options);
+  assert(ref_column);
+  assert(ref_column->table() == table);
+  assert(ref_column->name() == "RefColumn");
+  assert(ref_column->data_type() == grnxx::INT_DATA);
+  assert(ref_column->ref_table());
+  assert(!ref_column->has_key_attribute());
+  assert(ref_column->num_indexes() == 0);
+
+  // Create a column named "RefVectorColumn".
+  // The column stores Int values.
+  options.ref_table_name = "Table";
+  auto ref_vector_column =
+      table->create_column(&error, "RefVectorColumn",
+                           grnxx::INT_VECTOR_DATA, options);
+  assert(ref_vector_column);
+  assert(ref_vector_column->table() == table);
+  assert(ref_vector_column->name() == "RefVectorColumn");
+  assert(ref_vector_column->data_type() == grnxx::INT_VECTOR_DATA);
+  assert(ref_vector_column->ref_table());
+  assert(!ref_vector_column->has_key_attribute());
+  assert(ref_vector_column->num_indexes() == 0);
+
   grnxx::Datum datum;
 
   // Check that the default values are stored.
@@ -181,10 +195,6 @@ void test_column() {
   assert(!datum.force_bool());
 
   assert(int_column->get(&error, 1, &datum));
-  assert(datum.type() == grnxx::INT_DATA);
-  assert(datum.force_int() == 0);
-
-  assert(ref_column->get(&error, 1, &datum));
   assert(datum.type() == grnxx::INT_DATA);
   assert(datum.force_int() == 0);
 
@@ -220,10 +230,17 @@ void test_column() {
   assert(datum.type() == grnxx::TEXT_VECTOR_DATA);
   assert(datum.force_text_vector() == grnxx::TextVector(nullptr, 0));
 
+  assert(ref_column->get(&error, 1, &datum));
+  assert(datum.type() == grnxx::INT_DATA);
+  assert(datum.force_int() == 0);
+
+  assert(ref_vector_column->get(&error, 1, &datum));
+  assert(datum.type() == grnxx::INT_VECTOR_DATA);
+  assert(datum.force_int_vector() == grnxx::IntVector(nullptr, 0));
+
   // Set and get values.
   assert(bool_column->set(&error, 1, grnxx::Bool(true)));
   assert(int_column->set(&error, 1, grnxx::Int(123)));
-  assert(ref_column->set(&error, 1, grnxx::Int(1)));
   assert(float_column->set(&error, 1, grnxx::Float(0.25)));
   assert(geo_point_column->set(&error, 1, grnxx::GeoPoint(123, 456)));
   assert(text_column->set(&error, 1, grnxx::Text("Hello, world!")));
@@ -243,6 +260,10 @@ void test_column() {
   grnxx::Text text_vector_value[] = { "abc", "DEF", "ghi" };
   assert(text_vector_column->set(&error, 1,
                                  grnxx::TextVector(text_vector_value, 3)));
+  assert(ref_column->set(&error, 1, grnxx::Int(1)));
+  grnxx::Int ref_vector_value[] = { 1, 1, 1 };
+  assert(ref_vector_column->set(&error, 1,
+                                grnxx::IntVector(ref_vector_value, 3)));
 
   assert(bool_column->get(&error, 1, &datum));
   assert(datum.type() == grnxx::BOOL_DATA);
@@ -251,10 +272,6 @@ void test_column() {
   assert(int_column->get(&error, 1, &datum));
   assert(datum.type() == grnxx::INT_DATA);
   assert(datum.force_int() == 123);
-
-  assert(ref_column->get(&error, 1, &datum));
-  assert(datum.type() == grnxx::INT_DATA);
-  assert(datum.force_int() == 1);
 
   assert(float_column->get(&error, 1, &datum));
   assert(datum.type() == grnxx::FLOAT_DATA);
@@ -292,6 +309,15 @@ void test_column() {
   assert(datum.type() == grnxx::TEXT_VECTOR_DATA);
   assert(datum.force_text_vector() ==
          grnxx::TextVector(text_vector_value, 3));
+
+  assert(ref_column->get(&error, 1, &datum));
+  assert(datum.type() == grnxx::INT_DATA);
+  assert(datum.force_int() == 1);
+
+  assert(ref_vector_column->get(&error, 1, &datum));
+  assert(datum.type() == grnxx::INT_VECTOR_DATA);
+  assert(datum.force_int_vector() ==
+         grnxx::IntVector(ref_vector_value, 3));
 }
 
 int main() {
