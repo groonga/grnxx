@@ -79,29 +79,31 @@ bool Index::is_removable() {
   return true;
 }
 
-// -- TreeIndexCursor --
+// -- TreeIndexRegularCursor --
 
-template <typename T> class TreeIndexCursor;
+template <typename T> class TreeIndexRegularCursor;
 
 template <>
-class TreeIndexCursor<Int> : public Cursor {
+class TreeIndexRegularCursor<Int> : public Cursor {
  public:
   using Value = Int;
   using Set = std::set<Int>;
   using Map = std::map<Value, Set>;
 
-  TreeIndexCursor(const Table *table, Map::iterator begin, Map::iterator end)
+  TreeIndexRegularCursor(const Table *table,
+                         Map::iterator begin,
+                         Map::iterator end)
       : Cursor(table),
         map_it_(begin),
         map_end_(end),
         set_it_(),
         set_end_() {
     if (begin != end) {
-      set_it_ = begin->second.begin();
-      set_end_ = begin->second.end();
+      set_it_ = map_it_->second.begin();
+      set_end_ = map_it_->second.end();
     }
   }
-  ~TreeIndexCursor() {}
+  ~TreeIndexRegularCursor() {}
 
   Int read(Error *error, Int max_count, Array<Record> *records);
 
@@ -112,9 +114,68 @@ class TreeIndexCursor<Int> : public Cursor {
   Set::iterator set_end_;
 };
 
-Int TreeIndexCursor<Int>::read(Error *error,
-                               Int max_count,
-                               Array<Record> *records) {
+Int TreeIndexRegularCursor<Int>::read(Error *error,
+                                      Int max_count,
+                                      Array<Record> *records) {
+  if (map_it_ == map_end_) {
+    return 0;
+  }
+  Int count = 0;
+  for ( ; count < max_count; ++count) {
+    if (set_it_ == set_end_) {
+      ++map_it_;
+      if (map_it_ == map_end_) {
+        break;
+      }
+      set_it_ = map_it_->second.begin();
+      set_end_ = map_it_->second.end();
+    }
+    if (!records->push_back(error, Record(*set_it_, 0.0))) {
+      return -1;
+    }
+    ++set_it_;
+  }
+  return count;
+}
+
+// -- TreeIndexReverseCursor --
+
+template <typename T> class TreeIndexReverseCursor;
+
+template <>
+class TreeIndexReverseCursor<Int> : public Cursor {
+ public:
+  using Value = Int;
+  using Set = std::set<Int>;
+  using Map = std::map<Value, Set>;
+
+  TreeIndexReverseCursor(const Table *table,
+                         Map::iterator begin,
+                         Map::iterator end)
+      : Cursor(table),
+        map_it_(Map::reverse_iterator(end)),
+        map_end_(Map::reverse_iterator(begin)),
+        set_it_(),
+        set_end_() {
+    if (begin != end) {
+      set_it_ = map_it_->second.begin();
+      set_end_ = map_it_->second.end();
+    }
+  }
+  ~TreeIndexReverseCursor() {}
+
+  Int read(Error *error, Int max_count, Array<Record> *records);
+
+ private:
+  Map::reverse_iterator map_it_;
+  Map::reverse_iterator map_end_;
+  Set::iterator set_it_;
+  Set::iterator set_end_;
+};
+
+Int TreeIndexReverseCursor<Int>::read(Error *error,
+                                      Int max_count,
+                                      Array<Record> *records) {
   if (map_it_ == map_end_) {
     return 0;
   }
@@ -180,7 +241,7 @@ TreeIndex<Int>::~TreeIndex() {}
 unique_ptr<Cursor> TreeIndex<Int>::create_cursor(
     Error *error,
     const IndexRange &range,
-    const CursorOptions &) const {
+    const CursorOptions &options) const {
   Int lower_bound_value = numeric_limits<Int>::min();
   if (range.has_lower_bound()) {
     const EndPoint &lower_bound = range.lower_bound();
@@ -222,8 +283,14 @@ unique_ptr<Cursor> TreeIndex<Int>::create_cursor(
 
   auto begin = map_.lower_bound(lower_bound_value);
   auto end = map_.upper_bound(upper_bound_value);
-  unique_ptr<Cursor> cursor(
-      new (nothrow) TreeIndexCursor<Int>(column_->table(), begin, end));
+  unique_ptr<Cursor> cursor;
+  if (options.order_type == REGULAR_ORDER) {
+    cursor.reset(new (nothrow) TreeIndexRegularCursor<Int>(
+        column_->table(), begin, end));
+  } else {
+    cursor.reset(new (nothrow) TreeIndexReverseCursor<Int>(
+        column_->table(), begin, end));
+  }
   if (!cursor) {
     GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
     return nullptr;
