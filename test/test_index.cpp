@@ -208,6 +208,68 @@ void test_remove() {
   }
 }
 
+void test_bool_exact_match() {
+  constexpr grnxx::Int NUM_ROWS = 1 << 16;
+
+  grnxx::Error error;
+
+  // Create a database with the default options.
+  auto db = grnxx::open_db(&error, "");
+  assert(db);
+
+  // Create a table with the default options.
+  auto table = db->create_table(&error, "Table");
+  assert(table);
+
+  // Create a column.
+  auto column = table->create_column(&error, "Bool", grnxx::BOOL_DATA);
+  assert(column);
+
+  // Create an index.
+  auto index = column->create_index(&error, "Index", grnxx::TREE_INDEX);
+  assert(index);
+
+  // Generate random values.
+  // Bool: [false, true].
+  grnxx::Array<grnxx::Bool> values;
+  assert(values.resize(&error, NUM_ROWS + 1));
+  for (grnxx::Int i = 1; i <= NUM_ROWS; ++i) {
+    values.set(i, (mersenne_twister() & 1) == 1);
+  }
+
+  // Store generated values into columns.
+  for (grnxx::Int i = 1; i <= NUM_ROWS; ++i) {
+    grnxx::Int row_id;
+    assert(table->insert_row(&error, grnxx::NULL_ROW_ID,
+                             grnxx::Datum(), &row_id));
+    assert(row_id == i);
+    assert(column->set(&error, row_id, values[i]));
+  }
+
+  // Test cursors for each value.
+  grnxx::Bool possible_values[2] = { false, true };
+  for (int possible_value_id = 0; possible_value_id < 2; ++possible_value_id) {
+    grnxx::Bool value = possible_values[possible_value_id];
+
+    auto cursor = index->create_cursor(&error, value);
+    assert(cursor);
+
+    grnxx::Array<grnxx::Record> records;
+    assert(cursor->read_all(&error, &records) != -1);
+    for (grnxx::Int i = 1; i < records.size(); ++i) {
+      assert(values[records.get_row_id(i)] == value);
+    }
+
+    grnxx::Int count = 0;
+    for (grnxx::Int i = 1; i <= NUM_ROWS; ++i) {
+      if (values[i] == value) {
+        ++count;
+      }
+    }
+    assert(count == records.size());
+  }
+}
+
 void test_int_exact_match() {
   constexpr grnxx::Int NUM_ROWS = 1 << 16;
 
@@ -592,6 +654,7 @@ int main() {
   test_index_and_set();
   test_remove();
 
+  test_bool_exact_match();
   test_int_exact_match();
   test_float_exact_match();
 
