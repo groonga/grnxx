@@ -390,6 +390,71 @@ void test_float_exact_match() {
   }
 }
 
+void test_text_exact_match() {
+  constexpr grnxx::Int NUM_ROWS = 1 << 16;
+
+  grnxx::Error error;
+
+  // Create a database with the default options.
+  auto db = grnxx::open_db(&error, "");
+  assert(db);
+
+  // Create a table with the default options.
+  auto table = db->create_table(&error, "Table");
+  assert(table);
+
+  // Create a column.
+  auto column = table->create_column(&error, "Text", grnxx::TEXT_DATA);
+  assert(column);
+
+  // Create an index.
+  auto index = column->create_index(&error, "Index", grnxx::TREE_INDEX);
+  assert(index);
+
+  // Generate random values.
+  // Text: ["0", "99"].
+  grnxx::Array<grnxx::Text> values;
+  char bodies[100][3];
+  assert(values.resize(&error, NUM_ROWS + 1));
+  for (int i = 0; i < 100; ++i) {
+    std::sprintf(bodies[i], "%d", i);
+  }
+  for (grnxx::Int i = 1; i <= NUM_ROWS; ++i) {
+    values.set(i, bodies[mersenne_twister() % 100]);
+  }
+
+  // Store generated values into columns.
+  for (grnxx::Int i = 1; i <= NUM_ROWS; ++i) {
+    grnxx::Int row_id;
+    assert(table->insert_row(&error, grnxx::NULL_ROW_ID,
+                             grnxx::Datum(), &row_id));
+    assert(row_id == i);
+    assert(column->set(&error, row_id, values[i]));
+  }
+
+  // Test cursors for each value.
+  for (int int_value = 0; int_value < 100; ++int_value) {
+    grnxx::Text value = bodies[int_value];
+
+    auto cursor = index->create_cursor(&error, value);
+    assert(cursor);
+
+    grnxx::Array<grnxx::Record> records;
+    assert(cursor->read_all(&error, &records) != -1);
+    for (grnxx::Int i = 1; i < records.size(); ++i) {
+      assert(values[records.get_row_id(i)] == value);
+    }
+
+    grnxx::Int count = 0;
+    for (grnxx::Int i = 1; i <= NUM_ROWS; ++i) {
+      if (values[i] == value) {
+        ++count;
+      }
+    }
+    assert(count == records.size());
+  }
+}
+
 void test_int_range() {
   constexpr grnxx::Int NUM_ROWS = 1 << 16;
 
@@ -504,6 +569,70 @@ void test_float_range() {
   grnxx::Int count = 0;
   for (grnxx::Int i = 1; i <= NUM_ROWS; ++i) {
     if ((values[i] >= (64 / 256.0)) && (values[i] < (192 / 256.0))) {
+      ++count;
+    }
+  }
+  assert(count == records.size());
+}
+
+void test_text_range() {
+  constexpr grnxx::Int NUM_ROWS = 1 << 16;
+
+  grnxx::Error error;
+
+  // Create a database with the default options.
+  auto db = grnxx::open_db(&error, "");
+  assert(db);
+
+  // Create a table with the default options.
+  auto table = db->create_table(&error, "Table");
+  assert(table);
+
+  // Create a column.
+  auto column = table->create_column(&error, "Text", grnxx::TEXT_DATA);
+  assert(column);
+
+  // Create an index.
+  auto index = column->create_index(&error, "Index", grnxx::TREE_INDEX);
+  assert(index);
+
+  // Generate random values.
+  // Text: ["0", "99"].
+  grnxx::Array<grnxx::Text> values;
+  char bodies[100][3];
+  assert(values.resize(&error, NUM_ROWS + 1));
+  for (int i = 0; i < 100; ++i) {
+    std::sprintf(bodies[i], "%d", i);
+  }
+  for (grnxx::Int i = 1; i <= NUM_ROWS; ++i) {
+    values.set(i, bodies[mersenne_twister() % 100]);
+  }
+
+  // Store generated values into columns.
+  for (grnxx::Int i = 1; i <= NUM_ROWS; ++i) {
+    grnxx::Int row_id;
+    assert(table->insert_row(&error, grnxx::NULL_ROW_ID,
+                             grnxx::Datum(), &row_id));
+    assert(row_id == i);
+    assert(column->set(&error, row_id, values[i]));
+  }
+
+  // Create a cursor.
+  grnxx::IndexRange range;
+  range.set_lower_bound(grnxx::Text("25"), grnxx::EXCLUSIVE_END_POINT);
+  range.set_upper_bound(grnxx::Text("75"), grnxx::INCLUSIVE_END_POINT);
+  auto cursor = index->create_cursor(&error, range);
+  assert(cursor);
+
+  grnxx::Array<grnxx::Record> records;
+  assert(cursor->read_all(&error, &records) != -1);
+  for (grnxx::Int i = 1; i < records.size(); ++i) {
+    assert(values[records.get_row_id(i - 1)] <= values[records.get_row_id(i)]);
+  }
+
+  grnxx::Int count = 0;
+  for (grnxx::Int i = 1; i <= NUM_ROWS; ++i) {
+    if ((values[i] > "25") && (values[i] <= "75")) {
       ++count;
     }
   }
@@ -657,9 +786,11 @@ int main() {
   test_bool_exact_match();
   test_int_exact_match();
   test_float_exact_match();
+  test_text_exact_match();
 
   test_int_range();
   test_float_range();
+  test_text_range();
 
   test_reverse();
   test_offset_and_limit();
