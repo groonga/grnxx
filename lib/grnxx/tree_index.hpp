@@ -27,7 +27,7 @@ class TreeIndex<Bool> : public Index {
 
   ~TreeIndex();
 
-  unique_ptr<Cursor> create_cursor(
+  unique_ptr<Cursor> find(
       Error *error,
       const Datum &datum,
       const CursorOptions &options = CursorOptions()) const;
@@ -61,7 +61,7 @@ class TreeIndex<Int> : public Index {
 
   ~TreeIndex();
 
-  unique_ptr<Cursor> create_cursor(
+  unique_ptr<Cursor> find(
       Error *error,
       const Datum &datum,
       const CursorOptions &options = CursorOptions()) const;
@@ -107,7 +107,7 @@ class TreeIndex<Float> : public Index {
 
   ~TreeIndex();
 
-  unique_ptr<Cursor> create_cursor(
+  unique_ptr<Cursor> find(
       Error *error,
       const Datum &datum,
       const CursorOptions &options = CursorOptions()) const;
@@ -141,7 +141,7 @@ class TreeIndex<Text> : public Index {
 
   ~TreeIndex();
 
-  unique_ptr<Cursor> create_cursor(
+  unique_ptr<Cursor> find(
       Error *error,
       const Datum &datum,
       const CursorOptions &options = CursorOptions()) const;

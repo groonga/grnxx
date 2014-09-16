@@ -251,7 +251,7 @@ void test_bool_exact_match() {
   for (int possible_value_id = 0; possible_value_id < 2; ++possible_value_id) {
     grnxx::Bool value = possible_values[possible_value_id];
 
-    auto cursor = index->create_cursor(&error, value);
+    auto cursor = index->find(&error, value);
     assert(cursor);
 
     grnxx::Array<grnxx::Record> records;
@@ -310,7 +310,7 @@ void test_int_exact_match() {
 
   // Test cursors for each value.
   for (grnxx::Int value = 0; value < 100; ++value) {
-    auto cursor = index->create_cursor(&error, value);
+    auto cursor = index->find(&error, value);
     assert(cursor);
 
     grnxx::Array<grnxx::Record> records;
@@ -371,7 +371,7 @@ void test_float_exact_match() {
   for (grnxx::Int int_value = 0; int_value < 256; ++int_value) {
     grnxx::Float value = int_value / 256.0;
 
-    auto cursor = index->create_cursor(&error, value);
+    auto cursor = index->find(&error, value);
     assert(cursor);
 
     grnxx::Array<grnxx::Record> records;
@@ -436,7 +436,7 @@ void test_text_exact_match() {
   for (int int_value = 0; int_value < 100; ++int_value) {
     grnxx::Text value = bodies[int_value];
 
-    auto cursor = index->create_cursor(&error, value);
+    auto cursor = index->find(&error, value);
     assert(cursor);
 
     grnxx::Array<grnxx::Record> records;

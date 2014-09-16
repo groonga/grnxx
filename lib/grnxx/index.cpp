@@ -12,7 +12,7 @@ namespace grnxx {
 
 Index::~Index() {}
 
-unique_ptr<Cursor> Index::create_cursor(
+unique_ptr<Cursor> Index::find(
     Error *error,
     const Datum &,
     const CursorOptions &) const {
@@ -384,7 +384,7 @@ unique_ptr<TreeIndex<Bool>> TreeIndex<Bool>::create(
 
 TreeIndex<Bool>::~TreeIndex() {}
 
-unique_ptr<Cursor> TreeIndex<Bool>::create_cursor(
+unique_ptr<Cursor> TreeIndex<Bool>::find(
     Error *error,
     const Datum &datum,
     const CursorOptions &options) const {
@@ -545,7 +545,7 @@ unique_ptr<TreeIndex<Int>> TreeIndex<Int>::create(
 
 TreeIndex<Int>::~TreeIndex() {}
 
-unique_ptr<Cursor> TreeIndex<Int>::create_cursor(
+unique_ptr<Cursor> TreeIndex<Int>::find(
     Error *error,
     const Datum &datum,
     const CursorOptions &options) const {
@@ -706,7 +706,7 @@ unique_ptr<TreeIndex<Float>> TreeIndex<Float>::create(
 
 TreeIndex<Float>::~TreeIndex() {}
 
-unique_ptr<Cursor> TreeIndex<Float>::create_cursor(
+unique_ptr<Cursor> TreeIndex<Float>::find(
     Error *error,
     const Datum &datum,
     const CursorOptions &options) const {
@@ -878,7 +878,7 @@ unique_ptr<TreeIndex<Text>> TreeIndex<Text>::create(
 
 TreeIndex<Text>::~TreeIndex() {}
 
-unique_ptr<Cursor> TreeIndex<Text>::create_cursor(
+unique_ptr<Cursor> TreeIndex<Text>::find(
     Error *error,
     const Datum &datum,
     const CursorOptions &options) const {
