@@ -426,29 +426,42 @@ bool ColumnImpl<Text>::set(Error *error, Int row_id, const Datum &datum) {
   if (!table_->test_row(error, row_id)) {
     return false;
   }
-  Text value = datum.force_text();
-  if (value.size() == 0) {
-    headers_[row_id] = 0;
-    return true;
-  }
-  Int offset = bodies_.size();
-  if (value.size() < 0xFFFF) {
-    if (!bodies_.resize(error, offset + value.size())) {
-      return false;
+  Text old_value = get(row_id);
+  Text new_value = datum.force_text();
+  if (new_value != old_value) {
+    for (Int i = 0; i < num_indexes(); ++i) {
+      if (!indexes_[i]->insert(error, row_id, datum)) {
+        for (Int j = 0; j < i; ++i) {
+          indexes_[j]->remove(nullptr, row_id, datum);
+        }
+        return false;
+      }
     }
-    std::memcpy(&bodies_[offset], value.data(), value.size());
-    headers_[row_id] = (offset << 16) | value.size();
-  } else {
-    // The size of a long text is stored in front of the body.
-    if ((offset % sizeof(Int)) != 0) {
-      offset += sizeof(Int) - (offset % sizeof(Int));
+    Int offset = bodies_.size();
+    UInt new_header;
+    if (new_value.size() < 0xFFFF) {
+      if (!bodies_.resize(error, offset + new_value.size())) {
+        return false;
+      }
+      std::memcpy(&bodies_[offset], new_value.data(), new_value.size());
+      new_header = (offset << 16) | new_value.size();
+    } else {
+      // The size of a long text is stored in front of the body.
+      if ((offset % sizeof(Int)) != 0) {
+        offset += sizeof(Int) - (offset % sizeof(Int));
+      }
+      if (!bodies_.resize(error, offset + sizeof(Int) + new_value.size())) {
+        return false;
+      }
+      *reinterpret_cast<Int *>(&bodies_[offset]) = new_value.size();
+      std::memcpy(&bodies_[offset + sizeof(Int)],
+                  new_value.data(), new_value.size());
+      new_header = (offset << 16) | 0xFFFF;
     }
-    if (!bodies_.resize(error, offset + sizeof(Int) + value.size())) {
-      return false;
+    for (Int i = 0; i < num_indexes(); ++i) {
+      indexes_[i]->remove(nullptr, row_id, old_value);
     }
-    *reinterpret_cast<Int *>(&bodies_[offset]) = value.size();
-    std::memcpy(&bodies_[offset + sizeof(Int)], value.data(), value.size());
-    headers_[row_id] = (offset << 16) | 0xFFFF;
+    headers_[row_id] = new_header;
   }
   return true;
 }
@@ -488,11 +501,23 @@ bool ColumnImpl<Text>::set_default_value(Error *error, Int row_id) {
       return false;
     }
   }
+  Text value = TypeTraits<Text>::default_value();
+  for (Int i = 0; i < num_indexes(); ++i) {
+    if (!indexes_[i]->insert(error, row_id, value)) {
+      for (Int j = 0; j < i; ++j) {
+        indexes_[j]->remove(nullptr, row_id, value);
+      }
+      return false;
+    }
+  }
   headers_[row_id] = 0;
   return true;
 }
 
 void ColumnImpl<Text>::unset(Int row_id) {
+  for (Int i = 0; i < num_indexes(); ++i) {
+    indexes_[i]->remove(nullptr, row_id, get(row_id));
+  }
   headers_[row_id] = 0;
 }
 

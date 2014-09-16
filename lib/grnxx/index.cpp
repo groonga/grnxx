@@ -65,8 +65,13 @@ unique_ptr<Index> Index::create(Error *error,
     case FLOAT_DATA: {
       return TreeIndex<Float>::create(error, column, name, options);
     }
-    case GEO_POINT_DATA:
-    case TEXT_DATA:
+    case GEO_POINT_DATA: {
+      GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supoprted yet");
+      return nullptr;
+    }
+    case TEXT_DATA: {
+      return TreeIndex<Text>::create(error, column, name, options);
+    }
     case BOOL_VECTOR_DATA:
     case INT_VECTOR_DATA:
     case FLOAT_VECTOR_DATA:
@@ -818,6 +823,169 @@ bool TreeIndex<Float>::insert(Error *, Int row_id, const Datum &value) {
 
 bool TreeIndex<Float>::remove(Error *, Int row_id, const Datum &value) {
   auto map_it = map_.find(value.force_float());
+  if (map_it == map_.end()) {
+    return false;
+  }
+  auto set_it = map_it->second.find(row_id);
+  if (set_it == map_it->second.end()) {
+    return false;
+  }
+  map_it->second.erase(set_it);
+  if (map_it->second.size() == 0) {
+    map_.erase(map_it);
+  }
+  return true;
+}
+
+// -- TreeIndex<Text> --
+
+unique_ptr<TreeIndex<Text>> TreeIndex<Text>::create(
+    Error *error,
+    Column *column,
+    String name,
+    const IndexOptions &options) {
+  unique_ptr<TreeIndex> index(new (nothrow) TreeIndex);
+  if (!index) {
+    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    return nullptr;
+  }
+  if (!index->initialize_base(error, column, name, TREE_INDEX, options)) {
+    return nullptr;
+  }
+  auto cursor = column->table()->create_cursor(error);
+  if (!cursor) {
+    return nullptr;
+  }
+  auto typed_column = static_cast<ColumnImpl<Text> *>(column);
+  Array<Record> records;
+  for ( ; ; ) {
+    Int count = cursor->read(error, 1024, &records);
+    if (count < 0) {
+      return nullptr;
+    } else if (count == 0) {
+      break;
+    }
+    for (Int i = 0; i < count; ++i) {
+      Int row_id = records.get_row_id(i);
+      if (!index->insert(error, row_id, typed_column->get(row_id))) {
+        return nullptr;
+      }
+    }
+    records.clear();
+  }
+  return index;
+}
+
+TreeIndex<Text>::~TreeIndex() {}
+
+unique_ptr<Cursor> TreeIndex<Text>::create_cursor(
+    Error *error,
+    const Datum &datum,
+    const CursorOptions &options) const {
+  if (datum.type() != TEXT_DATA) {
+    GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Data type conflict");
+    return nullptr;
+  }
+
+  Text text = datum.force_text();
+  std::string string(text.data(), text.size());
+  auto map_it = map_.find(string);
+  if (map_it == map_.end()) {
+    return create_empty_cursor(error, column_->table());
+  }
+  auto set_begin = map_it->second.begin();
+  auto set_end = map_it->second.end();
+  if (options.order_type == REGULAR_ORDER) {
+    return create_iterator_cursor(error,
+                                  column_->table(),
+                                  set_begin,
+                                  set_end,
+                                  options.offset,
+                                  options.limit);
+  } else {
+    return create_reverse_iterator_cursor(error,
+                                          column_->table(),
+                                          set_begin,
+                                          set_end,
+                                          options.offset,
+                                          options.limit);
+  }
+}
+
+unique_ptr<Cursor> TreeIndex<Text>::create_cursor(
+    Error *error,
+    const IndexRange &range,
+    const CursorOptions &options) const {
+  std::string lower_bound_value = "";
+  if (range.has_lower_bound()) {
+    const EndPoint &lower_bound = range.lower_bound();
+    if (lower_bound.value.type() != TEXT_DATA) {
+      GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Data type conflict");
+      return nullptr;
+    }
+    Text text = lower_bound.value.force_text();
+    lower_bound_value.assign(text.data(), text.size());
+    if (lower_bound.type == EXCLUSIVE_END_POINT) {
+      lower_bound_value += '\0';
+    }
+  }
+
+  std::string upper_bound_value = "";
+  if (range.has_upper_bound()) {
+    const EndPoint &upper_bound = range.upper_bound();
+    if (upper_bound.value.type() != TEXT_DATA) {
+      GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Data type conflict");
+      return nullptr;
+    }
+    Text text = upper_bound.value.force_text();
+    upper_bound_value.assign(text.data(), text.size());
+    if (upper_bound.type == INCLUSIVE_END_POINT) {
+      upper_bound_value += '\0';
+    }
+  }
+
+  if (range.has_upper_bound()) {
+    if (lower_bound_value >= upper_bound_value) {
+      // TODO: Invalid range.
+      return nullptr;
+    }
+  }
+
+  auto begin = map_.lower_bound(lower_bound_value);
+  auto end = range.has_upper_bound() ?
+      map_.lower_bound(upper_bound_value) : map_.end();
+  if (options.order_type == REGULAR_ORDER) {
+    return create_map_set_cursor(error,
+                                 column_->table(),
+                                 begin,
+                                 end,
+                                 options.offset,
+                                 options.limit);
+  } else {
+    return create_reverse_map_set_cursor(error,
+                                         column_->table(),
+                                         begin,
+                                         end,
+                                         options.offset,
+                                         options.limit);
+  }
+}
+
+bool TreeIndex<Text>::insert(Error *, Int row_id, const Datum &value) {
+  Text text = value.force_text();
+  std::string string(text.data(), text.size());
+  auto result = map_[string].insert(row_id);
+  if (!result.second) {
+    // Already exists.
+    return false;
+  }
+  return true;
+}
+
+bool TreeIndex<Text>::remove(Error *, Int row_id, const Datum &value) {
+  Text text = value.force_text();
+  std::string string(text.data(), text.size());
+  auto map_it = map_.find(string);
   if (map_it == map_.end()) {
     return false;
   }
