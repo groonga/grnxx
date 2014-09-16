@@ -431,8 +431,7 @@ unique_ptr<Cursor> TreeIndex<Bool>::find_in_range(
     lower_bound_value = lower_bound.value.force_bool();
     if (lower_bound.type == EXCLUSIVE_END_POINT) {
       if (lower_bound_value) {
-        // TODO: Invalid range.
-        return nullptr;
+        return create_empty_cursor(error, column_->table());
       }
       lower_bound_value = true;
     }
@@ -448,16 +447,14 @@ unique_ptr<Cursor> TreeIndex<Bool>::find_in_range(
     upper_bound_value = upper_bound.value.force_bool();
     if (upper_bound.type == EXCLUSIVE_END_POINT) {
       if (!upper_bound_value) {
-        // TODO: Invalid range.
-        return nullptr;
+        return create_empty_cursor(error, column_->table());
       }
       upper_bound_value = false;
     }
   }
 
   if (lower_bound_value > upper_bound_value) {
-    // TODO: Invalid range.
-    return nullptr;
+    return create_empty_cursor(error, column_->table());
   }
 
   auto begin = map_.lower_bound(lower_bound_value);
@@ -592,8 +589,7 @@ unique_ptr<Cursor> TreeIndex<Int>::find_in_range(
     lower_bound_value = lower_bound.value.force_int();
     if (lower_bound.type == EXCLUSIVE_END_POINT) {
       if (lower_bound_value == numeric_limits<Int>::max()) {
-        // TODO: Invalid range.
-        return nullptr;
+        return create_empty_cursor(error, column_->table());
       }
       ++lower_bound_value;
     }
@@ -609,16 +605,14 @@ unique_ptr<Cursor> TreeIndex<Int>::find_in_range(
     upper_bound_value = upper_bound.value.force_int();
     if (upper_bound.type == EXCLUSIVE_END_POINT) {
       if (upper_bound_value == numeric_limits<Int>::min()) {
-        // TODO: Invalid range.
-        return nullptr;
+        return create_empty_cursor(error, column_->table());
       }
       --upper_bound_value;
     }
   }
 
   if (lower_bound_value > upper_bound_value) {
-    // TODO: Invalid range.
-    return nullptr;
+    return create_empty_cursor(error, column_->table());
   }
 
   auto begin = map_.lower_bound(lower_bound_value);
@@ -756,8 +750,7 @@ unique_ptr<Cursor> TreeIndex<Float>::find_in_range(
       } else if (lower_bound_value == numeric_limits<Float>::max()) {
         lower_bound_value = numeric_limits<Float>::infinity();
       } else if (std::isnan(lower_bound_value)) {
-        // TODO: Invalid range.
-        return nullptr;
+        return create_empty_cursor(error, column_->table());
       } else {
         lower_bound_value = std::nextafter(lower_bound_value,
                                            numeric_limits<Float>::max());
@@ -775,8 +768,7 @@ unique_ptr<Cursor> TreeIndex<Float>::find_in_range(
     upper_bound_value = upper_bound.value.force_float();
     if (upper_bound.type == EXCLUSIVE_END_POINT) {
       if (upper_bound_value == -numeric_limits<Float>::infinity()) {
-        // TODO: Invalid range.
-        return nullptr;
+        return create_empty_cursor(error, column_->table());
       } else if (upper_bound_value == numeric_limits<Float>::min()) {
         upper_bound_value = -numeric_limits<Float>::infinity();
       } else if (std::isnan(upper_bound_value)) {
@@ -789,8 +781,7 @@ unique_ptr<Cursor> TreeIndex<Float>::find_in_range(
   }
 
   if (Less()(upper_bound_value, lower_bound_value)) {
-    // TODO: Invalid range.
-    return nullptr;
+    return create_empty_cursor(error, column_->table());
   }
 
   auto begin = map_.lower_bound(lower_bound_value);
@@ -941,13 +932,14 @@ unique_ptr<Cursor> TreeIndex<Text>::find_in_range(
     upper_bound_value.assign(text.data(), text.size());
     if (upper_bound.type == INCLUSIVE_END_POINT) {
       upper_bound_value += '\0';
+    } else if (upper_bound_value.empty()) {
+      return create_empty_cursor(error, column_->table());
     }
   }
 
   if (range.has_upper_bound()) {
     if (lower_bound_value >= upper_bound_value) {
-      // TODO: Invalid range.
-      return nullptr;
+      return create_empty_cursor(error, column_->table());
     }
   }
 
