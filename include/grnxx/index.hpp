@@ -131,7 +131,7 @@ class Index {
                        Column *column,
                        String name,
                        IndexType type,
-                       const IndexOptions &options = IndexOptions());
+                       const IndexOptions &options);
 
  private:
   // Create a new index.
