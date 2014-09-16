@@ -163,7 +163,7 @@ void test_adjust2() {
   // Create an adjuster (Float).
   assert(expression_builder->push_column(&error, "Int"));
   assert(expression_builder->push_operator(&error, grnxx::TO_FLOAT_OPERATOR));
-  assert(expression_builder->push_datum(&error, grnxx::Float(100.0)));
+  assert(expression_builder->push_constant(&error, grnxx::Float(100.0)));
   assert(expression_builder->push_operator(&error, grnxx::DIVISION_OPERATOR));
   assert(expression_builder->push_column(&error, "Float"));
   assert(expression_builder->push_operator(&error, grnxx::PLUS_OPERATOR));

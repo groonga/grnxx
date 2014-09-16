@@ -2679,7 +2679,7 @@ class Builder {
   // On success, returns true.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
-  bool push_datum(Error *error, const Datum &datum);
+  bool push_constant(Error *error, const Datum &datum);
 
   // Push a node associated with row IDs of Records.
   //
@@ -2818,7 +2818,7 @@ unique_ptr<Builder> Builder::create(Error *error, const Table *table) {
   return builder;
 }
 
-bool Builder::push_datum(Error *error, const Datum &datum) {
+bool Builder::push_constant(Error *error, const Datum &datum) {
   // Reserve a space for a new node.
   if (!stack_.reserve(error, stack_.size() + 1)) {
     return false;
@@ -3761,8 +3761,8 @@ unique_ptr<ExpressionBuilder> ExpressionBuilder::create(Error *error,
 
 ExpressionBuilder::~ExpressionBuilder() {}
 
-bool ExpressionBuilder::push_datum(Error *error, const Datum &datum) {
-  return builders_.back()->push_datum(error, datum);
+bool ExpressionBuilder::push_constant(Error *error, const Datum &datum) {
+  return builders_.back()->push_constant(error, datum);
 }
 
 bool ExpressionBuilder::push_row_id(Error *error) {

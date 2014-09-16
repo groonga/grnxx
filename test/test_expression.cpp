@@ -400,7 +400,7 @@ void test_constant() {
   assert(builder);
 
   // Test an expression (true).
-  assert(builder->push_datum(&error, grnxx::Bool(true)));
+  assert(builder->push_constant(&error, grnxx::Bool(true)));
   auto expression = builder->release(&error);
   assert(expression);
 
@@ -420,7 +420,7 @@ void test_constant() {
   assert(records.size() == test.table->num_rows());
 
   // Test an expression (false).
-  assert(builder->push_datum(&error, grnxx::Bool(false)));
+  assert(builder->push_constant(&error, grnxx::Bool(false)));
   expression = builder->release(&error);
   assert(expression);
 
@@ -435,7 +435,7 @@ void test_constant() {
   assert(records.size() == 0);
 
   // Test an expression (100).
-  assert(builder->push_datum(&error, grnxx::Int(100)));
+  assert(builder->push_constant(&error, grnxx::Int(100)));
   expression = builder->release(&error);
   assert(expression);
 
@@ -451,7 +451,7 @@ void test_constant() {
   }
 
   // Test an expression (1.25).
-  assert(builder->push_datum(&error, grnxx::Float(1.25)));
+  assert(builder->push_constant(&error, grnxx::Float(1.25)));
   expression = builder->release(&error);
   assert(expression);
 
@@ -469,7 +469,7 @@ void test_constant() {
   }
 
   // Test an expression ({ 123, 456 }).
-  assert(builder->push_datum(&error, grnxx::GeoPoint(123, 456)));
+  assert(builder->push_constant(&error, grnxx::GeoPoint(123, 456)));
   expression = builder->release(&error);
   assert(expression);
 
@@ -481,7 +481,7 @@ void test_constant() {
   }
 
   // Test an expression ("ABC").
-  assert(builder->push_datum(&error, grnxx::Text("ABC")));
+  assert(builder->push_constant(&error, grnxx::Text("ABC")));
   expression = builder->release(&error);
   assert(expression);
 
@@ -493,7 +493,7 @@ void test_constant() {
   }
 
   // Test an expression ({ true, false, true }).
-  assert(builder->push_datum(
+  assert(builder->push_constant(
       &error, grnxx::BoolVector({ true, false, true })));
   expression = builder->release(&error);
   assert(expression);
@@ -508,7 +508,7 @@ void test_constant() {
 
   // Test an expression ({ 123, -456, 789 }).
   grnxx::Int int_values[] = { 123, -456, 789 };
-  assert(builder->push_datum(&error, grnxx::IntVector(int_values, 3)));
+  assert(builder->push_constant(&error, grnxx::IntVector(int_values, 3)));
   expression = builder->release(&error);
   assert(expression);
 
@@ -521,7 +521,7 @@ void test_constant() {
 
   // Test an expression ({ 1.25, -4.5, 6.75 }).
   grnxx::Float float_values[] = { 1.25, -4.5, 6.75 };
-  assert(builder->push_datum(&error, grnxx::FloatVector(float_values, 3)));
+  assert(builder->push_constant(&error, grnxx::FloatVector(float_values, 3)));
   expression = builder->release(&error);
   assert(expression);
 
@@ -536,7 +536,7 @@ void test_constant() {
   grnxx::GeoPoint geo_point_values[] = {
     { 123, 456 }, { 789, 123 }, { 456, 789 }
   };
-  assert(builder->push_datum(
+  assert(builder->push_constant(
       &error, grnxx::GeoPointVector(geo_point_values, 3)));
   expression = builder->release(&error);
   assert(expression);
@@ -551,7 +551,7 @@ void test_constant() {
 
   // Test an expression ({ "abc", "DEF", "ghi" }).
   grnxx::Text text_values[] = { "abc", "DEF", "ghi" };
-  assert(builder->push_datum(&error, grnxx::TextVector(text_values, 3)));
+  assert(builder->push_constant(&error, grnxx::TextVector(text_values, 3)));
   expression = builder->release(&error);
   assert(expression);
 
@@ -2673,7 +2673,7 @@ void test_division() {
   // Test an expression (Int / (Int2 + 1)).
   assert(builder->push_column(&error, "Int"));
   assert(builder->push_column(&error, "Int2"));
-  assert(builder->push_datum(&error, grnxx::Int(1)));
+  assert(builder->push_constant(&error, grnxx::Int(1)));
   assert(builder->push_operator(&error, grnxx::PLUS_OPERATOR));
   assert(builder->push_operator(&error, grnxx::DIVISION_OPERATOR));
   expression = builder->release(&error);
@@ -2749,7 +2749,7 @@ void test_modulus() {
   // Test an expression (Int % (Int2 + 1)).
   assert(builder->push_column(&error, "Int"));
   assert(builder->push_column(&error, "Int2"));
-  assert(builder->push_datum(&error, grnxx::Int(1)));
+  assert(builder->push_constant(&error, grnxx::Int(1)));
   assert(builder->push_operator(&error, grnxx::PLUS_OPERATOR));
   assert(builder->push_operator(&error, grnxx::MODULUS_OPERATOR));
   expression = builder->release(&error);
@@ -3101,7 +3101,7 @@ void test_sequential_filter() {
   assert(builder->push_column(&error, "Int"));
   assert(builder->push_column(&error, "Int2"));
   assert(builder->push_operator(&error, grnxx::PLUS_OPERATOR));
-  assert(builder->push_datum(&error, grnxx::Int(100)));
+  assert(builder->push_constant(&error, grnxx::Int(100)));
   assert(builder->push_operator(&error, grnxx::LESS_OPERATOR));
   auto expression = builder->release(&error);
   assert(expression);
@@ -3183,7 +3183,7 @@ void test_sequential_evaluate() {
   // Test an expression (Int + Int(Float * 100.0)).
   assert(builder->push_column(&error, "Int"));
   assert(builder->push_column(&error, "Float"));
-  assert(builder->push_datum(&error, 100.0));
+  assert(builder->push_constant(&error, 100.0));
   assert(builder->push_operator(&error, grnxx::MULTIPLICATION_OPERATOR));
   assert(builder->push_operator(&error, grnxx::TO_INT_OPERATOR));
   assert(builder->push_operator(&error, grnxx::PLUS_OPERATOR));
@@ -3230,7 +3230,7 @@ void test_partial_filter() {
   assert(builder->push_column(&error, "Float"));
   assert(builder->push_column(&error, "Float2"));
   assert(builder->push_operator(&error, grnxx::MULTIPLICATION_OPERATOR));
-  assert(builder->push_datum(&error, grnxx::Float(0.25)));
+  assert(builder->push_constant(&error, grnxx::Float(0.25)));
   assert(builder->push_operator(&error, grnxx::GREATER_OPERATOR));
   auto expression = builder->release(&error);
   assert(expression);

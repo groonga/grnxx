@@ -128,10 +128,10 @@ void test_filter() {
   // Create a filter (Bool && (Int < 50) && (Float < 0.5)).
   assert(expression_builder->push_column(&error, "Bool"));
   assert(expression_builder->push_column(&error, "Int"));
-  assert(expression_builder->push_datum(&error, grnxx::Int(50)));
+  assert(expression_builder->push_constant(&error, grnxx::Int(50)));
   assert(expression_builder->push_operator(&error, grnxx::LESS_OPERATOR));
   assert(expression_builder->push_column(&error, "Float"));
-  assert(expression_builder->push_datum(&error, grnxx::Float(0.5)));
+  assert(expression_builder->push_constant(&error, grnxx::Float(0.5)));
   assert(expression_builder->push_operator(&error, grnxx::LESS_OPERATOR));
   assert(expression_builder->push_operator(&error,
                                            grnxx::LOGICAL_AND_OPERATOR));
@@ -170,7 +170,7 @@ void test_filter() {
   constexpr grnxx::Int FILTER_LIMIT  = 2345;
   assert(expression_builder->push_column(&error, "Bool"));
   assert(expression_builder->push_column(&error, "Int"));
-  assert(expression_builder->push_datum(&error, grnxx::Int(50)));
+  assert(expression_builder->push_constant(&error, grnxx::Int(50)));
   assert(expression_builder->push_operator(&error, grnxx::LESS_OPERATOR));
   assert(expression_builder->push_operator(&error,
                                            grnxx::LOGICAL_AND_OPERATOR));
@@ -225,7 +225,7 @@ void test_adjuster() {
 
   // Create an adjuster (Float * 100.0).
   assert(expression_builder->push_column(&error, "Float"));
-  assert(expression_builder->push_datum(&error, grnxx::Float(100.0)));
+  assert(expression_builder->push_constant(&error, grnxx::Float(100.0)));
   assert(expression_builder->push_operator(&error,
                                            grnxx::MULTIPLICATION_OPERATOR));
   expression = expression_builder->release(&error);

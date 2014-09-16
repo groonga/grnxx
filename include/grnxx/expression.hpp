@@ -211,7 +211,7 @@ class ExpressionBuilder {
   // On success, returns true.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
-  bool push_datum(Error *error, const Datum &datum);
+  bool push_constant(Error *error, const Datum &datum);
 
   // Push a node associated with row IDs of Records.
   //
