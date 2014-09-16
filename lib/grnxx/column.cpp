@@ -338,7 +338,6 @@ bool ColumnImpl<Int>::set(Error *error, Int row_id, const Datum &datum) {
       return false;
     }
   }
-  // Note that a Bool object does not have its own address.
   Int old_value = get(row_id);
   Int new_value = datum.force_int();
   if (new_value != old_value) {
