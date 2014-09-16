@@ -100,7 +100,7 @@ void test_set_and_index() {
   grnxx::Array<grnxx::Record> records;
   assert(cursor->read_all(&error, &records) == NUM_ROWS);
   for (grnxx::Int i = 1; i < NUM_ROWS; ++i) {
-    assert(values[records.get_row_id(i)] <= values[records.get_row_id(i)]);
+    assert(values[records.get_row_id(i - 1)] <= values[records.get_row_id(i)]);
   }
 }
 
@@ -149,7 +149,7 @@ void test_index_and_set() {
   grnxx::Array<grnxx::Record> records;
   assert(cursor->read_all(&error, &records) == NUM_ROWS);
   for (grnxx::Int i = 1; i < NUM_ROWS; ++i) {
-    assert(values[records.get_row_id(i)] <= values[records.get_row_id(i)]);
+    assert(values[records.get_row_id(i - 1)] <= values[records.get_row_id(i)]);
   }
 }
 
@@ -204,7 +204,7 @@ void test_remove() {
   grnxx::Array<grnxx::Record> records;
   assert(cursor->read_all(&error, &records) == (NUM_ROWS / 2));
   for (grnxx::Int i = 1; i < (NUM_ROWS / 2); ++i) {
-    assert(values[records.get_row_id(i)] <= values[records.get_row_id(i)]);
+    assert(values[records.get_row_id(i - 1)] <= values[records.get_row_id(i)]);
   }
 }
 
@@ -315,7 +315,7 @@ void test_range() {
   grnxx::Array<grnxx::Record> records;
   assert(cursor->read_all(&error, &records) != -1);
   for (grnxx::Int i = 1; i < records.size(); ++i) {
-    assert(values[records.get_row_id(i)] <= values[records.get_row_id(i)]);
+    assert(values[records.get_row_id(i - 1)] <= values[records.get_row_id(i)]);
   }
 
   grnxx::Int count = 0;
@@ -377,7 +377,7 @@ void test_reverse() {
   grnxx::Array<grnxx::Record> records;
   assert(cursor->read_all(&error, &records) != -1);
   for (grnxx::Int i = 1; i < records.size(); ++i) {
-    assert(values[records.get_row_id(i)] >= values[records.get_row_id(i)]);
+    assert(values[records.get_row_id(i - 1)] >= values[records.get_row_id(i)]);
   }
 
   grnxx::Int count = 0;
