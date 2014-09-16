@@ -63,7 +63,9 @@ unique_ptr<Index> Index::create(Error *error,
     case INT_DATA: {
       return TreeIndex<Int>::create(error, column, name, options);
     }
-    case FLOAT_DATA:
+    case FLOAT_DATA: {
+      return TreeIndex<Float>::create(error, column, name, options);
+    }
     case GEO_POINT_DATA:
     case TEXT_DATA:
     case BOOL_VECTOR_DATA:
@@ -484,6 +486,178 @@ bool TreeIndex<Int>::insert(Error *, Int row_id, const Datum &value) {
 
 bool TreeIndex<Int>::remove(Error *, Int row_id, const Datum &value) {
   auto map_it = map_.find(value.force_int());
+  if (map_it == map_.end()) {
+    return false;
+  }
+  auto set_it = map_it->second.find(row_id);
+  if (set_it == map_it->second.end()) {
+    return false;
+  }
+  map_it->second.erase(set_it);
+  if (map_it->second.size() == 0) {
+    map_.erase(map_it);
+  }
+  return true;
+}
+
+// -- TreeIndex<Float> --
+
+unique_ptr<TreeIndex<Float>> TreeIndex<Float>::create(
+    Error *error,
+    Column *column,
+    String name,
+    const IndexOptions &options) {
+  unique_ptr<TreeIndex> index(new (nothrow) TreeIndex);
+  if (!index) {
+    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    return nullptr;
+  }
+  if (!index->initialize_base(error, column, name, TREE_INDEX, options)) {
+    return nullptr;
+  }
+  auto cursor = column->table()->create_cursor(error);
+  if (!cursor) {
+    return nullptr;
+  }
+  auto typed_column = static_cast<ColumnImpl<Float> *>(column);
+  Array<Record> records;
+  for ( ; ; ) {
+    Int count = cursor->read(error, 1024, &records);
+    if (count < 0) {
+      return nullptr;
+    } else if (count == 0) {
+      break;
+    }
+    for (Int i = 0; i < count; ++i) {
+      Int row_id = records.get_row_id(i);
+      if (!index->insert(error, row_id, typed_column->get(row_id))) {
+        return nullptr;
+      }
+    }
+    records.clear();
+  }
+  return index;
+}
+
+TreeIndex<Float>::~TreeIndex() {}
+
+unique_ptr<Cursor> TreeIndex<Float>::create_cursor(
+    Error *error,
+    const Datum &datum,
+    const CursorOptions &options) const {
+  if (datum.type() != FLOAT_DATA) {
+    GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Data type conflict");
+    return nullptr;
+  }
+
+  auto map_it = map_.find(datum.force_float());
+  if (map_it == map_.end()) {
+    return create_empty_cursor(error, column_->table());
+  }
+  auto set_begin = map_it->second.begin();
+  auto set_end = map_it->second.end();
+  if (options.order_type == REGULAR_ORDER) {
+    return create_iterator_cursor(error,
+                                  column_->table(),
+                                  set_begin,
+                                  set_end,
+                                  options.offset,
+                                  options.limit);
+  } else {
+    return create_reverse_iterator_cursor(error,
+                                          column_->table(),
+                                          set_begin,
+                                          set_end,
+                                          options.offset,
+                                          options.limit);
+  }
+}
+
+unique_ptr<Cursor> TreeIndex<Float>::create_cursor(
+    Error *error,
+    const IndexRange &range,
+    const CursorOptions &options) const {
+  Float lower_bound_value = numeric_limits<Float>::min();
+  if (range.has_lower_bound()) {
+    const EndPoint &lower_bound = range.lower_bound();
+    if (lower_bound.value.type() != FLOAT_DATA) {
+      GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Data type conflict");
+      return nullptr;
+    }
+    lower_bound_value = lower_bound.value.force_float();
+    if (lower_bound.type == EXCLUSIVE_END_POINT) {
+      if (lower_bound_value == -numeric_limits<Float>::infinity()) {
+        lower_bound_value = numeric_limits<Float>::min();
+      } else if (lower_bound_value == numeric_limits<Float>::max()) {
+        lower_bound_value = numeric_limits<Float>::infinity();
+      } else if (std::isnan(lower_bound_value)) {
+        // TODO: Invalid range.
+        return nullptr;
+      } else {
+        lower_bound_value = std::nextafter(lower_bound_value,
+                                           numeric_limits<Float>::max());
+      }
+    }
+  }
+
+  Float upper_bound_value = numeric_limits<Float>::max();
+  if (range.has_upper_bound()) {
+    const EndPoint &upper_bound = range.upper_bound();
+    if (upper_bound.value.type() != FLOAT_DATA) {
+      GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Data type conflict");
+      return nullptr;
+    }
+    upper_bound_value = upper_bound.value.force_float();
+    if (upper_bound.type == EXCLUSIVE_END_POINT) {
+      if (upper_bound_value == -numeric_limits<Float>::infinity()) {
+        // TODO: Invalid range.
+        return nullptr;
+      } else if (upper_bound_value == numeric_limits<Float>::min()) {
+        upper_bound_value = -numeric_limits<Float>::infinity();
+      } else if (std::isnan(upper_bound_value)) {
+        upper_bound_value = numeric_limits<Float>::infinity();
+      } else {
+        upper_bound_value = std::nextafter(upper_bound_value,
+                                           numeric_limits<Float>::min());
+      }
+    }
+  }
+
+  if (Less()(upper_bound_value, lower_bound_value)) {
+    // TODO: Invalid range.
+    return nullptr;
+  }
+
+  auto begin = map_.lower_bound(lower_bound_value);
+  auto end = map_.upper_bound(upper_bound_value);
+  if (options.order_type == REGULAR_ORDER) {
+    return create_map_set_cursor(error,
+                                 column_->table(),
+                                 begin,
+                                 end,
+                                 options.offset,
+                                 options.limit);
+  } else {
+    return create_reverse_map_set_cursor(error,
+                                         column_->table(),
+                                         begin,
+                                         end,
+                                         options.offset,
+                                         options.limit);
+  }
+}
+
+bool TreeIndex<Float>::insert(Error *, Int row_id, const Datum &value) {
+  auto result = map_[value.force_float()].insert(row_id);
+  if (!result.second) {
+    // Already exists.
+    return false;
+  }
+  return true;
+}
+
+bool TreeIndex<Float>::remove(Error *, Int row_id, const Datum &value) {
+  auto map_it = map_.find(value.force_float());
   if (map_it == map_.end()) {
     return false;
   }

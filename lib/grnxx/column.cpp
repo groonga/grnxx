@@ -238,9 +238,24 @@ bool ColumnImpl<T>::set(Error *error, Int row_id, const Datum &datum) {
     return false;
   }
   // Note that a Bool object does not have its own address.
-  T value;
-  datum.force(&value);
-  values_.set(row_id, value);
+  T old_value = get(row_id);
+  T new_value;
+  datum.force(&new_value);
+  // TODO: Note that NaN != NaN.
+  if (new_value != old_value) {
+    for (Int i = 0; i < num_indexes(); ++i) {
+      if (!indexes_[i]->insert(error, row_id, datum)) {
+        for (Int j = 0; j < i; ++i) {
+          indexes_[j]->remove(nullptr, row_id, datum);
+        }
+        return false;
+      }
+    }
+    for (Int i = 0; i < num_indexes(); ++i) {
+      indexes_[i]->remove(nullptr, row_id, old_value);
+    }
+  }
+  values_.set(row_id, new_value);
   return true;
 }
 
@@ -284,12 +299,24 @@ bool ColumnImpl<T>::set_default_value(Error *error, Int row_id) {
       return false;
     }
   }
-  values_.set(row_id, TypeTraits<T>::default_value());
+  T value = TypeTraits<T>::default_value();
+  for (Int i = 0; i < num_indexes(); ++i) {
+    if (!indexes_[i]->insert(error, row_id, value)) {
+      for (Int j = 0; j < i; ++j) {
+        indexes_[j]->remove(nullptr, row_id, value);
+      }
+      return false;
+    }
+  }
+  values_.set(row_id, value);
   return true;
 }
 
 template <typename T>
 void ColumnImpl<T>::unset(Int row_id) {
+  for (Int i = 0; i < num_indexes(); ++i) {
+    indexes_[i]->remove(nullptr, row_id, get(row_id));
+  }
   values_.set(row_id, TypeTraits<T>::default_value());
 }
 
@@ -327,7 +354,7 @@ bool ColumnImpl<Int>::set(Error *error, Int row_id, const Datum &datum) {
       indexes_[i]->remove(nullptr, row_id, old_value);
     }
   }
-  values_.set(row_id, datum.force_int());
+  values_.set(row_id, new_value);
   return true;
 }
 
