@@ -14,6 +14,14 @@ Index::~Index() {}
 
 unique_ptr<Cursor> Index::create_cursor(
     Error *error,
+    const Datum &,
+    const CursorOptions &) const {
+  GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supoprted yet");
+  return nullptr;
+}
+
+unique_ptr<Cursor> Index::create_cursor(
+    Error *error,
     const IndexRange &,
     const CursorOptions &) const {
   GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supoprted yet");
@@ -77,6 +85,128 @@ bool Index::rename(Error *error, String new_name) {
 bool Index::is_removable() {
   // TODO: Not supported yet.
   return true;
+}
+
+// -- EmptyCursor --
+
+class EmptyCursor : public Cursor {
+ public:
+  EmptyCursor(const Table *table) : Cursor(table) {}
+
+  Int read(Error *error, Int max_count, Array<Record> *records);
+};
+
+Int EmptyCursor::read(Error *, Int, Array<Record> *) {
+  return 0;
+}
+
+// Create an empty cursor.
+unique_ptr<Cursor> create_empty_cursor(Error *error, const Table *table) {
+  unique_ptr<Cursor> cursor(new (nothrow) EmptyCursor(table));
+  if (!cursor) {
+    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    return nullptr;
+  }
+  return cursor;
+}
+
+// -- IteratorCursor --
+
+template <typename T>
+class IteratorCursor : public Cursor {
+ public:
+  using Iterator = T;
+
+  IteratorCursor(const Table *table,
+                 Iterator begin,
+                 Iterator end,
+                 Int offset,
+                 Int limit)
+      : Cursor(table),
+        begin_(begin),
+        it_(begin),
+        end_(end),
+        offset_(offset),
+        limit_(limit),
+        offset_left_(offset),
+        limit_left_(limit) {}
+  ~IteratorCursor() {}
+
+  Int read(Error *error, Int max_count, Array<Record> *records);
+
+ private:
+  Iterator begin_;
+  Iterator it_;
+  Iterator end_;
+  Int offset_;
+  Int limit_;
+  Int offset_left_;
+  Int limit_left_;
+};
+
+template <typename T>
+Int IteratorCursor<T>::read(Error *error,
+                            Int max_count,
+                            Array<Record> *records) {
+  while ((offset_left_ > 0) && (it_ != end_)) {
+    ++it_;
+    --offset_left_;
+  }
+  Int count = 0;
+  if (max_count > limit_left_) {
+    max_count = limit_left_;
+  }
+  while ((count < max_count) && (it_ != end_)) {
+    if (!records->push_back(error, Record(*it_, 0.0))) {
+      return -1;
+    }
+    ++count;
+    ++it_;
+  }
+  limit_left_ -= count;
+  return count;
+}
+
+// Helper function to create an iterator cursor.
+template <typename T>
+unique_ptr<Cursor> create_iterator_cursor(Error *error,
+                                          const Table *table,
+                                          T begin,
+                                          T end,
+                                          Int offset,
+                                          Int limit) {
+  unique_ptr<Cursor> cursor(
+      new (nothrow) IteratorCursor<T>(table, begin, end, offset, limit));
+  if (!cursor) {
+    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    return nullptr;
+  }
+  return cursor;
+}
+
+// TODO: It's not clear that a reverse cursor should return row IDs in
+//       reverse order or not.
+//
+// Helper function to create a reverse iterator cursor.
+template <typename T>
+unique_ptr<Cursor> create_reverse_iterator_cursor(Error *error,
+                                                  const Table *table,
+                                                  T begin,
+                                                  T end,
+                                                  Int offset,
+                                                  Int limit) {
+  using ReverseIterator = std::reverse_iterator<T>;
+  unique_ptr<Cursor> cursor(
+      new (nothrow) IteratorCursor<ReverseIterator>(table,
+                                                    ReverseIterator(end),
+                                                    ReverseIterator(begin),
+                                                    offset,
+                                                    limit));
+  if (!cursor) {
+    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    return nullptr;
+  }
+  return cursor;
 }
 
 // -- TreeIndexRegularCursor --
@@ -237,6 +367,39 @@ unique_ptr<TreeIndex<Int>> TreeIndex<Int>::create(
 }
 
 TreeIndex<Int>::~TreeIndex() {}
+
+unique_ptr<Cursor> TreeIndex<Int>::create_cursor(
+    Error *error,
+    const Datum &datum,
+    const CursorOptions &options) const {
+  if (datum.type() != INT_DATA) {
+    GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Data type conflict");
+    return nullptr;
+  }
+
+  auto map_it = map_.find(datum.force_int());
+  if (map_it == map_.end()) {
+    return create_empty_cursor(error, column_->table());
+  } else {
+    auto set_begin = map_it->second.begin();
+    auto set_end = map_it->second.end();
+    if (options.order_type == REGULAR_ORDER) {
+      return create_iterator_cursor(error,
+                                    column_->table(),
+                                    set_begin,
+                                    set_end,
+                                    options.offset,
+                                    options.limit);
+    } else {
+      return create_reverse_iterator_cursor(error,
+                                            column_->table(),
+                                            set_begin,
+                                            set_end,
+                                            options.offset,
+                                            options.limit);
+    }
+  }
+}
 
 unique_ptr<Cursor> TreeIndex<Int>::create_cursor(
     Error *error,

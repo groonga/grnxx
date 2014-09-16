@@ -28,6 +28,11 @@ class TreeIndex<Int> : public Index {
 
   unique_ptr<Cursor> create_cursor(
       Error *error,
+      const Datum &datum,
+      const CursorOptions &options = CursorOptions()) const;
+
+  unique_ptr<Cursor> create_cursor(
+      Error *error,
       const IndexRange &range,
       const CursorOptions &options) const;
 
