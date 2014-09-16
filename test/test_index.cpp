@@ -389,6 +389,81 @@ void test_reverse() {
   assert(count == records.size());
 }
 
+void test_offset_and_limit() {
+  constexpr grnxx::Int NUM_ROWS = 1 << 16;
+
+  grnxx::Error error;
+
+  // Create a database with the default options.
+  auto db = grnxx::open_db(&error, "");
+  assert(db);
+
+  // Create a table with the default options.
+  auto table = db->create_table(&error, "Table");
+  assert(table);
+
+  // Create a column.
+  auto column = table->create_column(&error, "Int", grnxx::INT_DATA);
+  assert(column);
+
+  // Generate random values.
+  // Int: [0, 100).
+  grnxx::Array<grnxx::Int> values;
+  assert(values.resize(&error, NUM_ROWS + 1));
+  for (grnxx::Int i = 1; i <= NUM_ROWS; ++i) {
+    values.set(i, mersenne_twister() % 100);
+  }
+
+  // Store generated values into columns.
+  for (grnxx::Int i = 1; i <= NUM_ROWS; ++i) {
+    grnxx::Int row_id;
+    assert(table->insert_row(&error, grnxx::NULL_ROW_ID,
+                             grnxx::Datum(), &row_id));
+    assert(row_id == i);
+    assert(column->set(&error, row_id, values[i]));
+  }
+
+  // Create an index.
+  auto index = column->create_index(&error, "Index", grnxx::TREE_INDEX);
+  assert(index);
+
+  // Create a cursor.
+  auto cursor = index->create_cursor(&error);
+  assert(cursor);
+
+  grnxx::Array<grnxx::Record> records;
+  assert(cursor->read_all(&error, &records) == NUM_ROWS);
+
+  constexpr grnxx::Int OFFSET = 1000;
+
+  // Create a cursor with an offset.
+  grnxx::CursorOptions options;
+  options.offset = OFFSET;
+  cursor = index->create_cursor(&error, grnxx::IndexRange(), options);
+
+  grnxx::Array<grnxx::Record> records_with_offset;
+  assert(cursor->read_all(&error, &records_with_offset) == (NUM_ROWS - OFFSET));
+
+  for (grnxx::Int i = 0; i < records_with_offset.size(); ++i) {
+    assert(records.get_row_id(OFFSET + i) ==
+           records_with_offset.get_row_id(i));
+  }
+
+  constexpr grnxx::Int LIMIT = 100;
+
+  // Create a cursor with an offset and a limit.
+  options.limit = LIMIT;
+  cursor = index->create_cursor(&error, grnxx::IndexRange(), options);
+
+  grnxx::Array<grnxx::Record> records_with_offset_and_limit;
+  assert(cursor->read_all(&error, &records_with_offset_and_limit) == LIMIT);
+
+  for (grnxx::Int i = 0; i < records_with_offset_and_limit.size(); ++i) {
+    assert(records.get_row_id(OFFSET + i) ==
+           records_with_offset_and_limit.get_row_id(i));
+  }
+}
+
 int main() {
   test_index();
 
@@ -400,6 +475,7 @@ int main() {
 
   test_range();
   test_reverse();
+  test_offset_and_limit();
 
   return 0;
 }
