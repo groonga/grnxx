@@ -20,7 +20,7 @@ unique_ptr<Cursor> Index::find(
   return nullptr;
 }
 
-unique_ptr<Cursor> Index::create_cursor(
+unique_ptr<Cursor> Index::find_in_range(
     Error *error,
     const IndexRange &,
     const CursorOptions &) const {
@@ -417,7 +417,7 @@ unique_ptr<Cursor> TreeIndex<Bool>::find(
   }
 }
 
-unique_ptr<Cursor> TreeIndex<Bool>::create_cursor(
+unique_ptr<Cursor> TreeIndex<Bool>::find_in_range(
     Error *error,
     const IndexRange &range,
     const CursorOptions &options) const {
@@ -578,7 +578,7 @@ unique_ptr<Cursor> TreeIndex<Int>::find(
   }
 }
 
-unique_ptr<Cursor> TreeIndex<Int>::create_cursor(
+unique_ptr<Cursor> TreeIndex<Int>::find_in_range(
     Error *error,
     const IndexRange &range,
     const CursorOptions &options) const {
@@ -738,7 +738,7 @@ unique_ptr<Cursor> TreeIndex<Float>::find(
   }
 }
 
-unique_ptr<Cursor> TreeIndex<Float>::create_cursor(
+unique_ptr<Cursor> TreeIndex<Float>::find_in_range(
     Error *error,
     const IndexRange &range,
     const CursorOptions &options) const {
@@ -912,7 +912,7 @@ unique_ptr<Cursor> TreeIndex<Text>::find(
   }
 }
 
-unique_ptr<Cursor> TreeIndex<Text>::create_cursor(
+unique_ptr<Cursor> TreeIndex<Text>::find_in_range(
     Error *error,
     const IndexRange &range,
     const CursorOptions &options) const {

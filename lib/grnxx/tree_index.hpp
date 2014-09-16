@@ -32,7 +32,7 @@ class TreeIndex<Bool> : public Index {
       const Datum &datum,
       const CursorOptions &options = CursorOptions()) const;
 
-  unique_ptr<Cursor> create_cursor(
+  unique_ptr<Cursor> find_in_range(
       Error *error,
       const IndexRange &range,
       const CursorOptions &options) const;
@@ -66,7 +66,7 @@ class TreeIndex<Int> : public Index {
       const Datum &datum,
       const CursorOptions &options = CursorOptions()) const;
 
-  unique_ptr<Cursor> create_cursor(
+  unique_ptr<Cursor> find_in_range(
       Error *error,
       const IndexRange &range,
       const CursorOptions &options) const;
@@ -112,7 +112,7 @@ class TreeIndex<Float> : public Index {
       const Datum &datum,
       const CursorOptions &options = CursorOptions()) const;
 
-  unique_ptr<Cursor> create_cursor(
+  unique_ptr<Cursor> find_in_range(
       Error *error,
       const IndexRange &range,
       const CursorOptions &options) const;
@@ -146,7 +146,7 @@ class TreeIndex<Text> : public Index {
       const Datum &datum,
       const CursorOptions &options = CursorOptions()) const;
 
-  unique_ptr<Cursor> create_cursor(
+  unique_ptr<Cursor> find_in_range(
       Error *error,
       const IndexRange &range,
       const CursorOptions &options) const;

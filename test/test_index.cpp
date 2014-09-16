@@ -94,7 +94,7 @@ void test_set_and_index() {
   assert(index);
 
   // Create a cursor.
-  auto cursor = index->create_cursor(&error);
+  auto cursor = index->find_in_range(&error);
   assert(cursor);
 
   grnxx::Array<grnxx::Record> records;
@@ -143,7 +143,7 @@ void test_index_and_set() {
   }
 
   // Create a cursor.
-  auto cursor = index->create_cursor(&error);
+  auto cursor = index->find_in_range(&error);
   assert(cursor);
 
   grnxx::Array<grnxx::Record> records;
@@ -198,7 +198,7 @@ void test_remove() {
   }
 
   // Create a cursor.
-  auto cursor = index->create_cursor(&error);
+  auto cursor = index->find_in_range(&error);
   assert(cursor);
 
   grnxx::Array<grnxx::Record> records;
@@ -497,7 +497,7 @@ void test_int_range() {
   grnxx::IndexRange range;
   range.set_lower_bound(grnxx::Int(10), grnxx::INCLUSIVE_END_POINT);
   range.set_upper_bound(grnxx::Int(90), grnxx::EXCLUSIVE_END_POINT);
-  auto cursor = index->create_cursor(&error, range);
+  auto cursor = index->find_in_range(&error, range);
   assert(cursor);
 
   grnxx::Array<grnxx::Record> records;
@@ -557,7 +557,7 @@ void test_float_range() {
   grnxx::IndexRange range;
   range.set_lower_bound(grnxx::Float(64 / 256.0), grnxx::INCLUSIVE_END_POINT);
   range.set_upper_bound(grnxx::Float(192 / 256.0), grnxx::EXCLUSIVE_END_POINT);
-  auto cursor = index->create_cursor(&error, range);
+  auto cursor = index->find_in_range(&error, range);
   assert(cursor);
 
   grnxx::Array<grnxx::Record> records;
@@ -621,7 +621,7 @@ void test_text_range() {
   grnxx::IndexRange range;
   range.set_lower_bound(grnxx::Text("25"), grnxx::EXCLUSIVE_END_POINT);
   range.set_upper_bound(grnxx::Text("75"), grnxx::INCLUSIVE_END_POINT);
-  auto cursor = index->create_cursor(&error, range);
+  auto cursor = index->find_in_range(&error, range);
   assert(cursor);
 
   grnxx::Array<grnxx::Record> records;
@@ -683,7 +683,7 @@ void test_reverse() {
   range.set_upper_bound(grnxx::Int(90), grnxx::EXCLUSIVE_END_POINT);
   grnxx::CursorOptions options;
   options.order_type = grnxx::REVERSE_ORDER;
-  auto cursor = index->create_cursor(&error, range, options);
+  auto cursor = index->find_in_range(&error, range, options);
   assert(cursor);
 
   grnxx::Array<grnxx::Record> records;
@@ -740,7 +740,7 @@ void test_offset_and_limit() {
   assert(index);
 
   // Create a cursor.
-  auto cursor = index->create_cursor(&error);
+  auto cursor = index->find_in_range(&error);
   assert(cursor);
 
   grnxx::Array<grnxx::Record> records;
@@ -751,7 +751,7 @@ void test_offset_and_limit() {
   // Create a cursor with an offset.
   grnxx::CursorOptions options;
   options.offset = OFFSET;
-  cursor = index->create_cursor(&error, grnxx::IndexRange(), options);
+  cursor = index->find_in_range(&error, grnxx::IndexRange(), options);
 
   grnxx::Array<grnxx::Record> records_with_offset;
   assert(cursor->read_all(&error, &records_with_offset) == (NUM_ROWS - OFFSET));
@@ -765,7 +765,7 @@ void test_offset_and_limit() {
 
   // Create a cursor with an offset and a limit.
   options.limit = LIMIT;
-  cursor = index->create_cursor(&error, grnxx::IndexRange(), options);
+  cursor = index->find_in_range(&error, grnxx::IndexRange(), options);
 
   grnxx::Array<grnxx::Record> records_with_offset_and_limit;
   assert(cursor->read_all(&error, &records_with_offset_and_limit) == LIMIT);

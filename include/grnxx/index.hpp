@@ -97,7 +97,7 @@ class Index {
   // Returns a pointer to the cursor on success.
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
-  virtual unique_ptr<Cursor> create_cursor(
+  virtual unique_ptr<Cursor> find_in_range(
       Error *error,
       const IndexRange &range = IndexRange(),
       const CursorOptions &options = CursorOptions()) const;
