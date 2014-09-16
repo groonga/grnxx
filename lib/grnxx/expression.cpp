@@ -2994,25 +2994,6 @@ unique_ptr<Node> Builder::create_datum_node(
 unique_ptr<Node> Builder::create_column_node(
     Error *error,
     String name) {
-  if (name == "_id") {
-    // Create a node associated with row IDs of records.
-    unique_ptr<Node> node(RowIDNode::create(error));
-    if (!node) {
-      return nullptr;
-    }
-    return node;
-  }
-
-  if (name == "_score") {
-    // Create a node associated with scores of records.
-    unique_ptr<Node> node(ScoreNode::create(error));
-    if (!node) {
-      return nullptr;
-    }
-    return node;
-  }
-
-  // Create a node associated with a column.
   Column *column = table_->find_column(error, name);
   if (!column) {
     return nullptr;

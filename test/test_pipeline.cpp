@@ -288,7 +288,7 @@ void test_sorter() {
   assert(expression);
   orders[0].expression = std::move(expression);
   orders[0].type = grnxx::REGULAR_ORDER;
-  assert(expression_builder->push_column(&error, "_id"));
+  assert(expression_builder->push_row_id(&error));
   expression = expression_builder->release(&error);
   assert(expression);
   orders[1].expression = std::move(expression);

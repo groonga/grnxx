@@ -229,10 +229,6 @@ class ExpressionBuilder {
 
   // Push a node associated with a column.
   //
-  // TODO: "_id" and "_score" will be obsolete.
-  // If "name" == "_id", pushes a pseudo column associated with row IDs.
-  // If "name" == "_score", pushes a pseudo column associated with scores.
-  //
   // On success, returns true.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
