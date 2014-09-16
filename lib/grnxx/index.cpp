@@ -148,13 +148,16 @@ template <typename T>
 Int IteratorCursor<T>::read(Error *error,
                             Int max_count,
                             Array<Record> *records) {
+  if (max_count > limit_left_) {
+    max_count = limit_left_;
+  }
+  if (max_count <= 0) {
+    return 0;
+  }
+  Int count = 0;
   while ((offset_left_ > 0) && (it_ != end_)) {
     ++it_;
     --offset_left_;
-  }
-  Int count = 0;
-  if (max_count > limit_left_) {
-    max_count = limit_left_;
   }
   while ((count < max_count) && (it_ != end_)) {
     if (!records->push_back(error, Record(*it_, 0.0))) {
@@ -209,49 +212,63 @@ unique_ptr<Cursor> create_reverse_iterator_cursor(Error *error,
   return cursor;
 }
 
-// -- TreeIndexRegularCursor --
+// -- DualIteratorCursor --
 
-template <typename T> class TreeIndexRegularCursor;
-
-template <>
-class TreeIndexRegularCursor<Int> : public Cursor {
+template <typename T>
+class MapSetCursor : public Cursor {
  public:
-  using Value = Int;
-  using Set = std::set<Int>;
-  using Map = std::map<Value, Set>;
+  using MapIterator = T;
+  using SetIterator = typename MapIterator::value_type::second_type::iterator;
 
-  TreeIndexRegularCursor(const Table *table,
-                         Map::iterator begin,
-                         Map::iterator end)
+  MapSetCursor(const Table *table,
+               MapIterator begin,
+               MapIterator end,
+               Int offset,
+               Int limit)
       : Cursor(table),
+        map_begin_(begin),
         map_it_(begin),
         map_end_(end),
         set_it_(),
-        set_end_() {
-    if (begin != end) {
+        set_end_(),
+        offset_(offset),
+        limit_(limit),
+        offset_left_(offset),
+        limit_left_(limit) {
+    if (map_it_ != map_end_) {
       set_it_ = map_it_->second.begin();
       set_end_ = map_it_->second.end();
     }
   }
-  ~TreeIndexRegularCursor() {}
+  ~MapSetCursor() {}
 
   Int read(Error *error, Int max_count, Array<Record> *records);
 
  private:
-  Map::iterator map_it_;
-  Map::iterator map_end_;
-  Set::iterator set_it_;
-  Set::iterator set_end_;
+  MapIterator map_begin_;
+  MapIterator map_it_;
+  MapIterator map_end_;
+  SetIterator set_begin_;
+  SetIterator set_it_;
+  SetIterator set_end_;
+  Int offset_;
+  Int limit_;
+  Int offset_left_;
+  Int limit_left_;
 };
 
-Int TreeIndexRegularCursor<Int>::read(Error *error,
-                                      Int max_count,
-                                      Array<Record> *records) {
-  if (map_it_ == map_end_) {
+template <typename T>
+Int MapSetCursor<T>::read(Error *error,
+                          Int max_count,
+                          Array<Record> *records) {
+  if (max_count > limit_left_) {
+    max_count = limit_left_;
+  }
+  if (max_count <= 0) {
     return 0;
   }
   Int count = 0;
-  for ( ; count < max_count; ++count) {
+  while ((count < max_count) && (map_it_ != map_end_)) {
     if (set_it_ == set_end_) {
       ++map_it_;
       if (map_it_ == map_end_) {
@@ -259,72 +276,65 @@ Int TreeIndexRegularCursor<Int>::read(Error *error,
       }
       set_it_ = map_it_->second.begin();
       set_end_ = map_it_->second.end();
+      if (set_it_ == set_end_) {
+        continue;
+      }
     }
-    if (!records->push_back(error, Record(*set_it_, 0.0))) {
-      return -1;
+
+    if (offset_left_ > 0) {
+      --offset_left_;
+    } else {
+      if (!records->push_back(error, Record(*set_it_, 0.0))) {
+        return -1;
+      }
+      ++count;
     }
     ++set_it_;
   }
+  limit_left_ -= count;
   return count;
 }
 
-// -- TreeIndexReverseCursor --
-
-template <typename T> class TreeIndexReverseCursor;
-
-template <>
-class TreeIndexReverseCursor<Int> : public Cursor {
- public:
-  using Value = Int;
-  using Set = std::set<Int>;
-  using Map = std::map<Value, Set>;
-
-  TreeIndexReverseCursor(const Table *table,
-                         Map::iterator begin,
-                         Map::iterator end)
-      : Cursor(table),
-        map_it_(Map::reverse_iterator(end)),
-        map_end_(Map::reverse_iterator(begin)),
-        set_it_(),
-        set_end_() {
-    if (begin != end) {
-      set_it_ = map_it_->second.begin();
-      set_end_ = map_it_->second.end();
-    }
+// Helper function to create a map set cursor.
+template <typename T>
+unique_ptr<Cursor> create_map_set_cursor(Error *error,
+                                         const Table *table,
+                                         T begin,
+                                         T end,
+                                         Int offset,
+                                         Int limit) {
+  unique_ptr<Cursor> cursor(
+      new (nothrow) MapSetCursor<T>(table, begin, end, offset, limit));
+  if (!cursor) {
+    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    return nullptr;
   }
-  ~TreeIndexReverseCursor() {}
+  return cursor;
+}
 
-  Int read(Error *error, Int max_count, Array<Record> *records);
-
- private:
-  Map::reverse_iterator map_it_;
-  Map::reverse_iterator map_end_;
-  Set::iterator set_it_;
-  Set::iterator set_end_;
-};
-
-Int TreeIndexReverseCursor<Int>::read(Error *error,
-                                      Int max_count,
-                                      Array<Record> *records) {
-  if (map_it_ == map_end_) {
-    return 0;
+// TODO: It's not clear that a reverse cursor should return row IDs in
+//       reverse order or not.
+//
+// Helper function to create a reverse map set cursor.
+template <typename T>
+unique_ptr<Cursor> create_reverse_map_set_cursor(Error *error,
+                                                  const Table *table,
+                                                  T begin,
+                                                  T end,
+                                                  Int offset,
+                                                  Int limit) {
+  using ReverseIterator = std::reverse_iterator<T>;
+  unique_ptr<Cursor> cursor(
+      new (nothrow) MapSetCursor<ReverseIterator>(table,
+                                                  ReverseIterator(end),
+                                                  ReverseIterator(begin),
+                                                  offset,
+                                                  limit));
+  if (!cursor) {
+    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    return nullptr;
   }
-  Int count = 0;
-  for ( ; count < max_count; ++count) {
-    if (set_it_ == set_end_) {
-      ++map_it_;
-      if (map_it_ == map_end_) {
-        break;
-      }
-      set_it_ = map_it_->second.begin();
-      set_end_ = map_it_->second.end();
-    }
-    if (!records->push_back(error, Record(*set_it_, 0.0))) {
-      return -1;
-    }
-    ++set_it_;
-  }
-  return count;
+  return cursor;
 }
 
 // -- TreeIndex<Int> --
@@ -446,19 +456,21 @@ unique_ptr<Cursor> TreeIndex<Int>::create_cursor(
 
   auto begin = map_.lower_bound(lower_bound_value);
   auto end = map_.upper_bound(upper_bound_value);
-  unique_ptr<Cursor> cursor;
   if (options.order_type == REGULAR_ORDER) {
-    cursor.reset(new (nothrow) TreeIndexRegularCursor<Int>(
-        column_->table(), begin, end));
+    return create_map_set_cursor(error,
+                                 column_->table(),
+                                 begin,
+                                 end,
+                                 options.offset,
+                                 options.limit);
   } else {
-    cursor.reset(new (nothrow) TreeIndexReverseCursor<Int>(
-        column_->table(), begin, end));
+    return create_reverse_map_set_cursor(error,
+                                         column_->table(),
+                                         begin,
+                                         end,
+                                         options.offset,
+                                         options.limit);
   }
-  if (!cursor) {
-    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
-    return nullptr;
-  }
-  return cursor;
 }
 
 bool TreeIndex<Int>::insert(Error *, Int row_id, const Datum &value) {
