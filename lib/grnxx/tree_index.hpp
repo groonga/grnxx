@@ -151,6 +151,11 @@ class TreeIndex<Text> : public Index {
       const IndexRange &range,
       const CursorOptions &options) const;
 
+  unique_ptr<Cursor> find_starts_with(
+      Error *error,
+      const EndPoint &prefix,
+      const CursorOptions &options = CursorOptions()) const;
+
   bool insert(Error *error, Int row_id, const Datum &value);
   bool remove(Error *error, Int row_id, const Datum &value);
 

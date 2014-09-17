@@ -28,6 +28,14 @@ unique_ptr<Cursor> Index::find_in_range(
   return nullptr;
 }
 
+unique_ptr<Cursor> Index::find_starts_with(
+    Error *error,
+    const EndPoint &,
+    const CursorOptions &) const {
+  GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supoprted yet");
+  return nullptr;
+}
+
 Index::Index()
     : column_(nullptr),
       name_(),
@@ -945,6 +953,51 @@ unique_ptr<Cursor> TreeIndex<Text>::find_in_range(
 
   auto begin = map_.lower_bound(lower_bound_value);
   auto end = range.has_upper_bound() ?
+      map_.lower_bound(upper_bound_value) : map_.end();
+  if (options.order_type == REGULAR_ORDER) {
+    return create_map_set_cursor(error,
+                                 column_->table(),
+                                 begin,
+                                 end,
+                                 options.offset,
+                                 options.limit);
+  } else {
+    return create_reverse_map_set_cursor(error,
+                                         column_->table(),
+                                         begin,
+                                         end,
+                                         options.offset,
+                                         options.limit);
+  }
+}
+
+unique_ptr<Cursor> TreeIndex<Text>::find_starts_with(
+    Error *error,
+    const EndPoint &prefix,
+    const CursorOptions &options) const {
+  std::string lower_bound_value = "";
+  if (prefix.value.type() != TEXT_DATA) {
+    GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Data type conflict");
+    return nullptr;
+  }
+  Text prefix_text = prefix.value.force_text();
+  lower_bound_value.assign(prefix_text.data(), prefix_text.size());
+
+  std::string upper_bound_value = lower_bound_value;
+  while (!upper_bound_value.empty() &&
+         (static_cast<unsigned char>(upper_bound_value.back()) == 0xFF)) {
+    upper_bound_value.pop_back();
+  }
+  if (!upper_bound_value.empty()) {
+    ++upper_bound_value.back();
+  }
+
+  if (prefix.type == EXCLUSIVE_END_POINT) {
+    lower_bound_value += '\0';
+  }
+
+  auto begin = map_.lower_bound(lower_bound_value);
+  auto end = !upper_bound_value.empty() ?
       map_.lower_bound(upper_bound_value) : map_.end();
   if (options.order_type == REGULAR_ORDER) {
     return create_map_set_cursor(error,
