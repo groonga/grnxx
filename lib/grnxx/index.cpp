@@ -36,6 +36,14 @@ unique_ptr<Cursor> Index::find_starts_with(
   return nullptr;
 }
 
+unique_ptr<Cursor> Index::find_prefixes(
+    Error *error,
+    const Datum &,
+    const CursorOptions &) const {
+  GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supoprted yet");
+  return nullptr;
+}
+
 Index::Index()
     : column_(nullptr),
       name_(),
@@ -349,6 +357,83 @@ unique_ptr<Cursor> create_reverse_map_set_cursor(Error *error,
     return nullptr;
   }
   return cursor;
+}
+
+// -- ArrayCursor --
+
+class ArrayCursor : public Cursor {
+ public:
+  using Set = std::set<Int>;
+  using Map = std::map<std::string, Set>;
+
+  ArrayCursor(const Table *table,
+              Array<Map::iterator> &&array,
+              Int offset,
+              Int limit)
+      : Cursor(table),
+        array_(std::move(array)),
+        pos_(0),
+        it_(),
+        end_(),
+        offset_(offset),
+        limit_(limit),
+        offset_left_(offset),
+        limit_left_(limit) {
+    if (array_.size() != 0) {
+      it_ = array_[0]->second.begin();
+      end_ = array_[0]->second.end();
+    }
+  }
+  ~ArrayCursor() {}
+
+  Int read(Error *error, Int max_count, Array<Record> *records);
+
+ private:
+  Array<Map::iterator> array_;
+  Int pos_;
+  Set::iterator it_;
+  Set::iterator end_;
+  Int offset_;
+  Int limit_;
+  Int offset_left_;
+  Int limit_left_;
+};
+
+Int ArrayCursor::read(Error *error,
+                      Int max_count,
+                      Array<Record> *records) {
+  if (max_count > limit_left_) {
+    max_count = limit_left_;
+  }
+  if (max_count <= 0) {
+    return 0;
+  }
+  Int count = 0;
+  while ((count < max_count) && (pos_ < array_.size())) {
+    if (it_ == end_) {
+      ++pos_;
+      if (pos_ >= array_.size()) {
+        break;
+      }
+      it_ = array_[pos_]->second.begin();
+      end_ = array_[pos_]->second.end();
+      if (it_ == end_) {
+        continue;
+      }
+    }
+
+    if (offset_left_ > 0) {
+      --offset_left_;
+    } else {
+      if (!records->push_back(error, Record(*it_, 0.0))) {
+        return -1;
+      }
+      ++count;
+    }
+    ++it_;
+  }
+  limit_left_ -= count;
+  return count;
 }
 
 // -- TreeIndex<Bool> --
@@ -1014,6 +1099,38 @@ unique_ptr<Cursor> TreeIndex<Text>::find_starts_with(
                                          options.offset,
                                          options.limit);
   }
+}
+
+unique_ptr<Cursor> TreeIndex<Text>::find_prefixes(
+    Error *error,
+    const Datum &prefix,
+    const CursorOptions &options) const {
+  Text prefix_text = prefix.force_text();
+  std::string value(prefix_text.data(), prefix_text.size());
+  Array<Map::iterator> array;
+  for (std::size_t i = 0; i <= value.size(); ++i) {
+    auto it = map_.find(value.substr(0, i));
+    if (it != map_.end()) {
+      if (!array.push_back(error, it)) {
+        return nullptr;
+      }
+    }
+  }
+  if (options.order_type == REVERSE_ORDER) {
+    for (Int i = 0; i < (array.size() / 2); ++i) {
+      Map::iterator temp = array[i];
+      array[i] = array[array.size() - i - 1];
+      array[array.size() - i - 1] = temp;
+    }
+  }
+  unique_ptr<Cursor> cursor(
+      new (nothrow) ArrayCursor(column_->table(), std::move(array),
+                                options.offset, options.limit));
+  if (!cursor) {
+    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    return nullptr;
+  }
+  return cursor;
 }
 
 bool TreeIndex<Text>::insert(Error *, Int row_id, const Datum &value) {

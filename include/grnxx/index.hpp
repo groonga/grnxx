@@ -112,6 +112,16 @@ class Index {
       const EndPoint &prefix,
       const CursorOptions &options = CursorOptions()) const;
 
+  // Create a cursor to get records.
+  //
+  // Returns a pointer to the cursor on success.
+  // On failure, returns nullptr and stores error information into "*error" if
+  // "error" != nullptr.
+  virtual unique_ptr<Cursor> find_prefixes(
+      Error *error,
+      const Datum &datum,
+      const CursorOptions &options = CursorOptions()) const;
+
   // Insert a new entry.
   //
   // On success, returns true.

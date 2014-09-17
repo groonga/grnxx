@@ -156,6 +156,11 @@ class TreeIndex<Text> : public Index {
       const EndPoint &prefix,
       const CursorOptions &options = CursorOptions()) const;
 
+  unique_ptr<Cursor> find_prefixes(
+      Error *error,
+      const Datum &prefix,
+      const CursorOptions &options = CursorOptions()) const;
+
   bool insert(Error *error, Int row_id, const Datum &value);
   bool remove(Error *error, Int row_id, const Datum &value);
 
