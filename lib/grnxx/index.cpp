@@ -115,10 +115,10 @@ class EmptyCursor : public Cursor {
  public:
   EmptyCursor(const Table *table) : Cursor(table) {}
 
-  Int read(Error *error, Int max_count, Array<Record> *records);
+  Int read(Error *error, ArrayRef<Record> records);
 };
 
-Int EmptyCursor::read(Error *, Int, Array<Record> *) {
+Int EmptyCursor::read(Error *, ArrayRef<Record>) {
   return 0;
 }
 
