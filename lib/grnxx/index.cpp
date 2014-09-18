@@ -154,7 +154,7 @@ class IteratorCursor : public Cursor {
         limit_left_(limit) {}
   ~IteratorCursor() {}
 
-  Int read(Error *error, Int max_count, Array<Record> *records);
+  Int read(Error *error, ArrayRef<Record> records);
 
  private:
   Iterator begin_;
@@ -167,9 +167,8 @@ class IteratorCursor : public Cursor {
 };
 
 template <typename T>
-Int IteratorCursor<T>::read(Error *error,
-                            Int max_count,
-                            Array<Record> *records) {
+Int IteratorCursor<T>::read(Error *, ArrayRef<Record> records) {
+  Int max_count = records.size();
   if (max_count > limit_left_) {
     max_count = limit_left_;
   }
@@ -182,9 +181,7 @@ Int IteratorCursor<T>::read(Error *error,
     --offset_left_;
   }
   while ((count < max_count) && (it_ != end_)) {
-    if (!records->push_back(error, Record(*it_, 0.0))) {
-      return -1;
-    }
+    records.set(count, Record(*it_, 0.0));
     ++count;
     ++it_;
   }
