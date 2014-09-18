@@ -261,7 +261,7 @@ class MapSetCursor : public Cursor {
   }
   ~MapSetCursor() {}
 
-  Int read(Error *error, Int max_count, Array<Record> *records);
+  Int read(Error *error, ArrayRef<Record> records);
 
  private:
   MapIterator map_begin_;
@@ -277,9 +277,8 @@ class MapSetCursor : public Cursor {
 };
 
 template <typename T>
-Int MapSetCursor<T>::read(Error *error,
-                          Int max_count,
-                          Array<Record> *records) {
+Int MapSetCursor<T>::read(Error *, ArrayRef<Record> records) {
+  Int max_count = records.size();
   if (max_count > limit_left_) {
     max_count = limit_left_;
   }
@@ -303,9 +302,7 @@ Int MapSetCursor<T>::read(Error *error,
     if (offset_left_ > 0) {
       --offset_left_;
     } else {
-      if (!records->push_back(error, Record(*set_it_, 0.0))) {
-        return -1;
-      }
+      records.set(count, Record(*set_it_, 0.0));
       ++count;
     }
     ++set_it_;
