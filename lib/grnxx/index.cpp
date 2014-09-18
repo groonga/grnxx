@@ -380,7 +380,7 @@ class ArrayCursor : public Cursor {
   }
   ~ArrayCursor() {}
 
-  Int read(Error *error, Int max_count, Array<Record> *records);
+  Int read(Error *error, ArrayRef<Record> records);
 
  private:
   Array<Map::iterator> array_;
@@ -393,9 +393,8 @@ class ArrayCursor : public Cursor {
   Int limit_left_;
 };
 
-Int ArrayCursor::read(Error *error,
-                      Int max_count,
-                      Array<Record> *records) {
+Int ArrayCursor::read(Error *, ArrayRef<Record> records) {
+  Int max_count = records.size();
   if (max_count > limit_left_) {
     max_count = limit_left_;
   }
@@ -419,9 +418,7 @@ Int ArrayCursor::read(Error *error,
     if (offset_left_ > 0) {
       --offset_left_;
     } else {
-      if (!records->push_back(error, Record(*it_, 0.0))) {
-        return -1;
-      }
+      records.set(count, Record(*it_, 0.0));
       ++count;
     }
     ++it_;
