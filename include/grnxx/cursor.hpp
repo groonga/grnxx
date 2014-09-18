@@ -16,23 +16,30 @@ class Cursor {
 
   // Read the next records.
   //
-  // Reads at most "max_count" records and stores the records into "*records".
+  // Reads at most "max_count" records into "*records".
   //
   // On success, returns the number of records read.
   // On failure, returns -1 and stores error information into "*error" if
   // "error" != nullptr.
-  virtual Int read(Error *error,
-                   Int max_count,
-                   Array<Record> *records) = 0;
+  virtual Int read(Error *error, Int max_count, Array<Record> *records);
+
+  // TODO: should be pure virtual.
+  //
+  // Read the next records.
+  //
+  // Reads at most "records.size()" records into "records".
+  //
+  // On success, returns the number of records read.
+  // On failure, returns -1 and stores error information into "*error" if
+  // "error" != nullptr.
+  virtual Int read(Error *error, ArrayRef<Record> records);
 
   // Read all the remaining records.
   //
   // On success, returns the number of records read.
   // On failure, returns -1 and stores error information into "*error" if
   // "error" != nullptr.
-  virtual Int read_all(Error *error, Array<Record> *records) {
-    return read(error, numeric_limits<Int>::max(), records);
-  }
+  virtual Int read_all(Error *error, Array<Record> *records);
 
  protected:
   const Table *table_;

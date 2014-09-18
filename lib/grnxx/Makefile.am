@@ -11,6 +11,7 @@ libgrnxx_la_LDFLAGS = @AM_LTLDFLAGS@
 libgrnxx_la_SOURCES =			\
 	array.cpp			\
 	column.cpp			\
+	cursor.cpp			\
 	db.cpp				\
 	error.cpp			\
 	expression.cpp			\
