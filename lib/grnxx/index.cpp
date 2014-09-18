@@ -148,8 +148,6 @@ class IteratorCursor : public Cursor {
         begin_(begin),
         it_(begin),
         end_(end),
-        offset_(offset),
-        limit_(limit),
         offset_left_(offset),
         limit_left_(limit) {}
   ~IteratorCursor() {}
@@ -160,8 +158,6 @@ class IteratorCursor : public Cursor {
   Iterator begin_;
   Iterator it_;
   Iterator end_;
-  Int offset_;
-  Int limit_;
   Int offset_left_;
   Int limit_left_;
 };
@@ -250,8 +246,6 @@ class MapSetCursor : public Cursor {
         map_end_(end),
         set_it_(),
         set_end_(),
-        offset_(offset),
-        limit_(limit),
         offset_left_(offset),
         limit_left_(limit) {
     if (map_it_ != map_end_) {
@@ -270,8 +264,6 @@ class MapSetCursor : public Cursor {
   SetIterator set_begin_;
   SetIterator set_it_;
   SetIterator set_end_;
-  Int offset_;
-  Int limit_;
   Int offset_left_;
   Int limit_left_;
 };
@@ -369,8 +361,6 @@ class ArrayCursor : public Cursor {
         pos_(0),
         it_(),
         end_(),
-        offset_(offset),
-        limit_(limit),
         offset_left_(offset),
         limit_left_(limit) {
     if (array_.size() != 0) {
@@ -387,8 +377,6 @@ class ArrayCursor : public Cursor {
   Int pos_;
   Set::iterator it_;
   Set::iterator end_;
-  Int offset_;
-  Int limit_;
   Int offset_left_;
   Int limit_left_;
 };
