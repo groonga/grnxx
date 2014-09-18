@@ -231,7 +231,7 @@ unique_ptr<Cursor> create_reverse_iterator_cursor(Error *error,
   return cursor;
 }
 
-// -- DualIteratorCursor --
+// -- MapSetCursor --
 
 template <typename T>
 class MapSetCursor : public Cursor {
