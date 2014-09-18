@@ -16,7 +16,7 @@ class TableCursor : public Cursor {
 
   ~TableCursor() {}
 
-  Int read(Error *error, Int max_count, Array<Record> *records);
+  Int read(Error *error, ArrayRef<Record> records);
 
   // -- Internal API --
 
@@ -30,10 +30,10 @@ class TableCursor : public Cursor {
                                         const CursorOptions &options);
 
   // Read records in regular order.
-  Int regular_read(Error *error, Int max_count, Array<Record> *records);
+  Int regular_read(Error *error, ArrayRef<Record> records);
 
   // Read records in reverse order.
-  Int reverse_read(Error *error, Int max_count, Array<Record> *records);
+  Int reverse_read(Error *error, ArrayRef<Record> records);
 
  private:
   Int offset_left_;
@@ -44,16 +44,16 @@ class TableCursor : public Cursor {
   explicit TableCursor(const Table *table);
 };
 
-Int TableCursor::read(Error *error, Int max_count, Array<Record> *records) {
-  if (max_count <= 0) {
+Int TableCursor::read(Error *error, ArrayRef<Record> records) {
+  if (records.size() <= 0) {
     return 0;
   }
   switch (order_type_) {
     case REGULAR_ORDER: {
-      return regular_read(error, max_count, records);
+      return regular_read(error, records);
     }
     case REVERSE_ORDER: {
-      return reverse_read(error, max_count, records);
+      return reverse_read(error, records);
     }
     default: {
       GRNXX_ERROR_SET(error, BROKEN, "Broken cursor");
@@ -98,13 +98,7 @@ TableCursor::TableCursor(const Table *table)
       order_type_(),
       next_row_id_() {}
 
-Int TableCursor::regular_read(Error *error,
-                              Int max_count,
-                              Array<Record> *records) {
-  // TODO: If possible, the buffer should be expanded outside the loop in order
-  //       to remove size check and buffer expansion inside the loop.
-  //       However, note that max_count can be extremely large for reading all
-  //       the remaining records.
+Int TableCursor::regular_read(Error *, ArrayRef<Record> records) {
   Int count = 0;
   bool has_false_bit =
       table_->num_rows() != (table_->max_row_id() - MIN_ROW_ID + 1);
@@ -122,7 +116,7 @@ Int TableCursor::regular_read(Error *error,
       offset_left_ = 0;
     }
     // Calculate the number of records to be read.
-    count = max_count;
+    count = records.size();
     if (count > num_remaining_records) {
       count = num_remaining_records;
     }
@@ -130,9 +124,7 @@ Int TableCursor::regular_read(Error *error,
       count = limit_left_;
     }
     for (Int i = 0; i < count; ++i) {
-      if (!records->push_back(error, Record(next_row_id_, 0.0))) {
-        return -1;
-      }
+      records.set(i, Record(next_row_id_, 0.0));
       ++next_row_id_;
       --limit_left_;
     }
@@ -147,13 +139,11 @@ Int TableCursor::regular_read(Error *error,
         --offset_left_;
         ++next_row_id_;
       } else {
-        if (!records->push_back(error, Record(next_row_id_, 0.0))) {
-          return -1;
-        }
+        records.set(count, Record(next_row_id_, 0.0));
         --limit_left_;
         ++count;
         ++next_row_id_;
-        if ((limit_left_ <= 0) || (count >= max_count)) {
+        if ((limit_left_ <= 0) || (count >= records.size())) {
           break;
         }
       }
@@ -162,13 +152,7 @@ Int TableCursor::regular_read(Error *error,
   return count;
 }
 
-Int TableCursor::reverse_read(Error *error,
-                              Int max_count,
-                              Array<Record> *records) {
-  // TODO: If possible, the buffer should be expanded outside the loop in order
-  //       to remove size check and buffer expansion inside the loop.
-  //       However, note that max_count can be extremely large for reading all
-  //       the remaining records.
+Int TableCursor::reverse_read(Error *, ArrayRef<Record> records) {
   Int count = 0;
   bool has_false_bit =
       table_->num_rows() != (table_->max_row_id() - MIN_ROW_ID + 1);
@@ -186,7 +170,7 @@ Int TableCursor::reverse_read(Error *error,
       offset_left_ = 0;
     }
     // Calculate the number of records to be read.
-    count = max_count;
+    count = records.size();
     if (count > num_remaining_records) {
       count = num_remaining_records;
     }
@@ -194,9 +178,7 @@ Int TableCursor::reverse_read(Error *error,
       count = limit_left_;
     }
     for (Int i = 0; i < count; ++i) {
-      if (!records->push_back(error, Record(next_row_id_, 0.0))) {
-        return -1;
-      }
+      records.set(i, Record(next_row_id_, 0.0));
       --next_row_id_;
       --limit_left_;
     }
@@ -211,13 +193,11 @@ Int TableCursor::reverse_read(Error *error,
         --offset_left_;
         --next_row_id_;
       } else {
-        if (!records->push_back(error, Record(next_row_id_, 0.0))) {
-          return -1;
-        }
+        records.set(count, Record(next_row_id_, 0.0));
         --limit_left_;
         ++count;
         --next_row_id_;
-        if ((limit_left_ <= 0) || (count >= max_count)) {
+        if ((limit_left_ <= 0) || (count >= records.size())) {
           break;
         }
       }
