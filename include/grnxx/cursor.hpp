@@ -23,8 +23,6 @@ class Cursor {
   // "error" != nullptr.
   virtual Int read(Error *error, Int max_count, Array<Record> *records);
 
-  // TODO: should be pure virtual.
-  //
   // Read the next records.
   //
   // Reads at most "records.size()" records into "records".
@@ -32,7 +30,7 @@ class Cursor {
   // On success, returns the number of records read.
   // On failure, returns -1 and stores error information into "*error" if
   // "error" != nullptr.
-  virtual Int read(Error *error, ArrayRef<Record> records);
+  virtual Int read(Error *error, ArrayRef<Record> records) = 0;
 
   // Read all the remaining records.
   //

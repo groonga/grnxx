@@ -69,11 +69,6 @@ Int Cursor::read(Error *error, Int max_count, Array<Record> *records) {
   return count;
 }
 
-// TODO: To be removed!
-Int Cursor::read(Error *, ArrayRef<Record>) {
-  return -1;
-}
-
 Int Cursor::read_all(Error *error, Array<Record> *records) {
   Int total_count = 0;
   Int count;
