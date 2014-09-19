@@ -453,9 +453,7 @@ class ColumnNode : public TypedNode<T> {
   bool evaluate(Error *,
                 ArrayCRef<Record> records,
                 ArrayRef<Value> results) {
-    for (Int i = 0; i < records.size(); ++i) {
-      results[i] = column_->get(records.get_row_id(i));
-    }
+    column_->read(records, results);
     return true;
   }
 
@@ -490,9 +488,7 @@ class ColumnNode<Bool> : public TypedNode<Bool> {
   bool evaluate(Error *,
                 ArrayCRef<Record> records,
                 ArrayRef<Value> results) {
-    for (Int i = 0; i < records.size(); ++i) {
-      results.set(i, column_->get(records.get_row_id(i)));
-    }
+    column_->read(records, results);
     return true;
   }
 
@@ -544,9 +540,7 @@ class ColumnNode<Float> : public TypedNode<Float> {
   bool evaluate(Error *,
                 ArrayCRef<Record> records,
                 ArrayRef<Value> results) {
-    for (Int i = 0; i < records.size(); ++i) {
-      results[i] = column_->get(records.get_row_id(i));
-    }
+    column_->read(records, results);
     return true;
   }
 
