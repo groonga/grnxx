@@ -257,7 +257,9 @@ class ExpressionBuilder {
   // On success, returns true.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
-  bool end_subexpression(Error *error);
+  bool end_subexpression(
+      Error *error,
+      const ExpressionOptions &options = ExpressionOptions());
 
   // Clear the internal stack.
   void clear();

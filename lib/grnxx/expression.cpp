@@ -2379,7 +2379,8 @@ class ReferenceNode : public BinaryNode<T, Int, T> {
 
   static unique_ptr<Node> create(Error *error,
                                  unique_ptr<Node> &&arg1,
-                                 unique_ptr<Node> &&arg2) {
+                                 unique_ptr<Node> &&arg2,
+                                 const ExpressionOptions &) {
     unique_ptr<Node> node(
         new (nothrow) ReferenceNode(std::move(arg1), std::move(arg2)));
     if (!node) {
@@ -2430,7 +2431,8 @@ class ReferenceNode<Bool> : public BinaryNode<Bool, Int, Bool> {
 
   static unique_ptr<Node> create(Error *error,
                                  unique_ptr<Node> &&arg1,
-                                 unique_ptr<Node> &&arg2) {
+                                 unique_ptr<Node> &&arg2,
+                                 const ExpressionOptions &) {
     unique_ptr<Node> node(
         new (nothrow) ReferenceNode(std::move(arg1), std::move(arg2)));
     if (!node) {
@@ -2507,7 +2509,8 @@ class ReferenceNode<Float> : public BinaryNode<Float, Int, Float> {
 
   static unique_ptr<Node> create(Error *error,
                                  unique_ptr<Node> &&arg1,
-                                 unique_ptr<Node> &&arg2) {
+                                 unique_ptr<Node> &&arg2,
+                                 const ExpressionOptions &) {
     unique_ptr<Node> node(
         new (nothrow) ReferenceNode(std::move(arg1), std::move(arg2)));
     if (!node) {
@@ -2578,18 +2581,25 @@ class ReferenceVectorNode
 
   static unique_ptr<Node> create(Error *error,
                                  unique_ptr<Node> &&arg1,
-                                 unique_ptr<Node> &&arg2) {
+                                 unique_ptr<Node> &&arg2,
+                                 const ExpressionOptions &options) {
     unique_ptr<Node> node(
-        new (nothrow) ReferenceVectorNode(std::move(arg1), std::move(arg2)));
+        new (nothrow) ReferenceVectorNode(std::move(arg1),
+                                          std::move(arg2),
+                                          options.block_size));
     if (!node) {
       GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
     }
     return node;
   }
 
-  ReferenceVectorNode(unique_ptr<Node> &&arg1, unique_ptr<Node> &&arg2)
+  ReferenceVectorNode(unique_ptr<Node> &&arg1,
+                      unique_ptr<Node> &&arg2,
+                      Int block_size)
       : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)),
-        temp_records_() {}
+        temp_records_(),
+        result_pools_(),
+        block_size_(block_size) {}
 
   const Table *ref_table() const {
     return this->arg2_->ref_table();
@@ -2601,7 +2611,8 @@ class ReferenceVectorNode
 
  private:
   Array<Record> temp_records_;
-  Array<Array<Arg2>> result_blocks_;
+  Array<Array<Arg2>> result_pools_;
+  Int block_size_;
 };
 
 template <typename T>
@@ -2615,32 +2626,43 @@ bool ReferenceVectorNode<T>::evaluate(Error *error,
   for (Int i = 0; i < records.size(); ++i) {
     total_size += this->arg1_values_[i].size();
   }
-  if (!temp_records_.resize(error, total_size)) {
+  if (!temp_records_.resize(error, block_size_)) {
     return false;
   }
-  Array<Arg2> result_block;
-  if (!result_block.resize(error, total_size)) {
+  Array<Arg2> result_pool;
+  if (!result_pool.resize(error, total_size)) {
     return false;
   }
+  Int offset = 0;
   Int count = 0;
   for (Int i = 0; i < records.size(); ++i) {
     Float score = records.get_score(i);
     for (Int j = 0; j < this->arg1_values_[i].size(); ++j) {
       temp_records_.set(count, Record(this->arg1_values_[i][j], score));
       ++count;
+      if (count >= block_size_) {
+        if (!this->arg2_->evaluate(error, temp_records_,
+                                   result_pool.ref(offset, count))) {
+          return false;
+        }
+        offset += count;
+        count = 0;
+      }
     }
   }
-  // TODO: evaluate() should be called for each block of "temp_records_".
-  if (!this->arg2_->evaluate(error, temp_records_, result_block.ref())) {
-    return false;
+  if (count != 0) {
+    if (!this->arg2_->evaluate(error, temp_records_.ref(0, count),
+                               result_pool.ref(offset, count))) {
+      return false;
+    }
   }
-  Int offset = 0;
+  offset = 0;
   for (Int i = 0; i < records.size(); ++i) {
     Int size = this->arg1_values_[i].size();
-    results[i] = Value(&result_block[offset], size);
+    results[i] = Value(&result_pool[offset], size);
     offset += size;
   }
-  if (!result_blocks_.push_back(error, std::move(result_block))) {
+  if (!result_pools_.push_back(error, std::move(result_pool))) {
     return false;
   }
   return true;
@@ -2722,7 +2744,7 @@ class Builder {
   // On success, returns true.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
-  bool push_reference(Error *error);
+  bool push_reference(Error *error, const ExpressionOptions &options);
 
   // Clear the internal stack.
   void clear();
@@ -2800,7 +2822,8 @@ class Builder {
   unique_ptr<Node> create_reference_node(
       Error *error,
       unique_ptr<Node> &&arg1,
-      unique_ptr<Node> &&arg2);
+      unique_ptr<Node> &&arg2,
+      const ExpressionOptions &options);
 };
 
 unique_ptr<Builder> Builder::create(Error *error, const Table *table) {
@@ -2909,7 +2932,7 @@ bool Builder::push_node(Error *error, unique_ptr<Node> &&node) {
   return stack_.push_back(error, std::move(node));
 }
 
-bool Builder::push_reference(Error *error) {
+bool Builder::push_reference(Error *error, const ExpressionOptions &options) {
   if (stack_.size() < 2) {
     GRNXX_ERROR_SET(error, INVALID_OPERAND, "Not enough operands");
     return false;
@@ -2918,7 +2941,7 @@ bool Builder::push_reference(Error *error) {
   unique_ptr<Node> arg2 = std::move(stack_[stack_.size() - 1]);
   stack_.resize(nullptr, stack_.size() - 2);
   unique_ptr<Node> node =
-      create_reference_node(error, std::move(arg1), std::move(arg2));
+      create_reference_node(error, std::move(arg1), std::move(arg2), options);
   if (!node) {
     return false;
   }
@@ -3431,49 +3454,50 @@ unique_ptr<Node> Builder::create_subscript_node(
 unique_ptr<Node> Builder::create_reference_node(
     Error *error,
     unique_ptr<Node> &&arg1,
-    unique_ptr<Node> &&arg2) {
+    unique_ptr<Node> &&arg2,
+    const ExpressionOptions &options) {
   switch (arg1->data_type()) {
     case INT_DATA: {
       switch (arg2->data_type()) {
         case BOOL_DATA: {
           return ReferenceNode<Bool>::create(
-              error, std::move(arg1), std::move(arg2));
+              error, std::move(arg1), std::move(arg2), options);
         }
         case INT_DATA: {
           return ReferenceNode<Int>::create(
-              error, std::move(arg1), std::move(arg2));
+              error, std::move(arg1), std::move(arg2), options);
         }
         case FLOAT_DATA: {
           return ReferenceNode<Float>::create(
-              error, std::move(arg1), std::move(arg2));
+              error, std::move(arg1), std::move(arg2), options);
         }
         case GEO_POINT_DATA: {
           return ReferenceNode<GeoPoint>::create(
-              error, std::move(arg1), std::move(arg2));
+              error, std::move(arg1), std::move(arg2), options);
         }
         case TEXT_DATA: {
           return ReferenceNode<Text>::create(
-              error, std::move(arg1), std::move(arg2));
+              error, std::move(arg1), std::move(arg2), options);
         }
         case BOOL_VECTOR_DATA: {
           return ReferenceNode<Vector<Bool>>::create(
-              error, std::move(arg1), std::move(arg2));
+              error, std::move(arg1), std::move(arg2), options);
         }
         case INT_VECTOR_DATA: {
           return ReferenceNode<Vector<Int>>::create(
-              error, std::move(arg1), std::move(arg2));
+              error, std::move(arg1), std::move(arg2), options);
         }
         case FLOAT_VECTOR_DATA: {
           return ReferenceNode<Vector<Float>>::create(
-              error, std::move(arg1), std::move(arg2));
+              error, std::move(arg1), std::move(arg2), options);
         }
         case GEO_POINT_VECTOR_DATA: {
           return ReferenceNode<Vector<GeoPoint>>::create(
-              error, std::move(arg1), std::move(arg2));
+              error, std::move(arg1), std::move(arg2), options);
         }
         case TEXT_VECTOR_DATA: {
           return ReferenceNode<Vector<Text>>::create(
-              error, std::move(arg1), std::move(arg2));
+              error, std::move(arg1), std::move(arg2), options);
         }
         default: {
           GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
@@ -3492,19 +3516,19 @@ unique_ptr<Node> Builder::create_reference_node(
         }
         case INT_DATA: {
           return ReferenceVectorNode<Int>::create(
-              error, std::move(arg1), std::move(arg2));
+              error, std::move(arg1), std::move(arg2), options);
         }
         case FLOAT_DATA: {
           return ReferenceVectorNode<Float>::create(
-              error, std::move(arg1), std::move(arg2));
+              error, std::move(arg1), std::move(arg2), options);
         }
         case GEO_POINT_DATA: {
           return ReferenceVectorNode<GeoPoint>::create(
-              error, std::move(arg1), std::move(arg2));
+              error, std::move(arg1), std::move(arg2), options);
         }
         case TEXT_DATA: {
           return ReferenceVectorNode<Text>::create(
-              error, std::move(arg1), std::move(arg2));
+              error, std::move(arg1), std::move(arg2), options);
         }
         default: {
           GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
@@ -3778,7 +3802,9 @@ bool ExpressionBuilder::begin_subexpression(Error *error) {
   return true;
 }
 
-bool ExpressionBuilder::end_subexpression(Error *error) {
+bool ExpressionBuilder::end_subexpression(
+    Error *error,
+    const ExpressionOptions &options) {
   if (builders_.size() <= 1) {
     GRNXX_ERROR_SET(error, INVALID_OPERATION, "Subexpression not found");
     return false;
@@ -3791,7 +3817,7 @@ bool ExpressionBuilder::end_subexpression(Error *error) {
   if (!builders_.back()->push_node(error, std::move(node))) {
     return false;
   }
-  return builders_.back()->push_reference(error);
+  return builders_.back()->push_reference(error, options);
 }
 
 void ExpressionBuilder::clear() {
