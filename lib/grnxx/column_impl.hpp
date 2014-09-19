@@ -37,6 +37,13 @@ class ColumnImpl : public Column {
     return values_[row_id];
   }
 
+  // Read values.
+  void read(ArrayCRef<Record> records, ArrayRef<T> values) const {
+    for (Int i = 0; i < records.size(); ++i) {
+      values.set(i, get(records.get_row_id(i)));
+    }
+  }
+
  private:
   Array<T> values_;
 
@@ -73,6 +80,13 @@ class ColumnImpl<Int> : public Column {
   // Assumes that "row_id" is valid. Otherwise, the result is undefined.
   Int get(Int row_id) const {
     return values_[row_id];
+  }
+
+  // Read values.
+  void read(ArrayCRef<Record> records, ArrayRef<Int> values) const {
+    for (Int i = 0; i < records.size(); ++i) {
+      values.set(i, get(records.get_row_id(i)));
+    }
   }
 
  private:
@@ -121,6 +135,13 @@ class ColumnImpl<Text> : public Column {
       // The size of a long text is stored in front of the body.
       size = *reinterpret_cast<const Int *>(&bodies_[offset]);
       return String(&bodies_[offset + sizeof(Int)], size);
+    }
+  }
+
+  // Read values.
+  void read(ArrayCRef<Record> records, ArrayRef<Text> values) const {
+    for (Int i = 0; i < records.size(); ++i) {
+      values.set(i, get(records.get_row_id(i)));
     }
   }
 
@@ -174,6 +195,13 @@ class ColumnImpl<Vector<Int>> : public Column {
     }
   }
 
+  // Read values.
+  void read(ArrayCRef<Record> records, ArrayRef<Vector<Int>> values) const {
+    for (Int i = 0; i < records.size(); ++i) {
+      values.set(i, get(records.get_row_id(i)));
+    }
+  }
+
  private:
   Array<UInt> headers_;
   Array<Int> bodies_;
@@ -221,6 +249,13 @@ class ColumnImpl<Vector<Float>> : public Column {
       // The size of a long vector is stored in front of the body.
       std::memcpy(&size, &bodies_[offset], sizeof(Int));
       return Vector<Float>(&bodies_[offset + 1], size);
+    }
+  }
+
+  // Read values.
+  void read(ArrayCRef<Record> records, ArrayRef<Vector<Float>> values) const {
+    for (Int i = 0; i < records.size(); ++i) {
+      values.set(i, get(records.get_row_id(i)));
     }
   }
 
@@ -274,6 +309,14 @@ class ColumnImpl<Vector<GeoPoint>> : public Column {
     }
   }
 
+  // Read values.
+  void read(ArrayCRef<Record> records,
+            ArrayRef<Vector<GeoPoint>> values) const {
+    for (Int i = 0; i < records.size(); ++i) {
+      values.set(i, get(records.get_row_id(i)));
+    }
+  }
+
  private:
   Array<UInt> headers_;
   Array<GeoPoint> bodies_;
@@ -313,6 +356,13 @@ class ColumnImpl<Vector<Text>> : public Column {
   Vector<Text> get(Int row_id) const {
     return Vector<Text>(&text_headers_[headers_[row_id].offset],
                         bodies_.data(), headers_[row_id].size);
+  }
+
+  // Read values.
+  void read(ArrayCRef<Record> records, ArrayRef<Vector<Text>> values) const {
+    for (Int i = 0; i < records.size(); ++i) {
+      values.set(i, get(records.get_row_id(i)));
+    }
   }
 
  private:
