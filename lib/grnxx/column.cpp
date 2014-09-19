@@ -114,14 +114,6 @@ bool Column::get(Error *error, Int, Datum *) const {
   return false;
 }
 
-unique_ptr<Cursor> Column::create_cursor(
-    Error *error,
-    const CursorOptions &) const {
-  // TODO: Cursor is not supported yet.
-  GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not suported yet");
-  return nullptr;
-}
-
 unique_ptr<Column> Column::create(Error *error,
                                   Table *table,
                                   String name,

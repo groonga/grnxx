@@ -114,15 +114,6 @@ class Column {
   // "error" != nullptr.
   virtual bool get(Error *error, Int row_id, Datum *datum) const;
 
-  // Create a cursor to get records.
-  //
-  // On success, returns a pointer to the cursor.
-  // On failure, returns nullptr and stores error information into "*error" if
-  // "error" != nullptr.
-  virtual unique_ptr<Cursor> create_cursor(
-      Error *error,
-      const CursorOptions &options = CursorOptions()) const;
-
  protected:
   Table *table_;
   Name name_;
