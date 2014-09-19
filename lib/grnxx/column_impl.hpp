@@ -37,7 +37,7 @@ class ColumnImpl : public Column {
     return values_[row_id];
   }
 
- protected:
+ private:
   Array<T> values_;
 
   ColumnImpl();
@@ -75,7 +75,7 @@ class ColumnImpl<Int> : public Column {
     return values_[row_id];
   }
 
- protected:
+ private:
   Array<Int> values_;
 
   ColumnImpl();
@@ -124,7 +124,7 @@ class ColumnImpl<Text> : public Column {
     }
   }
 
- protected:
+ private:
   Array<UInt> headers_;
   Array<char> bodies_;
 
@@ -174,7 +174,7 @@ class ColumnImpl<Vector<Int>> : public Column {
     }
   }
 
- protected:
+ private:
   Array<UInt> headers_;
   Array<Int> bodies_;
 
@@ -224,7 +224,7 @@ class ColumnImpl<Vector<Float>> : public Column {
     }
   }
 
- protected:
+ private:
   Array<UInt> headers_;
   Array<Float> bodies_;
 
@@ -274,7 +274,7 @@ class ColumnImpl<Vector<GeoPoint>> : public Column {
     }
   }
 
- protected:
+ private:
   Array<UInt> headers_;
   Array<GeoPoint> bodies_;
 
@@ -315,7 +315,7 @@ class ColumnImpl<Vector<Text>> : public Column {
                         bodies_.data(), headers_[row_id].size);
   }
 
- protected:
+ private:
   struct Header {
     Int offset;
     Int size;
