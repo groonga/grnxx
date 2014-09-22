@@ -21,11 +21,6 @@ class AndMerger : public Merger {
 
   bool finish(Error *error);
 
-  bool merge(Error *error,
-             Array<Record> *input_records_1,
-             Array<Record> *input_records_2,
-             Array<Record> *output_records);
-
  private:
   Array<Record> *input_records_1_;
   Array<Record> *input_records_2_;
@@ -157,16 +152,6 @@ bool AndMerger::finish(Error *error) {
   return true;
 }
 
-bool AndMerger::merge(Error *error,
-                      Array<Record> *input_records_1,
-                      Array<Record> *input_records_2,
-                      Array<Record> *output_records) {
-  if (!reset(error, input_records_1, input_records_2, output_records)) {
-    return false;
-  }
-  return finish(error);
-}
-
 // -- Merger --
 
 Merger::Merger() {}
@@ -187,6 +172,16 @@ unique_ptr<Merger> Merger::create(Error *error, const MergerOptions &options) {
       return nullptr;
     }
   }
+}
+
+bool Merger::merge(Error *error,
+                   Array<Record> *input_records_1,
+                   Array<Record> *input_records_2,
+                   Array<Record> *output_records) {
+  if (!reset(error, input_records_1, input_records_2, output_records)) {
+    return false;
+  }
+  return finish(error);
 }
 
 }  // namespace grnxx

@@ -58,7 +58,7 @@ class Merger {
   virtual bool merge(Error *error,
                      Array<Record> *input_records_1,
                      Array<Record> *input_records_2,
-                     Array<Record> *output_records) = 0;
+                     Array<Record> *output_records);
 };
 
 }  // namespace grnxx
