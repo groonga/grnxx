@@ -6,6 +6,8 @@
 namespace grnxx {
 namespace pipeline {
 
+// -- Node --
+
 class Node {
  public:
   Node() {}
@@ -29,6 +31,8 @@ Int Node::read_all(Error *error, Array<Record> *records) {
   return total_count;
 }
 
+// --- CursorNode ---
+
 class CursorNode : public Node {
  public:
   explicit CursorNode(unique_ptr<Cursor> &&cursor)
@@ -51,6 +55,8 @@ Int CursorNode::read_next(Error *error, Array<Record> *records) {
 Int CursorNode::read_all(Error *error, Array<Record> *records) {
   return cursor_->read_all(error, records);
 }
+
+// --- FilterNode ---
 
 class FilterNode : public Node {
  public:
@@ -114,6 +120,8 @@ Int FilterNode::read_next(Error *error, Array<Record> *records) {
   return records->size() - offset;
 }
 
+// --- AdjusterNode ---
+
 class AdjusterNode : public Node {
  public:
   explicit AdjusterNode(unique_ptr<Node> &&arg,
@@ -141,6 +149,8 @@ Int AdjusterNode::read_next(Error *error, Array<Record> *records) {
   }
   return count;
 }
+
+// --- SorterNode ---
 
 class SorterNode : public Node {
  public:
