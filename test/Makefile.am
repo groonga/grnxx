@@ -6,7 +6,8 @@ TESTS =				\
 	test_index		\
 	test_expression		\
 	test_sorter		\
-	test_pipeline
+	test_pipeline		\
+	test_issue_62
 
 check_PROGRAMS = $(TESTS)
 
@@ -33,3 +34,6 @@ test_sorter_LDADD = $(top_srcdir)/lib/grnxx/libgrnxx.la
 
 test_pipeline_SOURCES = test_pipeline.cpp
 test_pipeline_LDADD = $(top_srcdir)/lib/grnxx/libgrnxx.la
+
+test_issue_62_SOURCES = test_issue_62.cpp
+test_issue_62_LDADD = $(top_srcdir)/lib/grnxx/libgrnxx.la
