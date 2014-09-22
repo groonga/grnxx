@@ -38,6 +38,7 @@ test/test_table
 test/test_column
 test/test_index
 test/test_expression
+test/test_merger
 test/test_sorter
 test/test_pipeline
 test/test_issue_62
