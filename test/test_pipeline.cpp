@@ -330,11 +330,92 @@ void test_sorter() {
   }
 }
 
+void test_merger() {
+  grnxx::Error error;
+
+  // Create an object for building a pipeline.
+  auto pipeline_builder = grnxx::PipelineBuilder::create(&error, test.table);
+  assert(pipeline_builder);
+
+  // Create a cursor which reads all the records.
+  auto cursor = test.table->create_cursor(&error);
+  assert(cursor);
+  assert(pipeline_builder->push_cursor(&error, std::move(cursor)));
+
+  // Create an object for building expressions.
+  auto expression_builder =
+      grnxx::ExpressionBuilder::create(&error, test.table);
+  assert(expression_builder);
+
+  // Create a filter (Bool).
+  assert(expression_builder->push_column(&error, "Bool"));
+  auto expression = expression_builder->release(&error);
+  assert(expression);
+  assert(pipeline_builder->push_filter(&error, std::move(expression)));
+
+  // Create an adjuster (Float).
+  assert(expression_builder->push_column(&error, "Float"));
+  expression = expression_builder->release(&error);
+  assert(expression);
+  assert(pipeline_builder->push_adjuster(&error, std::move(expression)));
+
+  // Create a cursor which reads all the records.
+  cursor = test.table->create_cursor(&error);
+  assert(cursor);
+  assert(pipeline_builder->push_cursor(&error, std::move(cursor)));
+
+  // Create a filter (Int < 50).
+  assert(expression_builder->push_column(&error, "Int"));
+  assert(expression_builder->push_constant(&error, grnxx::Int(50)));
+  assert(expression_builder->push_operator(&error, grnxx::LESS_OPERATOR));
+  expression = expression_builder->release(&error);
+  assert(expression);
+  assert(pipeline_builder->push_filter(&error, std::move(expression)));
+
+  // Create an adjuster (Float * 2.0).
+  assert(expression_builder->push_column(&error, "Float"));
+  assert(expression_builder->push_constant(&error, grnxx::Float(2.0)));
+  assert(expression_builder->push_operator(&error,
+                                           grnxx::MULTIPLICATION_OPERATOR));
+  expression = expression_builder->release(&error);
+  assert(expression);
+  assert(pipeline_builder->push_adjuster(&error, std::move(expression)));
+
+  // Create a merger.
+  grnxx::MergerOptions options;
+  options.type = grnxx::AND_MERGER;
+  options.operator_type = grnxx::PLUS_MERGER_OPERATOR;
+  assert(pipeline_builder->push_merger(&error, options));
+
+  // Complete a pipeline.
+  auto pipeline = pipeline_builder->release(&error);
+  assert(pipeline);
+
+  // Read records through the pipeline.
+  grnxx::Array<grnxx::Record> records;
+  assert(pipeline->flush(&error, &records));
+
+  grnxx::Int count = 0;
+  for (grnxx::Int i = 1; i < test.bool_values.size(); ++i) {
+    if (test.bool_values[i] && (test.int_values[i] < 50)) {
+      ++count;
+    }
+  }
+  assert(records.size() == count);
+
+  for (grnxx::Int i = 0; i < records.size(); ++i) {
+    grnxx::Int row_id = records.get_row_id(i);
+    assert(test.bool_values[row_id] && (test.int_values[row_id] < 50));
+    assert(records.get_score(i) == (test.float_values[row_id] * 3.0));
+  }
+}
+
 int main() {
   init_test();
   test_cursor();
   test_filter();
   test_adjuster();
   test_sorter();
+  test_merger();
   return 0;
 }
