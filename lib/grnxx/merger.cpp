@@ -98,6 +98,7 @@ bool AndMerger::finish(Error *error) {
           } else {
             record.score = it->second - stream_records->get_score(i);
           }
+          break;
         }
         case MULTIPLICATION_MERGER_OPERATOR: {
           record.score = stream_records->get_score(i) * it->second;
