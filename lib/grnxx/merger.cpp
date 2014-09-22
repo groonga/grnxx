@@ -152,6 +152,8 @@ bool AndMerger::finish(Error *error) {
   if (limit_ < output_records_->size()) {
     output_records_->resize(nullptr, limit_);
   }
+  input_records_1_->clear();
+  input_records_2_->clear();
   return true;
 }
 
