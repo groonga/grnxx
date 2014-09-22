@@ -36,7 +36,7 @@ class Merger {
   // On success, returns true.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
-  virtual bool progress(Error *error) = 0;
+  virtual bool progress(Error *error);
 
   // Finish merging.
   //

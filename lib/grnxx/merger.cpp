@@ -17,8 +17,6 @@ class AndMerger : public Merger {
              Array<Record> *input_records_2,
              Array<Record> *output_records);
 
-  bool progress(Error *error);
-
   bool finish(Error *error);
 
  private:
@@ -59,11 +57,6 @@ bool AndMerger::reset(Error *,
   input_records_1_ = input_records_1;
   input_records_2_ = input_records_2;
   output_records_ = output_records;
-  return true;
-}
-
-bool AndMerger::progress(Error *) {
-  // TODO: Incremental merging is not supported yet.
   return true;
 }
 
@@ -172,6 +165,11 @@ unique_ptr<Merger> Merger::create(Error *error, const MergerOptions &options) {
       return nullptr;
     }
   }
+}
+
+bool Merger::progress(Error *) {
+  // TODO: Incremental merging is not supported yet.
+  return true;
 }
 
 bool Merger::merge(Error *error,
