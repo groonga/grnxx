@@ -90,8 +90,9 @@ class PipelineBuilder {
   // "error" != nullptr.
   bool push_sorter(Error *error, unique_ptr<Sorter> &&sorter);
 
-  // TODO: Not supported yet.
-//  bool push_merger(Error *error, const MergerOptions &options);
+  // Push a merger.
+  bool push_merger(Error *error,
+                   const MergerOptions &options = MergerOptions());
 
   // Clear the internal stack.
   void clear();

@@ -60,6 +60,10 @@ SorterOptions::SorterOptions()
     : offset(0),
       limit(numeric_limits<Int>::max()) {}
 
+MergerOptions::MergerOptions()
+    : type(AND_MERGER),
+      operator_type(PLUS_MERGER_OPERATOR) {}
+
 PipelineOptions::PipelineOptions() {}
 
 SortOrder::SortOrder() : expression(), type(REGULAR_ORDER) {}

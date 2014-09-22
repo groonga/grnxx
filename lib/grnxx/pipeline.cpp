@@ -282,6 +282,12 @@ bool PipelineBuilder::push_sorter(Error *error, unique_ptr<Sorter> &&sorter) {
   return true;
 }
 
+bool PipelineBuilder::push_merger(Error *error, const MergerOptions &options) {
+  // TODO
+  GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
+  return false;
+}
+
 void PipelineBuilder::clear() {
   stack_.clear();
 }

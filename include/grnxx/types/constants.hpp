@@ -58,6 +58,41 @@ enum OrderType {
   REVERSE_ORDER
 };
 
+// TODO: The following names should be improved.
+enum MergerType {
+  // Keep records included in both the first input stream and the second input
+  // stream.
+  AND_MERGER,
+  // Keep records included in the first input stream and/or the second input
+  // stream.
+  OR_MERGER,
+  // Keep records included in only one of the input streams.
+  XOR_MERGER,
+  // Keep records included in the first input stream and not included in the
+  // second input stream.
+  MINUS_MERGER,
+  // Keep records included in the first input stream.
+  LHS_MERGER,
+  // Keep records included in the second input stream.
+  RHS_MERGER
+};
+
+// TODO: The following names should be improved.
+enum MergerOperatorType {
+  // Add the first input score and the second input score.
+  PLUS_MERGER_OPERATOR,
+  // Subtract the second input score from the first input score.
+  MINUS_MERGER_OPERATOR,
+  // Multiply the first input score by the second input score.
+  MULTIPLICATION_MERGER_OPERATOR,
+  // Ignores the second input score.
+  LHS_MERGER_OPERATOR,
+  // Ignores the first input score.
+  RHS_MERGER_OPERATOR,
+  // All zeros.
+  ZERO_MERGER_OPERATOR
+};
+
 }  // namespace grnxx
 
 #endif  // GRNXX_TYPES_CONSTANTS_HPP

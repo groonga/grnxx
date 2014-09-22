@@ -56,6 +56,16 @@ struct SorterOptions {
   SorterOptions();
 };
 
+struct MergerOptions {
+  // How to merge row IDs.
+  MergerType type;
+
+  // How to merge scores.
+  MergerOperatorType operator_type;
+
+  MergerOptions();
+};
+
 struct PipelineOptions {
   PipelineOptions();
 };
