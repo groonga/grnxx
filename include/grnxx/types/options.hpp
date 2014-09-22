@@ -63,6 +63,13 @@ struct MergerOptions {
   // How to merge scores.
   MergerOperatorType operator_type;
 
+  // The first "offset" records are skipped (default: 0).
+  Int offset;
+
+  // At most "limit" records are returned
+  // (default: numeric_limits<Int>::max()).
+  Int limit;
+
   MergerOptions();
 };
 

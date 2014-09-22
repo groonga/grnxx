@@ -62,7 +62,9 @@ SorterOptions::SorterOptions()
 
 MergerOptions::MergerOptions()
     : type(AND_MERGER),
-      operator_type(PLUS_MERGER_OPERATOR) {}
+      operator_type(PLUS_MERGER_OPERATOR),
+      offset(0),
+      limit(numeric_limits<Int>::max()) {}
 
 PipelineOptions::PipelineOptions() {}
 
