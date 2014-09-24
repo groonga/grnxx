@@ -37,6 +37,8 @@ struct {
   grnxx::Array<grnxx::Float> scores2;
 } test;
 
+std::mt19937_64 mersenne_twister;
+
 void init_test() {
   grnxx::Error error;
 
@@ -63,8 +65,7 @@ void init_test() {
 
   // Generate random values.
   // Bool: true or false.
-  constexpr grnxx::Int NUM_ROWS = 1 << 16;
-  std::mt19937_64 mersenne_twister;
+  constexpr grnxx::Int NUM_ROWS = 1 << 12;
   assert(test.bool_values.resize(&error, NUM_ROWS + 1));
   assert(test.bool2_values.resize(&error, NUM_ROWS + 1));
   assert(test.float_values.resize(&error, NUM_ROWS + 1));
@@ -622,14 +623,14 @@ void test_rhs() {
 }
 
 int main() {
-  init_test();
-
-  test_and();
-  test_or();
-  test_xor();
-  test_minus();
-  test_lhs();
-  test_rhs();
-
+  for (int i = 0; i < 5; ++i) {
+    init_test();
+    test_and();
+    test_or();
+    test_xor();
+    test_minus();
+    test_lhs();
+    test_rhs();
+  }
   return 0;
 }
