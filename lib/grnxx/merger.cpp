@@ -501,7 +501,10 @@ bool XorMerger::finish(Error *error) {
         break;
       }
       case MINUS_MERGER_OPERATOR: {
-        it.second = stream_is_1 ? -it.second : 0.0;
+        if (stream_is_1) {
+          it.second = -it.second;
+        }
+        break;
       }
       case MULTIPLICATION_MERGER_OPERATOR: {
         // TODO: I'm not sure if it.second should be used?
