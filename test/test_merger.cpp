@@ -129,6 +129,34 @@ grnxx::Array<grnxx::Record> create_input_records_2() {
   return create_input_records("Bool2", "Float2");
 }
 
+grnxx::Array<grnxx::Record> merge_records(
+    const grnxx::Array<grnxx::Record> &input_records_1,
+    const grnxx::Array<grnxx::Record> &input_records_2,
+    const grnxx::MergerOptions &options) {
+  grnxx::Error error;
+
+  // Create a merger.
+  auto merger = grnxx::Merger::create(&error, options);
+  assert(merger);
+
+  // Create copies of input records.
+  grnxx::Array<grnxx::Record> copy_1;
+  assert(copy_1.resize(&error, input_records_1.size()));
+  for (grnxx::Int i = 0; i < copy_1.size(); ++i) {
+    copy_1.set(i, input_records_1.get(i));
+  }
+  grnxx::Array<grnxx::Record> copy_2;
+  assert(copy_2.resize(&error, input_records_2.size()));
+  for (grnxx::Int i = 0; i < copy_2.size(); ++i) {
+    copy_2.set(i, input_records_2.get(i));
+  }
+
+  // Merge records.
+  grnxx::Array<grnxx::Record> result_records;
+  assert(merger->merge(&error, &copy_1, &copy_2, &result_records));
+  return result_records;
+}
+
 void test_and() {
   grnxx::Error error;
 
@@ -136,20 +164,17 @@ void test_and() {
   auto records = create_input_records_1();
   auto records2 = create_input_records_2();
 
-  // Merge records.
+  // Set options.
   grnxx::MergerOptions options;
   options.type = grnxx::AND_MERGER;
   options.operator_type = grnxx::PLUS_MERGER_OPERATOR;
-  auto merger = grnxx::Merger::create(&error, options);
-  assert(merger);
-  grnxx::Array<grnxx::Record> result_records;
-  assert(merger->merge(&error, &records, &records2, &result_records));
 
+  // Merge records.
+  auto result_records = merge_records(records, records2, options);
   for (grnxx::Int i = 0; i < result_records.size(); ++i) {
     grnxx::Int row_id = result_records.get_row_id(i);
     assert(test.bool_values[row_id] && test.bool2_values[row_id]);
   }
-
   grnxx::Int count = 0;
   for (grnxx::Int i = 1; i <= test.table->max_row_id(); ++i) {
     if (test.bool_values[i] && test.bool2_values[i]) {
@@ -167,20 +192,17 @@ void test_or() {
   auto records = create_input_records_1();
   auto records2 = create_input_records_2();
 
-  // Merge records.
+  // Set options.
   grnxx::MergerOptions options;
   options.type = grnxx::OR_MERGER;
   options.operator_type = grnxx::PLUS_MERGER_OPERATOR;
-  auto merger = grnxx::Merger::create(&error, options);
-  assert(merger);
-  grnxx::Array<grnxx::Record> result_records;
-  assert(merger->merge(&error, &records, &records2, &result_records));
 
+  // Merge records.
+  auto result_records = merge_records(records, records2, options);
   for (grnxx::Int i = 0; i < result_records.size(); ++i) {
     grnxx::Int row_id = result_records.get_row_id(i);
     assert(test.bool_values[row_id] || test.bool2_values[row_id]);
   }
-
   grnxx::Int count = 0;
   for (grnxx::Int i = 1; i <= test.table->max_row_id(); ++i) {
     if (test.bool_values[i] || test.bool2_values[i]) {
@@ -197,20 +219,17 @@ void test_xor() {
   auto records = create_input_records_1();
   auto records2 = create_input_records_2();
 
-  // Merge records.
+  // Set options.
   grnxx::MergerOptions options;
   options.type = grnxx::XOR_MERGER;
   options.operator_type = grnxx::PLUS_MERGER_OPERATOR;
-  auto merger = grnxx::Merger::create(&error, options);
-  assert(merger);
-  grnxx::Array<grnxx::Record> result_records;
-  assert(merger->merge(&error, &records, &records2, &result_records));
 
+  // Merge records.
+  auto result_records = merge_records(records, records2, options);
   for (grnxx::Int i = 0; i < result_records.size(); ++i) {
     grnxx::Int row_id = result_records.get_row_id(i);
     assert(test.bool_values[row_id] ^ test.bool2_values[row_id]);
   }
-
   grnxx::Int count = 0;
   for (grnxx::Int i = 1; i <= test.table->max_row_id(); ++i) {
     if (test.bool_values[i] ^ test.bool2_values[i]) {
@@ -227,20 +246,17 @@ void test_minus() {
   auto records = create_input_records_1();
   auto records2 = create_input_records_2();
 
-  // Merge records.
+  // Set options.
   grnxx::MergerOptions options;
   options.type = grnxx::MINUS_MERGER;
   options.operator_type = grnxx::PLUS_MERGER_OPERATOR;
-  auto merger = grnxx::Merger::create(&error, options);
-  assert(merger);
-  grnxx::Array<grnxx::Record> result_records;
-  assert(merger->merge(&error, &records, &records2, &result_records));
 
+  // Merge records.
+  auto result_records = merge_records(records, records2, options);
   for (grnxx::Int i = 0; i < result_records.size(); ++i) {
     grnxx::Int row_id = result_records.get_row_id(i);
     assert(test.bool_values[row_id] && !test.bool2_values[row_id]);
   }
-
   grnxx::Int count = 0;
   for (grnxx::Int i = 1; i <= test.table->max_row_id(); ++i) {
     if (test.bool_values[i] && !test.bool2_values[i]) {
@@ -257,20 +273,17 @@ void test_lhs() {
   auto records = create_input_records_1();
   auto records2 = create_input_records_2();
 
-  // Merge records.
+  // Set options.
   grnxx::MergerOptions options;
   options.type = grnxx::LHS_MERGER;
   options.operator_type = grnxx::PLUS_MERGER_OPERATOR;
-  auto merger = grnxx::Merger::create(&error, options);
-  assert(merger);
-  grnxx::Array<grnxx::Record> result_records;
-  assert(merger->merge(&error, &records, &records2, &result_records));
 
+  // Merge records.
+  auto result_records = merge_records(records, records2, options);
   for (grnxx::Int i = 0; i < result_records.size(); ++i) {
     grnxx::Int row_id = result_records.get_row_id(i);
     assert(test.bool_values[row_id]);
   }
-
   grnxx::Int count = 0;
   for (grnxx::Int i = 1; i <= test.table->max_row_id(); ++i) {
     if (test.bool_values[i]) {
@@ -287,20 +300,17 @@ void test_rhs() {
   auto records = create_input_records_1();
   auto records2 = create_input_records_2();
 
-  // Merge records.
+  // Set options.
   grnxx::MergerOptions options;
   options.type = grnxx::RHS_MERGER;
   options.operator_type = grnxx::PLUS_MERGER_OPERATOR;
-  auto merger = grnxx::Merger::create(&error, options);
-  assert(merger);
-  grnxx::Array<grnxx::Record> result_records;
-  assert(merger->merge(&error, &records, &records2, &result_records));
 
+  // Merge records.
+  auto result_records = merge_records(records, records2, options);
   for (grnxx::Int i = 0; i < result_records.size(); ++i) {
     grnxx::Int row_id = result_records.get_row_id(i);
     assert(test.bool2_values[row_id]);
   }
-
   grnxx::Int count = 0;
   for (grnxx::Int i = 1; i <= test.table->max_row_id(); ++i) {
     if (test.bool2_values[i]) {
