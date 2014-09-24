@@ -225,10 +225,10 @@ bool OrMerger::finish(Error *error) {
   const MergerOperatorType operator_type = operator_type_;
   const bool stream_is_1 = stream_records == input_records_1_;
   for (Int i = 0; i < stream_records->size(); ++i) {
+    Record record;
+    record.row_id = stream_records->get_row_id(i);
     auto it = filter.find(stream_records->get_row_id(i));
     if (it == filter.end()) {
-      Record record;
-      record.row_id = stream_records->get_row_id(i);
       switch (operator_type) {
         case PLUS_MERGER_OPERATOR: {
           record.score = stream_records->get_score(i);
@@ -267,47 +267,85 @@ bool OrMerger::finish(Error *error) {
           break;
         }
       }
-      if (!output_records_->push_back(error, record)) {
-        return false;
-      }
     } else {
       switch (operator_type) {
         case PLUS_MERGER_OPERATOR: {
-          it->second += stream_records->get_score(i);
+          record.score = it->second + stream_records->get_score(i);
           break;
         }
         case MINUS_MERGER_OPERATOR: {
           if (stream_is_1) {
-            it->second = stream_records->get_score(i) - it->second;
+            record.score = stream_records->get_score(i) - it->second;
           } else {
-            it->second -= stream_records->get_score(i);
+            record.score = it->second - stream_records->get_score(i);
           }
+          break;
         }
         case MULTIPLICATION_MERGER_OPERATOR: {
-          it->second *= stream_records->get_score(i);
+          record.score = it->second * stream_records->get_score(i);
           break;
         }
         case LHS_MERGER_OPERATOR: {
           if (stream_is_1) {
-            it->second = stream_records->get_score(i);
+            record.score = stream_records->get_score(i);
+          } else {
+            record.score = it->second;
           }
           break;
         }
         case RHS_MERGER_OPERATOR: {
           if (!stream_is_1) {
-            it->second = stream_records->get_score(i);
+            record.score = stream_records->get_score(i);
+          } else {
+            record.score = it->second;
           }
           break;
         }
         case ZERO_MERGER_OPERATOR: {
-          it->second = 0.0;
+          record.score = 0.0;
           break;
         }
       }
+      filter.erase(it);
+    }
+    if (!output_records_->push_back(error, record)) {
+      return false;
     }
   }
 
   for (auto it : filter) {
+    switch (operator_type) {
+      case PLUS_MERGER_OPERATOR: {
+        break;
+      }
+      case MINUS_MERGER_OPERATOR: {
+        if (stream_is_1) {
+          it.second = -it.second;
+        }
+        break;
+      }
+      case MULTIPLICATION_MERGER_OPERATOR: {
+        // TODO: I'm not sure if it.second should be used?
+        it.second = 0.0;
+        break;
+      }
+      case LHS_MERGER_OPERATOR: {
+        if (stream_is_1) {
+          it.second = 0.0;
+        }
+        break;
+      }
+      case RHS_MERGER_OPERATOR: {
+        if (!stream_is_1) {
+          it.second = 0.0;
+        }
+        break;
+      }
+      case ZERO_MERGER_OPERATOR: {
+        it.second = 0.0;
+        break;
+      }
+    }
     if (!output_records_->push_back(error, Record(it.first, it.second))) {
       return false;
     }
