@@ -626,45 +626,73 @@ bool MinusMerger::finish(Error *error) {
   // Filter the stream (the larger input) with the hash table.
   const MergerOperatorType operator_type = operator_type_;
   const bool stream_is_1 = stream_records == input_records_1_;
-  for (Int i = 0; i < stream_records->size(); ++i) {
-    auto it = filter.find(stream_records->get_row_id(i));
-    if (it != filter.end()) {
-      filter.erase(it);
-    }
-  }
-
-  for (auto it : filter) {
-    Record record;
-    record.row_id = it.first;
-    switch (operator_type) {
-      case PLUS_MERGER_OPERATOR: {
-        record.score = it.second;
-        break;
+  if (stream_is_1) {
+    for (Int i = 0; i < stream_records->size(); ++i) {
+      auto it = filter.find(stream_records->get_row_id(i));
+      if (it != filter.end()) {
+        continue;
       }
-      case MINUS_MERGER_OPERATOR: {
-        record.score = stream_is_1 ? -it.second : it.second;
-        break;
+      Record record = stream_records->get(i);
+      switch (operator_type) {
+        case PLUS_MERGER_OPERATOR:
+        case MINUS_MERGER_OPERATOR: {
+          break;
+        }
+        case MULTIPLICATION_MERGER_OPERATOR: {
+          // TODO: I'm not sure if it.second should be used?
+          record.score = 0.0;
+          break;
+        }
+        case LHS_MERGER_OPERATOR: {
+          break;
+        }
+        case RHS_MERGER_OPERATOR:
+        case ZERO_MERGER_OPERATOR: {
+          record.score = 0.0;
+          break;
+        }
       }
-      case MULTIPLICATION_MERGER_OPERATOR: {
-        // TODO: I'm not sure if it.second should be used?
-        record.score = 0.0;
-        break;
-      }
-      case LHS_MERGER_OPERATOR: {
-        record.score = stream_is_1 ? 0.0 : it.second;
-        break;
-      }
-      case RHS_MERGER_OPERATOR: {
-        record.score = stream_is_1 ? it.second : 0.0;
-        break;
-      }
-      case ZERO_MERGER_OPERATOR: {
-        record.score = 0.0;
-        break;
+      if (!output_records_->push_back(error, record)) {
+        return false;
       }
     }
-    if (!output_records_->push_back(error, record)) {
-      return false;
+  } else {
+    for (Int i = 0; i < stream_records->size(); ++i) {
+      auto it = filter.find(stream_records->get_row_id(i));
+      if (it != filter.end()) {
+        filter.erase(it);
+      }
+    }
+    for (auto it : filter) {
+      Record record;
+      record.row_id = it.first;
+      switch (operator_type) {
+        case PLUS_MERGER_OPERATOR: {
+          record.score = it.second;
+          break;
+        }
+        case MINUS_MERGER_OPERATOR: {
+          record.score = it.second;
+          break;
+        }
+        case MULTIPLICATION_MERGER_OPERATOR: {
+          // TODO: I'm not sure if it.second should be used?
+          record.score = 0.0;
+          break;
+        }
+        case LHS_MERGER_OPERATOR: {
+          record.score = it.second;
+          break;
+        }
+        case RHS_MERGER_OPERATOR:
+        case ZERO_MERGER_OPERATOR: {
+          record.score = 0.0;
+          break;
+        }
+      }
+      if (!output_records_->push_back(error, record)) {
+        return false;
+      }
     }
   }
 
