@@ -638,6 +638,7 @@ bool MinusMerger::finish(Error *error) {
     record.row_id = it.first;
     switch (operator_type) {
       case PLUS_MERGER_OPERATOR: {
+        record.score = it.second;
         break;
       }
       case MINUS_MERGER_OPERATOR: {
