@@ -189,6 +189,57 @@ void test_or() {
   assert(count == result_records.size());
 }
 
+void test_xor() {
+  grnxx::Error error;
+
+  // Create cursors to read all the records.
+  auto cursor = test.table->create_cursor(&error);
+  assert(cursor);
+  auto cursor2 = test.table->create_cursor(&error);
+  assert(cursor2);
+
+  // Create expressions to read values.
+  auto expression_builder =
+      grnxx::ExpressionBuilder::create(&error, test.table);
+  assert(expression_builder);
+  assert(expression_builder->push_column(&error, "Bool"));
+  auto expression = expression_builder->release(&error);
+  assert(expression);
+  assert(expression_builder->push_column(&error, "Bool2"));
+  auto expression2 = expression_builder->release(&error);
+  assert(expression2);
+
+  // Create input records.
+  grnxx::Array<grnxx::Record> records;
+  assert(cursor->read_all(&error, &records) == test.table->num_rows());
+  assert(expression->filter(&error, &records));
+  grnxx::Array<grnxx::Record> records2;
+  assert(cursor2->read_all(&error, &records2) == test.table->num_rows());
+  assert(expression2->filter(&error, &records2));
+
+  // Merge records.
+  grnxx::MergerOptions options;
+  options.type = grnxx::XOR_MERGER;
+  options.operator_type = grnxx::PLUS_MERGER_OPERATOR;
+  auto merger = grnxx::Merger::create(&error, options);
+  assert(merger);
+  grnxx::Array<grnxx::Record> result_records;
+  assert(merger->merge(&error, &records, &records2, &result_records));
+
+  for (grnxx::Int i = 0; i < result_records.size(); ++i) {
+    grnxx::Int row_id = result_records.get_row_id(i);
+    assert(test.bool_values[row_id] ^ test.bool2_values[row_id]);
+  }
+
+  grnxx::Int count = 0;
+  for (grnxx::Int i = 1; i <= test.table->max_row_id(); ++i) {
+    if (test.bool_values[i] ^ test.bool2_values[i]) {
+      ++count;
+    }
+  }
+  assert(count == result_records.size());
+}
+
 void test_minus() {
   grnxx::Error error;
 
@@ -415,7 +466,7 @@ int main() {
 
   test_and();
   test_or();
-//  test_xor();
+  test_xor();
   test_minus();
   test_lhs();
   test_rhs();
