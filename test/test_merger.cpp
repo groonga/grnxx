@@ -89,36 +89,58 @@ void init_test() {
   }
 }
 
-void test_and() {
+grnxx::Array<grnxx::Record> create_input_records(const char *bool_name,
+                                                 const char *float_name) {
   grnxx::Error error;
 
-  // Create cursors to read all the records.
+  // Create a cursor to read records.
   auto cursor = test.table->create_cursor(&error);
   assert(cursor);
-  auto cursor2 = test.table->create_cursor(&error);
-  assert(cursor2);
 
-  // Create expressions to read values.
+  // Read all the records.
+  grnxx::Array<grnxx::Record> records;
+  assert(cursor->read_all(&error, &records) == test.table->num_rows());
+
+  // Create an object to create expressions.
   auto expression_builder =
       grnxx::ExpressionBuilder::create(&error, test.table);
   assert(expression_builder);
-  assert(expression_builder->push_column(&error, "Bool"));
+
+  // Apply a filter to the records.
+  assert(expression_builder->push_column(&error, bool_name));
   auto expression = expression_builder->release(&error);
   assert(expression);
-  assert(expression_builder->push_column(&error, "Bool2"));
-  auto expression2 = expression_builder->release(&error);
-  assert(expression2);
+  assert(expression->filter(&error, &records));
+
+  // Apply an adjuster to the records.
+  assert(expression_builder->push_column(&error, float_name));
+  expression = expression_builder->release(&error);
+  assert(expression);
+  assert(expression->adjust(&error, &records));
+
+  return records;
+}
+
+grnxx::Array<grnxx::Record> create_input_records_1() {
+  return create_input_records("Bool", "Float");
+}
+
+grnxx::Array<grnxx::Record> create_input_records_2() {
+  return create_input_records("Bool2", "Float2");
+}
+
+void test_and() {
+  grnxx::Error error;
 
   // Create input records.
-  grnxx::Array<grnxx::Record> records;
-  assert(cursor->read_all(&error, &records) == test.table->num_rows());
-  assert(expression->filter(&error, &records));
-  grnxx::Array<grnxx::Record> records2;
-  assert(cursor2->read_all(&error, &records2) == test.table->num_rows());
-  assert(expression2->filter(&error, &records2));
+  auto records = create_input_records_1();
+  auto records2 = create_input_records_2();
 
   // Merge records.
-  auto merger = grnxx::Merger::create(&error);
+  grnxx::MergerOptions options;
+  options.type = grnxx::AND_MERGER;
+  options.operator_type = grnxx::PLUS_MERGER_OPERATOR;
+  auto merger = grnxx::Merger::create(&error, options);
   assert(merger);
   grnxx::Array<grnxx::Record> result_records;
   assert(merger->merge(&error, &records, &records2, &result_records));
@@ -141,30 +163,9 @@ void test_and() {
 void test_or() {
   grnxx::Error error;
 
-  // Create cursors to read all the records.
-  auto cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  auto cursor2 = test.table->create_cursor(&error);
-  assert(cursor2);
-
-  // Create expressions to read values.
-  auto expression_builder =
-      grnxx::ExpressionBuilder::create(&error, test.table);
-  assert(expression_builder);
-  assert(expression_builder->push_column(&error, "Bool"));
-  auto expression = expression_builder->release(&error);
-  assert(expression);
-  assert(expression_builder->push_column(&error, "Bool2"));
-  auto expression2 = expression_builder->release(&error);
-  assert(expression2);
-
   // Create input records.
-  grnxx::Array<grnxx::Record> records;
-  assert(cursor->read_all(&error, &records) == test.table->num_rows());
-  assert(expression->filter(&error, &records));
-  grnxx::Array<grnxx::Record> records2;
-  assert(cursor2->read_all(&error, &records2) == test.table->num_rows());
-  assert(expression2->filter(&error, &records2));
+  auto records = create_input_records_1();
+  auto records2 = create_input_records_2();
 
   // Merge records.
   grnxx::MergerOptions options;
@@ -192,30 +193,9 @@ void test_or() {
 void test_xor() {
   grnxx::Error error;
 
-  // Create cursors to read all the records.
-  auto cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  auto cursor2 = test.table->create_cursor(&error);
-  assert(cursor2);
-
-  // Create expressions to read values.
-  auto expression_builder =
-      grnxx::ExpressionBuilder::create(&error, test.table);
-  assert(expression_builder);
-  assert(expression_builder->push_column(&error, "Bool"));
-  auto expression = expression_builder->release(&error);
-  assert(expression);
-  assert(expression_builder->push_column(&error, "Bool2"));
-  auto expression2 = expression_builder->release(&error);
-  assert(expression2);
-
   // Create input records.
-  grnxx::Array<grnxx::Record> records;
-  assert(cursor->read_all(&error, &records) == test.table->num_rows());
-  assert(expression->filter(&error, &records));
-  grnxx::Array<grnxx::Record> records2;
-  assert(cursor2->read_all(&error, &records2) == test.table->num_rows());
-  assert(expression2->filter(&error, &records2));
+  auto records = create_input_records_1();
+  auto records2 = create_input_records_2();
 
   // Merge records.
   grnxx::MergerOptions options;
@@ -243,30 +223,9 @@ void test_xor() {
 void test_minus() {
   grnxx::Error error;
 
-  // Create cursors to read all the records.
-  auto cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  auto cursor2 = test.table->create_cursor(&error);
-  assert(cursor2);
-
-  // Create expressions to read values.
-  auto expression_builder =
-      grnxx::ExpressionBuilder::create(&error, test.table);
-  assert(expression_builder);
-  assert(expression_builder->push_column(&error, "Bool"));
-  auto expression = expression_builder->release(&error);
-  assert(expression);
-  assert(expression_builder->push_column(&error, "Bool2"));
-  auto expression2 = expression_builder->release(&error);
-  assert(expression2);
-
   // Create input records.
-  grnxx::Array<grnxx::Record> records;
-  assert(cursor->read_all(&error, &records) == test.table->num_rows());
-  assert(expression->filter(&error, &records));
-  grnxx::Array<grnxx::Record> records2;
-  assert(cursor2->read_all(&error, &records2) == test.table->num_rows());
-  assert(expression2->filter(&error, &records2));
+  auto records = create_input_records_1();
+  auto records2 = create_input_records_2();
 
   // Merge records.
   grnxx::MergerOptions options;
@@ -294,30 +253,9 @@ void test_minus() {
 void test_lhs() {
   grnxx::Error error;
 
-  // Create cursors to read all the records.
-  auto cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  auto cursor2 = test.table->create_cursor(&error);
-  assert(cursor2);
-
-  // Create expressions to read values.
-  auto expression_builder =
-      grnxx::ExpressionBuilder::create(&error, test.table);
-  assert(expression_builder);
-  assert(expression_builder->push_column(&error, "Bool"));
-  auto expression = expression_builder->release(&error);
-  assert(expression);
-  assert(expression_builder->push_column(&error, "Bool2"));
-  auto expression2 = expression_builder->release(&error);
-  assert(expression2);
-
   // Create input records.
-  grnxx::Array<grnxx::Record> records;
-  assert(cursor->read_all(&error, &records) == test.table->num_rows());
-  assert(expression->filter(&error, &records));
-  grnxx::Array<grnxx::Record> records2;
-  assert(cursor2->read_all(&error, &records2) == test.table->num_rows());
-  assert(expression2->filter(&error, &records2));
+  auto records = create_input_records_1();
+  auto records2 = create_input_records_2();
 
   // Merge records.
   grnxx::MergerOptions options;
@@ -345,30 +283,9 @@ void test_lhs() {
 void test_rhs() {
   grnxx::Error error;
 
-  // Create cursors to read all the records.
-  auto cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  auto cursor2 = test.table->create_cursor(&error);
-  assert(cursor2);
-
-  // Create expressions to read values.
-  auto expression_builder =
-      grnxx::ExpressionBuilder::create(&error, test.table);
-  assert(expression_builder);
-  assert(expression_builder->push_column(&error, "Bool"));
-  auto expression = expression_builder->release(&error);
-  assert(expression);
-  assert(expression_builder->push_column(&error, "Bool2"));
-  auto expression2 = expression_builder->release(&error);
-  assert(expression2);
-
   // Create input records.
-  grnxx::Array<grnxx::Record> records;
-  assert(cursor->read_all(&error, &records) == test.table->num_rows());
-  assert(expression->filter(&error, &records));
-  grnxx::Array<grnxx::Record> records2;
-  assert(cursor2->read_all(&error, &records2) == test.table->num_rows());
-  assert(expression2->filter(&error, &records2));
+  auto records = create_input_records_1();
+  auto records2 = create_input_records_2();
 
   // Merge records.
   grnxx::MergerOptions options;
@@ -396,44 +313,9 @@ void test_rhs() {
 void test_plus() {
   grnxx::Error error;
 
-  // Create the first input records.
-  auto cursor = test.table->create_cursor(&error);
-  assert(cursor);
-
-  auto expression_builder =
-      grnxx::ExpressionBuilder::create(&error, test.table);
-  assert(expression_builder);
-  assert(expression_builder->push_column(&error, "Bool"));
-  auto expression = expression_builder->release(&error);
-  assert(expression);
-
-  grnxx::Array<grnxx::Record> records;
-  assert(cursor->read_all(&error, &records) == test.table->num_rows());
-  assert(expression->filter(&error, &records));
-
-  assert(expression_builder->push_column(&error, "Float"));
-  expression = expression_builder->release(&error);
-  assert(expression);
-
-  assert(expression->adjust(&error, &records));
-
-  // Create the second input records.
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-
-  assert(expression_builder->push_column(&error, "Bool2"));
-  expression = expression_builder->release(&error);
-  assert(expression);
-
-  grnxx::Array<grnxx::Record> records2;
-  assert(cursor->read_all(&error, &records2) == test.table->num_rows());
-  assert(expression->filter(&error, &records2));
-
-  assert(expression_builder->push_column(&error, "Float2"));
-  expression = expression_builder->release(&error);
-  assert(expression);
-
-  assert(expression->adjust(&error, &records2));
+  // Create input records.
+  auto records = create_input_records_1();
+  auto records2 = create_input_records_2();
 
   // Merge records.
   grnxx::MergerOptions options;
