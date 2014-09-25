@@ -193,22 +193,22 @@ bool TypedNode<Float>::adjust(Error *error, ArrayRef<Record> records) {
   return true;
 }
 
-// -- DatumNode --
+// -- ConstantNode --
 
 template <typename T>
-class DatumNode : public TypedNode<T> {
+class ConstantNode : public TypedNode<T> {
  public:
   using Value = T;
 
   static unique_ptr<Node> create(Error *error, Value datum) {
-    unique_ptr<Node> node(new (nothrow) DatumNode(datum));
+    unique_ptr<Node> node(new (nothrow) ConstantNode(datum));
     if (!node) {
       GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
     }
     return node;
   }
 
-  explicit DatumNode(Value datum)
+  explicit ConstantNode(Value datum)
       : TypedNode<Value>(),
         datum_(datum) {}
 
@@ -230,19 +230,19 @@ class DatumNode : public TypedNode<T> {
 };
 
 template <>
-class DatumNode<Bool> : public TypedNode<Bool> {
+class ConstantNode<Bool> : public TypedNode<Bool> {
  public:
   using Value = Bool;
 
   static unique_ptr<Node> create(Error *error, Value datum) {
-    unique_ptr<Node> node(new (nothrow) DatumNode(datum));
+    unique_ptr<Node> node(new (nothrow) ConstantNode(datum));
     if (!node) {
       GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
     }
     return node;
   }
 
-  explicit DatumNode(Value datum)
+  explicit ConstantNode(Value datum)
       : TypedNode<Value>(),
         datum_(datum) {}
 
@@ -261,9 +261,9 @@ class DatumNode<Bool> : public TypedNode<Bool> {
   Value datum_;
 };
 
-bool DatumNode<Bool>::filter(Error *,
-                             ArrayCRef<Record> input_records,
-                             ArrayRef<Record> *output_records) {
+bool ConstantNode<Bool>::filter(Error *,
+                                ArrayCRef<Record> input_records,
+                                ArrayRef<Record> *output_records) {
   if (datum_) {
     if (input_records != *output_records) {
       for (Int i = 0; i < input_records.size(); ++i) {
@@ -276,9 +276,9 @@ bool DatumNode<Bool>::filter(Error *,
   return true;
 }
 
-bool DatumNode<Bool>::evaluate(Error *,
-                               ArrayCRef<Record> records,
-                               ArrayRef<Value> results) {
+bool ConstantNode<Bool>::evaluate(Error *,
+                                  ArrayCRef<Record> records,
+                                  ArrayRef<Value> results) {
   // TODO: Fill results per 64 bits.
   for (Int i = 0; i < records.size(); ++i) {
     results.set(i, datum_);
@@ -287,19 +287,19 @@ bool DatumNode<Bool>::evaluate(Error *,
 }
 
 template <>
-class DatumNode<Float> : public TypedNode<Float> {
+class ConstantNode<Float> : public TypedNode<Float> {
  public:
   using Value = Float;
 
   static unique_ptr<Node> create(Error *error, Value datum) {
-    unique_ptr<Node> node(new (nothrow) DatumNode(datum));
+    unique_ptr<Node> node(new (nothrow) ConstantNode(datum));
     if (!node) {
       GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
     }
     return node;
   }
 
-  explicit DatumNode(Value datum)
+  explicit ConstantNode(Value datum)
       : TypedNode<Float>(),
         datum_(datum) {}
 
@@ -327,18 +327,18 @@ class DatumNode<Float> : public TypedNode<Float> {
 };
 
 template <>
-class DatumNode<Text> : public TypedNode<Text> {
+class ConstantNode<Text> : public TypedNode<Text> {
  public:
   using Value = Text;
 
   static unique_ptr<Node> create(Error *error, Value datum) try {
-    return unique_ptr<Node>(new DatumNode(datum));
+    return unique_ptr<Node>(new ConstantNode(datum));
   } catch (...) {
     GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
     return nullptr;
   }
 
-  explicit DatumNode(Value datum)
+  explicit ConstantNode(Value datum)
       : TypedNode<Value>(),
         datum_(datum.data(), datum.size()) {}
 
@@ -2765,7 +2765,7 @@ class Builder {
   Builder(const Table *table) : table_(table), stack_() {}
 
   // Create a node associated with a constant.
-  unique_ptr<Node> create_datum_node(Error *error, const Datum &datum);
+  unique_ptr<Node> create_constant_node(Error *error, const Datum &datum);
   // Create a node associated with a column.
   unique_ptr<Node> create_column_node(Error *error, String name);
 
@@ -2840,7 +2840,7 @@ bool Builder::push_constant(Error *error, const Datum &datum) {
   if (!stack_.reserve(error, stack_.size() + 1)) {
     return false;
   }
-  unique_ptr<Node> node = create_datum_node(error, datum);
+  unique_ptr<Node> node = create_constant_node(error, datum);
   if (!node) {
     return false;
   }
@@ -2963,41 +2963,43 @@ unique_ptr<Node> Builder::release(Error *error) {
   return root;
 }
 
-unique_ptr<Node> Builder::create_datum_node(
+unique_ptr<Node> Builder::create_constant_node(
     Error *error,
     const Datum &datum) {
   switch (datum.type()) {
     case BOOL_DATA: {
-      return DatumNode<Bool>::create(error, datum.force_bool());
+      return ConstantNode<Bool>::create(error, datum.force_bool());
     }
     case INT_DATA: {
-      return DatumNode<Int>::create(error, datum.force_int());
+      return ConstantNode<Int>::create(error, datum.force_int());
     }
     case FLOAT_DATA: {
-      return DatumNode<Float>::create(error, datum.force_float());
+      return ConstantNode<Float>::create(error, datum.force_float());
     }
     case GEO_POINT_DATA: {
-      return DatumNode<GeoPoint>::create(error, datum.force_geo_point());
+      return ConstantNode<GeoPoint>::create(error, datum.force_geo_point());
     }
     case TEXT_DATA: {
-      return DatumNode<Text>::create(error, datum.force_text());
+      return ConstantNode<Text>::create(error, datum.force_text());
     }
     case BOOL_VECTOR_DATA: {
-      return DatumNode<Vector<Bool>>::create(error, datum.force_bool_vector());
+      return ConstantNode<Vector<Bool>>::create(error,
+                                                datum.force_bool_vector());
     }
     case INT_VECTOR_DATA: {
-      return DatumNode<Vector<Int>>::create(error, datum.force_int_vector());
+      return ConstantNode<Vector<Int>>::create(error,
+                                               datum.force_int_vector());
     }
     case FLOAT_VECTOR_DATA: {
-      return DatumNode<Vector<Float>>::create(error,
-                                              datum.force_float_vector());
+      return ConstantNode<Vector<Float>>::create(error,
+                                                 datum.force_float_vector());
     }
     case TEXT_VECTOR_DATA: {
-      return DatumNode<Vector<Text>>::create(error,
-                                             datum.force_text_vector());
+      return ConstantNode<Vector<Text>>::create(error,
+                                                datum.force_text_vector());
     }
     case GEO_POINT_VECTOR_DATA: {
-      return DatumNode<Vector<GeoPoint>>::create(
+      return ConstantNode<Vector<GeoPoint>>::create(
           error, datum.force_geo_point_vector());
     }
     default: {
