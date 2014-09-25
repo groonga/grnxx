@@ -360,6 +360,186 @@ class ConstantNode<Text> : public TypedNode<Text> {
   std::string datum_;
 };
 
+template <>
+class ConstantNode<Vector<Int>> : public TypedNode<Vector<Int>> {
+ public:
+  using Value = Vector<Int>;
+
+  static unique_ptr<Node> create(Error *error, Value value) {
+    unique_ptr<ConstantNode> node(new (nothrow) ConstantNode);
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+      return nullptr;
+    }
+    if (!node->value_.resize(error, value.size())) {
+      return nullptr;
+    }
+    for (Int i = 0; i < value.size(); ++i) {
+      node->value_[i] = value[i];
+    }
+    return unique_ptr<Node>(node.release());
+  }
+
+  explicit ConstantNode()
+      : TypedNode<Value>(),
+        value_() {}
+
+  NodeType node_type() const {
+    return CONSTANT_NODE;
+  }
+
+  bool evaluate(Error *,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results) {
+    Value value(value_.data(), value_.size());
+    for (Int i = 0; i < records.size(); ++i) {
+      results[i] = value;
+    }
+    return true;
+  }
+
+ private:
+  Array<Int> value_;
+};
+
+template <>
+class ConstantNode<Vector<Float>> : public TypedNode<Vector<Float>> {
+ public:
+  using Value = Vector<Float>;
+
+  static unique_ptr<Node> create(Error *error, Value value) {
+    unique_ptr<ConstantNode> node(new (nothrow) ConstantNode);
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+      return nullptr;
+    }
+    if (!node->value_.resize(error, value.size())) {
+      return nullptr;
+    }
+    for (Int i = 0; i < value.size(); ++i) {
+      node->value_[i] = value[i];
+    }
+    return unique_ptr<Node>(node.release());
+  }
+
+  explicit ConstantNode()
+      : TypedNode<Value>(),
+        value_() {}
+
+  NodeType node_type() const {
+    return CONSTANT_NODE;
+  }
+
+  bool evaluate(Error *,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results) {
+    Value value(value_.data(), value_.size());
+    for (Int i = 0; i < records.size(); ++i) {
+      results[i] = value;
+    }
+    return true;
+  }
+
+ private:
+  Array<Float> value_;
+};
+
+template <>
+class ConstantNode<Vector<GeoPoint>> : public TypedNode<Vector<GeoPoint>> {
+ public:
+  using Value = Vector<GeoPoint>;
+
+  static unique_ptr<Node> create(Error *error, Value value) {
+    unique_ptr<ConstantNode> node(new (nothrow) ConstantNode);
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+      return nullptr;
+    }
+    if (!node->value_.resize(error, value.size())) {
+      return nullptr;
+    }
+    for (Int i = 0; i < value.size(); ++i) {
+      node->value_[i] = value[i];
+    }
+    return unique_ptr<Node>(node.release());
+  }
+
+  explicit ConstantNode()
+      : TypedNode<Value>(),
+        value_() {}
+
+  NodeType node_type() const {
+    return CONSTANT_NODE;
+  }
+
+  bool evaluate(Error *,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results) {
+    Value value(value_.data(), value_.size());
+    for (Int i = 0; i < records.size(); ++i) {
+      results[i] = value;
+    }
+    return true;
+  }
+
+ private:
+  Array<GeoPoint> value_;
+};
+
+template <>
+class ConstantNode<Vector<Text>> : public TypedNode<Vector<Text>> {
+ public:
+  using Value = Vector<Text>;
+
+  static unique_ptr<Node> create(Error *error, Value value) {
+    unique_ptr<ConstantNode> node(new (nothrow) ConstantNode);
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+      return nullptr;
+    }
+    Int total_size = 0;
+    for (Int i = 0; i < value.size(); ++i) {
+      total_size += value[i].size();
+    }
+    if (!node->value_.resize(error, value.size()) ||
+        !node->bodies_.resize(error, total_size)) {
+      return nullptr;
+    }
+    char *body = node->bodies_.data();
+    for (Int i = 0; i < value.size(); ++i) {
+      node->value_[i] = Text(body, value[i].size());
+      for (Int j = 0; j < value[i].size(); ++j) {
+        body[j] = value[i][j];
+      }
+      body += value[i].size();
+    }
+    return unique_ptr<Node>(node.release());
+  }
+
+  explicit ConstantNode()
+      : TypedNode<Value>(),
+        value_(),
+        bodies_() {}
+
+  NodeType node_type() const {
+    return CONSTANT_NODE;
+  }
+
+  bool evaluate(Error *,
+                ArrayCRef<Record> records,
+                ArrayRef<Value> results) {
+    Value value(value_.data(), value_.size());
+    for (Int i = 0; i < records.size(); ++i) {
+      results[i] = value;
+    }
+    return true;
+  }
+
+ private:
+  Array<Text> value_;
+  Array<char> bodies_;
+};
+
 // -- RowIDNode --
 
 class RowIDNode : public TypedNode<Int> {
