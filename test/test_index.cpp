@@ -98,7 +98,9 @@ void test_set_and_index() {
   assert(cursor);
 
   grnxx::Array<grnxx::Record> records;
-  assert(cursor->read_all(&error, &records) == NUM_ROWS);
+  auto result = cursor->read_all(&error, &records);
+  assert(result.is_ok);
+  assert(result.count == NUM_ROWS);
   for (grnxx::Int i = 1; i < NUM_ROWS; ++i) {
     assert(values[records.get_row_id(i - 1)] <= values[records.get_row_id(i)]);
   }
@@ -147,7 +149,9 @@ void test_index_and_set() {
   assert(cursor);
 
   grnxx::Array<grnxx::Record> records;
-  assert(cursor->read_all(&error, &records) == NUM_ROWS);
+  auto result = cursor->read_all(&error, &records);
+  assert(result.is_ok);
+  assert(result.count == NUM_ROWS);
   for (grnxx::Int i = 1; i < NUM_ROWS; ++i) {
     assert(values[records.get_row_id(i - 1)] <= values[records.get_row_id(i)]);
   }
@@ -202,7 +206,9 @@ void test_remove() {
   assert(cursor);
 
   grnxx::Array<grnxx::Record> records;
-  assert(cursor->read_all(&error, &records) == (NUM_ROWS / 2));
+  auto result = cursor->read_all(&error, &records);
+  assert(result.is_ok);
+  assert(result.count == NUM_ROWS / 2);
   for (grnxx::Int i = 1; i < (NUM_ROWS / 2); ++i) {
     assert(values[records.get_row_id(i - 1)] <= values[records.get_row_id(i)]);
   }
@@ -255,7 +261,8 @@ void test_bool_exact_match() {
     assert(cursor);
 
     grnxx::Array<grnxx::Record> records;
-    assert(cursor->read_all(&error, &records) != -1);
+    auto result = cursor->read_all(&error, &records);
+    assert(result.is_ok);
     for (grnxx::Int i = 1; i < records.size(); ++i) {
       assert(values[records.get_row_id(i)] == value);
     }
@@ -314,7 +321,8 @@ void test_int_exact_match() {
     assert(cursor);
 
     grnxx::Array<grnxx::Record> records;
-    assert(cursor->read_all(&error, &records) != -1);
+    auto result = cursor->read_all(&error, &records);
+    assert(result.is_ok);
     for (grnxx::Int i = 1; i < records.size(); ++i) {
       assert(values[records.get_row_id(i)] == value);
     }
@@ -375,7 +383,8 @@ void test_float_exact_match() {
     assert(cursor);
 
     grnxx::Array<grnxx::Record> records;
-    assert(cursor->read_all(&error, &records) != -1);
+    auto result = cursor->read_all(&error, &records);
+    assert(result.is_ok);
     for (grnxx::Int i = 1; i < records.size(); ++i) {
       assert(values[records.get_row_id(i)] == value);
     }
@@ -440,7 +449,8 @@ void test_text_exact_match() {
     assert(cursor);
 
     grnxx::Array<grnxx::Record> records;
-    assert(cursor->read_all(&error, &records) != -1);
+    auto result = cursor->read_all(&error, &records);
+    assert(result.is_ok);
     for (grnxx::Int i = 1; i < records.size(); ++i) {
       assert(values[records.get_row_id(i)] == value);
     }
@@ -501,7 +511,8 @@ void test_int_range() {
   assert(cursor);
 
   grnxx::Array<grnxx::Record> records;
-  assert(cursor->read_all(&error, &records) != -1);
+  auto result = cursor->read_all(&error, &records);
+  assert(result.is_ok);
   for (grnxx::Int i = 1; i < records.size(); ++i) {
     assert(values[records.get_row_id(i - 1)] <= values[records.get_row_id(i)]);
   }
@@ -561,7 +572,8 @@ void test_float_range() {
   assert(cursor);
 
   grnxx::Array<grnxx::Record> records;
-  assert(cursor->read_all(&error, &records) != -1);
+  auto result = cursor->read_all(&error, &records);
+  assert(result.is_ok);
   for (grnxx::Int i = 1; i < records.size(); ++i) {
     assert(values[records.get_row_id(i - 1)] <= values[records.get_row_id(i)]);
   }
@@ -625,7 +637,8 @@ void test_text_range() {
   assert(cursor);
 
   grnxx::Array<grnxx::Record> records;
-  assert(cursor->read_all(&error, &records) != -1);
+  auto result = cursor->read_all(&error, &records);
+  assert(result.is_ok);
   for (grnxx::Int i = 1; i < records.size(); ++i) {
     assert(values[records.get_row_id(i - 1)] <= values[records.get_row_id(i)]);
   }
@@ -716,7 +729,8 @@ void test_text_find_starts_with() {
     assert(cursor);
 
     grnxx::Array<grnxx::Record> records;
-    assert(cursor->read_all(&error, &records) != -1);
+    auto result = cursor->read_all(&error, &records);
+    assert(result.is_ok);
     for (grnxx::Int i = 1; i < records.size(); ++i) {
       assert(inclusive_starts_with(values[records.get_row_id(i)], value));
     }
@@ -741,7 +755,8 @@ void test_text_find_starts_with() {
     assert(cursor);
 
     grnxx::Array<grnxx::Record> records;
-    assert(cursor->read_all(&error, &records) != -1);
+    auto result = cursor->read_all(&error, &records);
+    assert(result.is_ok);
     for (grnxx::Int i = 1; i < records.size(); ++i) {
       assert(exclusive_starts_with(values[records.get_row_id(i)], value));
     }
@@ -805,7 +820,8 @@ void test_text_find_prefixes() {
     assert(cursor);
 
     grnxx::Array<grnxx::Record> records;
-    assert(cursor->read_all(&error, &records) != -1);
+    auto result = cursor->read_all(&error, &records);
+    assert(result.is_ok);
     for (grnxx::Int i = 1; i < records.size(); ++i) {
       assert(inclusive_starts_with(value, values[records.get_row_id(i)]));
     }
@@ -868,7 +884,8 @@ void test_reverse() {
   assert(cursor);
 
   grnxx::Array<grnxx::Record> records;
-  assert(cursor->read_all(&error, &records) != -1);
+  auto result = cursor->read_all(&error, &records);
+  assert(result.is_ok);
   for (grnxx::Int i = 1; i < records.size(); ++i) {
     assert(values[records.get_row_id(i - 1)] >= values[records.get_row_id(i)]);
   }
@@ -925,7 +942,9 @@ void test_offset_and_limit() {
   assert(cursor);
 
   grnxx::Array<grnxx::Record> records;
-  assert(cursor->read_all(&error, &records) == NUM_ROWS);
+  auto result = cursor->read_all(&error, &records);
+  assert(result.is_ok);
+  assert(result.count == NUM_ROWS);
 
   constexpr grnxx::Int OFFSET = 1000;
 
@@ -935,7 +954,9 @@ void test_offset_and_limit() {
   cursor = index->find_in_range(&error, grnxx::IndexRange(), options);
 
   grnxx::Array<grnxx::Record> records_with_offset;
-  assert(cursor->read_all(&error, &records_with_offset) == (NUM_ROWS - OFFSET));
+  result = cursor->read_all(&error, &records_with_offset);
+  assert(result.is_ok);
+  assert(result.count == (NUM_ROWS - OFFSET));
 
   for (grnxx::Int i = 0; i < records_with_offset.size(); ++i) {
     assert(records.get_row_id(OFFSET + i) ==
@@ -949,7 +970,9 @@ void test_offset_and_limit() {
   cursor = index->find_in_range(&error, grnxx::IndexRange(), options);
 
   grnxx::Array<grnxx::Record> records_with_offset_and_limit;
-  assert(cursor->read_all(&error, &records_with_offset_and_limit) == LIMIT);
+  result = cursor->read_all(&error, &records_with_offset_and_limit);
+  assert(result.is_ok);
+  assert(result.count == LIMIT);
 
   for (grnxx::Int i = 0; i < records_with_offset_and_limit.size(); ++i) {
     assert(records.get_row_id(OFFSET + i) ==

@@ -50,11 +50,19 @@ class CursorNode : public Node {
 
 Int CursorNode::read_next(Error *error, Array<Record> *records) {
   // TODO: The following block size (1024) should be optimized.
-  return cursor_->read(error, 1024, records);
+  auto result = cursor_->read(error, 1024, records);
+  if (!result.is_ok) {
+    return -1;
+  }
+  return result.count;
 }
 
 Int CursorNode::read_all(Error *error, Array<Record> *records) {
-  return cursor_->read_all(error, records);
+  auto result = cursor_->read_all(error, records);
+  if (!result.is_ok) {
+    return -1;
+  }
+  return result.count;
 }
 
 // --- FilterNode ---

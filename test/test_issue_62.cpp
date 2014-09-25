@@ -76,7 +76,9 @@ void test_scored_subexpression() {
   grnxx::Array<grnxx::Record> records;
   auto cursor = table->create_cursor(&error);
   assert(cursor);
-  assert(cursor->read_all(&error, &records) == table->num_rows());
+  auto result = cursor->read_all(&error, &records);
+  assert(result.is_ok);
+  assert(result.count == table->num_rows());
 
   // Set scores (Float).
   auto builder = grnxx::ExpressionBuilder::create(&error, table);

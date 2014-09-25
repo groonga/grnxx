@@ -5,6 +5,11 @@
 
 namespace grnxx {
 
+struct CursorResult {
+  bool is_ok;
+  Int count;
+};
+
 class Cursor {
  public:
   virtual ~Cursor() {}
@@ -18,26 +23,32 @@ class Cursor {
   //
   // Reads at most "max_count" records into "*records".
   //
-  // On success, returns the number of records read.
-  // On failure, returns -1 and stores error information into "*error" if
-  // "error" != nullptr.
-  virtual Int read(Error *error, Int max_count, Array<Record> *records);
+  // On success, returns true and the number of records read.
+  // On failure, returns false and the number of records read and stores error
+  // information into "*error" if "error" != nullptr.
+  virtual CursorResult read(Error *error,
+                            Int max_count,
+                            Array<Record> *records);
 
   // Read the next records.
   //
   // Reads at most "records.size()" records into "records".
   //
-  // On success, returns the number of records read.
-  // On failure, returns -1 and stores error information into "*error" if
-  // "error" != nullptr.
-  virtual Int read(Error *error, ArrayRef<Record> records) = 0;
+  // On success, returns true and the number of records read.
+  // On failure, returns false and the number of records read and stores error
+  // information into "*error" if "error" != nullptr.
+  virtual CursorResult read(Error *error,
+                            ArrayRef<Record> records) = 0;
 
   // Read all the remaining records.
   //
-  // On success, returns the number of records read.
-  // On failure, returns -1 and stores error information into "*error" if
-  // "error" != nullptr.
-  virtual Int read_all(Error *error, Array<Record> *records);
+  // Reads records into "*records".
+  //
+  // On success, returns true and the number of records read.
+  // On failure, returns false and the number of records read and stores error
+  // information into "*error" if "error" != nullptr.
+  virtual CursorResult read_all(Error *error,
+                                Array<Record> *records);
 
  protected:
   const Table *table_;

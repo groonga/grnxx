@@ -107,7 +107,9 @@ grnxx::Array<grnxx::Record> create_input(const char *bool_name,
 
   // Read all the records.
   grnxx::Array<grnxx::Record> records;
-  assert(cursor->read_all(&error, &records) == test.table->num_rows());
+  auto result = cursor->read_all(&error, &records);
+  assert(result.is_ok);
+  assert(result.count == test.table->num_rows());
 
   // Create an object to create expressions.
   auto expression_builder =

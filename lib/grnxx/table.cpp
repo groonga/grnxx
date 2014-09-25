@@ -16,7 +16,7 @@ class TableCursor : public Cursor {
 
   ~TableCursor() {}
 
-  Int read(Error *error, ArrayRef<Record> records);
+  CursorResult read(Error *error, ArrayRef<Record> records);
 
   // -- Internal API --
 
@@ -30,10 +30,10 @@ class TableCursor : public Cursor {
                                         const CursorOptions &options);
 
   // Read records in regular order.
-  Int regular_read(Error *error, ArrayRef<Record> records);
+  CursorResult regular_read(Error *error, ArrayRef<Record> records);
 
   // Read records in reverse order.
-  Int reverse_read(Error *error, ArrayRef<Record> records);
+  CursorResult reverse_read(Error *error, ArrayRef<Record> records);
 
  private:
   Int offset_left_;
@@ -44,9 +44,9 @@ class TableCursor : public Cursor {
   explicit TableCursor(const Table *table);
 };
 
-Int TableCursor::read(Error *error, ArrayRef<Record> records) {
+CursorResult TableCursor::read(Error *error, ArrayRef<Record> records) {
   if (records.size() <= 0) {
-    return 0;
+    return { true, 0 };
   }
   switch (order_type_) {
     case REGULAR_ORDER: {
@@ -57,7 +57,7 @@ Int TableCursor::read(Error *error, ArrayRef<Record> records) {
     }
     default: {
       GRNXX_ERROR_SET(error, BROKEN, "Broken cursor");
-      return -1;
+      return { false, 0 };
     }
   }
 }
@@ -98,7 +98,7 @@ TableCursor::TableCursor(const Table *table)
       order_type_(),
       next_row_id_() {}
 
-Int TableCursor::regular_read(Error *, ArrayRef<Record> records) {
+CursorResult TableCursor::regular_read(Error *, ArrayRef<Record> records) {
   Int count = 0;
   bool has_false_bit =
       table_->num_rows() != (table_->max_row_id() - MIN_ROW_ID + 1);
@@ -109,7 +109,7 @@ Int TableCursor::regular_read(Error *, ArrayRef<Record> records) {
       if (offset_left_ >= num_remaining_records) {
         next_row_id_ += num_remaining_records;
         offset_left_ -= num_remaining_records;
-        return 0;
+        return { true, 0 };
       }
       num_remaining_records -= offset_left_;
       next_row_id_ += offset_left_;
@@ -149,10 +149,10 @@ Int TableCursor::regular_read(Error *, ArrayRef<Record> records) {
       }
     }
   }
-  return count;
+  return { true, count };
 }
 
-Int TableCursor::reverse_read(Error *, ArrayRef<Record> records) {
+CursorResult TableCursor::reverse_read(Error *, ArrayRef<Record> records) {
   Int count = 0;
   bool has_false_bit =
       table_->num_rows() != (table_->max_row_id() - MIN_ROW_ID + 1);
@@ -163,7 +163,7 @@ Int TableCursor::reverse_read(Error *, ArrayRef<Record> records) {
       if (offset_left_ >= num_remaining_records) {
         next_row_id_ -= num_remaining_records;
         offset_left_ -= num_remaining_records;
-        return 0;
+        return { true, 0 };
       }
       num_remaining_records -= offset_left_;
       next_row_id_ -= offset_left_;
@@ -203,7 +203,7 @@ Int TableCursor::reverse_read(Error *, ArrayRef<Record> records) {
       }
     }
   }
-  return count;
+  return { true, count };
 }
 
 // -- Table --

@@ -245,13 +245,19 @@ void test_cursor() {
 
   // Read records from the cursor.
   grnxx::Array<grnxx::Record> records;
-  assert(cursor->read(&error, 0, &records) == 0);
+  auto result = cursor->read(&error, 0, &records);
+  assert(result.is_ok);
+  assert(result.count == 0);
 
-  assert(cursor->read(&error, 1, &records) == 1);
+  result = cursor->read(&error, 1, &records);
+  assert(result.is_ok);
+  assert(result.count == 1);
   assert(records.size() == 1);
   assert(records.get(0).row_id == 1);
 
-  assert(cursor->read(&error, 2, &records) == 1);
+  result = cursor->read(&error, 2, &records);
+  assert(result.is_ok);
+  assert(result.count == 1);
   assert(records.size() == 2);
   assert(records.get(0).row_id == 1);
   assert(records.get(1).row_id == 3);
@@ -264,7 +270,9 @@ void test_cursor() {
   cursor = table->create_cursor(&error, cursor_options);
   assert(cursor);
 
-  assert(cursor->read_all(&error, &records) == 2);
+  result = cursor->read_all(&error, &records);
+  assert(result.is_ok);
+  assert(result.count == 2);
   assert(records.size() == 2);
   assert(records.get(0).row_id == 3);
   assert(records.get(1).row_id == 1);
@@ -274,11 +282,15 @@ void test_cursor() {
   cursor = table->create_cursor(&error, cursor_options);
   assert(cursor);
 
-  assert(cursor->read(&error, 1, &records) == 1);
+  result = cursor->read(&error, 1, &records);
+  assert(result.is_ok);
+  assert(result.count == 1);
   assert(records.size() == 1);
   assert(records.get(0).row_id == 3);
 
-  assert(cursor->read(&error, 2, &records) == 1);
+  result = cursor->read(&error, 2, &records);
+  assert(result.is_ok);
+  assert(result.count == 1);
   assert(records.size() == 2);
   assert(records.get(0).row_id == 3);
   assert(records.get(1).row_id == 1);

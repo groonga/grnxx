@@ -115,7 +115,9 @@ void test_bool() {
   auto cursor = test.table->create_cursor(&error);
   assert(cursor);
   grnxx::Array<grnxx::Record> records;
-  assert(cursor->read_all(&error, &records) == test.table->num_rows());
+  auto result = cursor->read_all(&error, &records);
+  assert(result.is_ok);
+  assert(result.count == test.table->num_rows());
 
   // Create an object for building expressions.
   auto expression_builder =
@@ -193,7 +195,9 @@ void test_int() {
   auto cursor = test.table->create_cursor(&error);
   assert(cursor);
   grnxx::Array<grnxx::Record> records;
-  assert(cursor->read_all(&error, &records) == test.table->num_rows());
+  auto result = cursor->read_all(&error, &records);
+  assert(result.is_ok);
+  assert(result.count == test.table->num_rows());
 
   // Create an object for building expressions.
   auto expression_builder =
@@ -289,7 +293,9 @@ void test_float() {
   auto cursor = test.table->create_cursor(&error);
   assert(cursor);
   grnxx::Array<grnxx::Record> records;
-  assert(cursor->read_all(&error, &records) == test.table->num_rows());
+  auto result = cursor->read_all(&error, &records);
+  assert(result.is_ok);
+  assert(result.count == test.table->num_rows());
 
   // Create an object for building expressions.
   auto expression_builder =
@@ -367,7 +373,9 @@ void test_text() {
   auto cursor = test.table->create_cursor(&error);
   assert(cursor);
   grnxx::Array<grnxx::Record> records;
-  assert(cursor->read_all(&error, &records) == test.table->num_rows());
+  auto result = cursor->read_all(&error, &records);
+  assert(result.is_ok);
+  assert(result.count == test.table->num_rows());
 
   // Create an object for building expressions.
   auto expression_builder =
@@ -445,7 +453,9 @@ void test_composite() {
   auto cursor = test.table->create_cursor(&error);
   assert(cursor);
   grnxx::Array<grnxx::Record> records;
-  assert(cursor->read_all(&error, &records) == test.table->num_rows());
+  auto result = cursor->read_all(&error, &records);
+  assert(result.is_ok);
+  assert(result.count == test.table->num_rows());
 
   // Create an object for building expressions.
   auto expression_builder =

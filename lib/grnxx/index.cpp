@@ -115,11 +115,11 @@ class EmptyCursor : public Cursor {
  public:
   EmptyCursor(const Table *table) : Cursor(table) {}
 
-  Int read(Error *error, ArrayRef<Record> records);
+  CursorResult read(Error *error, ArrayRef<Record> records);
 };
 
-Int EmptyCursor::read(Error *, ArrayRef<Record>) {
-  return 0;
+CursorResult EmptyCursor::read(Error *, ArrayRef<Record>) {
+  return CursorResult{ true, 0 };
 }
 
 // Create an empty cursor.
@@ -152,7 +152,7 @@ class IteratorCursor : public Cursor {
         limit_left_(limit) {}
   ~IteratorCursor() {}
 
-  Int read(Error *error, ArrayRef<Record> records);
+  CursorResult read(Error *error, ArrayRef<Record> records);
 
  private:
   Iterator begin_;
@@ -163,13 +163,13 @@ class IteratorCursor : public Cursor {
 };
 
 template <typename T>
-Int IteratorCursor<T>::read(Error *, ArrayRef<Record> records) {
+CursorResult IteratorCursor<T>::read(Error *, ArrayRef<Record> records) {
   Int max_count = records.size();
   if (max_count > limit_left_) {
     max_count = limit_left_;
   }
   if (max_count <= 0) {
-    return 0;
+    return { true, 0 };
   }
   Int count = 0;
   while ((offset_left_ > 0) && (it_ != end_)) {
@@ -182,7 +182,7 @@ Int IteratorCursor<T>::read(Error *, ArrayRef<Record> records) {
     ++it_;
   }
   limit_left_ -= count;
-  return count;
+  return { true, count };
 }
 
 // Helper function to create an iterator cursor.
@@ -255,7 +255,7 @@ class MapSetCursor : public Cursor {
   }
   ~MapSetCursor() {}
 
-  Int read(Error *error, ArrayRef<Record> records);
+  CursorResult read(Error *error, ArrayRef<Record> records);
 
  private:
   MapIterator map_begin_;
@@ -269,13 +269,13 @@ class MapSetCursor : public Cursor {
 };
 
 template <typename T>
-Int MapSetCursor<T>::read(Error *, ArrayRef<Record> records) {
+CursorResult MapSetCursor<T>::read(Error *, ArrayRef<Record> records) {
   Int max_count = records.size();
   if (max_count > limit_left_) {
     max_count = limit_left_;
   }
   if (max_count <= 0) {
-    return 0;
+    return { true, 0 };
   }
   Int count = 0;
   while ((count < max_count) && (map_it_ != map_end_)) {
@@ -300,7 +300,7 @@ Int MapSetCursor<T>::read(Error *, ArrayRef<Record> records) {
     ++set_it_;
   }
   limit_left_ -= count;
-  return count;
+  return { true, count };
 }
 
 // Helper function to create a map set cursor.
@@ -370,7 +370,7 @@ class ArrayCursor : public Cursor {
   }
   ~ArrayCursor() {}
 
-  Int read(Error *error, ArrayRef<Record> records);
+  CursorResult read(Error *error, ArrayRef<Record> records);
 
  private:
   Array<Map::iterator> array_;
@@ -381,13 +381,13 @@ class ArrayCursor : public Cursor {
   Int limit_left_;
 };
 
-Int ArrayCursor::read(Error *, ArrayRef<Record> records) {
+CursorResult ArrayCursor::read(Error *, ArrayRef<Record> records) {
   Int max_count = records.size();
   if (max_count > limit_left_) {
     max_count = limit_left_;
   }
   if (max_count <= 0) {
-    return 0;
+    return { true, 0 };
   }
   Int count = 0;
   while ((count < max_count) && (pos_ < array_.size())) {
@@ -412,7 +412,7 @@ Int ArrayCursor::read(Error *, ArrayRef<Record> records) {
     ++it_;
   }
   limit_left_ -= count;
-  return count;
+  return { true, count };
 }
 
 // -- TreeIndex<Bool> --
@@ -437,13 +437,13 @@ unique_ptr<TreeIndex<Bool>> TreeIndex<Bool>::create(
   auto typed_column = static_cast<ColumnImpl<Bool> *>(column);
   Array<Record> records;
   for ( ; ; ) {
-    Int count = cursor->read(error, 1024, &records);
-    if (count < 0) {
+    auto result = cursor->read(error, 1024, &records);
+    if (!result.is_ok) {
       return nullptr;
-    } else if (count == 0) {
+    } else if (result.count == 0) {
       break;
     }
-    for (Int i = 0; i < count; ++i) {
+    for (Int i = 0; i < result.count; ++i) {
       Int row_id = records.get_row_id(i);
       if (!index->insert(error, row_id, typed_column->get(row_id))) {
         return nullptr;
@@ -595,13 +595,13 @@ unique_ptr<TreeIndex<Int>> TreeIndex<Int>::create(
   auto typed_column = static_cast<ColumnImpl<Int> *>(column);
   Array<Record> records;
   for ( ; ; ) {
-    Int count = cursor->read(error, 1024, &records);
-    if (count < 0) {
+    auto result = cursor->read(error, 1024, &records);
+    if (!result.is_ok) {
       return nullptr;
-    } else if (count == 0) {
+    } else if (result.count == 0) {
       break;
     }
-    for (Int i = 0; i < count; ++i) {
+    for (Int i = 0; i < result.count; ++i) {
       Int row_id = records.get_row_id(i);
       if (!index->insert(error, row_id, typed_column->get(row_id))) {
         return nullptr;
@@ -753,13 +753,13 @@ unique_ptr<TreeIndex<Float>> TreeIndex<Float>::create(
   auto typed_column = static_cast<ColumnImpl<Float> *>(column);
   Array<Record> records;
   for ( ; ; ) {
-    Int count = cursor->read(error, 1024, &records);
-    if (count < 0) {
+    auto result = cursor->read(error, 1024, &records);
+    if (!result.is_ok) {
       return nullptr;
-    } else if (count == 0) {
+    } else if (result.count == 0) {
       break;
     }
-    for (Int i = 0; i < count; ++i) {
+    for (Int i = 0; i < result.count; ++i) {
       Int row_id = records.get_row_id(i);
       if (!index->insert(error, row_id, typed_column->get(row_id))) {
         return nullptr;
@@ -922,13 +922,13 @@ unique_ptr<TreeIndex<Text>> TreeIndex<Text>::create(
   auto typed_column = static_cast<ColumnImpl<Text> *>(column);
   Array<Record> records;
   for ( ; ; ) {
-    Int count = cursor->read(error, 1024, &records);
-    if (count < 0) {
+    auto result = cursor->read(error, 1024, &records);
+    if (!result.is_ok) {
       return nullptr;
-    } else if (count == 0) {
+    } else if (result.count == 0) {
       break;
     }
-    for (Int i = 0; i < count; ++i) {
+    for (Int i = 0; i < result.count; ++i) {
       Int row_id = records.get_row_id(i);
       if (!index->insert(error, row_id, typed_column->get(row_id))) {
         return nullptr;
