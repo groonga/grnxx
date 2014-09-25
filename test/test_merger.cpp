@@ -26,6 +26,8 @@
 #include "grnxx/table.hpp"
 #include "grnxx/merger.hpp"
 
+constexpr grnxx::Float NULL_SCORE = 0.125;
+
 struct {
   grnxx::unique_ptr<grnxx::DB> db;
   grnxx::Table *table;
@@ -81,8 +83,10 @@ void init_test() {
     float_value =
         1.0 * mersenne_twister() / mersenne_twister.max();
     test.float2_values.set(i, float_value);
-    test.scores.set(i, test.bool_values[i] ? test.float_values[i] : 0.0);
-    test.scores2.set(i, test.bool2_values[i] ? test.float2_values[i] : 0.0);
+    test.scores.set(i, test.bool_values[i] ?
+                       test.float_values[i] : NULL_SCORE);
+    test.scores2.set(i, test.bool2_values[i] ?
+                        test.float2_values[i] : NULL_SCORE);
   }
 
   // Store generated values into columns.
@@ -177,6 +181,7 @@ void test_and() {
   // Set options.
   grnxx::MergerOptions options;
   options.type = grnxx::AND_MERGER;
+  options.null_score = NULL_SCORE;
 
   // Merge records (PLUS).
   options.operator_type = grnxx::PLUS_MERGER_OPERATOR;
@@ -254,9 +259,10 @@ void test_or() {
   // Set options.
   grnxx::MergerOptions options;
   options.type = grnxx::OR_MERGER;
-  options.operator_type = grnxx::PLUS_MERGER_OPERATOR;
+  options.null_score = NULL_SCORE;
 
   // Merge records (PLUS).
+  options.operator_type = grnxx::PLUS_MERGER_OPERATOR;
   auto output = merge_records(input_1, input_2, options);
   for (grnxx::Int i = 0; i < output.size(); ++i) {
     grnxx::Int row_id = output.get_row_id(i);
@@ -330,9 +336,10 @@ void test_xor() {
   // Set options.
   grnxx::MergerOptions options;
   options.type = grnxx::XOR_MERGER;
-  options.operator_type = grnxx::PLUS_MERGER_OPERATOR;
+  options.null_score = NULL_SCORE;
 
   // Merge records (PLUS).
+  options.operator_type = grnxx::PLUS_MERGER_OPERATOR;
   auto output = merge_records(input_1, input_2, options);
   for (grnxx::Int i = 0; i < output.size(); ++i) {
     grnxx::Int row_id = output.get_row_id(i);
@@ -406,9 +413,10 @@ void test_minus() {
   // Set options.
   grnxx::MergerOptions options;
   options.type = grnxx::MINUS_MERGER;
-  options.operator_type = grnxx::PLUS_MERGER_OPERATOR;
+  options.null_score = NULL_SCORE;
 
   // Merge records (PLUS).
+  options.operator_type = grnxx::PLUS_MERGER_OPERATOR;
   auto output = merge_records(input_1, input_2, options);
   for (grnxx::Int i = 0; i < output.size(); ++i) {
     grnxx::Int row_id = output.get_row_id(i);
@@ -482,9 +490,10 @@ void test_lhs() {
   // Set options.
   grnxx::MergerOptions options;
   options.type = grnxx::LHS_MERGER;
-  options.operator_type = grnxx::PLUS_MERGER_OPERATOR;
+  options.null_score = NULL_SCORE;
 
   // Merge records (PLUS).
+  options.operator_type = grnxx::PLUS_MERGER_OPERATOR;
   auto output = merge_records(input_1, input_2, options);
   for (grnxx::Int i = 0; i < output.size(); ++i) {
     grnxx::Int row_id = output.get_row_id(i);
@@ -558,9 +567,10 @@ void test_rhs() {
   // Set options.
   grnxx::MergerOptions options;
   options.type = grnxx::RHS_MERGER;
-  options.operator_type = grnxx::PLUS_MERGER_OPERATOR;
+  options.null_score = NULL_SCORE;
 
   // Merge records (PLUS).
+  options.operator_type = grnxx::PLUS_MERGER_OPERATOR;
   auto output = merge_records(input_1, input_2, options);
   for (grnxx::Int i = 0; i < output.size(); ++i) {
     grnxx::Int row_id = output.get_row_id(i);
