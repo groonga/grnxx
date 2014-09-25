@@ -166,15 +166,20 @@ class OrMerger : public Merger {
   Array<Record> *input_records_2_;
   Array<Record> *output_records_;
   MergerOperatorType operator_type_;
+  Float null_score_;
   Int offset_;
   Int limit_;
 
-  OrMerger(MergerOperatorType operator_type, Int offset, Int limit)
+  OrMerger(MergerOperatorType operator_type,
+           Float null_score,
+           Int offset,
+           Int limit)
       : Merger(),
         input_records_1_(nullptr),
         input_records_2_(nullptr),
         output_records_(nullptr),
         operator_type_(operator_type),
+        null_score_(null_score),
         offset_(offset),
         limit_(limit) {}
 };
@@ -183,6 +188,7 @@ unique_ptr<Merger> OrMerger::create(Error *error,
                                     const MergerOptions &options) {
   unique_ptr<Merger> merger(
       new (nothrow) OrMerger(options.operator_type,
+                             options.null_score,
                              options.offset,
                              options.limit));
   if (!merger) {
@@ -231,32 +237,32 @@ bool OrMerger::finish(Error *error) {
     if (it == filter.end()) {
       switch (operator_type) {
         case PLUS_MERGER_OPERATOR: {
-          record.score = stream_records->get_score(i);
+          record.score = stream_records->get_score(i) + null_score_;
           break;
         }
         case MINUS_MERGER_OPERATOR: {
-          record.score = stream_records->get_score(i);
-          if (!stream_is_1) {
-            record.score = -record.score;
+          if (stream_is_1) {
+            record.score = stream_records->get_score(i) - null_score_;
+          } else {
+            record.score = null_score_ - stream_records->get_score(i);
           }
           break;
         }
         case MULTIPLICATION_MERGER_OPERATOR: {
-          // TODO: I'm not sure if stream_records->get_score(i) should be used?
-          record.score = 0.0;
+          record.score = stream_records->get_score(i) * null_score_;
           break;
         }
         case LHS_MERGER_OPERATOR: {
           if (stream_is_1) {
             record.score = stream_records->get_score(i);
           } else {
-            record.score = 0.0;
+            record.score = null_score_;
           }
           break;
         }
         case RHS_MERGER_OPERATOR: {
           if (stream_is_1) {
-            record.score = 0.0;
+            record.score = null_score_;
           } else {
             record.score = stream_records->get_score(i);
           }
@@ -316,28 +322,30 @@ bool OrMerger::finish(Error *error) {
   for (auto it : filter) {
     switch (operator_type) {
       case PLUS_MERGER_OPERATOR: {
+        it.second += null_score_;
         break;
       }
       case MINUS_MERGER_OPERATOR: {
         if (stream_is_1) {
-          it.second = -it.second;
+          it.second = null_score_ - it.second;
+        } else {
+          it.second -= null_score_;
         }
         break;
       }
       case MULTIPLICATION_MERGER_OPERATOR: {
-        // TODO: I'm not sure if it.second should be used?
-        it.second = 0.0;
+        it.second *= null_score_;
         break;
       }
       case LHS_MERGER_OPERATOR: {
         if (stream_is_1) {
-          it.second = 0.0;
+          it.second = null_score_;
         }
         break;
       }
       case RHS_MERGER_OPERATOR: {
         if (!stream_is_1) {
-          it.second = 0.0;
+          it.second = null_score_;
         }
         break;
       }
@@ -386,15 +394,20 @@ class XorMerger : public Merger {
   Array<Record> *input_records_2_;
   Array<Record> *output_records_;
   MergerOperatorType operator_type_;
+  Float null_score_;
   Int offset_;
   Int limit_;
 
-  XorMerger(MergerOperatorType operator_type, Int offset, Int limit)
+  XorMerger(MergerOperatorType operator_type,
+            Float null_score,
+            Int offset,
+            Int limit)
       : Merger(),
         input_records_1_(nullptr),
         input_records_2_(nullptr),
         output_records_(nullptr),
         operator_type_(operator_type),
+        null_score_(null_score),
         offset_(offset),
         limit_(limit) {}
 };
@@ -403,6 +416,7 @@ unique_ptr<Merger> XorMerger::create(Error *error,
                                      const MergerOptions &options) {
   unique_ptr<Merger> merger(
       new (nothrow) XorMerger(options.operator_type,
+                              options.null_score,
                               options.offset,
                               options.limit));
   if (!merger) {
@@ -453,32 +467,32 @@ bool XorMerger::finish(Error *error) {
       record.row_id = stream_records->get_row_id(i);
       switch (operator_type) {
         case PLUS_MERGER_OPERATOR: {
-          record.score = stream_records->get_score(i);
+          record.score = stream_records->get_score(i) + null_score_;
           break;
         }
         case MINUS_MERGER_OPERATOR: {
-          record.score = stream_records->get_score(i);
-          if (!stream_is_1) {
-            record.score = -record.score;
+          if (stream_is_1) {
+            record.score = stream_records->get_score(i) - null_score_;
+          } else {
+            record.score = null_score_ - stream_records->get_score(i);
           }
           break;
         }
         case MULTIPLICATION_MERGER_OPERATOR: {
-          // TODO: I'm not sure if stream_records->get_score(i) should be used?
-          record.score = 0.0;
+          record.score = stream_records->get_score(i) * null_score_;
           break;
         }
         case LHS_MERGER_OPERATOR: {
           if (stream_is_1) {
             record.score = stream_records->get_score(i);
           } else {
-            record.score = 0.0;
+            record.score = null_score_;
           }
           break;
         }
         case RHS_MERGER_OPERATOR: {
           if (stream_is_1) {
-            record.score = 0.0;
+            record.score = null_score_;
           } else {
             record.score = stream_records->get_score(i);
           }
@@ -498,28 +512,30 @@ bool XorMerger::finish(Error *error) {
   for (auto it : filter) {
     switch (operator_type) {
       case PLUS_MERGER_OPERATOR: {
+        it.second += null_score_;
         break;
       }
       case MINUS_MERGER_OPERATOR: {
         if (stream_is_1) {
-          it.second = -it.second;
+          it.second = null_score_ - it.second;
+        } else {
+          it.second -= null_score_;
         }
         break;
       }
       case MULTIPLICATION_MERGER_OPERATOR: {
-        // TODO: I'm not sure if it.second should be used?
-        it.second = 0.0;
+        it.second *= null_score_;
         break;
       }
       case LHS_MERGER_OPERATOR: {
         if (stream_is_1) {
-          it.second = 0.0;
+          it.second = null_score_;
         }
         break;
       }
       case RHS_MERGER_OPERATOR: {
         if (!stream_is_1) {
-          it.second = 0.0;
+          it.second = null_score_;
         }
         break;
       }
@@ -568,15 +584,20 @@ class MinusMerger : public Merger {
   Array<Record> *input_records_2_;
   Array<Record> *output_records_;
   MergerOperatorType operator_type_;
+  Float null_score_;
   Int offset_;
   Int limit_;
 
-  MinusMerger(MergerOperatorType operator_type, Int offset, Int limit)
+  MinusMerger(MergerOperatorType operator_type,
+              Float null_score,
+              Int offset,
+              Int limit)
       : Merger(),
         input_records_1_(nullptr),
         input_records_2_(nullptr),
         output_records_(nullptr),
         operator_type_(operator_type),
+        null_score_(null_score),
         offset_(offset),
         limit_(limit) {}
 };
@@ -585,6 +606,7 @@ unique_ptr<Merger> MinusMerger::create(Error *error,
                                        const MergerOptions &options) {
   unique_ptr<Merger> merger(
       new (nothrow) MinusMerger(options.operator_type,
+                                options.null_score,
                                 options.offset,
                                 options.limit));
   if (!merger) {
@@ -634,19 +656,25 @@ bool MinusMerger::finish(Error *error) {
       }
       Record record = stream_records->get(i);
       switch (operator_type) {
-        case PLUS_MERGER_OPERATOR:
+        case PLUS_MERGER_OPERATOR: {
+          record.score += null_score_;
+          break;
+        }
         case MINUS_MERGER_OPERATOR: {
+          record.score -= null_score_;
           break;
         }
         case MULTIPLICATION_MERGER_OPERATOR: {
-          // TODO: I'm not sure if it.second should be used?
-          record.score = 0.0;
+          record.score *= null_score_;
           break;
         }
         case LHS_MERGER_OPERATOR: {
           break;
         }
-        case RHS_MERGER_OPERATOR:
+        case RHS_MERGER_OPERATOR: {
+          record.score = null_score_;
+          break;
+        }
         case ZERO_MERGER_OPERATOR: {
           record.score = 0.0;
           break;
@@ -668,23 +696,25 @@ bool MinusMerger::finish(Error *error) {
       record.row_id = it.first;
       switch (operator_type) {
         case PLUS_MERGER_OPERATOR: {
-          record.score = it.second;
+          record.score = it.second + null_score_;
           break;
         }
         case MINUS_MERGER_OPERATOR: {
-          record.score = it.second;
+          record.score = it.second - null_score_;
           break;
         }
         case MULTIPLICATION_MERGER_OPERATOR: {
-          // TODO: I'm not sure if it.second should be used?
-          record.score = 0.0;
+          record.score = it.second * null_score_;
           break;
         }
         case LHS_MERGER_OPERATOR: {
           record.score = it.second;
           break;
         }
-        case RHS_MERGER_OPERATOR:
+        case RHS_MERGER_OPERATOR: {
+          record.score = null_score_;
+          break;
+        }
         case ZERO_MERGER_OPERATOR: {
           record.score = 0.0;
           break;
@@ -731,15 +761,20 @@ class LhsMerger : public Merger {
   Array<Record> *input_records_2_;
   Array<Record> *output_records_;
   MergerOperatorType operator_type_;
+  Float null_score_;
   Int offset_;
   Int limit_;
 
-  LhsMerger(MergerOperatorType operator_type, Int offset, Int limit)
+  LhsMerger(MergerOperatorType operator_type,
+            Float null_score,
+            Int offset,
+            Int limit)
       : Merger(),
         input_records_1_(nullptr),
         input_records_2_(nullptr),
         output_records_(nullptr),
         operator_type_(operator_type),
+        null_score_(null_score),
         offset_(offset),
         limit_(limit) {}
 };
@@ -748,6 +783,7 @@ unique_ptr<Merger> LhsMerger::create(Error *error,
                                      const MergerOptions &options) {
   unique_ptr<Merger> merger(
       new (nothrow) LhsMerger(options.operator_type,
+                              options.null_score,
                               options.offset,
                               options.limit));
   if (!merger) {
@@ -807,19 +843,25 @@ bool LhsMerger::finish(Error *error) {
       }
     } else {
       switch (operator_type) {
-        case PLUS_MERGER_OPERATOR:
+        case PLUS_MERGER_OPERATOR: {
+          record.score += null_score_;
+          break;
+        }
         case MINUS_MERGER_OPERATOR: {
+          record.score -= null_score_;
           break;
         }
         case MULTIPLICATION_MERGER_OPERATOR: {
-          // TODO: I'm not sure if it->second should be used?
-          record.score = 0.0;
+          record.score *= null_score_;
           break;
         }
         case LHS_MERGER_OPERATOR: {
           break;
         }
-        case RHS_MERGER_OPERATOR:
+        case RHS_MERGER_OPERATOR: {
+          record.score = null_score_;
+          break;
+        }
         case ZERO_MERGER_OPERATOR: {
           record.score = 0.0;
           break;
@@ -867,15 +909,20 @@ class RhsMerger : public Merger {
   Array<Record> *input_records_2_;
   Array<Record> *output_records_;
   MergerOperatorType operator_type_;
+  Float null_score_;
   Int offset_;
   Int limit_;
 
-  RhsMerger(MergerOperatorType operator_type, Int offset, Int limit)
+  RhsMerger(MergerOperatorType operator_type,
+            Float null_score,
+            Int offset,
+            Int limit)
       : Merger(),
         input_records_1_(nullptr),
         input_records_2_(nullptr),
         output_records_(nullptr),
         operator_type_(operator_type),
+        null_score_(null_score),
         offset_(offset),
         limit_(limit) {}
 };
@@ -884,6 +931,7 @@ unique_ptr<Merger> RhsMerger::create(Error *error,
                                      const MergerOptions &options) {
   unique_ptr<Merger> merger(
       new (nothrow) RhsMerger(options.operator_type,
+                              options.null_score,
                               options.offset,
                               options.limit));
   if (!merger) {
@@ -946,20 +994,19 @@ bool RhsMerger::finish(Error *error) {
     } else {
       switch (operator_type) {
         case PLUS_MERGER_OPERATOR: {
-          record.score = input_records_2_->get_score(i);
+          record.score = null_score_ + input_records_2_->get_score(i);
           break;
         }
         case MINUS_MERGER_OPERATOR: {
-          record.score = -input_records_2_->get_score(i);
+          record.score = null_score_ - input_records_2_->get_score(i);
           break;
         }
         case MULTIPLICATION_MERGER_OPERATOR: {
-          // TODO: I'm not sure if input_records_2_->get_score(i) should be used?
-          record.score = 0.0;
+          record.score = null_score_ * input_records_2_->get_score(i);
           break;
         }
         case LHS_MERGER_OPERATOR: {
-          record.score = 0.0;
+          record.score = null_score_;
           break;
         }
         case RHS_MERGER_OPERATOR: {

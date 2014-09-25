@@ -63,6 +63,7 @@ SorterOptions::SorterOptions()
 MergerOptions::MergerOptions()
     : type(AND_MERGER),
       operator_type(PLUS_MERGER_OPERATOR),
+      null_score(0.0),
       offset(0),
       limit(numeric_limits<Int>::max()) {}
 

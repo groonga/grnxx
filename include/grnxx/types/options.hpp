@@ -63,6 +63,9 @@ struct MergerOptions {
   // How to merge scores.
   MergerOperatorType operator_type;
 
+  // This value is used when a corresponding record does not exist.
+  Float null_score;
+
   // The first "offset" records are skipped (default: 0).
   Int offset;
 
