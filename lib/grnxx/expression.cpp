@@ -10,7 +10,7 @@ namespace expression {
 
 // TODO: Only CONSTANT_NODE and VARIABLE_NODE are required?
 enum NodeType {
-  DATUM_NODE,
+  CONSTANT_NODE,
   ROW_ID_NODE,
   SCORE_NODE,
   COLUMN_NODE,
@@ -213,7 +213,7 @@ class DatumNode : public TypedNode<T> {
         datum_(datum) {}
 
   NodeType node_type() const {
-    return DATUM_NODE;
+    return CONSTANT_NODE;
   }
 
   bool evaluate(Error *,
@@ -247,7 +247,7 @@ class DatumNode<Bool> : public TypedNode<Bool> {
         datum_(datum) {}
 
   NodeType node_type() const {
-    return DATUM_NODE;
+    return CONSTANT_NODE;
   }
 
   bool filter(Error *error,
@@ -304,7 +304,7 @@ class DatumNode<Float> : public TypedNode<Float> {
         datum_(datum) {}
 
   NodeType node_type() const {
-    return DATUM_NODE;
+    return CONSTANT_NODE;
   }
 
   bool adjust(Error *, ArrayRef<Record> records) {
@@ -343,7 +343,7 @@ class DatumNode<Text> : public TypedNode<Text> {
         datum_(datum.data(), datum.size()) {}
 
   NodeType node_type() const {
-    return DATUM_NODE;
+    return CONSTANT_NODE;
   }
 
   bool evaluate(Error *,
@@ -580,7 +580,7 @@ bool fill_node_arg_values(Error *error, ArrayCRef<Record> records,
     }
   }
   switch (arg->node_type()) {
-    case DATUM_NODE: {
+    case CONSTANT_NODE: {
       if (old_size < records.size()) {
         if (!arg->evaluate(error, records.ref(old_size),
                            arg_values->ref(old_size))) {
