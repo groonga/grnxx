@@ -392,6 +392,20 @@ void init_test() {
   }
 }
 
+grnxx::Array<grnxx::Record> create_input_records() {
+  grnxx::Error error;
+
+  auto cursor = test.table->create_cursor(&error);
+  assert(cursor);
+
+  grnxx::Array<grnxx::Record> records;
+  auto result = cursor->read_all(&error, &records);
+  assert(result.is_ok);
+  assert(result.count == test.table->num_rows());
+
+  return records;
+}
+
 void test_constant() {
   grnxx::Error error;
 
@@ -404,12 +418,7 @@ void test_constant() {
   auto expression = builder->release(&error);
   assert(expression);
 
-  grnxx::Array<grnxx::Record> records;
-  auto cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  auto result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  auto records = create_input_records();
 
   grnxx::Array<grnxx::Bool> bool_results;
   assert(expression->evaluate(&error, records, &bool_results));
@@ -441,11 +450,7 @@ void test_constant() {
   expression = builder->release(&error);
   assert(expression);
 
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   grnxx::Array<grnxx::Int> int_results;
   assert(expression->evaluate(&error, records, &int_results));
@@ -579,12 +584,7 @@ void test_row_id() {
   auto expression = builder->release(&error);
   assert(expression);
 
-  grnxx::Array<grnxx::Record> records;
-  auto cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  auto result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  auto records = create_input_records();
 
   grnxx::Array<grnxx::Int> id_results;
   assert(expression->evaluate(&error, records, &id_results));
@@ -606,12 +606,7 @@ void test_score() {
   auto expression = builder->release(&error);
   assert(expression);
 
-  grnxx::Array<grnxx::Record> records;
-  auto cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  auto result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  auto records = create_input_records();
 
   grnxx::Array<grnxx::Float> score_results;
   assert(expression->evaluate(&error, records, &score_results));
@@ -639,12 +634,7 @@ void test_column() {
   auto expression = builder->release(&error);
   assert(expression);
 
-  grnxx::Array<grnxx::Record> records;
-  auto cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  auto result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  auto records = create_input_records();
 
   grnxx::Array<grnxx::Bool> bool_results;
   assert(expression->evaluate(&error, records, &bool_results));
@@ -669,12 +659,7 @@ void test_column() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   grnxx::Array<grnxx::Int> int_results;
   assert(expression->evaluate(&error, records, &int_results));
@@ -722,12 +707,7 @@ void test_column() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   grnxx::Array<grnxx::Text> text_results;
   assert(expression->evaluate(&error, records, &text_results));
@@ -742,12 +722,7 @@ void test_column() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   grnxx::Array<grnxx::BoolVector> bool_vector_results;
   assert(expression->evaluate(&error, records, &bool_vector_results));
@@ -762,12 +737,7 @@ void test_column() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   grnxx::Array<grnxx::IntVector> int_vector_results;
   assert(expression->evaluate(&error, records, &int_vector_results));
@@ -782,12 +752,7 @@ void test_column() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   grnxx::Array<grnxx::FloatVector> float_vector_results;
   assert(expression->evaluate(&error, records, &float_vector_results));
@@ -802,12 +767,7 @@ void test_column() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   grnxx::Array<grnxx::GeoPointVector> geo_point_vector_results;
   assert(expression->evaluate(&error, records, &geo_point_vector_results));
@@ -822,12 +782,7 @@ void test_column() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   grnxx::Array<grnxx::TextVector> text_vector_results;
   assert(expression->evaluate(&error, records, &text_vector_results));
@@ -842,12 +797,7 @@ void test_column() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   grnxx::Array<grnxx::Int> ref_results;
   assert(expression->evaluate(&error, records, &ref_results));
@@ -862,12 +812,7 @@ void test_column() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   grnxx::Array<grnxx::IntVector> ref_vector_results;
   assert(expression->evaluate(&error, records, &ref_vector_results));
@@ -891,12 +836,7 @@ void test_logical_not() {
   auto expression = builder->release(&error);
   assert(expression);
 
-  grnxx::Array<grnxx::Record> records;
-  auto cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  auto result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  auto records = create_input_records();
 
   grnxx::Array<grnxx::Bool> bool_results;
   assert(expression->evaluate(&error, records, &bool_results));
@@ -930,12 +870,7 @@ void test_bitwise_not() {
   auto expression = builder->release(&error);
   assert(expression);
 
-  grnxx::Array<grnxx::Record> records;
-  auto cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  auto result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  auto records = create_input_records();
 
   grnxx::Array<grnxx::Bool> bool_results;
   assert(expression->evaluate(&error, records, &bool_results));
@@ -961,12 +896,7 @@ void test_bitwise_not() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   grnxx::Array<grnxx::Int> int_results;
   assert(expression->evaluate(&error, records, &int_results));
@@ -990,12 +920,7 @@ void test_positive() {
   auto expression = builder->release(&error);
   assert(expression);
 
-  grnxx::Array<grnxx::Record> records;
-  auto cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  auto result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  auto records = create_input_records();
 
   grnxx::Array<grnxx::Int> int_results;
   assert(expression->evaluate(&error, records, &int_results));
@@ -1011,12 +936,7 @@ void test_positive() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   grnxx::Array<grnxx::Float> float_results;
   assert(expression->evaluate(&error, records, &float_results));
@@ -1047,12 +967,7 @@ void test_negative() {
   auto expression = builder->release(&error);
   assert(expression);
 
-  grnxx::Array<grnxx::Record> records;
-  auto cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  auto result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  auto records = create_input_records();
 
   grnxx::Array<grnxx::Int> int_results;
   assert(expression->evaluate(&error, records, &int_results));
@@ -1068,12 +983,7 @@ void test_negative() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   grnxx::Array<grnxx::Float> float_results;
   assert(expression->evaluate(&error, records, &float_results));
@@ -1104,12 +1014,7 @@ void test_to_int() {
   auto expression = builder->release(&error);
   assert(expression);
 
-  grnxx::Array<grnxx::Record> records;
-  auto cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  auto result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  auto records = create_input_records();
 
   grnxx::Array<grnxx::Int> int_results;
   assert(expression->evaluate(&error, records, &int_results));
@@ -1134,12 +1039,7 @@ void test_to_float() {
   auto expression = builder->release(&error);
   assert(expression);
 
-  grnxx::Array<grnxx::Record> records;
-  auto cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  auto result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  auto records = create_input_records();
 
   grnxx::Array<grnxx::Float> float_results;
   assert(expression->evaluate(&error, records, &float_results));
@@ -1173,12 +1073,7 @@ void test_logical_and() {
   auto expression = builder->release(&error);
   assert(expression);
 
-  grnxx::Array<grnxx::Record> records;
-  auto cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  auto result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  auto records = create_input_records();
 
   grnxx::Array<grnxx::Bool> bool_results;
   assert(expression->evaluate(&error, records, &bool_results));
@@ -1214,12 +1109,7 @@ void test_logical_or() {
   auto expression = builder->release(&error);
   assert(expression);
 
-  grnxx::Array<grnxx::Record> records;
-  auto cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  auto result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  auto records = create_input_records();
 
   grnxx::Array<grnxx::Bool> bool_results;
   assert(expression->evaluate(&error, records, &bool_results));
@@ -1255,12 +1145,7 @@ void test_equal() {
   auto expression = builder->release(&error);
   assert(expression);
 
-  grnxx::Array<grnxx::Record> records;
-  auto cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  auto result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  auto records = create_input_records();
 
   grnxx::Array<grnxx::Bool> results;
   assert(expression->evaluate(&error, records, &results));
@@ -1288,12 +1173,7 @@ void test_equal() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   results.clear();
   assert(expression->evaluate(&error, records, &results));
@@ -1321,12 +1201,7 @@ void test_equal() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   results.clear();
   assert(expression->evaluate(&error, records, &results));
@@ -1354,12 +1229,7 @@ void test_equal() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   results.clear();
   assert(expression->evaluate(&error, records, &results));
@@ -1387,12 +1257,7 @@ void test_equal() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   results.clear();
   assert(expression->evaluate(&error, records, &results));
@@ -1420,12 +1285,7 @@ void test_equal() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   results.clear();
   assert(expression->evaluate(&error, records, &results));
@@ -1453,12 +1313,7 @@ void test_equal() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   results.clear();
   assert(expression->evaluate(&error, records, &results));
@@ -1486,12 +1341,7 @@ void test_equal() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   results.clear();
   assert(expression->evaluate(&error, records, &results));
@@ -1519,12 +1369,7 @@ void test_equal() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   results.clear();
   assert(expression->evaluate(&error, records, &results));
@@ -1552,12 +1397,7 @@ void test_equal() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   results.clear();
   assert(expression->evaluate(&error, records, &results));
@@ -1593,12 +1433,7 @@ void test_not_equal() {
   auto expression = builder->release(&error);
   assert(expression);
 
-  grnxx::Array<grnxx::Record> records;
-  auto cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  auto result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  auto records = create_input_records();
 
   grnxx::Array<grnxx::Bool> results;
   assert(expression->evaluate(&error, records, &results));
@@ -1626,12 +1461,7 @@ void test_not_equal() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   results.clear();
   assert(expression->evaluate(&error, records, &results));
@@ -1659,12 +1489,7 @@ void test_not_equal() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   results.clear();
   assert(expression->evaluate(&error, records, &results));
@@ -1692,12 +1517,7 @@ void test_not_equal() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   results.clear();
   assert(expression->evaluate(&error, records, &results));
@@ -1725,12 +1545,7 @@ void test_not_equal() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   results.clear();
   assert(expression->evaluate(&error, records, &results));
@@ -1758,12 +1573,7 @@ void test_not_equal() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   results.clear();
   assert(expression->evaluate(&error, records, &results));
@@ -1791,12 +1601,7 @@ void test_not_equal() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   results.clear();
   assert(expression->evaluate(&error, records, &results));
@@ -1824,12 +1629,7 @@ void test_not_equal() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   results.clear();
   assert(expression->evaluate(&error, records, &results));
@@ -1857,12 +1657,7 @@ void test_not_equal() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   results.clear();
   assert(expression->evaluate(&error, records, &results));
@@ -1890,12 +1685,7 @@ void test_not_equal() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   results.clear();
   assert(expression->evaluate(&error, records, &results));
@@ -1931,12 +1721,7 @@ void test_less() {
   auto expression = builder->release(&error);
   assert(expression);
 
-  grnxx::Array<grnxx::Record> records;
-  auto cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  auto result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  auto records = create_input_records();
 
   grnxx::Array<grnxx::Bool> results;
   assert(expression->evaluate(&error, records, &results));
@@ -1964,12 +1749,7 @@ void test_less() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   results.clear();
   assert(expression->evaluate(&error, records, &results));
@@ -1997,12 +1777,7 @@ void test_less() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   results.clear();
   assert(expression->evaluate(&error, records, &results));
@@ -2038,12 +1813,7 @@ void test_less_equal() {
   auto expression = builder->release(&error);
   assert(expression);
 
-  grnxx::Array<grnxx::Record> records;
-  auto cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  auto result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  auto records = create_input_records();
 
   grnxx::Array<grnxx::Bool> results;
   assert(expression->evaluate(&error, records, &results));
@@ -2071,12 +1841,7 @@ void test_less_equal() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   results.clear();
   assert(expression->evaluate(&error, records, &results));
@@ -2104,12 +1869,7 @@ void test_less_equal() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   results.clear();
   assert(expression->evaluate(&error, records, &results));
@@ -2137,12 +1897,7 @@ void test_less_equal() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   results.clear();
   assert(expression->evaluate(&error, records, &results));
@@ -2178,12 +1933,7 @@ void test_greater() {
   auto expression = builder->release(&error);
   assert(expression);
 
-  grnxx::Array<grnxx::Record> records;
-  auto cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  auto result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  auto records = create_input_records();
 
   grnxx::Array<grnxx::Bool> results;
   assert(expression->evaluate(&error, records, &results));
@@ -2211,12 +1961,7 @@ void test_greater() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   results.clear();
   assert(expression->evaluate(&error, records, &results));
@@ -2244,12 +1989,7 @@ void test_greater() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   results.clear();
   assert(expression->evaluate(&error, records, &results));
@@ -2285,12 +2025,7 @@ void test_greater_equal() {
   auto expression = builder->release(&error);
   assert(expression);
 
-  grnxx::Array<grnxx::Record> records;
-  auto cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  auto result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  auto records = create_input_records();
 
   grnxx::Array<grnxx::Bool> results;
   assert(expression->evaluate(&error, records, &results));
@@ -2318,12 +2053,7 @@ void test_greater_equal() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   results.clear();
   assert(expression->evaluate(&error, records, &results));
@@ -2351,12 +2081,7 @@ void test_greater_equal() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   results.clear();
   assert(expression->evaluate(&error, records, &results));
@@ -2384,12 +2109,7 @@ void test_greater_equal() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   results.clear();
   assert(expression->evaluate(&error, records, &results));
@@ -2425,12 +2145,7 @@ void test_bitwise_and() {
   auto expression = builder->release(&error);
   assert(expression);
 
-  grnxx::Array<grnxx::Record> records;
-  auto cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  auto result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  auto records = create_input_records();
 
   grnxx::Array<grnxx::Bool> bool_results;
   assert(expression->evaluate(&error, records, &bool_results));
@@ -2458,12 +2173,7 @@ void test_bitwise_and() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   grnxx::Array<grnxx::Int> int_results;
   assert(expression->evaluate(&error, records, &int_results));
@@ -2489,12 +2199,7 @@ void test_bitwise_or() {
   auto expression = builder->release(&error);
   assert(expression);
 
-  grnxx::Array<grnxx::Record> records;
-  auto cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  auto result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  auto records = create_input_records();
 
   grnxx::Array<grnxx::Bool> bool_results;
   assert(expression->evaluate(&error, records, &bool_results));
@@ -2522,12 +2227,7 @@ void test_bitwise_or() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   grnxx::Array<grnxx::Int> int_results;
   assert(expression->evaluate(&error, records, &int_results));
@@ -2553,12 +2253,7 @@ void test_bitwise_xor() {
   auto expression = builder->release(&error);
   assert(expression);
 
-  grnxx::Array<grnxx::Record> records;
-  auto cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  auto result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  auto records = create_input_records();
 
   grnxx::Array<grnxx::Bool> bool_results;
   assert(expression->evaluate(&error, records, &bool_results));
@@ -2586,12 +2281,7 @@ void test_bitwise_xor() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   grnxx::Array<grnxx::Int> int_results;
   assert(expression->evaluate(&error, records, &int_results));
@@ -2617,12 +2307,7 @@ void test_plus() {
   auto expression = builder->release(&error);
   assert(expression);
 
-  grnxx::Array<grnxx::Record> records;
-  auto cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  auto result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  auto records = create_input_records();
 
   grnxx::Array<grnxx::Int> int_results;
   assert(expression->evaluate(&error, records, &int_results));
@@ -2640,12 +2325,7 @@ void test_plus() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   grnxx::Array<grnxx::Float> float_results;
   assert(expression->evaluate(&error, records, &float_results));
@@ -2679,12 +2359,7 @@ void test_minus() {
   auto expression = builder->release(&error);
   assert(expression);
 
-  grnxx::Array<grnxx::Record> records;
-  auto cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  auto result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  auto records = create_input_records();
 
   grnxx::Array<grnxx::Int> int_results;
   assert(expression->evaluate(&error, records, &int_results));
@@ -2702,12 +2377,7 @@ void test_minus() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   grnxx::Array<grnxx::Float> float_results;
   assert(expression->evaluate(&error, records, &float_results));
@@ -2741,12 +2411,7 @@ void test_multiplication() {
   auto expression = builder->release(&error);
   assert(expression);
 
-  grnxx::Array<grnxx::Record> records;
-  auto cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  auto result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  auto records = create_input_records();
 
   grnxx::Array<grnxx::Int> int_results;
   assert(expression->evaluate(&error, records, &int_results));
@@ -2764,12 +2429,7 @@ void test_multiplication() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   grnxx::Array<grnxx::Float> float_results;
   assert(expression->evaluate(&error, records, &float_results));
@@ -2804,12 +2464,7 @@ void test_division() {
   auto expression = builder->release(&error);
   assert(expression);
 
-  grnxx::Array<grnxx::Record> records;
-  auto cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  auto result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  auto records = create_input_records();
 
   grnxx::Array<grnxx::Int> int_results;
   assert(!expression->evaluate(&error, records, &int_results));
@@ -2823,12 +2478,7 @@ void test_division() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   int_results.clear();
   assert(expression->evaluate(&error, records, &int_results));
@@ -2846,12 +2496,7 @@ void test_division() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   grnxx::Array<grnxx::Float> float_results;
   assert(expression->evaluate(&error, records, &float_results));
@@ -2886,12 +2531,7 @@ void test_modulus() {
   auto expression = builder->release(&error);
   assert(expression);
 
-  grnxx::Array<grnxx::Record> records;
-  auto cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  auto result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  auto records = create_input_records();
 
   grnxx::Array<grnxx::Int> int_results;
   assert(!expression->evaluate(&error, records, &int_results));
@@ -2905,12 +2545,7 @@ void test_modulus() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   int_results.clear();
   assert(expression->evaluate(&error, records, &int_results));
@@ -2936,12 +2571,7 @@ void test_subscript() {
   auto expression = builder->release(&error);
   assert(expression);
 
-  grnxx::Array<grnxx::Record> records;
-  auto cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  auto result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  auto records = create_input_records();
 
   grnxx::Array<grnxx::Bool> bool_results;
   assert(expression->evaluate(&error, records, &bool_results));
@@ -2978,12 +2608,7 @@ void test_subscript() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   grnxx::Array<grnxx::Int> int_results;
   assert(expression->evaluate(&error, records, &int_results));
@@ -3006,12 +2631,7 @@ void test_subscript() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   grnxx::Array<grnxx::Float> float_results;
   assert(expression->evaluate(&error, records, &float_results));
@@ -3047,12 +2667,7 @@ void test_subscript() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   grnxx::Array<grnxx::GeoPoint> geo_point_results;
   assert(expression->evaluate(&error, records, &geo_point_results));
@@ -3075,12 +2690,7 @@ void test_subscript() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   grnxx::Array<grnxx::Text> text_results;
   assert(expression->evaluate(&error, records, &text_results));
@@ -3112,12 +2722,7 @@ void test_subexpression() {
   auto expression = builder->release(&error);
   assert(expression);
 
-  grnxx::Array<grnxx::Record> records;
-  auto cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  auto result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  auto records = create_input_records();
 
   grnxx::Array<grnxx::Bool> bool_results;
   assert(expression->evaluate(&error, records, &bool_results));
@@ -3149,12 +2754,7 @@ void test_subexpression() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   grnxx::Array<grnxx::Float> float_results;
   assert(expression->evaluate(&error, records, &float_results));
@@ -3185,12 +2785,7 @@ void test_subexpression() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   grnxx::Array<grnxx::Text> text_results;
   assert(expression->evaluate(&error, records, &text_results));
@@ -3214,12 +2809,7 @@ void test_subexpression() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   grnxx::Array<grnxx::Int> int_results;
   assert(expression->evaluate(&error, records, &int_results));
@@ -3240,12 +2830,7 @@ void test_subexpression() {
   expression = builder->release(&error);
   assert(expression);
 
-  records.clear();
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  records = create_input_records();
 
   grnxx::Array<grnxx::IntVector> int_vector_results;
   assert(expression->evaluate(&error, records, &int_vector_results));
@@ -3408,12 +2993,7 @@ void test_partial_filter() {
   assert(expression);
 
   // Read all records.
-  auto cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  grnxx::Array<grnxx::Record> records;
-  auto result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  auto records = create_input_records();
 
   // Extract a part of true records.
   constexpr grnxx::Int OFFSET = 12345;

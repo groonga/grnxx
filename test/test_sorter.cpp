@@ -108,16 +108,25 @@ void init_test() {
   }
 }
 
-void test_bool() {
+grnxx::Array<grnxx::Record> create_input_records() {
   grnxx::Error error;
 
-  // Create a cursor which reads all the records.
   auto cursor = test.table->create_cursor(&error);
   assert(cursor);
+
   grnxx::Array<grnxx::Record> records;
   auto result = cursor->read_all(&error, &records);
   assert(result.is_ok);
   assert(result.count == test.table->num_rows());
+
+  return records;
+}
+
+void test_bool() {
+  grnxx::Error error;
+
+  // Create a cursor which reads all the records.
+  auto records = create_input_records();
 
   // Create an object for building expressions.
   auto expression_builder =
@@ -192,12 +201,7 @@ void test_int() {
   grnxx::Error error;
 
   // Create a cursor which reads all the records.
-  auto cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  grnxx::Array<grnxx::Record> records;
-  auto result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  auto records = create_input_records();
 
   // Create an object for building expressions.
   auto expression_builder =
@@ -290,12 +294,7 @@ void test_float() {
   grnxx::Error error;
 
   // Create a cursor which reads all the records.
-  auto cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  grnxx::Array<grnxx::Record> records;
-  auto result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  auto records = create_input_records();
 
   // Create an object for building expressions.
   auto expression_builder =
@@ -370,12 +369,7 @@ void test_text() {
   grnxx::Error error;
 
   // Create a cursor which reads all the records.
-  auto cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  grnxx::Array<grnxx::Record> records;
-  auto result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  auto records = create_input_records();
 
   // Create an object for building expressions.
   auto expression_builder =
@@ -450,12 +444,7 @@ void test_composite() {
   grnxx::Error error;
 
   // Create a cursor which reads all the records.
-  auto cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  grnxx::Array<grnxx::Record> records;
-  auto result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  auto records = create_input_records();
 
   // Create an object for building expressions.
   auto expression_builder =
