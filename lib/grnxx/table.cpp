@@ -243,6 +243,10 @@ bool Table::remove_column(Error *error, String name) {
                     static_cast<int>(name.size()), name.data());
     return false;
   }
+  // TODO: Clear key_column_ if the specified column is the key column.
+//  if (columns_[column_id].get() == key_column_) {
+//    key_column_ = nullptr;
+//  }
   columns_.erase(column_id);
   return true;
 }
@@ -310,7 +314,16 @@ bool Table::set_key_column(Error *error, String) {
     GRNXX_ERROR_SET(error, ALREADY_EXISTS, "Key column already exists");
     return false;
   }
-  // TODO: Key column is not supported yet.
+
+  // TODO: Check if the column exists or not.
+
+  // TODO: Check if the data type is supported or not.
+
+  // TODO: Check if there are duplicate values or not.
+  //       Use an index if exists.
+
+  // TODO: Set the key attribute to the column.
+
   return false;
 }
 
@@ -319,7 +332,9 @@ bool Table::unset_key_column(Error *error) {
     GRNXX_ERROR_SET(error, NOT_FOUND, "Key column not found");
     return false;
   }
-  // TODO: Key column is not supported yet.
+
+  // TODO: Unset the key attribute of the key column.
+
   return false;
 }
 
