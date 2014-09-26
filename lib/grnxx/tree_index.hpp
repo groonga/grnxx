@@ -132,7 +132,7 @@ class TreeIndex<Text> : public Index {
  public:
   using Value = Text;
   using Set = std::set<Int>;
-  using Map = std::map<std::string, Set>;
+  using Map = std::map<String, Set>;
 
   static unique_ptr<TreeIndex> create(Error *error,
                                       Column *column,

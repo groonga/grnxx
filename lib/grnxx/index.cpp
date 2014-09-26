@@ -350,7 +350,7 @@ unique_ptr<Cursor> create_reverse_map_set_cursor(Error *error,
 class ArrayCursor : public Cursor {
  public:
   using Set = std::set<Int>;
-  using Map = std::map<std::string, Set>;
+  using Map = std::map<String, Set>;
 
   ArrayCursor(const Table *table,
               Array<Map::iterator> &&array,
@@ -950,8 +950,10 @@ unique_ptr<Cursor> TreeIndex<Text>::find(
     return nullptr;
   }
 
-  Text text = datum.force_text();
-  std::string string(text.data(), text.size());
+  String string;
+  if (!string.assign(error, datum.force_text())) {
+    return nullptr;
+  }
   auto map_it = map_.find(string);
   if (map_it == map_.end()) {
     return create_empty_cursor(error, column_->table());
@@ -979,32 +981,38 @@ unique_ptr<Cursor> TreeIndex<Text>::find_in_range(
     Error *error,
     const IndexRange &range,
     const CursorOptions &options) const {
-  std::string lower_bound_value = "";
+  String lower_bound_value;
   if (range.has_lower_bound()) {
     const EndPoint &lower_bound = range.lower_bound();
     if (lower_bound.value.type() != TEXT_DATA) {
       GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Data type conflict");
       return nullptr;
     }
-    Text text = lower_bound.value.force_text();
-    lower_bound_value.assign(text.data(), text.size());
+    if (!lower_bound_value.assign(error, lower_bound.value.force_text())) {
+      return nullptr;
+    }
     if (lower_bound.type == EXCLUSIVE_END_POINT) {
-      lower_bound_value += '\0';
+      if (!lower_bound_value.push_back(error, '\0')) {
+        return nullptr;
+      }
     }
   }
 
-  std::string upper_bound_value = "";
+  String upper_bound_value;
   if (range.has_upper_bound()) {
     const EndPoint &upper_bound = range.upper_bound();
     if (upper_bound.value.type() != TEXT_DATA) {
       GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Data type conflict");
       return nullptr;
     }
-    Text text = upper_bound.value.force_text();
-    upper_bound_value.assign(text.data(), text.size());
+    if (!upper_bound_value.assign(error, upper_bound.value.force_text())) {
+      return nullptr;
+    }
     if (upper_bound.type == INCLUSIVE_END_POINT) {
-      upper_bound_value += '\0';
-    } else if (upper_bound_value.empty()) {
+      if (!upper_bound_value.push_back(error, '\0')) {
+        return nullptr;
+      }
+    } else if (upper_bound_value.size() == 0) {
       return create_empty_cursor(error, column_->table());
     }
   }
@@ -1039,29 +1047,35 @@ unique_ptr<Cursor> TreeIndex<Text>::find_starts_with(
     Error *error,
     const EndPoint &prefix,
     const CursorOptions &options) const {
-  std::string lower_bound_value = "";
+  String lower_bound_value;
   if (prefix.value.type() != TEXT_DATA) {
     GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Data type conflict");
     return nullptr;
   }
-  Text prefix_text = prefix.value.force_text();
-  lower_bound_value.assign(prefix_text.data(), prefix_text.size());
+  if (!lower_bound_value.assign(error, prefix.value.force_text())) {
+    return nullptr;
+  }
 
-  std::string upper_bound_value = lower_bound_value;
-  while (!upper_bound_value.empty() &&
+  String upper_bound_value;
+  if (!upper_bound_value.assign(error, lower_bound_value)) {
+    return nullptr;
+  }
+  while ((upper_bound_value.size() != 0) &&
          (static_cast<unsigned char>(upper_bound_value.back()) == 0xFF)) {
     upper_bound_value.pop_back();
   }
-  if (!upper_bound_value.empty()) {
+  if (upper_bound_value.size() != 0) {
     ++upper_bound_value.back();
   }
 
   if (prefix.type == EXCLUSIVE_END_POINT) {
-    lower_bound_value += '\0';
+    if (!lower_bound_value.push_back(error, '\0')) {
+      return nullptr;
+    }
   }
 
   auto begin = map_.lower_bound(lower_bound_value);
-  auto end = !upper_bound_value.empty() ?
+  auto end = (upper_bound_value.size() != 0) ?
       map_.lower_bound(upper_bound_value) : map_.end();
   if (options.order_type == REGULAR_ORDER) {
     return create_map_set_cursor(error,
@@ -1084,11 +1098,17 @@ unique_ptr<Cursor> TreeIndex<Text>::find_prefixes(
     Error *error,
     const Datum &prefix,
     const CursorOptions &options) const {
-  Text prefix_text = prefix.force_text();
-  std::string value(prefix_text.data(), prefix_text.size());
+  String value;
+  if (!value.assign(error, prefix.force_text())) {
+    return nullptr;
+  }
   Array<Map::iterator> array;
-  for (std::size_t i = 0; i <= value.size(); ++i) {
-    auto it = map_.find(value.substr(0, i));
+  String substr;
+  for (Int i = 0; i <= value.size(); ++i) {
+    if (!substr.assign(error, value.ref(0, i))) {
+      return nullptr;
+    }
+    auto it = map_.find(substr);
     if (it != map_.end()) {
       if (!array.push_back(error, it)) {
         return nullptr;
@@ -1112,20 +1132,30 @@ unique_ptr<Cursor> TreeIndex<Text>::find_prefixes(
   return cursor;
 }
 
-bool TreeIndex<Text>::insert(Error *, Int row_id, const Datum &value) {
-  Text text = value.force_text();
-  std::string string(text.data(), text.size());
-  auto result = map_[string].insert(row_id);
-  if (!result.second) {
+bool TreeIndex<Text>::insert(Error *error, Int row_id, const Datum &value) {
+  String string;
+  if (!string.assign(error, value.force_text())) {
+    return false;
+  }
+  auto map_pair = map_.insert(std::make_pair(std::move(string), Set()));
+  auto set_pair = map_pair.first->second.insert(row_id);
+  if (!set_pair.second) {
     // Already exists.
     return false;
   }
+//  auto result = map_[string].insert(row_id);
+//  if (!result.second) {
+//    // Already exists.
+//    return false;
+//  }
   return true;
 }
 
-bool TreeIndex<Text>::remove(Error *, Int row_id, const Datum &value) {
-  Text text = value.force_text();
-  std::string string(text.data(), text.size());
+bool TreeIndex<Text>::remove(Error *error, Int row_id, const Datum &value) {
+  String string;
+  if (!string.assign(error, value.force_text())) {
+    return false;
+  }
   auto map_it = map_.find(string);
   if (map_it == map_.end()) {
     return false;
