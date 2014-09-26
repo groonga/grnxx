@@ -266,6 +266,9 @@ class String {
     size_ = arg.size();
     return true;
   }
+  bool assign(Error *error, const char *data, Int size) {
+    return assign(error, StringCRef(data, size));
+  }
 
   bool resize(Error *error, Int new_size) {
     if (new_size > capacity_) {
@@ -316,6 +319,9 @@ class String {
     std::memcpy(buf_.get() + size_, arg.data(), arg.size());
     size_ += arg.size();
     return true;
+  }
+  bool append(Error *error, const char *data, Int size) {
+    return append(error, StringCRef(data, size));
   }
 
   void swap(Int i, Int j) {
