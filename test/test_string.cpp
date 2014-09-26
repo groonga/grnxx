@@ -90,7 +90,78 @@ void test_string_cref() {
   }
 }
 
+void test_string() {
+  constexpr grnxx::Int NUM_STRINGS = 1000;
+
+  grnxx::Error error;
+
+  std::vector<std::string> strings(NUM_STRINGS);
+  std::vector<grnxx::StringCRef> refs(NUM_STRINGS);
+  std::vector<grnxx::String> bodies(NUM_STRINGS);
+  for (grnxx::Int i = 0; i < NUM_STRINGS; ++i) {
+    std::stringstream stream;
+    stream << i;
+    strings[i] = stream.str();
+    refs[i] = grnxx::StringCRef(strings[i].data(), strings[i].size());
+    assert(bodies[i].assign(&error, refs[i]));
+  }
+
+  for (grnxx::Int i = 0; i < NUM_STRINGS; ++i) {
+    assert(bodies[i].size() == static_cast<grnxx::Int>(strings[i].size()));
+    for (grnxx::Int j = 0; j < bodies[i].size(); ++j) {
+      assert(bodies[i][j] == strings[i][j]);
+    }
+
+    for (grnxx::Int j = 0; j < NUM_STRINGS; ++j) {
+      assert((bodies[i] == bodies[j]) == (strings[i] == strings[j]));
+      assert((bodies[i] != bodies[j]) == (strings[i] != strings[j]));
+      assert((bodies[i] < bodies[j]) == (strings[i] < strings[j]));
+      assert((bodies[i] > bodies[j]) == (strings[i] > strings[j]));
+      assert((bodies[i] <= bodies[j]) == (strings[i] <= strings[j]));
+      assert((bodies[i] >= bodies[j]) == (strings[i] >= strings[j]));
+
+      assert((bodies[i] == refs[j]) == (strings[i] == strings[j]));
+      assert((bodies[i] != refs[j]) == (strings[i] != strings[j]));
+      assert((bodies[i] < refs[j]) == (strings[i] < strings[j]));
+      assert((bodies[i] > refs[j]) == (strings[i] > strings[j]));
+      assert((bodies[i] <= refs[j]) == (strings[i] <= strings[j]));
+      assert((bodies[i] >= refs[j]) == (strings[i] >= strings[j]));
+
+      assert((bodies[i] == strings[j].c_str()) == (strings[i] == strings[j]));
+      assert((bodies[i] != strings[j].c_str()) == (strings[i] != strings[j]));
+      assert((bodies[i] < strings[j].c_str()) == (strings[i] < strings[j]));
+      assert((bodies[i] > strings[j].c_str()) == (strings[i] > strings[j]));
+      assert((bodies[i] <= strings[j].c_str()) == (strings[i] <= strings[j]));
+      assert((bodies[i] >= strings[j].c_str()) == (strings[i] >= strings[j]));
+
+      assert((refs[i] == bodies[j]) == (strings[i] == strings[j]));
+      assert((refs[i] != bodies[j]) == (strings[i] != strings[j]));
+      assert((refs[i] < bodies[j]) == (strings[i] < strings[j]));
+      assert((refs[i] > bodies[j]) == (strings[i] > strings[j]));
+      assert((refs[i] <= bodies[j]) == (strings[i] <= strings[j]));
+      assert((refs[i] >= bodies[j]) == (strings[i] >= strings[j]));
+
+      assert((strings[i].c_str() == bodies[j]) == (strings[i] == strings[j]));
+      assert((strings[i].c_str() != bodies[j]) == (strings[i] != strings[j]));
+      assert((strings[i].c_str() < bodies[j]) == (strings[i] < strings[j]));
+      assert((strings[i].c_str() > bodies[j]) == (strings[i] > strings[j]));
+      assert((strings[i].c_str() <= bodies[j]) == (strings[i] <= strings[j]));
+      assert((strings[i].c_str() >= bodies[j]) == (strings[i] >= strings[j]));
+
+      assert(bodies[i].starts_with(bodies[j]) ==
+             string_starts_with(strings[i], strings[j]));
+      assert(bodies[i].starts_with(strings[j].c_str()) ==
+             string_starts_with(strings[i], strings[j]));
+      assert(bodies[i].ends_with(bodies[j]) ==
+             string_ends_with(strings[i], strings[j]));
+      assert(bodies[i].ends_with(strings[j].c_str()) ==
+             string_ends_with(strings[i], strings[j]));
+    }
+  }
+}
+
 int main() {
   test_string_cref();
+  test_string();
   return 0;
 }
