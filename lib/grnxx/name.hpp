@@ -7,25 +7,22 @@ namespace grnxx {
 
 class Name {
  public:
-  Name() : data_(nullptr), size_(0) {}
-
-  Name(const Name &) = delete;
-  Name &operator=(const Name &) = delete;
+  Name() : string_() {}
 
   const char &operator[](Int i) const {
-    return data_[i];
+    return string_[i];
   }
 
   const char *data() const {
-    return data_.get();
+    return string_.data();
   }
   Int size() const {
-    return size_;
+    return string_.size();
   }
 
   // Return a reference to the name string.
   StringCRef ref() const {
-    return StringCRef(data_.get(), size_);
+    return string_.ref();
   }
 
   // Assign a new name.
@@ -41,8 +38,7 @@ class Name {
   bool assign(Error *error, const StringCRef &name);
 
  private:
-  unique_ptr<char[]> data_;
-  Int size_;
+  String string_;
 
   static constexpr Int MIN_SIZE = 1;
   static constexpr Int MAX_SIZE = 1023;

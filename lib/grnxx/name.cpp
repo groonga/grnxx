@@ -21,19 +21,7 @@ bool Name::assign(Error *error, const StringCRef &name) {
   if (!test(error, name)) {
     return false;
   }
-
-  unique_ptr<char[]> new_data(new (std::nothrow) char[name.size() + 1]);
-  if (!new_data) {
-    GRNXX_ERROR_SET(error, NO_MEMORY,
-                    "Memory allocation failed: size = %" PRIi64, name.size());
-    return false;
-  }
-  std::memcpy(new_data.get(), name.data(), name.size());
-  new_data[name.size()] = '\0';
-
-  data_ = std::move(new_data);
-  size_ = name.size();
-  return true;
+  return string_.assign(error, name);
 }
 
 bool Name::test(Error *error, const StringCRef &name) {
