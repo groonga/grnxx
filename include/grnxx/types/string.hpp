@@ -312,7 +312,11 @@ class String {
 
   bool append(Error *error, const StringCRef &arg) {
     if ((size_ + arg.size()) > capacity_) {
-      if (!resize_buf(error, (size_ + arg.size()))) {
+      if ((arg.data() >= buf_.get()) && (arg.data() < (buf_.get() + size_))) {
+        // Note that "arg" will be deleted in resize_buf() if "arg" is a part
+        // of "*this".
+        return append_overlap(error, arg);
+      } else if (!resize_buf(error, (size_ + arg.size()))) {
         return false;
       }
     }
@@ -393,6 +397,8 @@ class String {
 
   // Assume new_size > capacity_.
   bool resize_buf(Error *error, Int new_size);
+  // Resize the internal buffer and append a part of "*this".
+  bool append_overlap(Error *error, const StringCRef &arg);
 };
 
 // Compare a null-terminated string with a string.
