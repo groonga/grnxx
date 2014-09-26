@@ -331,16 +331,21 @@ class ConstantNode<Text> : public TypedNode<Text> {
  public:
   using Value = Text;
 
-  static unique_ptr<Node> create(Error *error, Value datum) try {
-    return unique_ptr<Node>(new ConstantNode(datum));
-  } catch (...) {
-    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
-    return nullptr;
+  static unique_ptr<Node> create(Error *error, Value datum) {
+    unique_ptr<ConstantNode> node(new (nothrow) ConstantNode);
+    if (!node) {
+      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+      return nullptr;
+    }
+    if (!node->datum_.assign(error, datum)) {
+      return nullptr;
+    }
+    return unique_ptr<Node>(node.release());
   }
 
-  explicit ConstantNode(Value datum)
+  explicit ConstantNode()
       : TypedNode<Value>(),
-        datum_(datum.data(), datum.size()) {}
+        datum_() {}
 
   NodeType node_type() const {
     return CONSTANT_NODE;
@@ -349,15 +354,14 @@ class ConstantNode<Text> : public TypedNode<Text> {
   bool evaluate(Error *,
                 ArrayCRef<Record> records,
                 ArrayRef<Value> results) {
-    Text datum(datum_.data(), datum_.size());
     for (Int i = 0; i < records.size(); ++i) {
-      results[i] = datum;
+      results[i] = datum_;
     }
     return true;
   }
 
  private:
-  std::string datum_;
+  String datum_;
 };
 
 template <>
