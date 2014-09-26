@@ -158,6 +158,16 @@ void test_string() {
              string_ends_with(strings[i], strings[j]));
     }
   }
+
+  for (grnxx::Int i = 0; i < NUM_STRINGS; ++i) {
+    std::stringstream stream;
+    stream << (i / 2.0);
+    std::string extra_string = stream.str();
+    strings[i].append(extra_string);
+    assert(bodies[i].append(&error, extra_string.data(), extra_string.size()));
+    assert(bodies[i] ==
+           grnxx::StringCRef(strings[i].data(), strings[i].size()));
+  }
 }
 
 int main() {
