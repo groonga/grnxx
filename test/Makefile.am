@@ -1,4 +1,5 @@
 TESTS =				\
+	test_string		\
 	test_array		\
 	test_db			\
 	test_table		\
@@ -11,6 +12,9 @@ TESTS =				\
 	test_issue_62
 
 check_PROGRAMS = $(TESTS)
+
+test_string_SOURCES = test_string.cpp
+test_string_LDADD = $(top_srcdir)/lib/grnxx/libgrnxx.la
 
 test_array_SOURCES = test_array.cpp
 test_array_LDADD = $(top_srcdir)/lib/grnxx/libgrnxx.la

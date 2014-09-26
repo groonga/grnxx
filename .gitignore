@@ -32,6 +32,7 @@ oprofile_data/
 src/grnxx
 stamp-h1
 test/*.trs
+test/test_string
 test/test_array
 test/test_db
 test/test_table
