@@ -51,6 +51,11 @@ void test_string_cref() {
   }
 
   for (grnxx::Int i = 0; i < NUM_STRINGS; ++i) {
+    assert(refs[i].size() == static_cast<grnxx::Int>(strings[i].size()));
+    for (grnxx::Int j = 0; j < refs[i].size(); ++j) {
+      assert(refs[i][j] == strings[i][j]);
+    }
+
     for (grnxx::Int j = 0; j < NUM_STRINGS; ++j) {
       assert((refs[i] == refs[j]) == (strings[i] == strings[j]));
       assert((refs[i] != refs[j]) == (strings[i] != strings[j]));
