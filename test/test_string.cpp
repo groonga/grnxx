@@ -168,6 +168,12 @@ void test_string() {
     assert(bodies[i] ==
            grnxx::StringCRef(strings[i].data(), strings[i].size()));
   }
+
+  for (grnxx::Int i = 0; i < NUM_STRINGS; ++i) {
+    strings[i].append(strings[i]);
+    assert(bodies[i].append(&error, bodies[i]));
+    assert(std::string(bodies[i].data(), bodies[i].size()) == strings[i]);
+  }
 }
 
 int main() {
