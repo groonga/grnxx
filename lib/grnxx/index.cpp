@@ -51,7 +51,7 @@ Index::Index()
 
 bool Index::initialize_base(Error *error,
                             Column *column,
-                            String name,
+                            const StringCRef &name,
                             IndexType type,
                             const IndexOptions &) {
   column_ = column;
@@ -64,7 +64,7 @@ bool Index::initialize_base(Error *error,
 
 unique_ptr<Index> Index::create(Error *error,
                                 Column *column,
-                                String name,
+                                const StringCRef &name,
                                 IndexType type,
                                 const IndexOptions &options) {
   if (type != TREE_INDEX) {
@@ -100,7 +100,7 @@ unique_ptr<Index> Index::create(Error *error,
   }
 }
 
-bool Index::rename(Error *error, String new_name) {
+bool Index::rename(Error *error, const StringCRef &new_name) {
   return name_.assign(error, new_name);
 }
 
@@ -420,7 +420,7 @@ CursorResult ArrayCursor::read(Error *, ArrayRef<Record> records) {
 unique_ptr<TreeIndex<Bool>> TreeIndex<Bool>::create(
     Error *error,
     Column *column,
-    String name,
+    const StringCRef &name,
     const IndexOptions &options) {
   unique_ptr<TreeIndex> index(new (nothrow) TreeIndex);
   if (!index) {
@@ -578,7 +578,7 @@ bool TreeIndex<Bool>::remove(Error *, Int row_id, const Datum &value) {
 unique_ptr<TreeIndex<Int>> TreeIndex<Int>::create(
     Error *error,
     Column *column,
-    String name,
+    const StringCRef &name,
     const IndexOptions &options) {
   unique_ptr<TreeIndex> index(new (nothrow) TreeIndex);
   if (!index) {
@@ -736,7 +736,7 @@ bool TreeIndex<Int>::remove(Error *, Int row_id, const Datum &value) {
 unique_ptr<TreeIndex<Float>> TreeIndex<Float>::create(
     Error *error,
     Column *column,
-    String name,
+    const StringCRef &name,
     const IndexOptions &options) {
   unique_ptr<TreeIndex> index(new (nothrow) TreeIndex);
   if (!index) {
@@ -905,7 +905,7 @@ bool TreeIndex<Float>::remove(Error *, Int row_id, const Datum &value) {
 unique_ptr<TreeIndex<Text>> TreeIndex<Text>::create(
     Error *error,
     Column *column,
-    String name,
+    const StringCRef &name,
     const IndexOptions &options) {
   unique_ptr<TreeIndex> index(new (nothrow) TreeIndex);
   if (!index) {

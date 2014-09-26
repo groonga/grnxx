@@ -2702,7 +2702,7 @@ void test_subscript() {
     if (int_value < text_vector_value.size()) {
       assert(text_results[i] == text_vector_value[int_value]);
     } else {
-      assert(text_results[i] == 0);
+      assert(text_results[i] == grnxx::StringCRef(""));
     }
   }
 }

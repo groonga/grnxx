@@ -20,7 +20,7 @@ class DB {
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
   Table *create_table(Error *error,
-                      String name,
+                      const StringCRef &name,
                       const TableOptions &options = TableOptions());
 
   // Remove a table named "name".
@@ -30,7 +30,7 @@ class DB {
   // "error" != nullptr.
   //
   // Note: Pointers to the removed table must not be used after deletion.
-  bool remove_table(Error *error, String name);
+  bool remove_table(Error *error, const StringCRef &name);
 
   // Rename a table named "name" to "new_name".
   //
@@ -38,8 +38,8 @@ class DB {
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
   bool rename_table(Error *error,
-                    String name,
-                    String new_name);
+                    const StringCRef &name,
+                    const StringCRef &new_name);
 
   // Change the order of tables.
   //
@@ -52,8 +52,8 @@ class DB {
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
   bool reorder_table(Error *error,
-                     String name,
-                     String prev_name);
+                     const StringCRef &name,
+                     const StringCRef &prev_name);
 
   // Get a table identified by "table_id".
   //
@@ -71,7 +71,7 @@ class DB {
   // On success, returns a pointer to the table.
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
-  Table *find_table(Error *error, String name) const;
+  Table *find_table(Error *error, const StringCRef &name) const;
 
   // TODO: Not supported yet.
   //
@@ -84,7 +84,7 @@ class DB {
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
   bool save(Error *error,
-            String path,
+            const StringCRef &path,
             const DBOptions &options = DBOptions()) const;
 
  private:
@@ -98,11 +98,11 @@ class DB {
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
   Table *find_table_with_id(Error *error,
-                            String name,
+                            const StringCRef &name,
                             Int *table_id) const;
 
   friend unique_ptr<DB> open_db(Error *error,
-                                String path,
+                                const StringCRef &path,
                                 const DBOptions &options);
 };
 
@@ -116,7 +116,7 @@ class DB {
 // On failure, returns nullptr and stores error information into "*error" if
 // "error" != nullptr.
 unique_ptr<DB> open_db(Error *error,
-                       String path,
+                       const StringCRef &path,
                        const DBOptions &options = DBOptions());
 
 // TODO: Not supported yet.
@@ -127,7 +127,7 @@ unique_ptr<DB> open_db(Error *error,
 // On failure, returns false and stores error information into "*error" if
 // "error" != nullptr.
 bool remove_db(Error *error,
-               String path,
+               const StringCRef &path,
                const DBOptions &options = DBOptions());
 
 }  // namespace grnxx

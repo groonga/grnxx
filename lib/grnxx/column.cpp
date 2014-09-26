@@ -11,7 +11,7 @@ namespace grnxx {
 Column::~Column() {}
 
 Index *Column::create_index(Error *error,
-                            String name,
+                            const StringCRef &name,
                             IndexType type,
                             const IndexOptions &options) {
   if (find_index(nullptr, name)) {
@@ -32,7 +32,7 @@ Index *Column::create_index(Error *error,
   return indexes_.back().get();
 }
 
-bool Column::remove_index(Error *error, String name) {
+bool Column::remove_index(Error *error, const StringCRef &name) {
   Int index_id;
   if (!find_index_with_id(error, name, &index_id)) {
     return false;
@@ -48,8 +48,8 @@ bool Column::remove_index(Error *error, String name) {
 }
 
 bool Column::rename_index(Error *error,
-                          String name,
-                          String new_name) {
+                          const StringCRef &name,
+                          const StringCRef &new_name) {
   Int index_id;
   if (!find_index_with_id(error, name, &index_id)) {
     return false;
@@ -67,8 +67,8 @@ bool Column::rename_index(Error *error,
 }
 
 bool Column::reorder_index(Error *error,
-                           String name,
-                           String prev_name) {
+                           const StringCRef &name,
+                           const StringCRef &prev_name) {
   Int index_id;
   if (!find_index_with_id(error, name, &index_id)) {
     return false;
@@ -94,7 +94,7 @@ bool Column::reorder_index(Error *error,
   return true;
 }
 
-Index *Column::find_index(Error *error, String name) const {
+Index *Column::find_index(Error *error, const StringCRef &name) const {
   for (Int index_id = 0; index_id < num_indexes(); ++index_id) {
     if (name == indexes_[index_id]->name()) {
       return indexes_[index_id].get();
@@ -116,7 +116,7 @@ bool Column::get(Error *error, Int, Datum *) const {
 
 unique_ptr<Column> Column::create(Error *error,
                                   Table *table,
-                                  String name,
+                                  const StringCRef &name,
                                   DataType data_type,
                                   const ColumnOptions &options) {
   switch (data_type) {
@@ -167,7 +167,7 @@ Column::Column()
 
 bool Column::initialize_base(Error *error,
                              Table *table,
-                             String name,
+                             const StringCRef &name,
                              DataType data_type,
                              const ColumnOptions &options) {
   table_ = table;
@@ -187,7 +187,7 @@ bool Column::initialize_base(Error *error,
   return true;
 }
 
-bool Column::rename(Error *error, String new_name) {
+bool Column::rename(Error *error, const StringCRef &new_name) {
   return name_.assign(error, new_name);
 }
 
@@ -203,7 +203,7 @@ bool Column::set_initial_key(Error *error, Int, const Datum &) {
 }
 
 Index *Column::find_index_with_id(Error *error,
-                                  String name,
+                                  const StringCRef &name,
                                   Int *index_id) const {
   for (Int i = 0; i < num_indexes(); ++i) {
     if (name == indexes_[i]->name()) {
@@ -263,7 +263,7 @@ bool ColumnImpl<T>::get(Error *error, Int row_id, Datum *datum) const {
 template <typename T>
 unique_ptr<ColumnImpl<T>> ColumnImpl<T>::create(Error *error,
                                                 Table *table,
-                                                String name,
+                                                const StringCRef &name,
                                                 const ColumnOptions &options) {
   unique_ptr<ColumnImpl> column(new (nothrow) ColumnImpl);
   if (!column) {
@@ -360,7 +360,7 @@ bool ColumnImpl<Int>::get(Error *error, Int row_id, Datum *datum) const {
 unique_ptr<ColumnImpl<Int>> ColumnImpl<Int>::create(
     Error *error,
     Table *table,
-    String name,
+    const StringCRef &name,
     const ColumnOptions &options) {
   unique_ptr<ColumnImpl> column(new (nothrow) ColumnImpl);
   if (!column) {
@@ -468,7 +468,7 @@ bool ColumnImpl<Text>::get(Error *error, Int row_id, Datum *datum) const {
 unique_ptr<ColumnImpl<Text>> ColumnImpl<Text>::create(
     Error *error,
     Table *table,
-    String name,
+    const StringCRef &name,
     const ColumnOptions &options) {
   unique_ptr<ColumnImpl> column(new (nothrow) ColumnImpl);
   if (!column) {
@@ -572,7 +572,7 @@ bool ColumnImpl<Vector<Int>>::get(Error *error, Int row_id,
 unique_ptr<ColumnImpl<Vector<Int>>> ColumnImpl<Vector<Int>>::create(
     Error *error,
     Table *table,
-    String name,
+    const StringCRef &name,
     const ColumnOptions &options) {
   unique_ptr<ColumnImpl> column(new (nothrow) ColumnImpl);
   if (!column) {
@@ -658,7 +658,7 @@ bool ColumnImpl<Vector<Float>>::get(Error *error, Int row_id,
 unique_ptr<ColumnImpl<Vector<Float>>> ColumnImpl<Vector<Float>>::create(
     Error *error,
     Table *table,
-    String name,
+    const StringCRef &name,
     const ColumnOptions &options) {
   unique_ptr<ColumnImpl> column(new (nothrow) ColumnImpl);
   if (!column) {
@@ -745,7 +745,7 @@ bool ColumnImpl<Vector<GeoPoint>>::get(Error *error, Int row_id,
 unique_ptr<ColumnImpl<Vector<GeoPoint>>> ColumnImpl<Vector<GeoPoint>>::create(
     Error *error,
     Table *table,
-    String name,
+    const StringCRef &name,
     const ColumnOptions &options) {
   unique_ptr<ColumnImpl> column(new (nothrow) ColumnImpl);
   if (!column) {
@@ -831,7 +831,7 @@ bool ColumnImpl<Vector<Text>>::get(Error *error, Int row_id,
 unique_ptr<ColumnImpl<Vector<Text>>> ColumnImpl<Vector<Text>>::create(
     Error *error,
     Table *table,
-    String name,
+    const StringCRef &name,
     const ColumnOptions &options) {
   unique_ptr<ColumnImpl> column(new (nothrow) ColumnImpl);
   if (!column) {

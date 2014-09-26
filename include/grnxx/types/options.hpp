@@ -17,7 +17,7 @@ struct TableOptions {
 
 struct ColumnOptions {
   // The referenced (parent) table.
-  String ref_table_name;
+  StringCRef ref_table_name;
 
   ColumnOptions();
 };

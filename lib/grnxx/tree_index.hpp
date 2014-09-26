@@ -22,7 +22,7 @@ class TreeIndex<Bool> : public Index {
 
   static unique_ptr<TreeIndex> create(Error *error,
                                       Column *column,
-                                      String name,
+                                      const StringCRef &name,
                                       const IndexOptions &options);
 
   ~TreeIndex();
@@ -56,7 +56,7 @@ class TreeIndex<Int> : public Index {
 
   static unique_ptr<TreeIndex> create(Error *error,
                                       Column *column,
-                                      String name,
+                                      const StringCRef &name,
                                       const IndexOptions &options);
 
   ~TreeIndex();
@@ -102,7 +102,7 @@ class TreeIndex<Float> : public Index {
 
   static unique_ptr<TreeIndex> create(Error *error,
                                       Column *column,
-                                      String name,
+                                      const StringCRef &name,
                                       const IndexOptions &options);
 
   ~TreeIndex();
@@ -136,7 +136,7 @@ class TreeIndex<Text> : public Index {
 
   static unique_ptr<TreeIndex> create(Error *error,
                                       Column *column,
-                                      String name,
+                                      const StringCRef &name,
                                       const IndexOptions &options);
 
   ~TreeIndex();

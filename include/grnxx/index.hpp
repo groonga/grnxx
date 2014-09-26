@@ -74,7 +74,7 @@ class Index {
     return column_;
   }
   // Return the name.
-  String name() const {
+  StringCRef name() const {
     return name_.ref();
   }
   // Return the index type.
@@ -149,7 +149,7 @@ class Index {
   // "error" != nullptr.
   bool initialize_base(Error *error,
                        Column *column,
-                       String name,
+                       const StringCRef &name,
                        IndexType type,
                        const IndexOptions &options);
 
@@ -162,7 +162,7 @@ class Index {
   static unique_ptr<Index> create(
       Error *error,
       Column *column,
-      String name,
+      const StringCRef &name,
       IndexType type,
       const IndexOptions &options = IndexOptions());
 
@@ -171,7 +171,7 @@ class Index {
   // Returns true on success.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
-  bool rename(Error *error, String new_name);
+  bool rename(Error *error, const StringCRef &new_name);
 
   // Return whether the index is removable or not.
   bool is_removable();

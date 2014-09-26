@@ -22,7 +22,7 @@ class ColumnImpl : public Column {
   // "error" != nullptr.
   static unique_ptr<ColumnImpl> create(Error *error,
                                        Table *table,
-                                       String name,
+                                       const StringCRef &name,
                                        const ColumnOptions &options);
 
   ~ColumnImpl();
@@ -67,7 +67,7 @@ class ColumnImpl<Int> : public Column {
   // "error" != nullptr.
   static unique_ptr<ColumnImpl> create(Error *error,
                                        Table *table,
-                                       String name,
+                                       const StringCRef &name,
                                        const ColumnOptions &options);
 
   ~ColumnImpl();
@@ -112,7 +112,7 @@ class ColumnImpl<Text> : public Column {
   // "error" != nullptr.
   static unique_ptr<ColumnImpl> create(Error *error,
                                        Table *table,
-                                       String name,
+                                       const StringCRef &name,
                                        const ColumnOptions &options);
 
   ~ColumnImpl();
@@ -134,7 +134,7 @@ class ColumnImpl<Text> : public Column {
     } else {
       // The size of a long text is stored in front of the body.
       size = *reinterpret_cast<const Int *>(&bodies_[offset]);
-      return String(&bodies_[offset + sizeof(Int)], size);
+      return StringCRef(&bodies_[offset + sizeof(Int)], size);
     }
   }
 
@@ -169,7 +169,7 @@ class ColumnImpl<Vector<Int>> : public Column {
   // "error" != nullptr.
   static unique_ptr<ColumnImpl> create(Error *error,
                                        Table *table,
-                                       String name,
+                                       const StringCRef &name,
                                        const ColumnOptions &options);
 
   ~ColumnImpl();
@@ -226,7 +226,7 @@ class ColumnImpl<Vector<Float>> : public Column {
   // "error" != nullptr.
   static unique_ptr<ColumnImpl> create(Error *error,
                                        Table *table,
-                                       String name,
+                                       const StringCRef &name,
                                        const ColumnOptions &options);
 
   ~ColumnImpl();
@@ -283,7 +283,7 @@ class ColumnImpl<Vector<GeoPoint>> : public Column {
   // "error" != nullptr.
   static unique_ptr<ColumnImpl> create(Error *error,
                                        Table *table,
-                                       String name,
+                                       const StringCRef &name,
                                        const ColumnOptions &options);
 
   ~ColumnImpl();
@@ -342,7 +342,7 @@ class ColumnImpl<Vector<Text>> : public Column {
   // "error" != nullptr.
   static unique_ptr<ColumnImpl> create(Error *error,
                                        Table *table,
-                                       String name,
+                                       const StringCRef &name,
                                        const ColumnOptions &options);
 
   ~ColumnImpl();

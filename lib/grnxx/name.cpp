@@ -17,7 +17,7 @@ bool is_allowed_symbol(int c) {
 
 }  // namespace
 
-bool Name::assign(Error *error, String name) {
+bool Name::assign(Error *error, const StringCRef &name) {
   if (!test(error, name)) {
     return false;
   }
@@ -36,7 +36,7 @@ bool Name::assign(Error *error, String name) {
   return true;
 }
 
-bool Name::test(Error *error, String name) {
+bool Name::test(Error *error, const StringCRef &name) {
   if ((name.size() < MIN_SIZE) || (name.size() > MAX_SIZE)) {
     GRNXX_ERROR_SET(error, INVALID_NAME,
                     "Invalid name size: size = %" PRIi64, name.size());

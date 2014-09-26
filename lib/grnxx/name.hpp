@@ -24,8 +24,8 @@ class Name {
   }
 
   // Return a reference to the name string.
-  String ref() const {
-    return String(data_.get(), size_);
+  StringCRef ref() const {
+    return StringCRef(data_.get(), size_);
   }
 
   // Assign a new name.
@@ -38,7 +38,7 @@ class Name {
   // Returns true on success.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
-  bool assign(Error *error, String name);
+  bool assign(Error *error, const StringCRef &name);
 
  private:
   unique_ptr<char[]> data_;
@@ -52,7 +52,7 @@ class Name {
   // Returns true if "name" is valid.
   // Otherwise, returns false and stores error information into "*error" if
   // "error" != nullptr.
-  static bool test(Error *error, String name);
+  static bool test(Error *error, const StringCRef &name);
 };
 
 }  // namespace grnxx

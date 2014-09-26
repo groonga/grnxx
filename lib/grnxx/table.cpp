@@ -211,7 +211,7 @@ CursorResult TableCursor::reverse_read(Error *, ArrayRef<Record> records) {
 Table::~Table() {}
 
 Column *Table::create_column(Error *error,
-                             String name,
+                             const StringCRef &name,
                              DataType data_type,
                              const ColumnOptions &options) {
   if (find_column(nullptr, name)) {
@@ -232,7 +232,7 @@ Column *Table::create_column(Error *error,
   return columns_.back().get();
 }
 
-bool Table::remove_column(Error *error, String name) {
+bool Table::remove_column(Error *error, const StringCRef &name) {
   Int column_id;
   if (!find_column_with_id(error, name, &column_id)) {
     return false;
@@ -252,8 +252,8 @@ bool Table::remove_column(Error *error, String name) {
 }
 
 bool Table::rename_column(Error *error,
-                          String name,
-                          String new_name) {
+                          const StringCRef &name,
+                          const StringCRef &new_name) {
   Int column_id;
   if (!find_column_with_id(error, name, &column_id)) {
     return false;
@@ -271,8 +271,8 @@ bool Table::rename_column(Error *error,
 }
 
 bool Table::reorder_column(Error *error,
-                           String name,
-                           String prev_name) {
+                           const StringCRef &name,
+                           const StringCRef &prev_name) {
   Int column_id;
   if (!find_column_with_id(error, name, &column_id)) {
     return false;
@@ -298,7 +298,7 @@ bool Table::reorder_column(Error *error,
   return true;
 }
 
-Column *Table::find_column(Error *error, String name) const {
+Column *Table::find_column(Error *error, const StringCRef &name) const {
   for (Int column_id = 0; column_id < num_columns(); ++column_id) {
     if (name == columns_[column_id]->name()) {
       return columns_[column_id].get();
@@ -309,7 +309,7 @@ Column *Table::find_column(Error *error, String name) const {
   return nullptr;
 }
 
-bool Table::set_key_column(Error *error, String) {
+bool Table::set_key_column(Error *error, const StringCRef &) {
   if (key_column_) {
     GRNXX_ERROR_SET(error, ALREADY_EXISTS, "Key column already exists");
     return false;
@@ -465,7 +465,7 @@ unique_ptr<Cursor> Table::create_cursor(
 
 unique_ptr<Table> Table::create(Error *error,
                                 DB *db,
-                                String name,
+                                const StringCRef &name,
                                 const TableOptions &) {
   unique_ptr<Table> table(new Table);
   table->db_ = db;
@@ -569,7 +569,7 @@ bool Table::reserve_bit(Error *error, Int i) {
   return true;
 }
 
-bool Table::rename(Error *error, String new_name) {
+bool Table::rename(Error *error, const StringCRef &new_name) {
   return name_.assign(error, new_name);
 }
 
@@ -579,7 +579,7 @@ bool Table::is_removable() {
 }
 
 Column *Table::find_column_with_id(Error *error,
-                                   String name,
+                                   const StringCRef &name,
                                    Int *column_id) const {
   for (Int i = 0; i < num_columns(); ++i) {
     if (name == columns_[i]->name()) {

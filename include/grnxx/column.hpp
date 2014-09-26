@@ -15,7 +15,7 @@ class Column {
     return table_;
   }
   // Return the name.
-  String name() const {
+  StringCRef name() const {
     return name_.ref();
   }
   // Return the data type.
@@ -43,7 +43,7 @@ class Column {
   // "error" != nullptr.
   virtual Index *create_index(
       Error *error,
-      String name,
+      const StringCRef &name,
       IndexType type,
       const IndexOptions &options = IndexOptions());
 
@@ -54,7 +54,7 @@ class Column {
   // "error" != nullptr.
   //
   // Note: Pointers to the removed index must not be used after deletion.
-  bool remove_index(Error *error, String name);
+  bool remove_index(Error *error, const StringCRef &name);
 
   // Rename an index named "name" to "new_name".
   //
@@ -62,8 +62,8 @@ class Column {
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
   bool rename_index(Error *error,
-                    String name,
-                    String new_name);
+                    const StringCRef &name,
+                    const StringCRef &new_name);
 
   // Change the order of indexes.
   //
@@ -77,8 +77,8 @@ class Column {
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
   bool reorder_index(Error *error,
-                     String name,
-                     String prev_name);
+                     const StringCRef &name,
+                     const StringCRef &prev_name);
 
   // Get an index identified by "index_id".
   //
@@ -96,7 +96,7 @@ class Column {
   // On success, returns a pointer to the index.
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
-  Index *find_index(Error *error, String name) const;
+  Index *find_index(Error *error, const StringCRef &name) const;
 
   // Set a value.
   //
@@ -131,7 +131,7 @@ class Column {
   // "error" != nullptr.
   bool initialize_base(Error *error,
                        Table *table,
-                       String name,
+                       const StringCRef &name,
                        DataType data_type,
                        const ColumnOptions &options = ColumnOptions());
 
@@ -144,7 +144,7 @@ class Column {
   static unique_ptr<Column> create(
       Error *error,
       Table *table,
-      String name,
+      const StringCRef &name,
       DataType data_type,
       const ColumnOptions &options = ColumnOptions());
 
@@ -153,7 +153,7 @@ class Column {
   // On success, returns true.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
-  bool rename(Error *error, String new_name);
+  bool rename(Error *error, const StringCRef &new_name);
 
   // Return whether the column is removable or not.
   bool is_removable();
@@ -181,7 +181,7 @@ class Column {
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
   Index *find_index_with_id(Error *error,
-                            String name,
+                            const StringCRef &name,
                             Int *column_id) const;
 
   friend class Table;

@@ -7,7 +7,7 @@ namespace grnxx {
 DB::~DB() {}
 
 Table *DB::create_table(Error *error,
-                        String name,
+                        const StringCRef &name,
                         const TableOptions &options) {
   if (find_table(nullptr, name)) {
     GRNXX_ERROR_SET(error, ALREADY_EXISTS,
@@ -27,7 +27,7 @@ Table *DB::create_table(Error *error,
   return tables_.back().get();
 }
 
-bool DB::remove_table(Error *error, String name) {
+bool DB::remove_table(Error *error, const StringCRef &name) {
   Int table_id;
   if (!find_table_with_id(error, name, &table_id)) {
     return false;
@@ -43,8 +43,8 @@ bool DB::remove_table(Error *error, String name) {
 }
 
 bool DB::rename_table(Error *error,
-                      String name,
-                      String new_name) {
+                      const StringCRef &name,
+                      const StringCRef &new_name) {
   Int table_id;
   if (!find_table_with_id(error, name, &table_id)) {
     return false;
@@ -62,8 +62,8 @@ bool DB::rename_table(Error *error,
 }
 
 bool DB::reorder_table(Error *error,
-                       String name,
-                       String prev_name) {
+                       const StringCRef &name,
+                       const StringCRef &prev_name) {
   Int table_id;
   if (!find_table_with_id(error, name, &table_id)) {
     return false;
@@ -89,7 +89,7 @@ bool DB::reorder_table(Error *error,
   return true;
 }
 
-Table *DB::find_table(Error *error, String name) const {
+Table *DB::find_table(Error *error, const StringCRef &name) const {
   for (Int table_id = 0; table_id < num_tables(); ++table_id) {
     if (name == tables_[table_id]->name()) {
       return tables_[table_id].get();
@@ -101,7 +101,7 @@ Table *DB::find_table(Error *error, String name) const {
 }
 
 bool DB::save(Error *error,
-              String,
+              const StringCRef &,
               const DBOptions &) const {
   // TODO: Named DB is not supported yet.
   GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
@@ -111,7 +111,7 @@ bool DB::save(Error *error,
 DB::DB() : tables_() {}
 
 Table *DB::find_table_with_id(Error *error,
-                              String name,
+                              const StringCRef &name,
                               Int *table_id) const {
   for (Int i = 0; i < num_tables(); ++i) {
     if (name == tables_[i]->name()) {
@@ -127,7 +127,7 @@ Table *DB::find_table_with_id(Error *error,
 }
 
 unique_ptr<DB> open_db(Error *error,
-                       String path,
+                       const StringCRef &path,
                        const DBOptions &) {
   if (path.size() != 0) {
     // TODO: Named DB is not supported yet.
@@ -142,7 +142,7 @@ unique_ptr<DB> open_db(Error *error,
   return db;
 }
 
-bool remove_db(Error *error, String, const DBOptions &) {
+bool remove_db(Error *error, const StringCRef &, const DBOptions &) {
   // TODO: Named DB is not supported yet.
   GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
   return false;

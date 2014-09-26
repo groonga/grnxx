@@ -13,8 +13,8 @@ namespace grnxx {
 
 // GeoPoint is provided in grnxx/types/geo_point.hpp.
 
-// String is provided in grnxx/types/string.hpp.
-using Text = String;
+// StringCRef is provided in grnxx/types/string.hpp.
+using Text = StringCRef;
 
 // Vector<T> are provided in grnxx/types/vector.hpp.
 using BoolVector     = Vector<Bool>;

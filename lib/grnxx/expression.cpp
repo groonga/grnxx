@@ -2899,7 +2899,7 @@ class Builder {
   // On success, returns true.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
-  bool push_column(Error *error, String name);
+  bool push_column(Error *error, const StringCRef &name);
 
   // Push an operator.
   //
@@ -2947,7 +2947,7 @@ class Builder {
   // Create a node associated with a constant.
   unique_ptr<Node> create_constant_node(Error *error, const Datum &datum);
   // Create a node associated with a column.
-  unique_ptr<Node> create_column_node(Error *error, String name);
+  unique_ptr<Node> create_column_node(Error *error, const StringCRef &name);
 
   // Push a unary operator.
   bool push_unary_operator(Error *error, OperatorType operator_type);
@@ -3057,7 +3057,7 @@ bool Builder::push_score(Error *error) {
   return true;
 }
 
-bool Builder::push_column(Error *error, String name) {
+bool Builder::push_column(Error *error, const StringCRef &name) {
   // Reserve a space for a new node.
   if (!stack_.reserve(error, stack_.size() + 1)) {
     return false;
@@ -3192,7 +3192,7 @@ unique_ptr<Node> Builder::create_constant_node(
 
 unique_ptr<Node> Builder::create_column_node(
     Error *error,
-    String name) {
+    const StringCRef &name) {
   Column *column = table_->find_column(error, name);
   if (!column) {
     return nullptr;
@@ -3954,7 +3954,7 @@ bool ExpressionBuilder::push_score(Error *error) {
   return builders_.back()->push_score(error);
 }
 
-bool ExpressionBuilder::push_column(Error *error, String name) {
+bool ExpressionBuilder::push_column(Error *error, const StringCRef &name) {
   return builders_.back()->push_column(error, name);
 }
 

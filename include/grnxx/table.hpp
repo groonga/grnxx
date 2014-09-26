@@ -15,7 +15,7 @@ class Table {
     return db_;
   }
   // Return the name.
-  String name() const {
+  StringCRef name() const {
     return name_.ref();
   }
   // Return the number of columns.
@@ -41,7 +41,7 @@ class Table {
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
   Column *create_column(Error *error,
-                        String name,
+                        const StringCRef &name,
                         DataType data_type,
                         const ColumnOptions &options = ColumnOptions());
 
@@ -52,7 +52,7 @@ class Table {
   // "error" != nullptr.
   //
   // Note: Pointers to the removed column must not be used after deletion.
-  bool remove_column(Error *error, String name);
+  bool remove_column(Error *error, const StringCRef &name);
 
   // Rename a column named "name" to "new_name".
   //
@@ -60,8 +60,8 @@ class Table {
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
   bool rename_column(Error *error,
-                     String name,
-                     String new_name);
+                     const StringCRef &name,
+                     const StringCRef &new_name);
 
   // Change the order of columns.
   //
@@ -75,8 +75,8 @@ class Table {
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
   bool reorder_column(Error *error,
-                      String name,
-                      String prev_name);
+                      const StringCRef &name,
+                      const StringCRef &prev_name);
 
   // Get a column identified by "column_id".
   //
@@ -94,7 +94,7 @@ class Table {
   // On success, returns a pointer to the column.
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
-  Column *find_column(Error *error, String name) const;
+  Column *find_column(Error *error, const StringCRef &name) const;
 
   // Set the key attribute to the column named "name".
   //
@@ -103,7 +103,7 @@ class Table {
   // On success, returns true.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
-  bool set_key_column(Error *error, String name);
+  bool set_key_column(Error *error, const StringCRef &name);
 
   // Unset the key attribute of the key column.
   //
@@ -200,7 +200,7 @@ class Table {
   static unique_ptr<Table> create(
       Error *error,
       DB *db,
-      String name,
+      const StringCRef &name,
       const TableOptions &options = TableOptions());
 
   Table();
@@ -227,7 +227,7 @@ class Table {
   // On success, returns true.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
-  bool rename(Error *error, String new_name);
+  bool rename(Error *error, const StringCRef &new_name);
 
   // Return whether the table is removable or not.
   bool is_removable();
@@ -238,7 +238,7 @@ class Table {
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
   Column *find_column_with_id(Error *error,
-                              String name,
+                              const StringCRef &name,
                               Int *column_id) const;
 
   friend class DB;

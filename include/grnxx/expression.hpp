@@ -232,7 +232,7 @@ class ExpressionBuilder {
   // On success, returns true.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
-  bool push_column(Error *error, String name);
+  bool push_column(Error *error, const StringCRef &name);
 
   // Push a node associated with an operator.
   //
