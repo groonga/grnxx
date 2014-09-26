@@ -40,6 +40,23 @@ void GeoPoint::fix(Int *latitude, Int *longitude) {
   }
 }
 
+bool String::resize_buf(Error *error, Int new_size) {
+  Int new_capacity = capacity_ * 2;
+  if (new_size > new_capacity) {
+    new_capacity = new_size;
+  }
+  Int new_buf_size = new_capacity;
+  unique_ptr<char[]> new_buf(new (nothrow) char[new_buf_size]);
+  if (!new_buf) {
+    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    return false;
+  }
+  std::memcpy(new_buf.get(), buf_.get(), size_);
+  buf_ = std::move(new_buf);
+  capacity_ = new_capacity;
+  return true;
+}
+
 DBOptions::DBOptions() {}
 
 TableOptions::TableOptions() {}
