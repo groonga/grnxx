@@ -519,13 +519,7 @@ Int ColumnImpl<Int>::find_one(const Datum &datum) const {
   //       Also, cursor operations can fail due to memory allocation.
   Int value = datum.force_int();
   if (indexes_.size() != 0) {
-    auto cursor = indexes_[0]->find(nullptr, value);
-    Array<Record> records;
-    auto result = cursor->read(nullptr, 1, &records);
-    if (!result.is_ok || (result.count == 0)) {
-      return NULL_ROW_ID;
-    }
-    return true;
+    return indexes_[0]->find_one(datum);
   } else {
     // TODO: A full scan takes time.
     //       An index should be required for a key column.

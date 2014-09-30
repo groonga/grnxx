@@ -82,6 +82,18 @@ class Index {
     return type_;
   }
 
+  // Check if "datum" is registered or not.
+  //
+  // If registered, returns true.
+  // Otherwise, returns false.
+  virtual bool contains(const Datum &datum) const;
+
+  // Search the index for "datum".
+  //
+  // On success, returns the row ID of one of the matched values.
+  // On failure, returns NULL_ROW_ID.
+  virtual Int find_one(const Datum &datum) const;
+
   // Create a cursor to get records.
   //
   // On success, returns a pointer to the cursor.

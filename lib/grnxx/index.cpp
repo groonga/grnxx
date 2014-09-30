@@ -12,6 +12,24 @@ namespace grnxx {
 
 Index::~Index() {}
 
+bool Index::contains(const Datum &datum) const {
+  return find_one(datum) != NULL_ROW_ID;
+}
+
+Int Index::find_one(const Datum &datum) const {
+  // TODO: This function should not fail, so Cursor should not be used.
+  auto cursor = find(nullptr, datum);
+  if (!cursor) {
+    return NULL_ROW_ID;
+  }
+  Array<Record> records;
+  auto result = cursor->read(nullptr, 1, &records);
+  if (!result.is_ok || (result.count == 0)) {
+    return NULL_ROW_ID;
+  }
+  return records[0].row_id;
+}
+
 unique_ptr<Cursor> Index::find(
     Error *error,
     const Datum &,
