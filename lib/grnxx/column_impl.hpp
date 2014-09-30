@@ -72,8 +72,13 @@ class ColumnImpl<Int> : public Column {
 
   ~ColumnImpl();
 
+  bool set_key_attribute(Error *error);
+  bool unset_key_attribute(Error *error);
+
+  bool set_initial_key(Error *error, Int row_id, const Datum &key);
   bool set_default_value(Error *error, Int row_id);
   void unset(Int row_id);
+  Int find_one(const Datum &datum) const;
 
   // Return a value identified by "row_id".
   //

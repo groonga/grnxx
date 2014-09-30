@@ -243,10 +243,9 @@ bool Table::remove_column(Error *error, const StringCRef &name) {
                     static_cast<int>(name.size()), name.data());
     return false;
   }
-  // TODO: Clear key_column_ if the specified column is the key column.
-//  if (columns_[column_id].get() == key_column_) {
-//    key_column_ = nullptr;
-//  }
+  if (columns_[column_id].get() == key_column_) {
+    key_column_ = nullptr;
+  }
   columns_.erase(column_id);
   return true;
 }
@@ -309,22 +308,20 @@ Column *Table::find_column(Error *error, const StringCRef &name) const {
   return nullptr;
 }
 
-bool Table::set_key_column(Error *error, const StringCRef &) {
+bool Table::set_key_column(Error *error, const StringCRef &name) {
   if (key_column_) {
     GRNXX_ERROR_SET(error, ALREADY_EXISTS, "Key column already exists");
     return false;
   }
-
-  // TODO: Check if the column exists or not.
-
-  // TODO: Check if the data type is supported or not.
-
-  // TODO: Check if there are duplicate values or not.
-  //       Use an index if exists.
-
-  // TODO: Set the key attribute to the column.
-
-  return false;
+  Column *column = find_column(error, name);
+  if (!column) {
+    return false;
+  }
+  if (!column->set_key_attribute(error)) {
+    return false;
+  }
+  key_column_ = column;
+  return true;
 }
 
 bool Table::unset_key_column(Error *error) {
@@ -332,10 +329,11 @@ bool Table::unset_key_column(Error *error) {
     GRNXX_ERROR_SET(error, NOT_FOUND, "Key column not found");
     return false;
   }
-
-  // TODO: Unset the key attribute of the key column.
-
-  return false;
+  if (!key_column_->unset_key_attribute(error)) {
+    return false;
+  }
+  key_column_ = nullptr;
+  return true;
 }
 
 bool Table::insert_row(Error *error,
@@ -448,13 +446,12 @@ bool Table::test_row(Error *error, Int row_id) const {
   return true;
 }
 
-Int Table::find_row(Error *error, const Datum &) const {
+Int Table::find_row(Error *error, const Datum &key) const {
   if (!key_column_) {
     GRNXX_ERROR_SET(error, NO_KEY_COLUMN, "No key column");
     return NULL_ROW_ID;
   }
-  // TODO: Key column is not supported yet.
-  return NULL_ROW_ID;
+  return key_column_->find_one(key);
 }
 
 unique_ptr<Cursor> Table::create_cursor(

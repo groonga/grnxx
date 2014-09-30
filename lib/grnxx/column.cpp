@@ -6,6 +6,8 @@
 #include "grnxx/index.hpp"
 #include "grnxx/table.hpp"
 
+#include <unordered_set>
+
 namespace grnxx {
 
 Column::~Column() {}
@@ -114,6 +116,15 @@ bool Column::get(Error *error, Int, Datum *) const {
   return false;
 }
 
+bool Column::contains(const Datum &datum) const {
+  return find_one(datum) != NULL_ROW_ID;
+}
+
+Int Column::find_one(const Datum &) const {
+  // TODO: This function should be pure virtual.
+  return NULL_ROW_ID;
+}
+
 unique_ptr<Column> Column::create(Error *error,
                                   Table *table,
                                   const StringCRef &name,
@@ -199,6 +210,16 @@ bool Column::is_removable() {
 bool Column::set_initial_key(Error *error, Int, const Datum &) {
   // TODO: Key column is not supported yet.
   GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not suported yet");
+  return false;
+}
+
+bool Column::set_key_attribute(Error *error) {
+  GRNXX_ERROR_SET(error, INVALID_OPERATION, "This type does not support Key");
+  return false;
+}
+
+bool Column::unset_key_attribute(Error *error) {
+  GRNXX_ERROR_SET(error, INVALID_OPERATION, "This type does not support Key");
   return false;
 }
 
@@ -333,6 +354,10 @@ bool ColumnImpl<Int>::set(Error *error, Int row_id, const Datum &datum) {
   Int old_value = get(row_id);
   Int new_value = datum.force_int();
   if (new_value != old_value) {
+    if (has_key_attribute_ && contains(datum)) {
+      GRNXX_ERROR_SET(error, ALREADY_EXISTS, "Key duplicate");
+      return false;
+    }
     for (Int i = 0; i < num_indexes(); ++i) {
       if (!indexes_[i]->insert(error, row_id, datum)) {
         for (Int j = 0; j < i; ++i) {
@@ -379,7 +404,91 @@ unique_ptr<ColumnImpl<Int>> ColumnImpl<Int>::create(
 
 ColumnImpl<Int>::~ColumnImpl() {}
 
+bool ColumnImpl<Int>::set_key_attribute(Error *error) {
+  if (has_key_attribute_) {
+    GRNXX_ERROR_SET(error, INVALID_OPERATION,
+                    "This column is a key column");
+    return false;
+  }
+  // TODO: An index should be used if possible.
+  try {
+    std::unordered_set<Int> set;
+    // TODO: Functor-based inline callback may be better in this case,
+    //       because it does not require memory allocation.
+    auto cursor = table_->create_cursor(nullptr);
+    if (!cursor) {
+      return false;
+    }
+    Array<Record> records;
+    for ( ; ; ) {
+      auto result = cursor->read(nullptr, 1024, &records);
+      if (!result.is_ok) {
+        return false;
+      } else {
+        break;
+      }
+      for (Int i = 0; i < result.count; ++i) {
+        if (!set.insert(values_[records.get_row_id(i)]).second) {
+          GRNXX_ERROR_SET(error, INVALID_OPERATION, "Key duplicate");
+          return false;
+        }
+      }
+      records.clear();
+    }
+  } catch (...) {
+    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
+    return false;
+  }
+  has_key_attribute_ = true;
+  return true;
+}
+
+bool ColumnImpl<Int>::unset_key_attribute(Error *error) {
+  if (!has_key_attribute_) {
+    GRNXX_ERROR_SET(error, INVALID_OPERATION,
+                    "This column is not a key column");
+    return false;
+  }
+  has_key_attribute_ = false;
+  return true;
+}
+
+bool ColumnImpl<Int>::set_initial_key(Error *error,
+                                      Int row_id,
+                                      const Datum &key) {
+  if (!has_key_attribute_) {
+    GRNXX_ERROR_SET(error, INVALID_OPERATION,
+                    "This column is not a key column");
+    return false;
+  }
+  if (has_key_attribute_ && contains(key)) {
+    GRNXX_ERROR_SET(error, ALREADY_EXISTS, "Key duplicate");
+    return false;
+  }
+  if (row_id >= values_.size()) {
+    if (!values_.resize(error, row_id + 1, TypeTraits<Int>::default_value())) {
+      return false;
+    }
+  }
+  Int value = key.force_int();
+  for (Int i = 0; i < num_indexes(); ++i) {
+    if (!indexes_[i]->insert(error, row_id, value)) {
+      for (Int j = 0; j < i; ++j) {
+        indexes_[j]->remove(nullptr, row_id, value);
+      }
+      return false;
+    }
+  }
+  values_.set(row_id, value);
+  return true;
+}
+
 bool ColumnImpl<Int>::set_default_value(Error *error, Int row_id) {
+  if (has_key_attribute_) {
+    GRNXX_ERROR_SET(error, INVALID_OPERATION,
+                    "This column is a key column");
+    return false;
+  }
   if (row_id >= values_.size()) {
     if (!values_.resize(error, row_id + 1, TypeTraits<Int>::default_value())) {
       return false;
@@ -403,6 +512,47 @@ void ColumnImpl<Int>::unset(Int row_id) {
     indexes_[i]->remove(nullptr, row_id, get(row_id));
   }
   values_.set(row_id, TypeTraits<Int>::default_value());
+}
+
+Int ColumnImpl<Int>::find_one(const Datum &datum) const {
+  // TODO: Cursor should not be used because it takes time.
+  //       Also, cursor operations can fail due to memory allocation.
+  Int value = datum.force_int();
+  if (indexes_.size() != 0) {
+    auto cursor = indexes_[0]->find(nullptr, value);
+    Array<Record> records;
+    auto result = cursor->read(nullptr, 1, &records);
+    if (!result.is_ok || (result.count == 0)) {
+      return NULL_ROW_ID;
+    }
+    return true;
+  } else {
+    // TODO: A full scan takes time.
+    //       An index should be required for a key column.
+
+    // TODO: Functor-based inline callback may be better in this case,
+    //       because it does not require memory allocation.
+
+    // Scan the column to find "value".
+    auto cursor = table_->create_cursor(nullptr);
+    if (!cursor) {
+      return NULL_ROW_ID;
+    }
+    Array<Record> records;
+    for ( ; ; ) {
+      auto result = cursor->read(nullptr, 1024, &records);
+      if (!result.is_ok || result.count == 0) {
+        return NULL_ROW_ID;
+      }
+      for (Int i = 0; i < result.count; ++i) {
+        if (values_[records.get_row_id(i)] == value) {
+          return records.get_row_id(i);
+        }
+      }
+      records.clear();
+    }
+  }
+  return NULL_ROW_ID;
 }
 
 ColumnImpl<Int>::ColumnImpl() : Column(), values_() {}

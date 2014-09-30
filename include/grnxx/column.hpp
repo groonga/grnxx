@@ -114,6 +114,18 @@ class Column {
   // "error" != nullptr.
   virtual bool get(Error *error, Int row_id, Datum *datum) const;
 
+  // Check if "datum" exists in the column or not.
+  //
+  // If exists, returns true.
+  // Otherwise, returns false.
+  virtual bool contains(const Datum &datum) const;
+
+  // Find "datum" in the column.
+  //
+  // If found, returns the row ID of the matched value.
+  // Otherwise, returns NULL_ROW_ID.
+  virtual Int find_one(const Datum &datum) const;
+
  protected:
   Table *table_;
   Name name_;
@@ -157,6 +169,11 @@ class Column {
 
   // Return whether the column is removable or not.
   bool is_removable();
+
+  // Set the key attribute.
+  virtual bool set_key_attribute(Error *error);
+  // Unset the key attribute.
+  virtual bool unset_key_attribute(Error *error);
 
   // Set the initial key.
   //
