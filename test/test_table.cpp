@@ -210,7 +210,7 @@ void test_bitmap() {
   assert(table->max_row_id() == NUM_ROWS);
 }
 
-void test_key() {
+void test_int_key() {
   // TODO: find_row() is not supported yet.
   grnxx::Error error;
 
@@ -275,6 +275,77 @@ void test_key() {
   assert(table->find_row(&error, grnxx::Int(2)) == 4);
   assert(table->find_row(&error, grnxx::Int(20)) == 5);
   assert(table->find_row(&error, grnxx::Int(200)) == 6);
+
+  // Unset key column.
+  assert(table->unset_key_column(&error));
+  assert(!table->key_column());
+}
+
+void test_text_key() {
+  // TODO: find_row() is not supported yet.
+  grnxx::Error error;
+
+  // Create a database with the default options.
+  auto db = grnxx::open_db(&error, "");
+  assert(db);
+
+  // Create a table named "Table".
+  auto table = db->create_table(&error, "Table");
+  assert(table);
+
+  // Create a column named "Column".
+  auto column = table->create_column(&error, "Column", grnxx::TEXT_DATA);
+  assert(column);
+
+  // Append three rows.
+  grnxx::Int row_id;
+  assert(table->insert_row(&error, grnxx::NULL_ROW_ID,
+                           grnxx::Datum(), &row_id));
+  assert(column->set(&error, row_id, grnxx::Text("1")));
+  assert(table->insert_row(&error, grnxx::NULL_ROW_ID,
+                           grnxx::Datum(), &row_id));
+  assert(column->set(&error, row_id, grnxx::Text("12")));
+  assert(table->insert_row(&error, grnxx::NULL_ROW_ID,
+                           grnxx::Datum(), &row_id));
+  assert(column->set(&error, row_id, grnxx::Text("123")));
+
+  // Set key column.
+  assert(table->set_key_column(&error, "Column"));
+  assert(table->key_column() == column);
+
+  // Duplicate keys must be rejected.
+  assert(!table->insert_row(&error, grnxx::NULL_ROW_ID,
+                            grnxx::Text("1"), &row_id));
+  assert(row_id == 1);
+  assert(!table->insert_row(&error, grnxx::NULL_ROW_ID,
+                            grnxx::Text("12"), &row_id));
+  assert(row_id == 2);
+  assert(!table->insert_row(&error, grnxx::NULL_ROW_ID,
+                            grnxx::Text("123"), &row_id));
+  assert(row_id == 3);
+
+  // Append new keys.
+  grnxx::Datum datum;
+  assert(table->insert_row(&error, grnxx::NULL_ROW_ID,
+                           grnxx::Text("A"), &row_id));
+  assert(column->get(&error, row_id, &datum));
+  assert(datum.force_text() == "A");
+  assert(table->insert_row(&error, grnxx::NULL_ROW_ID,
+                           grnxx::Text("AB"), &row_id));
+  assert(column->get(&error, row_id, &datum));
+  assert(datum.force_text() == "AB");
+  assert(table->insert_row(&error, grnxx::NULL_ROW_ID,
+                           grnxx::Text("ABC"), &row_id));
+  assert(column->get(&error, row_id, &datum));
+  assert(datum.force_text() == "ABC");
+
+  // Find rows by key.
+  assert(table->find_row(&error, grnxx::Text("1")) == 1);
+  assert(table->find_row(&error, grnxx::Text("12")) == 2);
+  assert(table->find_row(&error, grnxx::Text("123")) == 3);
+  assert(table->find_row(&error, grnxx::Text("A")) == 4);
+  assert(table->find_row(&error, grnxx::Text("AB")) == 5);
+  assert(table->find_row(&error, grnxx::Text("ABC")) == 6);
 
   // Unset key column.
   assert(table->unset_key_column(&error));
@@ -366,7 +437,8 @@ int main() {
   test_table();
   test_rows();
   test_bitmap();
-  test_key();
+  test_int_key();
+  test_text_key();
   test_cursor();
   return 0;
 }
