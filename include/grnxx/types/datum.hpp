@@ -30,6 +30,8 @@ class Datum {
   Datum(Text value)
       : type_(TEXT_DATA),
         text_(value) {}
+  // Disable implicit conversion from const char * to Bool.
+  Datum(const char *) = delete;
   Datum(Vector<Bool> value)
       : type_(BOOL_VECTOR_DATA),
         bool_vector_(value) {}
