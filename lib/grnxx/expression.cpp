@@ -4007,7 +4007,8 @@ bool ExpressionBuilder::end_subexpression(
 }
 
 void ExpressionBuilder::clear() {
-  builders_.clear();
+  builders_.resize(nullptr, 1);
+  builders_[0]->clear();
 }
 
 unique_ptr<Expression> ExpressionBuilder::release(
