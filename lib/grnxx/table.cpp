@@ -595,7 +595,12 @@ bool Table::rename(Error *error, const StringCRef &new_name) {
 }
 
 bool Table::is_removable() {
-  // TODO: Referenced table (except self-reference) is not removable.
+  // Referenced table (except self-reference) is not removable.
+  for (Int i = 0; i < referrer_columns_.size(); ++i) {
+    if (referrer_columns_[i]->table() != this) {
+      return false;
+    }
+  }
   return true;
 }
 
