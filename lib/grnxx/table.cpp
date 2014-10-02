@@ -228,7 +228,7 @@ Column *Table::create_column(Error *error,
   if (!new_column) {
     return nullptr;
   }
-  columns_.push_back(error, std::move(new_column));
+  columns_.push_back(nullptr, std::move(new_column));
   return columns_.back().get();
 }
 
@@ -243,8 +243,12 @@ bool Table::remove_column(Error *error, const StringCRef &name) {
                     static_cast<int>(name.size()), name.data());
     return false;
   }
-  if (columns_[column_id].get() == key_column_) {
+  Column *column = columns_[column_id].get();
+  if (column == key_column_) {
     key_column_ = nullptr;
+  }
+  if (column->ref_table()) {
+    column->ref_table()->remove_referrer_column(nullptr, column);
   }
   columns_.erase(column_id);
   return true;
@@ -478,10 +482,30 @@ unique_ptr<Table> Table::create(Error *error,
   return table;
 }
 
+bool Table::append_referrer_column(Error *error, Column *column) {
+  if (column->ref_table() != this) {
+    GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Wrong column");
+    return false;
+  }
+  return referrer_columns_.push_back(error, column);
+}
+
+bool Table::remove_referrer_column(Error *error, Column *column) {
+  for (Int i = 0; i < referrer_columns_.size(); ++i) {
+    if (column == referrer_columns_[i]) {
+      referrer_columns_.erase(i);
+      return true;
+    }
+  }
+  GRNXX_ERROR_SET(error, NOT_FOUND, "Column not found");
+  return false;
+}
+
 Table::Table()
     : db_(nullptr),
       name_(),
       columns_(),
+      referrer_columns_(),
       key_column_(nullptr),
       num_rows_(0),
       max_row_id_(MIN_ROW_ID - 1),

@@ -400,6 +400,11 @@ unique_ptr<ColumnImpl<Int>> ColumnImpl<Int>::create(
                               TypeTraits<Int>::default_value())) {
     return nullptr;
   }
+  if (column->ref_table()) {
+    if (!table->append_referrer_column(error, column.get())) {
+      return nullptr;
+    }
+  }
   return column;
 }
 
@@ -878,6 +883,11 @@ unique_ptr<ColumnImpl<Vector<Int>>> ColumnImpl<Vector<Int>>::create(
   }
   if (!column->headers_.resize(error, table->max_row_id() + 1, 0)) {
     return nullptr;
+  }
+  if (column->ref_table()) {
+    if (!table->append_referrer_column(error, column.get())) {
+      return nullptr;
+    }
   }
   return column;
 }

@@ -182,10 +182,29 @@ class Table {
 //      unique_ptr<Expression> &&expression,
 //      const GrouperOptions &options = GrouperOptions()) const;
 
+  // TODO: This member function should be hidden.
+  //
+  // Append a referrer column.
+  //
+  // On success, returns true.
+  // On failure, returns false and stores error information into "*error" if
+  // "error" != nullptr.
+  bool append_referrer_column(Error *error, Column *column);
+
+  // TODO: This member function should be hidden.
+  //
+  // Append a referrer column.
+  //
+  // On success, returns true.
+  // On failure, returns false and stores error information into "*error" if
+  // "error" != nullptr.
+  bool remove_referrer_column(Error *error, Column *column);
+
  private:
   DB *db_;
   Name name_;
   Array<unique_ptr<Column>> columns_;
+  Array<Column *> referrer_columns_;
   Column *key_column_;
   Int num_rows_;
   Int max_row_id_;
