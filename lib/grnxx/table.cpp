@@ -417,7 +417,9 @@ bool Table::remove_row(Error *error, Int row_id) {
   if (!test_row(error, row_id)) {
     return false;
   }
-  // TODO: Check removability and unset column values.
+  // TODO: Check removability.
+
+  // Unset column values.
   for (Int column_id = 0; column_id < num_columns(); ++column_id) {
     columns_[column_id]->unset(row_id);
   }
