@@ -3947,42 +3947,75 @@ unique_ptr<ExpressionBuilder> ExpressionBuilder::create(Error *error,
 ExpressionBuilder::~ExpressionBuilder() {}
 
 bool ExpressionBuilder::push_constant(Error *error, const Datum &datum) {
-  return builders_.back()->push_constant(error, datum);
+  if (!is_ok_) {
+    GRNXX_ERROR_SET(error, BROKEN, "Broken builder");
+    return false;
+  }
+  is_ok_ = builders_.back()->push_constant(error, datum);
+  return is_ok_;
 }
 
 bool ExpressionBuilder::push_row_id(Error *error) {
-  return builders_.back()->push_row_id(error);
+  if (!is_ok_) {
+    GRNXX_ERROR_SET(error, BROKEN, "Broken builder");
+    return false;
+  }
+  is_ok_ = builders_.back()->push_row_id(error);
+  return is_ok_;
 }
 
 bool ExpressionBuilder::push_score(Error *error) {
-  return builders_.back()->push_score(error);
+  if (!is_ok_) {
+    GRNXX_ERROR_SET(error, BROKEN, "Broken builder");
+    return false;
+  }
+  is_ok_ = builders_.back()->push_score(error);
+  return is_ok_;
 }
 
 bool ExpressionBuilder::push_column(Error *error, const StringCRef &name) {
-  return builders_.back()->push_column(error, name);
+  if (!is_ok_) {
+    GRNXX_ERROR_SET(error, BROKEN, "Broken builder");
+    return false;
+  }
+  is_ok_ = builders_.back()->push_column(error, name);
+  return is_ok_;
 }
 
 bool ExpressionBuilder::push_operator(Error *error,
                                       OperatorType operator_type) {
-  return builders_.back()->push_operator(error, operator_type);
+  if (!is_ok_) {
+    GRNXX_ERROR_SET(error, BROKEN, "Broken builder");
+    return false;
+  }
+  is_ok_ = builders_.back()->push_operator(error, operator_type);
+  return is_ok_;
 }
 
 bool ExpressionBuilder::begin_subexpression(Error *error) {
+  if (!is_ok_) {
+    GRNXX_ERROR_SET(error, BROKEN, "Broken builder");
+    return false;
+  }
   const Node *latest_node = builders_.back()->latest_node();
   if (!latest_node) {
     GRNXX_ERROR_SET(error, INVALID_OPERAND, "Not enough operands");
+    is_ok_ = false;
     return false;
   }
   if (!latest_node->ref_table()) {
     GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
+    is_ok_ = false;
     return false;
   }
   unique_ptr<Builder> subexpression_builder =
       Builder::create(error, latest_node->ref_table());
   if (!subexpression_builder) {
+    is_ok_ = false;
     return false;
   }
   if (!builders_.push_back(error, std::move(subexpression_builder))) {
+    is_ok_ = false;
     return false;
   }
   return true;
@@ -3991,42 +4024,67 @@ bool ExpressionBuilder::begin_subexpression(Error *error) {
 bool ExpressionBuilder::end_subexpression(
     Error *error,
     const ExpressionOptions &options) {
+  if (!is_ok_) {
+    GRNXX_ERROR_SET(error, BROKEN, "Broken builder");
+    return false;
+  }
   if (builders_.size() <= 1) {
     GRNXX_ERROR_SET(error, INVALID_OPERATION, "Subexpression not found");
+    is_ok_ = false;
     return false;
   }
   unique_ptr<Node> node = builders_.back()->release(error);
   if (!node) {
+    is_ok_ = false;
     return false;
   }
   builders_.pop_back();
   if (!builders_.back()->push_node(error, std::move(node))) {
+    is_ok_ = false;
     return false;
   }
-  return builders_.back()->push_reference(error, options);
+  if (!builders_.back()->push_reference(error, options)) {
+    is_ok_ = false;
+    return false;
+  }
+  return true;
 }
 
 void ExpressionBuilder::clear() {
   builders_.resize(nullptr, 1);
   builders_[0]->clear();
+  is_ok_ = true;
 }
 
 unique_ptr<Expression> ExpressionBuilder::release(
     Error *error,
     const ExpressionOptions &options) {
+  if (!is_ok_) {
+    GRNXX_ERROR_SET(error, BROKEN, "Broken builder");
+    return nullptr;
+  }
   if (builders_.size() != 1) {
     GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Incomplete expression");
+    is_ok_ = false;
     return nullptr;
   }
   unique_ptr<Node> root = builders_[0]->release(error);
   if (!root) {
+    is_ok_ = false;
     return nullptr;
   }
-  return Expression::create(error, table_, std::move(root), options);
+  auto expression = Expression::create(error, table_, std::move(root),
+                                       options);
+  if (!expression) {
+    is_ok_ = false;
+    return nullptr;
+  }
+  return expression;
 }
 
 ExpressionBuilder::ExpressionBuilder(const Table *table)
     : table_(table),
-      builders_() {}
+      builders_(),
+      is_ok_(true) {}
 
 }  // namespace grnxx

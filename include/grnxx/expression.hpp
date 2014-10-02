@@ -205,6 +205,10 @@ class ExpressionBuilder {
   const Table *table() const {
     return table_;
   }
+  // Return the builder is OK or broken.
+  bool is_ok() const {
+    return is_ok_;
+  }
 
   // Push a node associated with a constant.
   //
@@ -278,6 +282,7 @@ class ExpressionBuilder {
  private:
   const Table *table_;
   Array<unique_ptr<Builder>> builders_;
+  bool is_ok_;
 
   explicit ExpressionBuilder(const Table *table);
 };
