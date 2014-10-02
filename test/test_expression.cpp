@@ -3011,6 +3011,31 @@ void test_partial_filter() {
   }
 }
 
+void test_error() {
+  grnxx::Error error;
+
+  // Create an object for building expressions.
+  auto builder = grnxx::ExpressionBuilder::create(&error, test.table);
+  assert(builder);
+
+  // Test an invalid expression (Int * Text).
+  assert(builder->push_column(&error, "Int"));
+  assert(builder->push_column(&error, "Text"));
+  assert(!builder->push_operator(&error, grnxx::MULTIPLICATION_OPERATOR));
+
+  // Additional operations must fail.
+  assert(!builder->push_constant(&error, grnxx::Text("ABC")));
+  assert(!builder->push_column(&error, "Float"));
+
+  // Clear the broken status.
+  builder->clear();
+
+  // Test a valid expression (Int + Int).
+  assert(builder->push_column(&error, "Int"));
+  assert(builder->push_column(&error, "Int"));
+  assert(builder->push_operator(&error, grnxx::PLUS_OPERATOR));
+}
+
 int main() {
   init_test();
 
@@ -3057,6 +3082,9 @@ int main() {
 
   // Test partial filtering.
   test_partial_filter();
+
+  // Test error.
+  test_error();
 
   return 0;
 }
