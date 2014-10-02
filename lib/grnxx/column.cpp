@@ -126,6 +126,9 @@ Int Column::find_one(const Datum &) const {
   return NULL_ROW_ID;
 }
 
+void Column::clear_references(Int) {
+}
+
 unique_ptr<Column> Column::create(Error *error,
                                   Table *table,
                                   const StringCRef &name,
@@ -555,6 +558,53 @@ Int ColumnImpl<Int>::find_one(const Datum &datum) const {
   return NULL_ROW_ID;
 }
 
+void ColumnImpl<Int>::clear_references(Int row_id) {
+  // TODO: Cursor should not be used to avoid errors.
+  if (indexes_.size() != 0) {
+    auto cursor = indexes_[0]->find(nullptr, grnxx::Int(0));
+    if (!cursor) {
+      // Error.
+      return;
+    }
+    Array<Record> records;
+    for ( ; ; ) {
+      auto result = cursor->read(nullptr, 1024, &records);
+      if (!result.is_ok) {
+        // Error.
+        return;
+      } else if (result.count == 0) {
+        return;
+      }
+      for (Int i = 0; i < records.size(); ++i) {
+        values_[records.get_row_id(i)] = NULL_ROW_ID;
+      }
+      records.clear();
+    }
+  } else {
+    auto cursor = table_->create_cursor(nullptr);
+    if (!cursor) {
+      // Error.
+      return;
+    }
+    Array<Record> records;
+    for ( ; ; ) {
+      auto result = cursor->read(nullptr, 1024, &records);
+      if (!result.is_ok) {
+        // Error.
+        return;
+      } else if (result.count == 0) {
+        return;
+      }
+      for (Int i = 0; i < records.size(); ++i) {
+        if (values_[records.get_row_id(i)] == row_id) {
+          values_[records.get_row_id(i)] = NULL_ROW_ID;
+        }
+      }
+      records.clear();
+    }
+  }
+}
+
 ColumnImpl<Int>::ColumnImpl() : Column(), values_() {}
 
 // -- ColumnImpl<Text> --
@@ -906,6 +956,53 @@ bool ColumnImpl<Vector<Int>>::set_default_value(Error *error, Int row_id) {
 
 void ColumnImpl<Vector<Int>>::unset(Int row_id) {
   headers_[row_id] = 0;
+}
+
+void ColumnImpl<Vector<Int>>::clear_references(Int row_id) {
+  auto cursor = table_->create_cursor(nullptr);
+  if (!cursor) {
+    // Error.
+    return;
+  }
+  Array<Record> records;
+  for ( ; ; ) {
+    auto result = cursor->read(nullptr, 1024, &records);
+    if (!result.is_ok) {
+      // Error.
+      return;
+    } else if (result.count == 0) {
+      return;
+    }
+    for (Int i = 0; i < records.size(); ++i) {
+      Int value_row_id = records.get_row_id(i);
+      Int value_size = static_cast<Int>(headers_[value_row_id] & 0xFFFF);
+      if (value_size == 0) {
+        continue;
+      }
+      Int value_offset = static_cast<Int>(headers_[value_row_id] >> 16);
+      if (value_size >= 0xFFFF) {
+        value_size = bodies_[value_offset];
+        ++value_offset;
+      }
+      Int count = 0;
+      for (Int j = 0; j < value_size; ++j) {
+        if (bodies_[value_offset + j] != row_id) {
+          bodies_[value_offset + count] = bodies_[value_offset + j];
+          ++count;
+        }
+      }
+      if (count < value_size) {
+        if (count == 0) {
+          headers_[value_row_id] = 0;
+        } else if (count < 0xFFFF) {
+          headers_[value_row_id] = count | (value_offset << 16);
+        } else {
+          bodies_[value_offset - 1] = count;
+        }
+      }
+    }
+    records.clear();
+  }
 }
 
 ColumnImpl<Vector<Int>>::ColumnImpl() : Column(), headers_(), bodies_() {}

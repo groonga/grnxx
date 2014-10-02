@@ -80,6 +80,8 @@ class ColumnImpl<Int> : public Column {
   void unset(Int row_id);
   Int find_one(const Datum &datum) const;
 
+  void clear_references(Int row_id);
+
   // Return a value identified by "row_id".
   //
   // Assumes that "row_id" is valid. Otherwise, the result is undefined.
@@ -186,6 +188,8 @@ class ColumnImpl<Vector<Int>> : public Column {
 
   bool set_default_value(Error *error, Int row_id);
   void unset(Int row_id);
+
+  void clear_references(Int row_id);
 
   // Return a value identified by "row_id".
   //

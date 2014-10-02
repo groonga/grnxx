@@ -437,6 +437,10 @@ bool Table::remove_row(Error *error, Int row_id) {
     }
     max_row_id_ = (block_id * 64) + 63 - ::__builtin_clzll(bitmap_[block_id]);
   }
+  // Clear referrers.
+  for (Int i = 0; i < referrer_columns_.size(); ++i) {
+    referrer_columns_[i]->clear_references(row_id);
+  }
   return true;
 }
 

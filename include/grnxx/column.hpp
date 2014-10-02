@@ -126,6 +126,11 @@ class Column {
   // Otherwise, returns NULL_ROW_ID.
   virtual Int find_one(const Datum &datum) const;
 
+  // TODO: This function should be hidden.
+  //
+  // Replace references to "row_id" with NULL.
+  virtual void clear_references(Int row_id);
+
  protected:
   Table *table_;
   Name name_;
