@@ -576,7 +576,7 @@ void ColumnImpl<Int>::clear_references(Int row_id) {
         return;
       }
       for (Int i = 0; i < records.size(); ++i) {
-        values_[records.get_row_id(i)] = NULL_ROW_ID;
+        set(nullptr, row_id, grnxx::NULL_ROW_ID);
       }
       records.clear();
     }
