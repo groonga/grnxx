@@ -404,7 +404,7 @@ unique_ptr<ColumnImpl<Int>> ColumnImpl<Int>::create(
     return nullptr;
   }
   if (column->ref_table()) {
-    if (!table->append_referrer_column(error, column.get())) {
+    if (!column->ref_table()->append_referrer_column(error, column.get())) {
       return nullptr;
     }
   }
@@ -935,7 +935,7 @@ unique_ptr<ColumnImpl<Vector<Int>>> ColumnImpl<Vector<Int>>::create(
     return nullptr;
   }
   if (column->ref_table()) {
-    if (!table->append_referrer_column(error, column.get())) {
+    if (!column->ref_table()->append_referrer_column(error, column.get())) {
       return nullptr;
     }
   }
