@@ -418,7 +418,13 @@ bool Table::remove_row(Error *error, Int row_id) {
     return false;
   }
   // TODO: Check removability.
-
+  for (Int i = 0; i < referrer_columns_.size(); ++i) {
+    if (referrer_columns_[i]->has_key_attribute()) {
+      GRNXX_ERROR_SET(error, INVALID_OPERATION,
+                      "This table is referred to from a key column");
+      return false;
+    }
+  }
   // Unset column values.
   for (Int column_id = 0; column_id < num_columns(); ++column_id) {
     columns_[column_id]->unset(row_id);
