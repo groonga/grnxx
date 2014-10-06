@@ -13,7 +13,9 @@ class DB : public grnxx::DB {
   DB();
   ~DB();
 
-  Int num_tables() const;
+  Int num_tables() const {
+    return tables_.size();
+  }
 
   Table *create_table(Error *error,
                       const StringCRef &name,
@@ -26,7 +28,9 @@ class DB : public grnxx::DB {
                      const StringCRef &name,
                      const StringCRef &prev_name);
 
-  Table *get_table(Int table_id) const;
+  Table *get_table(Int table_id) const {
+    return tables_[table_id].get();
+  }
   Table *find_table(Error *error, const StringCRef &name) const;
 
   bool save(Error *error,

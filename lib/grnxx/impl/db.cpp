@@ -7,10 +7,6 @@ DB::DB() : grnxx::DB(), tables_() {}
 
 DB::~DB() {}
 
-Int DB::num_tables() const {
-  return tables_.size();
-}
-
 Table *DB::create_table(Error *error,
                         const StringCRef &name,
                         const TableOptions &options) {
@@ -91,10 +87,6 @@ bool DB::reorder_table(Error *error,
     std::swap(tables_[table_id], tables_[table_id - 1]);
   }
   return true;
-}
-
-Table *DB::get_table(Int table_id) const {
-  return tables_[table_id].get();
 }
 
 Table *DB::find_table(Error *error, const StringCRef &name) const {
