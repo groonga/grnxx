@@ -20,7 +20,7 @@ Table *DB::create_table(Error *error,
                     static_cast<int>(name.size()), name.data());
     return nullptr;
   }
-  if (!tables_.reserve(error, tables_.size() + 1)) {
+  if (!tables_.reserve(error, num_tables() + 1)) {
     return nullptr;
   }
   unique_ptr<Table> new_table = Table::create(error, this, name, options);
@@ -98,7 +98,7 @@ Table *DB::get_table(Int table_id) const {
 }
 
 Table *DB::find_table(Error *error, const StringCRef &name) const {
-  for (Int table_id = 0; table_id < tables_.size(); ++table_id) {
+  for (Int table_id = 0; table_id < num_tables(); ++table_id) {
     if (name == tables_[table_id]->name()) {
       return tables_[table_id].get();
     }
@@ -119,7 +119,7 @@ bool DB::save(Error *error,
 Table *DB::find_table_with_id(Error *error,
                               const StringCRef &name,
                               Int *table_id) const {
-  for (Int i = 0; i < tables_.size(); ++i) {
+  for (Int i = 0; i < num_tables(); ++i) {
     if (name == tables_[i]->name()) {
       if (table_id != nullptr) {
         *table_id = i;
