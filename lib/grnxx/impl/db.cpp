@@ -3,7 +3,7 @@
 namespace grnxx {
 namespace impl {
 
-DB::DB() : tables_() {}
+DB::DB() : grnxx::DB(), tables_() {}
 
 DB::~DB() {}
 

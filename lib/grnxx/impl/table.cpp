@@ -212,7 +212,8 @@ CursorResult TableCursor::reverse_read(Error *, ArrayRef<Record> records) {
 // -- Table --
 
 Table::Table()
-    : db_(nullptr),
+    : grnxx::Table(),
+      db_(nullptr),
       name_(),
       columns_(),
       referrer_columns_(),
