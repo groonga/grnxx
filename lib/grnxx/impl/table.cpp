@@ -229,26 +229,6 @@ grnxx::DB *Table::db() const {
   return db_;
 }
 
-StringCRef Table::name() const {
-  return name_.ref();
-}
-
-Int Table::num_columns() const {
-  return columns_.size();
-}
-
-Column *Table::key_column() const {
-  return key_column_;
-}
-
-Int Table::num_rows() const {
-  return num_rows_;
-}
-
-Int Table::max_row_id() const {
-  return max_row_id_;
-}
-
 Column *Table::create_column(Error *error,
                              const StringCRef &name,
                              DataType data_type,
@@ -338,10 +318,6 @@ bool Table::reorder_column(Error *error,
     std::swap(columns_[column_id], columns_[column_id - 1]);
   }
   return true;
-}
-
-Column *Table::get_column(Int column_id) const {
-  return columns_[column_id].get();
 }
 
 Column *Table::find_column(Error *error, const StringCRef &name) const {

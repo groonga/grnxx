@@ -17,11 +17,21 @@ class Table : public grnxx::Table {
   ~Table();
 
   grnxx::DB *db() const;
-  StringCRef name() const;
-  Int num_columns() const;
-  Column *key_column() const;
-  Int num_rows() const;
-  Int max_row_id() const;
+  StringCRef name() const {
+    return name_.ref();
+  }
+  Int num_columns() const {
+    return columns_.size();
+  }
+  Column *key_column() const {
+    return key_column_;
+  }
+  Int num_rows() const {
+    return num_rows_;
+  }
+  Int max_row_id() const {
+    return max_row_id_;
+  }
 
   Column *create_column(Error *error,
                         const StringCRef &name,
@@ -35,7 +45,9 @@ class Table : public grnxx::Table {
                       const StringCRef &name,
                       const StringCRef &prev_name);
 
-  Column *get_column(Int column_id) const;
+  Column *get_column(Int column_id) const {
+    return columns_[column_id].get();
+  }
   Column *find_column(Error *error, const StringCRef &name) const;
 
   bool set_key_column(Error *error, const StringCRef &name);
