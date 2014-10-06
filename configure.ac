@@ -56,6 +56,7 @@ AC_CONFIG_FILES([Makefile
                  include/grnxx/types/array/Makefile
                  lib/Makefile
                  lib/grnxx/Makefile
+                 lib/grnxx/impl/Makefile
                  src/Makefile
                  test/Makefile
                  benchmark/Makefile])

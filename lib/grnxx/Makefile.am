@@ -1,10 +1,10 @@
-#SUBDIRS =				\
-#	sub
+SUBDIRS =				\
+	impl
 
 lib_LTLIBRARIES = libgrnxx.la
 
-#libgrnxx_la_LIBADD =			\
-#	sub/libgrnxx_sub.la
+libgrnxx_la_LIBADD =			\
+	impl/libgrnxx_impl.la
 
 libgrnxx_la_LDFLAGS = @AM_LTLDFLAGS@
 

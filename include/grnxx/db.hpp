@@ -7,21 +7,21 @@ namespace grnxx {
 
 class DB {
  public:
-  ~DB();
+  DB() = default;
+  virtual ~DB() = default;
 
   // Return the number of tables.
-  Int num_tables() const {
-    return tables_.size();
-  }
+  virtual Int num_tables() const = 0;
 
   // Create a table with "name" and "options".
   //
   // On success, returns a pointer to the table.
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
-  Table *create_table(Error *error,
-                      const StringCRef &name,
-                      const TableOptions &options = TableOptions());
+  virtual Table *create_table(
+      Error *error,
+      const StringCRef &name,
+      const TableOptions &options = TableOptions()) = 0;
 
   // Remove a table named "name".
   //
@@ -30,16 +30,16 @@ class DB {
   // "error" != nullptr.
   //
   // Note: Pointers to the removed table must not be used after deletion.
-  bool remove_table(Error *error, const StringCRef &name);
+  virtual bool remove_table(Error *error, const StringCRef &name) = 0;
 
   // Rename a table named "name" to "new_name".
   //
   // On success, returns true.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
-  bool rename_table(Error *error,
-                    const StringCRef &name,
-                    const StringCRef &new_name);
+  virtual bool rename_table(Error *error,
+                            const StringCRef &name,
+                            const StringCRef &new_name) = 0;
 
   // Change the order of tables.
   //
@@ -51,9 +51,9 @@ class DB {
   // On success, returns true.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
-  bool reorder_table(Error *error,
-                     const StringCRef &name,
-                     const StringCRef &prev_name);
+  virtual bool reorder_table(Error *error,
+                             const StringCRef &name,
+                             const StringCRef &prev_name) = 0;
 
   // Get a table identified by "table_id".
   //
@@ -62,16 +62,14 @@ class DB {
   // On success, returns a pointer to the table.
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
-  Table *get_table(Int table_id) const {
-    return tables_[table_id].get();
-  }
+  virtual Table *get_table(Int table_id) const = 0;
 
   // Find a table named "name".
   //
   // On success, returns a pointer to the table.
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
-  Table *find_table(Error *error, const StringCRef &name) const;
+  virtual Table *find_table(Error *error, const StringCRef &name) const = 0;
 
   // TODO: Not supported yet.
   //
@@ -83,27 +81,9 @@ class DB {
   // On success, returns true.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
-  bool save(Error *error,
-            const StringCRef &path,
-            const DBOptions &options = DBOptions()) const;
-
- private:
-  Array<unique_ptr<Table>> tables_;
-
-  DB();
-
-  // Find a table with its ID.
-  //
-  // On success, returns a pointer to the table.
-  // On failure, returns nullptr and stores error information into "*error" if
-  // "error" != nullptr.
-  Table *find_table_with_id(Error *error,
-                            const StringCRef &name,
-                            Int *table_id) const;
-
-  friend unique_ptr<DB> open_db(Error *error,
-                                const StringCRef &path,
-                                const DBOptions &options);
+  virtual bool save(Error *error,
+                    const StringCRef &path,
+                    const DBOptions &options = DBOptions()) const = 0;
 };
 
 // Open or create a database.

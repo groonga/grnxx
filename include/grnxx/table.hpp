@@ -5,6 +5,11 @@
 #include "grnxx/types.hpp"
 
 namespace grnxx {
+namespace impl {
+
+class DB;
+
+}  // namespace impl
 
 class Table {
  public:
@@ -260,7 +265,7 @@ class Table {
                               const StringCRef &name,
                               Int *column_id) const;
 
-  friend class DB;
+  friend class impl::DB;
   friend class TableCursor;
 };
 
