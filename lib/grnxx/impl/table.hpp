@@ -67,6 +67,11 @@ class Table : public grnxx::Table {
       const StringCRef &name,
       const TableOptions &options = TableOptions());
 
+  // Return the owner DB.
+  DB *_db() const {
+    return db_;
+  }
+
   // Change the table name.
   //
   // On success, returns true.

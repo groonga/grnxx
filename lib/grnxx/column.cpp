@@ -2,7 +2,7 @@
 
 #include "grnxx/column_impl.hpp"
 #include "grnxx/cursor.hpp"
-#include "grnxx/db.hpp"
+#include "grnxx/impl/db.hpp"
 #include "grnxx/impl/table.hpp"
 #include "grnxx/index.hpp"
 
@@ -192,7 +192,7 @@ bool Column::initialize_base(Error *error,
   data_type_ = data_type;
   if ((data_type == INT_DATA) || (data_type == INT_VECTOR_DATA)) {
     if (options.ref_table_name.size() != 0) {
-      auto ref_table = table->db()->find_table(error, options.ref_table_name);
+      auto ref_table = table_->_db()->find_table(error, options.ref_table_name);
       if (!ref_table) {
         return false;
       }
