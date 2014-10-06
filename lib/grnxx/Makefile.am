@@ -21,7 +21,6 @@ libgrnxx_la_SOURCES =			\
 	name.cpp			\
 	pipeline.cpp			\
 	sorter.cpp			\
-	table.cpp			\
 	types.cpp
 
 libgrnxx_includedir = ${includedir}/grnxx

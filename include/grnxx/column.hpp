@@ -5,6 +5,11 @@
 #include "grnxx/types.hpp"
 
 namespace grnxx {
+namespace impl {
+
+class Table;
+
+}  // namespace impl
 
 class Column {
  public:
@@ -12,7 +17,7 @@ class Column {
 
   // Return the table.
   Table *table() const {
-    return table_;
+    return reinterpret_cast<Table *>(table_);
   }
   // Return the name.
   StringCRef name() const {
@@ -25,7 +30,7 @@ class Column {
   // Return the referenced (parent) table, or nullptr if the column is not a
   // reference column.
   Table *ref_table() const {
-    return ref_table_;
+    return reinterpret_cast<Table *>(ref_table_);
   }
   // Return whether the column has the key attribute or not.
   bool has_key_attribute() const {
@@ -128,14 +133,22 @@ class Column {
 
   // TODO: This function should be hidden.
   //
+  // Return the referenced (parent) table, or nullptr if the column is not a
+  // reference column.
+  impl::Table *_ref_table() const {
+    return ref_table_;
+  }
+
+  // TODO: This function should be hidden.
+  //
   // Replace references to "row_id" with NULL.
   virtual void clear_references(Int row_id);
 
  protected:
-  Table *table_;
+  impl::Table *table_;
   Name name_;
   DataType data_type_;
-  Table *ref_table_;
+  impl::Table *ref_table_;
   bool has_key_attribute_;
   Array<unique_ptr<Index>> indexes_;
 
@@ -206,7 +219,7 @@ class Column {
                             const StringCRef &name,
                             Int *column_id) const;
 
-  friend class Table;
+  friend class impl::Table;
 };
 
 }  // namespace grnxx

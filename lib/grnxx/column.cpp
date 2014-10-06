@@ -3,8 +3,8 @@
 #include "grnxx/column_impl.hpp"
 #include "grnxx/cursor.hpp"
 #include "grnxx/db.hpp"
+#include "grnxx/impl/table.hpp"
 #include "grnxx/index.hpp"
-#include "grnxx/table.hpp"
 
 #include <set>
 #include <unordered_set>
@@ -185,7 +185,7 @@ bool Column::initialize_base(Error *error,
                              const StringCRef &name,
                              DataType data_type,
                              const ColumnOptions &options) {
-  table_ = table;
+  table_ = static_cast<impl::Table *>(table);
   if (!name_.assign(error, name)) {
     return false;
   }
@@ -196,7 +196,7 @@ bool Column::initialize_base(Error *error,
       if (!ref_table) {
         return false;
       }
-      ref_table_ = ref_table;
+      ref_table_ = static_cast<impl::Table *>(ref_table);
     }
   }
   return true;
@@ -404,7 +404,7 @@ unique_ptr<ColumnImpl<Int>> ColumnImpl<Int>::create(
     return nullptr;
   }
   if (column->ref_table()) {
-    if (!column->ref_table()->append_referrer_column(error, column.get())) {
+    if (!column->ref_table_->append_referrer_column(error, column.get())) {
       return nullptr;
     }
   }
@@ -935,7 +935,7 @@ unique_ptr<ColumnImpl<Vector<Int>>> ColumnImpl<Vector<Int>>::create(
     return nullptr;
   }
   if (column->ref_table()) {
-    if (!column->ref_table()->append_referrer_column(error, column.get())) {
+    if (!column->ref_table_->append_referrer_column(error, column.get())) {
       return nullptr;
     }
   }

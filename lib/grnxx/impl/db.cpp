@@ -1,13 +1,15 @@
 #include "grnxx/impl/db.hpp"
 
-#include "grnxx/table.hpp"
-
 namespace grnxx {
 namespace impl {
 
 DB::DB() : tables_() {}
 
 DB::~DB() {}
+
+Int DB::num_tables() const {
+  return tables_.size();
+}
 
 Table *DB::create_table(Error *error,
                         const StringCRef &name,
@@ -91,8 +93,12 @@ bool DB::reorder_table(Error *error,
   return true;
 }
 
+Table *DB::get_table(Int table_id) const {
+  return tables_[table_id].get();
+}
+
 Table *DB::find_table(Error *error, const StringCRef &name) const {
-  for (Int table_id = 0; table_id < num_tables(); ++table_id) {
+  for (Int table_id = 0; table_id < tables_.size(); ++table_id) {
     if (name == tables_[table_id]->name()) {
       return tables_[table_id].get();
     }
@@ -113,7 +119,7 @@ bool DB::save(Error *error,
 Table *DB::find_table_with_id(Error *error,
                               const StringCRef &name,
                               Int *table_id) const {
-  for (Int i = 0; i < num_tables(); ++i) {
+  for (Int i = 0; i < tables_.size(); ++i) {
     if (name == tables_[i]->name()) {
       if (table_id != nullptr) {
         *table_id = i;

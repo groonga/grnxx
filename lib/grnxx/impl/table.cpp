@@ -1,12 +1,13 @@
-#include "grnxx/table.hpp"
+#include "grnxx/impl/table.hpp"
 
 #include "grnxx/column.hpp"
 #include "grnxx/cursor.hpp"
-#include "grnxx/db.hpp"
+#include "grnxx/impl/db.hpp"
 
 #include <iostream>  // For debug.
 
 namespace grnxx {
+namespace impl {
 
 // -- TableCursor --
 
@@ -36,6 +37,7 @@ class TableCursor : public Cursor {
   CursorResult reverse_read(Error *error, ArrayRef<Record> records);
 
  private:
+  const Table *table_;
   Int offset_left_;
   Int limit_left_;
   OrderType order_type_;
@@ -93,6 +95,7 @@ unique_ptr<TableCursor> TableCursor::create(Error *error,
 
 TableCursor::TableCursor(const Table *table)
     : Cursor(table),
+      table_(table),
       offset_left_(),
       limit_left_(),
       order_type_(),
@@ -208,7 +211,42 @@ CursorResult TableCursor::reverse_read(Error *, ArrayRef<Record> records) {
 
 // -- Table --
 
+Table::Table()
+    : db_(nullptr),
+      name_(),
+      columns_(),
+      referrer_columns_(),
+      key_column_(nullptr),
+      num_rows_(0),
+      max_row_id_(MIN_ROW_ID - 1),
+      bitmap_(),
+      bitmap_indexes_() {}
+
 Table::~Table() {}
+
+grnxx::DB *Table::db() const {
+  return db_;
+}
+
+StringCRef Table::name() const {
+  return name_.ref();
+}
+
+Int Table::num_columns() const {
+  return columns_.size();
+}
+
+Column *Table::key_column() const {
+  return key_column_;
+}
+
+Int Table::num_rows() const {
+  return num_rows_;
+}
+
+Int Table::max_row_id() const {
+  return max_row_id_;
+}
 
 Column *Table::create_column(Error *error,
                              const StringCRef &name,
@@ -248,7 +286,7 @@ bool Table::remove_column(Error *error, const StringCRef &name) {
     key_column_ = nullptr;
   }
   if (column->ref_table()) {
-    column->ref_table()->remove_referrer_column(nullptr, column);
+    column->_ref_table()->remove_referrer_column(nullptr, column);
   }
   columns_.erase(column_id);
   return true;
@@ -299,6 +337,10 @@ bool Table::reorder_column(Error *error,
     std::swap(columns_[column_id], columns_[column_id - 1]);
   }
   return true;
+}
+
+Column *Table::get_column(Int column_id) const {
+  return columns_[column_id].get();
 }
 
 Column *Table::find_column(Error *error, const StringCRef &name) const {
@@ -494,6 +536,20 @@ unique_ptr<Table> Table::create(Error *error,
   return table;
 }
 
+bool Table::rename(Error *error, const StringCRef &new_name) {
+  return name_.assign(error, new_name);
+}
+
+bool Table::is_removable() {
+  // Referenced table (except self-reference) is not removable.
+  for (Int i = 0; i < referrer_columns_.size(); ++i) {
+    if (referrer_columns_[i]->table() != this) {
+      return false;
+    }
+  }
+  return true;
+}
+
 bool Table::append_referrer_column(Error *error, Column *column) {
   if (column->ref_table() != this) {
     GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Wrong column");
@@ -512,17 +568,6 @@ bool Table::remove_referrer_column(Error *error, Column *column) {
   GRNXX_ERROR_SET(error, NOT_FOUND, "Column not found");
   return false;
 }
-
-Table::Table()
-    : db_(nullptr),
-      name_(),
-      columns_(),
-      referrer_columns_(),
-      key_column_(nullptr),
-      num_rows_(0),
-      max_row_id_(MIN_ROW_ID - 1),
-      bitmap_(),
-      bitmap_indexes_() {}
 
 void Table::set_bit(Int i) {
   bitmap_[i / 64] |= UInt(1) << (i % 64);
@@ -602,20 +647,6 @@ bool Table::reserve_bit(Error *error, Int i) {
   return true;
 }
 
-bool Table::rename(Error *error, const StringCRef &new_name) {
-  return name_.assign(error, new_name);
-}
-
-bool Table::is_removable() {
-  // Referenced table (except self-reference) is not removable.
-  for (Int i = 0; i < referrer_columns_.size(); ++i) {
-    if (referrer_columns_[i]->table() != this) {
-      return false;
-    }
-  }
-  return true;
-}
-
 Column *Table::find_column_with_id(Error *error,
                                    const StringCRef &name,
                                    Int *column_id) const {
@@ -632,4 +663,5 @@ Column *Table::find_column_with_id(Error *error,
   return nullptr;
 }
 
+}  // namespace impl
 }  // namespace grnxx
