@@ -1,6 +1,5 @@
 #include "grnxx/impl/table.hpp"
 
-#include "grnxx/column.hpp"
 #include "grnxx/cursor.hpp"
 #include "grnxx/impl/db.hpp"
 
@@ -229,10 +228,10 @@ grnxx::DB *Table::db() const {
   return db_;
 }
 
-Column *Table::create_column(Error *error,
-                             const StringCRef &name,
-                             DataType data_type,
-                             const ColumnOptions &options) {
+ColumnBase *Table::create_column(Error *error,
+                                 const StringCRef &name,
+                                 DataType data_type,
+                                 const ColumnOptions &options) {
   if (find_column(nullptr, name)) {
     GRNXX_ERROR_SET(error, ALREADY_EXISTS,
                     "Column already exists: name = \"%.*s\"",
@@ -242,8 +241,8 @@ Column *Table::create_column(Error *error,
   if (!columns_.reserve(error, columns_.size() + 1)) {
     return nullptr;
   }
-  unique_ptr<Column> new_column =
-      Column::create(error, this, name, data_type, options);
+  unique_ptr<ColumnBase> new_column =
+      ColumnBase::create(error, this, name, data_type, options);
   if (!new_column) {
     return nullptr;
   }
@@ -262,7 +261,7 @@ bool Table::remove_column(Error *error, const StringCRef &name) {
                     static_cast<int>(name.size()), name.data());
     return false;
   }
-  Column *column = columns_[column_id].get();
+  ColumnBase *column = columns_[column_id].get();
   if (column == key_column_) {
     key_column_ = nullptr;
   }
@@ -320,7 +319,7 @@ bool Table::reorder_column(Error *error,
   return true;
 }
 
-Column *Table::find_column(Error *error, const StringCRef &name) const {
+ColumnBase *Table::find_column(Error *error, const StringCRef &name) const {
   for (Int column_id = 0; column_id < num_columns(); ++column_id) {
     if (name == columns_[column_id]->name()) {
       return columns_[column_id].get();
@@ -336,7 +335,7 @@ bool Table::set_key_column(Error *error, const StringCRef &name) {
     GRNXX_ERROR_SET(error, ALREADY_EXISTS, "Key column already exists");
     return false;
   }
-  Column *column = find_column(error, name);
+  ColumnBase *column = find_column(error, name);
   if (!column) {
     return false;
   }
@@ -527,7 +526,7 @@ bool Table::is_removable() {
   return true;
 }
 
-bool Table::append_referrer_column(Error *error, Column *column) {
+bool Table::append_referrer_column(Error *error, ColumnBase *column) {
   if (column->ref_table() != this) {
     GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Wrong column");
     return false;
@@ -535,7 +534,7 @@ bool Table::append_referrer_column(Error *error, Column *column) {
   return referrer_columns_.push_back(error, column);
 }
 
-bool Table::remove_referrer_column(Error *error, Column *column) {
+bool Table::remove_referrer_column(Error *error, ColumnBase *column) {
   for (Int i = 0; i < referrer_columns_.size(); ++i) {
     if (column == referrer_columns_[i]) {
       referrer_columns_.erase(i);
@@ -624,9 +623,9 @@ bool Table::reserve_bit(Error *error, Int i) {
   return true;
 }
 
-Column *Table::find_column_with_id(Error *error,
-                                   const StringCRef &name,
-                                   Int *column_id) const {
+ColumnBase *Table::find_column_with_id(Error *error,
+                                       const StringCRef &name,
+                                       Int *column_id) const {
   for (Int i = 0; i < num_columns(); ++i) {
     if (name == columns_[i]->name()) {
       if (column_id != nullptr) {

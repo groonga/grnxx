@@ -3,6 +3,7 @@
 
 #include "grnxx/name.hpp"
 #include "grnxx/db.hpp"
+#include "grnxx/impl/column/column_base.hpp"
 #include "grnxx/table.hpp"
 
 namespace grnxx {
@@ -23,7 +24,7 @@ class Table : public grnxx::Table {
   Int num_columns() const {
     return columns_.size();
   }
-  Column *key_column() const {
+  ColumnBase *key_column() const {
     return key_column_;
   }
   Int num_rows() const {
@@ -33,10 +34,10 @@ class Table : public grnxx::Table {
     return max_row_id_;
   }
 
-  Column *create_column(Error *error,
-                        const StringCRef &name,
-                        DataType data_type,
-                        const ColumnOptions &options = ColumnOptions());
+  ColumnBase *create_column(Error *error,
+                            const StringCRef &name,
+                            DataType data_type,
+                            const ColumnOptions &options = ColumnOptions());
   bool remove_column(Error *error, const StringCRef &name);
   bool rename_column(Error *error,
                      const StringCRef &name,
@@ -45,10 +46,10 @@ class Table : public grnxx::Table {
                       const StringCRef &name,
                       const StringCRef &prev_name);
 
-  Column *get_column(Int column_id) const {
+  ColumnBase *get_column(Int column_id) const {
     return columns_[column_id].get();
   }
-  Column *find_column(Error *error, const StringCRef &name) const;
+  ColumnBase *find_column(Error *error, const StringCRef &name) const;
 
   bool set_key_column(Error *error, const StringCRef &name);
   bool unset_key_column(Error *error);
@@ -99,21 +100,21 @@ class Table : public grnxx::Table {
   // On success, returns true.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
-  bool append_referrer_column(Error *error, Column *column);
+  bool append_referrer_column(Error *error, ColumnBase *column);
 
   // Append a referrer column.
   //
   // On success, returns true.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
-  bool remove_referrer_column(Error *error, Column *column);
+  bool remove_referrer_column(Error *error, ColumnBase *column);
 
  private:
   DB *db_;
   Name name_;
-  Array<unique_ptr<Column>> columns_;
-  Array<Column *> referrer_columns_;
-  Column *key_column_;
+  Array<unique_ptr<ColumnBase>> columns_;
+  Array<ColumnBase *> referrer_columns_;
+  ColumnBase *key_column_;
   Int num_rows_;
   Int max_row_id_;
   Array<UInt> bitmap_;
@@ -141,9 +142,9 @@ class Table : public grnxx::Table {
   // On success, returns a pointer to the column.
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
-  Column *find_column_with_id(Error *error,
-                              const StringCRef &name,
-                              Int *column_id) const;
+  ColumnBase *find_column_with_id(Error *error,
+                                  const StringCRef &name,
+                                  Int *column_id) const;
 
   friend class TableCursor;
 };

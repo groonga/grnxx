@@ -5,6 +5,11 @@
 #include "grnxx/types.hpp"
 
 namespace grnxx {
+namespace impl {
+
+class ColumnBase;
+
+}  // namespace impl
 
 enum EndPointType {
   INCLUSIVE_END_POINT,
@@ -188,7 +193,7 @@ class Index {
   // Return whether the index is removable or not.
   bool is_removable();
 
-  friend class Column;
+  friend class impl::ColumnBase;
 };
 
 }  // namespace grnxx

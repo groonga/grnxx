@@ -1,45 +1,27 @@
 #ifndef GRNXX_COLUMN_HPP
 #define GRNXX_COLUMN_HPP
 
-#include "grnxx/name.hpp"
 #include "grnxx/types.hpp"
 
 namespace grnxx {
-namespace impl {
-
-class Table;
-
-}  // namespace impl
 
 class Column {
  public:
-  virtual ~Column();
+  Column() = default;
 
   // Return the table.
-  Table *table() const {
-    return reinterpret_cast<Table *>(table_);
-  }
+  virtual Table *table() const = 0;
   // Return the name.
-  StringCRef name() const {
-    return name_.ref();
-  }
+  virtual StringCRef name() const = 0;
   // Return the data type.
-  DataType data_type() const {
-    return data_type_;
-  }
+  virtual DataType data_type() const = 0;
   // Return the referenced (parent) table, or nullptr if the column is not a
   // reference column.
-  Table *ref_table() const {
-    return reinterpret_cast<Table *>(ref_table_);
-  }
+  virtual Table *ref_table() const = 0;
   // Return whether the column has the key attribute or not.
-  bool has_key_attribute() const {
-    return has_key_attribute_;
-  }
+  virtual bool has_key_attribute() const = 0;
   // Return the number of indexes.
-  Int num_indexes() const {
-    return indexes_.size();
-  }
+  virtual Int num_indexes() const = 0;
 
   // Create an index with "name", "index_type", and "index_options".
   //
@@ -50,7 +32,7 @@ class Column {
       Error *error,
       const StringCRef &name,
       IndexType type,
-      const IndexOptions &options = IndexOptions());
+      const IndexOptions &options = IndexOptions()) = 0;
 
   // Remove an index named "name".
   //
@@ -59,16 +41,16 @@ class Column {
   // "error" != nullptr.
   //
   // Note: Pointers to the removed index must not be used after deletion.
-  bool remove_index(Error *error, const StringCRef &name);
+  virtual bool remove_index(Error *error, const StringCRef &name) = 0;
 
   // Rename an index named "name" to "new_name".
   //
   // On success, returns true.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
-  bool rename_index(Error *error,
-                    const StringCRef &name,
-                    const StringCRef &new_name);
+  virtual bool rename_index(Error *error,
+                            const StringCRef &name,
+                            const StringCRef &new_name) = 0;
 
   // Change the order of indexes.
   //
@@ -81,9 +63,9 @@ class Column {
   // On success, returns true.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
-  bool reorder_index(Error *error,
-                     const StringCRef &name,
-                     const StringCRef &prev_name);
+  virtual bool reorder_index(Error *error,
+                             const StringCRef &name,
+                             const StringCRef &prev_name) = 0;
 
   // Get an index identified by "index_id".
   //
@@ -92,23 +74,21 @@ class Column {
   // On success, returns a pointer to the index.
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
-  Index *get_index(Int index_id) const {
-    return indexes_[index_id].get();
-  }
+  virtual Index *get_index(Int index_id) const = 0;
 
   // Find an index named "name".
   //
   // On success, returns a pointer to the index.
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
-  Index *find_index(Error *error, const StringCRef &name) const;
+  virtual Index *find_index(Error *error, const StringCRef &name) const = 0;
 
   // Set a value.
   //
   // On success, returns true.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
-  virtual bool set(Error *error, Int row_id, const Datum &datum);
+  virtual bool set(Error *error, Int row_id, const Datum &datum) = 0;
 
   // Get a value.
   //
@@ -117,109 +97,22 @@ class Column {
   // On success, returns true.
   // On failure, returns false and stores error information into "*error" if
   // "error" != nullptr.
-  virtual bool get(Error *error, Int row_id, Datum *datum) const;
+  virtual bool get(Error *error, Int row_id, Datum *datum) const = 0;
 
   // Check if "datum" exists in the column or not.
   //
   // If exists, returns true.
   // Otherwise, returns false.
-  virtual bool contains(const Datum &datum) const;
+  virtual bool contains(const Datum &datum) const = 0;
 
   // Find "datum" in the column.
   //
-  // If found, returns the row ID of the matched value.
-  // Otherwise, returns NULL_ROW_ID.
-  virtual Int find_one(const Datum &datum) const;
-
-  // TODO: This function should be hidden.
-  //
-  // Return the referenced (parent) table, or nullptr if the column is not a
-  // reference column.
-  impl::Table *_ref_table() const {
-    return ref_table_;
-  }
-
-  // TODO: This function should be hidden.
-  //
-  // Replace references to "row_id" with NULL.
-  virtual void clear_references(Int row_id);
+  // On success, returns the row ID of the matched value.
+  // On failure, returns NULL_ROW_ID.
+  virtual Int find_one(const Datum &datum) const = 0;
 
  protected:
-  impl::Table *table_;
-  Name name_;
-  DataType data_type_;
-  impl::Table *ref_table_;
-  bool has_key_attribute_;
-  Array<unique_ptr<Index>> indexes_;
-
-  Column();
-
-  // Initialize the base members.
-  //
-  // On success, returns true.
-  // On failure, returns false and stores error information into "*error" if
-  // "error" != nullptr.
-  bool initialize_base(Error *error,
-                       Table *table,
-                       const StringCRef &name,
-                       DataType data_type,
-                       const ColumnOptions &options = ColumnOptions());
-
- private:
-  // Create a new column.
-  //
-  // On success, returns a pointer to the column.
-  // On failure, returns nullptr and stores error information into "*error" if
-  // "error" != nullptr.
-  static unique_ptr<Column> create(
-      Error *error,
-      Table *table,
-      const StringCRef &name,
-      DataType data_type,
-      const ColumnOptions &options = ColumnOptions());
-
-  // Change the column name.
-  //
-  // On success, returns true.
-  // On failure, returns false and stores error information into "*error" if
-  // "error" != nullptr.
-  bool rename(Error *error, const StringCRef &new_name);
-
-  // Return whether the column is removable or not.
-  bool is_removable();
-
-  // Set the key attribute.
-  virtual bool set_key_attribute(Error *error);
-  // Unset the key attribute.
-  virtual bool unset_key_attribute(Error *error);
-
-  // Set the initial key.
-  //
-  // On success, returns true.
-  // On failure, returns false and stores error information into "*error" if
-  // "error" != nullptr.
-  virtual bool set_initial_key(Error *error, Int row_id, const Datum &key);
-
-  // Set the default value.
-  //
-  // On success, returns true.
-  // On failure, returns false and stores error information into "*error" if
-  // "error" != nullptr.
-  virtual bool set_default_value(Error *error, Int row_id) = 0;
-
-  // Unset the value.
-  virtual void unset(Int row_id) = 0;
-
-  // Find an index with its ID.
-  //
-  // On success, returns a pointer to the index.
-  // On failure, returns nullptr and stores error information into "*error" if
-  // "error" != nullptr.
-  Index *find_index_with_id(Error *error,
-                            const StringCRef &name,
-                            Int *column_id) const;
-
-  friend class impl::Table;
+  virtual ~Column() = default;
 };
 
 }  // namespace grnxx

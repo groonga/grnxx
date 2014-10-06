@@ -11,238 +11,6 @@
 
 namespace grnxx {
 
-Column::~Column() {}
-
-Index *Column::create_index(Error *error,
-                            const StringCRef &name,
-                            IndexType type,
-                            const IndexOptions &options) {
-  if (find_index(nullptr, name)) {
-    GRNXX_ERROR_SET(error, ALREADY_EXISTS,
-                    "Index already exists: name = \"%.*s\"",
-                    static_cast<int>(name.size()), name.data());
-    return nullptr;
-  }
-  if (!indexes_.reserve(error, indexes_.size() + 1)) {
-    return nullptr;
-  }
-  unique_ptr<Index> new_index =
-      Index::create(error, this, name, type, options);
-  if (!new_index) {
-    return nullptr;
-  }
-  indexes_.push_back(error, std::move(new_index));
-  return indexes_.back().get();
-}
-
-bool Column::remove_index(Error *error, const StringCRef &name) {
-  Int index_id;
-  if (!find_index_with_id(error, name, &index_id)) {
-    return false;
-  }
-  if (!indexes_[index_id]->is_removable()) {
-    GRNXX_ERROR_SET(error, NOT_REMOVABLE,
-                    "Index is not removable: name = \"%.*s\"",
-                    static_cast<int>(name.size()), name.data());
-    return false;
-  }
-  indexes_.erase(index_id);
-  return true;
-}
-
-bool Column::rename_index(Error *error,
-                          const StringCRef &name,
-                          const StringCRef &new_name) {
-  Int index_id;
-  if (!find_index_with_id(error, name, &index_id)) {
-    return false;
-  }
-  if (name == new_name) {
-    return true;
-  }
-  if (find_index(nullptr, new_name)) {
-    GRNXX_ERROR_SET(error, ALREADY_EXISTS,
-                    "Index already exists: new_name = \"%.*s\"",
-                    static_cast<int>(new_name.size()), new_name.data());
-    return false;
-  }
-  return indexes_[index_id]->rename(error, new_name);
-}
-
-bool Column::reorder_index(Error *error,
-                           const StringCRef &name,
-                           const StringCRef &prev_name) {
-  Int index_id;
-  if (!find_index_with_id(error, name, &index_id)) {
-    return false;
-  }
-  Int new_index_id = 0;
-  if (prev_name.size() != 0) {
-    Int prev_index_id;
-    if (!find_index_with_id(error, prev_name, &prev_index_id)) {
-      return false;
-    }
-    if (index_id <= prev_index_id) {
-      new_index_id = prev_index_id;
-    } else {
-      new_index_id = prev_index_id + 1;
-    }
-  }
-  for ( ; index_id < new_index_id; ++index_id) {
-    std::swap(indexes_[index_id], indexes_[index_id + 1]);
-  }
-  for ( ; index_id > new_index_id; --index_id) {
-    std::swap(indexes_[index_id], indexes_[index_id - 1]);
-  }
-  return true;
-}
-
-Index *Column::find_index(Error *error, const StringCRef &name) const {
-  for (Int index_id = 0; index_id < num_indexes(); ++index_id) {
-    if (name == indexes_[index_id]->name()) {
-      return indexes_[index_id].get();
-    }
-  }
-  GRNXX_ERROR_SET(error, NOT_FOUND, "Index not found");
-  return nullptr;
-}
-
-bool Column::set(Error *error, Int, const Datum &) {
-  GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not suported yet");
-  return false;
-}
-
-bool Column::get(Error *error, Int, Datum *) const {
-  GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not suported yet");
-  return false;
-}
-
-bool Column::contains(const Datum &datum) const {
-  return find_one(datum) != NULL_ROW_ID;
-}
-
-Int Column::find_one(const Datum &) const {
-  // TODO: This function should be pure virtual.
-  return NULL_ROW_ID;
-}
-
-void Column::clear_references(Int) {
-}
-
-unique_ptr<Column> Column::create(Error *error,
-                                  Table *table,
-                                  const StringCRef &name,
-                                  DataType data_type,
-                                  const ColumnOptions &options) {
-  switch (data_type) {
-    case BOOL_DATA: {
-      return ColumnImpl<Bool>::create(error, table, name, options);
-    }
-    case INT_DATA: {
-      return ColumnImpl<Int>::create(error, table, name, options);
-    }
-    case FLOAT_DATA: {
-      return ColumnImpl<Float>::create(error, table, name, options);
-    }
-    case GEO_POINT_DATA: {
-      return ColumnImpl<GeoPoint>::create(error, table, name, options);
-    }
-    case TEXT_DATA: {
-      return ColumnImpl<Text>::create(error, table, name, options);
-    }
-    case BOOL_VECTOR_DATA: {
-      return ColumnImpl<Vector<Bool>>::create(error, table, name, options);
-    }
-    case INT_VECTOR_DATA: {
-      return ColumnImpl<Vector<Int>>::create(error, table, name, options);
-    }
-    case FLOAT_VECTOR_DATA: {
-      return ColumnImpl<Vector<Float>>::create(error, table, name, options);
-    }
-    case GEO_POINT_VECTOR_DATA: {
-      return ColumnImpl<Vector<GeoPoint>>::create(error, table, name, options);
-    }
-    case TEXT_VECTOR_DATA: {
-      return ColumnImpl<Vector<Text>>::create(error, table, name, options);
-    }
-    default: {
-      // TODO: Other data types are not supported yet.
-      GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not suported yet");
-      return nullptr;
-    }
-  }
-}
-
-Column::Column()
-    : table_(nullptr),
-      name_(),
-      data_type_(),
-      ref_table_(nullptr),
-      has_key_attribute_(false) {}
-
-bool Column::initialize_base(Error *error,
-                             Table *table,
-                             const StringCRef &name,
-                             DataType data_type,
-                             const ColumnOptions &options) {
-  table_ = static_cast<impl::Table *>(table);
-  if (!name_.assign(error, name)) {
-    return false;
-  }
-  data_type_ = data_type;
-  if ((data_type == INT_DATA) || (data_type == INT_VECTOR_DATA)) {
-    if (options.ref_table_name.size() != 0) {
-      auto ref_table = table_->_db()->find_table(error, options.ref_table_name);
-      if (!ref_table) {
-        return false;
-      }
-      ref_table_ = static_cast<impl::Table *>(ref_table);
-    }
-  }
-  return true;
-}
-
-bool Column::rename(Error *error, const StringCRef &new_name) {
-  return name_.assign(error, new_name);
-}
-
-bool Column::is_removable() {
-  // TODO: Reference column is not supported yet.
-  return true;
-}
-
-bool Column::set_initial_key(Error *error, Int, const Datum &) {
-  // TODO: Key column is not supported yet.
-  GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not suported yet");
-  return false;
-}
-
-bool Column::set_key_attribute(Error *error) {
-  GRNXX_ERROR_SET(error, INVALID_OPERATION, "This type does not support Key");
-  return false;
-}
-
-bool Column::unset_key_attribute(Error *error) {
-  GRNXX_ERROR_SET(error, INVALID_OPERATION, "This type does not support Key");
-  return false;
-}
-
-Index *Column::find_index_with_id(Error *error,
-                                  const StringCRef &name,
-                                  Int *index_id) const {
-  for (Int i = 0; i < num_indexes(); ++i) {
-    if (name == indexes_[i]->name()) {
-      if (index_id != nullptr) {
-        *index_id = i;
-      }
-      return indexes_[i].get();
-    }
-  }
-  GRNXX_ERROR_SET(error, NOT_FOUND, "Index not found: name = \"%.*s\"",
-                  static_cast<int>(name.size()), name.data());
-  return nullptr;
-}
-
 // -- ColumnImpl<T> --
 
 template <typename T>
@@ -287,7 +55,7 @@ bool ColumnImpl<T>::get(Error *error, Int row_id, Datum *datum) const {
 
 template <typename T>
 unique_ptr<ColumnImpl<T>> ColumnImpl<T>::create(Error *error,
-                                                Table *table,
+                                                impl::Table *table,
                                                 const StringCRef &name,
                                                 const ColumnOptions &options) {
   unique_ptr<ColumnImpl> column(new (nothrow) ColumnImpl);
@@ -338,7 +106,12 @@ void ColumnImpl<T>::unset(Int row_id) {
 }
 
 template <typename T>
-ColumnImpl<T>::ColumnImpl() : Column(), values_() {}
+ColumnImpl<T>::ColumnImpl() : ColumnBase(), values_() {}
+
+template class ColumnImpl<Bool>;
+template class ColumnImpl<Float>;
+template class ColumnImpl<GeoPoint>;
+template class ColumnImpl<Vector<Bool>>;
 
 // -- ColumnImpl<Int> --
 
@@ -388,7 +161,7 @@ bool ColumnImpl<Int>::get(Error *error, Int row_id, Datum *datum) const {
 
 unique_ptr<ColumnImpl<Int>> ColumnImpl<Int>::create(
     Error *error,
-    Table *table,
+    impl::Table *table,
     const StringCRef &name,
     const ColumnOptions &options) {
   unique_ptr<ColumnImpl> column(new (nothrow) ColumnImpl);
@@ -605,7 +378,7 @@ void ColumnImpl<Int>::clear_references(Int row_id) {
   }
 }
 
-ColumnImpl<Int>::ColumnImpl() : Column(), values_() {}
+ColumnImpl<Int>::ColumnImpl() : ColumnBase(), values_() {}
 
 // -- ColumnImpl<Text> --
 
@@ -671,7 +444,7 @@ bool ColumnImpl<Text>::get(Error *error, Int row_id, Datum *datum) const {
 
 unique_ptr<ColumnImpl<Text>> ColumnImpl<Text>::create(
     Error *error,
-    Table *table,
+    impl::Table *table,
     const StringCRef &name,
     const ColumnOptions &options) {
   unique_ptr<ColumnImpl> column(new (nothrow) ColumnImpl);
@@ -861,7 +634,7 @@ Int ColumnImpl<Text>::find_one(const Datum &datum) const {
   return NULL_ROW_ID;
 }
 
-ColumnImpl<Text>::ColumnImpl() : Column(), headers_(), bodies_() {}
+ColumnImpl<Text>::ColumnImpl() : ColumnBase(), headers_(), bodies_() {}
 
 // -- ColumnImpl<Vector<Int>> --
 
@@ -920,7 +693,7 @@ bool ColumnImpl<Vector<Int>>::get(Error *error, Int row_id,
 
 unique_ptr<ColumnImpl<Vector<Int>>> ColumnImpl<Vector<Int>>::create(
     Error *error,
-    Table *table,
+    impl::Table *table,
     const StringCRef &name,
     const ColumnOptions &options) {
   unique_ptr<ColumnImpl> column(new (nothrow) ColumnImpl);
@@ -1005,7 +778,7 @@ void ColumnImpl<Vector<Int>>::clear_references(Int row_id) {
   }
 }
 
-ColumnImpl<Vector<Int>>::ColumnImpl() : Column(), headers_(), bodies_() {}
+ColumnImpl<Vector<Int>>::ColumnImpl() : ColumnBase(), headers_(), bodies_() {}
 
 // -- ColumnImpl<Vector<Float>> --
 
@@ -1058,7 +831,7 @@ bool ColumnImpl<Vector<Float>>::get(Error *error, Int row_id,
 
 unique_ptr<ColumnImpl<Vector<Float>>> ColumnImpl<Vector<Float>>::create(
     Error *error,
-    Table *table,
+    impl::Table *table,
     const StringCRef &name,
     const ColumnOptions &options) {
   unique_ptr<ColumnImpl> column(new (nothrow) ColumnImpl);
@@ -1092,7 +865,10 @@ void ColumnImpl<Vector<Float>>::unset(Int row_id) {
   headers_[row_id] = 0;
 }
 
-ColumnImpl<Vector<Float>>::ColumnImpl() : Column(), headers_(), bodies_() {}
+ColumnImpl<Vector<Float>>::ColumnImpl()
+    : ColumnBase(),
+      headers_(),
+      bodies_() {}
 
 // -- ColumnImpl<Vector<GeoPoint>> --
 
@@ -1145,7 +921,7 @@ bool ColumnImpl<Vector<GeoPoint>>::get(Error *error, Int row_id,
 
 unique_ptr<ColumnImpl<Vector<GeoPoint>>> ColumnImpl<Vector<GeoPoint>>::create(
     Error *error,
-    Table *table,
+    impl::Table *table,
     const StringCRef &name,
     const ColumnOptions &options) {
   unique_ptr<ColumnImpl> column(new (nothrow) ColumnImpl);
@@ -1180,7 +956,10 @@ void ColumnImpl<Vector<GeoPoint>>::unset(Int row_id) {
   headers_[row_id] = 0;
 }
 
-ColumnImpl<Vector<GeoPoint>>::ColumnImpl() : Column(), headers_(), bodies_() {}
+ColumnImpl<Vector<GeoPoint>>::ColumnImpl()
+    : ColumnBase(),
+      headers_(),
+      bodies_() {}
 
 // -- ColumnImpl<Vector<Text>> --
 
@@ -1231,7 +1010,7 @@ bool ColumnImpl<Vector<Text>>::get(Error *error, Int row_id,
 
 unique_ptr<ColumnImpl<Vector<Text>>> ColumnImpl<Vector<Text>>::create(
     Error *error,
-    Table *table,
+    impl::Table *table,
     const StringCRef &name,
     const ColumnOptions &options) {
   unique_ptr<ColumnImpl> column(new (nothrow) ColumnImpl);
@@ -1268,7 +1047,7 @@ void ColumnImpl<Vector<Text>>::unset(Int row_id) {
 }
 
 ColumnImpl<Vector<Text>>::ColumnImpl()
-    : Column(),
+    : ColumnBase(),
       headers_(),
       text_headers_(),
       bodies_() {}

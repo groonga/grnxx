@@ -1,12 +1,12 @@
 #ifndef GRNXX_COLUMN_IMPL_HPP
 #define GRNXX_COLUMN_IMPL_HPP
 
-#include "grnxx/column.hpp"
+#include "grnxx/impl/column/column_base.hpp"
 
 namespace grnxx {
 
 template <typename T>
-class ColumnImpl : public Column {
+class ColumnImpl : public impl::ColumnBase {
  public:
   // -- Public API --
 
@@ -21,7 +21,7 @@ class ColumnImpl : public Column {
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
   static unique_ptr<ColumnImpl> create(Error *error,
-                                       Table *table,
+                                       impl::Table *table,
                                        const StringCRef &name,
                                        const ColumnOptions &options);
 
@@ -51,7 +51,7 @@ class ColumnImpl : public Column {
 };
 
 template <>
-class ColumnImpl<Int> : public Column {
+class ColumnImpl<Int> : public impl::ColumnBase {
  public:
   // -- Public API --
 
@@ -66,7 +66,7 @@ class ColumnImpl<Int> : public Column {
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
   static unique_ptr<ColumnImpl> create(Error *error,
-                                       Table *table,
+                                       impl::Table *table,
                                        const StringCRef &name,
                                        const ColumnOptions &options);
 
@@ -103,7 +103,7 @@ class ColumnImpl<Int> : public Column {
 };
 
 template <>
-class ColumnImpl<Text> : public Column {
+class ColumnImpl<Text> : public impl::ColumnBase {
  public:
   // -- Public API --
 
@@ -118,7 +118,7 @@ class ColumnImpl<Text> : public Column {
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
   static unique_ptr<ColumnImpl> create(Error *error,
-                                       Table *table,
+                                       impl::Table *table,
                                        const StringCRef &name,
                                        const ColumnOptions &options);
 
@@ -165,7 +165,7 @@ class ColumnImpl<Text> : public Column {
 };
 
 template <>
-class ColumnImpl<Vector<Int>> : public Column {
+class ColumnImpl<Vector<Int>> : public impl::ColumnBase {
  public:
   // -- Public API --
 
@@ -180,7 +180,7 @@ class ColumnImpl<Vector<Int>> : public Column {
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
   static unique_ptr<ColumnImpl> create(Error *error,
-                                       Table *table,
+                                       impl::Table *table,
                                        const StringCRef &name,
                                        const ColumnOptions &options);
 
@@ -224,7 +224,7 @@ class ColumnImpl<Vector<Int>> : public Column {
 };
 
 template <>
-class ColumnImpl<Vector<Float>> : public Column {
+class ColumnImpl<Vector<Float>> : public impl::ColumnBase {
  public:
   // -- Public API --
 
@@ -239,7 +239,7 @@ class ColumnImpl<Vector<Float>> : public Column {
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
   static unique_ptr<ColumnImpl> create(Error *error,
-                                       Table *table,
+                                       impl::Table *table,
                                        const StringCRef &name,
                                        const ColumnOptions &options);
 
@@ -281,7 +281,7 @@ class ColumnImpl<Vector<Float>> : public Column {
 };
 
 template <>
-class ColumnImpl<Vector<GeoPoint>> : public Column {
+class ColumnImpl<Vector<GeoPoint>> : public impl::ColumnBase {
  public:
   // -- Public API --
 
@@ -296,7 +296,7 @@ class ColumnImpl<Vector<GeoPoint>> : public Column {
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
   static unique_ptr<ColumnImpl> create(Error *error,
-                                       Table *table,
+                                       impl::Table *table,
                                        const StringCRef &name,
                                        const ColumnOptions &options);
 
@@ -340,7 +340,7 @@ class ColumnImpl<Vector<GeoPoint>> : public Column {
 
 // TODO: Improve the implementation.
 template <>
-class ColumnImpl<Vector<Text>> : public Column {
+class ColumnImpl<Vector<Text>> : public impl::ColumnBase {
  public:
   // -- Public API --
 
@@ -355,7 +355,7 @@ class ColumnImpl<Vector<Text>> : public Column {
   // On failure, returns nullptr and stores error information into "*error" if
   // "error" != nullptr.
   static unique_ptr<ColumnImpl> create(Error *error,
-                                       Table *table,
+                                       impl::Table *table,
                                        const StringCRef &name,
                                        const ColumnOptions &options);
 
