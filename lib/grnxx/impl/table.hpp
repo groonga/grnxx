@@ -13,7 +13,8 @@ class DB;
 
 class Table : public grnxx::Table {
  public:
-  // Public API, see grnxx/table.hpp for details.
+  // -- Public API (grnxx/table.hpp) --
+
   Table();
   ~Table();
 
@@ -67,7 +68,7 @@ class Table : public grnxx::Table {
       Error *error,
       const CursorOptions &options = CursorOptions()) const;
 
-  // Internal API.
+  // -- Internal API --
 
   // Create a new table.
   //

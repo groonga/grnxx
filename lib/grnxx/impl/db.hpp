@@ -9,7 +9,8 @@ namespace impl {
 
 class DB : public grnxx::DB {
  public:
-  // Public API, see grnxx/db.hpp for details.
+  // -- Public API (grnxx/db.hpp) --
+
   DB();
   ~DB();
 
