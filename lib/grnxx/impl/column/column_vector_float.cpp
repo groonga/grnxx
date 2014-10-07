@@ -7,7 +7,6 @@
 namespace grnxx {
 namespace impl {
 
-
 bool Column<Vector<Float>>::set(Error *error, Int row_id, const Datum &datum) {
   if (datum.type() != FLOAT_VECTOR_DATA) {
     GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Wrong data type");

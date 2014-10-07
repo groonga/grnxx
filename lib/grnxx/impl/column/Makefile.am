@@ -11,6 +11,7 @@ libgrnxx_impl_column_la_LDFLAGS = @AM_LTLDFLAGS@
 libgrnxx_impl_column_la_SOURCES =		\
 	column.cpp				\
 	column_base.cpp				\
+	column_float.cpp			\
 	column_int.cpp				\
 	column_text.cpp				\
 	column_vector_int.cpp			\
