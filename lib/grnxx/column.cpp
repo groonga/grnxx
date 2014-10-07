@@ -334,7 +334,7 @@ Int ColumnImpl<Int>::find_one(const Datum &datum) const {
 void ColumnImpl<Int>::clear_references(Int row_id) {
   // TODO: Cursor should not be used to avoid errors.
   if (indexes_.size() != 0) {
-    auto cursor = indexes_[0]->find(nullptr, grnxx::Int(0));
+    auto cursor = indexes_[0]->find(nullptr, Int(0));
     if (!cursor) {
       // Error.
       return;
@@ -349,7 +349,7 @@ void ColumnImpl<Int>::clear_references(Int row_id) {
         return;
       }
       for (Int i = 0; i < records.size(); ++i) {
-        set(nullptr, row_id, grnxx::NULL_ROW_ID);
+        set(nullptr, row_id, NULL_ROW_ID);
       }
       records.clear();
     }

@@ -347,7 +347,7 @@ bool PipelineBuilder::push_merger(Error *error, const MergerOptions &options) {
     GRNXX_ERROR_SET(error, INVALID_OPERAND, "Not enough nodes");
     return false;
   }
-  auto merger = grnxx::Merger::create(error, options);
+  auto merger = Merger::create(error, options);
   if (!merger) {
     return false;
   }
