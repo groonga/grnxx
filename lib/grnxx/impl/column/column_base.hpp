@@ -8,23 +8,26 @@
 namespace grnxx {
 namespace impl {
 
+using TableInterface = grnxx::Table;
+using ColumnInterface = grnxx::Column;
+
 class Table;
 
-class ColumnBase : public grnxx::Column {
+class ColumnBase : public ColumnInterface {
  public:
   // -- Public API (grnxx/column.hpp) --
 
   ColumnBase();
   virtual ~ColumnBase();
 
-  grnxx::Table *table() const;
+  TableInterface *table() const;
   StringCRef name() const {
     return name_.ref();
   }
   DataType data_type() const {
     return data_type_;
   }
-  grnxx::Table *ref_table() const;
+  TableInterface *ref_table() const;
   bool has_key_attribute() const {
     return has_key_attribute_;
   }

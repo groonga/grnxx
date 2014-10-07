@@ -211,7 +211,7 @@ CursorResult TableCursor::reverse_read(Error *, ArrayRef<Record> records) {
 // -- Table --
 
 Table::Table()
-    : grnxx::Table(),
+    : TableInterface(),
       db_(nullptr),
       name_(),
       columns_(),
@@ -224,7 +224,7 @@ Table::Table()
 
 Table::~Table() {}
 
-grnxx::DB *Table::db() const {
+DBInterface *Table::db() const {
   return db_;
 }
 

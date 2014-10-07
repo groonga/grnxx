@@ -10,7 +10,7 @@ namespace grnxx {
 namespace impl {
 
 ColumnBase::ColumnBase()
-    : grnxx::Column(),
+    : ColumnInterface(),
       table_(nullptr),
       name_(),
       data_type_(),
@@ -19,11 +19,11 @@ ColumnBase::ColumnBase()
 
 ColumnBase::~ColumnBase() {}
 
-grnxx::Table *ColumnBase::table() const {
+TableInterface *ColumnBase::table() const {
   return table_;
 }
 
-grnxx::Table *ColumnBase::ref_table() const {
+TableInterface *ColumnBase::ref_table() const {
   return ref_table_;
 }
 

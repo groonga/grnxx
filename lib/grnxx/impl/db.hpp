@@ -7,7 +7,9 @@
 namespace grnxx {
 namespace impl {
 
-class DB : public grnxx::DB {
+using DBInterface = grnxx::DB;
+
+class DB : public DBInterface {
  public:
   // -- Public API (grnxx/db.hpp) --
 

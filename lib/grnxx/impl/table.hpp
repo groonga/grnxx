@@ -9,16 +9,19 @@
 namespace grnxx {
 namespace impl {
 
+using DBInterface = grnxx::DB;
+using TableInterface = grnxx::Table;
+
 class DB;
 
-class Table : public grnxx::Table {
+class Table : public TableInterface {
  public:
   // -- Public API (grnxx/table.hpp) --
 
   Table();
   ~Table();
 
-  grnxx::DB *db() const;
+  DBInterface *db() const;
   StringCRef name() const {
     return name_.ref();
   }
