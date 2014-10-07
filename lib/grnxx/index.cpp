@@ -1,8 +1,7 @@
 #include "grnxx/index.hpp"
 
-#include "grnxx/column.hpp"
-#include "grnxx/column_impl.hpp"
 #include "grnxx/cursor.hpp"
+#include "grnxx/impl/column.hpp"
 #include "grnxx/table.hpp"
 #include "grnxx/tree_index.hpp"
 
@@ -452,7 +451,7 @@ unique_ptr<TreeIndex<Bool>> TreeIndex<Bool>::create(
   if (!cursor) {
     return nullptr;
   }
-  auto typed_column = static_cast<ColumnImpl<Bool> *>(column);
+  auto typed_column = static_cast<impl::Column<Bool> *>(column);
   Array<Record> records;
   for ( ; ; ) {
     auto result = cursor->read(error, 1024, &records);
@@ -610,7 +609,7 @@ unique_ptr<TreeIndex<Int>> TreeIndex<Int>::create(
   if (!cursor) {
     return nullptr;
   }
-  auto typed_column = static_cast<ColumnImpl<Int> *>(column);
+  auto typed_column = static_cast<impl::Column<Int> *>(column);
   Array<Record> records;
   for ( ; ; ) {
     auto result = cursor->read(error, 1024, &records);
@@ -768,7 +767,7 @@ unique_ptr<TreeIndex<Float>> TreeIndex<Float>::create(
   if (!cursor) {
     return nullptr;
   }
-  auto typed_column = static_cast<ColumnImpl<Float> *>(column);
+  auto typed_column = static_cast<impl::Column<Float> *>(column);
   Array<Record> records;
   for ( ; ; ) {
     auto result = cursor->read(error, 1024, &records);
@@ -937,7 +936,7 @@ unique_ptr<TreeIndex<Text>> TreeIndex<Text>::create(
   if (!cursor) {
     return nullptr;
   }
-  auto typed_column = static_cast<ColumnImpl<Text> *>(column);
+  auto typed_column = static_cast<impl::Column<Text> *>(column);
   Array<Record> records;
   for ( ; ; ) {
     auto result = cursor->read(error, 1024, &records);

@@ -1,6 +1,6 @@
 #include "grnxx/expression.hpp"
 
-#include "grnxx/column_impl.hpp"
+#include "grnxx/impl/column.hpp"
 #include "grnxx/table.hpp"
 
 #include <iostream>  // For debugging.
@@ -625,7 +625,7 @@ class ColumnNode : public TypedNode<T> {
 
   explicit ColumnNode(const Column *column)
       : TypedNode<Value>(),
-        column_(static_cast<const ColumnImpl<Value> *>(column)) {}
+        column_(static_cast<const impl::Column<Value> *>(column)) {}
 
   NodeType node_type() const {
     return COLUMN_NODE;
@@ -642,7 +642,7 @@ class ColumnNode : public TypedNode<T> {
   }
 
  private:
-  const ColumnImpl<T> *column_;
+  const impl::Column<T> *column_;
 };
 
 template <>
@@ -660,7 +660,7 @@ class ColumnNode<Bool> : public TypedNode<Bool> {
 
   explicit ColumnNode(const Column *column)
       : TypedNode<Value>(),
-        column_(static_cast<const ColumnImpl<Value> *>(column)) {}
+        column_(static_cast<const impl::Column<Value> *>(column)) {}
 
   NodeType node_type() const {
     return COLUMN_NODE;
@@ -677,7 +677,7 @@ class ColumnNode<Bool> : public TypedNode<Bool> {
   }
 
  private:
-  const ColumnImpl<Value> *column_;
+  const impl::Column<Value> *column_;
 };
 
 bool ColumnNode<Bool>::filter(Error *,
@@ -709,7 +709,7 @@ class ColumnNode<Float> : public TypedNode<Float> {
 
   explicit ColumnNode(const Column *column)
       : TypedNode<Value>(),
-        column_(static_cast<const ColumnImpl<Value> *>(column)) {}
+        column_(static_cast<const impl::Column<Value> *>(column)) {}
 
   NodeType node_type() const {
     return COLUMN_NODE;
@@ -729,7 +729,7 @@ class ColumnNode<Float> : public TypedNode<Float> {
   }
 
  private:
-  const ColumnImpl<Value> *column_;
+  const impl::Column<Value> *column_;
 };
 
 // -- OperatorNode --

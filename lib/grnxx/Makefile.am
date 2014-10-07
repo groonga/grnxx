@@ -10,7 +10,6 @@ libgrnxx_la_LDFLAGS = @AM_LTLDFLAGS@
 
 libgrnxx_la_SOURCES =			\
 	array.cpp			\
-	column.cpp			\
 	cursor.cpp			\
 	db.cpp				\
 	error.cpp			\
@@ -25,7 +24,6 @@ libgrnxx_la_SOURCES =			\
 
 libgrnxx_includedir = ${includedir}/grnxx
 libgrnxx_include_HEADERS =		\
-	column_impl.hpp			\
 	name.hpp			\
 	tree_index.hpp			\
 	version.h

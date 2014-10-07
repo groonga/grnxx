@@ -53,6 +53,12 @@ class ColumnBase : public ColumnInterface {
   }
   Index *find_index(Error *error, const StringCRef &name) const;
 
+  bool set(Error *error, Int row_id, const Datum &datum);
+  bool get(Error *error, Int row_id, Datum *datum) const;
+
+  bool contains(const Datum &datum) const;
+  Int find_one(const Datum &datum) const;
+
   // -- Internal API --
 
   // Create a new column.
@@ -77,34 +83,6 @@ class ColumnBase : public ColumnInterface {
     return ref_table_;
   }
 
-  // Set a value.
-  //
-  // On success, returns true.
-  // On failure, returns false and stores error information into "*error" if
-  // "error" != nullptr.
-  virtual bool set(Error *error, Int row_id, const Datum &datum);
-
-  // Get a value.
-  //
-  // Stores a value identified by "row_id" into "*datum".
-  //
-  // On success, returns true.
-  // On failure, returns false and stores error information into "*error" if
-  // "error" != nullptr.
-  virtual bool get(Error *error, Int row_id, Datum *datum) const;
-
-  // Check if "datum" exists in the column or not.
-  //
-  // If exists, returns true.
-  // Otherwise, returns false.
-  virtual bool contains(const Datum &datum) const;
-
-  // Find "datum" in the column.
-  //
-  // If found, returns the row ID of the matched value.
-  // Otherwise, returns NULL_ROW_ID.
-  virtual Int find_one(const Datum &datum) const;
-
   // Change the column name.
   //
   // On success, returns true.
@@ -116,8 +94,16 @@ class ColumnBase : public ColumnInterface {
   bool is_removable();
 
   // Set the key attribute.
+  //
+  // On success, returns true.
+  // On failure, returns false and stores error information into "*error" if
+  // "error" != nullptr.
   virtual bool set_key_attribute(Error *error);
   // Unset the key attribute.
+  //
+  // On success, returns true.
+  // On failure, returns false and stores error information into "*error" if
+  // "error" != nullptr.
   virtual bool unset_key_attribute(Error *error);
 
   // Set the initial key.

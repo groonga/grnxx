@@ -3,7 +3,7 @@
 
 #include "grnxx/name.hpp"
 #include "grnxx/db.hpp"
-#include "grnxx/impl/column/column_base.hpp"
+#include "grnxx/impl/column.hpp"
 #include "grnxx/table.hpp"
 
 namespace grnxx {
