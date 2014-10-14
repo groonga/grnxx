@@ -20,8 +20,8 @@ bool Column<Float>::set(Error *error, Int row_id, const Datum &datum) {
   }
   Float old_value = get(row_id);
   Float new_value = datum.force_float();
-  if ((std::isnan(new_value) && std::isnan(old_value)) ||
-      (new_value != old_value)) {
+  if ((new_value != old_value) ||
+      (std::isnan(new_value) != std::isnan(old_value))) {
     for (Int i = 0; i < num_indexes(); ++i) {
       if (!indexes_[i]->insert(error, row_id, datum)) {
         for (Int j = 0; j < i; ++i) {
