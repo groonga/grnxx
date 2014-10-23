@@ -15,7 +15,8 @@ class Bool {
   constexpr Bool(const Bool &) = default;
   Bool &operator=(const Bool &) & = default;
 
-  explicit constexpr Bool(bool value) : value_(value) {}
+  explicit constexpr Bool(bool value)
+      : value_(value ? true_value() : false_value()) {}
   explicit constexpr Bool(NA) : value_(na_value()) {}
 
   constexpr uint8_t value() const {
@@ -39,7 +40,7 @@ class Bool {
   // -- Unary operators --
 
   constexpr Bool operator!() const {
-    return is_na() ? na() : Bool(!value_);
+    return is_na() ? na() : Bool(static_cast<uint8_t>(value_ ^ true_value()));
   }
   constexpr Bool operator~() const {
     return operator!();
@@ -47,24 +48,15 @@ class Bool {
 
   // -- Binary operators --
 
-  // TODO: Difficult branch predictions (for is_false()) should be removed.
-  constexpr Bool operator&&(Bool rhs) const {
-    return (is_false() || rhs.is_false()) ? Bool(false) :
-           ((is_na() || rhs.is_na()) ? na() : Bool(true));
-  }
-  constexpr Bool operator||(Bool rhs) const {
-    return (is_true() || rhs.is_true()) ? Bool(true) :
-           ((is_na() || rhs.is_na()) ? na() : Bool(false));
-  }
-
   constexpr Bool operator&(Bool rhs) const {
-    return operator&&(rhs);
+    return Bool(static_cast<uint8_t>(value_ & rhs.value_));
   }
   constexpr Bool operator|(Bool rhs) const {
-    return operator||(rhs);
+    return Bool(static_cast<uint8_t>(value_ | rhs.value_));
   }
   constexpr Bool operator^(Bool rhs) const {
-    return (is_na() || rhs.is_na()) ? na() : Bool(value_ ^ rhs.value_);
+    return (is_na() || rhs.is_na()) ? na() :
+           Bool(static_cast<uint8_t>(value_ ^ rhs.value_));
   }
 
   Bool &operator&=(Bool rhs) & {
@@ -80,10 +72,12 @@ class Bool {
   // -- Comparison operators --
 
   constexpr Bool operator==(Bool rhs) const {
-    return (is_na() || rhs.is_na()) ? na() : Bool(value_ == rhs.value_);
+    return (is_na() || rhs.is_na()) ? na() :
+           Bool(static_cast<uint8_t>(value_ ^ rhs.value_ ^ true_value()));
   }
   constexpr Bool operator!=(Bool rhs) const {
-    return (is_na() || rhs.is_na()) ? na() : Bool(value_ != rhs.value_);
+    return (is_na() || rhs.is_na()) ? na() :
+           Bool(static_cast<uint8_t>(value_ ^ rhs.value_));
   }
 
   static constexpr Bool na() {
@@ -91,17 +85,19 @@ class Bool {
   }
 
   static constexpr uint8_t true_value() {
-    return 1;
+    return 0b11;
   }
   static constexpr uint8_t false_value() {
-    return 0;
+    return 0b00;
   }
   static constexpr uint8_t na_value() {
-    return 2;
+    return 0b01;
   }
 
  private:
   uint8_t value_;
+
+  explicit constexpr Bool(uint8_t value) : value_(value) {}
 };
 
 }  // namespace grnxx
