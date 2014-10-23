@@ -60,13 +60,18 @@ class Bool {
   }
 
   Bool &operator&=(Bool rhs) & {
-    return *this = operator&(rhs);
+    value_ &= rhs.value_;
+    return *this;
   }
-  Bool operator|=(Bool rhs) & {
-    return *this = operator|(rhs);
+  Bool &operator|=(Bool rhs) & {
+    value_ |= rhs.value_;
+    return *this;
   }
-  Bool operator^=(Bool rhs) & {
-    return *this = operator^(rhs);
+  Bool &operator^=(Bool rhs) & {
+    if (!is_na()) {
+      value_ = rhs.is_na() ? na_value() : (value_ ^ rhs.value_);
+    }
+    return *this;
   }
 
   // -- Comparison operators --
