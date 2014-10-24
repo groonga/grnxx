@@ -251,7 +251,8 @@ class Int {
              "MOV %2, %0;"
              "GRNXX_INT_ADD_OVERFLOW%=:"
              : "+r" (lhs.value_)
-             : "r" (rhs.value_), "r" (na_value()));
+             : "r" (rhs.value_), "r" (na_value())
+             : "cc");
     return lhs;
   }
   static Int subtract(Int lhs, Int rhs) {
@@ -263,7 +264,8 @@ class Int {
              "MOV %2, %0;"
              "GRNXX_INT_SUBTRACT_OVERFLOW%=:"
              : "+r" (lhs.value_)
-             : "r" (rhs.value_), "r" (na_value()));
+             : "r" (rhs.value_), "r" (na_value())
+             : "cc");
     return lhs;
   }
   static Int multiply(Int lhs, Int rhs) {
@@ -275,7 +277,8 @@ class Int {
              "MOV %2, %0;"
              "GRNXX_INT_MULTIPLY_OVERFLOW%=:"
              : "+r" (lhs.value_)
-             : "r" (rhs.value_), "r" (na_value()));
+             : "r" (rhs.value_), "r" (na_value())
+             : "cc");
     return lhs;
   }
  #else  // !defined(GRNXX_HAVE_GNUC)
