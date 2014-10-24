@@ -195,6 +195,12 @@ class Int {
     return (is_na() || rhs.is_na()) ? Bool::na() : Bool(value_ >= rhs.value_);
   }
 
+  static constexpr Int min() {
+    return Int(min_value());
+  }
+  static constexpr Int max() {
+    return Int(max_value());
+  }
   static constexpr Int na() {
     return Int(NA());
   }
