@@ -140,7 +140,7 @@ class Int {
     return *this;
   }
 
-  constexpr Int arighmetic_right_shift(Int rhs) const {
+  constexpr Int arithmetic_right_shift(Int rhs) const {
     return (is_na() || rhs.is_na() ||
             (static_cast<uint64_t>(rhs.value_) >= 64)) ?
            na() : Int(value_ >> rhs.value_);
