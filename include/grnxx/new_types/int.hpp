@@ -113,10 +113,9 @@ class Int {
             (static_cast<uint64_t>(rhs.value_) >= 64)) ?
            na() : Int(value_ << rhs.value_);
   }
+  // NOTE: This is an arithmetic shift.
   constexpr Int operator>>(Int rhs) const {
-    return (is_na() || rhs.is_na() ||
-            (static_cast<uint64_t>(rhs.value_) >= 64)) ?
-           na() : Int(value_ >> rhs.value_);
+    return arithmetic_right_shift(rhs);
   }
 
   Int &operator<<=(Int rhs) & {
@@ -129,6 +128,7 @@ class Int {
     }
     return *this;
   }
+  // NOTE: This is an arithmetic shift.
   Int &operator>>=(Int rhs) & {
     if (!is_na()) {
       if (rhs.is_na() || (static_cast<uint64_t>(rhs.value_) >= 64)) {
@@ -138,6 +138,17 @@ class Int {
       }
     }
     return *this;
+  }
+
+  constexpr Int arighmetic_right_shift(Int rhs) const {
+    return (is_na() || rhs.is_na() ||
+            (static_cast<uint64_t>(rhs.value_) >= 64)) ?
+           na() : Int(value_ >> rhs.value_);
+  }
+  constexpr Int logical_right_shift(Int rhs) const {
+    return (is_na() || rhs.is_na() ||
+            (static_cast<uint64_t>(rhs.value_) >= 64)) ?
+           na() : Int(static_cast<uint64_t>(value_) >> rhs.value_);
   }
 
   // -- Arithmetic operators --
