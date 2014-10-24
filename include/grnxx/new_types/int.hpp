@@ -156,6 +156,10 @@ class Int {
     return (is_na() || rhs.is_na() || (rhs.value_ == 0)) ?
            na() : Int(value_ / rhs.value_);
   }
+  Int operator%(Int rhs) const {
+    return (is_na() || rhs.is_na() || (rhs.value_ == 0)) ?
+           na() : Int(value_ % rhs.value_);
+  }
 
   Int &operator+=(Int rhs) & {
     return *this = operator+(rhs);
@@ -170,6 +174,13 @@ class Int {
     if (!is_na()) {
       value_ = (rhs.is_na() || (rhs.value_ == 0)) ?
                na_value() : (value_ / rhs.value_);
+    }
+    return *this;
+  }
+  Int &operator%=(Int rhs) &{
+    if (!is_na()) {
+      value_ = (rhs.is_na() || (rhs.value_ == 0)) ?
+               na_value() : (value_ % rhs.value_);
     }
     return *this;
   }
