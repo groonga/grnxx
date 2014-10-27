@@ -32,13 +32,7 @@ class GeoPoint {
   // NOTE: gcc-4.8 does not support use of the value being constructed in
   //       a constant exression.
   GeoPoint(Int latitude, Int longitude)
-      : latitude_(((latitude.value() < min_latitude()) ||
-                   (latitude.value() > max_latitude()) ||
-                   (longitude.value() < min_longitude()) ||
-                   (longitude.value() > max_longitude())) ?
-                  na_latitude() : latitude.value()),
-        longitude_((latitude_ == na_latitude()) ?
-                   na_longitude() : longitude.value()) {}
+      : GeoPoint(latitude.value(), longitude.value()) {}
   explicit constexpr GeoPoint(NA)
       : latitude_(na_latitude()),
         longitude_(na_longitude()) {}
