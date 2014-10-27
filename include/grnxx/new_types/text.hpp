@@ -18,9 +18,10 @@ class Text {
   Text &operator=(const Text &) = default;
 
   explicit Text(const char *str)
-      : data_(str), size_(str ? std::strlen(str) : 0) {}
+      : data_(str),
+        size_(str ? std::strlen(str) : na_size()) {}
   constexpr Text(const char *data, size_t size) : data_(data), size_(size) {}
-  explicit constexpr Text(NA) : data_(nullptr), size_(0) {}
+  explicit constexpr Text(NA) : data_(na_data()), size_(na_size()) {}
 
   const char &operator[](size_t i) const {
     return data_[i];
@@ -109,6 +110,9 @@ class Text {
 
   static constexpr const char *na_data() {
     return nullptr;
+  }
+  static constexpr size_t na_size() {
+    return 0;
   }
 
  private:
