@@ -2,6 +2,7 @@
 #define GRNXX_DATA_TYPES_SCALAR_GEO_POINT_HPP
 
 #include <cstdint>
+#include <limits>
 
 #include "grnxx/data_types/na.hpp"
 
