@@ -55,6 +55,7 @@ AC_CONFIG_FILES([Makefile
                  include/grnxx/data_types/Makefile
                  include/grnxx/data_types/scalar/Makefile
                  include/grnxx/data_types/vector/Makefile
+                 include/grnxx/features/Makefile
                  lib/Makefile
                  lib/grnxx/Makefile
                  src/Makefile

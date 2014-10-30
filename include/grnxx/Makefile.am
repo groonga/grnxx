@@ -1,7 +1,9 @@
 SUBDIRS =		\
-	data_types
+	data_types	\
+	features
 
 pkginclude_HEADERS =	\
+	features.hpp	\
 	library.hpp
 
 #	column.hpp	\
