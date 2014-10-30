@@ -3,6 +3,7 @@ SUBDIRS =		\
 	features
 
 pkginclude_HEADERS =	\
+	error.hpp	\
 	features.hpp	\
 	library.hpp	\
 	memory.hpp	\
