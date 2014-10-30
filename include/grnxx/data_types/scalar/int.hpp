@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <limits>
 
+#include "grnxx/features.hpp"
 #include "grnxx/data_types/na.hpp"
 
 namespace grnxx {
@@ -240,8 +241,9 @@ class Int {
  private:
   int64_t value_;
 
-#if defined(GRNXX_HAVE_X86_64)
- #if defined(GRNXX_HAVE_GNUC)
+#if defined(GRNXX_GNUC) && defined(GRNXX_X86_64)
+  // TODO: Implementations for MSC should be written.
+  // NOTE: These implementations use x86_64 instructions for speed.
   static Int add(Int lhs, Int rhs) {
     if (lhs.is_na() || rhs.is_na()) {
       return na();
@@ -281,13 +283,12 @@ class Int {
              : "cc");
     return lhs;
   }
- #else  // !defined(GRNXX_HAVE_GNUC)
-  // TODO: Use assmbly for VC++.
- #endif  // defined(GRNXX_HAVE_GNUC), etc.
-#elif defined(GRNXX_HAVE_WRAP_AROUND)  // !defined(GRNXX_HAVE_X86_64)
-  // NOTE: These implementations assume silent two's complement wrap-around,
-  //       although a signed integer overflow causes undefined behavior in
-  //       C/C++.
+#elif defined(GRNXX_WRAP_AROUND)
+  // TODO: The following implementations should be used if the above
+  //       implementations are not available.
+  // NOTE: These implementations assume silent two's complement wrap-around.
+  //       The C/C++ standards say that a signed integer overflow causes
+  //       undefined behavior.
   static Int add(Int lhs, Int rhs) {
     if (lhs.is_na() || rhs.is_na()) {
       return na();
@@ -325,7 +326,7 @@ class Int {
     }
     return Int(result);
   }
-#else  // !defined(GRNXX_HAVE_X86_64) && !defined(GRNXX_HAVE_WRAP_AROUND)
+# else  // defined(GRNXX_WRAP_AROUND)
   // NOTE: These implementations are portable but slow.
   static Int add(Int lhs, Int rhs) {
     if (lhs.is_na() || rhs.is_na()) {
@@ -385,7 +386,7 @@ class Int {
     }
     return Int(lhs.value_ * rhs.value_);
   }
-#endif  // defined(GRNXX_HAVE_X86_64), etc.
+# endif  // GRNXX_WRAP_AROUND
 };
 
 }  // namespace grnxx
