@@ -10,7 +10,8 @@ libgrnxx_la_LDFLAGS = @AM_LTLDFLAGS@
 
 libgrnxx_la_SOURCES =			\
 	error.cpp			\
-	library.cpp
+	library.cpp			\
+	string.cpp
 
 #	array.cpp			\
 #	cursor.cpp			\
