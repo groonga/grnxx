@@ -5,6 +5,7 @@ SUBDIRS =		\
 pkginclude_HEADERS =	\
 	features.hpp	\
 	library.hpp	\
+	memory.hpp	\
 	string.hpp
 
 #	column.hpp	\
