@@ -64,7 +64,7 @@ class Float {
   constexpr Float operator/(Float rhs) const {
     return Float(value_ / rhs.value_);
   }
-  constexpr Float operator%(Float rhs) const {
+  Float operator%(Float rhs) const {
     return Float(std::fmod(value_, rhs.value_));
   }
 
