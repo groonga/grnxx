@@ -1,5 +1,6 @@
 TESTS =				\
-	test_data_types
+	test_data_types		\
+	test_string
 
 #	test_string		\
 #	test_array		\
@@ -17,6 +18,9 @@ check_PROGRAMS = $(TESTS)
 
 test_data_types_SOURCES = test_data_types.cpp
 test_data_types_LDADD = $(top_srcdir)/lib/grnxx/libgrnxx.la
+
+test_string_SOURCES = test_string.cpp
+test_string_LDADD = $(top_srcdir)/lib/grnxx/libgrnxx.la
 
 #test_string_SOURCES = test_string.cpp
 #test_string_LDADD = $(top_srcdir)/lib/grnxx/libgrnxx.la

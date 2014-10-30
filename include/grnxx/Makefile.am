@@ -4,7 +4,8 @@ SUBDIRS =		\
 
 pkginclude_HEADERS =	\
 	features.hpp	\
-	library.hpp
+	library.hpp	\
+	string.hpp
 
 #	column.hpp	\
 #	cursor.hpp	\
