@@ -1,10 +1,9 @@
-#ifndef GRNXX_NEW_TYPES_GEO_POINT_HPP
-#define GRNXX_NEW_TYPES_GEO_POINT_HPP
+#ifndef GRNXX_DATA_TYPES_SCALAR_GEO_POINT_HPP
+#define GRNXX_DATA_TYPES_SCALAR_GEO_POINT_HPP
 
 #include <cstdint>
 
-#include "grnxx/new_types/int.hpp"
-#include "grnxx/new_types/na.hpp"
+#include "grnxx/data_types/na.hpp"
 
 namespace grnxx {
 
@@ -26,13 +25,6 @@ class GeoPoint {
                   na_latitude() : latitude),
         longitude_((latitude_ == na_latitude()) ?
                    na_longitude() : longitude) {}
-  // NOTE: This implementation assumes that Int::na_value() is less than
-  //       GeoPoint::min_latitude() and GeoPoint::min_longitude.
-  //       If this assumption is wrong, N/A must be excluded.
-  // NOTE: gcc-4.8 does not support use of the value being constructed in
-  //       a constant exression.
-  GeoPoint(Int latitude, Int longitude)
-      : GeoPoint(latitude.value(), longitude.value()) {}
   explicit constexpr GeoPoint(NA)
       : latitude_(na_latitude()),
         longitude_(na_longitude()) {}
@@ -89,4 +81,4 @@ class GeoPoint {
 
 }  // namespace grnxx
 
-#endif  // GRNXX_NEW_TYPES_GEO_POINT_HPP
+#endif  // GRNXX_DATA_TYPES_SCALAR_GEO_POINT_HPP

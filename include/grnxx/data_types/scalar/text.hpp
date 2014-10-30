@@ -1,10 +1,10 @@
-#ifndef GRNXX_NEW_TYPES_TEXT_HPP
-#define GRNXX_NEW_TYPES_TEXT_HPP
+#ifndef GRNXX_DATA_TYPES_SCALAR_TEXT_HPP
+#define GRNXX_DATA_TYPES_SCALAR_TEXT_HPP
 
 #include <cstdint>
 #include <cstring>
 
-#include "grnxx/new_types/na.hpp"
+#include "grnxx/data_types/na.hpp"
 
 namespace grnxx {
 
@@ -122,4 +122,4 @@ class Text {
 
 }  // namespace grnxx
 
-#endif   // GRNXX_NEW_TYPES_TEXT_HPP
+#endif   // GRNXX_DATA_TYPES_SCALAR_TEXT_HPP

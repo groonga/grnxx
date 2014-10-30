@@ -1,5 +1,5 @@
-#SUBDIRS =		\
-#	types
+SUBDIRS =		\
+	data_types
 
 pkginclude_HEADERS =	\
 	library.hpp

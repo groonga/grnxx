@@ -1,10 +1,10 @@
-#ifndef GRNXX_NEW_TYPES_INT_HPP
-#define GRNXX_NEW_TYPES_INT_HPP
+#ifndef GRNXX_DATA_TYPES_SCALAR_INT_HPP
+#define GRNXX_DATA_TYPES_SCALAR_INT_HPP
 
 #include <cstdint>
 #include <limits>
 
-#include "grnxx/new_types/na.hpp"
+#include "grnxx/data_types/na.hpp"
 
 namespace grnxx {
 
@@ -390,4 +390,4 @@ class Int {
 
 }  // namespace grnxx
 
-#endif  // GRNXX_NEW_TYPES_INT_HPP
+#endif  // GRNXX_DATA_TYPES_SCALAR_INT_HPP

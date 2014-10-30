@@ -1,10 +1,10 @@
-#ifndef GRNXX_NEW_TYPES_ROW_ID_HPP
-#define GRNXX_NEW_TYPES_ROW_ID_HPP
+#ifndef GRNXX_DATA_TYPES_SCALAR_ROW_ID_HPP
+#define GRNXX_DATA_TYPES_SCALAR_ROW_ID_HPP
 
 #include <cstdint>
 #include <limits>
 
-#include "grnxx/new_types/na.hpp"
+#include "grnxx/data_types/na.hpp"
 
 namespace grnxx {
 
@@ -59,4 +59,4 @@ class RowID {
 
 }  // namespace grnxx
 
-#endif  // GRNXX_NEW_TYPES_ROW_ID_HPP
+#endif  // GRNXX_DATA_TYPES_SCALAR_ROW_ID_HPP
