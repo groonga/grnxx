@@ -5,44 +5,98 @@
 namespace grnxx {
 
 String::~String() {
-  std::free(buf_);
+  if (capacity_ != 0) {
+    std::free(buffer_);
+  }
 }
 
-bool String::resize_buf(Error *error, size_t new_size) {
+String &String::operator=(const String &rhs) {
+  if (capacity_ != 0) {
+    std::free(buffer_);
+  }
+  data_ = rhs.data_;
+  size_ = rhs.size_;
+  capacity_ = 0;
+  return *this;
+}
+
+String::String(size_t size)
+    : buffer_(),
+      size_(),
+      capacity_() {
+  char *new_buffer = static_cast<char *>(std::malloc(size));
+  if (!new_buffer) {
+    throw "Failed";  // TODO
+  }
+  buffer_ = new_buffer;
+  size_ = size;
+  capacity_ = size;
+}
+
+String::String(size_t size, char byte)
+    : buffer_(),
+      size_(),
+      capacity_() {
+  char *new_buffer = static_cast<char *>(std::malloc(size));
+  if (!new_buffer) {
+    throw "Failed";  // TODO
+  }
+  std::memset(new_buffer, byte, size);
+  buffer_ = new_buffer;
+  size_ = size;
+  capacity_ = size;
+}
+
+String &String::instantiate() {
+  if (is_empty() || is_instance()) {
+    // Nothing to do.
+    return *this;
+  }
+  char *new_buffer = static_cast<char *>(std::malloc(size_));
+  if (!new_buffer) {
+    throw "Failed";  // TODO
+  }
+  std::memcpy(new_buffer, data_, size_);
+  buffer_ = new_buffer;
+  capacity_ = size_;
+  return *this;
+}
+
+void String::resize_buffer(size_t new_size) {
   size_t new_capacity = capacity_ * 2;
   if (new_size > new_capacity) {
     new_capacity = new_size;
   }
-  char *new_buf = static_cast<char *>(std::malloc(new_capacity));
-  if (!new_buf) {
-    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
-    return false;
+  char *new_buffer = static_cast<char *>(std::malloc(new_capacity));
+  if (!new_buffer) {
+    throw "Failed";  // TODO
   }
-  std::memcpy(new_buf, buf_, size_);
-  std::free(buf_);
-  buf_ = new_buf;
+  std::memcpy(new_buffer, data_, size_);
+  if (capacity_ != 0) {
+    std::free(buffer_);
+  }
+  buffer_ = new_buffer;
   capacity_ = new_capacity;
-  return true;
 }
 
-bool String::append_overlap(Error *error, const StringCRef &rhs) {
+void String::append_overlap(const char *data, size_t size) {
   size_t new_capacity = capacity_ * 2;
-  size_t new_size = size_ + rhs.size();
+  size_t new_size = size_ + size;
   if (new_size > new_capacity) {
     new_capacity = new_size;
   }
-  char *new_buf = static_cast<char *>(std::malloc(new_capacity));
-  if (!new_buf) {
-    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
-    return false;
+  char *new_buffer = static_cast<char *>(std::malloc(new_capacity));
+  if (!new_buffer) {
+    throw "Failed";  // TODO
   }
-  std::memcpy(new_buf, buf_, size_);
-  std::memcpy(new_buf + size_, rhs.data(), rhs.size());
-  std::free(buf_);
-  buf_ = new_buf;
+  std::memcpy(new_buffer, buffer_, size_);
+  std::memcpy(new_buffer + size_, data, size);
+  if (capacity_ != 0) {
+    std::free(buffer_);
+  }
+  buffer_ = new_buffer;
   size_ = new_size;
   capacity_ = new_capacity;
-  return true;
 }
 
 }  // namespace grnxx

@@ -38,72 +38,20 @@ bool string_ends_with(const std::string &lhs, const std::string &rhs) {
   return lhs.compare(lhs.size() - rhs.size(), rhs.size(), rhs) == 0;
 }
 
-void test_string_cref() {
-  constexpr size_t NUM_STRINGS = 1024;
-
-  std::vector<std::string> strings(NUM_STRINGS);
-  std::vector<grnxx::StringCRef> refs(NUM_STRINGS);
-  for (size_t i = 0; i < NUM_STRINGS; ++i) {
-    std::stringstream stream;
-    stream << i;
-    strings[i] = stream.str();
-    refs[i] = grnxx::StringCRef(strings[i].data(), strings[i].size());
-  }
-
-  for (size_t i = 0; i < NUM_STRINGS; ++i) {
-    assert(refs[i].size() == static_cast<size_t>(strings[i].size()));
-    for (size_t j = 0; j < refs[i].size(); ++j) {
-      assert(refs[i][j] == strings[i][j]);
-    }
-
-    for (size_t j = 0; j < NUM_STRINGS; ++j) {
-      assert((refs[i] == refs[j]) == (strings[i] == strings[j]));
-      assert((refs[i] != refs[j]) == (strings[i] != strings[j]));
-      assert((refs[i] < refs[j]) == (strings[i] < strings[j]));
-      assert((refs[i] > refs[j]) == (strings[i] > strings[j]));
-      assert((refs[i] <= refs[j]) == (strings[i] <= strings[j]));
-      assert((refs[i] >= refs[j]) == (strings[i] >= strings[j]));
-
-      assert((refs[i] == strings[j].c_str()) == (strings[i] == strings[j]));
-      assert((refs[i] != strings[j].c_str()) == (strings[i] != strings[j]));
-      assert((refs[i] < strings[j].c_str()) == (strings[i] < strings[j]));
-      assert((refs[i] > strings[j].c_str()) == (strings[i] > strings[j]));
-      assert((refs[i] <= strings[j].c_str()) == (strings[i] <= strings[j]));
-      assert((refs[i] >= strings[j].c_str()) == (strings[i] >= strings[j]));
-
-      assert((strings[i].c_str() == refs[j]) == (strings[i] == strings[j]));
-      assert((strings[i].c_str() != refs[j]) == (strings[i] != strings[j]));
-      assert((strings[i].c_str() < refs[j]) == (strings[i] < strings[j]));
-      assert((strings[i].c_str() > refs[j]) == (strings[i] > strings[j]));
-      assert((strings[i].c_str() <= refs[j]) == (strings[i] <= strings[j]));
-      assert((strings[i].c_str() >= refs[j]) == (strings[i] >= strings[j]));
-
-      assert(refs[i].starts_with(refs[j]) ==
-             string_starts_with(strings[i], strings[j]));
-      assert(refs[i].starts_with(strings[j].c_str()) ==
-             string_starts_with(strings[i], strings[j]));
-      assert(refs[i].ends_with(refs[j]) ==
-             string_ends_with(strings[i], strings[j]));
-      assert(refs[i].ends_with(strings[j].c_str()) ==
-             string_ends_with(strings[i], strings[j]));
-    }
-  }
-}
-
 void test_string() {
   constexpr size_t NUM_STRINGS = 1024;
 
-  grnxx::Error error;
-
   std::vector<std::string> strings(NUM_STRINGS);
-  std::vector<grnxx::StringCRef> refs(NUM_STRINGS);
+  std::vector<grnxx::String> refs(NUM_STRINGS);
   std::vector<grnxx::String> bodies(NUM_STRINGS);
   for (size_t i = 0; i < NUM_STRINGS; ++i) {
     std::stringstream stream;
     stream << i;
     strings[i] = stream.str();
-    refs[i] = grnxx::StringCRef(strings[i].data(), strings[i].size());
-    assert(bodies[i].assign(&error, refs[i]));
+    refs[i] = grnxx::String(strings[i].data(), strings[i].size());
+    assert(refs[i].is_reference());
+    bodies[i].assign(refs[i]);
+    assert(bodies[i].is_instance());
   }
 
   for (size_t i = 0; i < NUM_STRINGS; ++i) {
@@ -164,20 +112,18 @@ void test_string() {
     stream << (i / 2.0);
     std::string extra_string = stream.str();
     strings[i].append(extra_string);
-    assert(bodies[i].append(&error, extra_string.data(), extra_string.size()));
-    assert(bodies[i] ==
-           grnxx::StringCRef(strings[i].data(), strings[i].size()));
+    bodies[i].append(extra_string.data(), extra_string.size());
+    assert(bodies[i] == grnxx::String(strings[i].data(), strings[i].size()));
   }
 
   for (size_t i = 0; i < NUM_STRINGS; ++i) {
     strings[i].append(strings[i]);
-    assert(bodies[i].append(&error, bodies[i]));
+    bodies[i].append(bodies[i]);
     assert(std::string(bodies[i].data(), bodies[i].size()) == strings[i]);
   }
 }
 
 int main() {
-  test_string_cref();
   test_string();
   return 0;
 }

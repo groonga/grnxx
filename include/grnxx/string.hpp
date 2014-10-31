@@ -3,69 +3,294 @@
 
 #include <cstring>
 
-#include "grnxx/error.hpp"
-#include "grnxx/memory.hpp"
-
 namespace grnxx {
 
-// Reference to a byte string.
-class StringCRef {
+class String {
  public:
-  StringCRef() = default;
-  ~StringCRef() = default;
+  // Create an empty string.
+  String() : data_(nullptr), size_(0), capacity_(0) {}
+  // Free allocated memory.
+  ~String();
 
-  constexpr StringCRef(const StringCRef &) = default;
-  StringCRef &operator=(const StringCRef &) = default;
+  // Create a reference to "string".
+  String(const String &string)
+      : data_(string.data_),
+        size_(string.size_),
+        capacity_(0) {}
+  // Create a reference to "rhs".
+  String &operator=(const String &rhs);
 
-  StringCRef(const char *str)
-      : data_(str),
-        size_(str ? std::strlen(str) : 0) {}
-  constexpr StringCRef(const char *data, size_t size)
+  // Move the ownership of a string.
+  String(String &&string)
+      : buffer_(string.buffer_),
+        size_(string.size_),
+        capacity_(string.capacity_) {
+    string.capacity_ = 0;
+  }
+  // Move the ownership of a string.
+  String &operator=(String &&rhs) {
+    buffer_ = rhs.buffer_;
+    size_ = rhs.size_;
+    capacity_ = rhs.capacity_;
+    rhs.capacity_ = 0;
+    return *this;
+  }
+
+  // Create a reference to "string".
+  //
+  // If "string" == nullptr, the behavior is undefined.
+  String(const char *string)
+      : data_(string),
+        size_(std::strlen(string)),
+        capacity_(0) {}
+  // Create a reference to a byte string.
+  String(const char *data, size_t size)
       : data_(data),
-        size_(size) {}
+        size_(size),
+        capacity_(0) {}
+  // Create an instance.
+  explicit String(size_t size);
+  // Create an instance filled with "byte".
+  String(size_t size, char byte);
 
-  // Return the "i"-th byte.
+  // Create a reference to a substring.
+  String substring(size_t offset = 0) const {
+    return String(data_ + offset, size_ - offset);
+  }
+  // Create a reference to a substring.
+  String substring(size_t offset, size_t size) const {
+    return String(data_ + offset, size);
+  }
+
+  // Return whether "this" is empty or not.
+  bool is_empty() const {
+    return size_ == 0;
+  }
+  // Return whether "this" is a reference or not.
+  bool is_reference() const {
+    return capacity_ == 0;
+  }
+  // Return whether "this" is an instance or not.
+  bool is_instance() const {
+    return capacity_ != 0;
+  }
+
+  // Instanciate the string.
+  //
+  // On success, returns a reference to "this".
+  // On failure, throws an exception.
+  String &instantiate();
+
+  // Return a reference to the "i"-th byte.
+  //
+  // If "i" is too large, the behavior is undefined.
+  // If "this" is a reference, the contents must not be modified.
+  char &operator[](size_t i) {
+    return buffer_[i];
+  }
+  // Return a reference to the "i"-th byte.
+  //
+  // If "i" is too large, the behavior is undefined.
   const char &operator[](size_t i) const {
     return data_[i];
   }
-  // Return the address.
-  constexpr const char *data() const {
-    return data_;
+
+  // Return a reference to the first byte.
+  //
+  // If "this" is empty, the behavior is undefined.
+  // If "this" is a reference, the contents must not be modified.
+  char &front() {
+    return buffer_[0];
   }
-  // Return the number of bytes.
-  constexpr size_t size() const {
-    return size_;
+  // Return a reference to the first byte.
+  //
+  // If "this" is empty, the behavior is undefined.
+  const char &front() const {
+    return data_[0];
   }
 
-  // Compare strings.
-  bool operator==(const StringCRef &rhs) const {
+  // Return a reference to the last byte.
+  //
+  // If "this" is empty, the behavior is undefined.
+  // If "this" is a reference, the contents must not be modified.
+  char &back() {
+    return buffer_[size_ - 1];
+  }
+  // Return a reference to the last byte.
+  //
+  // If "this" is empty, the behavior is undefined.
+  const char &back() const {
+    return data_[size_ - 1];
+  }
+
+  // Return a pointer to the buffer.
+  //
+  // If "this" is a reference, the contents must not be modified.
+  char *buffer() {
+    return buffer_;
+  }
+  // Return a pointer to the contents.
+  const char *data() const {
+    return data_;
+  }
+  // Return the length in bytes.
+  size_t size() const {
+    return size_;
+  }
+  // Return the size of the internal buffer.
+  size_t capacity() const {
+    return capacity_;
+  }
+
+  // Reserve memory for at least "new_size" bytes.
+  //
+  // On failure, throws an exception.
+  void reserve(size_t new_size) {
+    if (new_size > capacity_) {
+      resize_buffer(new_size);
+    }
+  }
+
+  // Store a string.
+  //
+  // On failure, throws an exception.
+  String &assign(const String &string) {
+    assign(string.data(), string.size());
+    return *this;
+  }
+  // Store a string.
+  //
+  // On failure, throws an exception.
+  String &assign(const char *data, size_t size) {
+    if (size > capacity_) {
+      resize_buffer(size);
+    }
+    std::memcpy(buffer_, data, size);
+    size_ = size;
+    return *this;
+  }
+
+  // Resize the string.
+  //
+  // On failure, throws an exception.
+  void resize(size_t new_size) {
+    if (new_size > capacity_) {
+      resize_buffer(new_size);
+    }
+    size_ = new_size;
+  }
+  // Resize the string and fill the new space with "byte".
+  //
+  // On failure, throws an exception.
+  void resize(size_t new_size, char byte) {
+    if (new_size > capacity_) {
+      resize_buffer(new_size);
+    }
+    if (new_size > size_) {
+      std::memset(buffer_ + size_, byte, new_size - size_);
+    }
+    size_ = new_size;
+  }
+
+  // Clear the contents.
+  void clear() {
+    size_ = 0;
+  }
+
+  // Concatenate strings.
+  String operator+(const String rhs) const {
+    String result(size_ + rhs.size_);
+    std::memcpy(result.buffer_, data_, size_);
+    std::memcpy(result.buffer_ + size_, rhs.data_, rhs.size_);
+    return result;
+  }
+
+  // Append "rhs" to the end.
+  //
+  // On failure, throws an exception.
+  String &operator+=(char byte) {
+    return append(byte);
+  }
+  // Append "rhs" to the end.
+  //
+  // On failure, throws an exception.
+  String &operator+=(const String &rhs) {
+    return append(rhs.data_, rhs.size_);
+  }
+
+  // Append "byte" to the end.
+  //
+  // On failure, throws an exception.
+  String &append(char byte) {
+    if (size_ == capacity_) {
+      resize_buffer(size_ + 1);
+    }
+    buffer_[size_] = byte;
+    ++size_;
+    return *this;
+  }
+  // Append "string" to the end.
+  //
+  // On failure, throws an exception.
+  String &append(const String &string) {
+    append(string.data(), string.size());
+    return *this;
+  }
+  // Append a string to the end.
+  //
+  // On failure, throws an exception.
+  String &append(const char *data, size_t size) {
+    if ((size_ + size) > capacity_) {
+      // NOTE: If the given string is a part of "this", it is destoyed in
+      //       resize_buffer(), so append_overlap() is required.
+      if ((data >= buffer_) && (data < (buffer_ + size_))) {
+        append_overlap(data, size);
+        return *this;
+      } else {
+        resize_buffer(size_ + size);
+      }
+    }
+    std::memcpy(buffer_ + size_, data, size);
+    size_ += size;
+    return *this;
+  }
+
+  // Return whether "this" == "rhs" or not.
+  bool operator==(const String &rhs) const {
     return (size_ == rhs.size_) && (std::memcmp(data_, rhs.data_, size_) == 0);
   }
-  bool operator!=(const StringCRef &rhs) const {
+  // Return whether "this" != "rhs" or not.
+  bool operator!=(const String &rhs) const {
     return (size_ != rhs.size_) || (std::memcmp(data_, rhs.data_, size_) != 0);
   }
-  bool operator<(const StringCRef &rhs) const {
+  // Return whether "this" < "rhs" or not.
+  bool operator<(const String &rhs) const {
     size_t min_size = (size_ < rhs.size_) ? size_ : rhs.size_;
     int result = std::memcmp(data_, rhs.data_, min_size);
     return (result < 0) || ((result == 0) && (size_ < rhs.size_));
   }
-  bool operator>(const StringCRef &rhs) const {
+  // Return whether "this" > "rhs" or not.
+  bool operator>(const String &rhs) const {
     size_t min_size = (size_ < rhs.size_) ? size_ : rhs.size_;
     int result = std::memcmp(data_, rhs.data_, min_size);
     return (result > 0) || ((result == 0) && (size_ > rhs.size_));
   }
-  bool operator<=(const StringCRef &rhs) const {
+  // Return whether "this" <= "rhs" or not.
+  bool operator<=(const String &rhs) const {
     size_t min_size = (size_ < rhs.size_) ? size_ : rhs.size_;
     int result = std::memcmp(data_, rhs.data_, min_size);
     return (result < 0) || ((result == 0) && (size_ <= rhs.size_));
   }
-  bool operator>=(const StringCRef &rhs) const {
+  // Return whether "this" >= "rhs" or not.
+  bool operator>=(const String &rhs) const {
     size_t min_size = (size_ < rhs.size_) ? size_ : rhs.size_;
     int result = std::memcmp(data_, rhs.data_, min_size);
     return (result > 0) || ((result == 0) && (size_ >= rhs.size_));
   }
 
-  // Compare a string with a zero-terminated string.
+  // Return whether "this" == "rhs" or not.
+  //
+  // If "rhs" == nullptr, the behavior is undefined.
   bool operator==(const char *rhs) const {
     for (size_t i = 0; i < size_; ++i) {
       if ((rhs[i] == '\0') || (data_[i] != rhs[i])) {
@@ -74,6 +299,9 @@ class StringCRef {
     }
     return rhs[size_] == '\0';
   }
+  // Return whether "this" != "rhs" or not.
+  //
+  // If "rhs" == nullptr, the behavior is undefined.
   bool operator!=(const char *rhs) const {
     for (size_t i = 0; i < size_; ++i) {
       if ((rhs[i] == '\0') || (data_[i] != rhs[i])) {
@@ -82,6 +310,9 @@ class StringCRef {
     }
     return rhs[size_] != '\0';
   }
+  // Return whether "this" < "rhs" or not.
+  //
+  // If "rhs" == nullptr, the behavior is undefined.
   bool operator<(const char *rhs) const {
     for (size_t i = 0; i < size_; ++i) {
       if (rhs[i] == '\0') {
@@ -94,6 +325,9 @@ class StringCRef {
     }
     return rhs[size_] != '\0';
   }
+  // Return whether "this" > "rhs" or not.
+  //
+  // If "rhs" == nullptr, the behavior is undefined.
   bool operator>(const char *rhs) const {
     for (size_t i = 0; i < size_; ++i) {
       if (rhs[i] == '\0') {
@@ -106,6 +340,9 @@ class StringCRef {
     }
     return false;
   }
+  // Return whether "this" <= "rhs" or not.
+  //
+  // If "rhs" == nullptr, the behavior is undefined.
   bool operator<=(const char *rhs) const {
     for (size_t i = 0; i < size_; ++i) {
       if (rhs[i] == '\0') {
@@ -118,6 +355,9 @@ class StringCRef {
     }
     return true;
   }
+  // Return whether "this" >= "rhs" or not.
+  //
+  // If "rhs" == nullptr, the behavior is undefined.
   bool operator>=(const char *rhs) const {
     for (size_t i = 0; i < size_; ++i) {
       if (rhs[i] == '\0') {
@@ -131,13 +371,14 @@ class StringCRef {
     return rhs[size_] == '\0';
   }
 
-  // Return true if "*this" starts with "rhs".
-  bool starts_with(const StringCRef &rhs) const {
+  // Return whether "this" starts with "rhs" or not.
+  bool starts_with(const String &rhs) const {
     if (size_ < rhs.size_) {
       return false;
     }
     return std::memcmp(data_, rhs.data_, rhs.size_) == 0;
   }
+  // Return whether "this" starts with "rhs" or not.
   bool starts_with(const char *rhs) const {
     for (size_t i = 0; i < size_; ++i) {
       if (rhs[i] == '\0') {
@@ -149,13 +390,14 @@ class StringCRef {
     return rhs[size_] == '\0';
   }
 
-  // Return true if "*this" ends with "rhs".
-  bool ends_with(const StringCRef &rhs) const {
+  // Return whether "this" ends with "rhs" or not.
+  bool ends_with(const String &rhs) const {
     if (size_ < rhs.size_) {
       return false;
     }
     return std::memcmp(data_ + size_ - rhs.size_, rhs.data_, rhs.size_) == 0;
   }
+  // Return whether "this" ends with "rhs" or not.
   bool ends_with(const char *rhs) const {
     for (size_t i = 0; i < size_; ++i) {
       if (rhs[i] == '\0') {
@@ -167,263 +409,47 @@ class StringCRef {
   }
 
  private:
-  const char *data_;
-  size_t size_;
-};
-
-// Compare a null-terminated string with a string.
-inline bool operator==(const char *lhs, const StringCRef &rhs) {
-  return rhs == lhs;
-}
-inline bool operator!=(const char *lhs, const StringCRef &rhs) {
-  return rhs != lhs;
-}
-inline bool operator<(const char *lhs, const StringCRef &rhs) {
-  return rhs > lhs;
-}
-inline bool operator>(const char *lhs, const StringCRef &rhs) {
-  return rhs < lhs;
-}
-inline bool operator<=(const char *lhs, const StringCRef &rhs) {
-  return rhs >= lhs;
-}
-inline bool operator>=(const char *lhs, const StringCRef &rhs) {
-  return rhs <= lhs;
-}
-
-class String {
- public:
-  constexpr String() : buf_(nullptr), size_(0), capacity_(0) {}
-  ~String();
-
-  String(const String &) = delete;
-  String& operator=(const String &) = delete;
-
-  String(String &&rhs)
-      : buf_(rhs.buf_),
-        size_(rhs.size_),
-        capacity_(rhs.capacity_) {
-    rhs.buf_ = nullptr;
-    rhs.size_ = 0;
-    rhs.capacity_ = 0;
-  }
-  String &operator=(String &&rhs) {
-    buf_ = rhs.buf_;
-    size_ = rhs.size_;
-    capacity_ = rhs.capacity_;
-    rhs.buf_ = nullptr;
-    rhs.size_ = 0;
-    rhs.capacity_ = 0;
-    return *this;
-  }
-
-  operator StringCRef() const {
-    return cref();
-  }
-
-  StringCRef cref(size_t offset = 0) const {
-    return StringCRef(buf_ + offset, size_ - offset);
-  }
-  StringCRef cref(size_t offset, size_t size) const {
-    return StringCRef(buf_ + offset, size);
-  }
-
-  char &operator[](size_t i) {
-    return buf_[i];
-  }
-  const char &operator[](size_t i) const {
-    return buf_[i];
-  }
-
-  char &front() {
-    return buf_[0];
-  }
-  const char &front() const {
-    return buf_[0];
-  }
-
-  char &back() {
-    return buf_[size_ - 1];
-  }
-  const char &back() const {
-    return buf_[size_ - 1];
-  }
-
-  char *data() {
-    return buf_;
-  }
-  const char *data() const {
-    return buf_;
-  }
-  size_t size() const {
-    return size_;
-  }
-  size_t capacity() const {
-    return capacity_;
-  }
-
-  bool reserve(Error *error, size_t new_size) {
-    if (new_size <= capacity_) {
-      return true;
-    }
-    return resize_buf(error, new_size);
-  }
-
-  bool assign(Error *error, const StringCRef &rhs) {
-    if (rhs.size() > capacity_) {
-      if (!resize_buf(error, rhs.size())) {
-        return false;
-      }
-    }
-    std::memcpy(buf_, rhs.data(), rhs.size());
-    size_ = rhs.size();
-    return true;
-  }
-  bool assign(Error *error, const char *data, size_t size) {
-    return assign(error, StringCRef(data, size));
-  }
-
-  bool resize(Error *error, size_t new_size) {
-    if (new_size > capacity_) {
-      if (!resize_buf(error, new_size)) {
-        return false;
-      }
-    }
-    size_ = new_size;
-    return true;
-  }
-  bool resize(Error *error, size_t new_size, char value) {
-    if (new_size > capacity_) {
-      if (!resize_buf(error, new_size)) {
-        return false;
-      }
-    }
-    if (new_size > size_) {
-      std::memset(buf_ + size_, value, new_size - size_);
-    }
-    size_ = new_size;
-    return true;
-  }
-
-  void clear() {
-    size_ = 0;
-  }
-
-  bool push_back(Error *error, char value) {
-    if (size_ == capacity_) {
-      if (!resize_buf(error, size_ + 1)) {
-        return false;
-      }
-    }
-    buf_[size_] = value;
-    ++size_;
-    return true;
-  }
-  void pop_back() {
-    --size_;
-  }
-
-  bool append(Error *error, const StringCRef &rhs) {
-    if ((size_ + rhs.size()) > capacity_) {
-      // NOTE: If "rhs" is a part of "*this", "rhs" is destoyed in
-      //       resize_buf(), so append_overlap() is required.
-      if ((rhs.data() >= buf_) && (rhs.data() < (buf_ + size_))) {
-        return append_overlap(error, rhs);
-      } else if (!resize_buf(error, (size_ + rhs.size()))) {
-        return false;
-      }
-    }
-    std::memcpy(buf_ + size_, rhs.data(), rhs.size());
-    size_ += rhs.size();
-    return true;
-  }
-  bool append(Error *error, const char *data, size_t size) {
-    return append(error, StringCRef(data, size));
-  }
-
-  // Compare a strings.
-  bool operator==(const StringCRef &rhs) const {
-    return cref() == rhs;
-  }
-  bool operator!=(const StringCRef &rhs) const {
-    return cref() != rhs;
-  }
-  bool operator<(const StringCRef &rhs) const {
-    return cref() < rhs;
-  }
-  bool operator>(const StringCRef &rhs) const {
-    return cref() > rhs;
-  }
-  bool operator<=(const StringCRef &rhs) const {
-    return cref() <= rhs;
-  }
-  bool operator>=(const StringCRef &rhs) const {
-    return cref() >= rhs;
-  }
-
-  // Compare a string with a zero-terminated string.
-  bool operator==(const char *rhs) const {
-    return cref() == rhs;
-  }
-  bool operator!=(const char *rhs) const {
-    return cref() != rhs;
-  }
-  bool operator<(const char *rhs) const {
-    return cref() < rhs;
-  }
-  bool operator>(const char *rhs) const {
-    return cref() > rhs;
-  }
-  bool operator<=(const char *rhs) const {
-    return cref() <= rhs;
-  }
-  bool operator>=(const char *rhs) const {
-    return cref() >= rhs;
-  }
-
-  // Return true if "*this" starts with "rhs".
-  bool starts_with(const StringCRef &rhs) const {
-    return cref().starts_with(rhs);
-  }
-  bool starts_with(const char *rhs) const {
-    return cref().starts_with(rhs);
-  }
-
-  // Return true if "*this" ends with "rhs".
-  bool ends_with(const StringCRef &rhs) const {
-    return cref().ends_with(rhs);
-  }
-  bool ends_with(const char *rhs) const {
-    return cref().ends_with(rhs);
-  }
-
- private:
-  char *buf_;
+  union {
+    char *buffer_;
+    const char *data_;
+  };
   size_t size_;
   size_t capacity_;
 
-  // Assume new_size > capacity_.
-  bool resize_buf(Error *error, size_t new_size);
-  // Resize the internal buffer and append a part of "*this".
-  bool append_overlap(Error *error, const StringCRef &rhs);
+  // Resize the internal buffer for at least "new_size".
+  //
+  // Assumes that "new_size" is greater than "capacity_".
+  //
+  // On failure, throws an exception.
+  void resize_buffer(size_t new_size);
+
+  // Resize the internal buffer and append a part of "this".
+  //
+  // On failure, throws an exception.
+  void append_overlap(const char *data, size_t size);
 };
 
-// Compare a null-terminated string with a string.
+// Return whether "lhs" == "rhs" or not.
 inline bool operator==(const char *lhs, const String &rhs) {
   return rhs == lhs;
 }
+// Return whether "lhs" != "rhs" or not.
 inline bool operator!=(const char *lhs, const String &rhs) {
   return rhs != lhs;
 }
+// Return whether "lhs" < "rhs" or not.
 inline bool operator<(const char *lhs, const String &rhs) {
   return rhs > lhs;
 }
+// Return whether "lhs" > "rhs" or not.
 inline bool operator>(const char *lhs, const String &rhs) {
   return rhs < lhs;
 }
+// Return whether "lhs" <= "rhs" or not.
 inline bool operator<=(const char *lhs, const String &rhs) {
   return rhs >= lhs;
 }
+// Return whether "lhs" >= "rhs" or not.
 inline bool operator>=(const char *lhs, const String &rhs) {
   return rhs <= lhs;
 }
