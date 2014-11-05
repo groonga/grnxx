@@ -11,7 +11,11 @@ template <typename T> class Vector;
 
 template <>
 class Vector<GeoPoint> {
+ public:
   // TODO
+  constexpr DataType type() const {
+    return GEO_POINT_VECTOR_DATA;
+  }
 };
 
 using GeoPointVector = Vector<GeoPoint>;

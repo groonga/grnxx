@@ -11,7 +11,11 @@ template <typename T> class Vector;
 
 template <>
 class Vector<Int> {
+ public:
   // TODO
+  constexpr DataType type() const {
+    return INT_VECTOR_DATA;
+  }
 };
 
 using IntVector = Vector<Int>;

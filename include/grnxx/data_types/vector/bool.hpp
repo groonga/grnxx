@@ -11,7 +11,11 @@ template <typename T> class Vector;
 
 template <>
 class Vector<Bool> {
+ public:
   // TODO
+  constexpr DataType type() const {
+    return BOOL_VECTOR_DATA;
+  }
 };
 
 using BoolVector = Vector<Bool>;

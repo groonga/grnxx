@@ -11,7 +11,11 @@ template <typename T> class Vector;
 
 template <>
 class Vector<Float> {
+ public:
   // TODO
+  constexpr DataType type() const {
+    return FLOAT_VECTOR_DATA;
+  }
 };
 
 using FloatVector = Vector<Float>;
