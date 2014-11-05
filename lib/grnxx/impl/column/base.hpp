@@ -35,8 +35,8 @@ class ColumnBase : public ColumnInterface {
     return data_type_;
   }
   TableInterface *reference_table() const;
-  bool has_key_attribute() const {
-    return has_key_attribute_;
+  bool is_key() const {
+    return is_key_;
   }
   size_t num_indexes() const {
     return indexes_.size();
@@ -116,7 +116,7 @@ class ColumnBase : public ColumnInterface {
   String name_;
   DataType data_type_;
   Table *reference_table_;
-  bool has_key_attribute_;
+  bool is_key_;
   Array<std::unique_ptr<Index>> indexes_;
 
 //  // Initialize the base members.

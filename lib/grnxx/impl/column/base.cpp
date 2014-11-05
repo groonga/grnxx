@@ -17,7 +17,7 @@ ColumnBase::ColumnBase(Table *table,
       name_(name),
       data_type_(data_type),
       reference_table_(reference_table),
-      has_key_attribute_(false) {}
+      is_key_(false) {}
 
 ColumnBase::~ColumnBase() {}
 
