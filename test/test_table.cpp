@@ -17,6 +17,8 @@
 */
 #include <cassert>
 #include <iostream>
+#include <random>
+#include <vector>
 
 #include "grnxx/column.hpp"
 #include "grnxx/cursor.hpp"
@@ -358,86 +360,74 @@ void test_rows() {
 //  assert(!table->key_column());
 //}
 
-//void test_cursor() {
-//  grnxx::Error error;
+void test_cursor() {
+  // Create a database with the default options.
+  auto db = grnxx::open_db("");
 
-//  // Create a database with the default options.
-//  auto db = grnxx::open_db(&error, "");
-//  assert(db);
+  // Create a table named "Table".
+  auto table = db->create_table("Table");
 
-//  // Create a table named "Table".
-//  auto table = db->create_table(&error, "Table");
-//  assert(table);
+  // Insert rows.
+  constexpr size_t NUM_ROWS = 1 << 16;
+  for (size_t i = 0; i < NUM_ROWS; ++i) {
+    table->insert_row();
+  }
 
-//  // Create a column named "Column".
-//  assert(table->create_column(&error, "Column", grnxx::BOOL_DATA));
+  // Test a cursor with the default options.
+  auto cursor = table->create_cursor();
+  grnxx::Array<grnxx::Record> records;
+  assert(cursor->read(0, &records) == 0);
+  assert(records.is_empty());
+  assert(cursor->read(NUM_ROWS / 2, &records) == (NUM_ROWS / 2));
+  assert(records.size() == (NUM_ROWS / 2));
+  assert(cursor->read_all(&records) == (NUM_ROWS / 2));
+  assert(records.size() == NUM_ROWS);
+  for (size_t i = 0; i < NUM_ROWS; ++i) {
+    assert(records[i].row_id == grnxx::Int(i));
+    assert(records[i].score == grnxx::Float(0.0));
+  }
+  records.clear();
 
-//  // Append three rows and remove the 2nd row.
-//  grnxx::Int row_id;
-//  assert(table->insert_row(&error, grnxx::NULL_ROW_ID,
-//                           grnxx::Datum(), &row_id));
-//  assert(table->insert_row(&error, grnxx::NULL_ROW_ID,
-//                           grnxx::Datum(), &row_id));
-//  assert(table->insert_row(&error, grnxx::NULL_ROW_ID,
-//                           grnxx::Datum(), &row_id));
-//  assert(table->remove_row(&error, 2));
+  // Test a cursor that scans a table in reverse order.
+  grnxx::CursorOptions cursor_options;
+  cursor_options.order_type = grnxx::CURSOR_REVERSE_ORDER;
+  cursor = table->create_cursor(cursor_options);
+  assert(cursor->read_all(&records) == NUM_ROWS);
+  assert(records.size() == NUM_ROWS);
+  for (size_t i = 0; i < NUM_ROWS; ++i) {
+    assert(records[i].row_id == grnxx::Int(NUM_ROWS - i - 1));
+    assert(records[i].score == grnxx::Float(0.0));
+  }
+  records.clear();
 
-//  // Create a cursor with the default options.
-//  auto cursor = table->create_cursor(&error);
-//  assert(cursor);
+  // Remove 98.4375% rows.
+  std::mt19937 rng;
+  std::vector<grnxx::Int> row_ids;
+  for (size_t i = 0; i < NUM_ROWS; ++i) {
+    grnxx::Int row_id(i);
+    if ((rng() % 64) != 0) {
+      table->remove_row(row_id);
+    } else {
+      row_ids.push_back(row_id);
+    }
+  }
 
-//  // Read records from the cursor.
-//  grnxx::Array<grnxx::Record> records;
-//  auto result = cursor->read(&error, 0, &records);
-//  assert(result.is_ok);
-//  assert(result.count == 0);
+  // Test a cursor with the default options.
+  cursor = table->create_cursor();
+  assert(cursor->read_all(&records) == row_ids.size());
+  for (size_t i = 0; i < row_ids.size(); ++i) {
+    assert(records[i].row_id == row_ids[i]);
+  }
+  records.clear();
 
-//  result = cursor->read(&error, 1, &records);
-//  assert(result.is_ok);
-//  assert(result.count == 1);
-//  assert(records.size() == 1);
-//  assert(records.get(0).row_id == 1);
-
-//  result = cursor->read(&error, 2, &records);
-//  assert(result.is_ok);
-//  assert(result.count == 1);
-//  assert(records.size() == 2);
-//  assert(records.get(0).row_id == 1);
-//  assert(records.get(1).row_id == 3);
-
-//  records.clear();
-
-//  // Create a cursor that scans a table in reverse order.
-//  grnxx::CursorOptions cursor_options;
-//  cursor_options.order_type = grnxx::REVERSE_ORDER;
-//  cursor = table->create_cursor(&error, cursor_options);
-//  assert(cursor);
-
-//  result = cursor->read_all(&error, &records);
-//  assert(result.is_ok);
-//  assert(result.count == 2);
-//  assert(records.size() == 2);
-//  assert(records.get(0).row_id == 3);
-//  assert(records.get(1).row_id == 1);
-
-//  records.clear();
-
-//  cursor = table->create_cursor(&error, cursor_options);
-//  assert(cursor);
-
-//  result = cursor->read(&error, 1, &records);
-//  assert(result.is_ok);
-//  assert(result.count == 1);
-//  assert(records.size() == 1);
-//  assert(records.get(0).row_id == 3);
-
-//  result = cursor->read(&error, 2, &records);
-//  assert(result.is_ok);
-//  assert(result.count == 1);
-//  assert(records.size() == 2);
-//  assert(records.get(0).row_id == 3);
-//  assert(records.get(1).row_id == 1);
-//}
+  // Test a cursor that scans a table in reverse order.
+  cursor = table->create_cursor(cursor_options);
+  assert(cursor->read_all(&records) == row_ids.size());
+  for (size_t i = 0; i < row_ids.size(); ++i) {
+    assert(records[i].row_id == row_ids[row_ids.size() - i - 1]);
+  }
+  records.clear();
+}
 
 //void test_reference() {
 //  grnxx::Error error;
@@ -506,11 +496,11 @@ void test_rows() {
 
 int main() {
   test_table();
-//  test_rows();
+  test_rows();
 //  test_bitmap();
 //  test_int_key();
 //  test_text_key();
-//  test_cursor();
+  test_cursor();
 //  test_reference();
   return 0;
 }
