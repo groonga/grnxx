@@ -10,12 +10,12 @@ pkginclude_HEADERS =	\
 	db.hpp		\
 	error.hpp	\
 	features.hpp	\
+	index.hpp	\
 	library.hpp	\
 	string.hpp	\
 	table.hpp
 
 #	expression.hpp	\
-#	index.hpp	\
 #	merger.hpp	\
 #	pipeline.hpp	\
 #	sorter.hpp
