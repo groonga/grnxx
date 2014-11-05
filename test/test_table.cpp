@@ -141,82 +141,71 @@ void test_rows() {
   assert(!table->test_row(grnxx::Int(3)));
 }
 
-//void test_bitmap() {
-//  constexpr int NUM_ROWS = 1 << 16;
+void test_bitmap() {
+  constexpr size_t NUM_ROWS = 1 << 16;
 
-//  grnxx::Error error;
+  // Create a database with the default options.
+  auto db = grnxx::open_db("");
 
-//  // Create a database with the default options.
-//  auto db = grnxx::open_db(&error, "");
-//  assert(db);
+  // Create a table named "Table".
+  auto table = db->create_table("Table");
 
-//  // Create a table named "Table".
-//  auto table = db->create_table(&error, "Table");
-//  assert(table);
+  // Insert rows.
+  for (size_t i = 0; i < NUM_ROWS; ++i) {
+    grnxx::Int row_id(i);
+    assert(table->insert_row() == row_id);
+  }
+  assert(table->num_rows() == NUM_ROWS);
+  assert(table->max_row_id() == grnxx::Int(NUM_ROWS - 1));
 
-//  // Create rows.
-//  for (int i = 0; i < NUM_ROWS; ++i) {
-//    grnxx::Int row_id;
-//    assert(table->insert_row(&error, grnxx::NULL_ROW_ID,
-//                             grnxx::Datum(), &row_id));
-//    assert(row_id == (i + 1));
-//  }
-//  assert(table->num_rows() == NUM_ROWS);
-//  assert(table->max_row_id() == NUM_ROWS);
+  // Remove all rows.
+  for (size_t i = 0; i < NUM_ROWS; ++i) {
+    grnxx::Int row_id(i);
+    table->remove_row(row_id);
+  }
+  assert(table->num_rows() == 0);
+  assert(table->max_row_id().is_na());
 
-//  // Remove all rows.
-//  for (int i = 0; i < NUM_ROWS; ++i) {
-//    grnxx::Int row_id = i + 1;
-//    assert(table->remove_row(&error, row_id));
-//  }
-//  assert(table->num_rows() == 0);
-//  assert(table->max_row_id() == (grnxx::MIN_ROW_ID - 1));
+  // Insert rows again.
+  for (size_t i = 0; i < NUM_ROWS; ++i) {
+    grnxx::Int row_id(i);
+    assert(table->insert_row() == row_id);
+  }
+  assert(table->num_rows() == NUM_ROWS);
+  assert(table->max_row_id() == grnxx::Int(NUM_ROWS - 1));
 
-//  // Recreate rows.
-//  for (int i = 0; i < NUM_ROWS; ++i) {
-//    grnxx::Int row_id;
-//    assert(table->insert_row(&error, grnxx::NULL_ROW_ID,
-//                             grnxx::Datum(), &row_id));
-//    assert(row_id == (i + 1));
-//  }
-//  assert(table->num_rows() == NUM_ROWS);
-//  assert(table->max_row_id() == NUM_ROWS);
+  // Remove rows with even IDs.
+  for (size_t i = 0; i < NUM_ROWS; i += 2) {
+    grnxx::Int row_id(i);
+    table->remove_row(row_id);
+  }
+  assert(table->num_rows() == (NUM_ROWS / 2));
+  assert(table->max_row_id() == grnxx::Int(NUM_ROWS - 1));
 
-//  // Remove rows with odd IDs.
-//  for (int i = 0; i < NUM_ROWS; i += 2) {
-//    grnxx::Int row_id = i + 1;
-//    assert(table->remove_row(&error, row_id));
-//  }
-//  assert(table->num_rows() == (NUM_ROWS / 2));
-//  assert(table->max_row_id() == NUM_ROWS);
+  // Insert rows again.
+  for (size_t i = 0; i < NUM_ROWS; i += 2) {
+    grnxx::Int row_id(i);
+    assert(table->insert_row() == row_id);
+  }
+  assert(table->num_rows() == NUM_ROWS);
+  assert(table->max_row_id() == grnxx::Int(NUM_ROWS - 1));
 
-//  // Recreate rows.
-//  for (int i = 0; i < NUM_ROWS; i += 2) {
-//    grnxx::Int row_id;
-//    assert(table->insert_row(&error, grnxx::NULL_ROW_ID,
-//                             grnxx::Datum(), &row_id));
-//    assert(row_id == (i + 1));
-//  }
-//  assert(table->num_rows() == NUM_ROWS);
-//  assert(table->max_row_id() == NUM_ROWS);
+  // Remove rows in reverse order.
+  for (size_t i = 0; i < NUM_ROWS; ++i) {
+    grnxx::Int row_id(NUM_ROWS - i - 1);
+    assert(table->max_row_id() == row_id);
+    table->remove_row(row_id);
+  }
+  assert(table->max_row_id().is_na());
 
-//  // Remove rows in reverse order.
-//  for (int i = 0; i < NUM_ROWS; ++i) {
-//    grnxx::Int row_id = NUM_ROWS - i;
-//    assert(table->remove_row(&error, row_id));
-//    assert(table->max_row_id() == (row_id - 1));
-//  }
-
-//  // Recreate rows.
-//  for (int i = 0; i < NUM_ROWS; ++i) {
-//    grnxx::Int row_id;
-//    assert(table->insert_row(&error, grnxx::NULL_ROW_ID,
-//                             grnxx::Datum(), &row_id));
-//    assert(row_id == (i + 1));
-//  }
-//  assert(table->num_rows() == NUM_ROWS);
-//  assert(table->max_row_id() == NUM_ROWS);
-//}
+  // Insert rows again.
+  for (size_t i = 0; i < NUM_ROWS; ++i) {
+    grnxx::Int row_id(i);
+    assert(table->insert_row() == row_id);
+  }
+  assert(table->num_rows() == NUM_ROWS);
+  assert(table->max_row_id() == grnxx::Int(NUM_ROWS - 1));
+}
 
 //void test_int_key() {
 //  // TODO: find_row() is not supported yet.
@@ -497,7 +486,7 @@ void test_cursor() {
 int main() {
   test_table();
   test_rows();
-//  test_bitmap();
+  test_bitmap();
 //  test_int_key();
 //  test_text_key();
   test_cursor();
