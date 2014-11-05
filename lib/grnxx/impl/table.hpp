@@ -15,8 +15,6 @@ using DBInterface = grnxx::DB;
 using TableInterface = grnxx::Table;
 
 class DB;
-class TableRegularCursor;
-class TableReverseCursor;
 
 class Table : public TableInterface {
  public:
