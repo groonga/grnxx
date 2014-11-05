@@ -4,6 +4,8 @@
 #include <memory>
 
 #include "grnxx/column.hpp"
+#include "grnxx/impl/index.hpp"
+#include "grnxx/table.hpp"
 
 namespace grnxx {
 namespace impl {
@@ -40,24 +42,24 @@ class ColumnBase : public ColumnInterface {
     return indexes_.size();
   }
 
-//  Index *create_index(
-//      const String &name,
-//      IndexType type,
-//      const IndexOptions &options = IndexOptions());
-//  void remove_index(const String &name);
-//  void rename_index(const String &name, const String &new_name);
-//  bool reorder_index(const String &name, const String &prev_name);
+  Index *create_index(
+      const String &name,
+      IndexType type,
+      const IndexOptions &options = IndexOptions());
+  void remove_index(const String &name);
+  void rename_index(const String &name, const String &new_name);
+  void reorder_index(const String &name, const String &prev_name);
 
-//  Index *get_index(Int index_id) const {
-//    return indexes_[index_id].get();
-//  }
-//  Index *find_index(Error *error, const String &name) const;
+  Index *get_index(size_t i) const {
+    return indexes_[i].get();
+  }
+  Index *find_index(const String &name) const;
 
-//  bool set(Error *error, Int row_id, const Datum &datum);
-//  bool get(Error *error, Int row_id, Datum *datum) const;
+  void set(Int row_id, const Datum &datum);
+  void get(Int row_id, Datum *datum) const;
 
-//  bool contains(const Datum &datum) const;
-//  Int find_one(const Datum &datum) const;
+  bool contains(const Datum &datum) const;
+  Int find_one(const Datum &datum) const;
 
   // -- Internal API --
 

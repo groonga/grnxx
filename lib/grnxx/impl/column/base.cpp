@@ -4,7 +4,6 @@
 //#include "grnxx/impl/column/vector.hpp"
 #include "grnxx/impl/db.hpp"
 #include "grnxx/impl/table.hpp"
-//#include "grnxx/index.hpp"
 
 namespace grnxx {
 namespace impl {
@@ -28,6 +27,45 @@ TableInterface *ColumnBase::table() const {
 
 TableInterface *ColumnBase::reference_table() const {
   return reference_table_;
+}
+
+Index *ColumnBase::create_index(
+    const String &name,
+    IndexType type,
+    const IndexOptions &options) {
+  throw "Not supported yet";  // TODO
+}
+
+void ColumnBase::remove_index(const String &name) {
+  throw "Not supported yet";  // TODO
+}
+
+void ColumnBase::rename_index(const String &name, const String &new_name) {
+  throw "Not supported yet";  // TODO
+}
+
+void ColumnBase::reorder_index(const String &name, const String &prev_name) {
+  throw "Not supported yet";  // TODO
+}
+
+Index *ColumnBase::find_index(const String &name) const {
+  throw "Not supported yet";  // TODO
+}
+
+void ColumnBase::set(Int row_id, const Datum &datum) {
+  throw "Not supported yet";  // TODO
+}
+
+void ColumnBase::get(Int row_id, Datum *datum) const {
+  throw "Not supported yet";  // TODO
+}
+
+bool ColumnBase::contains(const Datum &datum) const {
+  throw "Not supported yet";  // TODO
+}
+
+Int ColumnBase::find_one(const Datum &datum) const {
+  throw "Not supported yet";  // TODO
 }
 
 //Index *ColumnBase::create_index(Error *error,

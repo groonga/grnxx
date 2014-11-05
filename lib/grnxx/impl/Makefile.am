@@ -17,4 +17,5 @@ libgrnxx_impl_include_HEADERS =		\
 	column.hpp			\
 	cursor.hpp			\
 	db.hpp				\
+	index.hpp			\
 	table.hpp
