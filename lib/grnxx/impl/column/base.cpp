@@ -138,10 +138,10 @@ TableInterface *ColumnBase::reference_table() const {
 //  return find_one(datum) != NULL_ROW_ID;
 //}
 
-Int ColumnBase::find_one(const Datum &) const {
-  // TODO: This function should be pure virtual.
-  return Int::na();
-}
+//Int ColumnBase::find_one(const Datum &) const {
+//  // TODO: This function should be pure virtual.
+//  return Int::na();
+//}
 
 std::unique_ptr<ColumnBase> ColumnBase::create(Table *table,
                                                const String &name,

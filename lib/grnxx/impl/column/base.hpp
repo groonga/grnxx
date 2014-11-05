@@ -41,17 +41,12 @@ class ColumnBase : public ColumnInterface {
   }
 
 //  Index *create_index(
-//      Error *error,
 //      const String &name,
 //      IndexType type,
 //      const IndexOptions &options = IndexOptions());
-//  bool remove_index(Error *error, const String &name);
-//  bool rename_index(Error *error,
-//                    const String &name,
-//                    const String &new_name);
-//  bool reorder_index(Error *error,
-//                     const String &name,
-//                     const String &prev_name);
+//  void remove_index(const String &name);
+//  void rename_index(const String &name, const String &new_name);
+//  bool reorder_index(const String &name, const String &prev_name);
 
 //  Index *get_index(Int index_id) const {
 //    return indexes_[index_id].get();
@@ -62,7 +57,7 @@ class ColumnBase : public ColumnInterface {
 //  bool get(Error *error, Int row_id, Datum *datum) const;
 
 //  bool contains(const Datum &datum) const;
-  Int find_one(const Datum &datum) const;
+//  Int find_one(const Datum &datum) const;
 
   // -- Internal API --
 
