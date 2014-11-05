@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <limits>
 
+#include "grnxx/data_types/data_type.hpp"
 #include "grnxx/data_types/na.hpp"
 
 namespace grnxx {
@@ -30,6 +31,9 @@ class GeoPoint {
       : latitude_(na_latitude()),
         longitude_(na_longitude()) {}
 
+  constexpr DataType type() const {
+    return GEO_POINT_DATA;
+  }
   constexpr int32_t latitude() const {
     return latitude_;
   }

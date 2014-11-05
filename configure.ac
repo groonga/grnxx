@@ -58,6 +58,10 @@ AC_CONFIG_FILES([Makefile
                  include/grnxx/features/Makefile
                  lib/Makefile
                  lib/grnxx/Makefile
+                 lib/grnxx/impl/Makefile
+                 lib/grnxx/impl/column/Makefile
+                 lib/grnxx/impl/column/scalar/Makefile
+                 lib/grnxx/impl/column/vector/Makefile
                  src/Makefile
                  test/Makefile
                  benchmark/Makefile])

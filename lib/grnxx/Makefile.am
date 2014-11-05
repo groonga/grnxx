@@ -1,29 +1,25 @@
-#SUBDIRS =				\
-#	impl
+SUBDIRS =				\
+	impl
 
 lib_LTLIBRARIES = libgrnxx.la
 
-#libgrnxx_la_LIBADD =			\
-#	impl/libgrnxx_impl.la
+libgrnxx_la_LIBADD =			\
+	impl/libgrnxx_impl.la
 
 libgrnxx_la_LDFLAGS = @AM_LTLDFLAGS@
 
 libgrnxx_la_SOURCES =			\
-	error.cpp			\
+	cursor.cpp			\
+	db.cpp				\
 	library.cpp			\
 	string.cpp
 
-#	array.cpp			\
-#	cursor.cpp			\
-#	db.cpp				\
-#	error.cpp			\
 #	expression.cpp			\
 #	index.cpp			\
 #	merger.cpp			\
 #	name.cpp			\
 #	pipeline.cpp			\
-#	sorter.cpp			\
-#	types.cpp
+#	sorter.cpp
 
 libgrnxx_includedir = ${includedir}/grnxx
 libgrnxx_include_HEADERS =		\

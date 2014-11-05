@@ -3,19 +3,19 @@ SUBDIRS =		\
 	features
 
 pkginclude_HEADERS =	\
+	array.hpp	\
+	column.hpp	\
+	cursor.hpp	\
+	data_types.hpp	\
+	db.hpp		\
 	error.hpp	\
 	features.hpp	\
 	library.hpp	\
-	memory.hpp	\
-	string.hpp
+	string.hpp	\
+	table.hpp
 
-#	column.hpp	\
-#	cursor.hpp	\
-#	db.hpp		\
 #	expression.hpp	\
 #	index.hpp	\
 #	merger.hpp	\
 #	pipeline.hpp	\
-#	sorter.hpp	\
-#	table.hpp	\
-#	types.hpp
+#	sorter.hpp

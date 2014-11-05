@@ -5,6 +5,7 @@
 #include <limits>
 
 #include "grnxx/features.hpp"
+#include "grnxx/data_types/data_type.hpp"
 #include "grnxx/data_types/na.hpp"
 
 namespace grnxx {
@@ -21,6 +22,9 @@ class Int {
   explicit constexpr Int(int64_t value) : value_(value) {}
   explicit constexpr Int(NA) : value_(na_value()) {}
 
+  constexpr DataType type() const {
+    return INT_DATA;
+  }
   constexpr int64_t value() const {
     return value_;
   }

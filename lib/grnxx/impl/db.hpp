@@ -1,8 +1,12 @@
 #ifndef GRNXX_IMPL_DB_HPP
 #define GRNXX_IMPL_DB_HPP
 
+#include <memory>
+
+#include "grnxx/array.hpp"
 #include "grnxx/db.hpp"
 #include "grnxx/impl/table.hpp"
+#include "grnxx/string.hpp"
 
 namespace grnxx {
 namespace impl {
@@ -16,41 +20,30 @@ class DB : public DBInterface {
   DB();
   ~DB();
 
-  Int num_tables() const {
+  size_t num_tables() const {
     return tables_.size();
   }
 
-  Table *create_table(Error *error,
-                      const StringCRef &name,
-                      const TableOptions &options);
-  bool remove_table(Error *error, const StringCRef &name);
-  bool rename_table(Error *error,
-                    const StringCRef &name,
-                    const StringCRef &new_name);
-  bool reorder_table(Error *error,
-                     const StringCRef &name,
-                     const StringCRef &prev_name);
+  Table *create_table(const String &name, const TableOptions &options);
+  void remove_table(const String &name);
+  void rename_table(const String &name, const String &new_name);
+  void reorder_table(const String &name, const String &prev_name);
 
-  Table *get_table(Int table_id) const {
-    return tables_[table_id].get();
+  Table *get_table(size_t i) const {
+    return tables_[i].get();
   }
-  Table *find_table(Error *error, const StringCRef &name) const;
+  Table *find_table(const String &name) const;
 
-  bool save(Error *error,
-            const StringCRef &path,
-            const DBOptions &options = DBOptions()) const;
+  void save(const String &path, const DBOptions &options = DBOptions()) const;
 
  private:
-  Array<unique_ptr<Table>> tables_;
+  Array<std::unique_ptr<Table>> tables_;
 
   // Find a table with its ID.
   //
-  // On success, returns a pointer to the table.
-  // On failure, returns nullptr and stores error information into "*error" if
-  // "error" != nullptr.
-  Table *find_table_with_id(Error *error,
-                            const StringCRef &name,
-                            Int *table_id) const;
+  // If found, returns the table and stores its ID into "*table_id".
+  // If not found, returns nullptr.
+  Table *find_table_with_id(const String &name, size_t *table_id) const;
 };
 
 }  // namespace impl

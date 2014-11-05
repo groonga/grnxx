@@ -3,6 +3,7 @@
 
 #include <cstdint>
 
+#include "grnxx/data_types/data_type.hpp"
 #include "grnxx/data_types/na.hpp"
 
 namespace grnxx {
@@ -19,6 +20,9 @@ class Bool {
       : value_(value ? true_value() : false_value()) {}
   explicit constexpr Bool(NA) : value_(na_value()) {}
 
+  constexpr DataType type() const {
+    return BOOL_DATA;
+  }
   constexpr uint8_t value() const {
     return value_;
   }

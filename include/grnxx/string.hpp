@@ -36,7 +36,7 @@ class String {
     return *this;
   }
 
-  // Create a reference to "string".
+  // Create a reference to a null-terminated string.
   //
   // If "string" == nullptr, the behavior is undefined.
   String(const char *string)
@@ -49,8 +49,12 @@ class String {
         size_(size),
         capacity_(0) {}
   // Create an instance.
+  //
+  // On failure, throws an exception.
   explicit String(size_t size);
   // Create an instance filled with "byte".
+  //
+  // On failure, throws an exception.
   String(size_t size, char byte);
 
   // Create a reference to a substring.
@@ -137,7 +141,7 @@ class String {
   size_t size() const {
     return size_;
   }
-  // Return the size of the internal buffer.
+  // Return the buffer size.
   size_t capacity() const {
     return capacity_;
   }
@@ -179,7 +183,7 @@ class String {
     }
     size_ = new_size;
   }
-  // Resize the string and fill the new space with "byte".
+  // Resize the string and fill the new bytes with "byte".
   //
   // On failure, throws an exception.
   void resize(size_t new_size, char byte) {
@@ -416,14 +420,14 @@ class String {
   size_t size_;
   size_t capacity_;
 
-  // Resize the internal buffer for at least "new_size".
+  // Resize the buffer for at least "new_size".
   //
   // Assumes that "new_size" is greater than "capacity_".
   //
   // On failure, throws an exception.
   void resize_buffer(size_t new_size);
 
-  // Resize the internal buffer and append a part of "this".
+  // Resize the buffer and append a part of "this".
   //
   // On failure, throws an exception.
   void append_overlap(const char *data, size_t size);

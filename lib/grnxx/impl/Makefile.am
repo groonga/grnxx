@@ -15,5 +15,6 @@ libgrnxx_impl_la_SOURCES =		\
 libgrnxx_impl_includedir = ${includedir}/grnxx/impl
 libgrnxx_impl_include_HEADERS =		\
 	column.hpp			\
+	cursor.hpp			\
 	db.hpp				\
 	table.hpp

@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <cstring>
 
+#include "grnxx/data_types/data_type.hpp"
 #include "grnxx/data_types/na.hpp"
 
 namespace grnxx {
@@ -23,6 +24,9 @@ class Text {
   constexpr Text(const char *data, size_t size) : data_(data), size_(size) {}
   explicit constexpr Text(NA) : data_(na_data()), size_(na_size()) {}
 
+  constexpr DataType type() const {
+    return TEXT_DATA;
+  }
   const char &operator[](size_t i) const {
     return data_[i];
   }

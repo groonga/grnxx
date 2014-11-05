@@ -1,7 +1,9 @@
 #ifndef GRNXX_IMPL_TABLE_HPP
 #define GRNXX_IMPL_TABLE_HPP
 
-#include "grnxx/name.hpp"
+#include <cstdint>
+#include <memory>
+
 #include "grnxx/db.hpp"
 #include "grnxx/impl/column.hpp"
 #include "grnxx/table.hpp"
@@ -13,75 +15,81 @@ using DBInterface = grnxx::DB;
 using TableInterface = grnxx::Table;
 
 class DB;
+class TableRegularCursor;
+class TableReverseCursor;
 
 class Table : public TableInterface {
  public:
   // -- Public API (grnxx/table.hpp) --
 
-  Table();
+  Table(DB *db, const String &name);
   ~Table();
 
   DBInterface *db() const;
-  StringCRef name() const {
-    return name_.ref();
+  String name() const {
+    return name_;
   }
-  Int num_columns() const {
+  size_t num_columns() const {
     return columns_.size();
   }
   ColumnBase *key_column() const {
     return key_column_;
   }
-  Int num_rows() const {
+  size_t num_rows() const {
     return num_rows_;
   }
   Int max_row_id() const {
     return max_row_id_;
   }
+  bool is_empty() const {
+    return num_rows_ == 0;
+  }
+  bool is_full() const {
+    return is_empty() ||
+           (num_rows_ == static_cast<size_t>(max_row_id_.value() + 1));
+  }
 
-  ColumnBase *create_column(Error *error,
-                            const StringCRef &name,
+  ColumnBase *create_column(const String &name,
                             DataType data_type,
                             const ColumnOptions &options = ColumnOptions());
-  bool remove_column(Error *error, const StringCRef &name);
-  bool rename_column(Error *error,
-                     const StringCRef &name,
-                     const StringCRef &new_name);
-  bool reorder_column(Error *error,
-                      const StringCRef &name,
-                      const StringCRef &prev_name);
+  void remove_column(const String &name);
+  void rename_column(const String &name, const String &new_name);
+  void reorder_column(const String &name, const String &prev_name);
 
-  ColumnBase *get_column(Int column_id) const {
-    return columns_[column_id].get();
+  ColumnBase *get_column(size_t i) const {
+    return columns_[i].get();
   }
-  ColumnBase *find_column(Error *error, const StringCRef &name) const;
+  ColumnBase *find_column(const String &name) const;
 
-  bool set_key_column(Error *error, const StringCRef &name);
-  bool unset_key_column(Error *error);
+  void set_key_column(const String &name);
+  void unset_key_column();
 
-  bool insert_row(Error *error,
-                  Int request_row_id,
-                  const Datum &key,
-                  Int *result_row_id);
-  bool remove_row(Error *error, Int row_id);
+  Int insert_row(const Datum &key);
+  Int find_or_insert_row(const Datum &key, bool *inserted);
+  void insert_row_at(Int row_id, const Datum &key);
 
-  bool test_row(Error *error, Int row_id) const;
-  Int find_row(Error *error, const Datum &key) const;
+  void remove_row(Int row_id);
 
-  unique_ptr<Cursor> create_cursor(
-      Error *error,
+  bool test_row(Int row_id) const {
+    size_t bit_id = static_cast<size_t>(row_id.value());
+    size_t block_id = bit_id / 64;
+    return (block_id < bitmap_.size()) &&
+           ((bitmap_[block_id] & (uint64_t(1) << (bit_id % 64))) != 0);
+  }
+  Int find_row(const Datum &key) const;
+
+  std::unique_ptr<Cursor> create_cursor(
       const CursorOptions &options = CursorOptions()) const;
 
   // -- Internal API --
 
   // Create a new table.
   //
-  // On success, returns a pointer to the table.
-  // On failure, returns nullptr and stores error information into "*error" if
-  // "error" != nullptr.
-  static unique_ptr<Table> create(
-      Error *error,
+  // On success, returns the table.
+  // On failure, throws an exception.
+  static std::unique_ptr<Table> create(
       DB *db,
-      const StringCRef &name,
+      const String &name,
       const TableOptions &options = TableOptions());
 
   // Return the owner DB.
@@ -89,68 +97,59 @@ class Table : public TableInterface {
     return db_;
   }
 
+  // Return whether a row is valid or not.
+  //
+  // If "row_id" is too large, the behavior is undefined.
+  bool _test_row(size_t row_id) const {
+    return (bitmap_[row_id / 64] & (uint64_t(1) << (row_id % 64))) != 0;
+  }
+
   // Change the table name.
   //
-  // On success, returns true.
-  // On failure, returns false and stores error information into "*error" if
-  // "error" != nullptr.
-  bool rename(Error *error, const StringCRef &new_name);
+  // On failure, throws an exception.
+  void rename(const String &new_name);
 
   // Return whether the table is removable or not.
-  bool is_removable();
+  bool is_removable() const;
 
   // Append a referrer column.
   //
-  // On success, returns true.
-  // On failure, returns false and stores error information into "*error" if
-  // "error" != nullptr.
-  bool append_referrer_column(Error *error, ColumnBase *column);
+  // On failure, throws an exception.
+  void append_referrer_column(ColumnBase *column);
 
-  // Append a referrer column.
+  // Remove a referrer column.
   //
-  // On success, returns true.
-  // On failure, returns false and stores error information into "*error" if
-  // "error" != nullptr.
-  bool remove_referrer_column(Error *error, ColumnBase *column);
+  // On failure, throws an exception.
+  void remove_referrer_column(ColumnBase *column);
 
  private:
   DB *db_;
-  Name name_;
-  Array<unique_ptr<ColumnBase>> columns_;
+  String name_;
+  Array<std::unique_ptr<ColumnBase>> columns_;
   Array<ColumnBase *> referrer_columns_;
   ColumnBase *key_column_;
-  Int num_rows_;
+  size_t num_rows_;
   Int max_row_id_;
-  Array<UInt> bitmap_;
-  Array<Array<UInt>> bitmap_indexes_;
+  Array<uint64_t> bitmap_;
+  Array<Array<uint64_t>> bitmap_indexes_;
 
-  // Get the "i"-th bit from the bitmap.
-  bool get_bit(Int i) const {
-    return (bitmap_[i / 64] & (Int(1) << (i % 64))) != 0;
-  }
-  // Set 1 to the "i"-th bit of the bitmap and update bitmap indexes.
-  void set_bit(Int i);
-  // Set 0 to the "i"-th bit of the bitmap and update bitmap indexes.
-  void unset_bit(Int i);
-  // Find a zero-bit and return its position.
-  Int find_zero_bit() const;
-  // Reserve the "i"-th bit for the next row.
+  // Find the next row ID candidate.
+  Int find_next_row_id() const;
+  // Reserve a row.
   //
-  // On success, returns true.
-  // On failure, returns false and stores error information into "*error" if
-  // "error" != nullptr.
-  bool reserve_bit(Error *error, Int i);
+  // On failure, throws an exception.
+  void reserve_row(Int row_id);
+  // Validate a row.
+  void validate_row(Int row_id);
+  // Invalidate a row.
+  void invalidate_row(Int row_id);
 
   // Find a column with its ID.
   //
-  // On success, returns a pointer to the column.
-  // On failure, returns nullptr and stores error information into "*error" if
-  // "error" != nullptr.
-  ColumnBase *find_column_with_id(Error *error,
-                                  const StringCRef &name,
-                                  Int *column_id) const;
-
-  friend class TableCursor;
+  // If found, returns the column and stores its ID to "*column_id".
+  // If not found, returns nullptr.
+  ColumnBase *find_column_with_id(const String &name,
+                                  size_t *column_id) const;
 };
 
 }  // namespace impl

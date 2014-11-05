@@ -1,29 +1,22 @@
 #include "grnxx/db.hpp"
 
+#include <new>
+
 #include "grnxx/impl/db.hpp"
 
 namespace grnxx {
 
-unique_ptr<DB> open_db(Error *error,
-                       const StringCRef &path,
-                       const DBOptions &) {
+std::unique_ptr<DB> open_db(const String &path, const DBOptions &) try {
   if (path.size() != 0) {
-    // TODO: Named DB is not supported yet.
-    GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
-    return nullptr;
+    throw "Not supported yet";  // TODO
   }
-  unique_ptr<impl::DB> db(new (nothrow) impl::DB);
-  if (!db) {
-    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
-    return nullptr;
-  }
-  return unique_ptr<DB>(db.release());
+  return std::unique_ptr<impl::DB>(new impl::DB);
+} catch (const std::bad_alloc &) {
+  throw "Memory allocation failed";  // TODO
 }
 
-bool remove_db(Error *error, const StringCRef &, const DBOptions &) {
-  // TODO: Named DB is not supported yet.
-  GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not supported yet");
-  return false;
+void remove_db(const String &, const DBOptions &) {
+  throw "Not supported yet";  // TODO
 }
 
 }  // namespace grnxx

@@ -22,54 +22,57 @@
 #include "grnxx/table.hpp"
 
 void test_db() {
-  grnxx::Error error;
-
   // Create a database with the default options.
-  auto db = grnxx::open_db(&error, "");
-  assert(db);
+  auto db = grnxx::open_db("");
   assert(db->num_tables() == 0);
 
   // Create a table named "Table_1".
-  auto table = db->create_table(&error, "Table_1");
-  assert(table);
+  auto table = db->create_table("Table_1");
   assert(table->name() == "Table_1");
   assert(db->num_tables() == 1);
-
   assert(db->get_table(0) == table);
-  assert(db->find_table(&error, "Table_1") == table);
+
+  assert(db->find_table("Table_1") == table);
+  assert(!db->find_table("Table_X"));
 
   // The following create_table() must fail because "Table_1" already exists.
-  assert(!db->create_table(&error, "Table_1"));
+  try {
+    db->create_table("Table_1");
+    assert(false);
+  } catch (...) {
+  }
 
   // Create tables named "Table_2" and "Table_3".
-  assert(db->create_table(&error, "Table_2"));
-  assert(db->create_table(&error, "Table_3"));
+  assert(db->create_table("Table_2"));
+  assert(db->create_table("Table_3"));
   assert(db->num_tables() == 3);
+  assert(db->get_table(0)->name() == "Table_1");
+  assert(db->get_table(1)->name() == "Table_2");
+  assert(db->get_table(2)->name() == "Table_3");
 
   // Remove "Table_2".
-  assert(db->remove_table(&error, "Table_2"));
+  db->remove_table("Table_2");
   assert(db->num_tables() == 2);
-
   assert(db->get_table(0)->name() == "Table_1");
   assert(db->get_table(1)->name() == "Table_3");
 
   // Recreate "Table_2".
-  assert(db->create_table(&error, "Table_2"));
+  assert(db->create_table("Table_2"));
 
   // Move "Table_3" to the next to "Table_2".
-  assert(db->reorder_table(&error, "Table_3", "Table_2"));
+  db->reorder_table("Table_3", "Table_2");
   assert(db->get_table(0)->name() == "Table_1");
   assert(db->get_table(1)->name() == "Table_2");
   assert(db->get_table(2)->name() == "Table_3");
 
   // Move "Table_3" to the head.
-  assert(db->reorder_table(&error, "Table_3", ""));
+  db->reorder_table("Table_3", "");
   assert(db->get_table(0)->name() == "Table_3");
   assert(db->get_table(1)->name() == "Table_1");
   assert(db->get_table(2)->name() == "Table_2");
 
   // Move "Table_2" to the next to "Table_3".
-  assert(db->reorder_table(&error, "Table_2", "Table_3"));
+  db->reorder_table("Table_2", "Table_3");
   assert(db->get_table(0)->name() == "Table_3");
   assert(db->get_table(1)->name() == "Table_2");
   assert(db->get_table(2)->name() == "Table_1");

@@ -1,7 +1,7 @@
 #ifndef GRNXX_IMPL_COLUMN_COLUMN_HPP
 #define GRNXX_IMPL_COLUMN_COLUMN_HPP
 
-#include "grnxx/impl/column/column_base.hpp"
+#include "grnxx/impl/column/base.hpp"
 
 namespace grnxx {
 namespace impl {

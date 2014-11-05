@@ -4,5 +4,4 @@ pkginclude_HEADERS =	\
 	float.hpp	\
 	geo_point.hpp	\
 	int.hpp		\
-	row_id.hpp	\
 	text.hpp

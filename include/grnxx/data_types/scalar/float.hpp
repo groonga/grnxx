@@ -4,6 +4,7 @@
 #include <cmath>
 #include <limits>
 
+#include "grnxx/data_types/data_type.hpp"
 #include "grnxx/data_types/na.hpp"
 
 namespace grnxx {
@@ -22,6 +23,9 @@ class Float {
   explicit constexpr Float(double value) : value_(value) {}
   explicit constexpr Float(NA) : value_(na_value()) {}
 
+  constexpr DataType type() const {
+    return FLOAT_DATA;
+  }
   constexpr double value() const {
     return value_;
   }
