@@ -40,6 +40,10 @@ class ArrayCRef {
     return values_[i];
   }
 
+  // Return whether the array is empty or not.
+  bool is_empty() const {
+    return size_ == 0;
+  }
   // Return the number of values.
   size_t size() const {
     return size_;
@@ -109,6 +113,10 @@ class ArrayRef {
     return values_[i];
   }
 
+  // Return whether the array is empty or not.
+  bool is_empty() const {
+    return size_ == 0;
+  }
   // Return the number of values.
   size_t size() const {
     return size_;
@@ -225,6 +233,10 @@ class Array {
     return static_cast<const Value *>(buffer_);
   }
 
+  // Return whether the array is empty or not.
+  bool is_empty() const {
+    return size_ == 0;
+  }
   // Return the number of values.
   size_t size() const {
     return size_;
