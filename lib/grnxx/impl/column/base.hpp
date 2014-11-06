@@ -15,8 +15,6 @@ using ColumnInterface = grnxx::Column;
 
 class Table;
 
-class Index;  // TODO
-
 class ColumnBase : public ColumnInterface {
  public:
   // -- Public API (grnxx/column.hpp) --
@@ -55,11 +53,11 @@ class ColumnBase : public ColumnInterface {
   }
   Index *find_index(const String &name) const;
 
-  void set(Int row_id, const Datum &datum);
-  void get(Int row_id, Datum *datum) const;
+  virtual void set(Int row_id, const Datum &datum) = 0;
+  virtual void get(Int row_id, Datum *datum) const = 0;
 
-  bool contains(const Datum &datum) const;
-  Int find_one(const Datum &datum) const;
+  virtual bool contains(const Datum &datum) const;
+  virtual Int find_one(const Datum &datum) const;
 
   // -- Internal API --
 
@@ -103,7 +101,7 @@ class ColumnBase : public ColumnInterface {
   // Set the initial key.
   //
   // On failure, throws an exception.
-  virtual void set_initial_key(Int row_id, const Datum &key);
+  virtual void set_key(Int row_id, const Datum &key);
 
   // Unset the value.
   virtual void unset(Int row_id) = 0;

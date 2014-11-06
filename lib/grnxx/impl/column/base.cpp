@@ -1,8 +1,7 @@
 #include "grnxx/impl/column/base.hpp"
 
-//#include "grnxx/impl/column/scalar.hpp"
-//#include "grnxx/impl/column/vector.hpp"
-#include "grnxx/impl/db.hpp"
+#include "grnxx/impl/column/scalar.hpp"
+#include "grnxx/impl/column/vector.hpp"
 #include "grnxx/impl/table.hpp"
 
 namespace grnxx {
@@ -17,7 +16,8 @@ ColumnBase::ColumnBase(Table *table,
       name_(name),
       data_type_(data_type),
       reference_table_(reference_table),
-      is_key_(false) {}
+      is_key_(false),
+      indexes_() {}
 
 ColumnBase::~ColumnBase() {}
 
@@ -49,14 +49,6 @@ void ColumnBase::reorder_index(const String &name, const String &prev_name) {
 }
 
 Index *ColumnBase::find_index(const String &name) const {
-  throw "Not supported yet";  // TODO
-}
-
-void ColumnBase::set(Int row_id, const Datum &datum) {
-  throw "Not supported yet";  // TODO
-}
-
-void ColumnBase::get(Int row_id, Datum *datum) const {
   throw "Not supported yet";  // TODO
 }
 
@@ -181,48 +173,60 @@ Int ColumnBase::find_one(const Datum &datum) const {
 //  return Int::na();
 //}
 
-std::unique_ptr<ColumnBase> ColumnBase::create(Table *table,
-                                               const String &name,
-                                               DataType data_type,
-                                               const ColumnOptions &options) {
-  throw "Not supported yet";  // TODO
-//  switch (data_type) {
-//    case BOOL_DATA: {
-//      return impl::Column<Bool>::create(error, table, name, options);
-//    }
+std::unique_ptr<ColumnBase> ColumnBase::create(
+    Table *table,
+    const String &name,
+    DataType data_type,
+    const ColumnOptions &options) try {
+  std::unique_ptr<ColumnBase> column;
+  switch (data_type) {
+    case BOOL_DATA: {
+      column.reset(new impl::Column<Bool>(table, name, options));
+      break;
+    }
 //    case INT_DATA: {
-//      return impl::Column<Int>::create(error, table, name, options);
+//      column.reset(new impl::Column<Int>(table, name, options));
+//      break;
 //    }
 //    case FLOAT_DATA: {
-//      return impl::Column<Float>::create(error, table, name, options);
+//      column.reset(new impl::Column<Float>(table, name, options));
+//      break;
 //    }
 //    case GEO_POINT_DATA: {
-//      return impl::Column<GeoPoint>::create(error, table, name, options);
+//      column.reset(new impl::Column<GeoPoint>(table, name, options));
+//      break;
 //    }
 //    case TEXT_DATA: {
-//      return impl::Column<Text>::create(error, table, name, options);
+//      column.reset(new impl::Column<Text>(table, name, options));
+//      break;
 //    }
 //    case BOOL_VECTOR_DATA: {
-//      return impl::Column<Vector<Bool>>::create(error, table, name, options);
+//      column.reset(new impl::Column<Vector<Bool>>(table, name, options));
+//      break;
 //    }
 //    case INT_VECTOR_DATA: {
-//      return impl::Column<Vector<Int>>::create(error, table, name, options);
+//      column.reset(new impl::Column<Vector<Int>>(table, name, options));
+//      break;
 //    }
 //    case FLOAT_VECTOR_DATA: {
-//      return impl::Column<Vector<Float>>::create(error, table, name, options);
+//      column.reset(new impl::Column<Vector<Float>>(table, name, options));
+//      break;
 //    }
 //    case GEO_POINT_VECTOR_DATA: {
-//      return impl::Column<Vector<GeoPoint>>::create(error, table, name, options);
+//      column.reset(new impl::Column<Vector<GeoPoint>>(table, name, options));
+//      break;
 //    }
 //    case TEXT_VECTOR_DATA: {
-//      return impl::Column<Vector<Text>>::create(error, table, name, options);
+//      column.reset(new impl::Column<Vector<Text>>(table, name, options));
+//      break;
 //    }
-//    default: {
-//      // TODO: Other data types are not supported yet.
-//      GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not suported yet");
-//      return nullptr;
-//    }
-//  }
+    default: {
+      throw "Not supported";  // TODO
+    }
+  }
+  return column;
+} catch (const std::bad_alloc &) {
+  throw "Memory allocation failed";  // TODO
 }
 
 void ColumnBase::rename(const String &new_name) {
@@ -235,19 +239,19 @@ bool ColumnBase::is_removable() const {
 }
 
 void ColumnBase::set_key_attribute() {
-  throw "Not supported yet";  // TODO
+  throw "Not supported";  // TODO
 }
 
 void ColumnBase::unset_key_attribute() {
-  throw "Not supported yet";  // TODO
+  throw "Not supported";  // TODO
 }
 
-void ColumnBase::set_initial_key(Int, const Datum &) {
-  throw "Not supported yet";  // TODO
+void ColumnBase::set_key(Int, const Datum &) {
+  throw "Not supported";  // TODO
 }
 
 void ColumnBase::clear_references(Int) {
-  throw "Not supported yet";  // TODO
+  throw "Not supported";  // TODO
 }
 
 //bool ColumnBase::initialize_base(Error *error,

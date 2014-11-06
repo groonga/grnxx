@@ -336,7 +336,7 @@ Int Table::insert_row(const Datum &key) {
   Int row_id = find_next_row_id();
   reserve_row(row_id);
   if (key_column_) {
-    key_column_->set_initial_key(row_id, key);
+    key_column_->set_key(row_id, key);
   }
   validate_row(row_id);
   return row_id;
@@ -357,7 +357,7 @@ Int Table::find_or_insert_row(const Datum &key, bool *inserted) {
   Int row_id = find_next_row_id();
   reserve_row(row_id);
   if (key_column_) {
-    key_column_->set_initial_key(row_id, key);
+    key_column_->set_key(row_id, key);
   }
   validate_row(row_id);
   *inserted = true;
@@ -378,7 +378,7 @@ void Table::insert_row_at(Int row_id, const Datum &key) {
   }
   reserve_row(row_id);
   if (key_column_) {
-    key_column_->set_initial_key(row_id, key);
+    key_column_->set_key(row_id, key);
   }
   validate_row(row_id);
 }
