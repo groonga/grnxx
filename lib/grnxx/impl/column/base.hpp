@@ -103,8 +103,8 @@ class ColumnBase : public ColumnInterface {
   // Unset the value.
   virtual void unset(Int row_id) = 0;
 
-  // Replace references to "row_id" with NULL.
-  virtual void clear_references(Int row_id);
+//  // Replace references to "row_id" with NULL.
+//  virtual void clear_references(Int row_id);
 
  protected:
   Table *table_;

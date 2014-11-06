@@ -235,6 +235,9 @@ ColumnBase *Table::create_column(const String &name,
   columns_.reserve(columns_.size() + 1);
   std::unique_ptr<ColumnBase> new_column =
       ColumnBase::create(this, name, data_type, options);
+  if (new_column->_reference_table()) {
+    new_column->_reference_table()->append_referrer_column(new_column.get());
+  }
   columns_.push_back(std::move(new_column));
   return columns_.back().get();
 }
@@ -398,10 +401,11 @@ void Table::remove_row(Int row_id) {
     columns_[i]->unset(row_id);
   }
   invalidate_row(row_id);
-  // Clear referrers.
-  for (size_t i = 0; i < referrer_columns_.size(); ++i) {
-    referrer_columns_[i]->clear_references(row_id);
-  }
+
+  // TODO: Clear referrers.
+//  for (size_t i = 0; i < referrer_columns_.size(); ++i) {
+//    referrer_columns_[i]->clear_references(row_id);
+//  }
 }
 
 Int Table::find_row(const Datum &key) const {

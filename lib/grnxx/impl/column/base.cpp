@@ -183,10 +183,10 @@ std::unique_ptr<ColumnBase> ColumnBase::create(
       column.reset(new impl::Column<Bool>(table, name, options));
       break;
     }
-//    case INT_DATA: {
-//      column.reset(new impl::Column<Int>(table, name, options));
-//      break;
-//    }
+    case INT_DATA: {
+      column.reset(new impl::Column<Int>(table, name, options));
+      break;
+    }
 //    case FLOAT_DATA: {
 //      column.reset(new impl::Column<Float>(table, name, options));
 //      break;
@@ -249,9 +249,9 @@ void ColumnBase::set_key(Int, const Datum &) {
   throw "Not supported";  // TODO
 }
 
-void ColumnBase::clear_references(Int) {
-  throw "Not supported";  // TODO
-}
+//void ColumnBase::clear_references(Int) {
+//  throw "Not supported";  // TODO
+//}
 
 //bool ColumnBase::initialize_base(Error *error,
 //                                 Table *table,
