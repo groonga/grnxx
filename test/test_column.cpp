@@ -33,7 +33,6 @@ void test_column() {
   grnxx::Int row_id = table->insert_row();
 
   // Create a column named "Bool".
-  // The column stores Bool values.
   auto bool_column = table->create_column("Bool", grnxx::BOOL_DATA);
   assert(bool_column->table() == table);
   assert(bool_column->name() == "Bool");
@@ -42,16 +41,13 @@ void test_column() {
   assert(!bool_column->is_key());
 //  assert(bool_column->num_indexes() == 0);
 
-//  // Create a column named "IntColumn".
-//  // The column stores Int values.
-//  auto int_column = table->create_column(&error, "IntColumn",
-//                                         grnxx::INT_DATA);
-//  assert(int_column);
-//  assert(int_column->table() == table);
-//  assert(int_column->name() == "IntColumn");
-//  assert(int_column->data_type() == grnxx::INT_DATA);
-//  assert(!int_column->ref_table());
-//  assert(!int_column->has_key_attribute());
+  // Create a column named "Int".
+  auto int_column = table->create_column("Int", grnxx::INT_DATA);
+  assert(int_column->table() == table);
+  assert(int_column->name() == "Int");
+  assert(int_column->data_type() == grnxx::INT_DATA);
+  assert(!int_column->reference_table());
+  assert(!int_column->is_key());
 //  assert(int_column->num_indexes() == 0);
 
 //  // Create a column named "FloatColumn".
@@ -185,9 +181,9 @@ void test_column() {
   assert(datum.type() == grnxx::BOOL_DATA);
   assert(datum.as_bool().is_na());
 
-//  assert(int_column->get(&error, 1, &datum));
-//  assert(datum.type() == grnxx::INT_DATA);
-//  assert(datum.force_int() == 0);
+  int_column->get(row_id, &datum);
+  assert(datum.type() == grnxx::INT_DATA);
+  assert(datum.as_int().is_na());
 
 //  assert(float_column->get(&error, 1, &datum));
 //  assert(datum.type() == grnxx::FLOAT_DATA);
@@ -235,8 +231,12 @@ void test_column() {
   assert(datum.type() == grnxx::BOOL_DATA);
   assert(datum.as_bool() == grnxx::Bool(true));
 
+  int_column->set(row_id, grnxx::Int(123));
+  int_column->get(row_id, &datum);
+  assert(datum.type() == grnxx::INT_DATA);
+  assert(datum.as_int() == grnxx::Int(123));
+
 //  // Set and get values.
-//  assert(int_column->set(&error, 1, grnxx::Int(123)));
 //  assert(float_column->set(&error, 1, grnxx::Float(0.25)));
 //  assert(geo_point_column->set(&error, 1, grnxx::GeoPoint(123, 456)));
 //  assert(text_column->set(&error, 1, grnxx::Text("Hello, world!")));
@@ -260,10 +260,6 @@ void test_column() {
 //  grnxx::Int ref_vector_value[] = { 1, 1, 1 };
 //  assert(ref_vector_column->set(&error, 1,
 //                                grnxx::IntVector(ref_vector_value, 3)));
-
-//  assert(int_column->get(&error, 1, &datum));
-//  assert(datum.type() == grnxx::INT_DATA);
-//  assert(datum.force_int() == 123);
 
 //  assert(float_column->get(&error, 1, &datum));
 //  assert(datum.type() == grnxx::FLOAT_DATA);
