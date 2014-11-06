@@ -233,6 +233,15 @@ void Column<Int>::unset(Int row_id) {
   }
 }
 
+void Column<Int>::read(ArrayCRef<Record> records, ArrayRef<Int> values) const {
+  if (records.size() != values.size()) {
+    throw "Data size conflict";  // TODO
+  }
+  for (size_t i = 0; i < records.size(); ++i) {
+    values.set(i, get(records[i].row_id));
+  }
+}
+
 //void Column<Int>::clear_references(Int row_id) {
 //  // TODO: Cursor should not be used to avoid errors.
 //  if (indexes_.size() != 0) {

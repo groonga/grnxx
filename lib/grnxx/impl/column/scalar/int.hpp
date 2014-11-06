@@ -47,7 +47,7 @@ class Column<Int> : public ColumnBase {
   // Read values.
   //
   // On failure, throws an exception.
-  void read(ArrayCRef<Record> records, ArrayRef<Bool> values) const;
+  void read(ArrayCRef<Record> records, ArrayRef<Int> values) const;
 
  private:
   Array<Int> values_;
