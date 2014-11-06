@@ -191,10 +191,10 @@ std::unique_ptr<ColumnBase> ColumnBase::create(
       column.reset(new impl::Column<Float>(table, name, options));
       break;
     }
-//    case GEO_POINT_DATA: {
-//      column.reset(new impl::Column<GeoPoint>(table, name, options));
-//      break;
-//    }
+    case GEO_POINT_DATA: {
+      column.reset(new impl::Column<GeoPoint>(table, name, options));
+      break;
+    }
 //    case TEXT_DATA: {
 //      column.reset(new impl::Column<Text>(table, name, options));
 //      break;

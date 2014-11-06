@@ -11,9 +11,9 @@ libgrnxx_impl_column_scalar_la_LDFLAGS = @AM_LTLDFLAGS@
 libgrnxx_impl_column_scalar_la_SOURCES =	\
 	bool.cpp				\
 	float.cpp				\
+	geo_point.cpp				\
 	int.cpp
 
-#	geo_point.cpp				\
 #	text.cpp
 
 libgrnxx_impl_column_scalar_includedir = ${includedir}/grnxx/impl/column/scalar
