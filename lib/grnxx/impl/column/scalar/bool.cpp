@@ -14,20 +14,38 @@ Column<Bool>::Column(Table *table,
 Column<Bool>::~Column() {}
 
 void Column<Bool>::set(Int row_id, const Datum &datum) {
-  Bool value = parse_datum(datum);
+  Bool new_value = parse_datum(datum);
   if (!table_->test_row(row_id)) {
     throw "Invalid row ID";  // TODO
   }
-  if (value.is_na()) {
+  if (new_value.is_na()) {
     unset(row_id);
     return;
+  }
+  Bool old_value = get(row_id);
+  if (old_value == new_value) {
+    return;
+  }
+  if (!old_value.is_na()) {
+    // TODO: Remove the old value from indexes.
+//    for (size_t i = 0; i < num_indexes(); ++i) {
+//      indexes_[i]->remove(row_id, old_value);
+//    }
   }
   size_t value_id = row_id.value();
   if (value_id >= values_.size()) {
     values_.resize(value_id + 1, Bool::na());
   }
-  values_[value_id] = value;
-  // TODO: Update indexes if exist.
+  // TODO: Insert the new value into indexes.
+//  for (size_t i = 0; i < num_indexes(); ++i) try {
+//    indexes_[i]->insert(row_id, datum)) {
+//  } catch (...) {
+//    for (size_t j = 0; j < i; ++i) {
+//      indexes_[j]->remove(row_id, datum);
+//    }
+//    throw;
+//  }
+  values_[value_id] = new_value;
 }
 
 void Column<Bool>::get(Int row_id, Datum *datum) const {
@@ -42,9 +60,17 @@ void Column<Bool>::get(Int row_id, Datum *datum) const {
 bool Column<Bool>::contains(const Datum &datum) const {
   // TODO: Use an index if exists.
   Bool value = parse_datum(datum);
-  for (size_t i = 0; i < values_.size(); ++i) {
-    if (values_[i].value() == value.value()) {
-      return true;
+  if (value.is_na()) {
+    for (size_t i = 0; i < values_.size(); ++i) {
+      if (values_[i].is_na() && table_->_test_row(i)) {
+        return true;
+      }
+    }
+  } else {
+    for (size_t i = 0; i < values_.size(); ++i) {
+      if (values_[i].value() == value.value()) {
+        return true;
+      }
     }
   }
   return false;
@@ -53,9 +79,17 @@ bool Column<Bool>::contains(const Datum &datum) const {
 Int Column<Bool>::find_one(const Datum &datum) const {
   // TODO: Use an index if exists.
   Bool value = parse_datum(datum);
-  for (size_t i = 0; i < values_.size(); ++i) {
-    if (values_[i] == value) {
-      return Int(i);
+  if (value.is_na()) {
+    for (size_t i = 0; i < values_.size(); ++i) {
+      if (values_[i].is_na() && table_->_test_row(i)) {
+        return Int(i);
+      }
+    }
+  } else {
+    for (size_t i = 0; i < values_.size(); ++i) {
+      if (values_[i].value() == value.value()) {
+        return Int(i);
+      }
     }
   }
   return Int::na();
