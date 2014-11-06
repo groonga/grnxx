@@ -56,6 +56,10 @@ class GeoPoint {
                 (longitude_ != rhs.longitude_));
   }
 
+  static constexpr GeoPoint na() {
+    return GeoPoint(NA());
+  }
+
   static constexpr int32_t min_latitude() {
     return degrees(-90);
   }
