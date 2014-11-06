@@ -10,9 +10,9 @@ libgrnxx_impl_column_scalar_la_LDFLAGS = @AM_LTLDFLAGS@
 
 libgrnxx_impl_column_scalar_la_SOURCES =	\
 	bool.cpp				\
+	float.cpp				\
 	int.cpp
 
-#	float.cpp				\
 #	geo_point.cpp				\
 #	text.cpp
 

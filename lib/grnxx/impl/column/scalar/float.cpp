@@ -1,101 +1,135 @@
-#include "grnxx/impl/column/column.hpp"
+#include "grnxx/impl/column/scalar/float.hpp"
 
-#include "grnxx/cursor.hpp"
-#include "grnxx/impl/db.hpp"
 #include "grnxx/impl/table.hpp"
-#include "grnxx/index.hpp"
-
-#include <cmath>
+//#include "grnxx/index.hpp"
 
 namespace grnxx {
 namespace impl {
 
-bool Column<Float>::set(Error *error, Int row_id, const Datum &datum) {
-  if (datum.type() != TypeTraits<Float>::data_type()) {
-    GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Wrong data type");
-    return false;
-  }
-  if (!table_->test_row(error, row_id)) {
-    return false;
-  }
-  Float old_value = get(row_id);
-  Float new_value = datum.force_float();
-  if ((new_value != old_value) ||
-      (std::isnan(new_value) != std::isnan(old_value))) {
-    for (Int i = 0; i < num_indexes(); ++i) {
-      if (!indexes_[i]->insert(error, row_id, datum)) {
-        for (Int j = 0; j < i; ++i) {
-          indexes_[j]->remove(nullptr, row_id, datum);
-        }
-        return false;
-      }
-    }
-    for (Int i = 0; i < num_indexes(); ++i) {
-      indexes_[i]->remove(nullptr, row_id, old_value);
-    }
-  }
-  values_.set(row_id, new_value);
-  return true;
-}
-
-bool Column<Float>::get(Error *error, Int row_id, Datum *datum) const {
-  if (!table_->test_row(error, row_id)) {
-    return false;
-  }
-  *datum = values_[row_id];
-  return true;
-}
-
-unique_ptr<Column<Float>> Column<Float>::create(Error *error,
-                                                Table *table,
-                                                const StringCRef &name,
-                                                const ColumnOptions &options) {
-  unique_ptr<Column> column(new (nothrow) Column);
-  if (!column) {
-    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
-    return nullptr;
-  }
-  if (!column->initialize_base(error, table, name,
-                               TypeTraits<Float>::data_type(), options)) {
-    return nullptr;
-  }
-  if (!column->values_.resize(error, table->max_row_id() + 1,
-                              TypeTraits<Float>::default_value())) {
-    return nullptr;
-  }
-  return column;
-}
+Column<Float>::Column(Table *table,
+                      const String &name,
+                      const ColumnOptions &)
+    : ColumnBase(table, name, FLOAT_DATA),
+      values_() {}
 
 Column<Float>::~Column() {}
 
-bool Column<Float>::set_default_value(Error *error, Int row_id) {
-  if (row_id >= values_.size()) {
-    if (!values_.resize(error, row_id + 1,
-                        TypeTraits<Float>::default_value())) {
-      return false;
-    }
+void Column<Float>::set(Int row_id, const Datum &datum) {
+  Float new_value = parse_datum(datum);
+  if (!table_->test_row(row_id)) {
+    throw "Invalid row ID";  // TODO
   }
-  Float value = TypeTraits<Float>::default_value();
-  for (Int i = 0; i < num_indexes(); ++i) {
-    if (!indexes_[i]->insert(error, row_id, value)) {
-      for (Int j = 0; j < i; ++j) {
-        indexes_[j]->remove(nullptr, row_id, value);
+  if (new_value.is_na()) {
+    unset(row_id);
+    return;
+  }
+  Float old_value = get(row_id);
+  if (old_value == new_value) {
+    return;
+  }
+  if (!old_value.is_na()) {
+    // TODO: Remove the old value from indexes.
+//    for (size_t i = 0; i < num_indexes(); ++i) {
+//      indexes_[i]->remove(row_id, old_value);
+//    }
+  }
+  size_t value_id = row_id.value();
+  if (value_id >= values_.size()) {
+    values_.resize(value_id + 1, Float::na());
+  }
+  // TODO: Insert the new value into indexes.
+//  for (size_t i = 0; i < num_indexes(); ++i) try {
+//    indexes_[i]->insert(row_id, datum)) {
+//  } catch (...) {
+//    for (size_t j = 0; j < i; ++i) {
+//      indexes_[j]->remove(row_id, datum);
+//    }
+//    throw;
+//  }
+  values_[value_id] = new_value;
+}
+
+void Column<Float>::get(Int row_id, Datum *datum) const {
+  size_t value_id = row_id.value();
+  if (value_id >= values_.size()) {
+    *datum = Float::na();
+  } else {
+    *datum = values_[value_id];
+  }
+}
+
+bool Column<Float>::contains(const Datum &datum) const {
+  // TODO: Use an index if exists.
+  Float value = parse_datum(datum);
+  if (value.is_na()) {
+    for (size_t i = 0; i < values_.size(); ++i) {
+      if (values_[i].is_na() && table_->_test_row(i)) {
+        return true;
       }
-      return false;
+    }
+  } else {
+    for (size_t i = 0; i < values_.size(); ++i) {
+      if (values_[i].value() == value.value()) {
+        return true;
+      }
     }
   }
-  values_.set(row_id, value);
-  return true;
+  return false;
+}
+
+Int Column<Float>::find_one(const Datum &datum) const {
+  // TODO: Use an index if exists.
+  Float value = parse_datum(datum);
+  if (value.is_na()) {
+    for (size_t i = 0; i < values_.size(); ++i) {
+      if (values_[i].is_na() && table_->_test_row(i)) {
+        return Int(i);
+      }
+    }
+  } else {
+    for (size_t i = 0; i < values_.size(); ++i) {
+      if (values_[i].value() == value.value()) {
+        return Int(i);
+      }
+    }
+  }
+  return Int::na();
 }
 
 void Column<Float>::unset(Int row_id) {
-  for (Int i = 0; i < num_indexes(); ++i) {
-    indexes_[i]->remove(nullptr, row_id, get(row_id));
+  Float value = get(row_id);
+  if (!value.is_na()) {
+    // TODO: Update indexes if exist.
+//    for (size_t i = 0; i < num_indexes(); ++i) {
+//      indexes_[i]->remove(row_id, value);
+//    }
+    values_[row_id.value()] = Float::na();
   }
-  values_.set(row_id, TypeTraits<Float>::default_value());
 }
 
-Column<Float>::Column() : ColumnBase(), values_() {}
+void Column<Float>::read(ArrayCRef<Record> records,
+                         ArrayRef<Float> values) const {
+  if (records.size() != values.size()) {
+    throw "Data size conflict";  // TODO
+  }
+  for (size_t i = 0; i < records.size(); ++i) {
+    values.set(i, get(records[i].row_id));
+  }
+}
+
+Float Column<Float>::parse_datum(const Datum &datum) {
+  switch (datum.type()) {
+    case NA_DATA: {
+      return Float::na();
+    }
+    case FLOAT_DATA: {
+      return datum.as_float();
+    }
+    default: {
+      throw "Wrong data type";  // TODO
+    }
+  }
+}
 
 }  // namespace impl
 }  // namespace grnxx
