@@ -3,9 +3,9 @@ TESTS =				\
 	test_data_types		\
 	test_string		\
 	test_db			\
-	test_table
+	test_table		\
+	test_column
 
-#	test_column		\
 #	test_index		\
 #	test_expression		\
 #	test_merger		\
@@ -30,8 +30,8 @@ test_db_LDADD = $(top_srcdir)/lib/grnxx/libgrnxx.la
 test_table_SOURCES = test_table.cpp
 test_table_LDADD = $(top_srcdir)/lib/grnxx/libgrnxx.la
 
-#test_column_SOURCES = test_column.cpp
-#test_column_LDADD = $(top_srcdir)/lib/grnxx/libgrnxx.la
+test_column_SOURCES = test_column.cpp
+test_column_LDADD = $(top_srcdir)/lib/grnxx/libgrnxx.la
 
 #test_index_SOURCES = test_index.cpp
 #test_index_LDADD = $(top_srcdir)/lib/grnxx/libgrnxx.la
