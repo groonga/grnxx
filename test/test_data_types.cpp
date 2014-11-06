@@ -720,6 +720,22 @@ void test_float() {
   assert((grnxx::Float::na() >= grnxx::Float::max()).is_na());
   assert((grnxx::Float::na() >= grnxx::Float::infinity()).is_na());
   assert((grnxx::Float::na() >= grnxx::Float::na()).is_na());
+
+  assert((grnxx::Float(0.0).next_toward(grnxx::Float::max())) ==
+         grnxx::Float::subnormal_min());
+  assert((grnxx::Float(0.0).next_toward(-grnxx::Float::max())) ==
+         -grnxx::Float::subnormal_min());
+  assert((grnxx::Float(0.0).next_toward(grnxx::Float::infinity())) ==
+         grnxx::Float::subnormal_min());
+  assert((grnxx::Float(0.0).next_toward(-grnxx::Float::infinity())) ==
+         -grnxx::Float::subnormal_min());
+  assert((grnxx::Float::infinity().next_toward(grnxx::Float(0.0)))
+         == grnxx::Float::max());
+  assert((-grnxx::Float::infinity().next_toward(grnxx::Float(0.0)))
+         == -grnxx::Float::max());
+  assert((grnxx::Float(0.0).next_toward(grnxx::Float::na())).is_na());
+  assert((grnxx::Float::na().next_toward(grnxx::Float(0.0))).is_na());
+  assert((grnxx::Float::na().next_toward(grnxx::Float::na())).is_na());
 }
 
 void test_geo_point() {
