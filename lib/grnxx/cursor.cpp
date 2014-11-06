@@ -9,11 +9,6 @@ constexpr size_t CURSOR_BLOCK_SIZE = 1024;
 
 }  // namespace
 
-CursorOptions::CursorOptions()
-    : offset(0),
-      limit(std::numeric_limits<size_t>::max()),
-      order_type(CURSOR_REGULAR_ORDER) {}
-
 size_t Cursor::read(size_t max_count, Array<Record> *records) {
   if (max_count == 0) {
     return 0;

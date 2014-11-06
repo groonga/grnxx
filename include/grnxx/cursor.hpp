@@ -2,6 +2,7 @@
 #define GRNXX_CURSOR_HPP
 
 #include <cstddef>
+#include <limits>
 
 #include "grnxx/array.hpp"
 #include "grnxx/data_types.hpp"
@@ -16,16 +17,19 @@ enum CursorOrderType {
 };
 
 struct CursorOptions {
-  // The first "offset" records are skipped (default: 0).
+  // The first "offset" records are skipped.
   size_t offset;
 
-  // At most "limit" records are read (default: numeric_limits<size_t>::max()).
+  // At most "limit" records are read.
   size_t limit;
 
-  // The order of records (default: REGULAR_ORDER).
+  // The order of records.
   CursorOrderType order_type;
 
-  CursorOptions();
+  CursorOptions()
+      : offset(0),
+        limit(std::numeric_limits<size_t>::max()),
+        order_type(CURSOR_REGULAR_ORDER) {}
 };
 
 class Cursor {
