@@ -9,13 +9,12 @@ namespace impl {
 
 ColumnBase::ColumnBase(Table *table,
                        const String &name,
-                       DataType data_type,
-                       Table *reference_table)
+                       DataType data_type)
     : ColumnInterface(),
       table_(table),
       name_(name),
       data_type_(data_type),
-      reference_table_(reference_table),
+      reference_table_(nullptr),
       is_key_(false),
       indexes_() {}
 

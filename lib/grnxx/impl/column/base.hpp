@@ -19,10 +19,7 @@ class ColumnBase : public ColumnInterface {
  public:
   // -- Public API (grnxx/column.hpp) --
 
-  ColumnBase(Table *table,
-             const String &name,
-             DataType data_type,
-             Table *reference_table = nullptr);
+  ColumnBase(Table *table, const String &name, DataType data_type);
   virtual ~ColumnBase();
 
   TableInterface *table() const;
