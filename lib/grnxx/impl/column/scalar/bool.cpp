@@ -18,6 +18,10 @@ void Column<Bool>::set(Int row_id, const Datum &datum) {
   if (!table_->test_row(row_id)) {
     throw "Invalid row ID";  // TODO
   }
+  if (value.is_na()) {
+    unset(row_id);
+    return;
+  }
   size_t value_id = row_id.value();
   if (value_id >= values_.size()) {
     values_.resize(value_id + 1, Bool::na());
