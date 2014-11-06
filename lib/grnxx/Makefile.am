@@ -17,7 +17,6 @@ libgrnxx_la_SOURCES =			\
 #	expression.cpp			\
 #	index.cpp			\
 #	merger.cpp			\
-#	name.cpp			\
 #	pipeline.cpp			\
 #	sorter.cpp
 
@@ -25,7 +24,6 @@ libgrnxx_includedir = ${includedir}/grnxx
 libgrnxx_include_HEADERS =		\
 	version.h
 
-#	name.hpp			\
 #	tree_index.hpp
 
 EXTRA_DIST = version.sh
