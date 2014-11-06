@@ -111,7 +111,347 @@ void test_bool() {
 }
 
 void test_int() {
-  // TODO
+  assert(grnxx::Int(0).type() == grnxx::INT_DATA);
+  assert(grnxx::Int::min().type() == grnxx::INT_DATA);
+  assert(grnxx::Int::max().type() == grnxx::INT_DATA);
+  assert(grnxx::Int::na().type() == grnxx::INT_DATA);
+
+  assert(grnxx::Int(0).value() == 0);
+  assert(grnxx::Int::min().value() == grnxx::Int::min_value());
+  assert(grnxx::Int::max().value() == grnxx::Int::max_value());
+  assert(grnxx::Int::na().value() == grnxx::Int::na_value());
+
+  assert(!grnxx::Int(0).is_min());
+  assert(grnxx::Int::min().is_min());
+  assert(!grnxx::Int::max().is_min());
+  assert(!grnxx::Int::na().is_min());
+
+  assert(!grnxx::Int(0).is_max());
+  assert(!grnxx::Int::min().is_max());
+  assert(grnxx::Int::max().is_max());
+  assert(!grnxx::Int::na().is_max());
+
+  assert(!grnxx::Int(0).is_na());
+  assert(!grnxx::Int::min().is_na());
+  assert(!grnxx::Int::max().is_na());
+  assert(grnxx::Int::na().is_na());
+
+  assert(+grnxx::Int(0) == grnxx::Int(0));
+  assert(+grnxx::Int(1) == grnxx::Int(1));
+  assert(+grnxx::Int::min() == grnxx::Int::min());
+  assert(+grnxx::Int::max() == grnxx::Int::max());
+  assert((+grnxx::Int::na()).is_na());
+
+  assert(-grnxx::Int(0) == grnxx::Int(0));
+  assert(-grnxx::Int(1) == grnxx::Int(-1));
+  assert(-grnxx::Int::min() == grnxx::Int::max());
+  assert(-grnxx::Int::max() == grnxx::Int::min());
+  assert((-grnxx::Int::na()).is_na());
+
+  assert(~grnxx::Int(0) == grnxx::Int(-1));
+  assert(~grnxx::Int(1) == grnxx::Int(-2));
+  assert(~grnxx::Int::min() == grnxx::Int(grnxx::Int::max_value() - 1));
+  assert((~grnxx::Int::max()).is_na());
+  assert((~grnxx::Int::na()).is_na());
+
+  grnxx::Int object(0);
+
+  assert(++object == grnxx::Int(1));
+  assert(object++ == grnxx::Int(1));
+  assert(object == grnxx::Int(2));
+
+  assert(--object == grnxx::Int(1));
+  assert(object-- == grnxx::Int(1));
+  assert(object == grnxx::Int(0));
+
+  object = grnxx::Int::na();
+
+  assert((++object).is_na());
+  assert((object++).is_na());
+  assert(object.is_na());
+
+  assert((--object).is_na());
+  assert((object--).is_na());
+  assert(object.is_na());
+
+  assert((grnxx::Int(0) & grnxx::Int(0)) == grnxx::Int(0));
+  assert((grnxx::Int(0) & grnxx::Int(1)) == grnxx::Int(0));
+  assert((grnxx::Int(0) & grnxx::Int::na()).is_na());
+  assert((grnxx::Int(1) & grnxx::Int(0)) == grnxx::Int(0));
+  assert((grnxx::Int(1) & grnxx::Int(1)) == grnxx::Int(1));
+  assert((grnxx::Int(1) & grnxx::Int::na()).is_na());
+  assert((grnxx::Int::na() & grnxx::Int(0)).is_na());
+  assert((grnxx::Int::na() & grnxx::Int(1)).is_na());
+  assert((grnxx::Int::na() & grnxx::Int::na()).is_na());
+
+  assert((grnxx::Int(0) | grnxx::Int(0)) == grnxx::Int(0));
+  assert((grnxx::Int(0) | grnxx::Int(1)) == grnxx::Int(1));
+  assert((grnxx::Int(0) | grnxx::Int::na()).is_na());
+  assert((grnxx::Int(1) | grnxx::Int(0)) == grnxx::Int(1));
+  assert((grnxx::Int(1) | grnxx::Int(1)) == grnxx::Int(1));
+  assert((grnxx::Int(1) | grnxx::Int::na()).is_na());
+  assert((grnxx::Int::na() | grnxx::Int(0)).is_na());
+  assert((grnxx::Int::na() | grnxx::Int(1)).is_na());
+  assert((grnxx::Int::na() | grnxx::Int::na()).is_na());
+
+  assert((grnxx::Int(0) ^ grnxx::Int(0)) == grnxx::Int(0));
+  assert((grnxx::Int(0) ^ grnxx::Int(1)) == grnxx::Int(1));
+  assert((grnxx::Int(0) ^ grnxx::Int::na()).is_na());
+  assert((grnxx::Int(1) ^ grnxx::Int(0)) == grnxx::Int(1));
+  assert((grnxx::Int(1) ^ grnxx::Int(1)) == grnxx::Int(0));
+  assert((grnxx::Int(1) ^ grnxx::Int::na()).is_na());
+  assert((grnxx::Int::na() ^ grnxx::Int(0)).is_na());
+  assert((grnxx::Int::na() ^ grnxx::Int(1)).is_na());
+  assert((grnxx::Int::na() ^ grnxx::Int::na()).is_na());
+
+  object = grnxx::Int(3);
+
+  assert((object &= grnxx::Int(1)) == grnxx::Int(1));
+  assert(object == grnxx::Int(1));
+  assert((object |= grnxx::Int(2)) == grnxx::Int(3));
+  assert(object == grnxx::Int(3));
+  assert((object ^= grnxx::Int(6)) == grnxx::Int(5));
+  assert(object == grnxx::Int(5));
+
+  object = grnxx::Int(0);
+
+  assert((object &= grnxx::Int::na()).is_na());
+  assert(object.is_na());
+  assert((object &= grnxx::Int(1)).is_na());
+  assert(object.is_na());
+
+  object = grnxx::Int(0);
+
+  assert((object |= grnxx::Int::na()).is_na());
+  assert(object.is_na());
+  assert((object |= grnxx::Int(1)).is_na());
+  assert(object.is_na());
+
+  object = grnxx::Int(0);
+
+  assert((object ^= grnxx::Int::na()).is_na());
+  assert(object.is_na());
+  assert((object ^= grnxx::Int(1)).is_na());
+  assert(object.is_na());
+
+  assert((grnxx::Int(1) << grnxx::Int(0)) == grnxx::Int(1));
+  assert((grnxx::Int(1) << grnxx::Int(1)) == grnxx::Int(2));
+  assert((grnxx::Int(1) << grnxx::Int(63)).is_na());
+  assert((grnxx::Int(1) << grnxx::Int(64)).is_na());
+  assert((grnxx::Int(1) << grnxx::Int(-1)).is_na());
+  assert((grnxx::Int(1) << grnxx::Int::na()).is_na());
+  assert((grnxx::Int::na() << grnxx::Int(1)).is_na());
+  assert((grnxx::Int::na() << grnxx::Int::na()).is_na());
+
+  assert((grnxx::Int(4) >> grnxx::Int(0)) == grnxx::Int(4));
+  assert((grnxx::Int(4) >> grnxx::Int(1)) == grnxx::Int(2));
+  assert((grnxx::Int(4) >> grnxx::Int(63)) == grnxx::Int(0));
+  assert((grnxx::Int(4) >> grnxx::Int(64)).is_na());
+  assert((grnxx::Int(4) >> grnxx::Int(-1)).is_na());
+  assert((grnxx::Int(4) >> grnxx::Int::na()).is_na());
+  assert((grnxx::Int::na() >> grnxx::Int(1)).is_na());
+  assert((grnxx::Int::na() >> grnxx::Int::na()).is_na());
+
+  object = grnxx::Int(1);
+
+  assert((object <<= grnxx::Int(3)) == grnxx::Int(8));
+  assert(object == grnxx::Int(8));
+  assert((object >>= grnxx::Int(2)) == grnxx::Int(2));
+  assert(object == grnxx::Int(2));
+
+  object = grnxx::Int(-1);
+
+  assert(object.arithmetic_right_shift(grnxx::Int(0)) == grnxx::Int(-1));
+  assert(object.arithmetic_right_shift(grnxx::Int(1)) == grnxx::Int(-1));
+
+  assert(object.logical_right_shift(grnxx::Int(0)) == grnxx::Int(-1));
+  assert(object.logical_right_shift(grnxx::Int(1)).is_max());
+
+  assert((grnxx::Int(1) + grnxx::Int(1)) == grnxx::Int(2));
+  assert((grnxx::Int(1) + grnxx::Int::max()).is_na());
+  assert((grnxx::Int(1) + grnxx::Int::na()).is_na());
+  assert((grnxx::Int(-1) + grnxx::Int(-1)) == grnxx::Int(-2));
+  assert((grnxx::Int(-1) + grnxx::Int::min()).is_na());
+  assert((grnxx::Int(-1) + grnxx::Int::na()).is_na());
+  assert((grnxx::Int::na() + grnxx::Int(1)).is_na());
+  assert((grnxx::Int::na() + grnxx::Int::na()).is_na());
+
+  assert((grnxx::Int(1) - grnxx::Int(1)) == grnxx::Int(0));
+  assert((grnxx::Int(1) - grnxx::Int::min()).is_na());
+  assert((grnxx::Int(1) - grnxx::Int::na()).is_na());
+  assert((grnxx::Int(-1) - grnxx::Int(-1)) == grnxx::Int(0));
+  assert((grnxx::Int(-1) - grnxx::Int::max()).is_na());
+  assert((grnxx::Int(-1) - grnxx::Int::na()).is_na());
+  assert((grnxx::Int::na() - grnxx::Int(1)).is_na());
+  assert((grnxx::Int::na() - grnxx::Int::na()).is_na());
+
+  assert((grnxx::Int(1) * grnxx::Int(0)) == grnxx::Int(0));
+  assert((grnxx::Int(1) * grnxx::Int(2)) == grnxx::Int(2));
+  assert((grnxx::Int(1) * grnxx::Int::min()).is_min());
+  assert((grnxx::Int(1) * grnxx::Int::max()).is_max());
+  assert((grnxx::Int(1) * grnxx::Int::na()).is_na());
+  assert((grnxx::Int(2) * grnxx::Int(0)) == grnxx::Int(0));
+  assert((grnxx::Int(2) * grnxx::Int(2)) == grnxx::Int(4));
+  assert((grnxx::Int(2) * grnxx::Int::min()).is_na());
+  assert((grnxx::Int(2) * grnxx::Int::max()).is_na());
+  assert((grnxx::Int(2) * grnxx::Int::na()).is_na());
+  assert((grnxx::Int::na() * grnxx::Int(0)).is_na());
+  assert((grnxx::Int::na() * grnxx::Int(2)).is_na());
+  assert((grnxx::Int::na() * grnxx::Int::na()).is_na());
+
+  object = grnxx::Int(1);
+
+  assert((object += grnxx::Int(2)) == grnxx::Int(3));
+  assert(object == grnxx::Int(3));
+  assert((object -= grnxx::Int(1)) == grnxx::Int(2));
+  assert(object == grnxx::Int(2));
+  assert((object *= grnxx::Int(4)) == grnxx::Int(8));
+  assert(object == grnxx::Int(8));
+
+  object = grnxx::Int(1);
+
+  assert((object += grnxx::Int::na()).is_na());
+  assert(object.is_na());
+  assert((object += grnxx::Int(1)).is_na());
+  assert(object.is_na());
+
+  object = grnxx::Int(1);
+
+  assert((object -= grnxx::Int::na()).is_na());
+  assert(object.is_na());
+  assert((object -= grnxx::Int(1)).is_na());
+  assert(object.is_na());
+
+  object = grnxx::Int(1);
+
+  assert((object *= grnxx::Int::na()).is_na());
+  assert(object.is_na());
+  assert((object *= grnxx::Int(1)).is_na());
+  assert(object.is_na());
+
+  assert((grnxx::Int(0) / grnxx::Int(0)).is_na());
+  assert((grnxx::Int(0) / grnxx::Int(1)) == grnxx::Int(0));
+  assert((grnxx::Int(0) / grnxx::Int(2)) == grnxx::Int(0));
+  assert((grnxx::Int(0) / grnxx::Int::na()).is_na());
+  assert((grnxx::Int(2) / grnxx::Int(0)).is_na());
+  assert((grnxx::Int(2) / grnxx::Int(1)) == grnxx::Int(2));
+  assert((grnxx::Int(2) / grnxx::Int(2)) == grnxx::Int(1));
+  assert((grnxx::Int(2) / grnxx::Int::na()).is_na());
+  assert((grnxx::Int(3) / grnxx::Int(2)) == grnxx::Int(1));
+  assert((grnxx::Int(3) / grnxx::Int(-2)) == grnxx::Int(-1));
+  assert((grnxx::Int(-3) / grnxx::Int(2)) == grnxx::Int(-1));
+  assert((grnxx::Int(-3) / grnxx::Int(-2)) == grnxx::Int(1));
+  assert((grnxx::Int::min() / grnxx::Int(-1)).is_max());
+  assert((grnxx::Int::max() / grnxx::Int(-1)).is_min());
+  assert((grnxx::Int::na() / grnxx::Int(0)).is_na());
+  assert((grnxx::Int::na() / grnxx::Int(1)).is_na());
+  assert((grnxx::Int::na() / grnxx::Int::na()).is_na());
+
+  assert((grnxx::Int(0) % grnxx::Int(0)).is_na());
+  assert((grnxx::Int(0) % grnxx::Int(1)) == grnxx::Int(0));
+  assert((grnxx::Int(0) % grnxx::Int(2)) == grnxx::Int(0));
+  assert((grnxx::Int(0) % grnxx::Int::na()).is_na());
+  assert((grnxx::Int(3) % grnxx::Int(0)).is_na());
+  assert((grnxx::Int(3) % grnxx::Int(1)) == grnxx::Int(0));
+  assert((grnxx::Int(3) % grnxx::Int(2)) == grnxx::Int(1));
+  assert((grnxx::Int(3) % grnxx::Int::na()).is_na());
+  assert((grnxx::Int(3) % grnxx::Int(-2)) == grnxx::Int(1));
+  assert((grnxx::Int(-3) % grnxx::Int(2)) == grnxx::Int(-1));
+  assert((grnxx::Int(-3) % grnxx::Int(-2)) == grnxx::Int(-1));
+  assert((grnxx::Int::na() % grnxx::Int(0)).is_na());
+  assert((grnxx::Int::na() % grnxx::Int(1)).is_na());
+  assert((grnxx::Int::na() % grnxx::Int::na()).is_na());
+
+  object = grnxx::Int(13);
+
+  assert((object /= grnxx::Int(2)) == grnxx::Int(6));
+  assert(object == grnxx::Int(6));
+  assert((object %= grnxx::Int(3)) == grnxx::Int(0));
+  assert(object == grnxx::Int(0));
+
+  object = grnxx::Int(1);
+
+  assert((object /= grnxx::Int(0)).is_na());
+  assert(object.is_na());
+
+  object = grnxx::Int(1);
+
+  assert((object /= grnxx::Int::na()).is_na());
+  assert(object.is_na());
+  assert((object /= grnxx::Int(1)).is_na());
+  assert(object.is_na());
+
+  object = grnxx::Int(1);
+
+  assert((object %= grnxx::Int(0)).is_na());
+  assert(object.is_na());
+
+  object = grnxx::Int(1);
+
+  assert((object %= grnxx::Int::na()).is_na());
+  assert(object.is_na());
+  assert((object %= grnxx::Int(1)).is_na());
+  assert(object.is_na());
+
+  assert((grnxx::Int(0) == grnxx::Int(0)).is_true());
+  assert((grnxx::Int(0) == grnxx::Int(1)).is_false());
+  assert((grnxx::Int(0) == grnxx::Int::na()).is_na());
+  assert((grnxx::Int(1) == grnxx::Int(0)).is_false());
+  assert((grnxx::Int(1) == grnxx::Int(1)).is_true());
+  assert((grnxx::Int(1) == grnxx::Int::na()).is_na());
+  assert((grnxx::Int::na() == grnxx::Int(0)).is_na());
+  assert((grnxx::Int::na() == grnxx::Int(1)).is_na());
+  assert((grnxx::Int::na() == grnxx::Int::na()).is_na());
+
+  assert((grnxx::Int(0) != grnxx::Int(0)).is_false());
+  assert((grnxx::Int(0) != grnxx::Int(1)).is_true());
+  assert((grnxx::Int(0) != grnxx::Int::na()).is_na());
+  assert((grnxx::Int(1) != grnxx::Int(0)).is_true());
+  assert((grnxx::Int(1) != grnxx::Int(1)).is_false());
+  assert((grnxx::Int(1) != grnxx::Int::na()).is_na());
+  assert((grnxx::Int::na() != grnxx::Int(0)).is_na());
+  assert((grnxx::Int::na() != grnxx::Int(1)).is_na());
+  assert((grnxx::Int::na() != grnxx::Int::na()).is_na());
+
+  assert((grnxx::Int(0) < grnxx::Int(0)).is_false());
+  assert((grnxx::Int(0) < grnxx::Int(1)).is_true());
+  assert((grnxx::Int(0) < grnxx::Int::na()).is_na());
+  assert((grnxx::Int(1) < grnxx::Int(0)).is_false());
+  assert((grnxx::Int(1) < grnxx::Int(1)).is_false());
+  assert((grnxx::Int(1) < grnxx::Int::na()).is_na());
+  assert((grnxx::Int::na() < grnxx::Int(0)).is_na());
+  assert((grnxx::Int::na() < grnxx::Int(1)).is_na());
+  assert((grnxx::Int::na() < grnxx::Int::na()).is_na());
+
+  assert((grnxx::Int(0) > grnxx::Int(0)).is_false());
+  assert((grnxx::Int(0) > grnxx::Int(1)).is_false());
+  assert((grnxx::Int(0) > grnxx::Int::na()).is_na());
+  assert((grnxx::Int(1) > grnxx::Int(0)).is_true());
+  assert((grnxx::Int(1) > grnxx::Int(1)).is_false());
+  assert((grnxx::Int(1) > grnxx::Int::na()).is_na());
+  assert((grnxx::Int::na() > grnxx::Int(0)).is_na());
+  assert((grnxx::Int::na() > grnxx::Int(1)).is_na());
+  assert((grnxx::Int::na() > grnxx::Int::na()).is_na());
+
+  assert((grnxx::Int(0) <= grnxx::Int(0)).is_true());
+  assert((grnxx::Int(0) <= grnxx::Int(1)).is_true());
+  assert((grnxx::Int(0) <= grnxx::Int::na()).is_na());
+  assert((grnxx::Int(1) <= grnxx::Int(0)).is_false());
+  assert((grnxx::Int(1) <= grnxx::Int(1)).is_true());
+  assert((grnxx::Int(1) <= grnxx::Int::na()).is_na());
+  assert((grnxx::Int::na() <= grnxx::Int(0)).is_na());
+  assert((grnxx::Int::na() <= grnxx::Int(1)).is_na());
+  assert((grnxx::Int::na() <= grnxx::Int::na()).is_na());
+
+  assert((grnxx::Int(0) >= grnxx::Int(0)).is_true());
+  assert((grnxx::Int(0) >= grnxx::Int(1)).is_false());
+  assert((grnxx::Int(0) >= grnxx::Int::na()).is_na());
+  assert((grnxx::Int(1) >= grnxx::Int(0)).is_true());
+  assert((grnxx::Int(1) >= grnxx::Int(1)).is_true());
+  assert((grnxx::Int(1) >= grnxx::Int::na()).is_na());
+  assert((grnxx::Int::na() >= grnxx::Int(0)).is_na());
+  assert((grnxx::Int::na() >= grnxx::Int(1)).is_na());
+  assert((grnxx::Int::na() >= grnxx::Int::na()).is_na());
 }
 
 void test_float() {
