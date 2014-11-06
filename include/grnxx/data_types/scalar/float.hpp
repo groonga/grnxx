@@ -117,6 +117,11 @@ class Float {
     return (is_na() || rhs.is_na()) ? Bool::na() : Bool(value_ >= rhs.value_);
   }
 
+  // Return the next representable toward "to".
+  Float next_toward(Float to) const {
+    return Float(std::nextafter(value_, to.value_));
+  }
+
   static constexpr Float min() {
     return Float(min_value());
   }
