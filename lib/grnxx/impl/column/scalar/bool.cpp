@@ -1,5 +1,7 @@
 #include "grnxx/impl/column/scalar/bool.hpp"
 
+#include "grnxx/impl/table.hpp"
+
 namespace grnxx {
 namespace impl {
 
@@ -13,6 +15,9 @@ Column<Bool>::~Column() {}
 
 void Column<Bool>::set(Int row_id, const Datum &datum) {
   Bool value = parse_datum(datum);
+  if (!table_->test_row(row_id)) {
+    throw "Invalid row ID";  // TODO
+  }
   size_t value_id = row_id.value();
   if (value_id >= values_.size()) {
     values_.resize(value_id + 1, Bool::na());
