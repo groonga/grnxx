@@ -36,6 +36,9 @@ class Float {
   constexpr bool is_max() const {
     return value_ == max_value();
   }
+  constexpr bool is_finite() const {
+    return std::isfinite(value_);
+  }
   constexpr bool is_infinity() const {
     return std::isinf(value_);
   }
