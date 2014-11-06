@@ -86,6 +86,18 @@ void test_column() {
 //  assert(!text_column->has_key_attribute());
 //  assert(text_column->num_indexes() == 0);
 
+  // Create a column named "Reference".
+  grnxx::ColumnOptions options;
+  options.reference_table_name = "Table";
+  auto reference_column =
+      table->create_column("Reference", grnxx::INT_DATA, options);
+  assert(reference_column->table() == table);
+  assert(reference_column->name() == "Reference");
+  assert(reference_column->data_type() == grnxx::INT_DATA);
+  assert(reference_column->reference_table());
+  assert(!reference_column->is_key());
+//  assert(int_column->num_indexes() == 0);
+
 //  // Create a column named "BoolVectorColumn".
 //  // The column stores Text values.
 //  auto bool_vector_column = table->create_column(&error, "BoolVectorColumn",
@@ -146,20 +158,6 @@ void test_column() {
 //  assert(!text_vector_column->has_key_attribute());
 //  assert(text_vector_column->num_indexes() == 0);
 
-//  // Create a column named "RefColumn".
-//  // The column stores Int values.
-//  grnxx::ColumnOptions options;
-//  options.ref_table_name = "Table";
-//  auto ref_column = table->create_column(&error, "RefColumn",
-//                                         grnxx::INT_DATA, options);
-//  assert(ref_column);
-//  assert(ref_column->table() == table);
-//  assert(ref_column->name() == "RefColumn");
-//  assert(ref_column->data_type() == grnxx::INT_DATA);
-//  assert(ref_column->ref_table());
-//  assert(!ref_column->has_key_attribute());
-//  assert(ref_column->num_indexes() == 0);
-
 //  // Create a column named "RefVectorColumn".
 //  // The column stores Int values.
 //  options.ref_table_name = "Table";
@@ -197,6 +195,10 @@ void test_column() {
 //  assert(datum.type() == grnxx::TEXT_DATA);
 //  assert(datum.force_text() == "");
 
+  reference_column->get(row_id, &datum);
+  assert(datum.type() == grnxx::INT_DATA);
+  assert(datum.as_int().is_na());
+
 //  assert(bool_vector_column->get(&error, 1, &datum));
 //  assert(datum.type() == grnxx::BOOL_VECTOR_DATA);
 //  assert(datum.force_bool_vector() == grnxx::BoolVector{});
@@ -217,10 +219,6 @@ void test_column() {
 //  assert(datum.type() == grnxx::TEXT_VECTOR_DATA);
 //  assert(datum.force_text_vector() == grnxx::TextVector(nullptr, 0));
 
-//  assert(ref_column->get(&error, 1, &datum));
-//  assert(datum.type() == grnxx::INT_DATA);
-//  assert(datum.force_int() == 0);
-
 //  assert(ref_vector_column->get(&error, 1, &datum));
 //  assert(datum.type() == grnxx::INT_VECTOR_DATA);
 //  assert(datum.force_int_vector() == grnxx::IntVector(nullptr, 0));
@@ -235,6 +233,11 @@ void test_column() {
   int_column->get(row_id, &datum);
   assert(datum.type() == grnxx::INT_DATA);
   assert(datum.as_int() == grnxx::Int(123));
+
+  reference_column->set(row_id, row_id);
+  reference_column->get(row_id, &datum);
+  assert(datum.type() == grnxx::INT_DATA);
+  assert(datum.as_int() == row_id);
 
 //  // Set and get values.
 //  assert(float_column->set(&error, 1, grnxx::Float(0.25)));
@@ -256,7 +259,6 @@ void test_column() {
 //  grnxx::Text text_vector_value[] = { "abc", "DEF", "ghi" };
 //  assert(text_vector_column->set(&error, 1,
 //                                 grnxx::TextVector(text_vector_value, 3)));
-//  assert(ref_column->set(&error, 1, grnxx::Int(1)));
 //  grnxx::Int ref_vector_value[] = { 1, 1, 1 };
 //  assert(ref_vector_column->set(&error, 1,
 //                                grnxx::IntVector(ref_vector_value, 3)));
@@ -297,10 +299,6 @@ void test_column() {
 //  assert(datum.type() == grnxx::TEXT_VECTOR_DATA);
 //  assert(datum.force_text_vector() ==
 //         grnxx::TextVector(text_vector_value, 3));
-
-//  assert(ref_column->get(&error, 1, &datum));
-//  assert(datum.type() == grnxx::INT_DATA);
-//  assert(datum.force_int() == 1);
 
 //  assert(ref_vector_column->get(&error, 1, &datum));
 //  assert(datum.type() == grnxx::INT_VECTOR_DATA);
