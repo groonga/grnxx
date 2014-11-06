@@ -39,7 +39,7 @@ class Float {
   constexpr bool is_finite() const {
     return std::isfinite(value_);
   }
-  constexpr bool is_infinity() const {
+  constexpr bool is_infinite() const {
     return std::isinf(value_);
   }
   constexpr bool is_na() const {
