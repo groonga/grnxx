@@ -89,11 +89,13 @@ size_t TableRegularCursor::read(ArrayRef<Record> records) {
 
 std::unique_ptr<Cursor> TableRegularCursor::create(
     const Table *table,
-    const CursorOptions &options) {
+    const CursorOptions &options) try {
   if (table->is_empty()) {
     return std::unique_ptr<Cursor>(new EmptyCursor);
   }
   return std::unique_ptr<Cursor>(new TableRegularCursor(table, options));
+} catch (const std::bad_alloc &) {
+  throw "Memory allocation failed";  // TODO
 }
 
 TableRegularCursor::TableRegularCursor(const Table *table,
@@ -187,11 +189,13 @@ size_t TableReverseCursor::read(ArrayRef<Record> records) {
 
 std::unique_ptr<Cursor> TableReverseCursor::create(
     const Table *table,
-    const CursorOptions &options) {
+    const CursorOptions &options) try {
   if (table->is_empty()) {
     return std::unique_ptr<Cursor>(new EmptyCursor);
   }
   return std::unique_ptr<Cursor>(new TableReverseCursor(table, options));
+} catch (const std::bad_alloc &) {
+  throw "Memorya allocation failed";  // TODO
 }
 
 TableReverseCursor::TableReverseCursor(const Table *table,
