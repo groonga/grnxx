@@ -24,16 +24,6 @@ class Column<Bool> : public ColumnBase {
 
   // -- Internal API (grnxx/impl/column/base.hpp) --
 
-  // Create a new column.
-  //
-  // On success, returns the column.
-  // On failure, throws an exception.
-  static std::unique_ptr<ColumnBase> create(
-      Table *table,
-      const String &name,
-      DataType data_type,
-      const ColumnOptions &options);
-
   // Unset the value.
   void unset(Int row_id);
 
