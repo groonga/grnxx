@@ -128,6 +128,12 @@ class Float {
   static constexpr Float max() {
     return Float(max_value());
   }
+  static constexpr Float normal_min() {
+    return Float(normal_min_value());
+  }
+  static constexpr Float subnormal_min() {
+    return Float(subnormal_min_value());
+  }
   static constexpr Float infinity() {
     return Float(infinity_value());
   }
@@ -136,10 +142,16 @@ class Float {
   }
 
   static constexpr double min_value() {
-    return std::numeric_limits<double>::min();
+    return std::numeric_limits<double>::lowest();
   }
   static constexpr double max_value() {
     return std::numeric_limits<double>::max();
+  }
+  static constexpr double normal_min_value() {
+    return std::numeric_limits<double>::min();
+  }
+  static constexpr double subnormal_min_value() {
+    return std::numeric_limits<double>::denorm_min();
   }
   static constexpr double infinity_value() {
     return std::numeric_limits<double>::infinity();

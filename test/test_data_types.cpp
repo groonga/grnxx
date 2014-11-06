@@ -459,12 +459,19 @@ void test_float() {
   assert(grnxx::Float(0.0).type() == grnxx::FLOAT_DATA);
   assert(grnxx::Float::min().type() == grnxx::FLOAT_DATA);
   assert(grnxx::Float::max().type() == grnxx::FLOAT_DATA);
+  assert(grnxx::Float::normal_min().type() == grnxx::FLOAT_DATA);
+  assert(grnxx::Float::subnormal_min().type() == grnxx::FLOAT_DATA);
+  assert(grnxx::Float::max().type() == grnxx::FLOAT_DATA);
   assert(grnxx::Float::infinity().type() == grnxx::FLOAT_DATA);
   assert(grnxx::Float::na().type() == grnxx::FLOAT_DATA);
 
   assert(grnxx::Float(0.0).value() == 0.0);
   assert(grnxx::Float::min().value() == grnxx::Float::min_value());
   assert(grnxx::Float::max().value() == grnxx::Float::max_value());
+  assert(grnxx::Float::normal_min().value() ==
+         grnxx::Float::normal_min_value());
+  assert(grnxx::Float::subnormal_min().value() ==
+         grnxx::Float::subnormal_min_value());
   assert(grnxx::Float::infinity().value() == grnxx::Float::infinity_value());
   assert(std::isnan(grnxx::Float::na().value()));
 
@@ -507,8 +514,8 @@ void test_float() {
 
   assert(-grnxx::Float(0.0) == grnxx::Float(0.0));
   assert(-grnxx::Float(1.0) == grnxx::Float(-1.0));
-  assert(-grnxx::Float::min() == grnxx::Float(-grnxx::Float::min_value()));
-  assert(-grnxx::Float::max() == grnxx::Float(-grnxx::Float::max_value()));
+  assert(-grnxx::Float::min() == grnxx::Float::max());
+  assert(-grnxx::Float::max() == grnxx::Float::min());
   assert(-grnxx::Float::infinity() ==
          grnxx::Float(-grnxx::Float::infinity_value()));
   assert((-grnxx::Float::na()).is_na());
@@ -523,7 +530,7 @@ void test_float() {
 
   assert((grnxx::Float(1.0) - grnxx::Float(1.0)) == grnxx::Float(0.0));
   assert((grnxx::Float::max() - -grnxx::Float::max()).is_infinite());
-  assert((grnxx::Float::infinity() - grnxx::Float::min()).is_infinite());
+  assert((grnxx::Float::infinity() - grnxx::Float::max()).is_infinite());
   assert((grnxx::Float::infinity() - grnxx::Float::infinity()).is_na());
   assert((grnxx::Float(1.0) - grnxx::Float::na()).is_na());
   assert((grnxx::Float::na() - grnxx::Float(1.0)).is_na());
@@ -531,7 +538,8 @@ void test_float() {
 
   assert((grnxx::Float(2.0) * grnxx::Float(0.5)) == grnxx::Float(1.0));
   assert((grnxx::Float::max() * grnxx::Float::max()).is_infinite());
-  assert((grnxx::Float::infinity() * grnxx::Float::min()).is_infinite());
+  assert((grnxx::Float::infinity() * grnxx::Float::subnormal_min())
+         == grnxx::Float::infinity());
   assert((grnxx::Float::infinity() * grnxx::Float(0.0)).is_na());
   assert((grnxx::Float(1.0) * grnxx::Float::na()).is_na());
   assert((grnxx::Float::na() * grnxx::Float(1.0)).is_na());
@@ -570,7 +578,7 @@ void test_float() {
   assert((grnxx::Float(1.0) / grnxx::Float(2.0)) == grnxx::Float(0.5));
   assert((grnxx::Float(1.0) / grnxx::Float(0.0)).is_infinite());
   assert((grnxx::Float(1.0) / grnxx::Float::infinity()) == grnxx::Float(0.0));
-  assert((grnxx::Float::max() / grnxx::Float::min()).is_infinite());
+  assert((grnxx::Float::max() / grnxx::Float::subnormal_min()).is_infinite());
   assert((grnxx::Float::infinity() / grnxx::Float::max()).is_infinite());
   assert((grnxx::Float::infinity() / grnxx::Float::infinity()).is_na());
   assert((grnxx::Float(0.0) / grnxx::Float(0.0)).is_na());
