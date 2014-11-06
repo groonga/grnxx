@@ -1,5 +1,5 @@
-#ifndef GRNXX_IMPL_COLUMN_COLUMN_VECTOR_INT_HPP
-#define GRNXX_IMPL_COLUMN_COLUMN_VECTOR_INT_HPP
+#ifndef GRNXX_IMPL_COLUMN_VECTOR_INT_HPP
+#define GRNXX_IMPL_COLUMN_VECTOR_INT_HPP
 
 #include "grnxx/impl/column/column.hpp"
 
@@ -69,4 +69,4 @@ class Column<Vector<Int>> : public ColumnBase {
 }  // namespace impl
 }  // namespace grnxx
 
-#endif  // GRNXX_IMPL_COLUMN_COLUMN_VECTOR_INT_HPP
+#endif  // GRNXX_IMPL_COLUMN_VECTOR_INT_HPP

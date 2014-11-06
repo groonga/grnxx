@@ -1,5 +1,5 @@
-#ifndef GRNXX_IMPL_COLUMN_COLUMN_TEXT_HPP
-#define GRNXX_IMPL_COLUMN_COLUMN_TEXT_HPP
+#ifndef GRNXX_IMPL_COLUMN_SCALAR_TEXT_HPP
+#define GRNXX_IMPL_COLUMN_SCALAR_TEXT_HPP
 
 #include "grnxx/impl/column/column.hpp"
 
@@ -71,4 +71,4 @@ class Column<Text> : public impl::ColumnBase {
 }  // namespace impl
 }  // namespace grnxx
 
-#endif  // GRNXX_IMPL_COLUMN_COLUMN_TEXT_HPP
+#endif  // GRNXX_IMPL_COLUMN_SCALAR_TEXT_HPP

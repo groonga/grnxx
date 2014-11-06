@@ -1,5 +1,5 @@
-#ifndef GRNXX_IMPL_COLUMN_COLUMN_VECTOR_GEO_POINT_HPP
-#define GRNXX_IMPL_COLUMN_COLUMN_VECTOR_GEO_POINT_HPP
+#ifndef GRNXX_IMPL_COLUMN_VECTOR_GEO_POINT_HPP
+#define GRNXX_IMPL_COLUMN_VECTOR_GEO_POINT_HPP
 
 #include "grnxx/impl/column/column.hpp"
 
@@ -68,4 +68,4 @@ class Column<Vector<GeoPoint>> : public ColumnBase {
 }  // namespace impl
 }  // namespace grnxx
 
-#endif  // GRNXX_IMPL_COLUMN_COLUMN_VECTOR_GEO_POINT_HPP
+#endif  // GRNXX_IMPL_COLUMN_VECTOR_GEO_POINT_HPP

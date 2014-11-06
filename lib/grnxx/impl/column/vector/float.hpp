@@ -1,5 +1,5 @@
-#ifndef GRNXX_IMPL_COLUMN_COLUMN_VECTOR_FLOAT_HPP
-#define GRNXX_IMPL_COLUMN_COLUMN_VECTOR_FLOAT_HPP
+#ifndef GRNXX_IMPL_COLUMN_VECTOR_FLOAT_HPP
+#define GRNXX_IMPL_COLUMN_VECTOR_FLOAT_HPP
 
 #include "grnxx/impl/column/column.hpp"
 
@@ -66,4 +66,4 @@ class Column<Vector<Float>> : public ColumnBase {
 }  // namespace impl
 }  // namespace grnxx
 
-#endif  // GRNXX_IMPL_COLUMN_COLUMN_VECTOR_FLOAT_HPP
+#endif  // GRNXX_IMPL_COLUMN_VECTOR_FLOAT_HPP

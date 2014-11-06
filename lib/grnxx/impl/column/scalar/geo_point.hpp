@@ -1,5 +1,5 @@
-#ifndef GRNXX_IMPL_COLUMN_COLUMN_GEO_POINT_HPP
-#define GRNXX_IMPL_COLUMN_COLUMN_GEO_POINT_HPP
+#ifndef GRNXX_IMPL_COLUMN_SCALAR_GEO_POINT_HPP
+#define GRNXX_IMPL_COLUMN_SCALAR_GEO_POINT_HPP
 
 #include "grnxx/impl/column/column.hpp"
 
@@ -11,4 +11,4 @@ namespace impl {
 }  // namespace impl
 }  // namespace grnxx
 
-#endif  // GRNXX_IMPL_COLUMN_COLUMN_GEO_POINT_HPP
+#endif  // GRNXX_IMPL_COLUMN_SCALAR_GEO_POINT_HPP
