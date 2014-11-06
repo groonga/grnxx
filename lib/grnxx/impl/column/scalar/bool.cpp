@@ -58,9 +58,11 @@ Int Column<Bool>::find_one(const Datum &datum) const {
 }
 
 void Column<Bool>::unset(Int row_id) {
-  size_t value_id = row_id.value();
-  values_[value_id] = Bool::na();
-  // TODO: Update indexes if exist.
+  Bool value = get(row_id);
+  if (!value.is_na()) {
+    values_[row_id.value()] = Bool::na();
+    // TODO: Update indexes if exist.
+  }
 }
 
 void Column<Bool>::read(ArrayCRef<Record> records,
