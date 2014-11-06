@@ -45,7 +45,7 @@ class ColumnBase : public ColumnInterface {
   Index *create_index(
       const String &name,
       IndexType type,
-      const IndexOptions &options = IndexOptions());
+      const IndexOptions &options);
   void remove_index(const String &name);
   void rename_index(const String &name, const String &new_name);
   void reorder_index(const String &name, const String &prev_name);
@@ -71,7 +71,7 @@ class ColumnBase : public ColumnInterface {
       Table *table,
       const String &name,
       DataType data_type,
-      const ColumnOptions &options = ColumnOptions());
+      const ColumnOptions &options);
 
   // Return the owner table.
   Table *_table() const {
@@ -128,7 +128,7 @@ class ColumnBase : public ColumnInterface {
 //                       Table *table,
 //                       const String &name,
 //                       DataType data_type,
-//                       const ColumnOptions &options = ColumnOptions());
+//                       const ColumnOptions &options);
 
 // private:
 //  // Find an index with its ID.

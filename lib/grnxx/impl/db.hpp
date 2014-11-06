@@ -34,7 +34,7 @@ class DB : public DBInterface {
   }
   Table *find_table(const String &name) const;
 
-  void save(const String &path, const DBOptions &options = DBOptions()) const;
+  void save(const String &path, const DBOptions &options) const;
 
  private:
   Array<std::unique_ptr<Table>> tables_;

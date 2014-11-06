@@ -49,7 +49,7 @@ class Table : public TableInterface {
 
   ColumnBase *create_column(const String &name,
                             DataType data_type,
-                            const ColumnOptions &options = ColumnOptions());
+                            const ColumnOptions &options);
   void remove_column(const String &name);
   void rename_column(const String &name, const String &new_name);
   void reorder_column(const String &name, const String &prev_name);
@@ -76,8 +76,7 @@ class Table : public TableInterface {
   }
   Int find_row(const Datum &key) const;
 
-  std::unique_ptr<Cursor> create_cursor(
-      const CursorOptions &options = CursorOptions()) const;
+  std::unique_ptr<Cursor> create_cursor(const CursorOptions &options) const;
 
   // -- Internal API --
 
@@ -88,7 +87,7 @@ class Table : public TableInterface {
   static std::unique_ptr<Table> create(
       DB *db,
       const String &name,
-      const TableOptions &options = TableOptions());
+      const TableOptions &options);
 
   // Return the owner DB.
   DB *_db() const {
