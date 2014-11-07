@@ -739,7 +739,79 @@ void test_float() {
 }
 
 void test_geo_point() {
-  // TODO
+  grnxx::GeoPoint zero(grnxx::Int(0), grnxx::Int(0));
+  grnxx::GeoPoint north_pole(grnxx::Float(90.0), grnxx::Float(100.0));
+  grnxx::GeoPoint south_pole(grnxx::Float(-90.0), grnxx::Float(100.0));
+  grnxx::GeoPoint date_line(grnxx::Float(0.0), grnxx::Float(180.0));
+  grnxx::GeoPoint na(grnxx::Int::na(), grnxx::Int::na());
+
+  assert(zero.type() == grnxx::GEO_POINT_DATA);
+  assert(north_pole.type() == grnxx::GEO_POINT_DATA);
+  assert(south_pole.type() == grnxx::GEO_POINT_DATA);
+  assert(date_line.type() == grnxx::GEO_POINT_DATA);
+  assert(na.type() == grnxx::GEO_POINT_DATA);
+
+  assert(zero.latitude() == 0);
+  assert(date_line.latitude() == 0);
+  assert(na.latitude() == grnxx::GeoPoint::na_latitude());
+
+  assert(zero.longitude() == 0);
+  assert(north_pole.longitude() == 0);
+  assert(south_pole.longitude() == 0);
+  assert(na.longitude() == grnxx::GeoPoint::na_longitude());
+
+  assert(zero.latitude_in_milliseconds() == grnxx::Int(0));
+  assert(date_line.latitude_in_milliseconds() == grnxx::Int(0));
+  assert(na.latitude_in_milliseconds().is_na());
+
+  assert(zero.longitude_in_milliseconds() == grnxx::Int(0));
+  assert(north_pole.longitude_in_milliseconds() == grnxx::Int(0));
+  assert(south_pole.longitude_in_milliseconds() == grnxx::Int(0));
+  assert(na.longitude_in_milliseconds().is_na());
+
+  assert(zero.latitude_in_degrees() == grnxx::Float(0.0));
+  assert(north_pole.latitude_in_degrees() == grnxx::Float(90.0));
+  assert(south_pole.latitude_in_degrees() == grnxx::Float(-90.0));
+  assert(date_line.latitude_in_degrees() == grnxx::Float(0.0));
+  assert(na.latitude_in_degrees().is_na());
+
+  assert(zero.longitude_in_degrees() == grnxx::Float(0.0));
+  assert(north_pole.longitude_in_degrees() == grnxx::Float(0.0));
+  assert(south_pole.longitude_in_degrees() == grnxx::Float(0.0));
+  assert(date_line.longitude_in_degrees() == grnxx::Float(-180.0));
+  assert(na.longitude_in_degrees().is_na());
+
+  assert((zero == zero).is_true());
+  assert((zero == north_pole).is_false());
+  assert((zero == south_pole).is_false());
+  assert((zero == date_line).is_false());
+  assert((zero == na).is_na());
+  assert((north_pole == north_pole).is_true());
+  assert((north_pole == south_pole).is_false());
+  assert((north_pole == date_line).is_false());
+  assert((north_pole == na).is_na());
+  assert((south_pole == south_pole).is_true());
+  assert((south_pole == date_line).is_false());
+  assert((south_pole == na).is_na());
+  assert((date_line == date_line).is_true());
+  assert((date_line == na).is_na());
+  assert((na == na).is_na());
+
+  assert((zero != zero).is_false());
+  assert((zero != north_pole).is_true());
+  assert((zero != south_pole).is_true());
+  assert((zero != date_line).is_true());
+  assert((zero != na).is_na());
+  assert((north_pole != north_pole).is_false());
+  assert((north_pole != south_pole).is_true());
+  assert((north_pole != date_line).is_true());
+  assert((north_pole != na).is_na());
+  assert((south_pole != south_pole).is_false());
+  assert((south_pole != date_line).is_true());
+  assert((south_pole != na).is_na());
+  assert((date_line != date_line).is_false());
+  assert((date_line != na).is_na());
+  assert((na != na).is_na());
 }
 
 int main() {
