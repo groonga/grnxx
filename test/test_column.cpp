@@ -234,10 +234,11 @@ void test_column() {
   assert(datum.type() == grnxx::FLOAT_DATA);
   assert(datum.as_float() == grnxx::Float(1.25));
 
-  geo_point_column->set(row_id, grnxx::GeoPoint(123, 456));
+  grnxx::GeoPoint geo_point(grnxx::Int(123), grnxx::Int(456));
+  geo_point_column->set(row_id, geo_point);
   geo_point_column->get(row_id, &datum);
   assert(datum.type() == grnxx::GEO_POINT_DATA);
-  assert(datum.as_geo_point() == grnxx::GeoPoint(123, 456));
+  assert(datum.as_geo_point() == geo_point);
 
   reference_column->set(row_id, row_id);
   reference_column->get(row_id, &datum);
