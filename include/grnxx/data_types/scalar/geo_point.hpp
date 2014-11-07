@@ -47,11 +47,11 @@ class GeoPoint {
     // N/A (NaN) is rejected due to LOGICAL_AND.
     if ((latitude_in_degrees.value() >= -90.0) &&
         (latitude_in_degrees.value() <= 90.0) &&
-        (longitude_in_degrees.value() <= -180.0) &&
+        (longitude_in_degrees.value() >= -180.0) &&
         (longitude_in_degrees.value() <= 180.0)) {
       int64_t latitude = latitude_in_degrees.value() * 60 * 60 * 1000;
       int64_t longitude = longitude_in_degrees.value() * 60 * 60 * 1000;
-      if ((latitude <= min_latitude()) || (latitude >= max_latitude())) {
+      if ((latitude == min_latitude()) || (latitude == max_latitude())) {
         longitude = 0;
       } else if (longitude == max_longitude()) {
         longitude = min_longitude();
