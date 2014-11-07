@@ -13,7 +13,7 @@ template <>
 class Vector<Float> {
  public:
   // TODO
-  constexpr DataType type() const {
+  static constexpr DataType type() {
     return FLOAT_VECTOR_DATA;
   }
 };

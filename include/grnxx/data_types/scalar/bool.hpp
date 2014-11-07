@@ -20,9 +20,6 @@ class Bool {
       : value_(value ? true_value() : false_value()) {}
   explicit constexpr Bool(NA) : value_(na_value()) {}
 
-  constexpr DataType type() const {
-    return BOOL_DATA;
-  }
   constexpr uint8_t value() const {
     return value_;
   }
@@ -87,6 +84,10 @@ class Bool {
   constexpr Bool operator!=(Bool rhs) const {
     return (is_na() || rhs.is_na()) ? na() :
            Bool(static_cast<uint8_t>(value_ ^ rhs.value_));
+  }
+
+  static constexpr DataType type() {
+    return BOOL_DATA;
   }
 
   static constexpr Bool na() {

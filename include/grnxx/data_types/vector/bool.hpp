@@ -13,7 +13,7 @@ template <>
 class Vector<Bool> {
  public:
   // TODO
-  constexpr DataType type() const {
+  static constexpr DataType type() {
     return BOOL_VECTOR_DATA;
   }
 };

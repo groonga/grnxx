@@ -13,7 +13,7 @@ template <>
 class Vector<Text> {
  public:
   // TODO
-  constexpr DataType type() const {
+  static constexpr DataType type() {
     return TEXT_VECTOR_DATA;
   }
 };

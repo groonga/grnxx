@@ -31,9 +31,6 @@ class GeoPoint {
       : latitude_(na_latitude()),
         longitude_(na_longitude()) {}
 
-  constexpr DataType type() const {
-    return GEO_POINT_DATA;
-  }
   constexpr int32_t latitude() const {
     return latitude_;
   }
@@ -54,6 +51,10 @@ class GeoPoint {
     return (is_na() || rhs.is_na()) ? Bool::na() :
            Bool((latitude_ != rhs.latitude_) ||
                 (longitude_ != rhs.longitude_));
+  }
+
+  static constexpr DataType type() {
+    return GEO_POINT_DATA;
   }
 
   static constexpr GeoPoint na() {

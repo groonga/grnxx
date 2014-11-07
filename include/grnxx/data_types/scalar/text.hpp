@@ -24,9 +24,6 @@ class Text {
   constexpr Text(const char *data, size_t size) : data_(data), size_(size) {}
   explicit constexpr Text(NA) : data_(na_data()), size_(na_size()) {}
 
-  constexpr DataType type() const {
-    return TEXT_DATA;
-  }
   const char &operator[](size_t i) const {
     return data_[i];
   }
@@ -103,6 +100,10 @@ class Text {
     }
     return Bool(std::memcmp(data_ + size_ - rhs.size_,
                             rhs.data_, rhs.size_) == 0);
+  }
+
+  static constexpr DataType type() {
+    return TEXT_DATA;
   }
 
   static constexpr Text empty() {

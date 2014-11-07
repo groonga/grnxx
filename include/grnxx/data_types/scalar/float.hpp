@@ -23,9 +23,6 @@ class Float {
   explicit constexpr Float(double value) : value_(value) {}
   explicit constexpr Float(NA) : value_(na_value()) {}
 
-  constexpr DataType type() const {
-    return FLOAT_DATA;
-  }
   constexpr double value() const {
     return value_;
   }
@@ -120,6 +117,10 @@ class Float {
   // Return the next representable toward "to".
   Float next_toward(Float to) const {
     return Float(std::nextafter(value_, to.value_));
+  }
+
+  static constexpr DataType type() {
+    return FLOAT_DATA;
   }
 
   static constexpr Float min() {

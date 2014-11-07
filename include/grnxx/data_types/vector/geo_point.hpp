@@ -13,7 +13,7 @@ template <>
 class Vector<GeoPoint> {
  public:
   // TODO
-  constexpr DataType type() const {
+  static constexpr DataType type() {
     return GEO_POINT_VECTOR_DATA;
   }
 };

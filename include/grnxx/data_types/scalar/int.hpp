@@ -22,9 +22,6 @@ class Int {
   explicit constexpr Int(int64_t value) : value_(value) {}
   explicit constexpr Int(NA) : value_(na_value()) {}
 
-  constexpr DataType type() const {
-    return INT_DATA;
-  }
   constexpr int64_t value() const {
     return value_;
   }
@@ -220,6 +217,10 @@ class Int {
   }
   constexpr Bool operator>=(Int rhs) const {
     return (is_na() || rhs.is_na()) ? Bool::na() : Bool(value_ >= rhs.value_);
+  }
+
+  static constexpr DataType type() {
+    return INT_DATA;
   }
 
   static constexpr Int min() {
