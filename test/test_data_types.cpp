@@ -17,6 +17,7 @@
 */
 #include <cassert>
 #include <cmath>
+#include <cstring>
 #include <iostream>
 
 #include "grnxx/data_types.hpp"
@@ -814,10 +815,195 @@ void test_geo_point() {
   assert((na != na).is_na());
 }
 
+void test_text() {
+  grnxx::Text ab("ab");
+  grnxx::Text abc("abc", 3);
+  grnxx::Text bc(grnxx::String("bc"));
+  grnxx::Text empty = grnxx::Text::empty();
+  grnxx::Text na = grnxx::Text::na();
+
+  assert(ab.type() == grnxx::TEXT_DATA);
+  assert(abc.type() == grnxx::TEXT_DATA);
+  assert(bc.type() == grnxx::TEXT_DATA);
+  assert(empty.type() == grnxx::TEXT_DATA);
+  assert(na.type() == grnxx::TEXT_DATA);
+
+  assert(std::strcmp(ab.data(), "ab") == 0);
+  assert(std::strcmp(abc.data(), "abc") == 0);
+  assert(std::strcmp(bc.data(), "bc") == 0);
+
+  assert(ab.size() == grnxx::Int(2));
+  assert(abc.size() == grnxx::Int(3));
+  assert(bc.size() == grnxx::Int(2));
+  assert(empty.size() == grnxx::Int(0));
+  assert(na.size().is_na());
+
+  assert(!ab.is_empty());
+  assert(!abc.is_empty());
+  assert(!bc.is_empty());
+  assert(empty.is_empty());
+  assert(!na.is_empty());
+
+  assert(!ab.is_na());
+  assert(!abc.is_na());
+  assert(!bc.is_na());
+  assert(!empty.is_na());
+  assert(na.is_na());
+
+  assert((ab == ab).is_true());
+  assert((ab == abc).is_false());
+  assert((ab == bc).is_false());
+  assert((ab == empty).is_false());
+  assert((ab == na).is_na());
+  assert((abc == abc).is_true());
+  assert((abc == bc).is_false());
+  assert((abc == empty).is_false());
+  assert((abc == na).is_na());
+  assert((bc == bc).is_true());
+  assert((bc == empty).is_false());
+  assert((bc == na).is_na());
+  assert((empty == empty).is_true());
+  assert((empty == na).is_na());
+  assert((na == na).is_na());
+
+  assert((ab != ab).is_false());
+  assert((ab != abc).is_true());
+  assert((ab != bc).is_true());
+  assert((ab != empty).is_true());
+  assert((ab != na).is_na());
+  assert((abc != abc).is_false());
+  assert((abc != bc).is_true());
+  assert((abc != empty).is_true());
+  assert((abc != na).is_na());
+  assert((bc != bc).is_false());
+  assert((bc != empty).is_true());
+  assert((bc != na).is_na());
+  assert((empty != empty).is_false());
+  assert((empty != na).is_na());
+  assert((na != na).is_na());
+
+  assert((ab < ab).is_false());
+  assert((ab < abc).is_true());
+  assert((ab < bc).is_true());
+  assert((ab < empty).is_false());
+  assert((ab < na).is_na());
+  assert((abc < abc).is_false());
+  assert((abc < bc).is_true());
+  assert((abc < empty).is_false());
+  assert((abc < na).is_na());
+  assert((bc < bc).is_false());
+  assert((bc < empty).is_false());
+  assert((bc < na).is_na());
+  assert((empty < empty).is_false());
+  assert((empty < na).is_na());
+  assert((na < na).is_na());
+
+  assert((ab > ab).is_false());
+  assert((ab > abc).is_false());
+  assert((ab > bc).is_false());
+  assert((ab > empty).is_true());
+  assert((ab > na).is_na());
+  assert((abc > abc).is_false());
+  assert((abc > bc).is_false());
+  assert((abc > empty).is_true());
+  assert((abc > na).is_na());
+  assert((bc > bc).is_false());
+  assert((bc > empty).is_true());
+  assert((bc > na).is_na());
+  assert((empty > empty).is_false());
+  assert((empty > na).is_na());
+  assert((na > na).is_na());
+
+  assert((ab <= ab).is_true());
+  assert((ab <= abc).is_true());
+  assert((ab <= bc).is_true());
+  assert((ab <= empty).is_false());
+  assert((ab <= na).is_na());
+  assert((abc <= abc).is_true());
+  assert((abc <= bc).is_true());
+  assert((abc <= empty).is_false());
+  assert((abc <= na).is_na());
+  assert((bc <= bc).is_true());
+  assert((bc <= empty).is_false());
+  assert((bc <= na).is_na());
+  assert((empty <= empty).is_true());
+  assert((empty <= na).is_na());
+  assert((na <= na).is_na());
+
+  assert((ab >= ab).is_true());
+  assert((ab >= abc).is_false());
+  assert((ab >= bc).is_false());
+  assert((ab >= empty).is_true());
+  assert((ab >= na).is_na());
+  assert((abc >= abc).is_true());
+  assert((abc >= bc).is_false());
+  assert((abc >= empty).is_true());
+  assert((abc >= na).is_na());
+  assert((bc >= bc).is_true());
+  assert((bc >= empty).is_true());
+  assert((bc >= na).is_na());
+  assert((empty >= empty).is_true());
+  assert((empty >= na).is_na());
+  assert((na >= na).is_na());
+
+  assert((ab.starts_with(ab)).is_true());
+  assert((ab.starts_with(abc)).is_false());
+  assert((ab.starts_with(bc)).is_false());
+  assert((ab.starts_with(empty)).is_true());
+  assert((ab.starts_with(na)).is_na());
+  assert((abc.starts_with(ab)).is_true());
+  assert((abc.starts_with(abc)).is_true());
+  assert((abc.starts_with(bc)).is_false());
+  assert((abc.starts_with(empty)).is_true());
+  assert((abc.starts_with(na)).is_na());
+  assert((bc.starts_with(ab)).is_false());
+  assert((bc.starts_with(abc)).is_false());
+  assert((bc.starts_with(bc)).is_true());
+  assert((bc.starts_with(empty)).is_true());
+  assert((bc.starts_with(na)).is_na());
+  assert((empty.starts_with(ab)).is_false());
+  assert((empty.starts_with(abc)).is_false());
+  assert((empty.starts_with(bc)).is_false());
+  assert((empty.starts_with(empty)).is_true());
+  assert((empty.starts_with(na)).is_na());
+  assert((na.starts_with(ab)).is_na());
+  assert((na.starts_with(abc)).is_na());
+  assert((na.starts_with(bc)).is_na());
+  assert((na.starts_with(empty)).is_na());
+  assert((na.starts_with(na)).is_na());
+
+  assert((ab.ends_with(ab)).is_true());
+  assert((ab.ends_with(abc)).is_false());
+  assert((ab.ends_with(bc)).is_false());
+  assert((ab.ends_with(empty)).is_true());
+  assert((ab.ends_with(na)).is_na());
+  assert((abc.ends_with(ab)).is_false());
+  assert((abc.ends_with(abc)).is_true());
+  assert((abc.ends_with(bc)).is_true());
+  assert((abc.ends_with(empty)).is_true());
+  assert((abc.ends_with(na)).is_na());
+  assert((bc.ends_with(ab)).is_false());
+  assert((bc.ends_with(abc)).is_false());
+  assert((bc.ends_with(bc)).is_true());
+  assert((bc.ends_with(empty)).is_true());
+  assert((bc.ends_with(na)).is_na());
+  assert((empty.ends_with(ab)).is_false());
+  assert((empty.ends_with(abc)).is_false());
+  assert((empty.ends_with(bc)).is_false());
+  assert((empty.ends_with(empty)).is_true());
+  assert((empty.ends_with(na)).is_na());
+  assert((na.ends_with(ab)).is_na());
+  assert((na.ends_with(abc)).is_na());
+  assert((na.ends_with(bc)).is_na());
+  assert((na.ends_with(empty)).is_na());
+  assert((na.ends_with(na)).is_na());
+}
+
 int main() {
   test_bool();
   test_int();
   test_float();
   test_geo_point();
+  test_text();
   return 0;
 }
