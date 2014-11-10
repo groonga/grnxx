@@ -209,6 +209,7 @@ void Column<Int>::set_key(Int row_id, const Datum &key) {
   if (value_id >= values_.size()) {
     values_.resize(value_id + 1, Int::na());
   }
+  // TODO: N/A is not available.
   Int value = parse_datum(key);
   // TODO: Update indexes if exist.
 //  for (size_t i = 0; i < num_indexes(); ++i) try {

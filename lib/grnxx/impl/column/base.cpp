@@ -195,10 +195,10 @@ std::unique_ptr<ColumnBase> ColumnBase::create(
       column.reset(new impl::Column<GeoPoint>(table, name, options));
       break;
     }
-//    case TEXT_DATA: {
-//      column.reset(new impl::Column<Text>(table, name, options));
-//      break;
-//    }
+    case TEXT_DATA: {
+      column.reset(new impl::Column<Text>(table, name, options));
+      break;
+    }
 //    case BOOL_VECTOR_DATA: {
 //      column.reset(new impl::Column<Vector<Bool>>(table, name, options));
 //      break;
