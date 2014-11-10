@@ -69,16 +69,13 @@ void test_column() {
   assert(!geo_point_column->is_key());
 //  assert(geo_point_column->num_indexes() == 0);
 
-//  // Create a column named "TextColumn".
-//  // The column stores Text values.
-//  auto text_column = table->create_column(&error, "TextColumn",
-//                                           grnxx::TEXT_DATA);
-//  assert(text_column);
-//  assert(text_column->table() == table);
-//  assert(text_column->name() == "TextColumn");
-//  assert(text_column->data_type() == grnxx::TEXT_DATA);
-//  assert(!text_column->ref_table());
-//  assert(!text_column->has_key_attribute());
+//  // Create a column named "Text".
+  auto text_column = table->create_column("Text", grnxx::TEXT_DATA);
+  assert(text_column->table() == table);
+  assert(text_column->name() == "Text");
+  assert(text_column->data_type() == grnxx::TEXT_DATA);
+  assert(!text_column->reference_table());
+  assert(!text_column->is_key());
 //  assert(text_column->num_indexes() == 0);
 
   // Create a column named "Reference".
@@ -186,9 +183,9 @@ void test_column() {
   assert(datum.type() == grnxx::GEO_POINT_DATA);
   assert(datum.as_geo_point().is_na());
 
-//  assert(text_column->get(&error, 1, &datum));
-//  assert(datum.type() == grnxx::TEXT_DATA);
-//  assert(datum.force_text() == "");
+  text_column->get(row_id, &datum);
+  assert(datum.type() == grnxx::TEXT_DATA);
+  assert(datum.as_text().is_na());
 
   reference_column->get(row_id, &datum);
   assert(datum.type() == grnxx::INT_DATA);
@@ -240,13 +237,18 @@ void test_column() {
   assert(datum.type() == grnxx::GEO_POINT_DATA);
   assert(datum.as_geo_point() == geo_point);
 
+  grnxx::Text text(grnxx::Text("ABC"));
+  text_column->set(row_id, text);
+  text_column->get(row_id, &datum);
+  assert(datum.type() == grnxx::TEXT_DATA);
+  assert(datum.as_text() == text);
+
   reference_column->set(row_id, row_id);
   reference_column->get(row_id, &datum);
   assert(datum.type() == grnxx::INT_DATA);
   assert(datum.as_int() == row_id);
 
 //  // Set and get values.
-//  assert(text_column->set(&error, 1, grnxx::Text("Hello, world!")));
 //  assert(bool_vector_column->set(&error, 1,
 //                                 grnxx::BoolVector{ true, false, true }));
 //  grnxx::Int int_vector_value[] = { 123, -456, 789 };
@@ -266,10 +268,6 @@ void test_column() {
 //  grnxx::Int ref_vector_value[] = { 1, 1, 1 };
 //  assert(ref_vector_column->set(&error, 1,
 //                                grnxx::IntVector(ref_vector_value, 3)));
-
-//  assert(text_column->get(&error, 1, &datum));
-//  assert(datum.type() == grnxx::TEXT_DATA);
-//  assert(datum.force_text() == "Hello, world!");
 
 //  assert(bool_vector_column->get(&error, 1, &datum));
 //  assert(datum.type() == grnxx::BOOL_VECTOR_DATA);
