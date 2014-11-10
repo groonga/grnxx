@@ -253,28 +253,6 @@ void ColumnBase::set_key(Int, const Datum &) {
 //  throw "Not supported";  // TODO
 //}
 
-//bool ColumnBase::initialize_base(Error *error,
-//                                 Table *table,
-//                                 const StringCRef &name,
-//                                 DataType data_type,
-//                                 const ColumnOptions &options) {
-//  table_ = table;
-//  if (!name_.assign(error, name)) {
-//    return false;
-//  }
-//  data_type_ = data_type;
-//  if ((data_type == INT_DATA) || (data_type == INT_VECTOR_DATA)) {
-//    if (options.ref_table_name.size() != 0) {
-//      auto ref_table = table_->_db()->find_table(error, options.ref_table_name);
-//      if (!ref_table) {
-//        return false;
-//      }
-//      ref_table_ = ref_table;
-//    }
-//  }
-//  return true;
-//}
-
 //Index *ColumnBase::find_index_with_id(Error *error,
 //                                      const StringCRef &name,
 //                                      Int *index_id) const {

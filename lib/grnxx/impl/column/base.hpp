@@ -114,17 +114,6 @@ class ColumnBase : public ColumnInterface {
   bool is_key_;
   Array<std::unique_ptr<Index>> indexes_;
 
-//  // Initialize the base members.
-//  //
-//  // On success, returns true.
-//  // On failure, returns false and stores error information into "*error" if
-//  // "error" != nullptr.
-//  bool initialize_base(Error *error,
-//                       Table *table,
-//                       const String &name,
-//                       DataType data_type,
-//                       const ColumnOptions &options);
-
 // private:
 //  // Find an index with its ID.
 //  //
