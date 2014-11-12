@@ -9,13 +9,13 @@ pkginclude_HEADERS =	\
 	data_types.hpp	\
 	db.hpp		\
 	error.hpp	\
+	expression.hpp	\
 	features.hpp	\
 	index.hpp	\
 	library.hpp	\
 	string.hpp	\
 	table.hpp
 
-#	expression.hpp	\
 #	merger.hpp	\
 #	pipeline.hpp	\
 #	sorter.hpp

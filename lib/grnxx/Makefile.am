@@ -11,10 +11,10 @@ libgrnxx_la_LDFLAGS = @AM_LTLDFLAGS@
 libgrnxx_la_SOURCES =			\
 	cursor.cpp			\
 	db.cpp				\
+	expression.cpp			\
 	library.cpp			\
 	string.cpp
 
-#	expression.cpp			\
 #	index.cpp			\
 #	merger.cpp			\
 #	pipeline.cpp			\

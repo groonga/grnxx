@@ -40,6 +40,11 @@ class ArrayCRef {
     return values_[i];
   }
 
+  // Return a pointer to the contents.
+  const Value *data() const {
+    return values_;
+  }
+
   // Return whether the array is empty or not.
   bool is_empty() const {
     return size_ == 0;
@@ -111,6 +116,11 @@ class ArrayRef {
   // Return a reference to the "i"-th value.
   const Value &operator[](size_t i) const {
     return values_[i];
+  }
+
+  // Return a pointer to the contents.
+  const Value *data() const {
+    return values_;
   }
 
   // Return whether the array is empty or not.
