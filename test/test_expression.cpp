@@ -3024,7 +3024,7 @@ int main() {
   // Data.
   test_constant();
   test_row_id();
-//  test_score();
+  test_score();
 //  test_column();
 
 //  // Unary operators.
