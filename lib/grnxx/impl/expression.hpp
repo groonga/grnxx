@@ -100,6 +100,16 @@ class ExpressionBuilder : public ExpressionBuilderInterface {
   Array<std::unique_ptr<Node>> node_stack_;
   std::unique_ptr<ExpressionBuilder> subexpression_builder_;
 
+  // Push a node associated with a unary operator.
+  //
+  // On failure, throws an exception.
+  void push_unary_operator(OperatorType operator_type);
+
+  // Push a node associated with a binary operator.
+  //
+  // On failure, throws an exception.
+  void push_binary_operator(OperatorType operator_type);
+
   // Push a node associated with the dereference operator.
   //
   // On failure, throws an exception.
@@ -115,6 +125,20 @@ class ExpressionBuilder : public ExpressionBuilderInterface {
   // On failure, throws an exception.
   Node *create_column_node(const String &name);
 
+  // Create a node associated with a unary operator.
+  //
+  // On failure, throws an exception.
+  Node *create_unary_node(
+      OperatorType operator_type,
+      std::unique_ptr<Node> &&arg);
+
+  // Create a node associated with a binary operator.
+  //
+  // On failure, throws an exception.
+  Node *create_binary_node(
+      OperatorType operator_type,
+      std::unique_ptr<Node> &&arg1,
+      std::unique_ptr<Node> &&arg2);
 };
 
 }  // namespace impl
