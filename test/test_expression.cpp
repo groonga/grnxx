@@ -78,7 +78,7 @@ struct {
 //  }
 //}
 
-void init_test() {
+void init_test() try {
   // Create a database with the default options.
   test.db = grnxx::open_db("");
 
@@ -377,9 +377,12 @@ void init_test() {
 //    assert(ref_vector_column->set(&error, i, test.ref_vector_values[i]));
 //    assert(ref_vector2_column->set(&error, i, test.ref_vector2_values[i]));
 //  }
+} catch (const char *msg) {
+  std::cout << msg << std::endl;
+  throw;
 }
 
-grnxx::Array<grnxx::Record> create_input_records() {
+grnxx::Array<grnxx::Record> create_input_records() try {
   auto cursor = test.table->create_cursor();
 
   grnxx::Array<grnxx::Record> records;
@@ -387,90 +390,86 @@ grnxx::Array<grnxx::Record> create_input_records() {
   assert(count == test.table->num_rows());
 
   return records;
+} catch (const char *msg) {
+  std::cout << msg << std::endl;
+  throw;
 }
 
-//void test_constant() {
-//  grnxx::Error error;
+void test_constant() try {
+  // Create an object for building expressions.
+  auto builder = grnxx::ExpressionBuilder::create(test.table);
 
-//  // Create an object for building expressions.
-//  auto builder = grnxx::ExpressionBuilder::create(&error, test.table);
-//  assert(builder);
+  // Test an expression (true).
+  builder->push_constant(grnxx::Bool(true));
+  auto expression = builder->release();
 
-//  // Test an expression (true).
-//  assert(builder->push_constant(&error, grnxx::Bool(true)));
-//  auto expression = builder->release(&error);
-//  assert(expression);
+  auto records = create_input_records();
 
-//  auto records = create_input_records();
+  grnxx::Array<grnxx::Bool> bool_results;
+  expression->evaluate(records, &bool_results);
+  assert(bool_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < bool_results.size(); ++i) {
+    assert(bool_results[i]);
+  }
 
-//  grnxx::Array<grnxx::Bool> bool_results;
-//  assert(expression->evaluate(&error, records, &bool_results));
-//  assert(bool_results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < bool_results.size(); ++i) {
-//    assert(bool_results[i]);
-//  }
+  expression->filter(&records);
+  assert(records.size() == test.table->num_rows());
 
-//  assert(expression->filter(&error, &records));
-//  assert(records.size() == test.table->num_rows());
+  // Test an expression (false).
+  builder->push_constant(grnxx::Bool(false));
+  expression = builder->release();
 
-//  // Test an expression (false).
-//  assert(builder->push_constant(&error, grnxx::Bool(false)));
-//  expression = builder->release(&error);
-//  assert(expression);
+  bool_results.clear();
+  expression->evaluate(records, &bool_results);
+  assert(bool_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < bool_results.size(); ++i) {
+    assert(!bool_results[i]);
+  }
 
-//  bool_results.clear();
-//  assert(expression->evaluate(&error, records, &bool_results));
-//  assert(bool_results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < bool_results.size(); ++i) {
-//    assert(!bool_results[i]);
-//  }
+  expression->filter(&records);
+  assert(records.size() == 0);
 
-//  assert(expression->filter(&error, &records));
-//  assert(records.size() == 0);
+  // Test an expression (100).
+  builder->push_constant(grnxx::Int(100));
+  expression = builder->release();
 
-//  // Test an expression (100).
-//  assert(builder->push_constant(&error, grnxx::Int(100)));
-//  expression = builder->release(&error);
-//  assert(expression);
+  records = create_input_records();
 
-//  records = create_input_records();
+  grnxx::Array<grnxx::Int> int_results;
+  expression->evaluate(records, &int_results);
+  assert(int_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < int_results.size(); ++i) {
+    assert(int_results[i] == grnxx::Int(100));
+  }
 
-//  grnxx::Array<grnxx::Int> int_results;
-//  assert(expression->evaluate(&error, records, &int_results));
-//  assert(int_results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < int_results.size(); ++i) {
-//    assert(int_results[i] == 100);
-//  }
+  // Test an expression (1.25).
+  builder->push_constant(grnxx::Float(1.25));
+  expression = builder->release();
 
-//  // Test an expression (1.25).
-//  assert(builder->push_constant(&error, grnxx::Float(1.25)));
-//  expression = builder->release(&error);
-//  assert(expression);
+  grnxx::Array<grnxx::Float> float_results;
+  expression->evaluate(records, &float_results);
+  assert(float_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < float_results.size(); ++i) {
+    assert(float_results[i] == grnxx::Float(1.25));
+  }
 
-//  grnxx::Array<grnxx::Float> float_results;
-//  assert(expression->evaluate(&error, records, &float_results));
-//  assert(float_results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < float_results.size(); ++i) {
-//    assert(float_results[i] == 1.25);
-//  }
+  expression->adjust(&records);
+  assert(records.size() == test.table->num_rows());
+  for (size_t i = 0; i < records.size(); ++i) {
+    assert(records[i].score == grnxx::Float(1.25));
+  }
 
-//  assert(expression->adjust(&error, &records));
-//  assert(records.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < records.size(); ++i) {
-//    assert(records.get_score(i) == 1.25);
-//  }
+  // Test an expression ({ 123, 456 }).
+  grnxx::GeoPoint geo_point(grnxx::Int(123), grnxx::Int(456));
+  builder->push_constant(geo_point);
+  expression = builder->release();
 
-//  // Test an expression ({ 123, 456 }).
-//  assert(builder->push_constant(&error, grnxx::GeoPoint(123, 456)));
-//  expression = builder->release(&error);
-//  assert(expression);
-
-//  grnxx::Array<grnxx::GeoPoint> geo_point_results;
-//  assert(expression->evaluate(&error, records, &geo_point_results));
-//  assert(geo_point_results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < geo_point_results.size(); ++i) {
-//    assert(geo_point_results[i] == grnxx::GeoPoint(123, 456));
-//  }
+  grnxx::Array<grnxx::GeoPoint> geo_point_results;
+  expression->evaluate(records, &geo_point_results);
+  assert(geo_point_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < geo_point_results.size(); ++i) {
+    assert(geo_point_results[i] == geo_point);
+  }
 
 //  // Test an expression ("ABC").
 //  assert(builder->push_constant(&error, grnxx::Text("ABC")));
@@ -553,7 +552,10 @@ grnxx::Array<grnxx::Record> create_input_records() {
 //  for (grnxx::Int i = 0; i < text_vector_results.size(); ++i) {
 //    assert(text_vector_results[i] == grnxx::TextVector(text_values, 3));
 //  }
-//}
+} catch (const char *msg) {
+  std::cout << msg << std::endl;
+  throw;
+}
 
 void test_row_id() try {
   // Create an object for building expressions.
@@ -572,6 +574,7 @@ void test_row_id() try {
   }
 } catch (const char *msg) {
   std::cout << msg << std::endl;
+  throw;
 }
 
 void test_score() try {
@@ -598,6 +601,7 @@ void test_score() try {
   }
 } catch (const char *msg) {
   std::cout << msg << std::endl;
+  throw;
 }
 
 //void test_column() {
@@ -3018,7 +3022,7 @@ int main() {
   init_test();
 
   // Data.
-//  test_constant();
+  test_constant();
   test_row_id();
 //  test_score();
 //  test_column();
