@@ -737,8 +737,7 @@ Expression::Expression(const Table *table,
 Expression::~Expression() {}
 
 DataType Expression::data_type() const {
-  // TODO: Node has the data type.
-  throw "Not supported yet";  // TODO
+  return root_->data_type();
 }
 
 void Expression::filter(Array<Record> *records,
@@ -867,7 +866,6 @@ void Expression::_evaluate(ArrayCRef<Record> records, Array<T> *results) {
 
 template <typename T>
 void Expression::_evaluate(ArrayCRef<Record> records, ArrayRef<T> results) {
-std::cout << "TEST!" << std::endl;
   if (T::type() != data_type()) {
     throw "Data type conflict";  // TODO
   }
