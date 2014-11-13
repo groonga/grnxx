@@ -684,8 +684,7 @@ void ToIntNode::evaluate(ArrayCRef<Record> records,
                          ArrayRef<Value> results) {
   fill_arg_values(records);
   for (size_t i = 0; i < records.size(); ++i) {
-    // TODO: Typecast inteface must be provided!
-    results[i] = Value(static_cast<int64_t>(arg_values_[i].value()));
+    results[i] = arg_values_[i].to_int();
   }
 }
 
@@ -707,8 +706,7 @@ class ToFloatNode : public UnaryNode<Float, Int> {
 void ToFloatNode::adjust(ArrayRef<Record> records) {
   fill_arg_values(records);
   for (size_t i = 0; i < records.size(); ++i) {
-    // TODO: Typecast inteface must be provided!
-    records[i].score = Value(static_cast<double>(arg_values_[i].value()));
+    records[i].score = arg_values_[i].to_float();
   }
 }
 
@@ -716,8 +714,7 @@ void ToFloatNode::evaluate(ArrayCRef<Record> records,
                            ArrayRef<Value> results) {
   fill_arg_values(records);
   for (size_t i = 0; i < records.size(); ++i) {
-    // TODO: Typecast inteface must be provided!
-    results[i] = Value(static_cast<double>(arg_values_[i].value()));
+    results[i] = arg_values_[i].to_float();
   }
 }
 
