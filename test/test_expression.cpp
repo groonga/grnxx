@@ -1986,167 +1986,152 @@ void test_greater_equal() {
 //  assert(records.size() == count);
 }
 
-//void test_bitwise_and() {
-//  grnxx::Error error;
+void test_bitwise_and() {
+  // Create an object for building expressions.
+  auto builder = grnxx::ExpressionBuilder::create(test.table);
 
-//  // Create an object for building expressions.
-//  auto builder = grnxx::ExpressionBuilder::create(&error, test.table);
-//  assert(builder);
+  // Test an expression (Bool & Bool2).
+  builder->push_column("Bool");
+  builder->push_column("Bool2");
+  builder->push_operator(grnxx::BITWISE_AND_OPERATOR);
+  auto expression = builder->release();
 
-//  // Test an expression (Bool & Bool2).
-//  assert(builder->push_column(&error, "Bool"));
-//  assert(builder->push_column(&error, "Bool2"));
-//  assert(builder->push_operator(&error, grnxx::BITWISE_AND_OPERATOR));
-//  auto expression = builder->release(&error);
-//  assert(expression);
+  auto records = create_input_records();
 
-//  auto records = create_input_records();
+  grnxx::Array<grnxx::Bool> bool_results;
+  expression->evaluate(records, &bool_results);
+  assert(bool_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < bool_results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert(bool_results[i].value() ==
+           (test.bool_values[row_id] & test.bool2_values[row_id]).value());
+  }
 
-//  grnxx::Array<grnxx::Bool> bool_results;
-//  assert(expression->evaluate(&error, records, &bool_results));
-//  assert(bool_results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < bool_results.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    assert(bool_results[i] ==
-//           (test.bool_values[row_id] & test.bool2_values[row_id]));
-//  }
+  expression->filter(&records);
+  size_t count = 0;
+  for (size_t i = 0; i < test.bool_values.size(); ++i) {
+    if ((test.bool_values[i] & test.bool2_values[i]).is_true()) {
+      assert(records[count].row_id.value() == grnxx::Int(i).value());
+      ++count;
+    }
+  }
+  assert(records.size() == count);
 
-//  assert(expression->filter(&error, &records));
-//  grnxx::Int count = 0;
-//  for (grnxx::Int i = 1; i < test.bool_values.size(); ++i) {
-//    if (test.bool_values[i] & test.bool2_values[i]) {
-//      assert(records.get_row_id(count) == i);
-//      ++count;
-//    }
-//  }
-//  assert(records.size() == count);
+  // Test an expression (Int & Int2).
+  builder->push_column("Int");
+  builder->push_column("Int2");
+  builder->push_operator(grnxx::BITWISE_AND_OPERATOR);
+  expression = builder->release();
 
-//  // Test an expression (Int & Int2).
-//  assert(builder->push_column(&error, "Int"));
-//  assert(builder->push_column(&error, "Int2"));
-//  assert(builder->push_operator(&error, grnxx::BITWISE_AND_OPERATOR));
-//  expression = builder->release(&error);
-//  assert(expression);
+  records = create_input_records();
 
-//  records = create_input_records();
+  grnxx::Array<grnxx::Int> int_results;
+  expression->evaluate(records, &int_results);
+  assert(int_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < int_results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert(int_results[i].value() ==
+           (test.int_values[row_id] & test.int2_values[row_id]).value());
+  }
+}
 
-//  grnxx::Array<grnxx::Int> int_results;
-//  assert(expression->evaluate(&error, records, &int_results));
-//  assert(int_results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < int_results.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    assert(int_results[i] ==
-//           (test.int_values[row_id] & test.int2_values[row_id]));
-//  }
-//}
+void test_bitwise_or() {
+  // Create an object for building expressions.
+  auto builder = grnxx::ExpressionBuilder::create(test.table);
 
-//void test_bitwise_or() {
-//  grnxx::Error error;
+  // Test an expression (Bool | Bool2).
+  builder->push_column("Bool");
+  builder->push_column("Bool2");
+  builder->push_operator(grnxx::BITWISE_OR_OPERATOR);
+  auto expression = builder->release();
 
-//  // Create an object for building expressions.
-//  auto builder = grnxx::ExpressionBuilder::create(&error, test.table);
-//  assert(builder);
+  auto records = create_input_records();
 
-//  // Test an expression (Bool | Bool2).
-//  assert(builder->push_column(&error, "Bool"));
-//  assert(builder->push_column(&error, "Bool2"));
-//  assert(builder->push_operator(&error, grnxx::BITWISE_OR_OPERATOR));
-//  auto expression = builder->release(&error);
-//  assert(expression);
+  grnxx::Array<grnxx::Bool> bool_results;
+  expression->evaluate(records, &bool_results);
+  assert(bool_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < bool_results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert(bool_results[i].value() ==
+           (test.bool_values[row_id] | test.bool2_values[row_id]).value());
+  }
 
-//  auto records = create_input_records();
+  expression->filter(&records);
+  size_t count = 0;
+  for (size_t i = 0; i < test.bool_values.size(); ++i) {
+    if ((test.bool_values[i] | test.bool2_values[i]).is_true()) {
+      assert(records[count].row_id.value() == grnxx::Int(i).value());
+      ++count;
+    }
+  }
+  assert(records.size() == count);
 
-//  grnxx::Array<grnxx::Bool> bool_results;
-//  assert(expression->evaluate(&error, records, &bool_results));
-//  assert(bool_results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < bool_results.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    assert(bool_results[i] ==
-//           (test.bool_values[row_id] | test.bool2_values[row_id]));
-//  }
+  // Test an expression (Int | Int2).
+  builder->push_column("Int");
+  builder->push_column("Int2");
+  builder->push_operator(grnxx::BITWISE_OR_OPERATOR);
+  expression = builder->release();
 
-//  assert(expression->filter(&error, &records));
-//  grnxx::Int count = 0;
-//  for (grnxx::Int i = 1; i < test.bool_values.size(); ++i) {
-//    if (test.bool_values[i] | test.bool2_values[i]) {
-//      assert(records.get_row_id(count) == i);
-//      ++count;
-//    }
-//  }
-//  assert(records.size() == count);
+  records = create_input_records();
 
-//  // Test an expression (Int | Int2).
-//  assert(builder->push_column(&error, "Int"));
-//  assert(builder->push_column(&error, "Int2"));
-//  assert(builder->push_operator(&error, grnxx::BITWISE_OR_OPERATOR));
-//  expression = builder->release(&error);
-//  assert(expression);
+  grnxx::Array<grnxx::Int> int_results;
+  expression->evaluate(records, &int_results);
+  assert(int_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < int_results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert(int_results[i].value() ==
+           (test.int_values[row_id] | test.int2_values[row_id]).value());
+  }
+}
 
-//  records = create_input_records();
+void test_bitwise_xor() {
+  // Create an object for building expressions.
+  auto builder = grnxx::ExpressionBuilder::create(test.table);
 
-//  grnxx::Array<grnxx::Int> int_results;
-//  assert(expression->evaluate(&error, records, &int_results));
-//  assert(int_results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < int_results.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    assert(int_results[i] ==
-//           (test.int_values[row_id] | test.int2_values[row_id]));
-//  }
-//}
+  // Test an expression (Bool ^ Bool2).
+  builder->push_column("Bool");
+  builder->push_column("Bool2");
+  builder->push_operator(grnxx::BITWISE_XOR_OPERATOR);
+  auto expression = builder->release();
 
-//void test_bitwise_xor() {
-//  grnxx::Error error;
+  auto records = create_input_records();
 
-//  // Create an object for building expressions.
-//  auto builder = grnxx::ExpressionBuilder::create(&error, test.table);
-//  assert(builder);
+  grnxx::Array<grnxx::Bool> bool_results;
+  expression->evaluate(records, &bool_results);
+  assert(bool_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < bool_results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert(bool_results[i].value() ==
+           (test.bool_values[row_id] ^ test.bool2_values[row_id]).value());
+  }
 
-//  // Test an expression (Bool ^ Bool2).
-//  assert(builder->push_column(&error, "Bool"));
-//  assert(builder->push_column(&error, "Bool2"));
-//  assert(builder->push_operator(&error, grnxx::BITWISE_XOR_OPERATOR));
-//  auto expression = builder->release(&error);
-//  assert(expression);
+  expression->filter(&records);
+  size_t count = 0;
+  for (size_t i = 0; i < test.bool_values.size(); ++i) {
+    if ((test.bool_values[i] ^ test.bool2_values[i]).is_true()) {
+      assert(records[count].row_id.value() == grnxx::Int(i).value());
+      ++count;
+    }
+  }
+  assert(records.size() == count);
 
-//  auto records = create_input_records();
+  // Test an expression (Int ^ Int2).
+  builder->push_column("Int");
+  builder->push_column("Int2");
+  builder->push_operator(grnxx::BITWISE_XOR_OPERATOR);
+  expression = builder->release();
 
-//  grnxx::Array<grnxx::Bool> bool_results;
-//  assert(expression->evaluate(&error, records, &bool_results));
-//  assert(bool_results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < bool_results.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    assert(bool_results[i] ==
-//           (test.bool_values[row_id] ^ test.bool2_values[row_id]));
-//  }
+  records = create_input_records();
 
-//  assert(expression->filter(&error, &records));
-//  grnxx::Int count = 0;
-//  for (grnxx::Int i = 1; i < test.bool_values.size(); ++i) {
-//    if (test.bool_values[i] ^ test.bool2_values[i]) {
-//      assert(records.get_row_id(count) == i);
-//      ++count;
-//    }
-//  }
-//  assert(records.size() == count);
-
-//  // Test an expression (Int ^ Int2).
-//  assert(builder->push_column(&error, "Int"));
-//  assert(builder->push_column(&error, "Int2"));
-//  assert(builder->push_operator(&error, grnxx::BITWISE_XOR_OPERATOR));
-//  expression = builder->release(&error);
-//  assert(expression);
-
-//  records = create_input_records();
-
-//  grnxx::Array<grnxx::Int> int_results;
-//  assert(expression->evaluate(&error, records, &int_results));
-//  assert(int_results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < int_results.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    assert(int_results[i] ==
-//           (test.int_values[row_id] ^ test.int2_values[row_id]));
-//  }
-//}
+  grnxx::Array<grnxx::Int> int_results;
+  expression->evaluate(records, &int_results);
+  assert(int_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < int_results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert(int_results[i].value() ==
+           (test.int_values[row_id] ^ test.int2_values[row_id]).value());
+  }
+}
 
 //void test_plus() {
 //  grnxx::Error error;
@@ -2917,9 +2902,9 @@ int main() {
   test_less_equal();
   test_greater();
   test_greater_equal();
-//  test_bitwise_and();
-//  test_bitwise_or();
-//  test_bitwise_xor();
+  test_bitwise_and();
+  test_bitwise_or();
+  test_bitwise_xor();
 //  test_plus();
 //  test_minus();
 //  test_multiplication();
