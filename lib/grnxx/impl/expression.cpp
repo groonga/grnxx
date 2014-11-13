@@ -257,43 +257,31 @@ class ConstantNode<Float> : public TypedNode<Float> {
   Float value_;
 };
 
-//template <>
-//class ConstantNode<Text> : public TypedNode<Text> {
-// public:
-//  using Value = Text;
+// TODO: Text will have ownership in future.
+template <>
+class ConstantNode<Text> : public TypedNode<Text> {
+ public:
+  using Value = Text;
 
-//  static unique_ptr<Node> create(Error *error, Value datum) {
-//    unique_ptr<ConstantNode> node(new (nothrow) ConstantNode);
-//    if (!node) {
-//      GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
-//      return nullptr;
-//    }
-//    if (!node->datum_.assign(error, datum)) {
-//      return nullptr;
-//    }
-//    return unique_ptr<Node>(node.release());
-//  }
+  explicit ConstantNode(const Value &value)
+      : TypedNode<Value>(),
+        value_() {
+    value_.assign(value.data(), value.size().value());
+  }
 
-//  explicit ConstantNode()
-//      : TypedNode<Value>(),
-//        datum_() {}
+  NodeType node_type() const {
+    return CONSTANT_NODE;
+  }
 
-//  NodeType node_type() const {
-//    return CONSTANT_NODE;
-//  }
+  void evaluate(ArrayCRef<Record> records, ArrayRef<Value> results) {
+    for (size_t i = 0; i < records.size(); ++i) {
+      results[i] = Text(value_.data(), value_.size());
+    }
+  }
 
-//  bool evaluate(Error *,
-//                ArrayCRef<Record> records,
-//                ArrayRef<Value> results) {
-//    for (Int i = 0; i < records.size(); ++i) {
-//      results[i] = datum_;
-//    }
-//    return true;
-//  }
-
-// private:
-//  String datum_;
-//};
+ private:
+  String value_;
+};
 
 // -- RowIDNode --
 
