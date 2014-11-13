@@ -44,7 +44,7 @@ void Column<Int>::set(Int row_id, const Datum &datum) {
     }
   }
   Int old_value = get(row_id);
-  if (old_value == new_value) {
+  if (old_value.value() == new_value.value()) {
     return;
   }
   if (is_key_ && contains(datum)) {

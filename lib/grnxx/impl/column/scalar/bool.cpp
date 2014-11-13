@@ -23,7 +23,7 @@ void Column<Bool>::set(Int row_id, const Datum &datum) {
     return;
   }
   Bool old_value = get(row_id);
-  if (old_value == new_value) {
+  if (old_value.value() == new_value.value()) {
     return;
   }
   if (!old_value.is_na()) {

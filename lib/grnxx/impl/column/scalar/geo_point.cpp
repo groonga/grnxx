@@ -24,7 +24,8 @@ void Column<GeoPoint>::set(Int row_id, const Datum &datum) {
     return;
   }
   GeoPoint old_value = get(row_id);
-  if (old_value == new_value) {
+  if ((old_value.latitude() == new_value.latitude()) &&
+      (old_value.longitude() == new_value.longitude())) {
     return;
   }
   if (!old_value.is_na()) {

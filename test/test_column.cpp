@@ -219,34 +219,35 @@ void test_column() {
   bool_column->set(row_id, grnxx::Bool(true));
   bool_column->get(row_id, &datum);
   assert(datum.type() == grnxx::BOOL_DATA);
-  assert(datum.as_bool() == grnxx::Bool(true));
+  assert(datum.as_bool().is_true());
 
   int_column->set(row_id, grnxx::Int(123));
   int_column->get(row_id, &datum);
   assert(datum.type() == grnxx::INT_DATA);
-  assert(datum.as_int() == grnxx::Int(123));
+  assert(datum.as_int().value() == 123);
 
   float_column->set(row_id, grnxx::Float(1.25));
   float_column->get(row_id, &datum);
   assert(datum.type() == grnxx::FLOAT_DATA);
-  assert(datum.as_float() == grnxx::Float(1.25));
+  assert(datum.as_float().value() == 1.25);
 
   grnxx::GeoPoint geo_point(grnxx::Int(123), grnxx::Int(456));
   geo_point_column->set(row_id, geo_point);
   geo_point_column->get(row_id, &datum);
   assert(datum.type() == grnxx::GEO_POINT_DATA);
-  assert(datum.as_geo_point() == geo_point);
+  assert(datum.as_geo_point().latitude() == 123);
+  assert(datum.as_geo_point().longitude() == 456);
 
   grnxx::Text text(grnxx::Text("ABC"));
   text_column->set(row_id, text);
   text_column->get(row_id, &datum);
   assert(datum.type() == grnxx::TEXT_DATA);
-  assert(datum.as_text() == text);
+//  assert(datum.as_text() == text);
 
   reference_column->set(row_id, row_id);
   reference_column->get(row_id, &datum);
   assert(datum.type() == grnxx::INT_DATA);
-  assert(datum.as_int() == row_id);
+  assert(datum.as_int().value() == row_id.value());
 
 //  // Set and get values.
 //  assert(bool_vector_column->set(&error, 1,

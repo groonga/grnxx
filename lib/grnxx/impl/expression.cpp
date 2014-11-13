@@ -117,7 +117,7 @@ void TypedNode<Bool>::filter(ArrayCRef<Record> input_records,
   evaluate(input_records, values_for_filter_.ref(0, input_records.size()));
   size_t count = 0;
   for (size_t i = 0; i < input_records.size(); ++i) {
-    if (values_for_filter_[i]) {
+    if (values_for_filter_[i].is_true()) {
       (*output_records)[count] = input_records[i];
       ++count;
     }
@@ -211,7 +211,7 @@ class ConstantNode<Bool> : public TypedNode<Bool> {
 
 void ConstantNode<Bool>::filter(ArrayCRef<Record> input_records,
                                 ArrayRef<Record> *output_records) {
-  if (value_) {
+  if (value_.is_true()) {
     // Don't copy records if the input/output addresses are the same.
     if (input_records.data() != output_records->data()) {
       for (size_t i = 0; i < input_records.size(); ++i) {
@@ -381,7 +381,7 @@ void ColumnNode<Bool>::filter(ArrayCRef<Record> input_records,
                               ArrayRef<Record> *output_records) {
   size_t count = 0;
   for (size_t i = 0; i < input_records.size(); ++i) {
-    if (column_->get(input_records[i].row_id)) {
+    if (column_->get(input_records[i].row_id).is_true()) {
       (*output_records)[count] = input_records[i];
       ++count;
     }
@@ -516,7 +516,7 @@ void LogicalNotNode::filter(ArrayCRef<Record> input_records,
   // Extract records which appear in "input_records" and don't appear in "ref".
   size_t count = 0;
   for (size_t i = 0, j = 0; i < input_records.size(); ++i) {
-    if (input_records[i].row_id == ref[j].row_id) {
+    if (input_records[i].row_id.value() == ref[j].row_id.value()) {
       ++j;
       continue;
     }
@@ -558,7 +558,7 @@ void BitwiseNotNode<Bool>::filter(ArrayCRef<Record> input_records,
   fill_arg_values(input_records);
   size_t count = 0;
   for (size_t i = 0; i < input_records.size(); ++i) {
-    if (!arg_values_[i]) {
+    if (!arg_values_[i].is_true()) {
       (*output_records)[count] = input_records[i];
       ++count;
     }

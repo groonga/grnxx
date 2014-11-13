@@ -34,10 +34,6 @@ class Bool {
     return value_ == na_value();
   }
 
-  explicit constexpr operator bool() const {
-    return is_true();
-  }
-
   // -- Unary operators --
 
   constexpr Bool operator!() const {

@@ -33,29 +33,29 @@ void test_bool() {
   array.push_back(grnxx::Bool(true));
   assert(array.size() == 1);
   assert(array.capacity() == 1);
-  assert(array[0]);
+  assert(array[0].is_true());
 
   array.push_back(grnxx::Bool(false));
   assert(array.size() == 2);
   assert(array.capacity() == 2);
-  assert(array[0]);
-  assert(!array[1]);
+  assert(array[0].is_true());
+  assert(array[1].is_false());
 
   array.push_back(grnxx::Bool(true));
   assert(array.size() == 3);
   assert(array.capacity() == 4);
-  assert(array[0]);
-  assert(!array[1]);
-  assert(array[2]);
+  assert(array[0].is_true());
+  assert(array[1].is_false());
+  assert(array[2].is_true());
 
   array.resize(200, grnxx::Bool(true));
   assert(array.size() == 200);
   assert(array.capacity() == 200);
-  assert(array[0]);
-  assert(!array[1]);
-  assert(array[2]);
+  assert(array[0].is_true());
+  assert(array[1].is_false());
+  assert(array[2].is_true());
   for (size_t i = 3; i < 200; ++i) {
-    assert(array[i]);
+    assert(array[i].is_true());
   }
 
   constexpr size_t ARRAY_SIZE = 1 << 20;
@@ -63,24 +63,24 @@ void test_bool() {
   array.resize(ARRAY_SIZE, grnxx::Bool(false));
   assert(array.size() == ARRAY_SIZE);
   assert(array.capacity() == ARRAY_SIZE);
-  assert(array[0]);
-  assert(!array[1]);
-  assert(array[2]);
+  assert(array[0].is_true());
+  assert(array[1].is_false());
+  assert(array[2].is_true());
   for (size_t i = 3; i < 200; ++i) {
-    assert(array[i]);
+    assert(array[i].is_true());
   }
   for (size_t i = 200; i < ARRAY_SIZE; ++i) {
-    assert(!array[i]);
+    assert(array[i].is_false());
   }
 
   std::vector<grnxx::Bool> values(ARRAY_SIZE);
   for (size_t i = 0; i < ARRAY_SIZE; ++i) {
     values[i] = grnxx::Bool((mersenne_twister() & 1) != 0);
     array.set(i, values[i]);
-    assert(array.get(i) == values[i]);
+    assert(array.get(i).value() == values[i].value());
   }
   for (size_t i = 0; i < ARRAY_SIZE; ++i) {
-    assert(array.get(i) == values[i]);
+    assert(array.get(i).value() == values[i].value());
   }
 
   grnxx::Array<grnxx::Bool> array2;
@@ -90,7 +90,7 @@ void test_bool() {
   assert(array2.size() == ARRAY_SIZE);
   assert(array2.capacity() == ARRAY_SIZE);
   for (size_t i = 0; i < ARRAY_SIZE; ++i) {
-    assert(array2.get(i) == values[i]);
+    assert(array2.get(i).value() == values[i].value());
   }
 }
 
@@ -102,29 +102,29 @@ void test_int() {
   array.push_back(grnxx::Int(123));
   assert(array.size() == 1);
   assert(array.capacity() == 1);
-  assert(array[0] == grnxx::Int(123));
+  assert(array[0].value() == 123);
 
   array.push_back(grnxx::Int(456));
   assert(array.size() == 2);
   assert(array.capacity() == 2);
-  assert(array[0] == grnxx::Int(123));
-  assert(array[1] == grnxx::Int(456));
+  assert(array[0].value() == 123);
+  assert(array[1].value() == 456);
 
   array.push_back(grnxx::Int(789));
   assert(array.size() == 3);
   assert(array.capacity() == 4);
-  assert(array[0] == grnxx::Int(123));
-  assert(array[1] == grnxx::Int(456));
-  assert(array[2] == grnxx::Int(789));
+  assert(array[0].value() == 123);
+  assert(array[1].value() == 456);
+  assert(array[2].value() == 789);
 
   array.resize(200, grnxx::Int(12345));
   assert(array.size() == 200);
   assert(array.capacity() == 200);
-  assert(array[0] == grnxx::Int(123));
-  assert(array[1] == grnxx::Int(456));
-  assert(array[2] == grnxx::Int(789));
+  assert(array[0].value() == 123);
+  assert(array[1].value() == 456);
+  assert(array[2].value() == 789);
   for (size_t i = 3; i < 200; ++i) {
-    assert(array[i] == grnxx::Int(12345));
+    assert(array[i].value() == 12345);
   }
 
   constexpr size_t ARRAY_SIZE = 1 << 20;
@@ -132,14 +132,14 @@ void test_int() {
   array.resize(ARRAY_SIZE, grnxx::Int(0));
   assert(array.size() == ARRAY_SIZE);
   assert(array.capacity() == ARRAY_SIZE);
-  assert(array[0] == grnxx::Int(123));
-  assert(array[1] == grnxx::Int(456));
-  assert(array[2] == grnxx::Int(789));
+  assert(array[0].value() == 123);
+  assert(array[1].value() == 456);
+  assert(array[2].value() == 789);
   for (size_t i = 3; i < 200; ++i) {
-    assert(array[i] == grnxx::Int(12345));
+    assert(array[i].value() == 12345);
   }
   for (size_t i = 200; i < ARRAY_SIZE; ++i) {
-    assert(array[i] == grnxx::Int(0));
+    assert(array[i].value() == 0);
   }
 
   std::vector<grnxx::Int> values(ARRAY_SIZE);
@@ -150,10 +150,10 @@ void test_int() {
     }
     values[i] = grnxx::Int(value);
     array.set(i, values[i]);
-    assert(array.get(i) == values[i]);
+    assert(array.get(i).value() == values[i].value());
   }
   for (size_t i = 0; i < ARRAY_SIZE; ++i) {
-    assert(array[i] == values[i]);
+    assert(array[i].value() == values[i].value());
   }
 
   grnxx::Array<grnxx::Int> array2;
@@ -163,7 +163,7 @@ void test_int() {
   assert(array2.size() == ARRAY_SIZE);
   assert(array2.capacity() == ARRAY_SIZE);
   for (size_t i = 0; i < ARRAY_SIZE; ++i) {
-    assert(array2[i] == values[i]);
+    assert(array2[i].value() == values[i].value());
   }
 }
 

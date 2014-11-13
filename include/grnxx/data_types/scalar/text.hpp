@@ -48,7 +48,7 @@ class Text {
 
   Bool operator==(const Text &rhs) const {
     Bool has_equal_size = (size_ == rhs.size_);
-    if (has_equal_size) {
+    if (has_equal_size.is_true()) {
       return Bool(std::memcmp(data_, rhs.data_, size_.value()) == 0);
     }
     return has_equal_size;
@@ -65,7 +65,8 @@ class Text {
     if (has_less_size.is_na()) {
       return Bool::na();
     }
-    size_t min_size = has_less_size ? size_.value() : rhs.size_.value();
+    size_t min_size = has_less_size.is_true() ?
+                      size_.value() : rhs.size_.value();
     int data_result = std::memcmp(data_, rhs.data_, min_size);
     return (data_result < 0) ? Bool(true) :
            ((data_result == 0) ? has_less_size : Bool(false));
@@ -78,7 +79,7 @@ class Text {
     if (has_less_or_equal_size.is_na()) {
       return Bool::na();
     }
-    size_t min_size = has_less_or_equal_size ?
+    size_t min_size = has_less_or_equal_size.is_true() ?
                       size_.value() : rhs.size_.value();
     int data_result = std::memcmp(data_, rhs.data_, min_size);
     return (data_result < 0) ? Bool(true) :
@@ -90,14 +91,14 @@ class Text {
 
   Bool starts_with(const Text &rhs) const {
     Bool has_greater_or_equal_size = (size_ >= rhs.size_);
-    if (has_greater_or_equal_size) {
+    if (has_greater_or_equal_size.is_true()) {
       return Bool(std::memcmp(data_, rhs.data_, rhs.size_.value()) == 0);
     }
     return has_greater_or_equal_size;
   }
   Bool ends_with(const Text &rhs) const {
     Bool has_greater_or_equal_size = (size_ >= rhs.size_);
-    if (has_greater_or_equal_size) {
+    if (has_greater_or_equal_size.is_true()) {
       return Bool(std::memcmp(data_ + size_.value() - rhs.size_.value(),
                               rhs.data_, rhs.size_.value()) == 0);
     }
