@@ -797,241 +797,212 @@ void test_column() {
 //  }
 }
 
-//void test_logical_not() {
-//  grnxx::Error error;
+void test_logical_not() {
+  // Create an object for building expressions.
+  auto builder = grnxx::ExpressionBuilder::create(test.table);
 
-//  // Create an object for building expressions.
-//  auto builder = grnxx::ExpressionBuilder::create(&error, test.table);
-//  assert(builder);
+  // Test an expression (!Bool).
+  builder->push_column("Bool");
+  builder->push_operator(grnxx::LOGICAL_NOT_OPERATOR);
+  auto expression = builder->release();
 
-//  // Test an expression (!Bool).
-//  assert(builder->push_column(&error, "Bool"));
-//  assert(builder->push_operator(&error, grnxx::LOGICAL_NOT_OPERATOR));
-//  auto expression = builder->release(&error);
-//  assert(expression);
+  auto records = create_input_records();
 
-//  auto records = create_input_records();
+  grnxx::Array<grnxx::Bool> bool_results;
+  expression->evaluate(records, &bool_results);
+  assert(bool_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < bool_results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert(bool_results[i] == !test.bool_values[row_id]);
+  }
 
-//  grnxx::Array<grnxx::Bool> bool_results;
-//  assert(expression->evaluate(&error, records, &bool_results));
-//  assert(bool_results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < bool_results.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    assert(bool_results[i] == !test.bool_values[row_id]);
-//  }
+  expression->filter(&records);
+  size_t count = 0;
+  for (size_t i = 0; i < test.bool_values.size(); ++i) {
+    if (!test.bool_values[i]) {
+      assert(records[count].row_id == grnxx::Int(i));
+      ++count;
+    }
+  }
+  assert(records.size() == count);
+}
 
-//  assert(expression->filter(&error, &records));
-//  grnxx::Int count = 0;
-//  for (grnxx::Int i = 1; i < test.bool_values.size(); ++i) {
-//    if (!test.bool_values[i]) {
-//      assert(records.get_row_id(count) == i);
-//      ++count;
-//    }
-//  }
-//  assert(records.size() == count);
-//}
+void test_bitwise_not() {
+  // Create an object for building expressions.
+  auto builder = grnxx::ExpressionBuilder::create(test.table);
 
-//void test_bitwise_not() {
-//  grnxx::Error error;
+  // Test an expression (~Bool).
+  builder->push_column("Bool");
+  builder->push_operator(grnxx::BITWISE_NOT_OPERATOR);
+  auto expression = builder->release();
 
-//  // Create an object for building expressions.
-//  auto builder = grnxx::ExpressionBuilder::create(&error, test.table);
-//  assert(builder);
+  auto records = create_input_records();
 
-//  // Test an expression (~Bool).
-//  assert(builder->push_column(&error, "Bool"));
-//  assert(builder->push_operator(&error, grnxx::BITWISE_NOT_OPERATOR));
-//  auto expression = builder->release(&error);
-//  assert(expression);
+  grnxx::Array<grnxx::Bool> bool_results;
+  expression->evaluate(records, &bool_results);
+  assert(bool_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < bool_results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert(bool_results[i] == ~test.bool_values[row_id]);
+  }
 
-//  auto records = create_input_records();
+  expression->filter(&records);
+  size_t count = 0;
+  for (size_t i = 0; i < test.bool_values.size(); ++i) {
+    if (~test.bool_values[i]) {
+      assert(records[count].row_id == grnxx::Int(i));
+      ++count;
+    }
+  }
+  assert(records.size() == count);
 
-//  grnxx::Array<grnxx::Bool> bool_results;
-//  assert(expression->evaluate(&error, records, &bool_results));
-//  assert(bool_results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < bool_results.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    assert(bool_results[i] == !test.bool_values[row_id]);
-//  }
+  // Test an expression (~Int).
+  builder->push_column("Int");
+  builder->push_operator(grnxx::BITWISE_NOT_OPERATOR);
+  expression = builder->release();
 
-//  assert(expression->filter(&error, &records));
-//  grnxx::Int count = 0;
-//  for (grnxx::Int i = 1; i < test.bool_values.size(); ++i) {
-//    if (!test.bool_values[i]) {
-//      assert(records.get_row_id(count) == i);
-//      ++count;
-//    }
-//  }
-//  assert(records.size() == count);
+  records = create_input_records();
 
-//  // Test an expression (~Int).
-//  assert(builder->push_column(&error, "Int"));
-//  assert(builder->push_operator(&error, grnxx::BITWISE_NOT_OPERATOR));
-//  expression = builder->release(&error);
-//  assert(expression);
+  grnxx::Array<grnxx::Int> int_results;
+  expression->evaluate(records, &int_results);
+  assert(int_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < int_results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert(int_results[i] == ~test.int_values[row_id]);
+  }
+}
 
-//  records = create_input_records();
+void test_positive() {
+  // Create an object for building expressions.
+  auto builder = grnxx::ExpressionBuilder::create(test.table);
 
-//  grnxx::Array<grnxx::Int> int_results;
-//  assert(expression->evaluate(&error, records, &int_results));
-//  assert(int_results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < int_results.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    assert(int_results[i] == ~test.int_values[row_id]);
-//  }
-//}
+  // Test an expression (+Int).
+  builder->push_column("Int");
+  builder->push_operator(grnxx::POSITIVE_OPERATOR);
+  auto expression = builder->release();
 
-//void test_positive() {
-//  grnxx::Error error;
+  auto records = create_input_records();
 
-//  // Create an object for building expressions.
-//  auto builder = grnxx::ExpressionBuilder::create(&error, test.table);
-//  assert(builder);
+  grnxx::Array<grnxx::Int> int_results;
+  expression->evaluate(records, &int_results);
+  assert(int_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < int_results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert(int_results[i] == test.int_values[row_id]);
+  }
 
-//  // Test an expression (+Int).
-//  assert(builder->push_column(&error, "Int"));
-//  assert(builder->push_operator(&error, grnxx::POSITIVE_OPERATOR));
-//  auto expression = builder->release(&error);
-//  assert(expression);
+  // Test an expression (+Float).
+  builder->push_column("Float");
+  builder->push_operator(grnxx::POSITIVE_OPERATOR);
+  expression = builder->release();
 
-//  auto records = create_input_records();
+  records = create_input_records();
 
-//  grnxx::Array<grnxx::Int> int_results;
-//  assert(expression->evaluate(&error, records, &int_results));
-//  assert(int_results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < int_results.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    assert(int_results[i] == test.int_values[row_id]);
-//  }
+  grnxx::Array<grnxx::Float> float_results;
+  expression->evaluate(records, &float_results);
+  assert(float_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < float_results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert(float_results[i] == test.float_values[row_id]);
+  }
 
-//  // Test an expression (+Float).
-//  assert(builder->push_column(&error, "Float"));
-//  assert(builder->push_operator(&error, grnxx::POSITIVE_OPERATOR));
-//  expression = builder->release(&error);
-//  assert(expression);
+  expression->adjust(&records);
+  assert(records.size() == test.table->num_rows());
+  for (size_t i = 0; i < records.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert(records[i].score == test.float_values[row_id]);
+  }
+}
 
-//  records = create_input_records();
+void test_negative() {
+  // Create an object for building expressions.
+  auto builder = grnxx::ExpressionBuilder::create(test.table);
 
-//  grnxx::Array<grnxx::Float> float_results;
-//  assert(expression->evaluate(&error, records, &float_results));
-//  assert(float_results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < float_results.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    assert(float_results[i] == test.float_values[row_id]);
-//  }
+  // Test an expression (-Int).
+  builder->push_column("Int");
+  builder->push_operator(grnxx::NEGATIVE_OPERATOR);
+  auto expression = builder->release();
 
-//  assert(expression->adjust(&error, &records));
-//  assert(records.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < records.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    assert(records.get_score(i) == test.float_values[row_id]);
-//  }
-//}
+  auto records = create_input_records();
 
-//void test_negative() {
-//  grnxx::Error error;
+  grnxx::Array<grnxx::Int> int_results;
+  expression->evaluate(records, &int_results);
+  assert(int_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < int_results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert(int_results[i] == -test.int_values[row_id]);
+  }
 
-//  // Create an object for building expressions.
-//  auto builder = grnxx::ExpressionBuilder::create(&error, test.table);
-//  assert(builder);
+  // Test an expression (-Float).
+  builder->push_column("Float");
+  builder->push_operator(grnxx::NEGATIVE_OPERATOR);
+  expression = builder->release();
 
-//  // Test an expression (-Int).
-//  assert(builder->push_column(&error, "Int"));
-//  assert(builder->push_operator(&error, grnxx::NEGATIVE_OPERATOR));
-//  auto expression = builder->release(&error);
-//  assert(expression);
+  records = create_input_records();
 
-//  auto records = create_input_records();
+  grnxx::Array<grnxx::Float> float_results;
+  expression->evaluate(records, &float_results);
+  assert(float_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < float_results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert(float_results[i] == -test.float_values[row_id]);
+  }
 
-//  grnxx::Array<grnxx::Int> int_results;
-//  assert(expression->evaluate(&error, records, &int_results));
-//  assert(int_results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < int_results.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    assert(int_results[i] == -test.int_values[row_id]);
-//  }
+  expression->adjust(&records);
+  assert(records.size() == test.table->num_rows());
+  for (size_t i = 0; i < records.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert(records[i].score == -test.float_values[row_id]);
+  }
+}
 
-//  // Test an expression (-Float).
-//  assert(builder->push_column(&error, "Float"));
-//  assert(builder->push_operator(&error, grnxx::NEGATIVE_OPERATOR));
-//  expression = builder->release(&error);
-//  assert(expression);
+void test_to_int() {
+  // Create an object for building expressions.
+  auto builder = grnxx::ExpressionBuilder::create(test.table);
 
-//  records = create_input_records();
+  // Test an expression (Int(Float)).
+  builder->push_column("Float");
+  builder->push_operator(grnxx::TO_INT_OPERATOR);
+  auto expression = builder->release();
 
-//  grnxx::Array<grnxx::Float> float_results;
-//  assert(expression->evaluate(&error, records, &float_results));
-//  assert(float_results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < float_results.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    assert(float_results[i] == -test.float_values[row_id]);
-//  }
+  auto records = create_input_records();
 
-//  assert(expression->adjust(&error, &records));
-//  assert(records.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < records.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    assert(records.get_score(i) == -test.float_values[row_id]);
-//  }
-//}
+  grnxx::Array<grnxx::Int> int_results;
+  expression->evaluate(records, &int_results);
+  assert(int_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < int_results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert(int_results[i] == test.float_values[row_id].to_int());
+  }
+}
 
-//void test_to_int() {
-//  grnxx::Error error;
+void test_to_float() {
+  // Create an object for building expressions.
+  auto builder = grnxx::ExpressionBuilder::create(test.table);
+  assert(builder);
 
-//  // Create an object for building expressions.
-//  auto builder = grnxx::ExpressionBuilder::create(&error, test.table);
-//  assert(builder);
+  // Test an expression (Float(Int)).
+  builder->push_column("Int");
+  builder->push_operator(grnxx::TO_FLOAT_OPERATOR);
+  auto expression = builder->release();
 
-//  // Test an expression (Int(Float)).
-//  assert(builder->push_column(&error, "Float"));
-//  assert(builder->push_operator(&error, grnxx::TO_INT_OPERATOR));
-//  auto expression = builder->release(&error);
-//  assert(expression);
+  auto records = create_input_records();
 
-//  auto records = create_input_records();
+  grnxx::Array<grnxx::Float> float_results;
+  expression->evaluate(records, &float_results);
+  assert(float_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < float_results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert(float_results[i] == test.int_values[row_id].to_float());
+  }
 
-//  grnxx::Array<grnxx::Int> int_results;
-//  assert(expression->evaluate(&error, records, &int_results));
-//  assert(int_results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < int_results.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    assert(int_results[i] ==
-//           static_cast<grnxx::Int>(test.float_values[row_id]));
-//  }
-//}
-
-//void test_to_float() {
-//  grnxx::Error error;
-
-//  // Create an object for building expressions.
-//  auto builder = grnxx::ExpressionBuilder::create(&error, test.table);
-//  assert(builder);
-
-//  // Test an expression (Float(Int)).
-//  assert(builder->push_column(&error, "Int"));
-//  assert(builder->push_operator(&error, grnxx::TO_FLOAT_OPERATOR));
-//  auto expression = builder->release(&error);
-//  assert(expression);
-
-//  auto records = create_input_records();
-
-//  grnxx::Array<grnxx::Float> float_results;
-//  assert(expression->evaluate(&error, records, &float_results));
-//  assert(float_results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < float_results.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    assert(float_results[i] ==
-//           static_cast<grnxx::Float>(test.int_values[row_id]));
-//  }
-
-//  assert(expression->adjust(&error, &records));
-//  assert(records.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < records.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    assert(records.get_score(i) ==
-//           static_cast<grnxx::Float>(test.int_values[row_id]));
-//  }
-//}
+  expression->adjust(&records);
+  assert(records.size() == test.table->num_rows());
+  for (size_t i = 0; i < records.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert(records[i].score == test.int_values[row_id].to_float());
+  }
+}
 
 //void test_logical_and() {
 //  grnxx::Error error;
@@ -3019,13 +2990,13 @@ int main() {
   test_score();
   test_column();
 
-//  // Unary operators.
-//  test_logical_not();
-//  test_bitwise_not();
-//  test_positive();
-//  test_negative();
-//  test_to_int();
-//  test_to_float();
+  // Unary operators.
+  test_logical_not();
+  test_bitwise_not();
+  test_positive();
+  test_negative();
+  test_to_int();
+  test_to_float();
 
 //  // Binary operators.
 //  test_logical_and();
