@@ -889,6 +889,149 @@ void LogicalOrNode::evaluate(ArrayCRef<Record> records,
   }
 }
 
+// ---- ComparisonNode ----
+
+template <typename T>
+class ComparisonNode
+    : public BinaryNode<Bool, typename T::Arg, typename T::Arg> {
+ public:
+  using Comparer = T;
+  using Value = Bool;
+  using Arg1 = typename T::Arg;
+  using Arg2 = typename T::Arg;
+
+  ComparisonNode(std::unique_ptr<Node> &&arg1, std::unique_ptr<Node> &&arg2)
+      : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)),
+        comparer_() {}
+  ~ComparisonNode() = default;
+
+  void filter(ArrayCRef<Record> input_records,
+              ArrayRef<Record> *output_records);
+  void evaluate(ArrayCRef<Record> records, ArrayRef<Value> results);
+
+ protected:
+  Comparer comparer_;
+};
+
+template <typename T>
+void ComparisonNode<T>::filter(ArrayCRef<Record> input_records,
+                               ArrayRef<Record> *output_records) {
+  this->fill_arg1_values(input_records);
+  this->fill_arg2_values(input_records);
+  size_t count = 0;
+  for (size_t i = 0; i < input_records.size(); ++i) {
+    if (comparer_(this->arg1_values_[i], this->arg2_values_[i]).is_true()) {
+      (*output_records)[count] = input_records[i];
+      ++count;
+    }
+  }
+  *output_records = output_records->ref(0, count);
+}
+
+template <typename T>
+void ComparisonNode<T>::evaluate(ArrayCRef<Record> records,
+                                 ArrayRef<Value> results) {
+  this->fill_arg1_values(records);
+  this->fill_arg2_values(records);
+  for (size_t i = 0; i < records.size(); ++i) {
+    results[i] = comparer_(this->arg1_values_[i], this->arg2_values_[i]);
+  }
+}
+
+// ----- EqualNode -----
+
+// TODO: EqualNode for Bool should be specialized.
+
+struct Equal {
+  template <typename T>
+  struct Comparer {
+    using Arg = T;
+    Bool operator()(const Arg &arg1, const Arg &arg2) const {
+      return arg1 == arg2;
+    }
+  };
+};
+
+template <typename T>
+using EqualNode = ComparisonNode<Equal::Comparer<T>>;
+
+// ----- NotEqualNode -----
+
+// TODO: NotEqualNode for Bool should be specialized.
+
+struct NotEqual {
+  template <typename T>
+  struct Comparer {
+    using Arg = T;
+    Bool operator()(const Arg &arg1, const Arg &arg2) const {
+      return arg1 != arg2;
+    }
+  };
+};
+
+template <typename T>
+using NotEqualNode = ComparisonNode<NotEqual::Comparer<T>>;
+
+// ----- LessNode -----
+
+struct Less {
+  template <typename T>
+  struct Comparer {
+    using Arg = T;
+    Bool operator()(const Arg &arg1, const Arg &arg2) const {
+      return arg1 < arg2;
+    }
+  };
+};
+
+template <typename T>
+using LessNode = ComparisonNode<Less::Comparer<T>>;
+
+// ----- LessEqualNode -----
+
+struct LessEqual {
+  template <typename T>
+  struct Comparer {
+    using Arg = T;
+    Bool operator()(const Arg &arg1, const Arg &arg2) const {
+      return arg1 <= arg2;
+    }
+  };
+};
+
+template <typename T>
+using LessEqualNode = ComparisonNode<LessEqual::Comparer<T>>;
+
+// ----- GreaterNode -----
+
+struct Greater {
+  template <typename T>
+  struct Comparer {
+    using Arg = T;
+    Bool operator()(const Arg &arg1, const Arg &arg2) const {
+      return arg1 > arg2;
+    }
+  };
+};
+
+template <typename T>
+using GreaterNode = ComparisonNode<Greater::Comparer<T>>;
+
+// ----- GreaterEqualNode -----
+
+struct GreaterEqual {
+  template <typename T>
+  struct Comparer {
+    using Arg = T;
+    Bool operator()(const Arg &arg1, const Arg &arg2) const {
+      return arg1 >= arg2;
+    }
+  };
+};
+
+template <typename T>
+using GreaterEqualNode = ComparisonNode<GreaterEqual::Comparer<T>>;
+
 }  // namespace expression
 
 using namespace expression;
@@ -1401,30 +1544,30 @@ Node *ExpressionBuilder::create_binary_node(
       }
       return new LogicalOrNode(std::move(arg1), std::move(arg2));
     }
-//    case EQUAL_OPERATOR: {
-//      return create_equality_test_node<Equal>(
-//          error, std::move(arg1), std::move(arg2));
-//    }
-//    case NOT_EQUAL_OPERATOR: {
-//      return create_equality_test_node<NotEqual>(
-//          error, std::move(arg1), std::move(arg2));
-//    }
-//    case LESS_OPERATOR: {
-//      return create_comparison_node<Less>(
-//          error, std::move(arg1), std::move(arg2));
-//    }
-//    case LESS_EQUAL_OPERATOR: {
-//      return create_comparison_node<LessEqual>(
-//          error, std::move(arg1), std::move(arg2));
-//    }
-//    case GREATER_OPERATOR: {
-//      return create_comparison_node<Greater>(
-//          error, std::move(arg1), std::move(arg2));
-//    }
-//    case GREATER_EQUAL_OPERATOR: {
-//      return create_comparison_node<GreaterEqual>(
-//          error, std::move(arg1), std::move(arg2));
-//    }
+    case EQUAL_OPERATOR: {
+      return create_equality_test_node<Equal>(
+          std::move(arg1), std::move(arg2));
+    }
+    case NOT_EQUAL_OPERATOR: {
+      return create_equality_test_node<NotEqual>(
+          std::move(arg1), std::move(arg2));
+    }
+    case LESS_OPERATOR: {
+      return create_comparison_node<Less>(
+          std::move(arg1), std::move(arg2));
+    }
+    case LESS_EQUAL_OPERATOR: {
+      return create_comparison_node<LessEqual>(
+          std::move(arg1), std::move(arg2));
+    }
+    case GREATER_OPERATOR: {
+      return create_comparison_node<Greater>(
+          std::move(arg1), std::move(arg2));
+    }
+    case GREATER_EQUAL_OPERATOR: {
+      return create_comparison_node<GreaterEqual>(
+          std::move(arg1), std::move(arg2));
+    }
 //    case BITWISE_AND_OPERATOR:
 //    case BITWISE_OR_OPERATOR:
 //    case BITWISE_XOR_OPERATOR: {
@@ -1479,6 +1622,92 @@ Node *ExpressionBuilder::create_binary_node(
   }
 } catch (const std::bad_alloc &) {
   throw "Memory allocation failed";  // TODO
+}
+
+// Create a node associated with an equality test operator.
+template <typename T>
+Node *ExpressionBuilder::create_equality_test_node(
+    std::unique_ptr<Node> &&arg1,
+    std::unique_ptr<Node> &&arg2) {
+  if (arg1->data_type() != arg2->data_type()) {
+    throw "Data type conflict";  // TODO
+  }
+  switch (arg1->data_type()) {
+    case BOOL_DATA: {
+      return new ComparisonNode<typename T:: template Comparer<Bool>>(
+          std::move(arg1), std::move(arg2));
+    }
+    case INT_DATA: {
+      return new ComparisonNode<typename T:: template Comparer<Int>>(
+          std::move(arg1), std::move(arg2));
+    }
+    case FLOAT_DATA: {
+      return new ComparisonNode<typename T:: template Comparer<Float>>(
+          std::move(arg1), std::move(arg2));
+    }
+    case GEO_POINT_DATA: {
+      return new ComparisonNode<typename T:: template Comparer<GeoPoint>>(
+          std::move(arg1), std::move(arg2));
+    }
+    case TEXT_DATA: {
+      return new ComparisonNode<typename T:: template Comparer<Text>>(
+          std::move(arg1), std::move(arg2));
+    }
+//    case BOOL_VECTOR_DATA: {
+//      typedef typename T:: template Comparer<Vector<Bool>> Functor;
+//      return ComparisonNode<Functor>::create(
+//          error, std::move(arg1), std::move(arg2));
+//    }
+//    case INT_VECTOR_DATA: {
+//      typedef typename T:: template Comparer<Vector<Int>> Functor;
+//      return ComparisonNode<Functor>::create(
+//          error, std::move(arg1), std::move(arg2));
+//    }
+//    case FLOAT_VECTOR_DATA: {
+//      typedef typename T:: template Comparer<Vector<Float>> Functor;
+//      return ComparisonNode<Functor>::create(
+//          error, std::move(arg1), std::move(arg2));
+//    }
+//    case GEO_POINT_VECTOR_DATA: {
+//      typedef typename T:: template Comparer<Vector<GeoPoint>> Functor;
+//      return ComparisonNode<Functor>::create(
+//          error, std::move(arg1), std::move(arg2));
+//    }
+//    case TEXT_VECTOR_DATA: {
+//      typedef typename T:: template Comparer<Vector<Text>> Functor;
+//      return ComparisonNode<Functor>::create(
+//          error, std::move(arg1), std::move(arg2));
+//    }
+    default: {
+      throw "Invalid data type";  // TODO
+    }
+  }
+}
+
+// Create a node associated with a comparison operator.
+template <typename T>
+Node *ExpressionBuilder::create_comparison_node(std::unique_ptr<Node> &&arg1,
+                                                std::unique_ptr<Node> &&arg2) {
+  if (arg1->data_type() != arg2->data_type()) {
+    throw "Data type conflict";  // TODO
+  }
+  switch (arg1->data_type()) {
+    case INT_DATA: {
+      return new ComparisonNode<typename T:: template Comparer<Int>>(
+          std::move(arg1), std::move(arg2));
+    }
+    case FLOAT_DATA: {
+      return new ComparisonNode<typename T:: template Comparer<Float>>(
+          std::move(arg1), std::move(arg2));
+    }
+    case TEXT_DATA: {
+      return new ComparisonNode<typename T:: template Comparer<Text>>(
+          std::move(arg1), std::move(arg2));
+    }
+    default: {
+      throw "Invalid data type";  // TODO
+    }
+  }
 }
 
 }  // namespace impl
