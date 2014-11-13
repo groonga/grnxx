@@ -516,7 +516,7 @@ void LogicalNotNode::filter(ArrayCRef<Record> input_records,
   // Extract records which appear in "input_records" and don't appear in "ref".
   size_t count = 0;
   for (size_t i = 0, j = 0; i < input_records.size(); ++i) {
-    if (input_records[i].row_id == ref[i].row_id) {
+    if (input_records[i].row_id == ref[j].row_id) {
       ++j;
       continue;
     }
