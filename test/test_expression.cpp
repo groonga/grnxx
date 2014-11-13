@@ -1004,77 +1004,69 @@ void test_to_float() {
   }
 }
 
-//void test_logical_and() {
-//  grnxx::Error error;
+void test_logical_and() {
+  // Create an object for building expressions.
+  auto builder = grnxx::ExpressionBuilder::create(test.table);
 
-//  // Create an object for building expressions.
-//  auto builder = grnxx::ExpressionBuilder::create(&error, test.table);
-//  assert(builder);
+  // Test an expression (Bool && Bool2).
+  builder->push_column("Bool");
+  builder->push_column("Bool2");
+  builder->push_operator(grnxx::LOGICAL_AND_OPERATOR);
+  auto expression = builder->release();
 
-//  // Test an expression (Bool && Bool2).
-//  assert(builder->push_column(&error, "Bool"));
-//  assert(builder->push_column(&error, "Bool2"));
-//  assert(builder->push_operator(&error, grnxx::LOGICAL_AND_OPERATOR));
-//  auto expression = builder->release(&error);
-//  assert(expression);
+  auto records = create_input_records();
 
-//  auto records = create_input_records();
+  grnxx::Array<grnxx::Bool> bool_results;
+  expression->evaluate(records, &bool_results);
+  assert(bool_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < bool_results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert(bool_results[i] ==
+           (test.bool_values[row_id] & test.bool2_values[row_id]));
+  }
 
-//  grnxx::Array<grnxx::Bool> bool_results;
-//  assert(expression->evaluate(&error, records, &bool_results));
-//  assert(bool_results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < bool_results.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    assert(bool_results[i] ==
-//           (test.bool_values[row_id] && test.bool2_values[row_id]));
-//  }
+  expression->filter(&records);
+  size_t count = 0;
+  for (size_t i = 0; i < test.bool_values.size(); ++i) {
+    if (test.bool_values[i] & test.bool2_values[i]) {
+      assert(records[count].row_id == grnxx::Int(i));
+      ++count;
+    }
+  }
+  assert(records.size() == count);
+}
 
-//  assert(expression->filter(&error, &records));
-//  grnxx::Int count = 0;
-//  for (grnxx::Int i = 1; i < test.bool_values.size(); ++i) {
-//    if (test.bool_values[i] && test.bool2_values[i]) {
-//      assert(records.get_row_id(count) == i);
-//      ++count;
-//    }
-//  }
-//  assert(records.size() == count);
-//}
+void test_logical_or() {
+  // Create an object for building expressions.
+  auto builder = grnxx::ExpressionBuilder::create(test.table);
 
-//void test_logical_or() {
-//  grnxx::Error error;
+  // Test an expression (Bool || Bool2).
+  builder->push_column("Bool");
+  builder->push_column("Bool2");
+  builder->push_operator(grnxx::LOGICAL_OR_OPERATOR);
+  auto expression = builder->release();
 
-//  // Create an object for building expressions.
-//  auto builder = grnxx::ExpressionBuilder::create(&error, test.table);
-//  assert(builder);
+  auto records = create_input_records();
 
-//  // Test an expression (Bool || Bool2).
-//  assert(builder->push_column(&error, "Bool"));
-//  assert(builder->push_column(&error, "Bool2"));
-//  assert(builder->push_operator(&error, grnxx::LOGICAL_OR_OPERATOR));
-//  auto expression = builder->release(&error);
-//  assert(expression);
+  grnxx::Array<grnxx::Bool> bool_results;
+  expression->evaluate(records, &bool_results);
+  assert(bool_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < bool_results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert(bool_results[i] ==
+           (test.bool_values[row_id] | test.bool2_values[row_id]));
+  }
 
-//  auto records = create_input_records();
-
-//  grnxx::Array<grnxx::Bool> bool_results;
-//  assert(expression->evaluate(&error, records, &bool_results));
-//  assert(bool_results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < bool_results.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    assert(bool_results[i] ==
-//           (test.bool_values[row_id] || test.bool2_values[row_id]));
-//  }
-
-//  assert(expression->filter(&error, &records));
-//  grnxx::Int count = 0;
-//  for (grnxx::Int i = 1; i < test.bool_values.size(); ++i) {
-//    if (test.bool_values[i] || test.bool2_values[i]) {
-//      assert(records.get_row_id(count) == i);
-//      ++count;
-//    }
-//  }
-//  assert(records.size() == count);
-//}
+  expression->filter(&records);
+  size_t count = 0;
+  for (size_t i = 0; i < test.bool_values.size(); ++i) {
+    if (test.bool_values[i] | test.bool2_values[i]) {
+      assert(records[count].row_id == grnxx::Int(i));
+      ++count;
+    }
+  }
+  assert(records.size() == count);
+}
 
 //void test_equal() {
 //  grnxx::Error error;
@@ -2998,9 +2990,9 @@ int main() {
   test_to_int();
   test_to_float();
 
-//  // Binary operators.
-//  test_logical_and();
-//  test_logical_or();
+  // Binary operators.
+  test_logical_and();
+  test_logical_or();
 //  test_equal();
 //  test_not_equal();
 //  test_less();
