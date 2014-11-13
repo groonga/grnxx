@@ -1060,7 +1060,7 @@ void BitwiseBinaryNode<T, U>::evaluate(ArrayCRef<Record> records,
   this->fill_arg1_values(records);
   this->fill_arg2_values(records);
   for (size_t i = 0; i < records.size(); ++i) {
-    results[i] = this->arg1_values_[i] & this->arg2_values_[i];
+    results[i] = operator_(this->arg1_values_[i], this->arg2_values_[i]);
   }
 }
 
@@ -1091,7 +1091,7 @@ void BitwiseBinaryNode<T, Bool>::filter(ArrayCRef<Record> input_records,
   this->fill_arg2_values(input_records);
   size_t count = 0;
   for (size_t i = 0; i < input_records.size(); ++i) {
-    if ((this->arg1_values_[i] & this->arg2_values_[i]).is_true()) {
+    if (operator_(this->arg1_values_[i], this->arg2_values_[i]).is_true()) {
       (*output_records)[count] = input_records[i];
       ++count;
     }
@@ -1107,7 +1107,7 @@ void BitwiseBinaryNode<T, Bool>::evaluate(ArrayCRef<Record> records,
   // TODO: Should be processed per 64 bits.
   //       Check the 64-bit boundary and do it!
   for (size_t i = 0; i < records.size(); ++i) {
-    results[i] = this->arg1_values_[i] & this->arg2_values_[i];
+    results[i] = operator_(this->arg1_values_[i], this->arg2_values_[i]);
   }
 }
 
