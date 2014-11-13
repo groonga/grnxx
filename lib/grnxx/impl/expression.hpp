@@ -142,14 +142,16 @@ class ExpressionBuilder : public ExpressionBuilderInterface {
   //
   // On failure, throws an exception.
   template <typename T>
-  Node *create_equality_test_node(std::unique_ptr<Node> &&arg1,
+  Node *create_equality_test_node(OperatorType operator_type,
+                                  std::unique_ptr<Node> &&arg1,
                                   std::unique_ptr<Node> &&arg2);
 
   // Create a node associated with a comparison operator.
   //
   // On failure, throws an exception.
   template <typename T>
-  Node *create_comparison_node(std::unique_ptr<Node> &&arg1,
+  Node *create_comparison_node(OperatorType operator_type,
+                               std::unique_ptr<Node> &&arg1,
                                std::unique_ptr<Node> &&arg2);
 
   // Create a node associated with a bitwise binary operator.

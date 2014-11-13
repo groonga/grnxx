@@ -1668,29 +1668,75 @@ Node *ExpressionBuilder::create_binary_node(
       }
       return new LogicalOrNode(std::move(arg1), std::move(arg2));
     }
-    case EQUAL_OPERATOR: {
-      return create_equality_test_node<Equal>(
-          std::move(arg1), std::move(arg2));
-    }
+    case EQUAL_OPERATOR:
     case NOT_EQUAL_OPERATOR: {
-      return create_equality_test_node<NotEqual>(
-          std::move(arg1), std::move(arg2));
+      switch (arg1->data_type()) {
+        case BOOL_DATA: {
+          return create_equality_test_node<Bool>(
+            operator_type, std::move(arg1), std::move(arg2));
+        }
+        case INT_DATA: {
+          return create_equality_test_node<Int>(
+            operator_type, std::move(arg1), std::move(arg2));
+        }
+        case FLOAT_DATA: {
+          return create_equality_test_node<Float>(
+            operator_type, std::move(arg1), std::move(arg2));
+        }
+        case GEO_POINT_DATA: {
+          return create_equality_test_node<GeoPoint>(
+            operator_type, std::move(arg1), std::move(arg2));
+        }
+        case TEXT_DATA: {
+          return create_equality_test_node<Text>(
+            operator_type, std::move(arg1), std::move(arg2));
+        }
+//        case BOOL_VECTOR_DATA: {
+//          return create_equality_test_node<Vector<Bool>>(
+//            operator_type, std::move(arg1), std::move(arg2));
+//        }
+//        case INT_VECTOR_DATA: {
+//          return create_equality_test_node<Vector<Int>>(
+//            operator_type, std::move(arg1), std::move(arg2));
+//        }
+//        case FLOAT_VECTOR_DATA: {
+//          return create_equality_test_node<Vector<Float>>(
+//            operator_type, std::move(arg1), std::move(arg2));
+//        }
+//        case GEO_POINT_VECTOR_DATA: {
+//          return create_equality_test_node<Vector<GeoPoint>>(
+//            operator_type, std::move(arg1), std::move(arg2));
+//        }
+//        case TEXT_VECTOR_DATA: {
+//          return create_equality_test_node<Vector<Text>>(
+//            operator_type, std::move(arg1), std::move(arg2));
+//        }
+        default: {
+          throw "Invalid data type";  // TODO
+        }
+      }
     }
-    case LESS_OPERATOR: {
-      return create_comparison_node<Less>(
-          std::move(arg1), std::move(arg2));
-    }
-    case LESS_EQUAL_OPERATOR: {
-      return create_comparison_node<LessEqual>(
-          std::move(arg1), std::move(arg2));
-    }
-    case GREATER_OPERATOR: {
-      return create_comparison_node<Greater>(
-          std::move(arg1), std::move(arg2));
-    }
+    case LESS_OPERATOR:
+    case LESS_EQUAL_OPERATOR:
+    case GREATER_OPERATOR:
     case GREATER_EQUAL_OPERATOR: {
-      return create_comparison_node<GreaterEqual>(
-          std::move(arg1), std::move(arg2));
+      switch (arg1->data_type()) {
+        case INT_DATA: {
+          return create_comparison_node<Int>(
+              operator_type, std::move(arg1), std::move(arg2));
+        }
+        case FLOAT_DATA: {
+          return create_comparison_node<Float>(
+              operator_type, std::move(arg1), std::move(arg2));
+        }
+        case TEXT_DATA: {
+          return create_comparison_node<Text>(
+              operator_type, std::move(arg1), std::move(arg2));
+        }
+        default: {
+          throw "Invalid data type";  // TODO
+        }
+      }
     }
     case BITWISE_AND_OPERATOR:
     case BITWISE_OR_OPERATOR:
@@ -1750,85 +1796,54 @@ Node *ExpressionBuilder::create_binary_node(
 // Create a node associated with an equality test operator.
 template <typename T>
 Node *ExpressionBuilder::create_equality_test_node(
+    OperatorType operator_type,
     std::unique_ptr<Node> &&arg1,
     std::unique_ptr<Node> &&arg2) {
   if (arg1->data_type() != arg2->data_type()) {
     throw "Data type conflict";  // TODO
   }
-  switch (arg1->data_type()) {
-    case BOOL_DATA: {
-      return new ComparisonNode<typename T:: template Comparer<Bool>>(
+  switch (operator_type) {
+    case EQUAL_OPERATOR: {
+      return new ComparisonNode<Equal::Comparer<T>>(
           std::move(arg1), std::move(arg2));
     }
-    case INT_DATA: {
-      return new ComparisonNode<typename T:: template Comparer<Int>>(
+    case NOT_EQUAL_OPERATOR: {
+      return new ComparisonNode<NotEqual::Comparer<T>>(
           std::move(arg1), std::move(arg2));
     }
-    case FLOAT_DATA: {
-      return new ComparisonNode<typename T:: template Comparer<Float>>(
-          std::move(arg1), std::move(arg2));
-    }
-    case GEO_POINT_DATA: {
-      return new ComparisonNode<typename T:: template Comparer<GeoPoint>>(
-          std::move(arg1), std::move(arg2));
-    }
-    case TEXT_DATA: {
-      return new ComparisonNode<typename T:: template Comparer<Text>>(
-          std::move(arg1), std::move(arg2));
-    }
-//    case BOOL_VECTOR_DATA: {
-//      typedef typename T:: template Comparer<Vector<Bool>> Functor;
-//      return ComparisonNode<Functor>::create(
-//          error, std::move(arg1), std::move(arg2));
-//    }
-//    case INT_VECTOR_DATA: {
-//      typedef typename T:: template Comparer<Vector<Int>> Functor;
-//      return ComparisonNode<Functor>::create(
-//          error, std::move(arg1), std::move(arg2));
-//    }
-//    case FLOAT_VECTOR_DATA: {
-//      typedef typename T:: template Comparer<Vector<Float>> Functor;
-//      return ComparisonNode<Functor>::create(
-//          error, std::move(arg1), std::move(arg2));
-//    }
-//    case GEO_POINT_VECTOR_DATA: {
-//      typedef typename T:: template Comparer<Vector<GeoPoint>> Functor;
-//      return ComparisonNode<Functor>::create(
-//          error, std::move(arg1), std::move(arg2));
-//    }
-//    case TEXT_VECTOR_DATA: {
-//      typedef typename T:: template Comparer<Vector<Text>> Functor;
-//      return ComparisonNode<Functor>::create(
-//          error, std::move(arg1), std::move(arg2));
-//    }
     default: {
-      throw "Invalid data type";  // TODO
+      throw "Invalid operator";  // TODO
     }
   }
 }
 
 // Create a node associated with a comparison operator.
 template <typename T>
-Node *ExpressionBuilder::create_comparison_node(std::unique_ptr<Node> &&arg1,
+Node *ExpressionBuilder::create_comparison_node(OperatorType operator_type,
+                                                std::unique_ptr<Node> &&arg1,
                                                 std::unique_ptr<Node> &&arg2) {
   if (arg1->data_type() != arg2->data_type()) {
     throw "Data type conflict";  // TODO
   }
-  switch (arg1->data_type()) {
-    case INT_DATA: {
-      return new ComparisonNode<typename T:: template Comparer<Int>>(
+  switch (operator_type) {
+    case LESS_OPERATOR: {
+      return new ComparisonNode<Less::Comparer<T>>(
           std::move(arg1), std::move(arg2));
     }
-    case FLOAT_DATA: {
-      return new ComparisonNode<typename T:: template Comparer<Float>>(
+    case LESS_EQUAL_OPERATOR: {
+      return new ComparisonNode<LessEqual::Comparer<T>>(
           std::move(arg1), std::move(arg2));
     }
-    case TEXT_DATA: {
-      return new ComparisonNode<typename T:: template Comparer<Text>>(
+    case GREATER_OPERATOR: {
+      return new ComparisonNode<Greater::Comparer<T>>(
+          std::move(arg1), std::move(arg2));
+    }
+    case GREATER_EQUAL_OPERATOR: {
+      return new ComparisonNode<GreaterEqual::Comparer<T>>(
           std::move(arg1), std::move(arg2));
     }
     default: {
-      throw "Invalid data type";  // TODO
+      throw "Invalid operator";  // TODO
     }
   }
 }
