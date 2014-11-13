@@ -855,6 +855,7 @@ void LogicalOrNode::filter(ArrayCRef<Record> input_records,
       ++count;
     }
   }
+  *output_records = output_records->ref(0, output_count);
 }
 
 void LogicalOrNode::evaluate(ArrayCRef<Record> records,
