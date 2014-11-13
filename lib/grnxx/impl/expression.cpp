@@ -1032,6 +1032,130 @@ struct GreaterEqual {
 template <typename T>
 using GreaterEqualNode = ComparisonNode<GreaterEqual::Comparer<T>>;
 
+// TODO: BitwiseAnd/Or/XorNode should be implemented on the same base class?
+
+// ---- BitwiseBinaryNode ----
+
+template <typename T, typename U = typename T::Value>
+class BitwiseBinaryNode : public BinaryNode<U, U, U> {
+ public:
+  using Operator = T;
+  using Value = U;
+  using Arg1 = U;
+  using Arg2 = U;
+
+  BitwiseBinaryNode(std::unique_ptr<Node> &&arg1, std::unique_ptr<Node> &&arg2)
+      : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)),
+        operator_() {}
+
+  void evaluate(ArrayCRef<Record> records, ArrayRef<Value> results);
+
+ private:
+  Operator operator_;
+};
+
+template <typename T, typename U>
+void BitwiseBinaryNode<T, U>::evaluate(ArrayCRef<Record> records,
+                                       ArrayRef<Value> results) {
+  this->fill_arg1_values(records);
+  this->fill_arg2_values(records);
+  for (size_t i = 0; i < records.size(); ++i) {
+    results[i] = this->arg1_values_[i] & this->arg2_values_[i];
+  }
+}
+
+template <typename T>
+class BitwiseBinaryNode<T, Bool> : public BinaryNode<Bool, Bool, Bool> {
+ public:
+  using Operator = T;
+  using Value = Bool;
+  using Arg1 = Bool;
+  using Arg2 = Bool;
+
+  BitwiseBinaryNode(std::unique_ptr<Node> &&arg1, std::unique_ptr<Node> &&arg2)
+      : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)),
+        operator_() {}
+
+  void filter(ArrayCRef<Record> input_records,
+              ArrayRef<Record> *output_records);
+  void evaluate(ArrayCRef<Record> records, ArrayRef<Value> results);
+
+ private:
+  Operator operator_;
+};
+
+template <typename T>
+void BitwiseBinaryNode<T, Bool>::filter(ArrayCRef<Record> input_records,
+                                        ArrayRef<Record> *output_records) {
+  this->fill_arg1_values(input_records);
+  this->fill_arg2_values(input_records);
+  size_t count = 0;
+  for (size_t i = 0; i < input_records.size(); ++i) {
+    if ((this->arg1_values_[i] & this->arg2_values_[i]).is_true()) {
+      (*output_records)[count] = input_records[i];
+      ++count;
+    }
+  }
+  *output_records = output_records->ref(0, count);
+}
+
+template <typename T>
+void BitwiseBinaryNode<T, Bool>::evaluate(ArrayCRef<Record> records,
+                                          ArrayRef<Value> results) {
+  this->fill_arg1_values(records);
+  this->fill_arg2_values(records);
+  // TODO: Should be processed per 64 bits.
+  //       Check the 64-bit boundary and do it!
+  for (size_t i = 0; i < records.size(); ++i) {
+    results[i] = this->arg1_values_[i] & this->arg2_values_[i];
+  }
+}
+
+// ----- BitwiseAndNode -----
+
+struct BitwiseAnd {
+  template <typename T>
+  struct Operator {
+    using Value = T;
+    Value operator()(Value arg1, Value arg2) const {
+      return arg1 & arg2;
+    }
+  };
+};
+
+template <typename T>
+using BitwiseAndNode = BitwiseBinaryNode<BitwiseAnd::Operator<T>>;
+
+// ----- BitwiseOrNode -----
+
+struct BitwiseOr {
+  template <typename T>
+  struct Operator {
+    using Value = T;
+    Value operator()(Value arg1, Value arg2) const {
+      return arg1 | arg2;
+    }
+  };
+};
+
+template <typename T>
+using BitwiseOrNode = BitwiseBinaryNode<BitwiseOr::Operator<T>>;
+
+// ----- BitwiseXorNode -----
+
+struct BitwiseXor {
+  template <typename T>
+  struct Operator {
+    using Value = T;
+    Value operator()(Value arg1, Value arg2) const {
+      return arg1 ^ arg2;
+    }
+  };
+};
+
+template <typename T>
+using BitwiseXorNode = BitwiseBinaryNode<BitwiseXor::Operator<T>>;
+
 }  // namespace expression
 
 using namespace expression;
@@ -1568,24 +1692,23 @@ Node *ExpressionBuilder::create_binary_node(
       return create_comparison_node<GreaterEqual>(
           std::move(arg1), std::move(arg2));
     }
-//    case BITWISE_AND_OPERATOR:
-//    case BITWISE_OR_OPERATOR:
-//    case BITWISE_XOR_OPERATOR: {
-//      switch (arg1->data_type()) {
-//        case BOOL_DATA: {
-//          return create_bitwise_node<Bool>(
-//              error, operator_type, std::move(arg1), std::move(arg2));
-//        }
-//        case INT_DATA: {
-//          return create_bitwise_node<Int>(
-//              error, operator_type, std::move(arg1), std::move(arg2));
-//        }
-//        default: {
-//          GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
-//          return nullptr;
-//        }
-//      }
-//    }
+    case BITWISE_AND_OPERATOR:
+    case BITWISE_OR_OPERATOR:
+    case BITWISE_XOR_OPERATOR: {
+      switch (arg1->data_type()) {
+        case BOOL_DATA: {
+          return create_bitwise_binary_node<Bool>(
+              operator_type, std::move(arg1), std::move(arg2));
+        }
+        case INT_DATA: {
+          return create_bitwise_binary_node<Int>(
+              operator_type, std::move(arg1), std::move(arg2));
+        }
+        default: {
+          throw "Invalid data type";  // TODO
+        }
+      }
+    }
 //    case PLUS_OPERATOR:
 //    case MINUS_OPERATOR:
 //    case MULTIPLICATION_OPERATOR:
@@ -1706,6 +1829,33 @@ Node *ExpressionBuilder::create_comparison_node(std::unique_ptr<Node> &&arg1,
     }
     default: {
       throw "Invalid data type";  // TODO
+    }
+  }
+}
+
+template <typename T>
+Node *ExpressionBuilder::create_bitwise_binary_node(
+    OperatorType operator_type,
+    std::unique_ptr<Node> &&arg1,
+    std::unique_ptr<Node> &&arg2) {
+  if (arg1->data_type() != arg2->data_type()) {
+    throw "Data type conflict";  // TODO
+  }
+  switch (operator_type) {
+    case BITWISE_AND_OPERATOR: {
+      return new BitwiseBinaryNode<BitwiseAnd::Operator<T>>(
+          std::move(arg1), std::move(arg2));
+    }
+    case BITWISE_OR_OPERATOR: {
+      return new BitwiseBinaryNode<BitwiseOr::Operator<T>>(
+          std::move(arg1), std::move(arg2));
+    }
+    case BITWISE_XOR_OPERATOR: {
+      return new BitwiseBinaryNode<BitwiseXor::Operator<T>>(
+          std::move(arg1), std::move(arg2));
+    }
+    default: {
+      throw "Invalid operator";  // TODO
     }
   }
 }

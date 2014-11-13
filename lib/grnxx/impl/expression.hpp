@@ -151,6 +151,14 @@ class ExpressionBuilder : public ExpressionBuilderInterface {
   template <typename T>
   Node *create_comparison_node(std::unique_ptr<Node> &&arg1,
                                std::unique_ptr<Node> &&arg2);
+
+  // Create a node associated with a bitwise binary operator.
+  //
+  // On failure, throws an exception.
+  template <typename T>
+  Node *create_bitwise_binary_node(OperatorType operator_type,
+                                   std::unique_ptr<Node> &&arg1,
+                                   std::unique_ptr<Node> &&arg2);
 };
 
 }  // namespace impl
