@@ -4,11 +4,13 @@
 #include <cstdint>
 #include <limits>
 
-#include "grnxx/features.hpp"
 #include "grnxx/data_types/data_type.hpp"
 #include "grnxx/data_types/na.hpp"
+#include "grnxx/features.hpp"
 
 namespace grnxx {
+
+class Float;
 
 // NOTE: This implementation assumes two's complement.
 class Int {
@@ -218,6 +220,10 @@ class Int {
   constexpr Bool operator>=(Int rhs) const {
     return (is_na() || rhs.is_na()) ? Bool::na() : Bool(value_ >= rhs.value_);
   }
+
+  // -- Typecast (grnxx/data_types/typecast.hpp) --
+
+  constexpr Float to_float() const;
 
   static constexpr DataType type() {
     return INT_DATA;

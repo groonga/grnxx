@@ -9,6 +9,8 @@
 
 namespace grnxx {
 
+class Int;
+
 // NOTE: This implementation assumes IEEE 754.
 class Float {
  public:
@@ -118,6 +120,10 @@ class Float {
   Float next_toward(Float to) const {
     return Float(std::nextafter(value_, to.value_));
   }
+
+  // -- Typecast (grnxx/data_types/typecast.hpp) --
+
+  constexpr Int to_int() const;
 
   static constexpr DataType type() {
     return FLOAT_DATA;

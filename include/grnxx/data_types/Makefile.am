@@ -9,4 +9,5 @@ pkginclude_HEADERS =	\
 	na.hpp		\
 	record.hpp	\
 	scalar.hpp	\
+	typecast.hpp	\
 	vector.hpp

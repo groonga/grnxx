@@ -6,6 +6,7 @@
 #include "grnxx/data_types/na.hpp"
 #include "grnxx/data_types/record.hpp"
 #include "grnxx/data_types/scalar.hpp"
+#include "grnxx/data_types/typecast.hpp"
 #include "grnxx/data_types/vector.hpp"
 
 #endif  // GRNXX_DATA_TYPES_HPP
