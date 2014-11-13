@@ -24,7 +24,7 @@ class Text {
       : data_(string),
         size_(std::strlen(string)) {}
   constexpr Text(const char *data, size_t size) : data_(data), size_(size) {}
-  explicit constexpr Text(const String &string)
+  explicit Text(const String &string)
       : data_(string.data()),
         size_(string.size()) {}
   explicit constexpr Text(NA) : data_(nullptr), size_(NA()) {}
