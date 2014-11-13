@@ -476,6 +476,7 @@ class UnaryNode : public OperatorNode<T> {
   std::unique_ptr<TypedNode<Arg>> arg_;
   Array<Arg> arg_values_;
 
+  // Fill "arg_values_" with the evaluation results of "arg_".
   void fill_arg_values(ArrayCRef<Record> records) {
     fill_node_arg_values(records, arg_.get(), &arg_values_);
   }
@@ -703,6 +704,187 @@ void ToFloatNode::evaluate(ArrayCRef<Record> records,
   fill_arg_values(records);
   for (size_t i = 0; i < records.size(); ++i) {
     results[i] = arg_values_[i].to_float();
+  }
+}
+
+// --- BinaryNode ---
+
+template <typename T, typename U, typename V>
+class BinaryNode : public OperatorNode<T> {
+ public:
+  using Value = T;
+  using Arg1 = U;
+  using Arg2 = V;
+
+  BinaryNode(std::unique_ptr<Node> &&arg1, std::unique_ptr<Node> &&arg2)
+      : OperatorNode<Value>(),
+        arg1_(static_cast<TypedNode<Arg1> *>(arg1.release())),
+        arg2_(static_cast<TypedNode<Arg2> *>(arg2.release())),
+        arg1_values_(),
+        arg2_values_() {}
+  virtual ~BinaryNode() = default;
+
+ protected:
+  std::unique_ptr<TypedNode<Arg1>> arg1_;
+  std::unique_ptr<TypedNode<Arg2>> arg2_;
+  Array<Arg1> arg1_values_;
+  Array<Arg2> arg2_values_;
+
+  // Fill "arg1_values_" with the evaluation results of "arg1_".
+  void fill_arg1_values(ArrayCRef<Record> records) {
+    fill_node_arg_values(records, arg1_.get(), &arg1_values_);
+  }
+  // Fill "arg2_values_" with the evaluation results of "arg2_".
+  void fill_arg2_values(ArrayCRef<Record> records) {
+    fill_node_arg_values(records, arg2_.get(), &arg2_values_);
+  }
+};
+
+// ---- LogicalAndNode ----
+
+class LogicalAndNode : public BinaryNode<Bool, Bool, Bool> {
+ public:
+  using Value = Bool;
+  using Arg1 = Bool;
+  using Arg2 = Bool;
+
+  LogicalAndNode(std::unique_ptr<Node> &&arg1, std::unique_ptr<Node> &&arg2)
+      : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)),
+        temp_records_() {}
+  ~LogicalAndNode() = default;
+
+  void filter(ArrayCRef<Record> input_records,
+              ArrayRef<Record> *output_records) {
+    arg1_->filter(input_records, output_records);
+    arg2_->filter(*output_records, output_records);
+  }
+  void evaluate(ArrayCRef<Record> records, ArrayRef<Value> results);
+
+ private:
+  Array<Record> temp_records_;
+};
+
+void LogicalAndNode::evaluate(ArrayCRef<Record> records,
+                              ArrayRef<Value> results) {
+  // Evaluate "arg1" for all the records.
+  // Then, evaluate "arg2" for non-false records.
+  arg1_->evaluate(records, results);
+  if (temp_records_.size() < records.size()) {
+    temp_records_.resize(records.size());
+  }
+  size_t count = 0;
+  for (size_t i = 0; i < records.size(); ++i) {
+    if (!results[i].is_false()) {
+      temp_records_[count] = records[i];
+      ++count;
+    }
+  }
+  if (count == 0) {
+    // Nothing to do.
+    return;
+  }
+  fill_arg2_values(temp_records_.cref(0, count));
+
+  // Merge the evaluation results.
+  count = 0;
+  for (size_t i = 0; i < records.size(); ++i) {
+    if (!results[i].is_false()) {
+      results[i] &= arg2_values_[count];
+      ++count;
+    }
+  }
+}
+
+// ---- LogicalOrNode ----
+
+class LogicalOrNode : public BinaryNode<Bool, Bool, Bool> {
+ public:
+  using Value = Bool;
+  using Arg1 = Bool;
+  using Arg2 = Bool;
+
+  LogicalOrNode(std::unique_ptr<Node> &&arg1, std::unique_ptr<Node> &&arg2)
+      : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)),
+        temp_records_() {}
+
+  void filter(ArrayCRef<Record> input_records,
+              ArrayRef<Record> *output_records);
+  void evaluate(ArrayCRef<Record> records, ArrayRef<Value> results);
+
+ private:
+  Array<Record> temp_records_;
+};
+
+void LogicalOrNode::filter(ArrayCRef<Record> input_records,
+                           ArrayRef<Record> *output_records) {
+  // Evaluate "arg1" for all the records.
+  // Then, evaluate "arg2" for non-true records.
+  fill_arg1_values(input_records);
+  if (temp_records_.size() < input_records.size()) {
+    temp_records_.resize(input_records.size());
+  }
+  size_t count = 0;
+  for (size_t i = 0; i < input_records.size(); ++i) {
+    if (!arg1_values_[i].is_true()) {
+      temp_records_[count] = input_records[i];
+      ++count;
+    }
+  }
+  if (count == 0) {
+    if (input_records.data() != output_records->data()) {
+      for (size_t i = 0; i < input_records.size(); ++i) {
+        (*output_records)[i] = input_records[i];
+      }
+    }
+    return;
+  }
+  fill_arg2_values(temp_records_.cref(0, count));
+
+  // Merge the evaluation results.
+  count = 0;
+  size_t output_count = 0;
+  for (size_t i = 0; i < input_records.size(); ++i) {
+    if (arg1_values_[i].is_true()) {
+      (*output_records)[output_count] = input_records[i];
+      ++output_count;
+    } else {
+      if (arg2_values_[count].is_true()) {
+        (*output_records)[output_count] = input_records[i];
+        ++output_count;
+      }
+      ++count;
+    }
+  }
+}
+
+void LogicalOrNode::evaluate(ArrayCRef<Record> records,
+                             ArrayRef<Value> results) {
+  // Evaluate "arg1" for all the records.
+  // Then, evaluate "arg2" for non-true records.
+  arg1_->evaluate(records, results);
+  if (temp_records_.size() < records.size()) {
+    temp_records_.resize(records.size());
+  }
+  size_t count = 0;
+  for (size_t i = 0; i < records.size(); ++i) {
+    if (!results[i].is_true()) {
+      temp_records_[count] = records[i];
+      ++count;
+    }
+  }
+  if (count == 0) {
+    // Nothing to do.
+    return;
+  }
+  fill_arg2_values(temp_records_.cref(0, count));
+
+  // Merge the evaluation results.
+  count = 0;
+  for (size_t i = 0; i < records.size(); ++i) {
+    if (!results[i].is_true()) {
+      results[i] |= arg2_values_[count];
+      ++count;
+    }
   }
 }
 
@@ -1203,7 +1385,97 @@ Node *ExpressionBuilder::create_binary_node(
     OperatorType operator_type,
     std::unique_ptr<Node> &&arg1,
     std::unique_ptr<Node> &&arg2) try {
-  throw "Not supported yet";  // TODO
+  switch (operator_type) {
+    case LOGICAL_AND_OPERATOR: {
+      if ((arg1->data_type() != BOOL_DATA) ||
+          (arg2->data_type() != BOOL_DATA)) {
+        throw "Invalid data type";  // TODO
+      }
+      return new LogicalAndNode(std::move(arg1), std::move(arg2));
+    }
+    case LOGICAL_OR_OPERATOR: {
+      if ((arg1->data_type() != BOOL_DATA) ||
+          (arg2->data_type() != BOOL_DATA)) {
+        throw "Invalid data type";  // TODO
+      }
+      return new LogicalOrNode(std::move(arg1), std::move(arg2));
+    }
+//    case EQUAL_OPERATOR: {
+//      return create_equality_test_node<Equal>(
+//          error, std::move(arg1), std::move(arg2));
+//    }
+//    case NOT_EQUAL_OPERATOR: {
+//      return create_equality_test_node<NotEqual>(
+//          error, std::move(arg1), std::move(arg2));
+//    }
+//    case LESS_OPERATOR: {
+//      return create_comparison_node<Less>(
+//          error, std::move(arg1), std::move(arg2));
+//    }
+//    case LESS_EQUAL_OPERATOR: {
+//      return create_comparison_node<LessEqual>(
+//          error, std::move(arg1), std::move(arg2));
+//    }
+//    case GREATER_OPERATOR: {
+//      return create_comparison_node<Greater>(
+//          error, std::move(arg1), std::move(arg2));
+//    }
+//    case GREATER_EQUAL_OPERATOR: {
+//      return create_comparison_node<GreaterEqual>(
+//          error, std::move(arg1), std::move(arg2));
+//    }
+//    case BITWISE_AND_OPERATOR:
+//    case BITWISE_OR_OPERATOR:
+//    case BITWISE_XOR_OPERATOR: {
+//      switch (arg1->data_type()) {
+//        case BOOL_DATA: {
+//          return create_bitwise_node<Bool>(
+//              error, operator_type, std::move(arg1), std::move(arg2));
+//        }
+//        case INT_DATA: {
+//          return create_bitwise_node<Int>(
+//              error, operator_type, std::move(arg1), std::move(arg2));
+//        }
+//        default: {
+//          GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
+//          return nullptr;
+//        }
+//      }
+//    }
+//    case PLUS_OPERATOR:
+//    case MINUS_OPERATOR:
+//    case MULTIPLICATION_OPERATOR:
+//    case DIVISION_OPERATOR: {
+//      switch (arg1->data_type()) {
+//        case INT_DATA: {
+//          return create_arithmetic_node<Int>(
+//              error, operator_type, std::move(arg1), std::move(arg2));
+//        }
+//        case FLOAT_DATA: {
+//          return create_arithmetic_node<Float>(
+//              error, operator_type, std::move(arg1), std::move(arg2));
+//        }
+//        default: {
+//          GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
+//          return nullptr;
+//        }
+//      }
+//    }
+//    case MODULUS_OPERATOR: {
+//      if ((arg1->data_type() != INT_DATA) ||
+//          (arg2->data_type() != INT_DATA)) {
+//        GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
+//        return nullptr;
+//      }
+//      return ModulusNode<Int>::create(error, std::move(arg1), std::move(arg2));
+//    }
+//    case SUBSCRIPT_OPERATOR: {
+//      return create_subscript_node(error, std::move(arg1), std::move(arg2));
+//    }
+    default: {
+      throw "Not supported yet";  // TODO
+    }
+  }
 } catch (const std::bad_alloc &) {
   throw "Memory allocation failed";  // TODO
 }
