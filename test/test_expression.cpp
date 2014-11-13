@@ -471,17 +471,16 @@ void test_constant() try {
     assert(geo_point_results[i] == geo_point);
   }
 
-//  // Test an expression ("ABC").
-//  assert(builder->push_constant(&error, grnxx::Text("ABC")));
-//  expression = builder->release(&error);
-//  assert(expression);
+  // Test an expression ("ABC").
+  builder->push_constant(grnxx::Text("ABC"));
+  expression = builder->release();
 
-//  grnxx::Array<grnxx::Text> text_results;
-//  assert(expression->evaluate(&error, records, &text_results));
-//  assert(text_results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < text_results.size(); ++i) {
-//    assert(text_results[i] == "ABC");
-//  }
+  grnxx::Array<grnxx::Text> text_results;
+  expression->evaluate(records, &text_results);
+  assert(text_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < text_results.size(); ++i) {
+    assert(text_results[i] == grnxx::Text("ABC"));
+  }
 
 //  // Test an expression ({ true, false, true }).
 //  assert(builder->push_constant(
