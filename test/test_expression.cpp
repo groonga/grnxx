@@ -2133,269 +2133,243 @@ void test_bitwise_xor() {
   }
 }
 
-//void test_plus() {
-//  grnxx::Error error;
+void test_plus() {
+  // Create an object for building expressions.
+  auto builder = grnxx::ExpressionBuilder::create(test.table);
 
-//  // Create an object for building expressions.
-//  auto builder = grnxx::ExpressionBuilder::create(&error, test.table);
-//  assert(builder);
+  // Test an expression (Int + Int2).
+  builder->push_column("Int");
+  builder->push_column("Int2");
+  builder->push_operator(grnxx::PLUS_OPERATOR);
+  auto expression = builder->release();
 
-//  // Test an expression (Int + Int2).
-//  assert(builder->push_column(&error, "Int"));
-//  assert(builder->push_column(&error, "Int2"));
-//  assert(builder->push_operator(&error, grnxx::PLUS_OPERATOR));
-//  auto expression = builder->release(&error);
-//  assert(expression);
+  auto records = create_input_records();
 
-//  auto records = create_input_records();
+  grnxx::Array<grnxx::Int> int_results;
+  expression->evaluate(records, &int_results);
+  assert(int_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < int_results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert(int_results[i].value() ==
+           (test.int_values[row_id] + test.int2_values[row_id]).value());
+  }
 
-//  grnxx::Array<grnxx::Int> int_results;
-//  assert(expression->evaluate(&error, records, &int_results));
-//  assert(int_results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < int_results.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    assert(int_results[i] ==
-//           (test.int_values[row_id] + test.int2_values[row_id]));
-//  }
+  // Test an expression (Float + Float2).
+  builder->push_column("Float");
+  builder->push_column("Float2");
+  builder->push_operator(grnxx::PLUS_OPERATOR);
+  expression = builder->release();
 
-//  // Test an expression (Float + Float2).
-//  assert(builder->push_column(&error, "Float"));
-//  assert(builder->push_column(&error, "Float2"));
-//  assert(builder->push_operator(&error, grnxx::PLUS_OPERATOR));
-//  expression = builder->release(&error);
-//  assert(expression);
+  records = create_input_records();
 
-//  records = create_input_records();
+  grnxx::Array<grnxx::Float> float_results;
+  expression->evaluate(records, &float_results);
+  assert(float_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < float_results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert(float_results[i].value() ==
+           (test.float_values[row_id] + test.float2_values[row_id]).value());
+  }
 
-//  grnxx::Array<grnxx::Float> float_results;
-//  assert(expression->evaluate(&error, records, &float_results));
-//  assert(float_results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < float_results.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    assert(float_results[i] ==
-//           (test.float_values[row_id] + test.float2_values[row_id]));
-//  }
+  expression->adjust(&records);
+  assert(records.size() == test.table->num_rows());
+  for (size_t i = 0; i < records.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert(records[i].score.value() ==
+           (test.float_values[row_id] + test.float2_values[row_id]).value());
+  }
+}
 
-//  assert(expression->adjust(&error, &records));
-//  assert(records.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < records.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    assert(records.get_score(i) ==
-//           (test.float_values[row_id] + test.float2_values[row_id]));
-//  }
-//}
+void test_minus() {
+  // Create an object for building expressions.
+  auto builder = grnxx::ExpressionBuilder::create(test.table);
 
-//void test_minus() {
-//  grnxx::Error error;
+  // Test an expression (Int - Int2).
+  builder->push_column("Int");
+  builder->push_column("Int2");
+  builder->push_operator(grnxx::MINUS_OPERATOR);
+  auto expression = builder->release();
 
-//  // Create an object for building expressions.
-//  auto builder = grnxx::ExpressionBuilder::create(&error, test.table);
-//  assert(builder);
+  auto records = create_input_records();
 
-//  // Test an expression (Int - Int2).
-//  assert(builder->push_column(&error, "Int"));
-//  assert(builder->push_column(&error, "Int2"));
-//  assert(builder->push_operator(&error, grnxx::MINUS_OPERATOR));
-//  auto expression = builder->release(&error);
-//  assert(expression);
+  grnxx::Array<grnxx::Int> int_results;
+  expression->evaluate(records, &int_results);
+  assert(int_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < int_results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert(int_results[i].value() ==
+           (test.int_values[row_id] - test.int2_values[row_id]).value());
+  }
 
-//  auto records = create_input_records();
+  // Test an expression (Float - Float2).
+  builder->push_column("Float");
+  builder->push_column("Float2");
+  builder->push_operator(grnxx::MINUS_OPERATOR);
+  expression = builder->release();
 
-//  grnxx::Array<grnxx::Int> int_results;
-//  assert(expression->evaluate(&error, records, &int_results));
-//  assert(int_results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < int_results.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    assert(int_results[i] ==
-//           (test.int_values[row_id] - test.int2_values[row_id]));
-//  }
+  records = create_input_records();
 
-//  // Test an expression (Float - Float2).
-//  assert(builder->push_column(&error, "Float"));
-//  assert(builder->push_column(&error, "Float2"));
-//  assert(builder->push_operator(&error, grnxx::MINUS_OPERATOR));
-//  expression = builder->release(&error);
-//  assert(expression);
+  grnxx::Array<grnxx::Float> float_results;
+  expression->evaluate(records, &float_results);
+  assert(float_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < float_results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert(float_results[i].value() ==
+           (test.float_values[row_id] - test.float2_values[row_id]).value());
+  }
 
-//  records = create_input_records();
+  expression->adjust(&records);
+  assert(records.size() == test.table->num_rows());
+  for (size_t i = 0; i < records.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert(records[i].score.value() ==
+           (test.float_values[row_id] - test.float2_values[row_id]).value());
+  }
+}
 
-//  grnxx::Array<grnxx::Float> float_results;
-//  assert(expression->evaluate(&error, records, &float_results));
-//  assert(float_results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < float_results.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    assert(float_results[i] ==
-//           (test.float_values[row_id] - test.float2_values[row_id]));
-//  }
+void test_multiplication() {
 
-//  assert(expression->adjust(&error, &records));
-//  assert(records.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < records.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    assert(records.get_score(i) ==
-//           (test.float_values[row_id] - test.float2_values[row_id]));
-//  }
-//}
+  // Create an object for building expressions.
+  auto builder = grnxx::ExpressionBuilder::create(test.table);
 
-//void test_multiplication() {
-//  grnxx::Error error;
+  // Test an expression (Int * Int2).
+  builder->push_column("Int");
+  builder->push_column("Int2");
+  builder->push_operator(grnxx::MULTIPLICATION_OPERATOR);
+  auto expression = builder->release();
 
-//  // Create an object for building expressions.
-//  auto builder = grnxx::ExpressionBuilder::create(&error, test.table);
-//  assert(builder);
+  auto records = create_input_records();
 
-//  // Test an expression (Int * Int2).
-//  assert(builder->push_column(&error, "Int"));
-//  assert(builder->push_column(&error, "Int2"));
-//  assert(builder->push_operator(&error, grnxx::MULTIPLICATION_OPERATOR));
-//  auto expression = builder->release(&error);
-//  assert(expression);
+  grnxx::Array<grnxx::Int> int_results;
+  expression->evaluate(records, &int_results);
+  assert(int_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < int_results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert(int_results[i].value() ==
+           (test.int_values[row_id] * test.int2_values[row_id]).value());
+  }
 
-//  auto records = create_input_records();
+  // Test an expression (Float * Float2).
+  builder->push_column("Float");
+  builder->push_column("Float2");
+  builder->push_operator(grnxx::MULTIPLICATION_OPERATOR);
+  expression = builder->release();
 
-//  grnxx::Array<grnxx::Int> int_results;
-//  assert(expression->evaluate(&error, records, &int_results));
-//  assert(int_results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < int_results.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    assert(int_results[i] ==
-//           (test.int_values[row_id] * test.int2_values[row_id]));
-//  }
+  records = create_input_records();
 
-//  // Test an expression (Float * Float2).
-//  assert(builder->push_column(&error, "Float"));
-//  assert(builder->push_column(&error, "Float2"));
-//  assert(builder->push_operator(&error, grnxx::MULTIPLICATION_OPERATOR));
-//  expression = builder->release(&error);
-//  assert(expression);
+  grnxx::Array<grnxx::Float> float_results;
+  expression->evaluate(records, &float_results);
+  assert(float_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < float_results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert(float_results[i].value() ==
+           (test.float_values[row_id] * test.float2_values[row_id]).value());
+  }
 
-//  records = create_input_records();
+  expression->adjust(&records);
+  assert(records.size() == test.table->num_rows());
+  for (size_t i = 0; i < records.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert(records[i].score.value() ==
+           (test.float_values[row_id] * test.float2_values[row_id]).value());
+  }
+}
 
-//  grnxx::Array<grnxx::Float> float_results;
-//  assert(expression->evaluate(&error, records, &float_results));
-//  assert(float_results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < float_results.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    assert(float_results[i] ==
-//           (test.float_values[row_id] * test.float2_values[row_id]));
-//  }
+void test_division() {
+  // Create an object for building expressions.
+  auto builder = grnxx::ExpressionBuilder::create(test.table);
 
-//  assert(expression->adjust(&error, &records));
-//  assert(records.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < records.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    assert(records.get_score(i) ==
-//           (test.float_values[row_id] * test.float2_values[row_id]));
-//  }
-//}
+  // Test an expression (Int / Int2).
+  // Division by zero does not fail.
+  builder->push_column("Int");
+  builder->push_column("Int2");
+  builder->push_operator(grnxx::DIVISION_OPERATOR);
+  auto expression = builder->release();
 
-//void test_division() {
-//  grnxx::Error error;
+  auto records = create_input_records();
 
-//  // Create an object for building expressions.
-//  auto builder = grnxx::ExpressionBuilder::create(&error, test.table);
-//  assert(builder);
+  grnxx::Array<grnxx::Int> int_results;
+  expression->evaluate(records, &int_results);
+  assert(int_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < int_results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert(int_results[i].value() ==
+           (test.int_values[row_id] / test.int2_values[row_id]).value());
+  }
 
-//  // Test an expression (Int / Int2).
-//  // An error occurs because of division by zero.
-//  assert(builder->push_column(&error, "Int"));
-//  assert(builder->push_column(&error, "Int2"));
-//  assert(builder->push_operator(&error, grnxx::DIVISION_OPERATOR));
-//  auto expression = builder->release(&error);
-//  assert(expression);
+  // Test an expression (Float / Float2).
+  builder->push_column("Float");
+  builder->push_column("Float2");
+  builder->push_operator(grnxx::DIVISION_OPERATOR);
+  expression = builder->release();
 
-//  auto records = create_input_records();
+  records = create_input_records();
 
-//  grnxx::Array<grnxx::Int> int_results;
-//  assert(!expression->evaluate(&error, records, &int_results));
+  grnxx::Array<grnxx::Float> float_results;
+  expression->evaluate(records, &float_results);
+  assert(float_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < float_results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert(float_results[i].value() ==
+           (test.float_values[row_id] / test.float2_values[row_id]).value());
+  }
 
-//  // Test an expression (Int / (Int2 + 1)).
-//  assert(builder->push_column(&error, "Int"));
-//  assert(builder->push_column(&error, "Int2"));
-//  assert(builder->push_constant(&error, grnxx::Int(1)));
-//  assert(builder->push_operator(&error, grnxx::PLUS_OPERATOR));
-//  assert(builder->push_operator(&error, grnxx::DIVISION_OPERATOR));
-//  expression = builder->release(&error);
-//  assert(expression);
+  expression->adjust(&records);
+  assert(records.size() == test.table->num_rows());
+  for (size_t i = 0; i < records.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert(records[i].score.value() ==
+           (test.float_values[row_id] / test.float2_values[row_id]).value());
+  }
+}
 
-//  records = create_input_records();
+void test_modulus() {
+  // Create an object for building expressions.
+  auto builder = grnxx::ExpressionBuilder::create(test.table);
 
-//  int_results.clear();
-//  assert(expression->evaluate(&error, records, &int_results));
-//  assert(int_results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < int_results.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    assert(int_results[i] ==
-//           (test.int_values[row_id] / (test.int2_values[row_id] + 1)));
-//  }
+  // Test an expression (Int % Int2).
+  // An error occurs because of division by zero.
+  builder->push_column("Int");
+  builder->push_column("Int2");
+  builder->push_operator(grnxx::MODULUS_OPERATOR);
+  auto expression = builder->release();
 
-//  // Test an expression (Float / Float2).
-//  assert(builder->push_column(&error, "Float"));
-//  assert(builder->push_column(&error, "Float2"));
-//  assert(builder->push_operator(&error, grnxx::DIVISION_OPERATOR));
-//  expression = builder->release(&error);
-//  assert(expression);
+  auto records = create_input_records();
 
-//  records = create_input_records();
+  grnxx::Array<grnxx::Int> int_results;
+  expression->evaluate(records, &int_results);
+  assert(int_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < int_results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert(int_results[i].value() ==
+           (test.int_values[row_id] % test.int2_values[row_id]).value());
+  }
 
-//  grnxx::Array<grnxx::Float> float_results;
-//  assert(expression->evaluate(&error, records, &float_results));
-//  assert(float_results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < float_results.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    assert(float_results[i] ==
-//           (test.float_values[row_id] / test.float2_values[row_id]));
-//  }
+  // Test an expression (Float % Float2).
+  builder->push_column("Float");
+  builder->push_column("Float2");
+  builder->push_operator(grnxx::MODULUS_OPERATOR);
+  expression = builder->release();
 
-//  assert(expression->adjust(&error, &records));
-//  assert(records.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < records.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    assert(records.get_score(i) ==
-//           (test.float_values[row_id] / test.float2_values[row_id]));
-//  }
-//}
+  records = create_input_records();
 
-//void test_modulus() {
-//  grnxx::Error error;
+  grnxx::Array<grnxx::Float> float_results;
+  expression->evaluate(records, &float_results);
+  assert(float_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < float_results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert(float_results[i].value() ==
+           (test.float_values[row_id] % test.float2_values[row_id]).value());
+  }
 
-//  // Create an object for building expressions.
-//  auto builder = grnxx::ExpressionBuilder::create(&error, test.table);
-//  assert(builder);
-
-//  // Test an expression (Int % Int2).
-//  // An error occurs because of division by zero.
-//  assert(builder->push_column(&error, "Int"));
-//  assert(builder->push_column(&error, "Int2"));
-//  assert(builder->push_operator(&error, grnxx::MODULUS_OPERATOR));
-//  auto expression = builder->release(&error);
-//  assert(expression);
-
-//  auto records = create_input_records();
-
-//  grnxx::Array<grnxx::Int> int_results;
-//  assert(!expression->evaluate(&error, records, &int_results));
-
-//  // Test an expression (Int % (Int2 + 1)).
-//  assert(builder->push_column(&error, "Int"));
-//  assert(builder->push_column(&error, "Int2"));
-//  assert(builder->push_constant(&error, grnxx::Int(1)));
-//  assert(builder->push_operator(&error, grnxx::PLUS_OPERATOR));
-//  assert(builder->push_operator(&error, grnxx::MODULUS_OPERATOR));
-//  expression = builder->release(&error);
-//  assert(expression);
-
-//  records = create_input_records();
-
-//  int_results.clear();
-//  assert(expression->evaluate(&error, records, &int_results));
-//  assert(int_results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < int_results.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    assert(int_results[i] ==
-//           (test.int_values[row_id] % (test.int2_values[row_id] + 1)));
-//  }
-//}
+  expression->adjust(&records);
+  assert(records.size() == test.table->num_rows());
+  for (size_t i = 0; i < records.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert(records[i].score.value() ==
+           (test.float_values[row_id] % test.float2_values[row_id]).value());
+  }
+}
 
 //void test_subscript() {
 //  grnxx::Error error;
@@ -2905,11 +2879,11 @@ int main() {
   test_bitwise_and();
   test_bitwise_or();
   test_bitwise_xor();
-//  test_plus();
-//  test_minus();
-//  test_multiplication();
-//  test_division();
-//  test_modulus();
+  test_plus();
+  test_minus();
+  test_multiplication();
+  test_division();
+  test_modulus();
 //  test_subscript();
 
 //  // Subexpression.
