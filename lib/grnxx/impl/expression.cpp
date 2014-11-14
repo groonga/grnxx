@@ -1100,127 +1100,50 @@ struct GreaterEqualOperator {
 template <typename T>
 using GreaterEqualNode = GenericBinaryNode<GreaterEqualOperator<T>>;
 
-// ---- BitwiseBinaryNode ----
-
-template <typename T, typename U = typename T::Value>
-class BitwiseBinaryNode : public BinaryNode<U, U, U> {
- public:
-  using Operator = T;
-  using Value = U;
-  using Arg1 = U;
-  using Arg2 = U;
-
-  BitwiseBinaryNode(std::unique_ptr<Node> &&arg1, std::unique_ptr<Node> &&arg2)
-      : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)),
-        operator_() {}
-
-  void evaluate(ArrayCRef<Record> records, ArrayRef<Value> results);
-
- private:
-  Operator operator_;
-};
-
-template <typename T, typename U>
-void BitwiseBinaryNode<T, U>::evaluate(ArrayCRef<Record> records,
-                                       ArrayRef<Value> results) {
-  this->fill_arg1_values(records);
-  this->fill_arg2_values(records);
-  for (size_t i = 0; i < records.size(); ++i) {
-    results[i] = operator_(this->arg1_values_[i], this->arg2_values_[i]);
-  }
-}
-
-template <typename T>
-class BitwiseBinaryNode<T, Bool> : public BinaryNode<Bool, Bool, Bool> {
- public:
-  using Operator = T;
-  using Value = Bool;
-  using Arg1 = Bool;
-  using Arg2 = Bool;
-
-  BitwiseBinaryNode(std::unique_ptr<Node> &&arg1, std::unique_ptr<Node> &&arg2)
-      : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)),
-        operator_() {}
-
-  void filter(ArrayCRef<Record> input_records,
-              ArrayRef<Record> *output_records);
-  void evaluate(ArrayCRef<Record> records, ArrayRef<Value> results);
-
- private:
-  Operator operator_;
-};
-
-template <typename T>
-void BitwiseBinaryNode<T, Bool>::filter(ArrayCRef<Record> input_records,
-                                        ArrayRef<Record> *output_records) {
-  this->fill_arg1_values(input_records);
-  this->fill_arg2_values(input_records);
-  size_t count = 0;
-  for (size_t i = 0; i < input_records.size(); ++i) {
-    if (operator_(this->arg1_values_[i], this->arg2_values_[i]).is_true()) {
-      (*output_records)[count] = input_records[i];
-      ++count;
-    }
-  }
-  *output_records = output_records->ref(0, count);
-}
-
-template <typename T>
-void BitwiseBinaryNode<T, Bool>::evaluate(ArrayCRef<Record> records,
-                                          ArrayRef<Value> results) {
-  this->fill_arg1_values(records);
-  this->fill_arg2_values(records);
-  // TODO: Should be processed per 64 bits.
-  //       Check the 64-bit boundary and do it!
-  for (size_t i = 0; i < records.size(); ++i) {
-    results[i] = operator_(this->arg1_values_[i], this->arg2_values_[i]);
-  }
-}
-
 // ----- BitwiseAndNode -----
 
-struct BitwiseAnd {
-  template <typename T>
-  struct Operator {
-    using Value = T;
-    Value operator()(Value arg1, Value arg2) const {
-      return arg1 & arg2;
-    }
-  };
+template <typename T>
+struct BitwiseAndOperator {
+  using Value = T;
+  using Arg1 = T;
+  using Arg2 = T;
+  Value operator()(Arg1 arg1, Arg2 arg2) const {
+    return arg1 & arg2;
+  }
 };
 
 template <typename T>
-using BitwiseAndNode = BitwiseBinaryNode<BitwiseAnd::Operator<T>>;
+using BitwiseAndNode = GenericBinaryNode<BitwiseAndOperator<T>>;
 
 // ----- BitwiseOrNode -----
 
-struct BitwiseOr {
-  template <typename T>
-  struct Operator {
-    using Value = T;
-    Value operator()(Value arg1, Value arg2) const {
-      return arg1 | arg2;
-    }
-  };
+template <typename T>
+struct BitwiseOrOperator {
+  using Value = T;
+  using Arg1 = T;
+  using Arg2 = T;
+  Value operator()(Arg1 arg1, Arg2 arg2) const {
+    return arg1 | arg2;
+  }
 };
 
 template <typename T>
-using BitwiseOrNode = BitwiseBinaryNode<BitwiseOr::Operator<T>>;
+using BitwiseOrNode = GenericBinaryNode<BitwiseOrOperator<T>>;
 
 // ----- BitwiseXorNode -----
 
-struct BitwiseXor {
-  template <typename T>
-  struct Operator {
-    using Value = T;
-    Value operator()(Value arg1, Value arg2) const {
-      return arg1 ^ arg2;
-    }
-  };
+template <typename T>
+struct BitwiseXorOperator {
+  using Value = T;
+  using Arg1 = T;
+  using Arg2 = T;
+  Value operator()(Arg1 arg1, Arg2 arg2) const {
+    return arg1 ^ arg2;
+  }
 };
 
 template <typename T>
-using BitwiseXorNode = BitwiseBinaryNode<BitwiseXor::Operator<T>>;
+using BitwiseXorNode = GenericBinaryNode<BitwiseXorOperator<T>>;
 
 }  // namespace expression
 
