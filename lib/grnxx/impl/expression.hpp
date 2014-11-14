@@ -169,6 +169,13 @@ class ExpressionBuilder : public ExpressionBuilderInterface {
   Node *create_arithmetic_node(OperatorType operator_type,
                                std::unique_ptr<Node> &&arg1,
                                std::unique_ptr<Node> &&arg2);
+
+  // Create a node associated with a dereference operator.
+  //
+  // On failure, throws an exception.
+  Node *create_dereference_node(std::unique_ptr<Node> &&arg1,
+                                std::unique_ptr<Node> &&arg2,
+                                const ExpressionOptions &options);
 };
 
 }  // namespace impl

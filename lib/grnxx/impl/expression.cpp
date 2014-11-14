@@ -1220,6 +1220,45 @@ struct ModulusOperator {
 template <typename T>
 using ModulusNode = GenericBinaryNode<ModulusOperator<T>>;
 
+
+// ---- DereferenceNode ----
+
+template <typename T>
+class DereferenceNode : public BinaryNode<T, Int, T> {
+ public:
+  using Value = T;
+  using Arg1 = Int;
+  using Arg2 = T;
+
+  DereferenceNode(std::unique_ptr<Node> &&arg1,
+                  std::unique_ptr<Node> &&arg2)
+      : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)),
+        temp_records_() {}
+
+  const Table *reference_table() const {
+    return this->arg1_->reference_table();
+  }
+
+  void evaluate(ArrayCRef<Record> records, ArrayRef<Value> results);
+
+ private:
+  Array<Record> temp_records_;
+};
+
+template <typename T>
+void DereferenceNode<T>::evaluate(ArrayCRef<Record> records,
+                                  ArrayRef<Value> results) {
+  this->fill_arg1_values(records);
+  if (temp_records_.size() < records.size()) {
+    temp_records_.resize(records.size());
+  }
+  for (size_t i = 0; i < records.size(); ++i) {
+    temp_records_[i].row_id = this->arg1_values_[i];
+    temp_records_[i].score = records[i].score;
+  }
+  this->arg2_->evaluate(temp_records_.ref(0, records.size()), results);
+}
+
 }  // namespace expression
 
 using namespace expression;
@@ -1544,7 +1583,15 @@ void ExpressionBuilder::push_binary_operator(OperatorType operator_type) {
 }
 
 void ExpressionBuilder::push_dereference(const ExpressionOptions &options) {
-  throw "Not supported yet";  // TODO
+  if (node_stack_.size() < 2) {
+    throw "Not enough operands";  // TODO
+  }
+  std::unique_ptr<Node> arg1 = std::move(node_stack_[node_stack_.size() - 2]);
+  std::unique_ptr<Node> arg2 = std::move(node_stack_[node_stack_.size() - 1]);
+  node_stack_.resize(node_stack_.size() - 2);
+  std::unique_ptr<Node> node(
+      create_dereference_node(std::move(arg1), std::move(arg2), options));
+  node_stack_.push_back(std::move(node));
 }
 
 Node *ExpressionBuilder::create_constant_node(
@@ -1948,6 +1995,91 @@ Node *ExpressionBuilder::create_arithmetic_node(
     }
     default: {
       throw "Invalid operator";  // TODO
+    }
+  }
+}
+
+Node *ExpressionBuilder::create_dereference_node(
+    std::unique_ptr<Node> &&arg1,
+    std::unique_ptr<Node> &&arg2,
+    const ExpressionOptions &options) {
+  switch (arg1->data_type()) {
+    case INT_DATA: {
+      switch (arg2->data_type()) {
+        case BOOL_DATA: {
+          return new DereferenceNode<Bool>(
+              std::move(arg1), std::move(arg2));
+        }
+        case INT_DATA: {
+          return new DereferenceNode<Int>(
+              std::move(arg1), std::move(arg2));
+        }
+        case FLOAT_DATA: {
+          return new DereferenceNode<Float>(
+              std::move(arg1), std::move(arg2));
+        }
+        case GEO_POINT_DATA: {
+          return new DereferenceNode<GeoPoint>(
+              std::move(arg1), std::move(arg2));
+        }
+//        case TEXT_DATA: {
+//          return new DereferenceNode<Text>(
+//              std::move(arg1), std::move(arg2));
+//        }
+//        case BOOL_VECTOR_DATA: {
+//          return new DereferenceNode<Vector<Bool>>(
+//              std::move(arg1), std::move(arg2));
+//        }
+//        case INT_VECTOR_DATA: {
+//          return new DereferenceNode<Vector<Int>>(
+//              std::move(arg1), std::move(arg2));
+//        }
+//        case FLOAT_VECTOR_DATA: {
+//          return new DereferenceNode<Vector<Float>>(
+//              std::move(arg1), std::move(arg2));
+//        }
+//        case GEO_POINT_VECTOR_DATA: {
+//          return new DereferenceNode<Vector<GeoPoint>>(
+//              std::move(arg1), std::move(arg2));
+//        }
+//        case TEXT_VECTOR_DATA: {
+//          return new DereferenceNode<Vector<Text>>(
+//              std::move(arg1), std::move(arg2));
+//        }
+        default: {
+          throw "Invalid data type";  // TODO
+        }
+      }
+    }
+//    case INT_VECTOR_DATA: {
+//      switch (arg2->data_type()) {
+//        case BOOL_DATA: {
+//          return new DereferenceVectorNode<Bool>(
+//              std::move(arg1), std::move(arg2), options);
+//        }
+//        case INT_DATA: {
+//          return new DereferenceVectorNode<Int>(
+//              std::move(arg1), std::move(arg2), options);
+//        }
+//        case FLOAT_DATA: {
+//          return new DereferenceVectorNode<Float>(
+//              std::move(arg1), std::move(arg2), options);
+//        }
+//        case GEO_POINT_DATA: {
+//          return new DereferenceVectorNode<GeoPoint>(
+//              std::move(arg1), std::move(arg2), options);
+//        }
+//        case TEXT_DATA: {
+//          return new DereferenceVectorNode<Text>(
+//              std::move(arg1), std::move(arg2), options);
+//        }
+//        default: {
+//          throw "Invalid data type";  // TODO
+//        }
+//      }
+//    }
+    default: {
+      throw "Invalid data type";  // TODO
     }
   }
 }
