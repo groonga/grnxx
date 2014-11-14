@@ -889,38 +889,68 @@ void LogicalOrNode::evaluate(ArrayCRef<Record> records,
   }
 }
 
-// ---- ComparisonNode ----
+// ---- GenericBinaryNode ----
 
-template <typename T>
-class ComparisonNode
-    : public BinaryNode<Bool, typename T::Arg, typename T::Arg> {
+template <typename T,
+          typename U = typename T::Value,
+          typename V = typename T::Arg1,
+          typename W = typename T::Arg2>
+class GenericBinaryNode : public BinaryNode<U, V, W> {
  public:
-  using Comparer = T;
-  using Value = Bool;
-  using Arg1 = typename T::Arg;
-  using Arg2 = typename T::Arg;
+  using Operator = T;
+  using Value = U;
+  using Arg1 = V;
+  using Arg2 = W;
 
-  ComparisonNode(std::unique_ptr<Node> &&arg1, std::unique_ptr<Node> &&arg2)
+  GenericBinaryNode(std::unique_ptr<Node> &&arg1, std::unique_ptr<Node> &&arg2)
       : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)),
-        comparer_() {}
-  ~ComparisonNode() = default;
+        operator_() {}
+
+  void evaluate(ArrayCRef<Record> records, ArrayRef<Value> results);
+
+ private:
+  Operator operator_;
+};
+
+template <typename T, typename U, typename V, typename W>
+void GenericBinaryNode<T, U, V, W>::evaluate(ArrayCRef<Record> records,
+                                             ArrayRef<Value> results) {
+  this->fill_arg1_values(records);
+  this->fill_arg2_values(records);
+  for (size_t i = 0; i < records.size(); ++i) {
+    results[i] = operator_(this->arg1_values_[i], this->arg2_values_[i]);
+  }
+}
+
+template <typename T, typename V, typename W>
+class GenericBinaryNode<T, Bool, V, W> : public BinaryNode<Bool, V, W> {
+ public:
+  using Operator = T;
+  using Value = Bool;
+  using Arg1 = V;
+  using Arg2 = W;
+
+  GenericBinaryNode(std::unique_ptr<Node> &&arg1, std::unique_ptr<Node> &&arg2)
+      : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)),
+        operator_() {}
 
   void filter(ArrayCRef<Record> input_records,
               ArrayRef<Record> *output_records);
   void evaluate(ArrayCRef<Record> records, ArrayRef<Value> results);
 
- protected:
-  Comparer comparer_;
+ private:
+  Operator operator_;
 };
 
-template <typename T>
-void ComparisonNode<T>::filter(ArrayCRef<Record> input_records,
-                               ArrayRef<Record> *output_records) {
+template <typename T, typename V, typename W>
+void GenericBinaryNode<T, Bool, V, W>::filter(
+    ArrayCRef<Record> input_records,
+    ArrayRef<Record> *output_records) {
   this->fill_arg1_values(input_records);
   this->fill_arg2_values(input_records);
   size_t count = 0;
   for (size_t i = 0; i < input_records.size(); ++i) {
-    if (comparer_(this->arg1_values_[i], this->arg2_values_[i]).is_true()) {
+    if (operator_(this->arg1_values_[i], this->arg2_values_[i]).is_true()) {
       (*output_records)[count] = input_records[i];
       ++count;
     }
@@ -928,109 +958,147 @@ void ComparisonNode<T>::filter(ArrayCRef<Record> input_records,
   *output_records = output_records->ref(0, count);
 }
 
-template <typename T>
-void ComparisonNode<T>::evaluate(ArrayCRef<Record> records,
-                                 ArrayRef<Value> results) {
+template <typename T, typename V, typename W>
+void GenericBinaryNode<T, Bool, V, W>::evaluate(ArrayCRef<Record> records,
+                                                ArrayRef<Value> results) {
+  this->fill_arg1_values(records);
+  this->fill_arg2_values(records);
+  // TODO: Should be processed per 64 bits.
+  //       Check the 64-bit boundary and do it!
+  for (size_t i = 0; i < records.size(); ++i) {
+    results[i] = operator_(this->arg1_values_[i], this->arg2_values_[i]);
+  }
+}
+
+template <typename T, typename V, typename W>
+class GenericBinaryNode<T, Float, V, W> : public BinaryNode<Float, V, W> {
+ public:
+  using Operator = T;
+  using Value = Float;
+  using Arg1 = V;
+  using Arg2 = W;
+
+  GenericBinaryNode(std::unique_ptr<Node> &&arg1, std::unique_ptr<Node> &&arg2)
+      : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)),
+        operator_() {}
+
+  void adjust(ArrayRef<Record> records);
+  void evaluate(ArrayCRef<Record> records, ArrayRef<Value> results);
+
+ private:
+  Operator operator_;
+};
+
+template <typename T, typename V, typename W>
+void GenericBinaryNode<T, Float, V, W>::evaluate(ArrayCRef<Record> records,
+                                                 ArrayRef<Value> results) {
+  this->fill_arg1_values(records);
+  this->fill_arg2_values(records);
+  // TODO: Should be processed per 64 bits.
+  //       Check the 64-bit boundary and do it!
+  for (size_t i = 0; i < records.size(); ++i) {
+    results[i] = operator_(this->arg1_values_[i], this->arg2_values_[i]);
+  }
+}
+
+template <typename T, typename V, typename W>
+void GenericBinaryNode<T, Float, V, W>::adjust(ArrayRef<Record> records) {
   this->fill_arg1_values(records);
   this->fill_arg2_values(records);
   for (size_t i = 0; i < records.size(); ++i) {
-    results[i] = comparer_(this->arg1_values_[i], this->arg2_values_[i]);
+    records[i].score = operator_(this->arg_values_[i], this->arg2_values_[i]);
   }
 }
 
 // ----- EqualNode -----
 
-// TODO: EqualNode for Bool should be specialized.
-
-struct Equal {
-  template <typename T>
-  struct Comparer {
-    using Arg = T;
-    Bool operator()(const Arg &arg1, const Arg &arg2) const {
-      return arg1 == arg2;
-    }
-  };
+template <typename T>
+struct EqualOperator {
+  using Value = Bool;
+  using Arg1 = T;
+  using Arg2 = T;
+  Value operator()(const Arg1 &arg1, const Arg2 &arg2) const {
+    return arg1 == arg2;
+  }
 };
 
 template <typename T>
-using EqualNode = ComparisonNode<Equal::Comparer<T>>;
+using EqualNode = GenericBinaryNode<EqualOperator<T>>;
 
 // ----- NotEqualNode -----
 
-// TODO: NotEqualNode for Bool should be specialized.
-
-struct NotEqual {
-  template <typename T>
-  struct Comparer {
-    using Arg = T;
-    Bool operator()(const Arg &arg1, const Arg &arg2) const {
-      return arg1 != arg2;
-    }
-  };
+template <typename T>
+struct NotEqualOperator {
+  using Value = Bool;
+  using Arg1 = T;
+  using Arg2 = T;
+  Value operator()(const Arg1 &arg1, const Arg2 &arg2) const {
+    return arg1 != arg2;
+  }
 };
 
 template <typename T>
-using NotEqualNode = ComparisonNode<NotEqual::Comparer<T>>;
+using NotEqualNode = GenericBinaryNode<NotEqualOperator<T>>;
 
 // ----- LessNode -----
 
-struct Less {
-  template <typename T>
-  struct Comparer {
-    using Arg = T;
-    Bool operator()(const Arg &arg1, const Arg &arg2) const {
-      return arg1 < arg2;
-    }
-  };
+template <typename T>
+struct LessOperator {
+  using Value = Bool;
+  using Arg1 = T;
+  using Arg2 = T;
+  Value operator()(const Arg1 &arg1, const Arg2 &arg2) const {
+    return arg1 < arg2;
+  }
 };
 
 template <typename T>
-using LessNode = ComparisonNode<Less::Comparer<T>>;
+using LessNode = GenericBinaryNode<LessOperator<T>>;
 
 // ----- LessEqualNode -----
 
-struct LessEqual {
-  template <typename T>
-  struct Comparer {
-    using Arg = T;
-    Bool operator()(const Arg &arg1, const Arg &arg2) const {
-      return arg1 <= arg2;
-    }
-  };
+template <typename T>
+struct LessEqualOperator {
+  using Value = Bool;
+  using Arg1 = T;
+  using Arg2 = T;
+  Value operator()(const Arg1 &arg1, const Arg2 &arg2) const {
+    return arg1 <= arg2;
+  }
 };
 
 template <typename T>
-using LessEqualNode = ComparisonNode<LessEqual::Comparer<T>>;
+using LessEqualNode = GenericBinaryNode<LessEqualOperator<T>>;
 
 // ----- GreaterNode -----
 
-struct Greater {
-  template <typename T>
-  struct Comparer {
-    using Arg = T;
-    Bool operator()(const Arg &arg1, const Arg &arg2) const {
-      return arg1 > arg2;
-    }
-  };
+template <typename T>
+struct GreaterOperator {
+  using Value = Bool;
+  using Arg1 = T;
+  using Arg2 = T;
+  Value operator()(const Arg1 &arg1, const Arg2 &arg2) const {
+    return arg1 > arg2;
+  }
 };
 
 template <typename T>
-using GreaterNode = ComparisonNode<Greater::Comparer<T>>;
+using GreaterNode = GenericBinaryNode<GreaterOperator<T>>;
 
 // ----- GreaterEqualNode -----
 
-struct GreaterEqual {
-  template <typename T>
-  struct Comparer {
-    using Arg = T;
-    Bool operator()(const Arg &arg1, const Arg &arg2) const {
-      return arg1 >= arg2;
-    }
-  };
+template <typename T>
+struct GreaterEqualOperator {
+  using Value = Bool;
+  using Arg1 = T;
+  using Arg2 = T;
+  Value operator()(const Arg1 &arg1, const Arg2 &arg2) const {
+    return arg1 >= arg2;
+  }
 };
 
 template <typename T>
-using GreaterEqualNode = ComparisonNode<GreaterEqual::Comparer<T>>;
+using GreaterEqualNode = GenericBinaryNode<GreaterEqualOperator<T>>;
 
 // ---- BitwiseBinaryNode ----
 
