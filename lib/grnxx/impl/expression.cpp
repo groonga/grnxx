@@ -1802,12 +1802,10 @@ Node *ExpressionBuilder::create_equality_test_node(
   }
   switch (operator_type) {
     case EQUAL_OPERATOR: {
-      return new ComparisonNode<Equal::Comparer<T>>(
-          std::move(arg1), std::move(arg2));
+      return new EqualNode<T>(std::move(arg1), std::move(arg2));
     }
     case NOT_EQUAL_OPERATOR: {
-      return new ComparisonNode<NotEqual::Comparer<T>>(
-          std::move(arg1), std::move(arg2));
+      return new NotEqualNode<T>(std::move(arg1), std::move(arg2));
     }
     default: {
       throw "Invalid operator";  // TODO
@@ -1825,20 +1823,16 @@ Node *ExpressionBuilder::create_comparison_node(OperatorType operator_type,
   }
   switch (operator_type) {
     case LESS_OPERATOR: {
-      return new ComparisonNode<Less::Comparer<T>>(
-          std::move(arg1), std::move(arg2));
+      return new LessNode<T>(std::move(arg1), std::move(arg2));
     }
     case LESS_EQUAL_OPERATOR: {
-      return new ComparisonNode<LessEqual::Comparer<T>>(
-          std::move(arg1), std::move(arg2));
+      return new LessEqualNode<T>(std::move(arg1), std::move(arg2));
     }
     case GREATER_OPERATOR: {
-      return new ComparisonNode<Greater::Comparer<T>>(
-          std::move(arg1), std::move(arg2));
+      return new GreaterNode<T>(std::move(arg1), std::move(arg2));
     }
     case GREATER_EQUAL_OPERATOR: {
-      return new ComparisonNode<GreaterEqual::Comparer<T>>(
-          std::move(arg1), std::move(arg2));
+      return new GreaterEqualNode<T>(std::move(arg1), std::move(arg2));
     }
     default: {
       throw "Invalid operator";  // TODO
@@ -1856,16 +1850,13 @@ Node *ExpressionBuilder::create_bitwise_binary_node(
   }
   switch (operator_type) {
     case BITWISE_AND_OPERATOR: {
-      return new BitwiseBinaryNode<BitwiseAnd::Operator<T>>(
-          std::move(arg1), std::move(arg2));
+      return new BitwiseAndNode<T>(std::move(arg1), std::move(arg2));
     }
     case BITWISE_OR_OPERATOR: {
-      return new BitwiseBinaryNode<BitwiseOr::Operator<T>>(
-          std::move(arg1), std::move(arg2));
+      return new BitwiseOrNode<T>(std::move(arg1), std::move(arg2));
     }
     case BITWISE_XOR_OPERATOR: {
-      return new BitwiseBinaryNode<BitwiseXor::Operator<T>>(
-          std::move(arg1), std::move(arg2));
+      return new BitwiseXorNode<T>(std::move(arg1), std::move(arg2));
     }
     default: {
       throw "Invalid operator";  // TODO
