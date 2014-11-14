@@ -1032,8 +1032,6 @@ struct GreaterEqual {
 template <typename T>
 using GreaterEqualNode = ComparisonNode<GreaterEqual::Comparer<T>>;
 
-// TODO: BitwiseAnd/Or/XorNode should be implemented on the same base class?
-
 // ---- BitwiseBinaryNode ----
 
 template <typename T, typename U = typename T::Value>
