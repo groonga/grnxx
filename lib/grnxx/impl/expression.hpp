@@ -161,6 +161,14 @@ class ExpressionBuilder : public ExpressionBuilderInterface {
   Node *create_bitwise_binary_node(OperatorType operator_type,
                                    std::unique_ptr<Node> &&arg1,
                                    std::unique_ptr<Node> &&arg2);
+
+  // Create a node associated with an arithmetic operator.
+  //
+  // On failure, throws an exception.
+  template <typename T>
+  Node *create_arithmetic_node(OperatorType operator_type,
+                               std::unique_ptr<Node> &&arg1,
+                               std::unique_ptr<Node> &&arg2);
 };
 
 }  // namespace impl

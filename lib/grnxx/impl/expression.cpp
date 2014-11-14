@@ -1006,7 +1006,7 @@ void GenericBinaryNode<T, Float, V, W>::adjust(ArrayRef<Record> records) {
   this->fill_arg1_values(records);
   this->fill_arg2_values(records);
   for (size_t i = 0; i < records.size(); ++i) {
-    records[i].score = operator_(this->arg_values_[i], this->arg2_values_[i]);
+    records[i].score = operator_(this->arg1_values_[i], this->arg2_values_[i]);
   }
 }
 
@@ -1144,6 +1144,81 @@ struct BitwiseXorOperator {
 
 template <typename T>
 using BitwiseXorNode = GenericBinaryNode<BitwiseXorOperator<T>>;
+
+// ----- PlusNode -----
+
+template <typename T>
+struct PlusOperator {
+  using Value = T;
+  using Arg1 = T;
+  using Arg2 = T;
+  Value operator()(Arg1 arg1, Arg2 arg2) const {
+    return arg1 + arg2;
+  }
+};
+
+template <typename T>
+using PlusNode = GenericBinaryNode<PlusOperator<T>>;
+
+// ----- MinusNode -----
+
+template <typename T>
+struct MinusOperator {
+  using Value = T;
+  using Arg1 = T;
+  using Arg2 = T;
+  Value operator()(Arg1 arg1, Arg2 arg2) const {
+    return arg1 - arg2;
+  }
+};
+
+template <typename T>
+using MinusNode = GenericBinaryNode<MinusOperator<T>>;
+
+// ----- MultiplicationNode -----
+
+template <typename T>
+struct MultiplicationOperator {
+  using Value = T;
+  using Arg1 = T;
+  using Arg2 = T;
+  Value operator()(Arg1 arg1, Arg2 arg2) const {
+    return arg1 * arg2;
+  }
+};
+
+template <typename T>
+using MultiplicationNode = GenericBinaryNode<MultiplicationOperator<T>>;
+
+// ----- DivisionNode -----
+
+template <typename T>
+struct DivisionOperator {
+  using Value = T;
+  using Arg1 = T;
+  using Arg2 = T;
+  Value operator()(Arg1 arg1, Arg2 arg2) const {
+    return arg1 / arg2;
+  }
+};
+
+template <typename T>
+using DivisionNode = GenericBinaryNode<DivisionOperator<T>>;
+
+// ----- ModulusNode -----
+
+template <typename T>
+struct ModulusOperator {
+  using Value = T;
+  using Arg1 = T;
+  using Arg2 = T;
+  Value operator()(Arg1 arg1, Arg2 arg2) const {
+    return arg1 % arg2;
+  }
+};
+
+template <typename T>
+using ModulusNode = GenericBinaryNode<ModulusOperator<T>>;
 
 }  // namespace expression
 
@@ -1744,33 +1819,25 @@ Node *ExpressionBuilder::create_binary_node(
         }
       }
     }
-//    case PLUS_OPERATOR:
-//    case MINUS_OPERATOR:
-//    case MULTIPLICATION_OPERATOR:
-//    case DIVISION_OPERATOR: {
-//      switch (arg1->data_type()) {
-//        case INT_DATA: {
-//          return create_arithmetic_node<Int>(
-//              error, operator_type, std::move(arg1), std::move(arg2));
-//        }
-//        case FLOAT_DATA: {
-//          return create_arithmetic_node<Float>(
-//              error, operator_type, std::move(arg1), std::move(arg2));
-//        }
-//        default: {
-//          GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
-//          return nullptr;
-//        }
-//      }
-//    }
-//    case MODULUS_OPERATOR: {
-//      if ((arg1->data_type() != INT_DATA) ||
-//          (arg2->data_type() != INT_DATA)) {
-//        GRNXX_ERROR_SET(error, INVALID_OPERAND, "Invalid data type");
-//        return nullptr;
-//      }
-//      return ModulusNode<Int>::create(error, std::move(arg1), std::move(arg2));
-//    }
+    case PLUS_OPERATOR:
+    case MINUS_OPERATOR:
+    case MULTIPLICATION_OPERATOR:
+    case DIVISION_OPERATOR:
+    case MODULUS_OPERATOR: {
+      switch (arg1->data_type()) {
+        case INT_DATA: {
+          return create_arithmetic_node<Int>(
+              operator_type, std::move(arg1), std::move(arg2));
+        }
+        case FLOAT_DATA: {
+          return create_arithmetic_node<Float>(
+              operator_type, std::move(arg1), std::move(arg2));
+        }
+        default: {
+          throw "Invalid data type";  // TODO
+        }
+      }
+    }
 //    case SUBSCRIPT_OPERATOR: {
 //      return create_subscript_node(error, std::move(arg1), std::move(arg2));
 //    }
@@ -1848,6 +1915,36 @@ Node *ExpressionBuilder::create_bitwise_binary_node(
     }
     case BITWISE_XOR_OPERATOR: {
       return new BitwiseXorNode<T>(std::move(arg1), std::move(arg2));
+    }
+    default: {
+      throw "Invalid operator";  // TODO
+    }
+  }
+}
+
+template <typename T>
+Node *ExpressionBuilder::create_arithmetic_node(
+    OperatorType operator_type,
+    std::unique_ptr<Node> &&arg1,
+    std::unique_ptr<Node> &&arg2) {
+  if (arg1->data_type() != arg2->data_type()) {
+    throw "Data type conflict";  // TODO
+  }
+  switch (operator_type) {
+    case PLUS_OPERATOR: {
+      return new PlusNode<T>(std::move(arg1), std::move(arg2));
+    }
+    case MINUS_OPERATOR: {
+      return new MinusNode<T>(std::move(arg1), std::move(arg2));
+    }
+    case MULTIPLICATION_OPERATOR: {
+      return new MultiplicationNode<T>(std::move(arg1), std::move(arg2));
+    }
+    case DIVISION_OPERATOR: {
+      return new DivisionNode<T>(std::move(arg1), std::move(arg2));
+    }
+    case MODULUS_OPERATOR: {
+      return new ModulusNode<T>(std::move(arg1), std::move(arg2));
     }
     default: {
       throw "Invalid operator";  // TODO
