@@ -61,8 +61,8 @@ struct {
 //  grnxx::Array<grnxx::TextVector> text_vector2_values;
 //  grnxx::Array<grnxx::Array<grnxx::Text>> text_vector_bodies;
 //  grnxx::Array<grnxx::Array<grnxx::Text>> text_vector2_bodies;
-//  grnxx::Array<grnxx::Int> ref_values;
-//  grnxx::Array<grnxx::Int> ref2_values;
+  grnxx::Array<grnxx::Int> ref_values;
+  grnxx::Array<grnxx::Int> ref2_values;
 //  grnxx::Array<grnxx::IntVector> ref_vector_values;
 //  grnxx::Array<grnxx::IntVector> ref_vector2_values;
 //  grnxx::Array<grnxx::Array<grnxx::Int>> ref_vector_bodies;
@@ -148,15 +148,11 @@ void init_test() try {
 //  assert(text_vector_column);
 //  assert(text_vector2_column);
 
-//  data_type = grnxx::INT_DATA;
-//  grnxx::ColumnOptions options;
-//  options.ref_table_name = "Table";
-//  auto ref_column =
-//      test.table->create_column(&error, "Ref", data_type, options);
-//  auto ref2_column =
-//      test.table->create_column(&error, "Ref2", data_type, options);
-//  assert(ref_column);
-//  assert(ref2_column);
+  data_type = grnxx::INT_DATA;
+  grnxx::ColumnOptions options;
+  options.reference_table_name = "Table";
+  auto ref_column = test.table->create_column("Ref", data_type, options);
+  auto ref2_column = test.table->create_column("Ref2", data_type, options);
 
 //  data_type = grnxx::INT_VECTOR_DATA;
 //  auto ref_vector_column =
@@ -211,8 +207,8 @@ void init_test() try {
 //  assert(test.text_vector2_values.resize(&error, NUM_ROWS + 1));
 //  assert(test.text_vector_bodies.resize(&error, NUM_ROWS + 1));
 //  assert(test.text_vector2_bodies.resize(&error, NUM_ROWS + 1));
-//  assert(test.ref_values.resize(&error, NUM_ROWS + 1));
-//  assert(test.ref2_values.resize(&error, NUM_ROWS + 1));
+  test.ref_values.resize(NUM_ROWS + 1);
+  test.ref2_values.resize(NUM_ROWS + 1);
 //  assert(test.ref_vector_values.resize(&error, NUM_ROWS + 1));
 //  assert(test.ref_vector2_values.resize(&error, NUM_ROWS + 1));
 //  assert(test.ref_vector_bodies.resize(&error, NUM_ROWS + 1));
@@ -315,8 +311,8 @@ void init_test() try {
 //    test.text_vector2_values.set(
 //        i, grnxx::TextVector(test.text_vector2_bodies[i].data(), size));
 
-//    test.ref_values.set(i, 1 + (mersenne_twister() % NUM_ROWS));
-//    test.ref2_values.set(i, 1 + (mersenne_twister() % NUM_ROWS));
+    test.ref_values.set(i, grnxx::Int(mersenne_twister() % NUM_ROWS));
+    test.ref2_values.set(i, grnxx::Int(mersenne_twister() % NUM_ROWS));
 
 //    size = mersenne_twister() % (MAX_SIZE + 1);
 //    assert(test.ref_vector_bodies[i].resize(&error, size));
@@ -371,12 +367,13 @@ void init_test() try {
 //                                    test.text_vector2_values[i]));
   }
 
-//  for (grnxx::Int i = 1; i <= NUM_ROWS; ++i) {
-//    assert(ref_column->set(&error, i, test.ref_values[i]));
-//    assert(ref2_column->set(&error, i, test.ref2_values[i]));
+  for (size_t i = 0; i < NUM_ROWS; ++i) {
+    grnxx::Int row_id(i);
+    ref_column->set(row_id, test.ref_values[i]);
+    ref2_column->set(row_id, test.ref2_values[i]);
 //    assert(ref_vector_column->set(&error, i, test.ref_vector_values[i]));
 //    assert(ref_vector2_column->set(&error, i, test.ref_vector2_values[i]));
-//  }
+  }
 } catch (const char *msg) {
   std::cout << msg << std::endl;
   throw;
@@ -770,20 +767,19 @@ void test_column() {
 //    assert(text_vector_results[i] == test.text_vector_values[row_id]);
 //  }
 
-//  // Test an expression (Ref).
-//  assert(builder->push_column(&error, "Ref"));
-//  expression = builder->release(&error);
-//  assert(expression);
+  // Test an expression (Ref).
+  builder->push_column("Ref");
+  expression = builder->release();
 
-//  records = create_input_records();
+  records = create_input_records();
 
-//  grnxx::Array<grnxx::Int> ref_results;
-//  assert(expression->evaluate(&error, records, &ref_results));
-//  assert(ref_results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < ref_results.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    assert(ref_results[i] == test.ref_values[row_id]);
-//  }
+  grnxx::Array<grnxx::Int> ref_results;
+  expression->evaluate(records, &ref_results);
+  assert(ref_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < ref_results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert(ref_results[i].value() == test.ref_values[row_id].value());
+  }
 
 //  // Test an expression (RefVector).
 //  assert(builder->push_column(&error, "RefVector"));
