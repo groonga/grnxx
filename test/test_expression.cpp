@@ -43,30 +43,32 @@ struct {
   grnxx::Array<grnxx::Text> text2_values;
   grnxx::Array<std::string> text_bodies;
   grnxx::Array<std::string> text2_bodies;
-//  grnxx::Array<grnxx::BoolVector> bool_vector_values;
-//  grnxx::Array<grnxx::BoolVector> bool_vector2_values;
-//  grnxx::Array<grnxx::IntVector> int_vector_values;
-//  grnxx::Array<grnxx::IntVector> int_vector2_values;
-//  grnxx::Array<grnxx::Array<grnxx::Int>> int_vector_bodies;
-//  grnxx::Array<grnxx::Array<grnxx::Int>> int_vector2_bodies;
-//  grnxx::Array<grnxx::FloatVector> float_vector_values;
-//  grnxx::Array<grnxx::FloatVector> float_vector2_values;
-//  grnxx::Array<grnxx::Array<grnxx::Float>> float_vector_bodies;
-//  grnxx::Array<grnxx::Array<grnxx::Float>> float_vector2_bodies;
-//  grnxx::Array<grnxx::GeoPointVector> geo_point_vector_values;
-//  grnxx::Array<grnxx::GeoPointVector> geo_point_vector2_values;
-//  grnxx::Array<grnxx::Array<grnxx::GeoPoint>> geo_point_vector_bodies;
-//  grnxx::Array<grnxx::Array<grnxx::GeoPoint>> geo_point_vector2_bodies;
+  grnxx::Array<grnxx::BoolVector> bool_vector_values;
+  grnxx::Array<grnxx::BoolVector> bool_vector2_values;
+  grnxx::Array<grnxx::Array<grnxx::Bool>> bool_vector_bodies;
+  grnxx::Array<grnxx::Array<grnxx::Bool>> bool_vector2_bodies;
+  grnxx::Array<grnxx::IntVector> int_vector_values;
+  grnxx::Array<grnxx::IntVector> int_vector2_values;
+  grnxx::Array<grnxx::Array<grnxx::Int>> int_vector_bodies;
+  grnxx::Array<grnxx::Array<grnxx::Int>> int_vector2_bodies;
+  grnxx::Array<grnxx::FloatVector> float_vector_values;
+  grnxx::Array<grnxx::FloatVector> float_vector2_values;
+  grnxx::Array<grnxx::Array<grnxx::Float>> float_vector_bodies;
+  grnxx::Array<grnxx::Array<grnxx::Float>> float_vector2_bodies;
+  grnxx::Array<grnxx::GeoPointVector> geo_point_vector_values;
+  grnxx::Array<grnxx::GeoPointVector> geo_point_vector2_values;
+  grnxx::Array<grnxx::Array<grnxx::GeoPoint>> geo_point_vector_bodies;
+  grnxx::Array<grnxx::Array<grnxx::GeoPoint>> geo_point_vector2_bodies;
 //  grnxx::Array<grnxx::TextVector> text_vector_values;
 //  grnxx::Array<grnxx::TextVector> text_vector2_values;
 //  grnxx::Array<grnxx::Array<grnxx::Text>> text_vector_bodies;
 //  grnxx::Array<grnxx::Array<grnxx::Text>> text_vector2_bodies;
   grnxx::Array<grnxx::Int> ref_values;
   grnxx::Array<grnxx::Int> ref2_values;
-//  grnxx::Array<grnxx::IntVector> ref_vector_values;
-//  grnxx::Array<grnxx::IntVector> ref_vector2_values;
-//  grnxx::Array<grnxx::Array<grnxx::Int>> ref_vector_bodies;
-//  grnxx::Array<grnxx::Array<grnxx::Int>> ref_vector2_bodies;
+  grnxx::Array<grnxx::IntVector> ref_vector_values;
+  grnxx::Array<grnxx::IntVector> ref_vector2_values;
+  grnxx::Array<grnxx::Array<grnxx::Int>> ref_vector_bodies;
+  grnxx::Array<grnxx::Array<grnxx::Int>> ref_vector2_bodies;
 } test;
 
 void generate_text(size_t min_size, size_t max_size, std::string *string) {
@@ -106,37 +108,29 @@ void init_test() try {
   auto text_column = test.table->create_column("Text", data_type);
   auto text2_column = test.table->create_column("Text2", data_type);
 
-//  data_type = grnxx::BOOL_VECTOR_DATA;
-//  auto bool_vector_column =
-//      test.table->create_column(&error, "BoolVector", data_type);
-//  auto bool_vector2_column =
-//      test.table->create_column(&error, "BoolVector2", data_type);
-//  assert(bool_vector_column);
-//  assert(bool_vector2_column);
+  data_type = grnxx::BOOL_VECTOR_DATA;
+  auto bool_vector_column =
+      test.table->create_column("BoolVector", data_type);
+  auto bool_vector2_column =
+      test.table->create_column("BoolVector2", data_type);
 
-//  data_type = grnxx::INT_VECTOR_DATA;
-//  auto int_vector_column =
-//      test.table->create_column(&error, "IntVector", data_type);
-//  auto int_vector2_column =
-//      test.table->create_column(&error, "IntVector2", data_type);
-//  assert(int_vector_column);
-//  assert(int_vector2_column);
+  data_type = grnxx::INT_VECTOR_DATA;
+  auto int_vector_column =
+      test.table->create_column("IntVector", data_type);
+  auto int_vector2_column =
+      test.table->create_column("IntVector2", data_type);
 
-//  data_type = grnxx::FLOAT_VECTOR_DATA;
-//  auto float_vector_column =
-//      test.table->create_column(&error, "FloatVector", data_type);
-//  auto float_vector2_column =
-//      test.table->create_column(&error, "FloatVector2", data_type);
-//  assert(float_vector_column);
-//  assert(float_vector2_column);
+  data_type = grnxx::FLOAT_VECTOR_DATA;
+  auto float_vector_column =
+      test.table->create_column("FloatVector", data_type);
+  auto float_vector2_column =
+      test.table->create_column("FloatVector2", data_type);
 
-//  data_type = grnxx::GEO_POINT_VECTOR_DATA;
-//  auto geo_point_vector_column =
-//      test.table->create_column(&error, "GeoPointVector", data_type);
-//  auto geo_point_vector2_column =
-//      test.table->create_column(&error, "GeoPointVector2", data_type);
-//  assert(geo_point_vector_column);
-//  assert(geo_point_vector2_column);
+  data_type = grnxx::GEO_POINT_VECTOR_DATA;
+  auto geo_point_vector_column =
+      test.table->create_column("GeoPointVector", data_type);
+  auto geo_point_vector2_column =
+      test.table->create_column("GeoPointVector2", data_type);
 
 //  data_type = grnxx::TEXT_VECTOR_DATA;
 //  auto text_vector_column =
@@ -152,13 +146,11 @@ void init_test() try {
   auto ref_column = test.table->create_column("Ref", data_type, options);
   auto ref2_column = test.table->create_column("Ref2", data_type, options);
 
-//  data_type = grnxx::INT_VECTOR_DATA;
-//  auto ref_vector_column =
-//      test.table->create_column(&error, "RefVector", data_type, options);
-//  auto ref_vector2_column =
-//      test.table->create_column(&error, "RefVector2", data_type, options);
-//  assert(ref_vector_column);
-//  assert(ref_vector2_column);
+  data_type = grnxx::INT_VECTOR_DATA;
+  auto ref_vector_column =
+      test.table->create_column("RefVector", data_type, options);
+  auto ref_vector2_column =
+      test.table->create_column("RefVector2", data_type, options);
 
   // Generate random values.
   // Bool: true or false.
@@ -166,7 +158,7 @@ void init_test() try {
   // Float: [0.0, 1.0].
   // GeoPoint: { [0, 100), [0, 100) }.
   // Text: byte = ['0', '9'], length = [1, 4].
-  // BoolVector: value = true or false, size = [0, 58].
+  // BoolVector: value = true or false, size = [0, 4].
   // IntVector: value = [0, 100), size = [0, 4].
   // FloatVector: value = [0.0, 1.0), size = [0, 4].
   // GeoPointVector: value = { [0, 100), [0, 100) }, size = [0, 4].
@@ -187,30 +179,32 @@ void init_test() try {
   test.text2_values.resize(NUM_ROWS);
   test.text_bodies.resize(NUM_ROWS);
   test.text2_bodies.resize(NUM_ROWS);
-//  assert(test.bool_vector_values.resize(&error, NUM_ROWS + 1));
-//  assert(test.bool_vector2_values.resize(&error, NUM_ROWS + 1));
-//  assert(test.int_vector_values.resize(&error, NUM_ROWS + 1));
-//  assert(test.int_vector2_values.resize(&error, NUM_ROWS + 1));
-//  assert(test.int_vector_bodies.resize(&error, NUM_ROWS + 1));
-//  assert(test.int_vector2_bodies.resize(&error, NUM_ROWS + 1));
-//  assert(test.float_vector_values.resize(&error, NUM_ROWS + 1));
-//  assert(test.float_vector2_values.resize(&error, NUM_ROWS + 1));
-//  assert(test.float_vector_bodies.resize(&error, NUM_ROWS + 1));
-//  assert(test.float_vector2_bodies.resize(&error, NUM_ROWS + 1));
-//  assert(test.geo_point_vector_values.resize(&error, NUM_ROWS + 1));
-//  assert(test.geo_point_vector2_values.resize(&error, NUM_ROWS + 1));
-//  assert(test.geo_point_vector_bodies.resize(&error, NUM_ROWS + 1));
-//  assert(test.geo_point_vector2_bodies.resize(&error, NUM_ROWS + 1));
+  test.bool_vector_values.resize(NUM_ROWS);
+  test.bool_vector2_values.resize(NUM_ROWS);
+  test.bool_vector_bodies.resize(NUM_ROWS);
+  test.bool_vector2_bodies.resize(NUM_ROWS);
+  test.int_vector_values.resize(NUM_ROWS);
+  test.int_vector2_values.resize(NUM_ROWS);
+  test.int_vector_bodies.resize(NUM_ROWS);
+  test.int_vector2_bodies.resize(NUM_ROWS);
+  test.float_vector_values.resize(NUM_ROWS);
+  test.float_vector2_values.resize(NUM_ROWS);
+  test.float_vector_bodies.resize(NUM_ROWS);
+  test.float_vector2_bodies.resize(NUM_ROWS);
+  test.geo_point_vector_values.resize(NUM_ROWS);
+  test.geo_point_vector2_values.resize(NUM_ROWS);
+  test.geo_point_vector_bodies.resize(NUM_ROWS);
+  test.geo_point_vector2_bodies.resize(NUM_ROWS);
 //  assert(test.text_vector_values.resize(&error, NUM_ROWS + 1));
 //  assert(test.text_vector2_values.resize(&error, NUM_ROWS + 1));
 //  assert(test.text_vector_bodies.resize(&error, NUM_ROWS + 1));
 //  assert(test.text_vector2_bodies.resize(&error, NUM_ROWS + 1));
   test.ref_values.resize(NUM_ROWS + 1);
   test.ref2_values.resize(NUM_ROWS + 1);
-//  assert(test.ref_vector_values.resize(&error, NUM_ROWS + 1));
-//  assert(test.ref_vector2_values.resize(&error, NUM_ROWS + 1));
-//  assert(test.ref_vector_bodies.resize(&error, NUM_ROWS + 1));
-//  assert(test.ref_vector2_bodies.resize(&error, NUM_ROWS + 1));
+  test.ref_vector_values.resize(NUM_ROWS);
+  test.ref_vector2_values.resize(NUM_ROWS);
+  test.ref_vector_bodies.resize(NUM_ROWS);
+  test.ref_vector2_bodies.resize(NUM_ROWS);
 
   for (std::size_t i = 0; i < NUM_ROWS; ++i) {
     test.bool_values.set(i, grnxx::Bool((mersenne_twister() & 1) != 0));
@@ -243,58 +237,82 @@ void init_test() try {
                              text_body->length()));
 
 //    grnxx::uint64_t bits = mersenne_twister();
-//    grnxx::Int size = mersenne_twister() % 59;
+//    size_t size = mersenne_twister() % 59;
 //    test.bool_vector_values.set(i, grnxx::BoolVector(bits, size));
 //    bits = mersenne_twister();
 //    size = mersenne_twister() % 59;
 //    test.bool_vector2_values.set(i, grnxx::BoolVector(bits, size));
 
-//    size = mersenne_twister() % (MAX_SIZE + 1);
-//    assert(test.int_vector_bodies[i].resize(&error, size));
-//    for (grnxx::Int j = 0; j < size; ++j) {
-//      test.int_vector_bodies[i][j] = mersenne_twister() % 100;
-//    }
-//    test.int_vector_values.set(
-//        i, grnxx::IntVector(test.int_vector_bodies[i].data(), size));
-//    size = mersenne_twister() % (MAX_SIZE + 1);
-//    assert(test.int_vector2_bodies[i].resize(&error, size));
-//    for (grnxx::Int j = 0; j < size; ++j) {
-//      test.int_vector2_bodies[i][j] = mersenne_twister() % 100;
-//    }
-//    test.int_vector2_values.set(
-//        i, grnxx::IntVector(test.int_vector2_bodies[i].data(), size));
+    size_t size = mersenne_twister() % (MAX_SIZE + 1);
+    test.bool_vector_bodies[i].resize(size);
+    for (size_t j = 0; j < size; ++j) {
+      test.bool_vector_bodies[i][j] =
+          grnxx::Bool((mersenne_twister() & 1) == 1);
+    }
+    test.bool_vector_values.set(
+        i, grnxx::BoolVector(test.bool_vector_bodies[i].data(), size));
+    size = mersenne_twister() % (MAX_SIZE + 1);
+    test.bool_vector2_bodies[i].resize(size);
+    for (size_t j = 0; j < size; ++j) {
+      test.bool_vector2_bodies[i][j] =
+          grnxx::Bool((mersenne_twister() & 1) == 1);
+    }
+    test.bool_vector2_values.set(
+        i, grnxx::BoolVector(test.bool_vector2_bodies[i].data(), size));
 
-//    size = mersenne_twister() % (MAX_SIZE + 1);
-//    assert(test.float_vector_bodies[i].resize(&error, size));
-//    for (grnxx::Int j = 0; j < size; ++j) {
-//      test.float_vector_bodies[i][j] = (mersenne_twister() % 100) / 100.0;
-//    }
-//    test.float_vector_values.set(
-//        i, grnxx::FloatVector(test.float_vector_bodies[i].data(), size));
-//    size = mersenne_twister() % (MAX_SIZE + 1);
-//    assert(test.float_vector2_bodies[i].resize(&error, size));
-//    for (grnxx::Int j = 0; j < size; ++j) {
-//      test.float_vector2_bodies[i][j] = (mersenne_twister() % 100) / 100.0;
-//    }
-//    test.float_vector2_values.set(
-//        i, grnxx::FloatVector(test.float_vector2_bodies[i].data(), size));
+    size = mersenne_twister() % (MAX_SIZE + 1);
+    test.int_vector_bodies[i].resize(size);
+    for (size_t j = 0; j < size; ++j) {
+      test.int_vector_bodies[i][j] = grnxx::Int(mersenne_twister() % 100);
+    }
+    test.int_vector_values.set(
+        i, grnxx::IntVector(test.int_vector_bodies[i].data(), size));
+    size = mersenne_twister() % (MAX_SIZE + 1);
+    test.int_vector2_bodies[i].resize(size);
+    for (size_t j = 0; j < size; ++j) {
+      test.int_vector2_bodies[i][j] = grnxx::Int(mersenne_twister() % 100);
+    }
+    test.int_vector2_values.set(
+        i, grnxx::IntVector(test.int_vector2_bodies[i].data(), size));
 
-//    size = mersenne_twister() % (MAX_SIZE + 1);
-//    assert(test.geo_point_vector_bodies[i].resize(&error, size));
-//    for (grnxx::Int j = 0; j < size; ++j) {
-//      test.geo_point_vector_bodies[i][j] =
-//          grnxx::GeoPoint(mersenne_twister() % 100, mersenne_twister() % 100);
-//    }
-//    test.geo_point_vector_values.set(
-//        i, grnxx::GeoPointVector(test.geo_point_vector_bodies[i].data(), size));
-//    size = mersenne_twister() % (MAX_SIZE + 1);
-//    assert(test.geo_point_vector2_bodies[i].resize(&error, size));
-//    for (grnxx::Int j = 0; j < size; ++j) {
-//      test.geo_point_vector2_bodies[i][j] =
-//          grnxx::GeoPoint(mersenne_twister() % 100, mersenne_twister() % 100);
-//    }
-//    test.geo_point_vector2_values.set(
-//        i, grnxx::GeoPointVector(test.geo_point_vector2_bodies[i].data(), size));
+    size = mersenne_twister() % (MAX_SIZE + 1);
+    test.float_vector_bodies[i].resize(size);
+    for (size_t j = 0; j < size; ++j) {
+      test.float_vector_bodies[i][j] =
+          grnxx::Float((mersenne_twister() % 100) / 100.0);
+    }
+    test.float_vector_values.set(
+        i, grnxx::FloatVector(test.float_vector_bodies[i].data(), size));
+    size = mersenne_twister() % (MAX_SIZE + 1);
+    test.float_vector2_bodies[i].resize(size);
+    for (size_t j = 0; j < size; ++j) {
+      test.float_vector2_bodies[i][j] =
+          grnxx::Float((mersenne_twister() % 100) / 100.0);
+    }
+    test.float_vector2_values.set(
+        i, grnxx::FloatVector(test.float_vector2_bodies[i].data(), size));
+
+    size = mersenne_twister() % (MAX_SIZE + 1);
+    test.geo_point_vector_bodies[i].resize(size);
+    for (size_t j = 0; j < size; ++j) {
+      test.geo_point_vector_bodies[i][j] =
+          grnxx::GeoPoint(grnxx::Int(mersenne_twister() % 100),
+                          grnxx::Int(mersenne_twister() % 100));
+    }
+    const grnxx::GeoPoint *geo_point_data =
+        test.geo_point_vector_bodies[i].data();
+    test.geo_point_vector_values.set(
+        i, grnxx::GeoPointVector(geo_point_data, size));
+    size = mersenne_twister() % (MAX_SIZE + 1);
+    test.geo_point_vector2_bodies[i].resize(size);
+    for (size_t j = 0; j < size; ++j) {
+      test.geo_point_vector2_bodies[i][j] =
+          grnxx::GeoPoint(grnxx::Int(mersenne_twister() % 100),
+                          grnxx::Int(mersenne_twister() % 100));
+    }
+    geo_point_data = test.geo_point_vector2_bodies[i].data();
+    test.geo_point_vector2_values.set(
+        i, grnxx::GeoPointVector(geo_point_data, size));
 
 //    size = mersenne_twister() % (MAX_SIZE + 1);
 //    assert(test.text_vector_bodies[i].resize(&error, size));
@@ -316,20 +334,22 @@ void init_test() try {
     test.ref_values.set(i, grnxx::Int(mersenne_twister() % NUM_ROWS));
     test.ref2_values.set(i, grnxx::Int(mersenne_twister() % NUM_ROWS));
 
-//    size = mersenne_twister() % (MAX_SIZE + 1);
-//    assert(test.ref_vector_bodies[i].resize(&error, size));
-//    for (grnxx::Int j = 0; j < size; ++j) {
-//      test.ref_vector_bodies[i][j] = 1 + (mersenne_twister() % NUM_ROWS);
-//    }
-//    test.ref_vector_values.set(
-//        i, grnxx::IntVector(test.ref_vector_bodies[i].data(), size));
-//    size = mersenne_twister() % (MAX_SIZE + 1);
-//    assert(test.ref_vector2_bodies[i].resize(&error, size));
-//    for (grnxx::Int j = 0; j < size; ++j) {
-//      test.ref_vector2_bodies[i][j] = 1 + (mersenne_twister() % NUM_ROWS);
-//    }
-//    test.ref_vector2_values.set(
-//        i, grnxx::IntVector(test.ref_vector2_bodies[i].data(), size));
+    size = mersenne_twister() % (MAX_SIZE + 1);
+    test.ref_vector_bodies[i].resize(size);
+    for (size_t j = 0; j < size; ++j) {
+      test.ref_vector_bodies[i][j] =
+          grnxx::Int(mersenne_twister() % NUM_ROWS);
+    }
+    test.ref_vector_values.set(
+        i, grnxx::IntVector(test.ref_vector_bodies[i].data(), size));
+    size = mersenne_twister() % (MAX_SIZE + 1);
+    test.ref_vector2_bodies[i].resize(size);
+    for (size_t j = 0; j < size; ++j) {
+      test.ref_vector2_bodies[i][j] =
+          grnxx::Int(mersenne_twister() % NUM_ROWS);
+    }
+    test.ref_vector2_values.set(
+        i, grnxx::IntVector(test.ref_vector2_bodies[i].data(), size));
   }
 
   // Store generated values into columns.
@@ -347,22 +367,14 @@ void init_test() try {
     geo_point2_column->set(row_id, test.geo_point2_values[i]);
     text_column->set(row_id, test.text_values[i]);
     text2_column->set(row_id, test.text2_values[i]);
-//    assert(bool_vector_column->set(&error, row_id,
-//                                   test.bool_vector_values[i]));
-//    assert(bool_vector2_column->set(&error, row_id,
-//                                    test.bool_vector2_values[i]));
-//    assert(int_vector_column->set(&error, row_id,
-//                                  test.int_vector_values[i]));
-//    assert(int_vector2_column->set(&error, row_id,
-//                                   test.int_vector2_values[i]));
-//    assert(float_vector_column->set(&error, row_id,
-//                                    test.float_vector_values[i]));
-//    assert(float_vector2_column->set(&error, row_id,
-//                                     test.float_vector2_values[i]));
-//    assert(geo_point_vector_column->set(&error, row_id,
-//                                        test.geo_point_vector_values[i]));
-//    assert(geo_point_vector2_column->set(&error, row_id,
-//                                         test.geo_point_vector2_values[i]));
+    bool_vector_column->set(row_id, test.bool_vector_values[i]);
+    bool_vector2_column->set(row_id, test.bool_vector2_values[i]);
+    int_vector_column->set(row_id, test.int_vector_values[i]);
+    int_vector2_column->set(row_id, test.int_vector2_values[i]);
+    float_vector_column->set(row_id, test.float_vector_values[i]);
+    float_vector2_column->set(row_id, test.float_vector2_values[i]);
+    geo_point_vector_column->set(row_id, test.geo_point_vector_values[i]);
+    geo_point_vector2_column->set(row_id, test.geo_point_vector2_values[i]);
 //    assert(text_vector_column->set(&error, row_id,
 //                                   test.text_vector_values[i]));
 //    assert(text_vector2_column->set(&error, row_id,
@@ -373,8 +385,8 @@ void init_test() try {
     grnxx::Int row_id(i);
     ref_column->set(row_id, test.ref_values[i]);
     ref2_column->set(row_id, test.ref2_values[i]);
-//    assert(ref_vector_column->set(&error, i, test.ref_vector_values[i]));
-//    assert(ref_vector2_column->set(&error, i, test.ref_vector2_values[i]));
+    ref_vector_column->set(row_id, test.ref_vector_values[i]);
+    ref_vector2_column->set(row_id, test.ref_vector2_values[i]);
   }
 } catch (const char *msg) {
   std::cout << msg << std::endl;
@@ -704,65 +716,65 @@ void test_column() {
     assert((text_results[i] == test.text_values[row_id]).is_true());
   }
 
-//  // Test an expression (BoolVector).
-//  assert(builder->push_column(&error, "BoolVector"));
-//  expression = builder->release(&error);
-//  assert(expression);
+  // Test an expression (BoolVector).
+  builder->push_column("BoolVector");
+  expression = builder->release();
 
-//  records = create_input_records();
+  records = create_input_records();
 
-//  grnxx::Array<grnxx::BoolVector> bool_vector_results;
-//  assert(expression->evaluate(&error, records, &bool_vector_results));
-//  assert(bool_vector_results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < bool_vector_results.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    assert(bool_vector_results[i] == test.bool_vector_values[row_id]);
-//  }
+  grnxx::Array<grnxx::BoolVector> bool_vector_results;
+  expression->evaluate(records, &bool_vector_results);
+  assert(bool_vector_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < bool_vector_results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert((bool_vector_results[i] ==
+            test.bool_vector_values[row_id]).is_true());
+  }
 
-//  // Test an expression (IntVector).
-//  assert(builder->push_column(&error, "IntVector"));
-//  expression = builder->release(&error);
-//  assert(expression);
+  // Test an expression (IntVector).
+  builder->push_column("IntVector");
+  expression = builder->release();
 
-//  records = create_input_records();
+  records = create_input_records();
 
-//  grnxx::Array<grnxx::IntVector> int_vector_results;
-//  assert(expression->evaluate(&error, records, &int_vector_results));
-//  assert(int_vector_results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < int_vector_results.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    assert(int_vector_results[i] == test.int_vector_values[row_id]);
-//  }
+  grnxx::Array<grnxx::IntVector> int_vector_results;
+  expression->evaluate(records, &int_vector_results);
+  assert(int_vector_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < int_vector_results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert((int_vector_results[i] ==
+            test.int_vector_values[row_id]).is_true());
+  }
 
-//  // Test an expression (FloatVector).
-//  assert(builder->push_column(&error, "FloatVector"));
-//  expression = builder->release(&error);
-//  assert(expression);
+  // Test an expression (FloatVector).
+  builder->push_column("FloatVector");
+  expression = builder->release();
 
-//  records = create_input_records();
+  records = create_input_records();
 
-//  grnxx::Array<grnxx::FloatVector> float_vector_results;
-//  assert(expression->evaluate(&error, records, &float_vector_results));
-//  assert(float_vector_results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < float_vector_results.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    assert(float_vector_results[i] == test.float_vector_values[row_id]);
-//  }
+  grnxx::Array<grnxx::FloatVector> float_vector_results;
+  expression->evaluate(records, &float_vector_results);
+  assert(float_vector_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < float_vector_results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert((float_vector_results[i] ==
+            test.float_vector_values[row_id]).is_true());
+  }
 
-//  // Test an expression (GeoPointVector).
-//  assert(builder->push_column(&error, "GeoPointVector"));
-//  expression = builder->release(&error);
-//  assert(expression);
+  // Test an expression (GeoPointVector).
+  builder->push_column("GeoPointVector");
+  expression = builder->release();
 
-//  records = create_input_records();
+  records = create_input_records();
 
-//  grnxx::Array<grnxx::GeoPointVector> geo_point_vector_results;
-//  assert(expression->evaluate(&error, records, &geo_point_vector_results));
-//  assert(geo_point_vector_results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < geo_point_vector_results.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    assert(geo_point_vector_results[i] == test.geo_point_vector_values[row_id]);
-//  }
+  grnxx::Array<grnxx::GeoPointVector> geo_point_vector_results;
+  expression->evaluate(records, &geo_point_vector_results);
+  assert(geo_point_vector_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < geo_point_vector_results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert((geo_point_vector_results[i] ==
+            test.geo_point_vector_values[row_id]).is_true());
+  }
 
 //  // Test an expression (TextVector).
 //  assert(builder->push_column(&error, "TextVector"));
