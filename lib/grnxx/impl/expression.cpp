@@ -59,16 +59,6 @@ class TypedNode : public Node {
     return T::type();
   }
 
-//  void filter(ArrayCRef<Record>, ArrayRef<Record> *) {
-//    // Other than TypedNode<Bool> don't support filter().
-//    throw "Not supported";
-//  }
-
-//  void adjust(ArrayRef<Record>) {
-//    // Other than TypedNode<Float> don't support adjust().
-//    throw "Not supported";
-//  }
-
   // Evaluate the expression subtree.
   //
   // The evaluation results are stored into "*results".
@@ -95,12 +85,6 @@ class TypedNode<Bool> : public Node {
   // NOTE: Derived classes should provide better implementations.
   virtual void filter(ArrayCRef<Record> input_records,
                       ArrayRef<Record> *output_records);
-
-//  void adjust(ArrayRef<Record>) {
-//    // Other than TypedNode<Float> don't support adjust().
-//    GRNXX_ERROR_SET(error, INVALID_OPERATION, "Invalid operation");
-//    return false;
-//  }
 
   virtual void evaluate(ArrayCRef<Record> records,
                         ArrayRef<Value> results) = 0;
@@ -136,12 +120,6 @@ class TypedNode<Float> : public Node {
   DataType data_type() const {
     return Value::type();
   }
-
-//  void filter(ArrayCRef<Record>, ArrayRef<Record> *) {
-//    // Other than TypedNode<Bool> don't support filter().
-//    GRNXX_ERROR_SET(error, INVALID_OPERATION, "Invalid operation");
-//    return false;
-//  }
 
   // NOTE: Derived classes should provide better implementations.
   virtual void adjust(ArrayRef<Record> records);
