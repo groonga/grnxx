@@ -100,16 +100,15 @@ void test_column() {
   assert(!bool_vector_column->is_key());
 //  assert(bool_vector_column->num_indexes() == 0);
 
-//  // Create a column named "IntVectorColumn".
-//  // The column stores Text values.
-//  auto int_vector_column = table->create_column(&error, "IntVectorColumn",
-//                                                 grnxx::INT_VECTOR_DATA);
-//  assert(int_vector_column);
-//  assert(int_vector_column->table() == table);
-//  assert(int_vector_column->name() == "IntVectorColumn");
-//  assert(int_vector_column->data_type() == grnxx::INT_VECTOR_DATA);
-//  assert(!int_vector_column->ref_table());
-//  assert(!int_vector_column->has_key_attribute());
+  // Create a column named "IntVector".
+  // The column stores Text values.
+  auto int_vector_column =
+      table->create_column("IntVector", grnxx::INT_VECTOR_DATA);
+  assert(int_vector_column->table() == table);
+  assert(int_vector_column->name() == "IntVector");
+  assert(int_vector_column->data_type() == grnxx::INT_VECTOR_DATA);
+  assert(!int_vector_column->reference_table());
+  assert(!int_vector_column->is_key());
 //  assert(int_vector_column->num_indexes() == 0);
 
 //  // Create a column named "FloatVectorColumn".
@@ -193,9 +192,9 @@ void test_column() {
   assert(datum.type() == grnxx::BOOL_VECTOR_DATA);
   assert(datum.as_bool_vector().is_na());
 
-//  assert(int_vector_column->get(&error, 1, &datum));
-//  assert(datum.type() == grnxx::INT_VECTOR_DATA);
-//  assert(datum.force_int_vector() == grnxx::IntVector(nullptr, 0));
+  int_vector_column->get(row_id, &datum);
+  assert(datum.type() == grnxx::INT_VECTOR_DATA);
+  assert(datum.as_int_vector().is_na());
 
 //  assert(float_vector_column->get(&error, 1, &datum));
 //  assert(datum.type() == grnxx::FLOAT_VECTOR_DATA);
@@ -257,6 +256,17 @@ void test_column() {
   bool_vector_column->get(row_id, &datum);
   assert(datum.type() == grnxx::BOOL_VECTOR_DATA);
   assert((datum.as_bool_vector() == bool_vector).is_true());
+
+  grnxx::Int int_vector_value[] = {
+    grnxx::Int(123),
+    grnxx::Int(-456),
+    grnxx::Int(789)
+  };
+  grnxx::IntVector int_vector(int_vector_value, 3);
+  int_vector_column->set(row_id, int_vector);
+  int_vector_column->get(row_id, &datum);
+  assert(datum.type() == grnxx::INT_VECTOR_DATA);
+  assert((datum.as_int_vector() == int_vector).is_true());
 
 //  // Set and get values.
 //  grnxx::Int int_vector_value[] = { 123, -456, 789 };
