@@ -39,10 +39,10 @@ struct {
   grnxx::Array<grnxx::Float> float2_values;
   grnxx::Array<grnxx::GeoPoint> geo_point_values;
   grnxx::Array<grnxx::GeoPoint> geo_point2_values;
-//  grnxx::Array<grnxx::Text> text_values;
-//  grnxx::Array<grnxx::Text> text2_values;
-//  grnxx::Array<std::string> text_bodies;
-//  grnxx::Array<std::string> text2_bodies;
+  grnxx::Array<grnxx::Text> text_values;
+  grnxx::Array<grnxx::Text> text2_values;
+  grnxx::Array<std::string> text_bodies;
+  grnxx::Array<std::string> text2_bodies;
 //  grnxx::Array<grnxx::BoolVector> bool_vector_values;
 //  grnxx::Array<grnxx::BoolVector> bool_vector2_values;
 //  grnxx::Array<grnxx::IntVector> int_vector_values;
@@ -69,14 +69,14 @@ struct {
 //  grnxx::Array<grnxx::Array<grnxx::Int>> ref_vector2_bodies;
 } test;
 
-//void generate_text(grnxx::Int min_size, grnxx::Int max_size,
-//                   std::string *str) {
-//  grnxx::Int size = (mersenne_twister() % (max_size - min_size + 1)) + min_size;
-//  str->resize(size);
-//  for (grnxx::Int i = 0; i < size; ++i) {
-//    (*str)[i] = '0' + (mersenne_twister() % 10);
-//  }
-//}
+void generate_text(size_t min_size, size_t max_size, std::string *string) {
+  size_t size = (mersenne_twister() % (max_size - min_size + 1)) + min_size;
+  string->resize(size);
+  char *string_buffer = &(*string)[0];
+  for (size_t i = 0; i < size; ++i) {
+    string_buffer[i] = '0' + (mersenne_twister() % 10);
+  }
+}
 
 void init_test() try {
   // Create a database with the default options.
@@ -102,11 +102,9 @@ void init_test() try {
   auto geo_point_column = test.table->create_column("GeoPoint", data_type);
   auto geo_point2_column = test.table->create_column("GeoPoint2", data_type);
 
-//  data_type = grnxx::TEXT_DATA;
-//  auto text_column = test.table->create_column(&error, "Text", data_type);
-//  auto text2_column = test.table->create_column(&error, "Text2", data_type);
-//  assert(text_column);
-//  assert(text2_column);
+  data_type = grnxx::TEXT_DATA;
+  auto text_column = test.table->create_column("Text", data_type);
+  auto text2_column = test.table->create_column("Text2", data_type);
 
 //  data_type = grnxx::BOOL_VECTOR_DATA;
 //  auto bool_vector_column =
@@ -185,10 +183,10 @@ void init_test() try {
   test.float2_values.resize(NUM_ROWS);
   test.geo_point_values.resize(NUM_ROWS);
   test.geo_point2_values.resize(NUM_ROWS);
-//  assert(test.text_values.resize(&error, NUM_ROWS + 1));
-//  assert(test.text2_values.resize(&error, NUM_ROWS + 1));
-//  assert(test.text_bodies.resize(&error, NUM_ROWS + 1));
-//  assert(test.text2_bodies.resize(&error, NUM_ROWS + 1));
+  test.text_values.resize(NUM_ROWS);
+  test.text2_values.resize(NUM_ROWS);
+  test.text_bodies.resize(NUM_ROWS);
+  test.text2_bodies.resize(NUM_ROWS);
 //  assert(test.bool_vector_values.resize(&error, NUM_ROWS + 1));
 //  assert(test.bool_vector2_values.resize(&error, NUM_ROWS + 1));
 //  assert(test.int_vector_values.resize(&error, NUM_ROWS + 1));
@@ -222,8 +220,10 @@ void init_test() try {
     test.int2_values.set(i, grnxx::Int(mersenne_twister() % 100));
 
     constexpr auto MAX_VALUE = mersenne_twister.max();
-    test.float_values.set(i, grnxx::Float(1.0 * mersenne_twister() / MAX_VALUE));
-    test.float2_values.set(i, grnxx::Float(1.0 * mersenne_twister() / MAX_VALUE));
+    test.float_values.set(i, grnxx::Float(1.0 * mersenne_twister() /
+                                          MAX_VALUE));
+    test.float2_values.set(i, grnxx::Float(1.0 * mersenne_twister() /
+                                           MAX_VALUE));
 
     test.geo_point_values.set(
         i, grnxx::GeoPoint(grnxx::Int(mersenne_twister() % 100),
@@ -232,13 +232,15 @@ void init_test() try {
         i, grnxx::GeoPoint(grnxx::Int(mersenne_twister() % 100),
                            grnxx::Int(mersenne_twister() % 100)));
 
-//    std::string *text_body = &test.text_bodies[i];
-//    generate_text(MIN_LENGTH, MAX_LENGTH, text_body);
-//    test.text_values.set(i, grnxx::Text(text_body->data(), text_body->length()));
+    std::string *text_body = &test.text_bodies[i];
+    generate_text(MIN_LENGTH, MAX_LENGTH, text_body);
+    test.text_values.set(i, grnxx::Text(text_body->data(),
+                                        text_body->length()));
 
-//    text_body = &test.text2_bodies[i];
-//    generate_text(MIN_LENGTH, MAX_LENGTH, text_body);
-//    test.text2_values.set(i, grnxx::Text(text_body->data(), text_body->length()));
+    text_body = &test.text2_bodies[i];
+    generate_text(MIN_LENGTH, MAX_LENGTH, text_body);
+    test.text2_values.set(i, grnxx::Text(text_body->data(),
+                             text_body->length()));
 
 //    grnxx::uint64_t bits = mersenne_twister();
 //    grnxx::Int size = mersenne_twister() % 59;
@@ -343,8 +345,8 @@ void init_test() try {
     float2_column->set(row_id, test.float2_values[i]);
     geo_point_column->set(row_id, test.geo_point_values[i]);
     geo_point2_column->set(row_id, test.geo_point2_values[i]);
-//    assert(text_column->set(&error, row_id, test.text_values[i]));
-//    assert(text2_column->set(&error, row_id, test.text2_values[i]));
+    text_column->set(row_id, test.text_values[i]);
+    text2_column->set(row_id, test.text2_values[i]);
 //    assert(bool_vector_column->set(&error, row_id,
 //                                   test.bool_vector_values[i]));
 //    assert(bool_vector2_column->set(&error, row_id,
@@ -477,7 +479,7 @@ void test_constant() try {
   expression->evaluate(records, &text_results);
   assert(text_results.size() == test.table->num_rows());
   for (size_t i = 0; i < text_results.size(); ++i) {
-//    assert(text_results[i] == grnxx::Text("ABC"));
+    assert((text_results[i] == grnxx::Text("ABC")).is_true());
   }
 
 //  // Test an expression ({ true, false, true }).
@@ -677,20 +679,19 @@ void test_column() {
            test.geo_point_values[row_id].longitude());
   }
 
-//  // Test an expression (Text).
-//  assert(builder->push_column(&error, "Text"));
-//  expression = builder->release(&error);
-//  assert(expression);
+  // Test an expression (Text).
+  builder->push_column("Text");
+  expression = builder->release();
 
-//  records = create_input_records();
+  records = create_input_records();
 
-//  grnxx::Array<grnxx::Text> text_results;
-//  assert(expression->evaluate(&error, records, &text_results));
-//  assert(text_results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < text_results.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    assert(text_results[i] == test.text_values[row_id]);
-//  }
+  grnxx::Array<grnxx::Text> text_results;
+  expression->evaluate(records, &text_results);
+  assert(text_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < text_results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert((text_results[i] == test.text_values[row_id]).is_true());
+  }
 
 //  // Test an expression (BoolVector).
 //  assert(builder->push_column(&error, "BoolVector"));
@@ -1185,32 +1186,32 @@ void test_equal() {
   }
   assert(records.size() == count);
 
-//  // Test an expression (Text == Text2).
-//  builder->push_column("Text");
-//  builder->push_column("Text2");
-//  builder->push_operator(grnxx::EQUAL_OPERATOR);
-//  expression = builder->release();
+  // Test an expression (Text == Text2).
+  builder->push_column("Text");
+  builder->push_column("Text2");
+  builder->push_operator(grnxx::EQUAL_OPERATOR);
+  expression = builder->release();
 
-//  records = create_input_records();
+  records = create_input_records();
 
-//  results.clear();
-//  expression->evaluate(records, &results);
-//  assert(results.size() == test.table->num_rows());
-//  for (size_t i = 0; i < results.size(); ++i) {
-//    size_t row_id = records[i].row_id.value();
-//    assert(results[i].value() ==
-//           (test.text_values[row_id] == test.text2_values[row_id]).value());
-//  }
+  results.clear();
+  expression->evaluate(records, &results);
+  assert(results.size() == test.table->num_rows());
+  for (size_t i = 0; i < results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert(results[i].value() ==
+           (test.text_values[row_id] == test.text2_values[row_id]).value());
+  }
 
-//  expression->filter(&records);
-//  count = 0;
-//  for (size_t i = 1; i < test.text_values.size(); ++i) {
-//    if ((test.text_values[i] == test.text2_values[i]).is_true()) {
-//      assert(records[count].row_id.value() == grnxx::Int(i).value());
-//      ++count;
-//    }
-//  }
-//  assert(records.size() == count);
+  expression->filter(&records);
+  count = 0;
+  for (size_t i = 0; i < test.text_values.size(); ++i) {
+    if ((test.text_values[i] == test.text2_values[i]).is_true()) {
+      assert(records[count].row_id.value() == grnxx::Int(i).value());
+      ++count;
+    }
+  }
+  assert(records.size() == count);
 
 //  // Test an expression (BoolVector == BoolVector2).
 //  assert(builder->push_column(&error, "BoolVector"));
@@ -1465,33 +1466,32 @@ void test_not_equal() {
   }
   assert(records.size() == count);
 
-//  // Test an expression (Text != Text2).
-//  assert(builder->push_column(&error, "Text"));
-//  assert(builder->push_column(&error, "Text2"));
-//  assert(builder->push_operator(&error, grnxx::NOT_EQUAL_OPERATOR));
-//  expression = builder->release(&error);
-//  assert(expression);
+  // Test an expression (Text != Text2).
+  builder->push_column("Text");
+  builder->push_column("Text2");
+  builder->push_operator(grnxx::NOT_EQUAL_OPERATOR);
+  expression = builder->release();
 
-//  records = create_input_records();
+  records = create_input_records();
 
-//  results.clear();
-//  assert(expression->evaluate(&error, records, &results));
-//  assert(results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < results.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    assert(results[i] ==
-//           (test.text_values[row_id] != test.text2_values[row_id]));
-//  }
+  results.clear();
+  expression->evaluate(records, &results);
+  assert(results.size() == test.table->num_rows());
+  for (size_t i = 0; i < results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert(results[i].value() ==
+           (test.text_values[row_id] != test.text2_values[row_id]).value());
+  }
 
-//  assert(expression->filter(&error, &records));
-//  count = 0;
-//  for (grnxx::Int i = 1; i < test.text_values.size(); ++i) {
-//    if (test.text_values[i] != test.text2_values[i]) {
-//      assert(records.get_row_id(count) == i);
-//      ++count;
-//    }
-//  }
-//  assert(records.size() == count);
+  expression->filter(&records);
+  count = 0;
+  for (size_t i = 0; i < test.text_values.size(); ++i) {
+    if ((test.text_values[i] != test.text2_values[i]).is_true()) {
+      assert(records[count].row_id.value() == grnxx::Int(i).value());
+      ++count;
+    }
+  }
+  assert(records.size() == count);
 
 //  // Test an expression (BoolVector != BoolVector2).
 //  assert(builder->push_column(&error, "BoolVector"));
@@ -1692,33 +1692,32 @@ void test_less() {
   }
   assert(records.size() == count);
 
-//  // Test an expression (Text < Text2).
-//  assert(builder->push_column(&error, "Text"));
-//  assert(builder->push_column(&error, "Text2"));
-//  assert(builder->push_operator(&error, grnxx::LESS_OPERATOR));
-//  expression = builder->release(&error);
-//  assert(expression);
+  // Test an expression (Text < Text2).
+  builder->push_column("Text");
+  builder->push_column("Text2");
+  builder->push_operator(grnxx::LESS_OPERATOR);
+  expression = builder->release();
 
-//  records = create_input_records();
+  records = create_input_records();
 
-//  results.clear();
-//  assert(expression->evaluate(&error, records, &results));
-//  assert(results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < results.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    assert(results[i] ==
-//           (test.text_values[row_id] < test.text2_values[row_id]));
-//  }
+  results.clear();
+  expression->evaluate(records, &results);
+  assert(results.size() == test.table->num_rows());
+  for (size_t i = 0; i < results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert(results[i].value() ==
+           (test.text_values[row_id] < test.text2_values[row_id]).value());
+  }
 
-//  assert(expression->filter(&error, &records));
-//  count = 0;
-//  for (grnxx::Int i = 1; i < test.text_values.size(); ++i) {
-//    if (test.text_values[i] < test.text2_values[i]) {
-//      assert(records.get_row_id(count) == i);
-//      ++count;
-//    }
-//  }
-//  assert(records.size() == count);
+  expression->filter(&records);
+  count = 0;
+  for (size_t i = 0; i < test.text_values.size(); ++i) {
+    if ((test.text_values[i] < test.text2_values[i]).is_true()) {
+      assert(records[count].row_id.value() == grnxx::Int(i).value());
+      ++count;
+    }
+  }
+  assert(records.size() == count);
 }
 
 void test_less_equal() {
@@ -1779,33 +1778,32 @@ void test_less_equal() {
   }
   assert(records.size() == count);
 
-//  // Test an expression (Text <= Text2).
-//  assert(builder->push_column(&error, "Text"));
-//  assert(builder->push_column(&error, "Text2"));
-//  assert(builder->push_operator(&error, grnxx::LESS_EQUAL_OPERATOR));
-//  expression = builder->release(&error);
-//  assert(expression);
+  // Test an expression (Text <= Text2).
+  builder->push_column("Text");
+  builder->push_column("Text2");
+  builder->push_operator(grnxx::LESS_EQUAL_OPERATOR);
+  expression = builder->release();
 
-//  records = create_input_records();
+  records = create_input_records();
 
-//  results.clear();
-//  assert(expression->evaluate(&error, records, &results));
-//  assert(results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < results.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    assert(results[i] ==
-//           (test.text_values[row_id] <= test.text2_values[row_id]));
-//  }
+  results.clear();
+  expression->evaluate(records, &results);
+  assert(results.size() == test.table->num_rows());
+  for (size_t i = 0; i < results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert(results[i].value() ==
+           (test.text_values[row_id] <= test.text2_values[row_id]).value());
+  }
 
-//  assert(expression->filter(&error, &records));
-//  count = 0;
-//  for (grnxx::Int i = 1; i < test.text_values.size(); ++i) {
-//    if (test.text_values[i] <= test.text2_values[i]) {
-//      assert(records.get_row_id(count) == i);
-//      ++count;
-//    }
-//  }
-//  assert(records.size() == count);
+  expression->filter(&records);
+  count = 0;
+  for (size_t i = 0; i < test.text_values.size(); ++i) {
+    if ((test.text_values[i] <= test.text2_values[i]).is_true()) {
+      assert(records[count].row_id.value() == grnxx::Int(i).value());
+      ++count;
+    }
+  }
+  assert(records.size() == count);
 }
 
 void test_greater() {
@@ -1866,33 +1864,32 @@ void test_greater() {
   }
   assert(records.size() == count);
 
-//  // Test an expression (Text > Text2).
-//  assert(builder->push_column(&error, "Text"));
-//  assert(builder->push_column(&error, "Text2"));
-//  assert(builder->push_operator(&error, grnxx::GREATER_OPERATOR));
-//  expression = builder->release(&error);
-//  assert(expression);
+  // Test an expression (Text > Text2).
+  builder->push_column("Text");
+  builder->push_column("Text2");
+  builder->push_operator(grnxx::GREATER_OPERATOR);
+  expression = builder->release();
 
-//  records = create_input_records();
+  records = create_input_records();
 
-//  results.clear();
-//  assert(expression->evaluate(&error, records, &results));
-//  assert(results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < results.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    assert(results[i] ==
-//           (test.text_values[row_id] > test.text2_values[row_id]));
-//  }
+  results.clear();
+  expression->evaluate(records, &results);
+  assert(results.size() == test.table->num_rows());
+  for (size_t i = 0; i < results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert(results[i].value() ==
+           (test.text_values[row_id] > test.text2_values[row_id]).value());
+  }
 
-//  assert(expression->filter(&error, &records));
-//  count = 0;
-//  for (grnxx::Int i = 1; i < test.text_values.size(); ++i) {
-//    if (test.text_values[i] > test.text2_values[i]) {
-//      assert(records.get_row_id(count) == i);
-//      ++count;
-//    }
-//  }
-//  assert(records.size() == count);
+  expression->filter(&records);
+  count = 0;
+  for (size_t i = 0; i < test.text_values.size(); ++i) {
+    if ((test.text_values[i] > test.text2_values[i]).is_true()) {
+      assert(records[count].row_id.value() == grnxx::Int(i).value());
+      ++count;
+    }
+  }
+  assert(records.size() == count);
 }
 
 void test_greater_equal() {
@@ -1953,33 +1950,32 @@ void test_greater_equal() {
   }
   assert(records.size() == count);
 
-//  // Test an expression (Text >= Text2).
-//  assert(builder->push_column(&error, "Text"));
-//  assert(builder->push_column(&error, "Text2"));
-//  assert(builder->push_operator(&error, grnxx::GREATER_EQUAL_OPERATOR));
-//  expression = builder->release(&error);
-//  assert(expression);
+  // Test an expression (Text >= Text2).
+  builder->push_column("Text");
+  builder->push_column("Text2");
+  builder->push_operator(grnxx::GREATER_EQUAL_OPERATOR);
+  expression = builder->release();
 
-//  records = create_input_records();
+  records = create_input_records();
 
-//  results.clear();
-//  assert(expression->evaluate(&error, records, &results));
-//  assert(results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < results.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    assert(results[i] ==
-//           (test.text_values[row_id] >= test.text2_values[row_id]));
-//  }
+  results.clear();
+  expression->evaluate(records, &results);
+  assert(results.size() == test.table->num_rows());
+  for (size_t i = 0; i < results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert(results[i].value() ==
+           (test.text_values[row_id] >= test.text2_values[row_id]).value());
+  }
 
-//  assert(expression->filter(&error, &records));
-//  count = 0;
-//  for (grnxx::Int i = 1; i < test.text_values.size(); ++i) {
-//    if (test.text_values[i] >= test.text2_values[i]) {
-//      assert(records.get_row_id(count) == i);
-//      ++count;
-//    }
-//  }
-//  assert(records.size() == count);
+  expression->filter(&records);
+  count = 0;
+  for (size_t i = 0; i < test.text_values.size(); ++i) {
+    if ((test.text_values[i] >= test.text2_values[i]).is_true()) {
+      assert(records[count].row_id.value() == grnxx::Int(i).value());
+      ++count;
+    }
+  }
+  assert(records.size() == count);
 }
 
 void test_bitwise_and() {
@@ -2576,29 +2572,28 @@ void test_subexpression() {
     assert(records[i].score.value() == float_value.value());
   }
 
-//  // Test an expression (Ref.(Ref.Text)).
-//  assert(builder->push_column(&error, "Ref"));
-//  assert(builder->begin_subexpression(&error));
-//  assert(builder->push_column(&error, "Ref"));
-//  assert(builder->begin_subexpression(&error));
-//  assert(builder->push_column(&error, "Text"));
-//  assert(builder->end_subexpression(&error));
-//  assert(builder->end_subexpression(&error));
-//  expression = builder->release(&error);
-//  assert(expression);
+  // Test an expression (Ref.(Ref.Text)).
+  builder->push_column("Ref");
+  builder->begin_subexpression();
+  builder->push_column("Ref");
+  builder->begin_subexpression();
+  builder->push_column("Text");
+  builder->end_subexpression();
+  builder->end_subexpression();
+  expression = builder->release();
 
-//  records = create_input_records();
+  records = create_input_records();
 
-//  grnxx::Array<grnxx::Text> text_results;
-//  assert(expression->evaluate(&error, records, &text_results));
-//  assert(text_results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < text_results.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    const auto ref_value = test.ref_values[row_id];
-//    const auto ref_ref_value = test.ref_values[ref_value];
-//    const auto text_value = test.text_values[ref_ref_value];
-//    assert(text_results[i] == text_value);
-//  }
+  grnxx::Array<grnxx::Text> text_results;
+  expression->evaluate(records, &text_results);
+  assert(text_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < text_results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    const auto ref_value = test.ref_values[row_id];
+    const auto ref_ref_value = test.ref_values[ref_value.value()];
+    const auto text_value = test.text_values[ref_ref_value.value()];
+    assert((text_results[i] == text_value).is_true());
+  }
 
   // Test an expression ((Ref.Ref).Int).
   builder->push_column("Ref");
