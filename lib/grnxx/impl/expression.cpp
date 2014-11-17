@@ -1998,10 +1998,10 @@ Node *ExpressionBuilder::create_dereference_node(
           return new DereferenceNode<GeoPoint>(
               std::move(arg1), std::move(arg2));
         }
-//        case TEXT_DATA: {
-//          return new DereferenceNode<Text>(
-//              std::move(arg1), std::move(arg2));
-//        }
+        case TEXT_DATA: {
+          return new DereferenceNode<Text>(
+              std::move(arg1), std::move(arg2));
+        }
 //        case BOOL_VECTOR_DATA: {
 //          return new DereferenceNode<Vector<Bool>>(
 //              std::move(arg1), std::move(arg2));
