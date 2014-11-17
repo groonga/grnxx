@@ -90,16 +90,14 @@ void test_column() {
   assert(!reference_column->is_key());
 //  assert(int_column->num_indexes() == 0);
 
-//  // Create a column named "BoolVectorColumn".
-//  // The column stores Text values.
-//  auto bool_vector_column = table->create_column(&error, "BoolVectorColumn",
-//                                                 grnxx::BOOL_VECTOR_DATA);
-//  assert(bool_vector_column);
-//  assert(bool_vector_column->table() == table);
-//  assert(bool_vector_column->name() == "BoolVectorColumn");
-//  assert(bool_vector_column->data_type() == grnxx::BOOL_VECTOR_DATA);
-//  assert(!bool_vector_column->ref_table());
-//  assert(!bool_vector_column->has_key_attribute());
+  // Create a column named "BoolVector".
+  auto bool_vector_column =
+      table->create_column("BoolVector", grnxx::BOOL_VECTOR_DATA);
+  assert(bool_vector_column->table() == table);
+  assert(bool_vector_column->name() == "BoolVector");
+  assert(bool_vector_column->data_type() == grnxx::BOOL_VECTOR_DATA);
+  assert(!bool_vector_column->reference_table());
+  assert(!bool_vector_column->is_key());
 //  assert(bool_vector_column->num_indexes() == 0);
 
 //  // Create a column named "IntVectorColumn".
@@ -191,9 +189,9 @@ void test_column() {
   assert(datum.type() == grnxx::INT_DATA);
   assert(datum.as_int().is_na());
 
-//  assert(bool_vector_column->get(&error, 1, &datum));
-//  assert(datum.type() == grnxx::BOOL_VECTOR_DATA);
-//  assert(datum.force_bool_vector() == grnxx::BoolVector{});
+  bool_vector_column->get(row_id, &datum);
+  assert(datum.type() == grnxx::BOOL_VECTOR_DATA);
+  assert(datum.as_bool_vector().is_na());
 
 //  assert(int_vector_column->get(&error, 1, &datum));
 //  assert(datum.type() == grnxx::INT_VECTOR_DATA);
@@ -249,9 +247,18 @@ void test_column() {
   assert(datum.type() == grnxx::INT_DATA);
   assert(datum.as_int().value() == row_id.value());
 
+  grnxx::Bool bool_vector_value[] = {
+    grnxx::Bool(true),
+    grnxx::Bool(false),
+    grnxx::Bool(true)
+  };
+  grnxx::BoolVector bool_vector(bool_vector_value, 3);
+  bool_vector_column->set(row_id, bool_vector);
+  bool_vector_column->get(row_id, &datum);
+  assert(datum.type() == grnxx::BOOL_VECTOR_DATA);
+  assert((datum.as_bool_vector() == bool_vector).is_true());
+
 //  // Set and get values.
-//  assert(bool_vector_column->set(&error, 1,
-//                                 grnxx::BoolVector{ true, false, true }));
 //  grnxx::Int int_vector_value[] = { 123, -456, 789 };
 //  assert(int_vector_column->set(&error, 1,
 //                                grnxx::IntVector(int_vector_value, 3)));
@@ -269,11 +276,6 @@ void test_column() {
 //  grnxx::Int ref_vector_value[] = { 1, 1, 1 };
 //  assert(ref_vector_column->set(&error, 1,
 //                                grnxx::IntVector(ref_vector_value, 3)));
-
-//  assert(bool_vector_column->get(&error, 1, &datum));
-//  assert(datum.type() == grnxx::BOOL_VECTOR_DATA);
-//  assert(datum.force_bool_vector() ==
-//         grnxx::BoolVector({ true, false, true }));
 
 //  assert(int_vector_column->get(&error, 1, &datum));
 //  assert(datum.type() == grnxx::INT_VECTOR_DATA);
