@@ -1060,6 +1060,70 @@ void test_bool_vector() {
   assert((na != na).is_na());
 }
 
+void test_int_vector() {
+  grnxx::Int data[] = {
+    grnxx::Int(1),
+    grnxx::Int(2),
+    grnxx::Int(3),
+    grnxx::Int::na(),
+  };
+
+  grnxx::IntVector abc = grnxx::IntVector(data, 3);
+  grnxx::IntVector bcn = grnxx::IntVector(data + 1, 3);
+  grnxx::IntVector empty = grnxx::IntVector::empty();
+  grnxx::IntVector na = grnxx::IntVector::na();
+
+  assert(abc.type() == grnxx::INT_VECTOR_DATA);
+  assert(bcn.type() == grnxx::INT_VECTOR_DATA);
+  assert(empty.type() == grnxx::INT_VECTOR_DATA);
+  assert(na.type() == grnxx::INT_VECTOR_DATA);
+
+  assert(abc[0].value() == 1);
+  assert(abc[1].value() == 2);
+  assert(abc[2].value() == 3);
+
+  assert(bcn[0].value() == 2);
+  assert(bcn[1].value() == 3);
+  assert(bcn[2].is_na());
+
+  assert(abc.size().value() == 3);
+  assert(bcn.size().value() == 3);
+  assert(empty.size().value() == 0);
+  assert(na.size().is_na());
+
+  assert(!abc.is_empty());
+  assert(!abc.is_empty());
+  assert(empty.is_empty());
+  assert(!na.is_empty());
+
+  assert(!abc.is_na());
+  assert(!bcn.is_na());
+  assert(!empty.is_na());
+  assert(na.is_na());
+
+  assert((abc == abc).is_true());
+  assert((abc == bcn).is_false());
+  assert((abc == empty).is_false());
+  assert((abc == na).is_na());
+  assert((bcn == bcn).is_true());
+  assert((bcn == empty).is_false());
+  assert((bcn == na).is_na());
+  assert((empty == empty).is_true());
+  assert((empty == na).is_na());
+  assert((na == na).is_na());
+
+  assert((abc != abc).is_false());
+  assert((abc != bcn).is_true());
+  assert((abc != empty).is_true());
+  assert((abc != na).is_na());
+  assert((bcn != bcn).is_false());
+  assert((bcn != empty).is_true());
+  assert((bcn != na).is_na());
+  assert((empty != empty).is_false());
+  assert((empty != na).is_na());
+  assert((na != na).is_na());
+}
+
 int main() {
   test_bool();
   test_int();
@@ -1067,5 +1131,6 @@ int main() {
   test_geo_point();
   test_text();
   test_bool_vector();
+  test_int_vector();
   return 0;
 }
