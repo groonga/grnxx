@@ -1,152 +1,223 @@
-#include "grnxx/impl/column/column_vector_int.hpp"
+#include "grnxx/impl/column/vector/int.hpp"
 
-#include "grnxx/cursor.hpp"
+#include <cstring>
+
 #include "grnxx/impl/db.hpp"
 #include "grnxx/impl/table.hpp"
+//#include "grnxx/impl/index.hpp"
 
 namespace grnxx {
 namespace impl {
 
-bool Column<Vector<Int>>::set(Error *error, Int row_id,
-                              const Datum &datum) {
-  if (datum.type() != INT_VECTOR_DATA) {
-    GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Wrong data type");
-    return false;
-  }
-  if (!table_->test_row(error, row_id)) {
-    return false;
-  }
-  Vector<Int> value = datum.force_int_vector();
-  if (value.size() == 0) {
-    headers_[row_id] = 0;
-    return true;
-  }
-  if (ref_table_) {
-    for (Int i = 0; i < value.size(); ++i) {
-      if (!ref_table_->test_row(error, value[i])) {
-        return false;
-      }
+Column<Vector<Int>>::Column(Table *table,
+                            const String &name,
+                            const ColumnOptions &options)
+    : ColumnBase(table, name, INT_VECTOR_DATA),
+      headers_(),
+      bodies_() {
+  if (!options.reference_table_name.is_empty()) {
+    reference_table_ = table->_db()->find_table(options.reference_table_name);
+    if (!reference_table_) {
+      throw "Table not found";  // TODO
     }
   }
-  Int offset = bodies_.size();
-  if (value.size() < 0xFFFF) {
-    if (!bodies_.resize(error, offset + value.size())) {
-      return false;
-    }
-    for (Int i = 0; i < value.size(); ++i) {
-      bodies_[offset + i] = value[i];
-    }
-    headers_[row_id] = (offset << 16) | value.size();
-  } else {
-    // The size of a long vector is stored in front of the body.
-    if (!bodies_.resize(error, offset + 1 + value.size())) {
-      return false;
-    }
-    bodies_[offset] = value.size();
-    for (Int i = 0; i < value.size(); ++i) {
-      bodies_[offset + 1 + i] = value[i];
-    }
-    headers_[row_id] = (offset << 16) | 0xFFFF;
-  }
-  return true;
-}
-
-bool Column<Vector<Int>>::get(Error *error, Int row_id, Datum *datum) const {
-  if (!table_->test_row(error, row_id)) {
-    return false;
-  }
-  *datum = get(row_id);
-  return true;
-}
-
-unique_ptr<Column<Vector<Int>>> Column<Vector<Int>>::create(
-    Error *error,
-    Table *table,
-    const StringCRef &name,
-    const ColumnOptions &options) {
-  unique_ptr<Column> column(new (nothrow) Column);
-  if (!column) {
-    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
-    return nullptr;
-  }
-  if (!column->initialize_base(error, table, name, INT_VECTOR_DATA, options)) {
-    return nullptr;
-  }
-  if (!column->headers_.resize(error, table->max_row_id() + 1, 0)) {
-    return nullptr;
-  }
-  if (column->ref_table()) {
-    if (!column->ref_table_->append_referrer_column(error, column.get())) {
-      return nullptr;
-    }
-  }
-  return column;
 }
 
 Column<Vector<Int>>::~Column() {}
 
-bool Column<Vector<Int>>::set_default_value(Error *error, Int row_id) {
-  if (row_id >= headers_.size()) {
-    if (!headers_.resize(error, row_id + 1)) {
-      return false;
+void Column<Vector<Int>>::set(Int row_id, const Datum &datum) {
+  Vector<Int> new_value = parse_datum(datum);
+  if (!table_->test_row(row_id)) {
+    throw "Invalid row ID";  // TODO
+  }
+  if (new_value.is_na()) {
+    unset(row_id);
+    return;
+  }
+  if (reference_table_) {
+    size_t new_value_size = new_value.size().value();
+    for (size_t i = 0; i < new_value_size; ++i) {
+      if (!reference_table_->test_row(new_value[i])) {
+        throw "Invalid reference";  // TODO
+      }
     }
   }
-  headers_[row_id] = 0;
-  return true;
+  Vector<Int> old_value = get(row_id);
+  if ((old_value == new_value).is_true()) {
+    return;
+  }
+  if (!old_value.is_na()) {
+    // TODO: Remove the old value from indexes.
+//    for (size_t i = 0; i < num_indexes(); ++i) {
+//      indexes_[i]->remove(row_id, old_value);
+//    }
+  }
+  size_t value_id = row_id.value();
+  if (value_id >= headers_.size()) {
+    headers_.resize(value_id + 1, na_header());
+  }
+  // TODO: Insert the new value into indexes.
+//  for (size_t i = 0; i < num_indexes(); ++i) try {
+//    indexes_[i]->insert(row_id, datum)) {
+//  } catch (...) {
+//    for (size_t j = 0; j < i; ++i) {
+//      indexes_[j]->remove(row_id, datum);
+//    }
+//    throw;
+//  }
+  // TODO: Error handling.
+  size_t offset = bodies_.size();
+  size_t size = new_value.size().value();
+  uint64_t header;
+  if (size < 0xFFFF) {
+    bodies_.resize(offset + size);
+    std::memcpy(&bodies_[offset], new_value.data(), sizeof(Int) * size);
+    header = (offset << 16) | size;
+  } else {
+    // The size of a long vector is stored in front of the body.
+    if ((offset % sizeof(uint64_t)) != 0) {
+      offset += sizeof(uint64_t) - (offset % sizeof(uint64_t));
+    }
+    bodies_.resize(offset + sizeof(uint64_t) + size);
+    *reinterpret_cast<uint64_t *>(&bodies_[offset]) = size;
+    std::memcpy(&bodies_[offset + sizeof(uint64_t)],
+                new_value.data(), sizeof(Int) * size);
+    header = (offset << 16) | 0xFFFF;
+  }
+  headers_[value_id] = header;
+}
+
+void Column<Vector<Int>>::get(Int row_id, Datum *datum) const {
+  size_t value_id = row_id.value();
+  if (value_id >= headers_.size()) {
+    *datum = Vector<Int>::na();
+  } else {
+    // TODO
+    *datum = get(row_id);
+  }
+}
+
+bool Column<Vector<Int>>::contains(const Datum &datum) const {
+  // TODO: Use an index if exists.
+  Vector<Int> value = parse_datum(datum);
+  if (value.is_na()) {
+    for (size_t i = 0; i < headers_.size(); ++i) {
+      if (headers_[i] == na_header()) {
+        return true;
+      }
+    }
+  } else {
+    for (size_t i = 0; i < headers_.size(); ++i) {
+      // TODO: Improve this.
+      if ((get(Int(i)) == value).is_true()) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+Int Column<Vector<Int>>::find_one(const Datum &datum) const {
+  // TODO: Use an index if exists.
+  Vector<Int> value = parse_datum(datum);
+  if (value.is_na()) {
+    for (size_t i = 0; i < headers_.size(); ++i) {
+      if (headers_[i] == na_header()) {
+        return Int(i);
+      }
+    }
+  } else {
+    for (size_t i = 0; i < headers_.size(); ++i) {
+      // TODO: Improve this.
+      if ((get(Int(i)) == value).is_true()) {
+        return Int(i);
+      }
+    }
+  }
+  return Int::na();
 }
 
 void Column<Vector<Int>>::unset(Int row_id) {
-  headers_[row_id] = 0;
-}
-
-void Column<Vector<Int>>::clear_references(Int row_id) {
-  auto cursor = table_->create_cursor(nullptr);
-  if (!cursor) {
-    // Error.
-    return;
-  }
-  Array<Record> records;
-  for ( ; ; ) {
-    auto result = cursor->read(nullptr, 1024, &records);
-    if (!result.is_ok) {
-      // Error.
-      return;
-    } else if (result.count == 0) {
-      return;
-    }
-    for (Int i = 0; i < records.size(); ++i) {
-      Int value_row_id = records.get_row_id(i);
-      Int value_size = static_cast<Int>(headers_[value_row_id] & 0xFFFF);
-      if (value_size == 0) {
-        continue;
-      }
-      Int value_offset = static_cast<Int>(headers_[value_row_id] >> 16);
-      if (value_size >= 0xFFFF) {
-        value_size = bodies_[value_offset];
-        ++value_offset;
-      }
-      Int count = 0;
-      for (Int j = 0; j < value_size; ++j) {
-        if (bodies_[value_offset + j] != row_id) {
-          bodies_[value_offset + count] = bodies_[value_offset + j];
-          ++count;
-        }
-      }
-      if (count < value_size) {
-        if (count == 0) {
-          headers_[value_row_id] = 0;
-        } else if (count < 0xFFFF) {
-          headers_[value_row_id] = count | (value_offset << 16);
-        } else {
-          bodies_[value_offset - 1] = count;
-        }
-      }
-    }
-    records.clear();
+  Vector<Int> value = get(row_id);
+  if (!value.is_na()) {
+    // TODO: Update indexes if exist.
+//    for (size_t i = 0; i < num_indexes(); ++i) {
+//      indexes_[i]->remove(row_id, value);
+//    }
+    headers_[row_id.value()] = na_header();
   }
 }
 
-Column<Vector<Int>>::Column() : ColumnBase(), headers_(), bodies_() {}
+void Column<Vector<Int>>::read(ArrayCRef<Record> records,
+                               ArrayRef<Vector<Int>> values) const {
+  if (records.size() != values.size()) {
+    throw "Data size conflict";  // TODO
+  }
+  for (size_t i = 0; i < records.size(); ++i) {
+    values.set(i, get(records[i].row_id));
+  }
+}
+
+Vector<Int> Column<Vector<Int>>::parse_datum(const Datum &datum) {
+  switch (datum.type()) {
+    case NA_DATA: {
+      return Vector<Int>::na();
+    }
+    case INT_VECTOR_DATA: {
+      return datum.as_int_vector();
+    }
+    default: {
+      throw "Wrong data type";  // TODO
+    }
+  }
+}
+
+//void Column<Vector<Int>>::clear_references(Int row_id) {
+//  auto cursor = table_->create_cursor(nullptr);
+//  if (!cursor) {
+//    // Error.
+//    return;
+//  }
+//  Array<Record> records;
+//  for ( ; ; ) {
+//    auto result = cursor->read(nullptr, 1024, &records);
+//    if (!result.is_ok) {
+//      // Error.
+//      return;
+//    } else if (result.count == 0) {
+//      return;
+//    }
+//    for (Int i = 0; i < records.size(); ++i) {
+//      Int value_row_id = records.get_row_id(i);
+//      Int value_size = static_cast<Int>(headers_[value_row_id] & 0xFFFF);
+//      if (value_size == 0) {
+//        continue;
+//      }
+//      Int value_offset = static_cast<Int>(headers_[value_row_id] >> 16);
+//      if (value_size >= 0xFFFF) {
+//        value_size = bodies_[value_offset];
+//        ++value_offset;
+//      }
+//      Int count = 0;
+//      for (Int j = 0; j < value_size; ++j) {
+//        if (bodies_[value_offset + j] != row_id) {
+//          bodies_[value_offset + count] = bodies_[value_offset + j];
+//          ++count;
+//        }
+//      }
+//      if (count < value_size) {
+//        if (count == 0) {
+//          headers_[value_row_id] = 0;
+//        } else if (count < 0xFFFF) {
+//          headers_[value_row_id] = count | (value_offset << 16);
+//        } else {
+//          bodies_[value_offset - 1] = count;
+//        }
+//      }
+//    }
+//    records.clear();
+//  }
+//}
 
 }  // namespace impl
 }  // namespace grnxx
