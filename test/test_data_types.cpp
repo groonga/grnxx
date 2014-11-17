@@ -1001,7 +1001,7 @@ void test_bool_vector() {
     grnxx::Bool(true),
     grnxx::Bool(false),
     grnxx::Bool(true),
-    grnxx::Bool::na(),
+    grnxx::Bool::na()
   };
 
   grnxx::BoolVector tft = grnxx::BoolVector(data, 3);
@@ -1065,7 +1065,7 @@ void test_int_vector() {
     grnxx::Int(1),
     grnxx::Int(2),
     grnxx::Int(3),
-    grnxx::Int::na(),
+    grnxx::Int::na()
   };
 
   grnxx::IntVector abc = grnxx::IntVector(data, 3);
