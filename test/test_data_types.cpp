@@ -1124,6 +1124,70 @@ void test_int_vector() {
   assert((na != na).is_na());
 }
 
+void test_float_vector() {
+  grnxx::Float data[] = {
+    grnxx::Float(1.25),
+    grnxx::Float(2.50),
+    grnxx::Float(6.25),
+    grnxx::Float::na()
+  };
+
+  grnxx::FloatVector abc = grnxx::FloatVector(data, 3);
+  grnxx::FloatVector bcn = grnxx::FloatVector(data + 1, 3);
+  grnxx::FloatVector empty = grnxx::FloatVector::empty();
+  grnxx::FloatVector na = grnxx::FloatVector::na();
+
+  assert(abc.type() == grnxx::FLOAT_VECTOR_DATA);
+  assert(bcn.type() == grnxx::FLOAT_VECTOR_DATA);
+  assert(empty.type() == grnxx::FLOAT_VECTOR_DATA);
+  assert(na.type() == grnxx::FLOAT_VECTOR_DATA);
+
+  assert(abc[0].value() == 1.25);
+  assert(abc[1].value() == 2.50);
+  assert(abc[2].value() == 6.25);
+
+  assert(bcn[0].value() == 2.50);
+  assert(bcn[1].value() == 6.25);
+  assert(bcn[2].is_na());
+
+  assert(abc.size().value() == 3);
+  assert(bcn.size().value() == 3);
+  assert(empty.size().value() == 0);
+  assert(na.size().is_na());
+
+  assert(!abc.is_empty());
+  assert(!abc.is_empty());
+  assert(empty.is_empty());
+  assert(!na.is_empty());
+
+  assert(!abc.is_na());
+  assert(!bcn.is_na());
+  assert(!empty.is_na());
+  assert(na.is_na());
+
+  assert((abc == abc).is_true());
+  assert((abc == bcn).is_false());
+  assert((abc == empty).is_false());
+  assert((abc == na).is_na());
+  assert((bcn == bcn).is_true());
+  assert((bcn == empty).is_false());
+  assert((bcn == na).is_na());
+  assert((empty == empty).is_true());
+  assert((empty == na).is_na());
+  assert((na == na).is_na());
+
+  assert((abc != abc).is_false());
+  assert((abc != bcn).is_true());
+  assert((abc != empty).is_true());
+  assert((abc != na).is_na());
+  assert((bcn != bcn).is_false());
+  assert((bcn != empty).is_true());
+  assert((bcn != na).is_na());
+  assert((empty != empty).is_false());
+  assert((empty != na).is_na());
+  assert((na != na).is_na());
+}
+
 void test_geo_point_vector() {
   grnxx::GeoPoint data[] = {
     { grnxx::Float(43.068661), grnxx::Float(141.350755) },  // Sapporo.
@@ -1204,6 +1268,7 @@ int main() {
   test_text();
   test_bool_vector();
   test_int_vector();
+  test_float_vector();
   test_geo_point_vector();
   return 0;
 }
