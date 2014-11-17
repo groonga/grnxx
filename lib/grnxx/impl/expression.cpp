@@ -246,6 +246,7 @@ class ConstantNode<Text> : public TypedNode<Text> {
         value_() {
     value_.assign(value.data(), value.size().value());
   }
+  ~ConstantNode() = default;
 
   NodeType node_type() const {
     return CONSTANT_NODE;
@@ -276,6 +277,7 @@ class ConstantNode<Vector<T>> : public TypedNode<Vector<T>> {
       value_[i] = value[i];
     }
   }
+  ~ConstantNode() = default;
 
   NodeType node_type() const {
     return CONSTANT_NODE;
@@ -814,6 +816,7 @@ class LogicalOrNode : public BinaryNode<Bool, Bool, Bool> {
   LogicalOrNode(std::unique_ptr<Node> &&arg1, std::unique_ptr<Node> &&arg2)
       : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)),
         temp_records_() {}
+  ~LogicalOrNode() = default;
 
   void filter(ArrayCRef<Record> input_records,
               ArrayRef<Record> *output_records);
@@ -913,6 +916,7 @@ class GenericBinaryNode : public BinaryNode<U, V, W> {
   GenericBinaryNode(std::unique_ptr<Node> &&arg1, std::unique_ptr<Node> &&arg2)
       : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)),
         operator_() {}
+  ~GenericBinaryNode() = default;
 
   void evaluate(ArrayCRef<Record> records, ArrayRef<Value> results);
 
@@ -941,6 +945,7 @@ class GenericBinaryNode<T, Bool, V, W> : public BinaryNode<Bool, V, W> {
   GenericBinaryNode(std::unique_ptr<Node> &&arg1, std::unique_ptr<Node> &&arg2)
       : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)),
         operator_() {}
+  ~GenericBinaryNode() = default;
 
   void filter(ArrayCRef<Record> input_records,
               ArrayRef<Record> *output_records);
@@ -989,6 +994,7 @@ class GenericBinaryNode<T, Float, V, W> : public BinaryNode<Float, V, W> {
   GenericBinaryNode(std::unique_ptr<Node> &&arg1, std::unique_ptr<Node> &&arg2)
       : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)),
         operator_() {}
+  ~GenericBinaryNode() = default;
 
   void adjust(ArrayRef<Record> records);
   void evaluate(ArrayCRef<Record> records, ArrayRef<Value> results);
@@ -1240,6 +1246,7 @@ class DereferenceNode : public BinaryNode<T, Int, T> {
                   std::unique_ptr<Node> &&arg2)
       : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)),
         temp_records_() {}
+  ~DereferenceNode() = default;
 
   const Table *reference_table() const {
     return this->arg1_->reference_table();
@@ -1281,6 +1288,7 @@ class VectorDereferenceNode : public BinaryNode<Vector<T>, Vector<Int>, T> {
         temp_records_(),
         result_pools_(),
         block_size_(options.block_size) {}
+  ~VectorDereferenceNode() = default;
 
   const Table *reference_table() const {
     return this->arg1_->reference_table();
