@@ -1859,22 +1859,22 @@ Node *ExpressionBuilder::create_binary_node(
           return create_equality_test_node<Text>(
             operator_type, std::move(arg1), std::move(arg2));
         }
-//        case BOOL_VECTOR_DATA: {
-//          return create_equality_test_node<Vector<Bool>>(
-//            operator_type, std::move(arg1), std::move(arg2));
-//        }
-//        case INT_VECTOR_DATA: {
-//          return create_equality_test_node<Vector<Int>>(
-//            operator_type, std::move(arg1), std::move(arg2));
-//        }
-//        case FLOAT_VECTOR_DATA: {
-//          return create_equality_test_node<Vector<Float>>(
-//            operator_type, std::move(arg1), std::move(arg2));
-//        }
-//        case GEO_POINT_VECTOR_DATA: {
-//          return create_equality_test_node<Vector<GeoPoint>>(
-//            operator_type, std::move(arg1), std::move(arg2));
-//        }
+        case BOOL_VECTOR_DATA: {
+          return create_equality_test_node<Vector<Bool>>(
+            operator_type, std::move(arg1), std::move(arg2));
+        }
+        case INT_VECTOR_DATA: {
+          return create_equality_test_node<Vector<Int>>(
+            operator_type, std::move(arg1), std::move(arg2));
+        }
+        case FLOAT_VECTOR_DATA: {
+          return create_equality_test_node<Vector<Float>>(
+            operator_type, std::move(arg1), std::move(arg2));
+        }
+        case GEO_POINT_VECTOR_DATA: {
+          return create_equality_test_node<Vector<GeoPoint>>(
+            operator_type, std::move(arg1), std::move(arg2));
+        }
 //        case TEXT_VECTOR_DATA: {
 //          return create_equality_test_node<Vector<Text>>(
 //            operator_type, std::move(arg1), std::move(arg2));

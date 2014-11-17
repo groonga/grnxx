@@ -1236,117 +1236,117 @@ void test_equal() {
   }
   assert(records.size() == count);
 
-//  // Test an expression (BoolVector == BoolVector2).
-//  assert(builder->push_column(&error, "BoolVector"));
-//  assert(builder->push_column(&error, "BoolVector2"));
-//  assert(builder->push_operator(&error, grnxx::EQUAL_OPERATOR));
-//  expression = builder->release(&error);
-//  assert(expression);
+  // Test an expression (BoolVector == BoolVector2).
+  builder->push_column("BoolVector");
+  builder->push_column("BoolVector2");
+  builder->push_operator(grnxx::EQUAL_OPERATOR);
+  expression = builder->release();
 
-//  records = create_input_records();
+  records = create_input_records();
 
-//  results.clear();
-//  assert(expression->evaluate(&error, records, &results));
-//  assert(results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < results.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    assert(results[i] == (test.bool_vector_values[row_id] ==
-//                          test.bool_vector2_values[row_id]));
-//  }
+  results.clear();
+  expression->evaluate(records, &results);
+  assert(results.size() == test.table->num_rows());
+  for (size_t i = 0; i < results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert(results[i].value() == (test.bool_vector_values[row_id] ==
+                                  test.bool_vector2_values[row_id]).value());
+  }
 
-//  assert(expression->filter(&error, &records));
-//  count = 0;
-//  for (grnxx::Int i = 1; i < test.bool_vector_values.size(); ++i) {
-//    if (test.bool_vector_values[i] == test.bool_vector2_values[i]) {
-//      assert(records.get_row_id(count) == i);
-//      ++count;
-//    }
-//  }
-//  assert(records.size() == count);
+  expression->filter(&records);
+  count = 0;
+  for (size_t i = 0; i < test.bool_vector_values.size(); ++i) {
+    if ((test.bool_vector_values[i] ==
+         test.bool_vector2_values[i]).is_true()) {
+      assert(records[count].row_id.value() == grnxx::Int(i).value());
+      ++count;
+    }
+  }
+  assert(records.size() == count);
 
-//  // Test an expression (IntVector == IntVector2).
-//  assert(builder->push_column(&error, "IntVector"));
-//  assert(builder->push_column(&error, "IntVector2"));
-//  assert(builder->push_operator(&error, grnxx::EQUAL_OPERATOR));
-//  expression = builder->release(&error);
-//  assert(expression);
+  // Test an expression (IntVector == IntVector2).
+  builder->push_column("IntVector");
+  builder->push_column("IntVector2");
+  builder->push_operator(grnxx::EQUAL_OPERATOR);
+  expression = builder->release();
 
-//  records = create_input_records();
+  records = create_input_records();
 
-//  results.clear();
-//  assert(expression->evaluate(&error, records, &results));
-//  assert(results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < results.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    assert(results[i] == (test.int_vector_values[row_id] ==
-//                          test.int_vector2_values[row_id]));
-//  }
+  results.clear();
+  expression->evaluate(records, &results);
+  assert(results.size() == test.table->num_rows());
+  for (size_t i = 0; i < results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert(results[i].value() == (test.int_vector_values[row_id] ==
+                                  test.int_vector2_values[row_id]).value());
+  }
 
-//  assert(expression->filter(&error, &records));
-//  count = 0;
-//  for (grnxx::Int i = 1; i < test.int_vector_values.size(); ++i) {
-//    if (test.int_vector_values[i] == test.int_vector2_values[i]) {
-//      assert(records.get_row_id(count) == i);
-//      ++count;
-//    }
-//  }
-//  assert(records.size() == count);
+  expression->filter(&records);
+  count = 0;
+  for (size_t i = 0; i < test.int_vector_values.size(); ++i) {
+    if ((test.int_vector_values[i] == test.int_vector2_values[i]).is_true()) {
+      assert(records[count].row_id.value() == grnxx::Int(i).value());
+      ++count;
+    }
+  }
+  assert(records.size() == count);
 
-//  // Test an expression (FloatVector == FloatVector2).
-//  assert(builder->push_column(&error, "FloatVector"));
-//  assert(builder->push_column(&error, "FloatVector2"));
-//  assert(builder->push_operator(&error, grnxx::EQUAL_OPERATOR));
-//  expression = builder->release(&error);
-//  assert(expression);
+  // Test an expression (FloatVector == FloatVector2).
+  builder->push_column("FloatVector");
+  builder->push_column("FloatVector2");
+  builder->push_operator(grnxx::EQUAL_OPERATOR);
+  expression = builder->release();
 
-//  records = create_input_records();
+  records = create_input_records();
 
-//  results.clear();
-//  assert(expression->evaluate(&error, records, &results));
-//  assert(results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < results.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    assert(results[i] == (test.float_vector_values[row_id] ==
-//                          test.float_vector2_values[row_id]));
-//  }
+  results.clear();
+  expression->evaluate(records, &results);
+  assert(results.size() == test.table->num_rows());
+  for (size_t i = 0; i < results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert(results[i].value() == (test.float_vector_values[row_id] ==
+                                  test.float_vector2_values[row_id]).value());
+  }
 
-//  assert(expression->filter(&error, &records));
-//  count = 0;
-//  for (grnxx::Int i = 1; i < test.float_vector_values.size(); ++i) {
-//    if (test.float_vector_values[i] == test.float_vector2_values[i]) {
-//      assert(records.get_row_id(count) == i);
-//      ++count;
-//    }
-//  }
-//  assert(records.size() == count);
+  expression->filter(&records);
+  count = 0;
+  for (size_t i = 0; i < test.float_vector_values.size(); ++i) {
+    if ((test.float_vector_values[i] ==
+         test.float_vector2_values[i]).is_true()) {
+      assert(records[count].row_id.value() == grnxx::Int(i).value());
+      ++count;
+    }
+  }
+  assert(records.size() == count);
 
-//  // Test an expression (GeoPointVector == GeoPointVector2).
-//  assert(builder->push_column(&error, "GeoPointVector"));
-//  assert(builder->push_column(&error, "GeoPointVector2"));
-//  assert(builder->push_operator(&error, grnxx::EQUAL_OPERATOR));
-//  expression = builder->release(&error);
-//  assert(expression);
+  // Test an expression (GeoPointVector == GeoPointVector2).
+  builder->push_column("GeoPointVector");
+  builder->push_column("GeoPointVector2");
+  builder->push_operator(grnxx::EQUAL_OPERATOR);
+  expression = builder->release();
 
-//  records = create_input_records();
+  records = create_input_records();
 
-//  results.clear();
-//  assert(expression->evaluate(&error, records, &results));
-//  assert(results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < results.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    assert(results[i] == (test.geo_point_vector_values[row_id] ==
-//                          test.geo_point_vector2_values[row_id]));
-//  }
+  results.clear();
+  expression->evaluate(records, &results);
+  assert(results.size() == test.table->num_rows());
+  for (size_t i = 0; i < results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert(results[i].value() ==
+           (test.geo_point_vector_values[row_id] ==
+            test.geo_point_vector2_values[row_id]).value());
+  }
 
-//  assert(expression->filter(&error, &records));
-//  count = 0;
-//  for (grnxx::Int i = 1; i < test.geo_point_vector_values.size(); ++i) {
-//    if (test.geo_point_vector_values[i] == test.geo_point_vector2_values[i]) {
-//      assert(records.get_row_id(count) == i);
-//      ++count;
-//    }
-//  }
-//  assert(records.size() == count);
+  expression->filter(&records);
+  count = 0;
+  for (size_t i = 0; i < test.geo_point_vector_values.size(); ++i) {
+    if ((test.geo_point_vector_values[i] ==
+         test.geo_point_vector2_values[i]).is_true()) {
+      assert(records[count].row_id.value() == grnxx::Int(i).value());
+      ++count;
+    }
+  }
+  assert(records.size() == count);
 
 //  // Test an expression (TextVector == TextVector2).
 //  assert(builder->push_column(&error, "TextVector"));
@@ -1516,117 +1516,117 @@ void test_not_equal() {
   }
   assert(records.size() == count);
 
-//  // Test an expression (BoolVector != BoolVector2).
-//  assert(builder->push_column(&error, "BoolVector"));
-//  assert(builder->push_column(&error, "BoolVector2"));
-//  assert(builder->push_operator(&error, grnxx::NOT_EQUAL_OPERATOR));
-//  expression = builder->release(&error);
-//  assert(expression);
+  // Test an expression (BoolVector != BoolVector2).
+  builder->push_column("BoolVector");
+  builder->push_column("BoolVector2");
+  builder->push_operator(grnxx::NOT_EQUAL_OPERATOR);
+  expression = builder->release();
 
-//  records = create_input_records();
+  records = create_input_records();
 
-//  results.clear();
-//  assert(expression->evaluate(&error, records, &results));
-//  assert(results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < results.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    assert(results[i] == (test.bool_vector_values[row_id] !=
-//                          test.bool_vector2_values[row_id]));
-//  }
+  results.clear();
+  expression->evaluate(records, &results);
+  assert(results.size() == test.table->num_rows());
+  for (size_t i = 0; i < results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert(results[i].value() == (test.bool_vector_values[row_id] !=
+                                  test.bool_vector2_values[row_id]).value());
+  }
 
-//  assert(expression->filter(&error, &records));
-//  count = 0;
-//  for (grnxx::Int i = 1; i < test.bool_vector_values.size(); ++i) {
-//    if (test.bool_vector_values[i] != test.bool_vector2_values[i]) {
-//      assert(records.get_row_id(count) == i);
-//      ++count;
-//    }
-//  }
-//  assert(records.size() == count);
+  expression->filter(&records);
+  count = 0;
+  for (size_t i = 0; i < test.bool_vector_values.size(); ++i) {
+    if ((test.bool_vector_values[i] !=
+         test.bool_vector2_values[i]).is_true()) {
+      assert(records[count].row_id.value() == grnxx::Int(i).value());
+      ++count;
+    }
+  }
+  assert(records.size() == count);
 
-//  // Test an expression (IntVector != IntVector2).
-//  assert(builder->push_column(&error, "IntVector"));
-//  assert(builder->push_column(&error, "IntVector2"));
-//  assert(builder->push_operator(&error, grnxx::NOT_EQUAL_OPERATOR));
-//  expression = builder->release(&error);
-//  assert(expression);
+  // Test an expression (IntVector != IntVector2).
+  builder->push_column("IntVector");
+  builder->push_column("IntVector2");
+  builder->push_operator(grnxx::NOT_EQUAL_OPERATOR);
+  expression = builder->release();
 
-//  records = create_input_records();
+  records = create_input_records();
 
-//  results.clear();
-//  assert(expression->evaluate(&error, records, &results));
-//  assert(results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < results.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    assert(results[i] == (test.int_vector_values[row_id] !=
-//                          test.int_vector2_values[row_id]));
-//  }
+  results.clear();
+  expression->evaluate(records, &results);
+  assert(results.size() == test.table->num_rows());
+  for (size_t i = 0; i < results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert(results[i].value() == (test.int_vector_values[row_id] !=
+                                  test.int_vector2_values[row_id]).value());
+  }
 
-//  assert(expression->filter(&error, &records));
-//  count = 0;
-//  for (grnxx::Int i = 1; i < test.int_vector_values.size(); ++i) {
-//    if (test.int_vector_values[i] != test.int_vector2_values[i]) {
-//      assert(records.get_row_id(count) == i);
-//      ++count;
-//    }
-//  }
-//  assert(records.size() == count);
+  expression->filter(&records);
+  count = 0;
+  for (size_t i = 0; i < test.int_vector_values.size(); ++i) {
+    if ((test.int_vector_values[i] != test.int_vector2_values[i]).is_true()) {
+      assert(records[count].row_id.value() == grnxx::Int(i).value());
+      ++count;
+    }
+  }
+  assert(records.size() == count);
 
-//  // Test an expression (FloatVector != FloatVector2).
-//  assert(builder->push_column(&error, "FloatVector"));
-//  assert(builder->push_column(&error, "FloatVector2"));
-//  assert(builder->push_operator(&error, grnxx::NOT_EQUAL_OPERATOR));
-//  expression = builder->release(&error);
-//  assert(expression);
+  // Test an expression (FloatVector != FloatVector2).
+  builder->push_column("FloatVector");
+  builder->push_column("FloatVector2");
+  builder->push_operator(grnxx::NOT_EQUAL_OPERATOR);
+  expression = builder->release();
 
-//  records = create_input_records();
+  records = create_input_records();
 
-//  results.clear();
-//  assert(expression->evaluate(&error, records, &results));
-//  assert(results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < results.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    assert(results[i] == (test.float_vector_values[row_id] !=
-//                          test.float_vector2_values[row_id]));
-//  }
+  results.clear();
+  expression->evaluate(records, &results);
+  assert(results.size() == test.table->num_rows());
+  for (size_t i = 0; i < results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert(results[i].value() == (test.float_vector_values[row_id] !=
+                                  test.float_vector2_values[row_id]).value());
+  }
 
-//  assert(expression->filter(&error, &records));
-//  count = 0;
-//  for (grnxx::Int i = 1; i < test.float_vector_values.size(); ++i) {
-//    if (test.float_vector_values[i] != test.float_vector2_values[i]) {
-//      assert(records.get_row_id(count) == i);
-//      ++count;
-//    }
-//  }
-//  assert(records.size() == count);
+  expression->filter(&records);
+  count = 0;
+  for (size_t i = 0; i < test.float_vector_values.size(); ++i) {
+    if ((test.float_vector_values[i] !=
+         test.float_vector2_values[i]).is_true()) {
+      assert(records[count].row_id.value() == grnxx::Int(i).value());
+      ++count;
+    }
+  }
+  assert(records.size() == count);
 
-//  // Test an expression (GeoPointVector != GeoPointVector2).
-//  assert(builder->push_column(&error, "GeoPointVector"));
-//  assert(builder->push_column(&error, "GeoPointVector2"));
-//  assert(builder->push_operator(&error, grnxx::NOT_EQUAL_OPERATOR));
-//  expression = builder->release(&error);
-//  assert(expression);
+  // Test an expression (GeoPointVector != GeoPointVector2).
+  builder->push_column("GeoPointVector");
+  builder->push_column("GeoPointVector2");
+  builder->push_operator(grnxx::NOT_EQUAL_OPERATOR);
+  expression = builder->release();
 
-//  records = create_input_records();
+  records = create_input_records();
 
-//  results.clear();
-//  assert(expression->evaluate(&error, records, &results));
-//  assert(results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < results.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    assert(results[i] == (test.geo_point_vector_values[row_id] !=
-//                          test.geo_point_vector2_values[row_id]));
-//  }
+  results.clear();
+  expression->evaluate(records, &results);
+  assert(results.size() == test.table->num_rows());
+  for (size_t i = 0; i < results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert(results[i].value() ==
+           (test.geo_point_vector_values[row_id] !=
+            test.geo_point_vector2_values[row_id]).value());
+  }
 
-//  assert(expression->filter(&error, &records));
-//  count = 0;
-//  for (grnxx::Int i = 1; i < test.geo_point_vector_values.size(); ++i) {
-//    if (test.geo_point_vector_values[i] != test.geo_point_vector2_values[i]) {
-//      assert(records.get_row_id(count) == i);
-//      ++count;
-//    }
-//  }
-//  assert(records.size() == count);
+  expression->filter(&records);
+  count = 0;
+  for (size_t i = 0; i < test.geo_point_vector_values.size(); ++i) {
+    if ((test.geo_point_vector_values[i] !=
+         test.geo_point_vector2_values[i]).is_true()) {
+      assert(records[count].row_id.value() == grnxx::Int(i).value());
+      ++count;
+    }
+  }
+  assert(records.size() == count);
 
 //  // Test an expression (TextVector != TextVector2).
 //  assert(builder->push_column(&error, "TextVector"));
