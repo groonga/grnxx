@@ -2083,22 +2083,22 @@ Node *ExpressionBuilder::create_dereference_node(
           return new DereferenceNode<Text>(
               std::move(arg1), std::move(arg2));
         }
-//        case BOOL_VECTOR_DATA: {
-//          return new DereferenceNode<Vector<Bool>>(
-//              std::move(arg1), std::move(arg2));
-//        }
-//        case INT_VECTOR_DATA: {
-//          return new DereferenceNode<Vector<Int>>(
-//              std::move(arg1), std::move(arg2));
-//        }
-//        case FLOAT_VECTOR_DATA: {
-//          return new DereferenceNode<Vector<Float>>(
-//              std::move(arg1), std::move(arg2));
-//        }
-//        case GEO_POINT_VECTOR_DATA: {
-//          return new DereferenceNode<Vector<GeoPoint>>(
-//              std::move(arg1), std::move(arg2));
-//        }
+        case BOOL_VECTOR_DATA: {
+          return new DereferenceNode<Vector<Bool>>(
+              std::move(arg1), std::move(arg2));
+        }
+        case INT_VECTOR_DATA: {
+          return new DereferenceNode<Vector<Int>>(
+              std::move(arg1), std::move(arg2));
+        }
+        case FLOAT_VECTOR_DATA: {
+          return new DereferenceNode<Vector<Float>>(
+              std::move(arg1), std::move(arg2));
+        }
+        case GEO_POINT_VECTOR_DATA: {
+          return new DereferenceNode<Vector<GeoPoint>>(
+              std::move(arg1), std::move(arg2));
+        }
 //        case TEXT_VECTOR_DATA: {
 //          return new DereferenceNode<Vector<Text>>(
 //              std::move(arg1), std::move(arg2));
