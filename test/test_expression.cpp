@@ -2386,131 +2386,127 @@ void test_modulus() {
   }
 }
 
-//void test_subscript() {
-//  grnxx::Error error;
+void test_subscript() {
+  // Create an object for building expressions.
+  auto builder = grnxx::ExpressionBuilder::create(test.table);
 
-//  // Create an object for building expressions.
-//  auto builder = grnxx::ExpressionBuilder::create(&error, test.table);
-//  assert(builder);
+  // Test an expression (BoolVector[Int]).
+  builder->push_column("BoolVector");
+  builder->push_column("Int");
+  builder->push_operator(grnxx::SUBSCRIPT_OPERATOR);
+  auto expression = builder->release();
 
-//  // Test an expression (BoolVector[Int]).
-//  assert(builder->push_column(&error, "BoolVector"));
-//  assert(builder->push_column(&error, "Int"));
-//  assert(builder->push_operator(&error, grnxx::SUBSCRIPT_OPERATOR));
-//  auto expression = builder->release(&error);
-//  assert(expression);
+  auto records = create_input_records();
 
-//  auto records = create_input_records();
+  grnxx::Array<grnxx::Bool> bool_results;
+  expression->evaluate(records, &bool_results);
+  assert(bool_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < bool_results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    const auto int_value = test.int_values[row_id];
+    const auto &bool_vector_value = test.bool_vector_values[row_id];
+    if ((int_value < bool_vector_value.size()).is_true()) {
+      assert(bool_results[i].value() == bool_vector_value[int_value].value());
+    } else {
+      assert(bool_results[i].is_na());
+    }
+  }
 
-//  grnxx::Array<grnxx::Bool> bool_results;
-//  assert(expression->evaluate(&error, records, &bool_results));
-//  assert(bool_results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < bool_results.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    const auto int_value = test.int_values[row_id];
-//    const auto &bool_vector_value = test.bool_vector_values[row_id];
-//    if (int_value < bool_vector_value.size()) {
-//      assert(bool_results[i] == bool_vector_value[int_value]);
-//    } else {
-//      assert(bool_results[i] == 0);
-//    }
-//  }
+  expression->filter(&records);
+  size_t count = 0;
+  for (size_t i = 0; i < test.int_values.size(); ++i) {
+    const auto int_value = test.int_values[i];
+    const auto &bool_vector_value = test.bool_vector_values[i];
+    if ((int_value < bool_vector_value.size()).is_true()) {
+      if (bool_vector_value[int_value].is_true()) {
+        assert(records[count].row_id.value() == grnxx::Int(i).value());
+        ++count;
+      }
+    }
+  }
+  assert(records.size() == count);
 
-//  assert(expression->filter(&error, &records));
-//  grnxx::Int count = 0;
-//  for (grnxx::Int i = 1; i < test.int_values.size(); ++i) {
-//    const auto int_value = test.int_values[i];
-//    const auto &bool_vector_value = test.bool_vector_values[i];
-//    if (int_value < bool_vector_value.size()) {
-//      if (bool_vector_value[int_value]) {
-//        assert(records.get_row_id(count) == i);
-//        ++count;
-//      }
-//    }
-//  }
-//  assert(records.size() == count);
+  // Test an expression (IntVector[Int]).
+  builder->push_column("IntVector");
+  builder->push_column("Int");
+  builder->push_operator(grnxx::SUBSCRIPT_OPERATOR);
+  expression = builder->release();
 
-//  // Test an expression (IntVector[Int]).
-//  assert(builder->push_column(&error, "IntVector"));
-//  assert(builder->push_column(&error, "Int"));
-//  assert(builder->push_operator(&error, grnxx::SUBSCRIPT_OPERATOR));
-//  expression = builder->release(&error);
-//  assert(expression);
+  records = create_input_records();
 
-//  records = create_input_records();
+  grnxx::Array<grnxx::Int> int_results;
+  expression->evaluate(records, &int_results);
+  assert(int_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < int_results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    const auto int_value = test.int_values[row_id];
+    const auto &int_vector_value = test.int_vector_values[row_id];
+    if ((int_value < int_vector_value.size()).is_true()) {
+      assert(int_results[i].value() == int_vector_value[int_value].value());
+    } else {
+      assert(int_results[i].is_na());
+    }
+  }
 
-//  grnxx::Array<grnxx::Int> int_results;
-//  assert(expression->evaluate(&error, records, &int_results));
-//  assert(int_results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < int_results.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    const auto int_value = test.int_values[row_id];
-//    const auto &int_vector_value = test.int_vector_values[row_id];
-//    if (int_value < int_vector_value.size()) {
-//      assert(int_results[i] == int_vector_value[int_value]);
-//    } else {
-//      assert(int_results[i] == 0);
-//    }
-//  }
+  // Test an expression (FloatVector[Int]).
+  builder->push_column("FloatVector");
+  builder->push_column("Int");
+  builder->push_operator(grnxx::SUBSCRIPT_OPERATOR);
+  expression = builder->release();
 
-//  // Test an expression (FloatVector[Int]).
-//  assert(builder->push_column(&error, "FloatVector"));
-//  assert(builder->push_column(&error, "Int"));
-//  assert(builder->push_operator(&error, grnxx::SUBSCRIPT_OPERATOR));
-//  expression = builder->release(&error);
-//  assert(expression);
+  records = create_input_records();
 
-//  records = create_input_records();
+  grnxx::Array<grnxx::Float> float_results;
+  expression->evaluate(records, &float_results);
+  assert(float_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < float_results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    const auto int_value = test.int_values[row_id];
+    const auto &float_vector_value = test.float_vector_values[row_id];
+    if ((int_value < float_vector_value.size()).is_true()) {
+      assert(float_results[i].value() ==
+             float_vector_value[int_value].value());
+    } else {
+      assert(float_results[i].is_na());
+    }
+  }
 
-//  grnxx::Array<grnxx::Float> float_results;
-//  assert(expression->evaluate(&error, records, &float_results));
-//  assert(float_results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < float_results.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    const auto int_value = test.int_values[row_id];
-//    const auto &float_vector_value = test.float_vector_values[row_id];
-//    if (int_value < float_vector_value.size()) {
-//      assert(float_results[i] == float_vector_value[int_value]);
-//    } else {
-//      assert(float_results[i] == 0);
-//    }
-//  }
+  expression->adjust(&records);
+  assert(records.size() == test.table->num_rows());
+  for (size_t i = 0; i < records.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    const auto int_value = test.int_values[row_id];
+    const auto &float_vector_value = test.float_vector_values[row_id];
+    if ((int_value < float_vector_value.size()).is_true()) {
+      assert(records[i].score.value() ==
+             float_vector_value[int_value].value());
+    } else {
+      assert(records[i].score.is_na());
+    }
+  }
 
-//  assert(expression->adjust(&error, &records));
-//  assert(records.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < records.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    const auto int_value = test.int_values[row_id];
-//    const auto &float_vector_value = test.float_vector_values[row_id];
-//    if (int_value < float_vector_value.size()) {
-//      assert(records.get_score(i) == float_vector_value[int_value]);
-//    } else {
-//      assert(records.get_score(i) == 0.0);
-//    }
-//  }
+  // Test an expression (GeoPointVector[Int]).
+  builder->push_column("GeoPointVector");
+  builder->push_column("Int");
+  builder->push_operator(grnxx::SUBSCRIPT_OPERATOR);
+  expression = builder->release();
 
-//  // Test an expression (GeoPointVector[Int]).
-//  assert(builder->push_column(&error, "GeoPointVector"));
-//  assert(builder->push_column(&error, "Int"));
-//  assert(builder->push_operator(&error, grnxx::SUBSCRIPT_OPERATOR));
-//  expression = builder->release(&error);
-//  assert(expression);
+  records = create_input_records();
 
-//  records = create_input_records();
-
-//  grnxx::Array<grnxx::GeoPoint> geo_point_results;
-//  assert(expression->evaluate(&error, records, &geo_point_results));
-//  assert(geo_point_results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < geo_point_results.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    const auto int_value = test.int_values[row_id];
-//    const auto &geo_point_vector_value = test.geo_point_vector_values[row_id];
-//    if (int_value < geo_point_vector_value.size()) {
-//      assert(geo_point_results[i] == geo_point_vector_value[int_value]);
-//    } else {
-//      assert(geo_point_results[i] == grnxx::GeoPoint(0, 0));
-//    }
-//  }
+  grnxx::Array<grnxx::GeoPoint> geo_point_results;
+  expression->evaluate(records, &geo_point_results);
+  assert(geo_point_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < geo_point_results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    const auto int_value = test.int_values[row_id];
+    const auto &geo_point_vector_value = test.geo_point_vector_values[row_id];
+    if ((int_value < geo_point_vector_value.size()).is_true()) {
+      assert((geo_point_results[i] ==
+              geo_point_vector_value[int_value]).is_true());
+    } else {
+      assert(geo_point_results[i].is_na());
+    }
+  }
 
 //  // Test an expression (TextVector[Int]).
 //  assert(builder->push_column(&error, "TextVector"));
@@ -2534,7 +2530,7 @@ void test_modulus() {
 //      assert(text_results[i] == grnxx::StringCRef(""));
 //    }
 //  }
-//}
+}
 
 void test_subexpression() {
   // Create an object for building expressions.
@@ -2907,7 +2903,7 @@ int main() {
   test_multiplication();
   test_division();
   test_modulus();
-//  test_subscript();
+  test_subscript();
 
   // Subexpression.
   test_subexpression();
