@@ -12,10 +12,77 @@ template <typename T> class Vector;
 template <>
 class Vector<Float> {
  public:
-  // TODO
+  Vector() = default;
+  ~Vector() = default;
+
+  constexpr Vector(const Vector &) = default;
+  Vector &operator=(const Vector &) = default;
+
+  constexpr Vector(const Float *data, size_t size)
+      : data_(data),
+        size_(size) {}
+  explicit constexpr Vector(NA) : data_(nullptr), size_(NA()) {}
+
+  const Float &operator[](size_t i) const {
+    return data_[i];
+  }
+  constexpr const Float *data() const {
+    return data_;
+  }
+  constexpr Int size() const {
+    return size_;
+  }
+
+  constexpr bool is_empty() const {
+    return size_.value() == 0;
+  }
+  constexpr bool is_na() const {
+    return size_.is_na();
+  }
+
+  // TODO: The behavior of N/A in vector is not fixed yet (#107).
+  Bool operator==(const Vector &rhs) const {
+    Bool has_equal_size = (size_ == rhs.size_);
+    if (has_equal_size.is_true()) {
+      size_t size = size_.value();
+      for (size_t i = 0; i < size; ++i) {
+        if ((data_[i].value() != rhs.data_[i].value()) &&
+            (!data_[i].is_na() || !rhs.data_[i].is_na())) {
+          return Bool(false);
+        }
+      }
+    }
+    return has_equal_size;
+  }
+  // TODO: The behavior of N/A in vector is not fixed yet (#107).
+  Bool operator!=(const Vector &rhs) const {
+    Bool has_not_equal_size = (size_ != rhs.size_);
+    if (has_not_equal_size.is_false()) {
+      size_t size = size_.value();
+      for (size_t i = 0; i < size; ++i) {
+        if ((data_[i].value() != rhs.data_[i].value()) &&
+            (!data_[i].is_na() || !rhs.data_[i].is_na())) {
+          return Bool(true);
+        }
+      }
+    }
+    return has_not_equal_size;
+  }
+
   static constexpr DataType type() {
     return FLOAT_VECTOR_DATA;
   }
+
+  static constexpr Vector empty() {
+    return Vector(nullptr, 0);
+  }
+  static constexpr Vector na() {
+    return Vector(NA());
+  }
+
+ private:
+  const Float *data_;
+  Int size_;
 };
 
 using FloatVector = Vector<Float>;
