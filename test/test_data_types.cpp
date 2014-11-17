@@ -1124,6 +1124,78 @@ void test_int_vector() {
   assert((na != na).is_na());
 }
 
+void test_geo_point_vector() {
+  grnxx::GeoPoint data[] = {
+    { grnxx::Float(43.068661), grnxx::Float(141.350755) },  // Sapporo.
+    { grnxx::Float(35.681382), grnxx::Float(139.766084) },  // Tokyo.
+    { grnxx::Float(34.702485), grnxx::Float(135.495951) },  // Osaka.
+    grnxx::GeoPoint::na()
+  };
+
+  grnxx::GeoPointVector sto = grnxx::GeoPointVector(data, 3);
+  grnxx::GeoPointVector ton = grnxx::GeoPointVector(data + 1, 3);
+  grnxx::GeoPointVector empty = grnxx::GeoPointVector::empty();
+  grnxx::GeoPointVector na = grnxx::GeoPointVector::na();
+
+  assert(sto.type() == grnxx::GEO_POINT_VECTOR_DATA);
+  assert(ton.type() == grnxx::GEO_POINT_VECTOR_DATA);
+  assert(empty.type() == grnxx::GEO_POINT_VECTOR_DATA);
+  assert(na.type() == grnxx::GEO_POINT_VECTOR_DATA);
+
+  assert(sto[0].latitude() == data[0].latitude());
+  assert(sto[1].latitude() == data[1].latitude());
+  assert(sto[2].latitude() == data[2].latitude());
+
+  assert(ton[0].latitude() == data[1].latitude());
+  assert(ton[1].latitude() == data[2].latitude());
+  assert(ton[2].latitude() == data[3].latitude());
+
+  assert(sto[0].longitude() == data[0].longitude());
+  assert(sto[1].longitude() == data[1].longitude());
+  assert(sto[2].longitude() == data[2].longitude());
+
+  assert(ton[0].longitude() == data[1].longitude());
+  assert(ton[1].longitude() == data[2].longitude());
+  assert(ton[2].longitude() == data[3].longitude());
+
+  assert(sto.size().value() == 3);
+  assert(ton.size().value() == 3);
+  assert(empty.size().value() == 0);
+  assert(na.size().is_na());
+
+  assert(!sto.is_empty());
+  assert(!sto.is_empty());
+  assert(empty.is_empty());
+  assert(!na.is_empty());
+
+  assert(!sto.is_na());
+  assert(!ton.is_na());
+  assert(!empty.is_na());
+  assert(na.is_na());
+
+  assert((sto == sto).is_true());
+  assert((sto == ton).is_false());
+  assert((sto == empty).is_false());
+  assert((sto == na).is_na());
+  assert((ton == ton).is_true());
+  assert((ton == empty).is_false());
+  assert((ton == na).is_na());
+  assert((empty == empty).is_true());
+  assert((empty == na).is_na());
+  assert((na == na).is_na());
+
+  assert((sto != sto).is_false());
+  assert((sto != ton).is_true());
+  assert((sto != empty).is_true());
+  assert((sto != na).is_na());
+  assert((ton != ton).is_false());
+  assert((ton != empty).is_true());
+  assert((ton != na).is_na());
+  assert((empty != empty).is_false());
+  assert((empty != na).is_na());
+  assert((na != na).is_na());
+}
+
 int main() {
   test_bool();
   test_int();
@@ -1132,5 +1204,6 @@ int main() {
   test_text();
   test_bool_vector();
   test_int_vector();
+  test_geo_point_vector();
   return 0;
 }
