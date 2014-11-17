@@ -482,62 +482,73 @@ void test_constant() try {
     assert((text_results[i] == grnxx::Text("ABC")).is_true());
   }
 
-//  // Test an expression ({ true, false, true }).
-//  assert(builder->push_constant(
-//      &error, grnxx::BoolVector({ true, false, true })));
-//  expression = builder->release(&error);
-//  assert(expression);
+  // Test an expression ({ true, false, true }).
+  grnxx::Bool bool_values[] = {
+    grnxx::Bool(true),
+    grnxx::Bool(false),
+    grnxx::Bool(true)
+  };
+  grnxx::BoolVector bool_vector(bool_values, 3);
+  builder->push_constant(bool_vector);
+  expression = builder->release();
 
-//  grnxx::Array<grnxx::BoolVector> bool_vector_results;
-//  assert(expression->evaluate(&error, records, &bool_vector_results));
-//  assert(bool_vector_results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < bool_vector_results.size(); ++i) {
-//    assert(bool_vector_results[i] ==
-//           grnxx::BoolVector({ true, false, true }));
-//  }
+  grnxx::Array<grnxx::BoolVector> bool_vector_results;
+  expression->evaluate(records, &bool_vector_results);
+  assert(bool_vector_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < bool_vector_results.size(); ++i) {
+    assert((bool_vector_results[i] == bool_vector).is_true());
+  }
 
-//  // Test an expression ({ 123, -456, 789 }).
-//  grnxx::Int int_values[] = { 123, -456, 789 };
-//  assert(builder->push_constant(&error, grnxx::IntVector(int_values, 3)));
-//  expression = builder->release(&error);
-//  assert(expression);
+  // Test an expression ({ 123, -456, 789 }).
+  grnxx::Int int_values[] = {
+    grnxx::Int(123),
+    grnxx::Int(-456),
+    grnxx::Int(789)
+  };
+  grnxx::IntVector int_vector(int_values, 3);
+  builder->push_constant(int_vector);
+  expression = builder->release();
 
-//  grnxx::Array<grnxx::IntVector> int_vector_results;
-//  assert(expression->evaluate(&error, records, &int_vector_results));
-//  assert(int_vector_results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < int_vector_results.size(); ++i) {
-//    assert(int_vector_results[i] == grnxx::IntVector(int_values, 3));
-//  }
+  grnxx::Array<grnxx::IntVector> int_vector_results;
+  expression->evaluate(records, &int_vector_results);
+  assert(int_vector_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < int_vector_results.size(); ++i) {
+    assert((int_vector_results[i] == int_vector).is_true());
+  }
 
-//  // Test an expression ({ 1.25, -4.5, 6.75 }).
-//  grnxx::Float float_values[] = { 1.25, -4.5, 6.75 };
-//  assert(builder->push_constant(&error, grnxx::FloatVector(float_values, 3)));
-//  expression = builder->release(&error);
-//  assert(expression);
+  // Test an expression ({ 1.25, -4.5, 6.75 }).
+  grnxx::Float float_values[] = {
+    grnxx::Float(1.25),
+    grnxx::Float(-4.5),
+    grnxx::Float(6.75)
+  };
+  grnxx::FloatVector float_vector(float_values, 3);
+  builder->push_constant(float_vector);
+  expression = builder->release();
 
-//  grnxx::Array<grnxx::FloatVector> float_vector_results;
-//  assert(expression->evaluate(&error, records, &float_vector_results));
-//  assert(float_vector_results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < float_vector_results.size(); ++i) {
-//    assert(float_vector_results[i] == grnxx::FloatVector(float_values, 3));
-//  }
+  grnxx::Array<grnxx::FloatVector> float_vector_results;
+  expression->evaluate(records, &float_vector_results);
+  assert(float_vector_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < float_vector_results.size(); ++i) {
+    assert((float_vector_results[i] == float_vector).is_true());
+  }
 
-//  // Test an expression ({{ 123, 456 }, { 789, 123 }, { 456, 789 }}).
-//  grnxx::GeoPoint geo_point_values[] = {
-//    { 123, 456 }, { 789, 123 }, { 456, 789 }
-//  };
-//  assert(builder->push_constant(
-//      &error, grnxx::GeoPointVector(geo_point_values, 3)));
-//  expression = builder->release(&error);
-//  assert(expression);
+  // Test an expression ({ Sapporo, Tokyo, Osaka }).
+  grnxx::GeoPoint geo_point_values[] = {
+    { grnxx::Float(43.068661), grnxx::Float(141.350755) },  // Sapporo.
+    { grnxx::Float(35.681382), grnxx::Float(139.766084) },  // Tokyo.
+    { grnxx::Float(34.702485), grnxx::Float(135.495951) },  // Osaka.
+  };
+  grnxx::GeoPointVector geo_point_vector(geo_point_values, 3);
+  builder->push_constant(geo_point_vector);
+  expression = builder->release();
 
-//  grnxx::Array<grnxx::GeoPointVector> geo_point_vector_results;
-//  assert(expression->evaluate(&error, records, &geo_point_vector_results));
-//  assert(geo_point_vector_results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < geo_point_vector_results.size(); ++i) {
-//    assert(geo_point_vector_results[i] ==
-//           grnxx::GeoPointVector(geo_point_values, 3));
-//  }
+  grnxx::Array<grnxx::GeoPointVector> geo_point_vector_results;
+  expression->evaluate(records, &geo_point_vector_results);
+  assert(geo_point_vector_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < geo_point_vector_results.size(); ++i) {
+    assert((geo_point_vector_results[i] == geo_point_vector).is_true());
+  }
 
 //  // Test an expression ({ "abc", "DEF", "ghi" }).
 //  grnxx::Text text_values[] = { "abc", "DEF", "ghi" };
