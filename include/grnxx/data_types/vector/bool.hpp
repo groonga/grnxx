@@ -21,6 +21,8 @@ class Vector<Bool> {
   constexpr Vector(const Bool *data, size_t size) : data_(data), size_(size) {}
   explicit constexpr Vector(NA) : data_(nullptr), size_(NA()) {}
 
+  // TODO: The argument should be Int.
+  //       Also, N/A should be returned for an invalid "i".
   const Bool &operator[](size_t i) const {
     return data_[i];
   }
