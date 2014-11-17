@@ -1265,6 +1265,83 @@ void DereferenceNode<T>::evaluate(ArrayCRef<Record> records,
   this->arg2_->evaluate(temp_records_.ref(0, records.size()), results);
 }
 
+// ---- VectorDereferenceNode ----
+
+template <typename T>
+class VectorDereferenceNode : public BinaryNode<Vector<T>, Vector<Int>, T> {
+ public:
+  using Value = Vector<T>;
+  using Arg1 = Vector<Int>;
+  using Arg2 = T;
+
+  VectorDereferenceNode(std::unique_ptr<Node> &&arg1,
+                        std::unique_ptr<Node> &&arg2,
+                        const ExpressionOptions &options)
+      : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)),
+        temp_records_(),
+        result_pools_(),
+        block_size_(options.block_size) {}
+
+  const Table *reference_table() const {
+    return this->arg1_->reference_table();
+  }
+
+  void evaluate(ArrayCRef<Record> records, ArrayRef<Value> results);
+
+ private:
+  Array<Record> temp_records_;
+  Array<Array<Arg2>> result_pools_;
+  size_t block_size_;
+};
+
+template <typename T>
+void VectorDereferenceNode<T>::evaluate(ArrayCRef<Record> records,
+                                        ArrayRef<Value> results) {
+  this->fill_arg1_values(records);
+  size_t total_size = 0;
+  for (size_t i = 0; i < records.size(); ++i) {
+    if (!this->arg1_values_[i].is_na()) {
+      total_size += this->arg1_values_[i].size().value();
+    }
+  }
+  temp_records_.resize(block_size_);
+  Array<Arg2> result_pool;
+  result_pool.resize(total_size);
+  size_t offset = 0;
+  size_t count = 0;
+  for (size_t i = 0; i < records.size(); ++i) {
+    if (this->arg1_values_[i].is_na()) {
+      continue;
+    }
+    Float score = records[i].score;
+    size_t value_size = this->arg1_values_[i].size().value();
+    for (size_t j = 0; j < value_size; ++j) {
+      temp_records_[count] = Record(this->arg1_values_[i][j], score);
+      ++count;
+      if (count >= block_size_) {
+        this->arg2_->evaluate(temp_records_, result_pool.ref(offset, count));
+        offset += count;
+        count = 0;
+      }
+    }
+  }
+  if (count != 0) {
+    this->arg2_->evaluate(temp_records_.ref(0, count),
+                          result_pool.ref(offset, count));
+  }
+  offset = 0;
+  for (size_t i = 0; i < records.size(); ++i) {
+    if (this->arg1_values_[i].is_na()) {
+      results[i] = Value::na();
+    } else {
+      size_t size = this->arg1_values_[i].size().value();
+      results[i] = Value(&result_pool[offset], size);
+      offset += size;
+    }
+  }
+  result_pools_.push_back(std::move(result_pool));
+}
+
 }  // namespace expression
 
 using namespace expression;
@@ -2108,33 +2185,33 @@ Node *ExpressionBuilder::create_dereference_node(
         }
       }
     }
-//    case INT_VECTOR_DATA: {
-//      switch (arg2->data_type()) {
-//        case BOOL_DATA: {
-//          return new DereferenceVectorNode<Bool>(
-//              std::move(arg1), std::move(arg2), options);
-//        }
-//        case INT_DATA: {
-//          return new DereferenceVectorNode<Int>(
-//              std::move(arg1), std::move(arg2), options);
-//        }
-//        case FLOAT_DATA: {
-//          return new DereferenceVectorNode<Float>(
-//              std::move(arg1), std::move(arg2), options);
-//        }
-//        case GEO_POINT_DATA: {
-//          return new DereferenceVectorNode<GeoPoint>(
-//              std::move(arg1), std::move(arg2), options);
-//        }
+    case INT_VECTOR_DATA: {
+      switch (arg2->data_type()) {
+        case BOOL_DATA: {
+          return new VectorDereferenceNode<Bool>(
+              std::move(arg1), std::move(arg2), options);
+        }
+        case INT_DATA: {
+          return new VectorDereferenceNode<Int>(
+              std::move(arg1), std::move(arg2), options);
+        }
+        case FLOAT_DATA: {
+          return new VectorDereferenceNode<Float>(
+              std::move(arg1), std::move(arg2), options);
+        }
+        case GEO_POINT_DATA: {
+          return new VectorDereferenceNode<GeoPoint>(
+              std::move(arg1), std::move(arg2), options);
+        }
 //        case TEXT_DATA: {
-//          return new DereferenceVectorNode<Text>(
+//          return new VectorDereferenceNode<Text>(
 //              std::move(arg1), std::move(arg2), options);
 //        }
-//        default: {
-//          throw "Invalid data type";  // TODO
-//        }
-//      }
-//    }
+        default: {
+          throw "Invalid data type";  // TODO
+        }
+      }
+    }
     default: {
       throw "Invalid data type";  // TODO
     }
