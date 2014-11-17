@@ -19,6 +19,9 @@ class GeoPoint {
   GeoPoint() = default;
   ~GeoPoint() = default;
 
+  GeoPoint(const GeoPoint &) = default;
+  GeoPoint &operator=(const GeoPoint &) = default;
+
   // NOTE: The following implementation assumes that Int::na()::value() returns
   //       a value less than min_latitude/longitude() or greater than
   //       max_latitude/longitude().
