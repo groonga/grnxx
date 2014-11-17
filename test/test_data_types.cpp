@@ -996,11 +996,76 @@ void test_text() {
   assert((na.ends_with(na)).is_na());
 }
 
+void test_bool_vector() {
+  grnxx::Bool data[] = {
+    grnxx::Bool(true),
+    grnxx::Bool(false),
+    grnxx::Bool(true),
+    grnxx::Bool::na(),
+  };
+
+  grnxx::BoolVector tft = grnxx::BoolVector(data, 3);
+  grnxx::BoolVector ftn = grnxx::BoolVector(data + 1, 3);
+  grnxx::BoolVector empty = grnxx::BoolVector::empty();
+  grnxx::BoolVector na = grnxx::BoolVector::na();
+
+  assert(tft.type() == grnxx::BOOL_VECTOR_DATA);
+  assert(ftn.type() == grnxx::BOOL_VECTOR_DATA);
+  assert(empty.type() == grnxx::BOOL_VECTOR_DATA);
+  assert(na.type() == grnxx::BOOL_VECTOR_DATA);
+
+  assert(tft[0].is_true());
+  assert(tft[1].is_false());
+  assert(tft[2].is_true());
+
+  assert(ftn[0].is_false());
+  assert(ftn[1].is_true());
+  assert(ftn[2].is_na());
+
+  assert(tft.size().value() == 3);
+  assert(ftn.size().value() == 3);
+  assert(empty.size().value() == 0);
+  assert(na.size().is_na());
+
+  assert(!tft.is_empty());
+  assert(!tft.is_empty());
+  assert(empty.is_empty());
+  assert(!na.is_empty());
+
+  assert(!tft.is_na());
+  assert(!ftn.is_na());
+  assert(!empty.is_na());
+  assert(na.is_na());
+
+  assert((tft == tft).is_true());
+  assert((tft == ftn).is_false());
+  assert((tft == empty).is_false());
+  assert((tft == na).is_na());
+  assert((ftn == ftn).is_true());
+  assert((ftn == empty).is_false());
+  assert((ftn == na).is_na());
+  assert((empty == empty).is_true());
+  assert((empty == na).is_na());
+  assert((na == na).is_na());
+
+  assert((tft != tft).is_false());
+  assert((tft != ftn).is_true());
+  assert((tft != empty).is_true());
+  assert((tft != na).is_na());
+  assert((ftn != ftn).is_false());
+  assert((ftn != empty).is_true());
+  assert((ftn != na).is_na());
+  assert((empty != empty).is_false());
+  assert((empty != na).is_na());
+  assert((na != na).is_na());
+}
+
 int main() {
   test_bool();
   test_int();
   test_float();
   test_geo_point();
   test_text();
+  test_bool_vector();
   return 0;
 }
