@@ -53,7 +53,7 @@ class Column<Vector<Bool>> : public ColumnBase {
     if (size < 0xFFFF) {
       return Vector<Bool>(&bodies_[offset], size);
     } else {
-      // The size of a long text is stored in front of the body.
+      // The size of a long vector is stored in front of the body.
       size = *reinterpret_cast<const uint64_t *>(&bodies_[offset]);
       return Vector<Bool>(&bodies_[offset + sizeof(uint64_t)], size);
     }
