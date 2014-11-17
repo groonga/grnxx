@@ -199,10 +199,10 @@ std::unique_ptr<ColumnBase> ColumnBase::create(
       column.reset(new impl::Column<Text>(table, name, options));
       break;
     }
-//    case BOOL_VECTOR_DATA: {
-//      column.reset(new impl::Column<Vector<Bool>>(table, name, options));
-//      break;
-//    }
+    case BOOL_VECTOR_DATA: {
+      column.reset(new impl::Column<Vector<Bool>>(table, name, options));
+      break;
+    }
 //    case INT_VECTOR_DATA: {
 //      column.reset(new impl::Column<Vector<Int>>(table, name, options));
 //      break;

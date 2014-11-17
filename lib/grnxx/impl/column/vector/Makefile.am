@@ -8,9 +8,9 @@ lib_LTLIBRARIES = libgrnxx_impl_column_vector.la
 
 libgrnxx_impl_column_vector_la_LDFLAGS = @AM_LTLDFLAGS@
 
-libgrnxx_impl_column_vector_la_SOURCES =
+libgrnxx_impl_column_vector_la_SOURCES =	\
+	bool.cpp
 
-#	bool.cpp				\
 #	float.cpp				\
 #	geo_point.cpp				\
 #	int.cpp					\
