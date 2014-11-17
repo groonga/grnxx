@@ -805,20 +805,20 @@ void test_column() {
     assert(ref_results[i].value() == test.ref_values[row_id].value());
   }
 
-//  // Test an expression (RefVector).
-//  assert(builder->push_column(&error, "RefVector"));
-//  expression = builder->release(&error);
-//  assert(expression);
+  // Test an expression (RefVector).
+  builder->push_column("RefVector");
+  expression = builder->release();
 
-//  records = create_input_records();
+  records = create_input_records();
 
-//  grnxx::Array<grnxx::IntVector> ref_vector_results;
-//  assert(expression->evaluate(&error, records, &ref_vector_results));
-//  assert(ref_vector_results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < ref_vector_results.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    assert(ref_vector_results[i] == test.ref_vector_values[row_id]);
-//  }
+  grnxx::Array<grnxx::IntVector> ref_vector_results;
+  expression->evaluate(records, &ref_vector_results);
+  assert(ref_vector_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < ref_vector_results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert((ref_vector_results[i] ==
+            test.ref_vector_values[row_id]).is_true());
+  }
 }
 
 void test_logical_not() {
