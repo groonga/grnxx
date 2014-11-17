@@ -50,12 +50,24 @@ class Expression : public ExpressionInterface {
   void evaluate(ArrayCRef<Record> records, Array<Float> *results);
   void evaluate(ArrayCRef<Record> records, Array<GeoPoint> *results);
   void evaluate(ArrayCRef<Record> records, Array<Text> *results);
+  void evaluate(ArrayCRef<Record> records, Array<Vector<Bool>> *results);
+  void evaluate(ArrayCRef<Record> records, Array<Vector<Int>> *results);
+  void evaluate(ArrayCRef<Record> records, Array<Vector<Float>> *results);
+  void evaluate(ArrayCRef<Record> records, Array<Vector<GeoPoint>> *results);
+  // TODO
+//  void evaluate(ArrayCRef<Record> records, Array<Vector<Text>> *results);
 
   void evaluate(ArrayCRef<Record> records, ArrayRef<Bool> results);
   void evaluate(ArrayCRef<Record> records, ArrayRef<Int> results);
   void evaluate(ArrayCRef<Record> records, ArrayRef<Float> results);
   void evaluate(ArrayCRef<Record> records, ArrayRef<GeoPoint> results);
   void evaluate(ArrayCRef<Record> records, ArrayRef<Text> results);
+  void evaluate(ArrayCRef<Record> records, ArrayRef<Vector<Bool>> results);
+  void evaluate(ArrayCRef<Record> records, ArrayRef<Vector<Int>> results);
+  void evaluate(ArrayCRef<Record> records, ArrayRef<Vector<Float>> results);
+  void evaluate(ArrayCRef<Record> records, ArrayRef<Vector<GeoPoint>> results);
+  // TODO
+//  void evaluate(ArrayCRef<Record> records, ArrayRef<Vector<Text>> results);
 
  private:
   const Table *table_;

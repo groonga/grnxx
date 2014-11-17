@@ -261,6 +261,36 @@ class ConstantNode<Text> : public TypedNode<Text> {
   String value_;
 };
 
+// TODO: Vector will have ownership in future.
+template <typename T>
+class ConstantNode<Vector<T>> : public TypedNode<Vector<T>> {
+ public:
+  using Value = Vector<T>;
+
+  explicit ConstantNode(const Value &value)
+      : TypedNode<Value>(),
+        value_() {
+    size_t value_size = value.size().value();
+    value_.resize(value_size);
+    for (size_t i = 0; i < value_size; ++i) {
+      value_[i] = value[i];
+    }
+  }
+
+  NodeType node_type() const {
+    return CONSTANT_NODE;
+  }
+
+  void evaluate(ArrayCRef<Record> records, ArrayRef<Value> results) {
+    for (size_t i = 0; i < records.size(); ++i) {
+      results[i] = Value(value_.data(), value_.size());
+    }
+  }
+
+ private:
+  Array<T> value_;
+};
+
 // -- RowIDNode --
 
 class RowIDNode : public TypedNode<Int> {
@@ -1348,6 +1378,32 @@ void Expression::evaluate(ArrayCRef<Record> records,
 }
 
 void Expression::evaluate(ArrayCRef<Record> records,
+                          Array<Vector<Bool>> *results) {
+  _evaluate(records, results);
+}
+
+void Expression::evaluate(ArrayCRef<Record> records,
+                          Array<Vector<Int>> *results) {
+  _evaluate(records, results);
+}
+
+void Expression::evaluate(ArrayCRef<Record> records,
+                          Array<Vector<Float>> *results) {
+  _evaluate(records, results);
+}
+
+void Expression::evaluate(ArrayCRef<Record> records,
+                          Array<Vector<GeoPoint>> *results) {
+  _evaluate(records, results);
+}
+
+// TODO
+//void Expression::evaluate(ArrayCRef<Record> records,
+//                          Array<Vector<Text>> *results) {
+//  _evaluate(records, results);
+//}
+
+void Expression::evaluate(ArrayCRef<Record> records,
                           ArrayRef<Bool> results) {
   _evaluate(records, results);
 }
@@ -1371,6 +1427,31 @@ void Expression::evaluate(ArrayCRef<Record> records,
                           ArrayRef<Text> results) {
   _evaluate(records, results);
 }
+
+void Expression::evaluate(ArrayCRef<Record> records,
+                          ArrayRef<Vector<Bool>> results) {
+  _evaluate(records, results);
+}
+
+void Expression::evaluate(ArrayCRef<Record> records,
+                          ArrayRef<Vector<Int>> results) {
+  _evaluate(records, results);
+}
+
+void Expression::evaluate(ArrayCRef<Record> records,
+                          ArrayRef<Vector<Float>> results) {
+  _evaluate(records, results);
+}
+
+void Expression::evaluate(ArrayCRef<Record> records,
+                          ArrayRef<Vector<GeoPoint>> results) {
+  _evaluate(records, results);
+}
+
+//void Expression::evaluate(ArrayCRef<Record> records,
+//                          ArrayRef<Vector<Text>> results) {
+//  _evaluate(records, results);
+//}
 
 template <typename T>
 void Expression::_evaluate(ArrayCRef<Record> records, Array<T> *results) {
@@ -1588,18 +1669,18 @@ Node *ExpressionBuilder::create_constant_node(
     case TEXT_DATA: {
       return new ConstantNode<Text>(datum.as_text());
     }
-//    case BOOL_VECTOR_DATA: {
-//      return new ConstantNode<Vector<Bool>>(datum.as_bool_vector());
-//    }
-//    case INT_VECTOR_DATA: {
-//      return new ConstantNode<Vector<Int>>(datum.as_int_vector());
-//    }
-//    case FLOAT_VECTOR_DATA: {
-//      return new ConstantNode<Vector<Float>>(datum.as_float_vector());
-//    }
-//    case GEO_POINT_VECTOR_DATA: {
-//      return new ConstantNode<Vector<GeoPoint>>(datum.as_geo_point_vector());
-//    }
+    case BOOL_VECTOR_DATA: {
+      return new ConstantNode<Vector<Bool>>(datum.as_bool_vector());
+    }
+    case INT_VECTOR_DATA: {
+      return new ConstantNode<Vector<Int>>(datum.as_int_vector());
+    }
+    case FLOAT_VECTOR_DATA: {
+      return new ConstantNode<Vector<Float>>(datum.as_float_vector());
+    }
+    case GEO_POINT_VECTOR_DATA: {
+      return new ConstantNode<Vector<GeoPoint>>(datum.as_geo_point_vector());
+    }
 //    case TEXT_VECTOR_DATA: {
 //      return new ConstantNode<Vector<Text>>(datum.as_text_vector());
 //    }
