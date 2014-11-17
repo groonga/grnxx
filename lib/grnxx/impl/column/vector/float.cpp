@@ -11,7 +11,7 @@ namespace impl {
 
 Column<Vector<Float>>::Column(Table *table,
                               const String &name,
-                              const ColumnOptions &options)
+                              const ColumnOptions &)
     : ColumnBase(table, name, FLOAT_VECTOR_DATA),
       headers_(),
       bodies_() {}

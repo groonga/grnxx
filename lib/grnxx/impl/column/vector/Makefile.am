@@ -11,9 +11,9 @@ libgrnxx_impl_column_vector_la_LDFLAGS = @AM_LTLDFLAGS@
 libgrnxx_impl_column_vector_la_SOURCES =	\
 	bool.cpp				\
 	float.cpp				\
+	geo_point.cpp				\
 	int.cpp
 
-#	geo_point.cpp				\
 #	text.cpp
 
 libgrnxx_impl_column_vector_includedir = ${includedir}/grnxx/impl/column/vector
