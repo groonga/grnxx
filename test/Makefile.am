@@ -5,13 +5,13 @@ TESTS =				\
 	test_db			\
 	test_table		\
 	test_column		\
-	test_expression
+	test_expression		\
+	test_issue_62
 
 #	test_index		\
 #	test_merger		\
 #	test_sorter		\
-#	test_pipeline		\
-#	test_issue_62
+#	test_pipeline
 
 check_PROGRAMS = $(TESTS)
 
@@ -48,5 +48,5 @@ test_expression_LDADD = $(top_srcdir)/lib/grnxx/libgrnxx.la
 #test_pipeline_SOURCES = test_pipeline.cpp
 #test_pipeline_LDADD = $(top_srcdir)/lib/grnxx/libgrnxx.la
 
-#test_issue_62_SOURCES = test_issue_62.cpp
-#test_issue_62_LDADD = $(top_srcdir)/lib/grnxx/libgrnxx.la
+test_issue_62_SOURCES = test_issue_62.cpp
+test_issue_62_LDADD = $(top_srcdir)/lib/grnxx/libgrnxx.la

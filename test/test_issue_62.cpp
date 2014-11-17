@@ -25,84 +25,69 @@
 #include "grnxx/expression.hpp"
 #include "grnxx/table.hpp"
 
-std::mt19937_64 mersenne_twister;
+std::mt19937_64 rng;
 
 void test_scored_subexpression() {
-  grnxx::Error error;
-
   // Create a database with the default options.
-  auto db = grnxx::open_db(&error, "");
-  assert(db);
+  auto db = grnxx::open_db("");
 
   // Create a table with the default options.
-  auto table = db->create_table(&error, "Table");
-  assert(table);
+  auto table = db->create_table("Table");
 
-  constexpr grnxx::Int NUM_ROWS = 1 << 16;
+  constexpr size_t NUM_ROWS = 1 << 16;
 
   // Generate random values.
   grnxx::Array<grnxx::Float> float_values;
   grnxx::Array<grnxx::Int> ref_values;
-  assert(float_values.resize(&error, NUM_ROWS + 1));
-  assert(ref_values.resize(&error, NUM_ROWS + 1));
-  for (grnxx::Int i = 1; i <= NUM_ROWS; ++i) {
-    float_values[i] = 1.0 * mersenne_twister() / mersenne_twister.max();
-//    ref_values[i] = (mersenne_twister() % NUM_ROWS) + 1;
-    ref_values[i] = 1;
+  float_values.resize(NUM_ROWS);
+  ref_values.resize(NUM_ROWS);
+  for (size_t i = 0; i < NUM_ROWS; ++i) {
+    float_values[i] = grnxx::Float(1.0 * rng() / rng.max());
+//    ref_values[i] = mersenne_twister() % NUM_ROWS;
+    ref_values[i] = grnxx::Int(0);
   }
 
   // Create columns for Float and Int values.
-  auto float_column = table->create_column(&error, "Float", grnxx::FLOAT_DATA);
-  assert(float_column);
+  auto float_column = table->create_column("Float", grnxx::FLOAT_DATA);
   grnxx::ColumnOptions options;
-  options.ref_table_name = "Table";
-  auto ref_column = table->create_column(&error, "Ref", grnxx::INT_DATA,
-                                         options);
-  assert(ref_column);
+  options.reference_table_name = "Table";
+  auto ref_column = table->create_column("Ref", grnxx::INT_DATA, options);
 
   // Store generated values into columns.
-  for (grnxx::Int i = 1; i <= NUM_ROWS; ++i) {
-    grnxx::Int row_id;
-    assert(table->insert_row(&error, grnxx::NULL_ROW_ID,
-                             grnxx::Datum(), &row_id));
-    assert(row_id == i);
-    assert(float_column->set(&error, row_id, float_values[i]));
+  for (size_t i = 0; i < NUM_ROWS; ++i) {
+    grnxx::Int row_id = table->insert_row();
+    assert(row_id.value() == grnxx::Int(i).value());
+    float_column->set(row_id, float_values[i]);
   }
-  for (grnxx::Int i = 1; i <= NUM_ROWS; ++i) {
-    assert(ref_column->set(&error, i, ref_values[i]));
+  for (size_t i = 0; i < NUM_ROWS; ++i) {
+    ref_column->set(grnxx::Int(i), ref_values[i]);
   }
 
   // Generate a list of records.
   grnxx::Array<grnxx::Record> records;
-  auto cursor = table->create_cursor(&error);
-  assert(cursor);
-  auto result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == table->num_rows());
+  auto cursor = table->create_cursor();
+  assert(cursor->read_all(&records) == table->num_rows());
 
   // Set scores (Float).
-  auto builder = grnxx::ExpressionBuilder::create(&error, table);
-  assert(builder);
-  assert(builder->push_column(&error, "Float"));
-  auto expression = builder->release(&error);
-  assert(expression);
-  assert(expression->adjust(&error, &records));
+  auto builder = grnxx::ExpressionBuilder::create(table);
+  builder->push_column("Float");
+  auto expression = builder->release();
+  expression->adjust(&records);
 
   // Test an expression (Ref.(_score > 0.5)).
-  assert(builder->push_column(&error, "Ref"));
-  assert(builder->begin_subexpression(&error));
-  assert(builder->push_score(&error));
-  assert(builder->push_constant(&error, grnxx::Float(0.5)));
-  assert(builder->push_operator(&error, grnxx::GREATER_OPERATOR));
-  assert(builder->end_subexpression(&error));
-  expression = builder->release(&error);
-  assert(expression);
+  builder->push_column("Ref");
+  builder->begin_subexpression();
+  builder->push_score();
+  builder->push_constant(grnxx::Float(0.5));
+  builder->push_operator(grnxx::GREATER_OPERATOR);
+  builder->end_subexpression();
+  expression = builder->release();
 
-  assert(expression->filter(&error, &records));
-  grnxx::Int count = 0;
-  for (grnxx::Int i = 1; i <= NUM_ROWS; ++i) {
-    if (float_values[i] > 0.5) {
-      assert(records.get_row_id(count) == i);
+  expression->filter(&records);
+  size_t count = 0;
+  for (size_t i = 0; i < NUM_ROWS; ++i) {
+    if (float_values[i].value() > 0.5) {
+      assert(records[count].row_id.value() == grnxx::Int(i).value());
       ++count;
     }
   }
