@@ -972,8 +972,6 @@ void GenericBinaryNode<T, Float, V, W>::evaluate(ArrayCRef<Record> records,
                                                  ArrayRef<Value> results) {
   this->fill_arg1_values(records);
   this->fill_arg2_values(records);
-  // TODO: Should be processed per 64 bits.
-  //       Check the 64-bit boundary and do it!
   for (size_t i = 0; i < records.size(); ++i) {
     results[i] = operator_(this->arg1_values_[i], this->arg2_values_[i]);
   }
