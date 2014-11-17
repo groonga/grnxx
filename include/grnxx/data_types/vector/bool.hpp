@@ -21,8 +21,14 @@ class Vector<Bool> {
   constexpr Vector(const Bool *data, size_t size) : data_(data), size_(size) {}
   explicit constexpr Vector(NA) : data_(nullptr), size_(NA()) {}
 
-  // TODO: The argument should be Int.
-  //       Also, N/A should be returned for an invalid "i".
+  Bool operator[](Int i) const {
+    if (is_na() || (static_cast<uint64_t>(i.value()) >=
+                    static_cast<uint64_t>(size_.value()))) {
+      return Bool::na();
+    }
+    return data_[i.value()];
+  }
+  // TODO: To be removed.
   const Bool &operator[](size_t i) const {
     return data_[i];
   }

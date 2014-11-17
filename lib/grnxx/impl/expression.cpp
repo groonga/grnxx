@@ -1232,6 +1232,106 @@ struct ModulusOperator {
 template <typename T>
 using ModulusNode = GenericBinaryNode<ModulusOperator<T>>;
 
+// ---- SubscriptNode ----
+
+template <typename T>
+class SubscriptNode : public BinaryNode<T, Vector<T>, Int> {
+ public:
+  using Value = T;
+  using Arg1 = Vector<T>;
+  using Arg2 = Int;
+
+  SubscriptNode(std::unique_ptr<Node> &&arg1, std::unique_ptr<Node> &&arg2)
+      : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)) {}
+  ~SubscriptNode() = default;
+
+  const Table *reference_table() const {
+    return this->arg1_->reference_table();
+  }
+
+  void evaluate(ArrayCRef<Record> records, ArrayRef<Value> results);
+};
+
+template <typename T>
+void SubscriptNode<T>::evaluate(ArrayCRef<Record> records,
+                                ArrayRef<Value> results) {
+  this->fill_arg1_values(records);
+  this->fill_arg2_values(records);
+  for (size_t i = 0; i < records.size(); ++i) {
+    results[i] = this->arg1_values_[i][this->arg2_values_[i]];
+  }
+}
+
+template <>
+class SubscriptNode<Bool> : public BinaryNode<Bool, Vector<Bool>, Int> {
+ public:
+  using Value = Bool;
+  using Arg1 = Vector<Bool>;
+  using Arg2 = Int;
+
+  SubscriptNode(std::unique_ptr<Node> &&arg1, std::unique_ptr<Node> &&arg2)
+      : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)) {}
+  ~SubscriptNode() = default;
+
+  void filter(ArrayCRef<Record> input_records,
+              ArrayRef<Record> *output_records);
+  void evaluate(ArrayCRef<Record> records, ArrayRef<Value> results);
+};
+
+void SubscriptNode<Bool>::filter(ArrayCRef<Record> input_records,
+                                 ArrayRef<Record> *output_records) {
+  this->fill_arg1_values(input_records);
+  this->fill_arg2_values(input_records);
+  size_t count = 0;
+  for (size_t i = 0; i < input_records.size(); ++i) {
+    if (this->arg1_values_[i][this->arg2_values_[i]].is_true()) {
+      (*output_records)[count] = input_records[i];
+      ++count;
+    }
+  }
+  *output_records = output_records->ref(0, count);
+}
+
+void SubscriptNode<Bool>::evaluate(ArrayCRef<Record> records,
+                                   ArrayRef<Value> results) {
+  this->fill_arg1_values(records);
+  this->fill_arg2_values(records);
+  for (size_t i = 0; i < records.size(); ++i) {
+    results[i] = this->arg1_values_[i][this->arg2_values_[i]];
+  }
+}
+
+template <>
+class SubscriptNode<Float> : public BinaryNode<Float, Vector<Float>, Int> {
+ public:
+  using Value = Float;
+  using Arg1 = Vector<Float>;
+  using Arg2 = Int;
+
+  SubscriptNode(std::unique_ptr<Node> &&arg1, std::unique_ptr<Node> &&arg2)
+      : BinaryNode<Value, Arg1, Arg2>(std::move(arg1), std::move(arg2)) {}
+  ~SubscriptNode() = default;
+
+  void adjust(ArrayRef<Record> records);
+  void evaluate(ArrayCRef<Record> records, ArrayRef<Value> results);
+};
+
+void SubscriptNode<Float>::adjust(ArrayRef<Record> records) {
+  fill_arg1_values(records);
+  fill_arg2_values(records);
+  for (size_t i = 0; i < records.size(); ++i) {
+    records[i].score = this->arg1_values_[i][this->arg2_values_[i]];
+  }
+}
+
+void SubscriptNode<Float>::evaluate(ArrayCRef<Record> records,
+                                    ArrayRef<Value> results) {
+  this->fill_arg1_values(records);
+  this->fill_arg2_values(records);
+  for (size_t i = 0; i < records.size(); ++i) {
+    results[i] = this->arg1_values_[i][this->arg2_values_[i]];
+  }
+}
 
 // ---- DereferenceNode ----
 
@@ -2027,9 +2127,9 @@ Node *ExpressionBuilder::create_binary_node(
         }
       }
     }
-//    case SUBSCRIPT_OPERATOR: {
-//      return create_subscript_node(error, std::move(arg1), std::move(arg2));
-//    }
+    case SUBSCRIPT_OPERATOR: {
+      return create_subscript_node(std::move(arg1), std::move(arg2));
+    }
     default: {
       throw "Not supported yet";  // TODO
     }
@@ -2137,6 +2237,33 @@ Node *ExpressionBuilder::create_arithmetic_node(
     }
     default: {
       throw "Invalid operator";  // TODO
+    }
+  }
+}
+
+Node *ExpressionBuilder::create_subscript_node(std::unique_ptr<Node> &&arg1,
+                                               std::unique_ptr<Node> &&arg2) {
+  if (arg2->data_type() != INT_DATA) {
+    throw "Invalid data type";  // TODO
+  }
+  switch (arg1->data_type()) {
+    case BOOL_VECTOR_DATA: {
+      return new SubscriptNode<Bool>(std::move(arg1), std::move(arg2));
+    }
+    case INT_VECTOR_DATA: {
+      return new SubscriptNode<Int>(std::move(arg1), std::move(arg2));
+    }
+    case FLOAT_VECTOR_DATA: {
+      return new SubscriptNode<Float>(std::move(arg1), std::move(arg2));
+    }
+    case GEO_POINT_VECTOR_DATA: {
+      return new SubscriptNode<GeoPoint>(std::move(arg1), std::move(arg2));
+    }
+//    case TEXT_VECTOR_DATA: {
+//      return new SubscriptNode<Text>(std::move(arg1), std::move(arg2));
+//    }
+    default: {
+      throw "Invalid data type";  // TODO
     }
   }
 }
