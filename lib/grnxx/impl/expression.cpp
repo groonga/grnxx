@@ -1714,18 +1714,18 @@ Node *ExpressionBuilder::create_column_node(
     case TEXT_DATA: {
       return new ColumnNode<Text>(column);
     }
-//    case BOOL_VECTOR_DATA: {
-//      return new ColumnNode<Vector<Bool>>(column);
-//    }
-//    case INT_VECTOR_DATA: {
-//      return new ColumnNode<Vector<Int>>(column);
-//    }
-//    case FLOAT_VECTOR_DATA: {
-//      return new ColumnNode<Vector<Float>>(column);
-//    }
-//    case GEO_POINT_VECTOR_DATA: {
-//      return new ColumnNode<Vector<GeoPoint>>(column);
-//    }
+    case BOOL_VECTOR_DATA: {
+      return new ColumnNode<Vector<Bool>>(column);
+    }
+    case INT_VECTOR_DATA: {
+      return new ColumnNode<Vector<Int>>(column);
+    }
+    case FLOAT_VECTOR_DATA: {
+      return new ColumnNode<Vector<Float>>(column);
+    }
+    case GEO_POINT_VECTOR_DATA: {
+      return new ColumnNode<Vector<GeoPoint>>(column);
+    }
 //    case TEXT_VECTOR_DATA: {
 //      return new ColumnNode<Vector<Text>>(column);
 //    }
