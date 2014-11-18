@@ -1582,11 +1582,10 @@ void Expression::evaluate(ArrayCRef<Record> records,
   _evaluate(records, results);
 }
 
-// TODO
-//void Expression::evaluate(ArrayCRef<Record> records,
-//                          Array<Vector<Text>> *results) {
-//  _evaluate(records, results);
-//}
+void Expression::evaluate(ArrayCRef<Record> records,
+                          Array<Vector<Text>> *results) {
+  _evaluate(records, results);
+}
 
 void Expression::evaluate(ArrayCRef<Record> records,
                           ArrayRef<Bool> results) {
@@ -1633,10 +1632,10 @@ void Expression::evaluate(ArrayCRef<Record> records,
   _evaluate(records, results);
 }
 
-//void Expression::evaluate(ArrayCRef<Record> records,
-//                          ArrayRef<Vector<Text>> results) {
-//  _evaluate(records, results);
-//}
+void Expression::evaluate(ArrayCRef<Record> records,
+                          ArrayRef<Vector<Text>> results) {
+  _evaluate(records, results);
+}
 
 template <typename T>
 void Expression::_evaluate(ArrayCRef<Record> records, Array<T> *results) {
@@ -1866,9 +1865,9 @@ Node *ExpressionBuilder::create_constant_node(
     case GEO_POINT_VECTOR_DATA: {
       return new ConstantNode<Vector<GeoPoint>>(datum.as_geo_point_vector());
     }
-//    case TEXT_VECTOR_DATA: {
-//      return new ConstantNode<Vector<Text>>(datum.as_text_vector());
-//    }
+    case TEXT_VECTOR_DATA: {
+      return new ConstantNode<Vector<Text>>(datum.as_text_vector());
+    }
     default: {
       throw "Not supported yet";  // TODO
     }
@@ -1911,9 +1910,9 @@ Node *ExpressionBuilder::create_column_node(
     case GEO_POINT_VECTOR_DATA: {
       return new ColumnNode<Vector<GeoPoint>>(column);
     }
-//    case TEXT_VECTOR_DATA: {
-//      return new ColumnNode<Vector<Text>>(column);
-//    }
+    case TEXT_VECTOR_DATA: {
+      return new ColumnNode<Vector<Text>>(column);
+    }
     default: {
       throw "Not supported yet";  // TODO
     }
@@ -2060,10 +2059,10 @@ Node *ExpressionBuilder::create_binary_node(
           return create_equality_test_node<Vector<GeoPoint>>(
             operator_type, std::move(arg1), std::move(arg2));
         }
-//        case TEXT_VECTOR_DATA: {
-//          return create_equality_test_node<Vector<Text>>(
-//            operator_type, std::move(arg1), std::move(arg2));
-//        }
+        case TEXT_VECTOR_DATA: {
+          return create_equality_test_node<Vector<Text>>(
+            operator_type, std::move(arg1), std::move(arg2));
+        }
         default: {
           throw "Invalid data type";  // TODO
         }
@@ -2259,9 +2258,9 @@ Node *ExpressionBuilder::create_subscript_node(std::unique_ptr<Node> &&arg1,
     case GEO_POINT_VECTOR_DATA: {
       return new SubscriptNode<GeoPoint>(std::move(arg1), std::move(arg2));
     }
-//    case TEXT_VECTOR_DATA: {
-//      return new SubscriptNode<Text>(std::move(arg1), std::move(arg2));
-//    }
+    case TEXT_VECTOR_DATA: {
+      return new SubscriptNode<Text>(std::move(arg1), std::move(arg2));
+    }
     default: {
       throw "Invalid data type";  // TODO
     }
@@ -2311,10 +2310,10 @@ Node *ExpressionBuilder::create_dereference_node(
           return new DereferenceNode<Vector<GeoPoint>>(
               std::move(arg1), std::move(arg2));
         }
-//        case TEXT_VECTOR_DATA: {
-//          return new DereferenceNode<Vector<Text>>(
-//              std::move(arg1), std::move(arg2));
-//        }
+        case TEXT_VECTOR_DATA: {
+          return new DereferenceNode<Vector<Text>>(
+              std::move(arg1), std::move(arg2));
+        }
         default: {
           throw "Invalid data type";  // TODO
         }

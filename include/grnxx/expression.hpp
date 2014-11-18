@@ -153,9 +153,8 @@ class Expression {
                         Array<Vector<Float>> *results) = 0;
   virtual void evaluate(ArrayCRef<Record> records,
                         Array<Vector<GeoPoint>> *results) = 0;
-  // TODO
-//  virtual void evaluate(ArrayCRef<Record> records,
-//                        Array<Vector<Text>> *results) = 0;
+  virtual void evaluate(ArrayCRef<Record> records,
+                        Array<Vector<Text>> *results) = 0;
 
   // Evaluate the expression.
   //
@@ -184,9 +183,8 @@ class Expression {
                         ArrayRef<Vector<Float>> results) = 0;
   virtual void evaluate(ArrayCRef<Record> records,
                         ArrayRef<Vector<GeoPoint>> results) = 0;
-  // TODO
-//  virtual void evaluate(ArrayCRef<Record> records,
-//                        ArrayRef<Vector<Text>> results) = 0;
+  virtual void evaluate(ArrayCRef<Record> records,
+                        ArrayRef<Vector<Text>> results) = 0;
 };
 
 class ExpressionBuilder {
