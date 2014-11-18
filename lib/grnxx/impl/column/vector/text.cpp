@@ -1,100 +1,163 @@
-#include "grnxx/impl/column/column_vector_text.hpp"
+#include "grnxx/impl/column/vector/text.hpp"
 
-#include "grnxx/cursor.hpp"
+#include <cstring>
+
 #include "grnxx/impl/db.hpp"
 #include "grnxx/impl/table.hpp"
+//#include "grnxx/impl/index.hpp"
 
 namespace grnxx {
 namespace impl {
 
-bool Column<Vector<Text>>::set(Error *error, Int row_id,
-                               const Datum &datum) {
-  if (datum.type() != TEXT_VECTOR_DATA) {
-    GRNXX_ERROR_SET(error, INVALID_ARGUMENT, "Wrong data type");
-    return false;
-  }
-  if (!table_->test_row(error, row_id)) {
-    return false;
-  }
-  Vector<Text> value = datum.force_text_vector();
-  if (value.size() == 0) {
-    headers_[row_id] = Header{ 0, 0 };
-    return true;
-  }
-  Int text_headers_offset = text_headers_.size();
-  if (!text_headers_.resize(error, text_headers_offset + value.size())) {
-    return false;
-  }
-  Int total_size = 0;
-  for (Int i = 0; i < value.size(); ++i) {
-    total_size += value[i].size();
-  }
-  Int bodies_offset = bodies_.size();
-  if (!bodies_.resize(error, bodies_offset + total_size)) {
-    return false;
-  }
-  headers_[row_id] = Header{ text_headers_offset, value.size() };
-  for (Int i = 0; i < value.size(); ++i) {
-    text_headers_[text_headers_offset + i].offset = bodies_offset;
-    text_headers_[text_headers_offset + i].size = value[i].size();
-    std::memcpy(&bodies_[bodies_offset], value[i].data(), value[i].size());
-    bodies_offset += value[i].size();
-  }
-  return true;
-}
-
-bool Column<Vector<Text>>::get(Error *error, Int row_id,
-                               Datum *datum) const {
-  if (!table_->test_row(error, row_id)) {
-    return false;
-  }
-  *datum = get(row_id);
-  return true;
-}
-
-unique_ptr<Column<Vector<Text>>> Column<Vector<Text>>::create(
-    Error *error,
-    Table *table,
-    const StringCRef &name,
-    const ColumnOptions &options) {
-  unique_ptr<Column> column(new (nothrow) Column);
-  if (!column) {
-    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
-    return nullptr;
-  }
-  if (!column->initialize_base(error, table, name,
-                               TEXT_VECTOR_DATA, options)) {
-    return nullptr;
-  }
-  if (!column->headers_.resize(error, table->max_row_id() + 1,
-                               Header{ 0, 0 })) {
-    return nullptr;
-  }
-  return column;
-}
+Column<Vector<Text>>::Column(Table *table,
+                             const String &name,
+                             const ColumnOptions &)
+    : ColumnBase(table, name, TEXT_VECTOR_DATA),
+      headers_(),
+      bodies_() {}
 
 Column<Vector<Text>>::~Column() {}
 
-bool Column<Vector<Text>>::set_default_value(Error *error,
-                                                     Int row_id) {
-  if (row_id >= headers_.size()) {
-    if (!headers_.resize(error, row_id + 1)) {
-      return false;
+void Column<Vector<Text>>::set(Int row_id, const Datum &datum) {
+  Vector<Text> new_value = parse_datum(datum);
+  if (!table_->test_row(row_id)) {
+    throw "Invalid row ID";  // TODO
+  }
+  if (new_value.is_na()) {
+    unset(row_id);
+    return;
+  }
+  Vector<Text> old_value = get(row_id);
+  if ((old_value == new_value).is_true()) {
+    return;
+  }
+  if (!old_value.is_na()) {
+    // TODO: Remove the old value from indexes.
+//    for (size_t i = 0; i < num_indexes(); ++i) {
+//      indexes_[i]->remove(row_id, old_value);
+//    }
+  }
+  size_t value_id = row_id.value();
+  if (value_id >= headers_.size()) {
+    headers_.resize(value_id + 1, na_header());
+  }
+  // TODO: Insert the new value into indexes.
+//  for (size_t i = 0; i < num_indexes(); ++i) try {
+//    indexes_[i]->insert(row_id, datum)) {
+//  } catch (...) {
+//    for (size_t j = 0; j < i; ++i) {
+//      indexes_[j]->remove(row_id, datum);
+//    }
+//    throw;
+//  }
+  // TODO: Error handling.
+  size_t new_value_size = new_value.size().value();
+  size_t text_headers_offset = text_headers_.size();
+  text_headers_.resize(text_headers_offset + new_value_size);
+  size_t total_size = 0;
+  for (size_t i = 0; i < new_value_size; ++i) {
+    if (!new_value[i].is_na()) {
+      total_size += new_value[i].size().value();
     }
   }
-  headers_[row_id] = Header{ 0, 0 };
-  return true;
+  size_t bodies_offset = bodies_.size();
+  bodies_.resize(bodies_offset + total_size);
+  headers_[value_id] = Header{ text_headers_offset, new_value.size() };
+  for (size_t i = 0; i < new_value_size; ++i) {
+    text_headers_[text_headers_offset + i].offset = bodies_offset;
+    text_headers_[text_headers_offset + i].size = new_value[i].size();
+    if (!new_value[i].is_na()) {
+      std::memcpy(&bodies_[bodies_offset],
+                  new_value[i].data(), new_value[i].size().value());
+      bodies_offset += new_value[i].size().value();
+    }
+  }
+}
+
+void Column<Vector<Text>>::get(Int row_id, Datum *datum) const {
+  size_t value_id = row_id.value();
+  if (value_id >= headers_.size()) {
+    *datum = Vector<Text>::na();
+  } else {
+    // TODO
+    *datum = get(row_id);
+  }
+}
+
+bool Column<Vector<Text>>::contains(const Datum &datum) const {
+  // TODO: Use an index if exists.
+  Vector<Text> value = parse_datum(datum);
+  if (value.is_na()) {
+    for (size_t i = 0; i < headers_.size(); ++i) {
+      if (headers_[i].size.is_na()) {
+        return true;
+      }
+    }
+  } else {
+    for (size_t i = 0; i < headers_.size(); ++i) {
+      // TODO: Improve this.
+      if ((get(Int(i)) == value).is_true()) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+Int Column<Vector<Text>>::find_one(const Datum &datum) const {
+  // TODO: Use an index if exists.
+  Vector<Text> value = parse_datum(datum);
+  if (value.is_na()) {
+    for (size_t i = 0; i < headers_.size(); ++i) {
+      if (headers_[i].size.is_na()) {
+        return Int(i);
+      }
+    }
+  } else {
+    for (size_t i = 0; i < headers_.size(); ++i) {
+      // TODO: Improve this.
+      if ((get(Int(i)) == value).is_true()) {
+        return Int(i);
+      }
+    }
+  }
+  return Int::na();
 }
 
 void Column<Vector<Text>>::unset(Int row_id) {
-  headers_[row_id] = Header{ 0, 0 };
+  Vector<Text> value = get(row_id);
+  if (!value.is_na()) {
+    // TODO: Update indexes if exist.
+//    for (size_t i = 0; i < num_indexes(); ++i) {
+//      indexes_[i]->remove(row_id, value);
+//    }
+    headers_[row_id.value()] = na_header();
+  }
 }
 
-Column<Vector<Text>>::Column()
-    : ColumnBase(),
-      headers_(),
-      text_headers_(),
-      bodies_() {}
+void Column<Vector<Text>>::read(ArrayCRef<Record> records,
+                                ArrayRef<Vector<Text>> values) const {
+  if (records.size() != values.size()) {
+    throw "Data size conflict";  // TODO
+  }
+  for (size_t i = 0; i < records.size(); ++i) {
+    values.set(i, get(records[i].row_id));
+  }
+}
+
+Vector<Text> Column<Vector<Text>>::parse_datum(const Datum &datum) {
+  switch (datum.type()) {
+    case NA_DATA: {
+      return Vector<Text>::na();
+    }
+    case TEXT_VECTOR_DATA: {
+      return datum.as_text_vector();
+    }
+    default: {
+      throw "Wrong data type";  // TODO
+    }
+  }
+}
 
 }  // namespace impl
 }  // namespace grnxx

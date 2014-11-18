@@ -12,9 +12,8 @@ libgrnxx_impl_column_vector_la_SOURCES =	\
 	bool.cpp				\
 	float.cpp				\
 	geo_point.cpp				\
-	int.cpp
-
-#	text.cpp
+	int.cpp					\
+	text.cpp
 
 libgrnxx_impl_column_vector_includedir = ${includedir}/grnxx/impl/column/vector
 libgrnxx_impl_column_vector_include_HEADERS =	\
