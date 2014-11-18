@@ -131,16 +131,14 @@ void test_column() {
   assert(!geo_point_vector_column->is_key());
 //  assert(geo_point_vector_column->num_indexes() == 0);
 
-//  // Create a column named "TextVectorColumn".
-//  // The column stores Text values.
-//  auto text_vector_column = table->create_column(&error, "TextVectorColumn",
-//                                                 grnxx::TEXT_VECTOR_DATA);
-//  assert(text_vector_column);
-//  assert(text_vector_column->table() == table);
-//  assert(text_vector_column->name() == "TextVectorColumn");
-//  assert(text_vector_column->data_type() == grnxx::TEXT_VECTOR_DATA);
-//  assert(!text_vector_column->ref_table());
-//  assert(!text_vector_column->has_key_attribute());
+  // Create a column named "TextVector".
+  auto text_vector_column =
+      table->create_column("TextVector", grnxx::TEXT_VECTOR_DATA);
+  assert(text_vector_column->table() == table);
+  assert(text_vector_column->name() == "TextVector");
+  assert(text_vector_column->data_type() == grnxx::TEXT_VECTOR_DATA);
+  assert(!text_vector_column->reference_table());
+  assert(!text_vector_column->is_key());
 //  assert(text_vector_column->num_indexes() == 0);
 
   // Create a column named "ReferenceVector".
@@ -197,9 +195,9 @@ void test_column() {
   assert(datum.type() == grnxx::GEO_POINT_VECTOR_DATA);
   assert(datum.as_geo_point_vector().is_na());
 
-//  assert(text_vector_column->get(&error, 1, &datum));
-//  assert(datum.type() == grnxx::TEXT_VECTOR_DATA);
-//  assert(datum.force_text_vector() == grnxx::TextVector(nullptr, 0));
+  text_vector_column->get(row_id, &datum);
+  assert(datum.type() == grnxx::TEXT_VECTOR_DATA);
+  assert(datum.as_text_vector().is_na());
 
   reference_vector_column->get(row_id, &datum);
   assert(datum.type() == grnxx::INT_VECTOR_DATA);
@@ -294,15 +292,16 @@ void test_column() {
   assert(datum.type() == grnxx::INT_VECTOR_DATA);
   assert((datum.as_int_vector() == reference_vector).is_true());
 
-//  // Set and get values.
-//  grnxx::Text text_vector_value[] = { "abc", "DEF", "ghi" };
-//  assert(text_vector_column->set(&error, 1,
-//                                 grnxx::TextVector(text_vector_value, 3)));
-
-//  assert(text_vector_column->get(&error, 1, &datum));
-//  assert(datum.type() == grnxx::TEXT_VECTOR_DATA);
-//  assert(datum.force_text_vector() ==
-//         grnxx::TextVector(text_vector_value, 3));
+  grnxx::Text text_values[] = {
+    grnxx::Text("abc"),
+    grnxx::Text("DEF"),
+    grnxx::Text("ghi")
+  };
+  grnxx::TextVector text_vector(text_values, 3);
+  text_vector_column->set(row_id, text_vector);
+  text_vector_column->get(row_id, &datum);
+  assert(datum.type() == grnxx::TEXT_VECTOR_DATA);
+  assert((datum.as_text_vector() == text_vector).is_true());
 }
 
 int main() {
