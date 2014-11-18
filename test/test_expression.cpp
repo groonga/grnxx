@@ -59,10 +59,10 @@ struct {
   grnxx::Array<grnxx::GeoPointVector> geo_point_vector2_values;
   grnxx::Array<grnxx::Array<grnxx::GeoPoint>> geo_point_vector_bodies;
   grnxx::Array<grnxx::Array<grnxx::GeoPoint>> geo_point_vector2_bodies;
-//  grnxx::Array<grnxx::TextVector> text_vector_values;
-//  grnxx::Array<grnxx::TextVector> text_vector2_values;
-//  grnxx::Array<grnxx::Array<grnxx::Text>> text_vector_bodies;
-//  grnxx::Array<grnxx::Array<grnxx::Text>> text_vector2_bodies;
+  grnxx::Array<grnxx::TextVector> text_vector_values;
+  grnxx::Array<grnxx::TextVector> text_vector2_values;
+  grnxx::Array<grnxx::Array<grnxx::Text>> text_vector_bodies;
+  grnxx::Array<grnxx::Array<grnxx::Text>> text_vector2_bodies;
   grnxx::Array<grnxx::Int> ref_values;
   grnxx::Array<grnxx::Int> ref2_values;
   grnxx::Array<grnxx::IntVector> ref_vector_values;
@@ -132,13 +132,11 @@ void init_test() try {
   auto geo_point_vector2_column =
       test.table->create_column("GeoPointVector2", data_type);
 
-//  data_type = grnxx::TEXT_VECTOR_DATA;
-//  auto text_vector_column =
-//      test.table->create_column(&error, "TextVector", data_type);
-//  auto text_vector2_column =
-//      test.table->create_column(&error, "TextVector2", data_type);
-//  assert(text_vector_column);
-//  assert(text_vector2_column);
+  data_type = grnxx::TEXT_VECTOR_DATA;
+  auto text_vector_column =
+      test.table->create_column("TextVector", data_type);
+  auto text_vector2_column =
+      test.table->create_column("TextVector2", data_type);
 
   data_type = grnxx::INT_DATA;
   grnxx::ColumnOptions options;
@@ -195,10 +193,10 @@ void init_test() try {
   test.geo_point_vector2_values.resize(NUM_ROWS);
   test.geo_point_vector_bodies.resize(NUM_ROWS);
   test.geo_point_vector2_bodies.resize(NUM_ROWS);
-//  assert(test.text_vector_values.resize(&error, NUM_ROWS + 1));
-//  assert(test.text_vector2_values.resize(&error, NUM_ROWS + 1));
-//  assert(test.text_vector_bodies.resize(&error, NUM_ROWS + 1));
-//  assert(test.text_vector2_bodies.resize(&error, NUM_ROWS + 1));
+  test.text_vector_values.resize(NUM_ROWS);
+  test.text_vector2_values.resize(NUM_ROWS);
+  test.text_vector_bodies.resize(NUM_ROWS);
+  test.text_vector2_bodies.resize(NUM_ROWS);
   test.ref_values.resize(NUM_ROWS + 1);
   test.ref2_values.resize(NUM_ROWS + 1);
   test.ref_vector_values.resize(NUM_ROWS);
@@ -235,13 +233,6 @@ void init_test() try {
     generate_text(MIN_LENGTH, MAX_LENGTH, text_body);
     test.text2_values.set(i, grnxx::Text(text_body->data(),
                              text_body->length()));
-
-//    grnxx::uint64_t bits = mersenne_twister();
-//    size_t size = mersenne_twister() % 59;
-//    test.bool_vector_values.set(i, grnxx::BoolVector(bits, size));
-//    bits = mersenne_twister();
-//    size = mersenne_twister() % 59;
-//    test.bool_vector2_values.set(i, grnxx::BoolVector(bits, size));
 
     size_t size = mersenne_twister() % (MAX_SIZE + 1);
     test.bool_vector_bodies[i].resize(size);
@@ -314,22 +305,22 @@ void init_test() try {
     test.geo_point_vector2_values.set(
         i, grnxx::GeoPointVector(geo_point_data, size));
 
-//    size = mersenne_twister() % (MAX_SIZE + 1);
-//    assert(test.text_vector_bodies[i].resize(&error, size));
-//    for (grnxx::Int j = 0; j < size; ++j) {
-//      test.text_vector_bodies[i][j] =
-//          test.text_values[1 + (mersenne_twister() % NUM_ROWS)];
-//    }
-//    test.text_vector_values.set(
-//        i, grnxx::TextVector(test.text_vector_bodies[i].data(), size));
-//    size = mersenne_twister() % (MAX_SIZE + 1);
-//    assert(test.text_vector2_bodies[i].resize(&error, size));
-//    for (grnxx::Int j = 0; j < size; ++j) {
-//      test.text_vector2_bodies[i][j] =
-//          test.text_values[1 + (mersenne_twister() % NUM_ROWS)];
-//    }
-//    test.text_vector2_values.set(
-//        i, grnxx::TextVector(test.text_vector2_bodies[i].data(), size));
+    size = mersenne_twister() % (MAX_SIZE + 1);
+    test.text_vector_bodies[i].resize(size);
+    for (size_t j = 0; j < size; ++j) {
+      test.text_vector_bodies[i][j] =
+          test.text_values[mersenne_twister() % NUM_ROWS];
+    }
+    test.text_vector_values.set(
+        i, grnxx::TextVector(test.text_vector_bodies[i].data(), size));
+    size = mersenne_twister() % (MAX_SIZE + 1);
+    test.text_vector2_bodies[i].resize(size);
+    for (size_t j = 0; j < size; ++j) {
+      test.text_vector2_bodies[i][j] =
+          test.text_values[mersenne_twister() % NUM_ROWS];
+    }
+    test.text_vector2_values.set(
+        i, grnxx::TextVector(test.text_vector2_bodies[i].data(), size));
 
     test.ref_values.set(i, grnxx::Int(mersenne_twister() % NUM_ROWS));
     test.ref2_values.set(i, grnxx::Int(mersenne_twister() % NUM_ROWS));
@@ -375,10 +366,8 @@ void init_test() try {
     float_vector2_column->set(row_id, test.float_vector2_values[i]);
     geo_point_vector_column->set(row_id, test.geo_point_vector_values[i]);
     geo_point_vector2_column->set(row_id, test.geo_point_vector2_values[i]);
-//    assert(text_vector_column->set(&error, row_id,
-//                                   test.text_vector_values[i]));
-//    assert(text_vector2_column->set(&error, row_id,
-//                                    test.text_vector2_values[i]));
+    text_vector_column->set(row_id, test.text_vector_values[i]);
+    text_vector2_column->set(row_id, test.text_vector2_values[i]);
   }
 
   for (size_t i = 0; i < NUM_ROWS; ++i) {
@@ -562,18 +551,22 @@ void test_constant() try {
     assert((geo_point_vector_results[i] == geo_point_vector).is_true());
   }
 
-//  // Test an expression ({ "abc", "DEF", "ghi" }).
-//  grnxx::Text text_values[] = { "abc", "DEF", "ghi" };
-//  assert(builder->push_constant(&error, grnxx::TextVector(text_values, 3)));
-//  expression = builder->release(&error);
-//  assert(expression);
+  // Test an expression ({ "abc", "DEF", "ghi" }).
+  grnxx::Text text_values[] = {
+    grnxx::Text("abc"),
+    grnxx::Text("DEF"),
+    grnxx::Text("ghi")
+  };
+  grnxx::TextVector text_vector(text_values, 3);
+  builder->push_constant(text_vector);
+  expression = builder->release();
 
-//  grnxx::Array<grnxx::TextVector> text_vector_results;
-//  assert(expression->evaluate(&error, records, &text_vector_results));
-//  assert(text_vector_results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < text_vector_results.size(); ++i) {
-//    assert(text_vector_results[i] == grnxx::TextVector(text_values, 3));
-//  }
+  grnxx::Array<grnxx::TextVector> text_vector_results;
+  expression->evaluate(records, &text_vector_results);
+  assert(text_vector_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < text_vector_results.size(); ++i) {
+    assert((text_vector_results[i] == text_vector).is_true());
+  }
 } catch (const char *msg) {
   std::cout << msg << std::endl;
   throw;
@@ -776,20 +769,20 @@ void test_column() {
             test.geo_point_vector_values[row_id]).is_true());
   }
 
-//  // Test an expression (TextVector).
-//  assert(builder->push_column(&error, "TextVector"));
-//  expression = builder->release(&error);
-//  assert(expression);
+  // Test an expression (TextVector).
+  builder->push_column("TextVector");
+  expression = builder->release();
 
-//  records = create_input_records();
+  records = create_input_records();
 
-//  grnxx::Array<grnxx::TextVector> text_vector_results;
-//  assert(expression->evaluate(&error, records, &text_vector_results));
-//  assert(text_vector_results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < text_vector_results.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    assert(text_vector_results[i] == test.text_vector_values[row_id]);
-//  }
+  grnxx::Array<grnxx::TextVector> text_vector_results;
+  expression->evaluate(records, &text_vector_results);
+  assert(text_vector_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < text_vector_results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert((text_vector_results[i] ==
+            test.text_vector_values[row_id]).is_true());
+  }
 
   // Test an expression (Ref).
   builder->push_column("Ref");
@@ -1348,33 +1341,33 @@ void test_equal() {
   }
   assert(records.size() == count);
 
-//  // Test an expression (TextVector == TextVector2).
-//  assert(builder->push_column(&error, "TextVector"));
-//  assert(builder->push_column(&error, "TextVector2"));
-//  assert(builder->push_operator(&error, grnxx::EQUAL_OPERATOR));
-//  expression = builder->release(&error);
-//  assert(expression);
+  // Test an expression (TextVector == TextVector2).
+  builder->push_column("TextVector");
+  builder->push_column("TextVector2");
+  builder->push_operator(grnxx::EQUAL_OPERATOR);
+  expression = builder->release();
 
-//  records = create_input_records();
+  records = create_input_records();
 
-//  results.clear();
-//  assert(expression->evaluate(&error, records, &results));
-//  assert(results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < results.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    assert(results[i] == (test.text_vector_values[row_id] ==
-//                          test.text_vector2_values[row_id]));
-//  }
+  results.clear();
+  expression->evaluate(records, &results);
+  assert(results.size() == test.table->num_rows());
+  for (size_t i = 0; i < results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert(results[i].value() == (test.text_vector_values[row_id] ==
+                                  test.text_vector2_values[row_id]).value());
+  }
 
-//  assert(expression->filter(&error, &records));
-//  count = 0;
-//  for (grnxx::Int i = 1; i < test.text_vector_values.size(); ++i) {
-//    if (test.text_vector_values[i] == test.text_vector2_values[i]) {
-//      assert(records.get_row_id(count) == i);
-//      ++count;
-//    }
-//  }
-//  assert(records.size() == count);
+  expression->filter(&records);
+  count = 0;
+  for (size_t i = 0; i < test.text_vector_values.size(); ++i) {
+    if ((test.text_vector_values[i] ==
+         test.text_vector2_values[i]).is_true()) {
+      assert(records[count].row_id.value() == grnxx::Int(i).value());
+      ++count;
+    }
+  }
+  assert(records.size() == count);
 }
 
 void test_not_equal() {
@@ -1628,33 +1621,33 @@ void test_not_equal() {
   }
   assert(records.size() == count);
 
-//  // Test an expression (TextVector != TextVector2).
-//  assert(builder->push_column(&error, "TextVector"));
-//  assert(builder->push_column(&error, "TextVector2"));
-//  assert(builder->push_operator(&error, grnxx::NOT_EQUAL_OPERATOR));
-//  expression = builder->release(&error);
-//  assert(expression);
+  // Test an expression (TextVector != TextVector2).
+  builder->push_column("TextVector");
+  builder->push_column("TextVector2");
+  builder->push_operator(grnxx::NOT_EQUAL_OPERATOR);
+  expression = builder->release();
 
-//  records = create_input_records();
+  records = create_input_records();
 
-//  results.clear();
-//  assert(expression->evaluate(&error, records, &results));
-//  assert(results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < results.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    assert(results[i] == (test.text_vector_values[row_id] !=
-//                          test.text_vector2_values[row_id]));
-//  }
+  results.clear();
+  expression->evaluate(records, &results);
+  assert(results.size() == test.table->num_rows());
+  for (size_t i = 0; i < results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert(results[i].value() == (test.text_vector_values[row_id] !=
+                                  test.text_vector2_values[row_id]).value());
+  }
 
-//  assert(expression->filter(&error, &records));
-//  count = 0;
-//  for (grnxx::Int i = 1; i < test.text_vector_values.size(); ++i) {
-//    if (test.text_vector_values[i] != test.text_vector2_values[i]) {
-//      assert(records.get_row_id(count) == i);
-//      ++count;
-//    }
-//  }
-//  assert(records.size() == count);
+  expression->filter(&records);
+  count = 0;
+  for (size_t i = 0; i < test.text_vector_values.size(); ++i) {
+    if ((test.text_vector_values[i] !=
+         test.text_vector2_values[i]).is_true()) {
+      assert(records[count].row_id.value() == grnxx::Int(i).value());
+      ++count;
+    }
+  }
+  assert(records.size() == count);
 }
 
 void test_less() {
@@ -2508,28 +2501,27 @@ void test_subscript() {
     }
   }
 
-//  // Test an expression (TextVector[Int]).
-//  assert(builder->push_column(&error, "TextVector"));
-//  assert(builder->push_column(&error, "Int"));
-//  assert(builder->push_operator(&error, grnxx::SUBSCRIPT_OPERATOR));
-//  expression = builder->release(&error);
-//  assert(expression);
+  // Test an expression (TextVector[Int]).
+  builder->push_column("TextVector");
+  builder->push_column("Int");
+  builder->push_operator(grnxx::SUBSCRIPT_OPERATOR);
+  expression = builder->release();
 
-//  records = create_input_records();
+  records = create_input_records();
 
-//  grnxx::Array<grnxx::Text> text_results;
-//  assert(expression->evaluate(&error, records, &text_results));
-//  assert(text_results.size() == test.table->num_rows());
-//  for (grnxx::Int i = 0; i < text_results.size(); ++i) {
-//    grnxx::Int row_id = records.get_row_id(i);
-//    const auto int_value = test.int_values[row_id];
-//    const auto &text_vector_value = test.text_vector_values[row_id];
-//    if (int_value < text_vector_value.size()) {
-//      assert(text_results[i] == text_vector_value[int_value]);
-//    } else {
-//      assert(text_results[i] == grnxx::StringCRef(""));
-//    }
-//  }
+  grnxx::Array<grnxx::Text> text_results;
+  expression->evaluate(records, &text_results);
+  assert(text_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < text_results.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    const auto int_value = test.int_values[row_id];
+    const auto &text_vector_value = test.text_vector_values[row_id];
+    if ((int_value < text_vector_value.size()).is_true()) {
+      assert((text_results[i] == text_vector_value[int_value]).is_true());
+    } else {
+      assert(text_results[i].is_na());
+    }
+  }
 }
 
 void test_subexpression() {
