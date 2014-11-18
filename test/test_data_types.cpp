@@ -1260,6 +1260,70 @@ void test_geo_point_vector() {
   assert((na != na).is_na());
 }
 
+void test_text_vector() {
+  grnxx::Text data[] = {
+    grnxx::Text("ABC"),
+    grnxx::Text("BCD"),
+    grnxx::Text("CDE"),
+    grnxx::Text::na()
+  };
+
+  grnxx::TextVector abc = grnxx::TextVector(data, 3);
+  grnxx::TextVector bcn = grnxx::TextVector(data + 1, 3);
+  grnxx::TextVector empty = grnxx::TextVector::empty();
+  grnxx::TextVector na = grnxx::TextVector::na();
+
+  assert(abc.type() == grnxx::TEXT_VECTOR_DATA);
+  assert(bcn.type() == grnxx::TEXT_VECTOR_DATA);
+  assert(empty.type() == grnxx::TEXT_VECTOR_DATA);
+  assert(na.type() == grnxx::TEXT_VECTOR_DATA);
+
+  assert(abc[0].data() == data[0].data());
+  assert(abc[1].data() == data[1].data());
+  assert(abc[2].data() == data[2].data());
+
+  assert(bcn[0].data() == data[1].data());
+  assert(bcn[1].data() == data[2].data());
+  assert(bcn[2].is_na());
+
+  assert(abc.size().value() == 3);
+  assert(bcn.size().value() == 3);
+  assert(empty.size().value() == 0);
+  assert(na.size().is_na());
+
+  assert(!abc.is_empty());
+  assert(!abc.is_empty());
+  assert(empty.is_empty());
+  assert(!na.is_empty());
+
+  assert(!abc.is_na());
+  assert(!bcn.is_na());
+  assert(!empty.is_na());
+  assert(na.is_na());
+
+  assert((abc == abc).is_true());
+  assert((abc == bcn).is_false());
+  assert((abc == empty).is_false());
+  assert((abc == na).is_na());
+  assert((bcn == bcn).is_true());
+  assert((bcn == empty).is_false());
+  assert((bcn == na).is_na());
+  assert((empty == empty).is_true());
+  assert((empty == na).is_na());
+  assert((na == na).is_na());
+
+  assert((abc != abc).is_false());
+  assert((abc != bcn).is_true());
+  assert((abc != empty).is_true());
+  assert((abc != na).is_na());
+  assert((bcn != bcn).is_false());
+  assert((bcn != empty).is_true());
+  assert((bcn != na).is_na());
+  assert((empty != empty).is_false());
+  assert((empty != na).is_na());
+  assert((na != na).is_na());
+}
+
 int main() {
   test_bool();
   test_int();
@@ -1270,5 +1334,6 @@ int main() {
   test_int_vector();
   test_float_vector();
   test_geo_point_vector();
+  test_text_vector();
   return 0;
 }
