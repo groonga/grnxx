@@ -62,13 +62,6 @@ class Column<Text> : public ColumnBase {
       return Text(&bodies_[offset + sizeof(uint64_t)], size);
     }
   }
-//  Text get(Int row_id) const {
-//    size_t value_id = row_id.value();
-//    if (value_id >= values_.size()) {
-//      return Text::na();
-//    }
-//    return values_[value_id];
-//  }
   // Read values.
   //
   // On failure, throws an exception.
