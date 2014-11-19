@@ -235,7 +235,7 @@ void test_column() {
   reference_column->set(row_id, row_id);
   reference_column->get(row_id, &datum);
   assert(datum.type() == grnxx::INT_DATA);
-  assert(datum.as_int().value() == row_id.value());
+  assert(datum.as_int().match(row_id));
 
   grnxx::Bool bool_vector_value[] = {
     grnxx::Bool(true),
