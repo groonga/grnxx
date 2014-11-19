@@ -1109,6 +1109,38 @@ void test_text() {
   assert((na.ends_with(bc)).is_na());
   assert((na.ends_with(empty)).is_na());
   assert((na.ends_with(na)).is_na());
+
+  assert(ab.match(ab));
+  assert(!ab.match(abc));
+  assert(!ab.match(bc));
+  assert(!ab.match(empty));
+  assert(!ab.match(na));
+  assert(abc.match(abc));
+  assert(!abc.match(bc));
+  assert(!abc.match(empty));
+  assert(!abc.match(na));
+  assert(bc.match(bc));
+  assert(!bc.match(empty));
+  assert(!bc.match(na));
+  assert(empty.match(empty));
+  assert(!empty.match(na));
+  assert(na.match(na));
+
+  assert(!ab.unmatch(ab));
+  assert(ab.unmatch(abc));
+  assert(ab.unmatch(bc));
+  assert(ab.unmatch(empty));
+  assert(ab.unmatch(na));
+  assert(!abc.unmatch(abc));
+  assert(abc.unmatch(bc));
+  assert(abc.unmatch(empty));
+  assert(abc.unmatch(na));
+  assert(!bc.unmatch(bc));
+  assert(bc.unmatch(empty));
+  assert(bc.unmatch(na));
+  assert(!empty.unmatch(empty));
+  assert(empty.unmatch(na));
+  assert(!na.unmatch(na));
 }
 
 void test_bool_vector() {
