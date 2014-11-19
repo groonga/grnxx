@@ -24,7 +24,7 @@ void Column<Float>::set(Int row_id, const Datum &datum) {
     return;
   }
   Float old_value = get(row_id);
-  if (old_value.value() == new_value.value()) {
+  if (old_value.match(new_value)) {
     return;
   }
   if (!old_value.is_na()) {
@@ -69,7 +69,7 @@ bool Column<Float>::contains(const Datum &datum) const {
     }
   } else {
     for (size_t i = 0; i < values_.size(); ++i) {
-      if (values_[i].value() == value.value()) {
+      if (values_[i].match(value)) {
         return true;
       }
     }
@@ -88,7 +88,7 @@ Int Column<Float>::find_one(const Datum &datum) const {
     }
   } else {
     for (size_t i = 0; i < values_.size(); ++i) {
-      if (values_[i].value() == value.value()) {
+      if (values_[i].match(value)) {
         return Int(i);
       }
     }

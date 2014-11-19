@@ -24,8 +24,7 @@ void Column<GeoPoint>::set(Int row_id, const Datum &datum) {
     return;
   }
   GeoPoint old_value = get(row_id);
-  if ((old_value.latitude() == new_value.latitude()) &&
-      (old_value.longitude() == new_value.longitude())) {
+  if (old_value.match(new_value)) {
     return;
   }
   if (!old_value.is_na()) {
@@ -70,8 +69,7 @@ bool Column<GeoPoint>::contains(const Datum &datum) const {
     }
   } else {
     for (size_t i = 0; i < values_.size(); ++i) {
-      if ((values_[i].latitude() == value.latitude()) &&
-          (values_[i].longitude() == value.longitude())) {
+      if (values_[i].match(value)) {
         return true;
       }
     }
@@ -90,8 +88,7 @@ Int Column<GeoPoint>::find_one(const Datum &datum) const {
     }
   } else {
     for (size_t i = 0; i < values_.size(); ++i) {
-      if ((values_[i].latitude() == value.latitude()) &&
-          (values_[i].longitude() == value.longitude())) {
+      if (values_[i].match(value)) {
         return Int(i);
       }
     }

@@ -43,7 +43,7 @@ void Column<Vector<Int>>::set(Int row_id, const Datum &datum) {
     }
   }
   Vector<Int> old_value = get(row_id);
-  if ((old_value == new_value).is_true()) {
+  if (old_value.match(new_value)) {
     return;
   }
   if (!old_value.is_na()) {
@@ -109,7 +109,7 @@ bool Column<Vector<Int>>::contains(const Datum &datum) const {
   } else {
     for (size_t i = 0; i < headers_.size(); ++i) {
       // TODO: Improve this.
-      if ((get(Int(i)) == value).is_true()) {
+      if (get(Int(i)).match(value)) {
         return true;
       }
     }
@@ -129,7 +129,7 @@ Int Column<Vector<Int>>::find_one(const Datum &datum) const {
   } else {
     for (size_t i = 0; i < headers_.size(); ++i) {
       // TODO: Improve this.
-      if ((get(Int(i)) == value).is_true()) {
+      if (get(Int(i)).match(value)) {
         return Int(i);
       }
     }

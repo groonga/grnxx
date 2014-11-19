@@ -34,7 +34,7 @@ void Column<Text>::set(Int row_id, const Datum &datum) {
     return;
   }
   Text old_value = get(row_id);
-  if ((old_value == new_value).is_true()) {
+  if (old_value.match(new_value)) {
     return;
   }
   if (is_key_ && contains(datum)) {
@@ -153,8 +153,8 @@ bool Column<Text>::contains(const Datum &datum) const {
     }
   } else {
     for (size_t i = 0; i < headers_.size(); ++i) {
-      // TODO: Improve this.
-      if ((get(Int(i)) == value).is_true()) {
+      // TODO: Improve this (get() checks the range of its argument).
+      if (get(Int(i)).match(value)) {
         return true;
       }
     }
@@ -173,8 +173,8 @@ Int Column<Text>::find_one(const Datum &datum) const {
     }
   } else {
     for (size_t i = 0; i < headers_.size(); ++i) {
-      // TODO: Improve this.
-      if ((get(Int(i)) == value).is_true()) {
+      // TODO: Improve this (get() checks the range of its argument).
+      if (get(Int(i)).match(value)) {
         return Int(i);
       }
     }
