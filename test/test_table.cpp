@@ -98,7 +98,7 @@ void test_rows() {
   row_id = table->insert_row();
   assert(row_id.value() == 0);
   assert(table->num_rows() == 1);
-  assert(table->max_row_id().value() == row_id.value());
+  assert(table->max_row_id().match(row_id));
   assert(!table->test_row(grnxx::Int(-1)));
   assert(table->test_row(grnxx::Int(0)));
   assert(!table->test_row(grnxx::Int(1)));
@@ -153,7 +153,7 @@ void test_bitmap() {
   // Insert rows.
   for (size_t i = 0; i < NUM_ROWS; ++i) {
     grnxx::Int row_id(i);
-    assert(table->insert_row().value() == row_id.value());
+    assert(table->insert_row().match(row_id));
   }
   assert(table->num_rows() == NUM_ROWS);
   assert(table->max_row_id().value() == (NUM_ROWS - 1));
@@ -169,7 +169,7 @@ void test_bitmap() {
   // Insert rows again.
   for (size_t i = 0; i < NUM_ROWS; ++i) {
     grnxx::Int row_id(i);
-    assert(table->insert_row().value() == row_id.value());
+    assert(table->insert_row().match(row_id));
   }
   assert(table->num_rows() == NUM_ROWS);
   assert(table->max_row_id().value() == (NUM_ROWS - 1));
@@ -185,7 +185,7 @@ void test_bitmap() {
   // Insert rows again.
   for (size_t i = 0; i < NUM_ROWS; i += 2) {
     grnxx::Int row_id(i);
-    assert(table->insert_row().value() == row_id.value());
+    assert(table->insert_row().match(row_id));
   }
   assert(table->num_rows() == NUM_ROWS);
   assert(table->max_row_id().value() == (NUM_ROWS - 1));
@@ -193,7 +193,7 @@ void test_bitmap() {
   // Remove rows in reverse order.
   for (size_t i = 0; i < NUM_ROWS; ++i) {
     grnxx::Int row_id(NUM_ROWS - i - 1);
-    assert(table->max_row_id().value() == row_id.value());
+    assert(table->max_row_id().match(row_id));
     table->remove_row(row_id);
   }
   assert(table->max_row_id().is_na());
@@ -201,7 +201,7 @@ void test_bitmap() {
   // Insert rows again.
   for (size_t i = 0; i < NUM_ROWS; ++i) {
     grnxx::Int row_id(i);
-    assert(table->insert_row().value() == row_id.value());
+    assert(table->insert_row().match(row_id));
   }
   assert(table->num_rows() == NUM_ROWS);
   assert(table->max_row_id().value() == (NUM_ROWS - 1));
@@ -373,7 +373,7 @@ void test_cursor() {
   assert(records.size() == NUM_ROWS);
   for (size_t i = 0; i < NUM_ROWS; ++i) {
     grnxx::Int row_id(i);
-    assert(records[i].row_id.value() == row_id.value());
+    assert(records[i].row_id.match(row_id));
     assert(records[i].score.value() == 0.0);
   }
   records.clear();
@@ -386,7 +386,7 @@ void test_cursor() {
   assert(records.size() == NUM_ROWS);
   for (size_t i = 0; i < NUM_ROWS; ++i) {
     grnxx::Int row_id(NUM_ROWS - i - 1);
-    assert(records[i].row_id.value() == row_id.value());
+    assert(records[i].row_id.match(row_id));
     assert(records[i].score.value() == 0.0);
   }
   records.clear();
@@ -407,7 +407,7 @@ void test_cursor() {
   cursor = table->create_cursor();
   assert(cursor->read_all(&records) == row_ids.size());
   for (size_t i = 0; i < row_ids.size(); ++i) {
-    assert(records[i].row_id.value() == row_ids[i].value());
+    assert(records[i].row_id.match(row_ids[i]));
   }
   records.clear();
 
@@ -415,8 +415,7 @@ void test_cursor() {
   cursor = table->create_cursor(cursor_options);
   assert(cursor->read_all(&records) == row_ids.size());
   for (size_t i = 0; i < row_ids.size(); ++i) {
-    assert(records[i].row_id.value() ==
-           row_ids[row_ids.size() - i - 1].value());
+    assert(records[i].row_id.match(row_ids[row_ids.size() - i - 1]));
   }
   records.clear();
 }
