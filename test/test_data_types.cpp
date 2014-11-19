@@ -1205,6 +1205,28 @@ void test_bool_vector() {
   assert((empty != empty).is_false());
   assert((empty != na).is_na());
   assert((na != na).is_na());
+
+  assert(tft.match(tft));
+  assert(!tft.match(ftn));
+  assert(!tft.match(empty));
+  assert(!tft.match(na));
+  assert(ftn.match(ftn));
+  assert(!ftn.match(empty));
+  assert(!ftn.match(na));
+  assert(empty.match(empty));
+  assert(!empty.match(na));
+  assert(na.match(na));
+
+  assert(!tft.unmatch(tft));
+  assert(tft.unmatch(ftn));
+  assert(tft.unmatch(empty));
+  assert(tft.unmatch(na));
+  assert(!ftn.unmatch(ftn));
+  assert(ftn.unmatch(empty));
+  assert(ftn.unmatch(na));
+  assert(!empty.unmatch(empty));
+  assert(empty.unmatch(na));
+  assert(!na.unmatch(na));
 }
 
 void test_int_vector() {
@@ -1269,6 +1291,28 @@ void test_int_vector() {
   assert((empty != empty).is_false());
   assert((empty != na).is_na());
   assert((na != na).is_na());
+
+  assert(abc.match(abc));
+  assert(!abc.match(bcn));
+  assert(!abc.match(empty));
+  assert(!abc.match(na));
+  assert(bcn.match(bcn));
+  assert(!bcn.match(empty));
+  assert(!bcn.match(na));
+  assert(empty.match(empty));
+  assert(!empty.match(na));
+  assert(na.match(na));
+
+  assert(!abc.unmatch(abc));
+  assert(abc.unmatch(bcn));
+  assert(abc.unmatch(empty));
+  assert(abc.unmatch(na));
+  assert(!bcn.unmatch(bcn));
+  assert(bcn.unmatch(empty));
+  assert(bcn.unmatch(na));
+  assert(!empty.unmatch(empty));
+  assert(empty.unmatch(na));
+  assert(!na.unmatch(na));
 }
 
 void test_float_vector() {
@@ -1333,6 +1377,28 @@ void test_float_vector() {
   assert((empty != empty).is_false());
   assert((empty != na).is_na());
   assert((na != na).is_na());
+
+  assert(abc.match(abc));
+  assert(!abc.match(bcn));
+  assert(!abc.match(empty));
+  assert(!abc.match(na));
+  assert(bcn.match(bcn));
+  assert(!bcn.match(empty));
+  assert(!bcn.match(na));
+  assert(empty.match(empty));
+  assert(!empty.match(na));
+  assert(na.match(na));
+
+  assert(!abc.unmatch(abc));
+  assert(abc.unmatch(bcn));
+  assert(abc.unmatch(empty));
+  assert(abc.unmatch(na));
+  assert(!bcn.unmatch(bcn));
+  assert(bcn.unmatch(empty));
+  assert(bcn.unmatch(na));
+  assert(!empty.unmatch(empty));
+  assert(empty.unmatch(na));
+  assert(!na.unmatch(na));
 }
 
 void test_geo_point_vector() {
@@ -1405,6 +1471,28 @@ void test_geo_point_vector() {
   assert((empty != empty).is_false());
   assert((empty != na).is_na());
   assert((na != na).is_na());
+
+  assert(sto.match(sto));
+  assert(!sto.match(ton));
+  assert(!sto.match(empty));
+  assert(!sto.match(na));
+  assert(ton.match(ton));
+  assert(!ton.match(empty));
+  assert(!ton.match(na));
+  assert(empty.match(empty));
+  assert(!empty.match(na));
+  assert(na.match(na));
+
+  assert(!sto.unmatch(sto));
+  assert(sto.unmatch(ton));
+  assert(sto.unmatch(empty));
+  assert(sto.unmatch(na));
+  assert(!ton.unmatch(ton));
+  assert(ton.unmatch(empty));
+  assert(ton.unmatch(na));
+  assert(!empty.unmatch(empty));
+  assert(empty.unmatch(na));
+  assert(!na.unmatch(na));
 }
 
 void test_text_vector() {
@@ -1469,6 +1557,28 @@ void test_text_vector() {
   assert((empty != empty).is_false());
   assert((empty != na).is_na());
   assert((na != na).is_na());
+
+  assert(abc.match(abc));
+  assert(!abc.match(bcn));
+  assert(!abc.match(empty));
+  assert(!abc.match(na));
+  assert(bcn.match(bcn));
+  assert(!bcn.match(empty));
+  assert(!bcn.match(na));
+  assert(empty.match(empty));
+  assert(!empty.match(na));
+  assert(na.match(na));
+
+  assert(!abc.unmatch(abc));
+  assert(abc.unmatch(bcn));
+  assert(abc.unmatch(empty));
+  assert(abc.unmatch(na));
+  assert(!bcn.unmatch(bcn));
+  assert(bcn.unmatch(empty));
+  assert(bcn.unmatch(na));
+  assert(!empty.unmatch(empty));
+  assert(empty.unmatch(na));
+  assert(!na.unmatch(na));
 }
 
 int main() {
