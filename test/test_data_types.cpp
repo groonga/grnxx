@@ -47,63 +47,83 @@ void test_bool() {
   assert(!na_object.is_false());
   assert(na_object.is_na());
 
-  assert((!true_object).value() == false_object.value());
-  assert((!false_object).value() == true_object.value());
+  assert((!true_object).is_false());
+  assert((!false_object).is_true());
   assert((!na_object).is_na());
 
-  assert((~true_object).value() == false_object.value());
-  assert((~false_object).value() == true_object.value());
+  assert((~true_object).is_false());
+  assert((~false_object).is_true());
   assert((~na_object).is_na());
 
-  assert((true_object & true_object).value() == true_object.value());
-  assert((true_object & false_object).value() == false_object.value());
+  assert((true_object & true_object).is_true());
+  assert((true_object & false_object).is_false());
   assert((true_object & na_object).is_na());
-  assert((false_object & true_object).value() == false_object.value());
-  assert((false_object & false_object).value() == false_object.value());
-  assert((false_object & na_object).value() == false_object.value());
+  assert((false_object & true_object).is_false());
+  assert((false_object & false_object).is_false());
+  assert((false_object & na_object).is_false());
   assert((na_object & true_object).is_na());
-  assert((na_object & false_object).value() == false_object.value());
+  assert((na_object & false_object).is_false());
   assert((na_object & na_object).is_na());
 
-  assert((true_object | true_object).value() == true_object.value());
-  assert((true_object | false_object).value() == true_object.value());
-  assert((true_object | na_object).value() == true_object.value());
-  assert((false_object | true_object).value() == true_object.value());
-  assert((false_object | false_object).value() == false_object.value());
+  assert((true_object | true_object).is_true());
+  assert((true_object | false_object).is_true());
+  assert((true_object | na_object).is_true());
+  assert((false_object | true_object).is_true());
+  assert((false_object | false_object).is_false());
   assert((false_object | na_object).is_na());
-  assert((na_object | true_object).value() == true_object.value());
+  assert((na_object | true_object).is_true());
   assert((na_object | false_object).is_na());
   assert((na_object | na_object).is_na());
 
-  assert((true_object ^ true_object).value() == false_object.value());
-  assert((true_object ^ false_object).value() == true_object.value());
+  assert((true_object ^ true_object).is_false());
+  assert((true_object ^ false_object).is_true());
   assert((true_object ^ na_object).is_na());
-  assert((false_object ^ true_object).value() == true_object.value());
-  assert((false_object ^ false_object).value() == false_object.value());
+  assert((false_object ^ true_object).is_true());
+  assert((false_object ^ false_object).is_false());
   assert((false_object ^ na_object).is_na());
   assert((na_object ^ true_object).is_na());
   assert((na_object ^ false_object).is_na());
   assert((na_object ^ na_object).is_na());
 
-  assert((true_object == true_object).value() == true_object.value());
-  assert((true_object == false_object).value() == false_object.value());
+  assert((true_object == true_object).is_true());
+  assert((true_object == false_object).is_false());
   assert((true_object == na_object).is_na());
-  assert((false_object == true_object).value() == false_object.value());
-  assert((false_object == false_object).value() == true_object.value());
+  assert((false_object == true_object).is_false());
+  assert((false_object == false_object).is_true());
   assert((false_object == na_object).is_na());
   assert((na_object == true_object).is_na());
   assert((na_object == false_object).is_na());
   assert((na_object == na_object).is_na());
 
-  assert((true_object != true_object).value() == false_object.value());
-  assert((true_object != false_object).value() == true_object.value());
+  assert((true_object != true_object).is_false());
+  assert((true_object != false_object).is_true());
   assert((true_object != na_object).is_na());
-  assert((false_object != true_object).value() == true_object.value());
-  assert((false_object != false_object).value() == false_object.value());
+  assert((false_object != true_object).is_true());
+  assert((false_object != false_object).is_false());
   assert((false_object != na_object).is_na());
   assert((na_object != true_object).is_na());
   assert((na_object != false_object).is_na());
   assert((na_object != na_object).is_na());
+
+  assert(true_object.match(true_object));
+  assert(!true_object.match(false_object));
+  assert(!true_object.match(na_object));
+  assert(!false_object.match(true_object));
+  assert(false_object.match(false_object));
+  assert(!false_object.match(na_object));
+  assert(!na_object.match(true_object));
+  assert(!na_object.match(false_object));
+  assert(na_object.match(na_object));
+
+  assert(!true_object.unmatch(true_object));
+  assert(true_object.unmatch(false_object));
+  assert(true_object.unmatch(na_object));
+  assert(false_object.unmatch(true_object));
+  assert(!false_object.unmatch(false_object));
+  assert(false_object.unmatch(na_object));
+  assert(na_object.unmatch(true_object));
+  assert(na_object.unmatch(false_object));
+  assert(!na_object.unmatch(na_object));
 
   assert(grnxx::Bool::na().is_na());
 }
