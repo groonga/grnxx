@@ -104,7 +104,8 @@ class Vector<Text> {
     // TODO: This is because raw values are not normalized.
     size_t size = size_.value();
     for (size_t i = 0; i < size; ++i) {
-      if (data_[i].unmatch(rhs.data_[i])) {
+      // TODO: This can be improved.
+      if (operator[](grnxx::Int(i)).unmatch(rhs[grnxx::Int(i)])) {
         return false;
       }
     }
@@ -120,7 +121,8 @@ class Vector<Text> {
     // TODO: This is because raw values are not normalized.
     size_t size = size_.value();
     for (size_t i = 0; i < size; ++i) {
-      if (data_[i].unmatch(rhs.data_[i])) {
+      // TODO: This can be improved.
+      if (operator[](grnxx::Int(i)).unmatch(rhs[grnxx::Int(i)])) {
         return true;
       }
     }
