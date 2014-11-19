@@ -94,6 +94,39 @@ class Vector<Text> {
     return has_not_equal_size;
   }
 
+  bool match(const Vector &rhs) const {
+    if (size_.unmatch(rhs.size_)) {
+      return false;
+    }
+    if (is_na()) {
+      return true;
+    }
+    // TODO: This is because raw values are not normalized.
+    size_t size = size_.value();
+    for (size_t i = 0; i < size; ++i) {
+      if (data_[i].unmatch(rhs.data_[i])) {
+        return false;
+      }
+    }
+    return true;
+  }
+  bool unmatch(const Vector &rhs) const {
+    if (size_.unmatch(rhs.size_)) {
+      return true;
+    }
+    if (is_na()) {
+      return false;
+    }
+    // TODO: This is because raw values are not normalized.
+    size_t size = size_.value();
+    for (size_t i = 0; i < size; ++i) {
+      if (data_[i].unmatch(rhs.data_[i])) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   static constexpr DataType type() {
     return TEXT_VECTOR_DATA;
   }

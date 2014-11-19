@@ -105,6 +105,14 @@ class GeoPoint {
                 (longitude_ != rhs.longitude_));
   }
 
+  // TODO: std::memcmp() might be better.
+  constexpr bool match(const GeoPoint &rhs) const {
+    return (latitude_ == rhs.latitude_) && (longitude_ == rhs.longitude_);
+  }
+  constexpr bool unmatch(const GeoPoint &rhs) const {
+    return (latitude_ != rhs.latitude_) || (longitude_ != rhs.longitude_);
+  }
+
   static constexpr DataType type() {
     return GEO_POINT_DATA;
   }

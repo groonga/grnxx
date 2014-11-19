@@ -221,6 +221,13 @@ class Int {
     return (is_na() || rhs.is_na()) ? Bool::na() : Bool(value_ >= rhs.value_);
   }
 
+  constexpr bool match(Int rhs) const {
+    return value_ == rhs.value_;
+  }
+  constexpr bool unmatch(Int rhs) const {
+    return value_ != rhs.value_;
+  }
+
   // -- Typecast (grnxx/data_types/typecast.hpp) --
 
   constexpr Float to_float() const;

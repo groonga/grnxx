@@ -116,6 +116,13 @@ class Float {
     return (is_na() || rhs.is_na()) ? Bool::na() : Bool(value_ >= rhs.value_);
   }
 
+  constexpr bool match(Float rhs) const {
+    return (is_na() && rhs.is_na()) || (value_ == rhs.value_);
+  }
+  constexpr bool unmatch(Float rhs) const {
+    return !(is_na() && rhs.is_na()) && (value_ != rhs.value_);
+  }
+
   // Return the next representable toward "to".
   Float next_toward(Float to) const {
     return Float(std::nextafter(value_, to.value_));

@@ -67,6 +67,27 @@ class Vector<GeoPoint> {
     return has_not_equal_size;
   }
 
+  bool match(const Vector &rhs) const {
+    if (size_.unmatch(rhs.size_)) {
+      return false;
+    }
+    if (is_na()) {
+      return true;
+    }
+    return std::memcmp(data_, rhs.data_,
+                       sizeof(GeoPoint) * size_.value()) == 0;
+  }
+  bool unmatch(const Vector &rhs) const {
+    if (size_.unmatch(rhs.size_)) {
+      return true;
+    }
+    if (is_na()) {
+      return false;
+    }
+    return std::memcmp(data_, rhs.data_,
+                       sizeof(GeoPoint) * size_.value()) != 0;
+  }
+
   static constexpr DataType type() {
     return GEO_POINT_VECTOR_DATA;
   }

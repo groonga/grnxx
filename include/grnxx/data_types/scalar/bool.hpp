@@ -82,6 +82,13 @@ class Bool {
            Bool(static_cast<uint8_t>(value_ ^ rhs.value_));
   }
 
+  constexpr bool match(Bool rhs) const {
+    return value_ == rhs.value_;
+  }
+  constexpr bool unmatch(Bool rhs) const {
+    return value_ != rhs.value_;
+  }
+
   static constexpr DataType type() {
     return BOOL_DATA;
   }
