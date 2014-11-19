@@ -893,6 +893,38 @@ void test_geo_point() {
   assert((date_line != date_line).is_false());
   assert((date_line != na).is_na());
   assert((na != na).is_na());
+
+  assert(zero.match(zero));
+  assert(!zero.match(north_pole));
+  assert(!zero.match(south_pole));
+  assert(!zero.match(date_line));
+  assert(!zero.match(na));
+  assert(north_pole.match(north_pole));
+  assert(!north_pole.match(south_pole));
+  assert(!north_pole.match(date_line));
+  assert(!north_pole.match(na));
+  assert(south_pole.match(south_pole));
+  assert(!south_pole.match(date_line));
+  assert(!south_pole.match(na));
+  assert(date_line.match(date_line));
+  assert(!date_line.match(na));
+  assert(na.match(na));
+
+  assert(!zero.unmatch(zero));
+  assert(zero.unmatch(north_pole));
+  assert(zero.unmatch(south_pole));
+  assert(zero.unmatch(date_line));
+  assert(zero.unmatch(na));
+  assert(!north_pole.unmatch(north_pole));
+  assert(north_pole.unmatch(south_pole));
+  assert(north_pole.unmatch(date_line));
+  assert(north_pole.unmatch(na));
+  assert(!south_pole.unmatch(south_pole));
+  assert(south_pole.unmatch(date_line));
+  assert(south_pole.unmatch(na));
+  assert(!date_line.unmatch(date_line));
+  assert(date_line.unmatch(na));
+  assert(!na.unmatch(na));
 }
 
 void test_text() {
