@@ -156,14 +156,14 @@ void test_int() {
 
   assert((+grnxx::Int(0)).value() == 0);
   assert((+grnxx::Int(1)).value() == 1);
-  assert((+grnxx::Int::min()).value() == grnxx::Int::min_value());
-  assert((+grnxx::Int::max()).value() == grnxx::Int::max_value());
+  assert((+grnxx::Int::min()).is_min());
+  assert((+grnxx::Int::max()).is_max());
   assert((+grnxx::Int::na()).is_na());
 
   assert((-grnxx::Int(0)).value() == 0);
   assert((-grnxx::Int(1)).value() == -1);
-  assert((-grnxx::Int::min()).value() == grnxx::Int::max_value());
-  assert((-grnxx::Int::max()).value() == grnxx::Int::min_value());
+  assert((-grnxx::Int::min()).is_max());
+  assert((-grnxx::Int::max()).is_min());
   assert((-grnxx::Int::na()).is_na());
 
   assert((~grnxx::Int(0)).value() == -1);
@@ -470,6 +470,26 @@ void test_int() {
   assert((grnxx::Int::na() >= grnxx::Int(0)).is_na());
   assert((grnxx::Int::na() >= grnxx::Int(1)).is_na());
   assert((grnxx::Int::na() >= grnxx::Int::na()).is_na());
+
+  assert(grnxx::Int(0).match(grnxx::Int(0)));
+  assert(!grnxx::Int(0).match(grnxx::Int(1)));
+  assert(!grnxx::Int(0).match(grnxx::Int::na()));
+  assert(!grnxx::Int(1).match(grnxx::Int(0)));
+  assert(grnxx::Int(1).match(grnxx::Int(1)));
+  assert(!grnxx::Int(1).match(grnxx::Int::na()));
+  assert(!grnxx::Int::na().match(grnxx::Int(0)));
+  assert(!grnxx::Int::na().match(grnxx::Int(1)));
+  assert(grnxx::Int::na().match(grnxx::Int::na()));
+
+  assert(!grnxx::Int(0).unmatch(grnxx::Int(0)));
+  assert(grnxx::Int(0).unmatch(grnxx::Int(1)));
+  assert(grnxx::Int(0).unmatch(grnxx::Int::na()));
+  assert(grnxx::Int(1).unmatch(grnxx::Int(0)));
+  assert(!grnxx::Int(1).unmatch(grnxx::Int(1)));
+  assert(grnxx::Int(1).unmatch(grnxx::Int::na()));
+  assert(grnxx::Int::na().unmatch(grnxx::Int(0)));
+  assert(grnxx::Int::na().unmatch(grnxx::Int(1)));
+  assert(!grnxx::Int::na().unmatch(grnxx::Int::na()));
 }
 
 void test_float() {
