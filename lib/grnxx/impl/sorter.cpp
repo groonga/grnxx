@@ -430,6 +430,39 @@ Node *Node::create(SorterOrder &&order) try {
 
 using namespace sorter;
 
+Sorter::Sorter(Array<SorterOrder> &&orders, const SorterOptions &options)
+    : table_(nullptr),
+      nodes_(),
+      records_(nullptr),
+      offset_(options.offset),
+      limit_(options.limit) {
+  // A sorter requires one or more orders.
+  // Also, expressions must be valid and associated tables must be the same.
+  if (orders.size() == 0) {
+    throw "No order";  // TODO
+  }
+  for (size_t i = 0; i < orders.size(); ++i) {
+    if (!orders[i].expression) {
+      throw "Missing expression";  // TODO
+    }
+  }
+  table_ = static_cast<const Table *>(orders[0].expression->table());
+  for (size_t i = 1; i < orders.size(); ++i) {
+    if (orders[i].expression->table() != table_) {
+      throw "Table conflict";  // TODO
+    }
+  }
+
+  nodes_.resize(orders.size());
+  for (size_t i = 0; i < orders.size(); ++i) {
+    nodes_[i].reset(Node::create(std::move(orders[i])));
+  }
+  for (size_t i = 1; i < orders.size(); ++i) {
+    nodes_[i - 1]->set_next(nodes_[i].get());
+  }
+  orders.clear();
+}
+
 Sorter::~Sorter() {}
 
 void Sorter::reset(Array<Record> *records) {
@@ -468,39 +501,6 @@ void Sorter::finish() {
 void Sorter::sort(Array<Record> *records) {
   reset(records);
   finish();
-}
-
-Sorter::Sorter(Array<SorterOrder> &&orders, const SorterOptions &options)
-    : table_(nullptr),
-      nodes_(),
-      records_(nullptr),
-      offset_(options.offset),
-      limit_(options.limit) {
-  // A sorter requires one or more orders.
-  // Also, expressions must be valid and associated tables must be the same.
-  if (orders.size() == 0) {
-    throw "No order";  // TODO
-  }
-  for (size_t i = 0; i < orders.size(); ++i) {
-    if (!orders[i].expression) {
-      throw "Missing expression";  // TODO
-    }
-  }
-  table_ = static_cast<const Table *>(orders[0].expression->table());
-  for (size_t i = 1; i < orders.size(); ++i) {
-    if (orders[i].expression->table() != table_) {
-      throw "Table conflict";  // TODO
-    }
-  }
-
-  nodes_.resize(orders.size());
-  for (size_t i = 0; i < orders.size(); ++i) {
-    nodes_[i].reset(Node::create(std::move(orders[i])));
-  }
-  for (size_t i = 1; i < orders.size(); ++i) {
-    nodes_[i - 1]->set_next(nodes_[i].get());
-  }
-  orders.clear();
 }
 
 }  // namespace impl

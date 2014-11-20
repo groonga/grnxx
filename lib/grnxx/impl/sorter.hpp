@@ -20,6 +20,7 @@ class Sorter : public SorterInterface {
 
   // -- Public API (grnxx/sorter.hpp) --
 
+  Sorter(Array<SorterOrder> &&orders, const SorterOptions &options);
   ~Sorter();
 
   const Table *table() const {
@@ -29,11 +30,6 @@ class Sorter : public SorterInterface {
   void progress();
   void finish();
   void sort(Array<Record> *records);
-
-  // -- Internal API --
-
-  // On failure, throws an exception.
-  Sorter(Array<SorterOrder> &&orders, const SorterOptions &options);
 
  private:
   const Table *table_;
