@@ -6,11 +6,11 @@ TESTS =				\
 	test_table		\
 	test_column		\
 	test_expression		\
+	test_sorter		\
 	test_issue_62
 
 #	test_index		\
 #	test_merger		\
-#	test_sorter		\
 #	test_pipeline
 
 check_PROGRAMS = $(TESTS)
@@ -42,8 +42,8 @@ test_expression_LDADD = $(top_srcdir)/lib/grnxx/libgrnxx.la
 #test_merger_SOURCES = test_merger.cpp
 #test_merger_LDADD = $(top_srcdir)/lib/grnxx/libgrnxx.la
 
-#test_sorter_SOURCES = test_sorter.cpp
-#test_sorter_LDADD = $(top_srcdir)/lib/grnxx/libgrnxx.la
+test_sorter_SOURCES = test_sorter.cpp
+test_sorter_LDADD = $(top_srcdir)/lib/grnxx/libgrnxx.la
 
 #test_pipeline_SOURCES = test_pipeline.cpp
 #test_pipeline_LDADD = $(top_srcdir)/lib/grnxx/libgrnxx.la
