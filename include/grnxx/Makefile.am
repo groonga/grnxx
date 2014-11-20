@@ -13,6 +13,7 @@ pkginclude_HEADERS =	\
 	features.hpp	\
 	index.hpp	\
 	library.hpp	\
+	sorter.hpp	\
 	string.hpp	\
 	table.hpp
 
