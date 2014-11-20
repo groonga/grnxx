@@ -175,333 +175,335 @@ void test_bool() {
     }
   }
 
-//  // Create a multiple order sorter.
-//  assert(orders.resize(&error, 2));
-//  assert(expression_builder->push_column(&error, "Bool"));
-//  expression = expression_builder->release(&error);
-//  assert(expression);
-//  orders[0].expression = std::move(expression);
-//  orders[0].type = grnxx::REGULAR_ORDER;
-//  assert(expression_builder->push_row_id(&error));
-//  expression = expression_builder->release(&error);
-//  assert(expression);
-//  orders[1].expression = std::move(expression);
-//  orders[1].type = grnxx::REGULAR_ORDER;
-//  sorter = grnxx::Sorter::create(&error, std::move(orders));
+  // Create a multiple order sorter.
+  orders.resize(2);
+  expression_builder->push_column("Bool");
+  expression = expression_builder->release();
+  orders[0].expression = std::move(expression);
+  orders[0].type = grnxx::SORTER_REGULAR_ORDER;
+  expression_builder->push_row_id();
+  expression = expression_builder->release();
+  orders[1].expression = std::move(expression);
+  orders[1].type = grnxx::SORTER_REGULAR_ORDER;
+  sorter = grnxx::Sorter::create(std::move(orders));
 
-//  sorter->sort(&error, &records);
-//  for (grnxx::Int i = 1; i < records.size(); ++i) {
-//    grnxx::Int lhs_row_id = records.get_row_id(i - 1);
-//    grnxx::Int rhs_row_id = records.get_row_id(i);
-//    grnxx::Bool lhs_value = test.bool_values[lhs_row_id];
-//    grnxx::Bool rhs_value = test.bool_values[rhs_row_id];
-//    assert(!lhs_value || rhs_value);
-//    if (lhs_value == rhs_value) {
-//      assert(lhs_row_id < rhs_row_id);
-//    }
-//  }
+  sorter->sort(&records);
+  for (size_t i = 1; i < records.size(); ++i) {
+    size_t lhs_row_id = records[i - 1].row_id.value();
+    size_t rhs_row_id = records[i].row_id.value();
+    grnxx::Bool lhs_value = test.bool_values[lhs_row_id];
+    grnxx::Bool rhs_value = test.bool_values[rhs_row_id];
+    if (lhs_value.is_true()) {
+      assert(rhs_value.is_true() || rhs_value.is_na());
+    } else if (lhs_value.is_na()) {
+      assert(rhs_value.is_na());
+    }
+    if (lhs_value.match(rhs_value)) {
+      assert(lhs_row_id < rhs_row_id);
+    }
+  }
 }
 
-//void test_int() {
-//  grnxx::Error error;
+void test_int() {
+  // Create a cursor which reads all the records.
+  auto records = create_input_records();
 
-//  // Create a cursor which reads all the records.
-//  auto records = create_input_records();
+  // Create an object for building expressions.
+  auto expression_builder = grnxx::ExpressionBuilder::create(test.table);
 
-//  // Create an object for building expressions.
-//  auto expression_builder =
-//      grnxx::ExpressionBuilder::create(&error, test.table);
-//  assert(expression_builder);
+  // Create a regular sorter.
+  grnxx::Array<grnxx::SorterOrder> orders;
+  orders.resize(1);
+  expression_builder->push_column("Int");
+  auto expression = expression_builder->release();
+  orders[0].expression = std::move(expression);
+  orders[0].type = grnxx::SORTER_REGULAR_ORDER;
+  auto sorter = grnxx::Sorter::create(std::move(orders));
 
-//  // Create a regular sorter.
-//  grnxx::Array<grnxx::SortOrder> orders;
-//  assert(orders.resize(&error, 1));
-//  assert(expression_builder->push_column(&error, "Int"));
-//  auto expression = expression_builder->release(&error);
-//  assert(expression);
-//  orders[0].expression = std::move(expression);
-//  orders[0].type = grnxx::REGULAR_ORDER;
-//  auto sorter = grnxx::Sorter::create(&error, std::move(orders));
+  sorter->sort(&records);
+  for (size_t i = 1; i < records.size(); ++i) {
+    size_t lhs_row_id = records[i - 1].row_id.value();
+    size_t rhs_row_id = records[i].row_id.value();
+    grnxx::Int lhs_value = test.int_values[lhs_row_id];
+    grnxx::Int rhs_value = test.int_values[rhs_row_id];
+    if (lhs_value.is_na()) {
+      assert(rhs_value.is_na());
+    } else {
+      assert(rhs_value.is_na() || (lhs_value <= rhs_value).is_true());
+    }
+  }
 
-//  sorter->sort(&error, &records);
-//  for (grnxx::Int i = 1; i < records.size(); ++i) {
-//    grnxx::Int lhs_row_id = records.get_row_id(i - 1);
-//    grnxx::Int rhs_row_id = records.get_row_id(i);
-//    grnxx::Int lhs_value = test.int_values[lhs_row_id];
-//    grnxx::Int rhs_value = test.int_values[rhs_row_id];
-//    assert(lhs_value <= rhs_value);
-//  }
+  // Create a reverse sorter.
+  orders.resize(1);
+  expression_builder->push_column("Int");
+  expression = expression_builder->release();
+  orders[0].expression = std::move(expression);
+  orders[0].type = grnxx::SORTER_REVERSE_ORDER;
+  sorter = grnxx::Sorter::create(std::move(orders));
 
-//  // Create a reverse sorter.
-//  assert(orders.resize(&error, 1));
-//  assert(expression_builder->push_column(&error, "Int"));
-//  expression = expression_builder->release(&error);
-//  assert(expression);
-//  orders[0].expression = std::move(expression);
-//  orders[0].type = grnxx::REVERSE_ORDER;
-//  sorter = grnxx::Sorter::create(&error, std::move(orders));
+  sorter->sort(&records);
+  for (size_t i = 1; i < records.size(); ++i) {
+    size_t lhs_row_id = records[i - 1].row_id.value();
+    size_t rhs_row_id = records[i].row_id.value();
+    grnxx::Int lhs_value = test.int_values[lhs_row_id];
+    grnxx::Int rhs_value = test.int_values[rhs_row_id];
+    if (lhs_value.is_na()) {
+      assert(rhs_value.is_na());
+    } else {
+      assert(rhs_value.is_na() || (lhs_value >= rhs_value).is_true());
+    }
+  }
 
-//  sorter->sort(&error, &records);
-//  for (grnxx::Int i = 1; i < records.size(); ++i) {
-//    grnxx::Int lhs_row_id = records.get_row_id(i - 1);
-//    grnxx::Int rhs_row_id = records.get_row_id(i);
-//    grnxx::Int lhs_value = test.int_values[lhs_row_id];
-//    grnxx::Int rhs_value = test.int_values[rhs_row_id];
-//    assert(lhs_value >= rhs_value);
-//  }
+  // Create a multiple order sorter.
+  orders.resize(2);
+  expression_builder->push_column("Int");
+  expression = expression_builder->release();
+  orders[0].expression = std::move(expression);
+  orders[0].type = grnxx::SORTER_REGULAR_ORDER;
+  expression_builder->push_row_id();
+  expression = expression_builder->release();
+  orders[1].expression = std::move(expression);
+  orders[1].type = grnxx::SORTER_REGULAR_ORDER;
+  sorter = grnxx::Sorter::create(std::move(orders));
 
-//  // Create a multiple order sorter.
-//  assert(orders.resize(&error, 2));
-//  assert(expression_builder->push_column(&error, "Int"));
-//  expression = expression_builder->release(&error);
-//  assert(expression);
-//  orders[0].expression = std::move(expression);
-//  orders[0].type = grnxx::REGULAR_ORDER;
-//  assert(expression_builder->push_row_id(&error));
-//  expression = expression_builder->release(&error);
-//  assert(expression);
-//  orders[1].expression = std::move(expression);
-//  orders[1].type = grnxx::REGULAR_ORDER;
-//  sorter = grnxx::Sorter::create(&error, std::move(orders));
+  sorter->sort(&records);
+  for (size_t i = 1; i < records.size(); ++i) {
+    size_t lhs_row_id = records[i - 1].row_id.value();
+    size_t rhs_row_id = records[i].row_id.value();
+    grnxx::Int lhs_value = test.int_values[lhs_row_id];
+    grnxx::Int rhs_value = test.int_values[rhs_row_id];
+    if (lhs_value.is_na()) {
+      assert(rhs_value.is_na());
+    } else {
+      assert(rhs_value.is_na() || (lhs_value <= rhs_value).is_true());
+    }
+    if (lhs_value.match(rhs_value)) {
+      assert(lhs_row_id < rhs_row_id);
+    }
+  }
+}
 
-//  sorter->sort(&error, &records);
-//  for (grnxx::Int i = 1; i < records.size(); ++i) {
-//    grnxx::Int lhs_row_id = records.get_row_id(i - 1);
-//    grnxx::Int rhs_row_id = records.get_row_id(i);
-//    grnxx::Int lhs_value = test.int_values[lhs_row_id];
-//    grnxx::Int rhs_value = test.int_values[rhs_row_id];
-//    assert(lhs_value <= rhs_value);
-//    if (lhs_value == rhs_value) {
-//      assert(lhs_row_id < rhs_row_id);
-//    }
-//  }
-//}
+void test_float() {
+  // Create a cursor which reads all the records.
+  auto records = create_input_records();
 
-//struct LessEqual {
-//  bool operator()(grnxx::Float lhs, grnxx::Float rhs) const {
-//    // Numbers are prior to NaN.
-//    if (std::isnan(rhs)) {
-//      return true;
-//    } else if (std::isnan(lhs)) {
-//      return false;
-//    }
-//    return lhs <= rhs;
-//  }
-//};
+  // Create an object for building expressions.
+  auto expression_builder = grnxx::ExpressionBuilder::create(test.table);
 
-//struct Equal {
-//  bool operator()(grnxx::Float lhs, grnxx::Float rhs) const {
-//    return (lhs == rhs) || (std::isnan(lhs) && std::isnan(rhs));
-//  }
-//};
+  // Create a regular sorter.
+  grnxx::Array<grnxx::SorterOrder> orders;
+  orders.resize(1);
+  expression_builder->push_column("Float");
+  auto expression = expression_builder->release();
+  orders[0].expression = std::move(expression);
+  orders[0].type = grnxx::SORTER_REGULAR_ORDER;
+  auto sorter = grnxx::Sorter::create(std::move(orders));
 
-//void test_float() {
-//  grnxx::Error error;
+  sorter->sort(&records);
+  for (size_t i = 1; i < records.size(); ++i) {
+    size_t lhs_row_id = records[i - 1].row_id.value();
+    size_t rhs_row_id = records[i].row_id.value();
+    grnxx::Float lhs_value = test.float_values[lhs_row_id];
+    grnxx::Float rhs_value = test.float_values[rhs_row_id];
+    if (lhs_value.is_na()) {
+      assert(rhs_value.is_na());
+    } else {
+      assert(rhs_value.is_na() || (lhs_value <= rhs_value).is_true());
+    }
+  }
 
-//  // Create a cursor which reads all the records.
-//  auto records = create_input_records();
+  // Create a reverse sorter.
+  orders.resize(1);
+  expression_builder->push_column("Float");
+  expression = expression_builder->release();
+  orders[0].expression = std::move(expression);
+  orders[0].type = grnxx::SORTER_REVERSE_ORDER;
+  sorter = grnxx::Sorter::create(std::move(orders));
 
-//  // Create an object for building expressions.
-//  auto expression_builder =
-//      grnxx::ExpressionBuilder::create(&error, test.table);
-//  assert(expression_builder);
+  sorter->sort(&records);
+  for (size_t i = 1; i < records.size(); ++i) {
+    size_t lhs_row_id = records[i - 1].row_id.value();
+    size_t rhs_row_id = records[i].row_id.value();
+    grnxx::Float lhs_value = test.float_values[lhs_row_id];
+    grnxx::Float rhs_value = test.float_values[rhs_row_id];
+    if (lhs_value.is_na()) {
+      assert(rhs_value.is_na());
+    } else {
+      assert(rhs_value.is_na() || (lhs_value >= rhs_value).is_true());
+    }
+  }
 
-//  // Create a regular sorter.
-//  grnxx::Array<grnxx::SortOrder> orders;
-//  assert(orders.resize(&error, 1));
-//  assert(expression_builder->push_column(&error, "Float"));
-//  auto expression = expression_builder->release(&error);
-//  assert(expression);
-//  orders[0].expression = std::move(expression);
-//  orders[0].type = grnxx::REGULAR_ORDER;
-//  auto sorter = grnxx::Sorter::create(&error, std::move(orders));
+  // Create a multiple order sorter.
+  orders.resize(2);
+  expression_builder->push_column("Float");
+  expression = expression_builder->release();
+  orders[0].expression = std::move(expression);
+  orders[0].type = grnxx::SORTER_REGULAR_ORDER;
+  expression_builder->push_row_id();
+  expression = expression_builder->release();
+  orders[1].expression = std::move(expression);
+  orders[1].type = grnxx::SORTER_REGULAR_ORDER;
+  sorter = grnxx::Sorter::create(std::move(orders));
 
-//  sorter->sort(&error, &records);
-//  for (grnxx::Int i = 1; i < records.size(); ++i) {
-//    grnxx::Int lhs_row_id = records.get_row_id(i - 1);
-//    grnxx::Int rhs_row_id = records.get_row_id(i);
-//    grnxx::Float lhs_value = test.float_values[lhs_row_id];
-//    grnxx::Float rhs_value = test.float_values[rhs_row_id];
-//    assert(LessEqual()(lhs_value, rhs_value));
-//  }
+  sorter->sort(&records);
+  for (size_t i = 1; i < records.size(); ++i) {
+    size_t lhs_row_id = records[i - 1].row_id.value();
+    size_t rhs_row_id = records[i].row_id.value();
+    grnxx::Float lhs_value = test.float_values[lhs_row_id];
+    grnxx::Float rhs_value = test.float_values[rhs_row_id];
+    if (lhs_value.is_na()) {
+      assert(rhs_value.is_na());
+    } else {
+      assert(rhs_value.is_na() || (lhs_value <= rhs_value).is_true());
+    }
+    if (lhs_value.match(rhs_value)) {
+      assert(lhs_row_id < rhs_row_id);
+    }
+  }
+}
 
-//  // Create a reverse sorter.
-//  assert(orders.resize(&error, 1));
-//  assert(expression_builder->push_column(&error, "Float"));
-//  expression = expression_builder->release(&error);
-//  assert(expression);
-//  orders[0].expression = std::move(expression);
-//  orders[0].type = grnxx::REVERSE_ORDER;
-//  sorter = grnxx::Sorter::create(&error, std::move(orders));
+void test_text() {
+  // Create a cursor which reads all the records.
+  auto records = create_input_records();
 
-//  sorter->sort(&error, &records);
-//  for (grnxx::Int i = 1; i < records.size(); ++i) {
-//    grnxx::Int lhs_row_id = records.get_row_id(i - 1);
-//    grnxx::Int rhs_row_id = records.get_row_id(i);
-//    grnxx::Float lhs_value = test.float_values[lhs_row_id];
-//    grnxx::Float rhs_value = test.float_values[rhs_row_id];
-//    assert(LessEqual()(rhs_value, lhs_value));
-//  }
+  // Create an object for building expressions.
+  auto expression_builder = grnxx::ExpressionBuilder::create(test.table);
 
-//  // Create a multiple order sorter.
-//  assert(orders.resize(&error, 2));
-//  assert(expression_builder->push_column(&error, "Float"));
-//  expression = expression_builder->release(&error);
-//  assert(expression);
-//  orders[0].expression = std::move(expression);
-//  orders[0].type = grnxx::REGULAR_ORDER;
-//  assert(expression_builder->push_row_id(&error));
-//  expression = expression_builder->release(&error);
-//  assert(expression);
-//  orders[1].expression = std::move(expression);
-//  orders[1].type = grnxx::REGULAR_ORDER;
-//  sorter = grnxx::Sorter::create(&error, std::move(orders));
+  // Create a regular sorter.
+  grnxx::Array<grnxx::SorterOrder> orders;
+  orders.resize(1);
+  expression_builder->push_column("Text");
+  auto expression = expression_builder->release();
+  orders[0].expression = std::move(expression);
+  orders[0].type = grnxx::SORTER_REGULAR_ORDER;
+  auto sorter = grnxx::Sorter::create(std::move(orders));
 
-//  sorter->sort(&error, &records);
-//  for (grnxx::Int i = 1; i < records.size(); ++i) {
-//    grnxx::Int lhs_row_id = records.get_row_id(i - 1);
-//    grnxx::Int rhs_row_id = records.get_row_id(i);
-//    grnxx::Float lhs_value = test.float_values[lhs_row_id];
-//    grnxx::Float rhs_value = test.float_values[rhs_row_id];
-//    assert(LessEqual()(lhs_value, rhs_value));
-//    if (Equal()(lhs_value, rhs_value)) {
-//      assert(lhs_row_id < rhs_row_id);
-//    }
-//  }
-//}
+  sorter->sort(&records);
+  for (size_t i = 1; i < records.size(); ++i) {
+    size_t lhs_row_id = records[i - 1].row_id.value();
+    size_t rhs_row_id = records[i].row_id.value();
+    grnxx::Text lhs_value = test.text_values[lhs_row_id];
+    grnxx::Text rhs_value = test.text_values[rhs_row_id];
+    if (lhs_value.is_na()) {
+      assert(rhs_value.is_na());
+    } else {
+      assert(rhs_value.is_na() || (lhs_value <= rhs_value).is_true());
+    }
+  }
 
-//void test_text() {
-//  grnxx::Error error;
+  // Create a reverse sorter.
+  orders.resize(1);
+  expression_builder->push_column("Text");
+  expression = expression_builder->release();
+  orders[0].expression = std::move(expression);
+  orders[0].type = grnxx::SORTER_REVERSE_ORDER;
+  sorter = grnxx::Sorter::create(std::move(orders));
 
-//  // Create a cursor which reads all the records.
-//  auto records = create_input_records();
+  sorter->sort(&records);
+  for (size_t i = 1; i < records.size(); ++i) {
+    size_t lhs_row_id = records[i - 1].row_id.value();
+    size_t rhs_row_id = records[i].row_id.value();
+    grnxx::Text lhs_value = test.text_values[lhs_row_id];
+    grnxx::Text rhs_value = test.text_values[rhs_row_id];
+    if (lhs_value.is_na()) {
+      assert(rhs_value.is_na());
+    } else {
+      assert(rhs_value.is_na() || (lhs_value >= rhs_value).is_true());
+    }
+  }
 
-//  // Create an object for building expressions.
-//  auto expression_builder =
-//      grnxx::ExpressionBuilder::create(&error, test.table);
-//  assert(expression_builder);
+  // Create a multiple order sorter.
+  orders.resize(2);
+  expression_builder->push_column("Text");
+  expression = expression_builder->release();
+  orders[0].expression = std::move(expression);
+  orders[0].type = grnxx::SORTER_REGULAR_ORDER;
+  expression_builder->push_row_id();
+  expression = expression_builder->release();
+  orders[1].expression = std::move(expression);
+  orders[1].type = grnxx::SORTER_REGULAR_ORDER;
+  sorter = grnxx::Sorter::create(std::move(orders));
 
-//  // Create a regular sorter.
-//  grnxx::Array<grnxx::SortOrder> orders;
-//  assert(orders.resize(&error, 1));
-//  assert(expression_builder->push_column(&error, "Text"));
-//  auto expression = expression_builder->release(&error);
-//  assert(expression);
-//  orders[0].expression = std::move(expression);
-//  orders[0].type = grnxx::REGULAR_ORDER;
-//  auto sorter = grnxx::Sorter::create(&error, std::move(orders));
+  sorter->sort(&records);
+  for (size_t i = 1; i < records.size(); ++i) {
+    size_t lhs_row_id = records[i - 1].row_id.value();
+    size_t rhs_row_id = records[i].row_id.value();
+    grnxx::Text lhs_value = test.text_values[lhs_row_id];
+    grnxx::Text rhs_value = test.text_values[rhs_row_id];
+    if (lhs_value.is_na()) {
+      assert(rhs_value.is_na());
+    } else {
+      assert(rhs_value.is_na() || (lhs_value <= rhs_value).is_true());
+    }
+    if (lhs_value.match(rhs_value)) {
+      assert(lhs_row_id < rhs_row_id);
+    }
+  }
+}
 
-//  sorter->sort(&error, &records);
-//  for (grnxx::Int i = 1; i < records.size(); ++i) {
-//    grnxx::Int lhs_row_id = records.get_row_id(i - 1);
-//    grnxx::Int rhs_row_id = records.get_row_id(i);
-//    grnxx::Text lhs_value = test.text_values[lhs_row_id];
-//    grnxx::Text rhs_value = test.text_values[rhs_row_id];
-//    assert(lhs_value <= rhs_value);
-//  }
+void test_composite() {
+  // Create a cursor which reads all the records.
+  auto records = create_input_records();
 
-//  // Create a reverse sorter.
-//  assert(orders.resize(&error, 1));
-//  assert(expression_builder->push_column(&error, "Text"));
-//  expression = expression_builder->release(&error);
-//  assert(expression);
-//  orders[0].expression = std::move(expression);
-//  orders[0].type = grnxx::REVERSE_ORDER;
-//  sorter = grnxx::Sorter::create(&error, std::move(orders));
+  // Create an object for building expressions.
+  auto expression_builder = grnxx::ExpressionBuilder::create(test.table);
 
-//  sorter->sort(&error, &records);
-//  for (grnxx::Int i = 1; i < records.size(); ++i) {
-//    grnxx::Int lhs_row_id = records.get_row_id(i - 1);
-//    grnxx::Int rhs_row_id = records.get_row_id(i);
-//    grnxx::Text lhs_value = test.text_values[lhs_row_id];
-//    grnxx::Text rhs_value = test.text_values[rhs_row_id];
-//    assert(lhs_value >= rhs_value);
-//  }
+  // Create a composite sorter.
+  grnxx::Array<grnxx::SorterOrder> orders;
+  orders.resize(3);
+  expression_builder->push_column("Bool");
+  auto expression = expression_builder->release();
+  assert(expression);
+  orders[0].expression = std::move(expression);
+  orders[0].type = grnxx::SORTER_REGULAR_ORDER;
+  expression_builder->push_column("Int");
+  expression = expression_builder->release();
+  orders[1].expression = std::move(expression);
+  orders[1].type = grnxx::SORTER_REVERSE_ORDER;
+  expression_builder->push_column("Text");
+  expression = expression_builder->release();
+  orders[2].expression = std::move(expression);
+  orders[2].type = grnxx::SORTER_REGULAR_ORDER;
+  auto sorter = grnxx::Sorter::create(std::move(orders));
 
-//  // Create a multiple order sorter.
-//  assert(orders.resize(&error, 2));
-//  assert(expression_builder->push_column(&error, "Text"));
-//  expression = expression_builder->release(&error);
-//  assert(expression);
-//  orders[0].expression = std::move(expression);
-//  orders[0].type = grnxx::REGULAR_ORDER;
-//  assert(expression_builder->push_row_id(&error));
-//  expression = expression_builder->release(&error);
-//  assert(expression);
-//  orders[1].expression = std::move(expression);
-//  orders[1].type = grnxx::REGULAR_ORDER;
-//  sorter = grnxx::Sorter::create(&error, std::move(orders));
-
-//  sorter->sort(&error, &records);
-//  for (grnxx::Int i = 1; i < records.size(); ++i) {
-//    grnxx::Int lhs_row_id = records.get_row_id(i - 1);
-//    grnxx::Int rhs_row_id = records.get_row_id(i);
-//    grnxx::Text lhs_value = test.text_values[lhs_row_id];
-//    grnxx::Text rhs_value = test.text_values[rhs_row_id];
-//    assert(lhs_value <= rhs_value);
-//    if (lhs_value == rhs_value) {
-//      assert(lhs_row_id < rhs_row_id);
-//    }
-//  }
-//}
-
-//void test_composite() {
-//  grnxx::Error error;
-
-//  // Create a cursor which reads all the records.
-//  auto records = create_input_records();
-
-//  // Create an object for building expressions.
-//  auto expression_builder =
-//      grnxx::ExpressionBuilder::create(&error, test.table);
-//  assert(expression_builder);
-
-//  // Create a composite sorter.
-//  grnxx::Array<grnxx::SortOrder> orders;
-//  assert(orders.resize(&error, 3));
-//  assert(expression_builder->push_column(&error, "Bool"));
-//  auto expression = expression_builder->release(&error);
-//  assert(expression);
-//  orders[0].expression = std::move(expression);
-//  orders[0].type = grnxx::REGULAR_ORDER;
-//  assert(expression_builder->push_column(&error, "Int"));
-//  expression = expression_builder->release(&error);
-//  assert(expression);
-//  orders[1].expression = std::move(expression);
-//  orders[1].type = grnxx::REVERSE_ORDER;
-//  assert(expression_builder->push_column(&error, "Text"));
-//  expression = expression_builder->release(&error);
-//  assert(expression);
-//  orders[2].expression = std::move(expression);
-//  orders[2].type = grnxx::REGULAR_ORDER;
-//  auto sorter = grnxx::Sorter::create(&error, std::move(orders));
-
-//  sorter->sort(&error, &records);
-//  for (grnxx::Int i = 1; i < records.size(); ++i) {
-//    grnxx::Int lhs_row_id = records.get_row_id(i - 1);
-//    grnxx::Int rhs_row_id = records.get_row_id(i);
-//    grnxx::Bool lhs_value = test.bool_values[lhs_row_id];
-//    grnxx::Bool rhs_value = test.bool_values[rhs_row_id];
-//    assert(!lhs_value || rhs_value);
-//    if (lhs_value == rhs_value) {
-//      grnxx::Int lhs_value = test.int_values[lhs_row_id];
-//      grnxx::Int rhs_value = test.int_values[rhs_row_id];
-//      assert(lhs_value >= rhs_value);
-//      if (lhs_value == rhs_value) {
-//        grnxx::Text lhs_value = test.text_values[lhs_row_id];
-//        grnxx::Text rhs_value = test.text_values[rhs_row_id];
-//        assert(lhs_value <= rhs_value);
-//      }
-//    }
-//  }
-//}
+  sorter->sort(&records);
+  for (size_t i = 1; i < records.size(); ++i) {
+    size_t lhs_row_id = records[i - 1].row_id.value();
+    size_t rhs_row_id = records[i].row_id.value();
+    grnxx::Bool lhs_value = test.bool_values[lhs_row_id];
+    grnxx::Bool rhs_value = test.bool_values[rhs_row_id];
+    if (lhs_value.is_true()) {
+      assert(rhs_value.is_true() || rhs_value.is_na());
+    } else if (lhs_value.is_na()) {
+      assert(rhs_value.is_na());
+    }
+    if (lhs_value.match(rhs_value)) {
+      grnxx::Int lhs_value = test.int_values[lhs_row_id];
+      grnxx::Int rhs_value = test.int_values[rhs_row_id];
+      if (lhs_value.is_na()) {
+        assert(rhs_value.is_na());
+      } else {
+        assert(rhs_value.is_na() || (lhs_value >= rhs_value).is_true());
+      }
+      if (lhs_value.match(rhs_value)) {
+        grnxx::Text lhs_value = test.text_values[lhs_row_id];
+        grnxx::Text rhs_value = test.text_values[rhs_row_id];
+        if (lhs_value.is_na()) {
+          assert(rhs_value.is_na());
+        } else {
+          assert(rhs_value.is_na() || (lhs_value <= rhs_value).is_true());
+        }
+      }
+    }
+  }
+}
 
 int main() {
   init_test();
   test_bool();
-//  test_int();
-//  test_float();
-//  test_text();
-//  test_composite();
+  test_int();
+  test_float();
+  test_text();
+  test_composite();
   return 0;
 }
