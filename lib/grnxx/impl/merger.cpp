@@ -712,7 +712,8 @@ void RightMerger::finish() {
 using namespace merger;
 
 Merger::Merger(const MergerOptions &options)
-    : input_records_1_(nullptr),
+    : MergerInterface(),
+      input_records_1_(nullptr),
       input_records_2_(nullptr),
       output_records_(nullptr),
       logical_operator_type_(options.logical_operator_type),
