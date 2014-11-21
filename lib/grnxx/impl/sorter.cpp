@@ -431,7 +431,8 @@ Node *Node::create(SorterOrder &&order) try {
 using namespace sorter;
 
 Sorter::Sorter(Array<SorterOrder> &&orders, const SorterOptions &options)
-    : table_(nullptr),
+    : SorterInterface(),
+      table_(nullptr),
       nodes_(),
       records_(nullptr),
       offset_(options.offset),
