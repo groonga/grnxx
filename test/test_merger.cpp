@@ -26,10 +26,10 @@
 #include "grnxx/table.hpp"
 #include "grnxx/merger.hpp"
 
-constexpr grnxx::Float NULL_SCORE = 0.125;
+constexpr grnxx::Float MISSING_SCORE(0.125);
 
 struct {
-  grnxx::unique_ptr<grnxx::DB> db;
+  std::unique_ptr<grnxx::DB> db;
   grnxx::Table *table;
   grnxx::Array<grnxx::Bool> bool_values;
   grnxx::Array<grnxx::Bool> bool2_values;
@@ -42,95 +42,76 @@ struct {
 std::mt19937_64 mersenne_twister;
 
 void init_test() {
-  grnxx::Error error;
-
   // Create a database with the default options.
-  test.db = grnxx::open_db(&error, "");
-  assert(test.db);
+  test.db = grnxx::open_db("");
 
   // Create a table with the default options.
-  test.table = test.db->create_table(&error, "Table");
-  assert(test.table);
+  test.table = test.db->create_table("Table");
 
   // Create columns for Bool and Float values.
   grnxx::DataType data_type = grnxx::BOOL_DATA;
-  auto bool_column = test.table->create_column(&error, "Bool", data_type);
-  assert(bool_column);
-  auto bool2_column = test.table->create_column(&error, "Bool2", data_type);
-  assert(bool2_column);
+  auto bool_column = test.table->create_column("Bool", data_type);
+  auto bool2_column = test.table->create_column("Bool2", data_type);
 
   data_type = grnxx::FLOAT_DATA;
-  auto float_column = test.table->create_column(&error, "Float", data_type);
-  assert(float_column);
-  auto float2_column = test.table->create_column(&error, "Float2", data_type);
-  assert(float2_column);
+  auto float_column = test.table->create_column("Float", data_type);
+  auto float2_column = test.table->create_column("Float2", data_type);
 
   // Generate random values.
-  // Bool: true or false.
-  constexpr grnxx::Int NUM_ROWS = 1 << 12;
-  assert(test.bool_values.resize(&error, NUM_ROWS + 1));
-  assert(test.bool2_values.resize(&error, NUM_ROWS + 1));
-  assert(test.float_values.resize(&error, NUM_ROWS + 1));
-  assert(test.float2_values.resize(&error, NUM_ROWS + 1));
-  assert(test.scores.resize(&error, NUM_ROWS + 1));
-  assert(test.scores2.resize(&error, NUM_ROWS + 1));
-  for (grnxx::Int i = 1; i <= NUM_ROWS; ++i) {
-    test.bool_values.set(i, (mersenne_twister() & 1) != 0);
-    test.bool2_values.set(i, (mersenne_twister() & 1) != 0);
-    grnxx::Float float_value =
-        1.0 * mersenne_twister() / mersenne_twister.max();
-    test.float_values.set(i, float_value);
-    float_value =
-        1.0 * mersenne_twister() / mersenne_twister.max();
-    test.float2_values.set(i, float_value);
-    test.scores.set(i, test.bool_values[i] ?
-                       test.float_values[i] : NULL_SCORE);
-    test.scores2.set(i, test.bool2_values[i] ?
-                        test.float2_values[i] : NULL_SCORE);
+  constexpr size_t NUM_ROWS = 1 << 12;
+  test.bool_values.resize(NUM_ROWS);
+  test.bool2_values.resize(NUM_ROWS);
+  test.float_values.resize(NUM_ROWS);
+  test.float2_values.resize(NUM_ROWS);
+  test.scores.resize(NUM_ROWS);
+  test.scores2.resize(NUM_ROWS);
+  for (size_t i = 0; i < NUM_ROWS; ++i) {
+    test.bool_values[i] = grnxx::Bool((mersenne_twister() & 1) != 0);
+    test.bool2_values[i] = grnxx::Bool((mersenne_twister() & 1) != 0);
+
+    test.float_values[i] =
+        grnxx::Float(1.0 * mersenne_twister() / mersenne_twister.max());
+    test.float2_values[i] =
+        grnxx::Float(1.0 * mersenne_twister() / mersenne_twister.max());
+
+    test.scores[i] = test.bool_values[i].is_true() ?
+                     test.float_values[i] : MISSING_SCORE;
+    test.scores2[i] = test.bool2_values[i].is_true() ?
+                      test.float2_values[i] : MISSING_SCORE;
   }
 
   // Store generated values into columns.
-  for (grnxx::Int i = 1; i <= NUM_ROWS; ++i) {
-    grnxx::Int row_id;
-    assert(test.table->insert_row(&error, grnxx::NULL_ROW_ID,
-                                  grnxx::Datum(), &row_id));
-    assert(bool_column->set(&error, row_id, test.bool_values[i]));
-    assert(bool2_column->set(&error, row_id, test.bool2_values[i]));
-    assert(float_column->set(&error, row_id, test.float_values[i]));
-    assert(float2_column->set(&error, row_id, test.float2_values[i]));
+  for (size_t i = 0; i < NUM_ROWS; ++i) {
+    grnxx::Int row_id = test.table->insert_row();
+    bool_column->set(row_id, test.bool_values[i]);
+    bool2_column->set(row_id, test.bool2_values[i]);
+    float_column->set(row_id, test.float_values[i]);
+    float2_column->set(row_id, test.float2_values[i]);
   }
 }
 
 grnxx::Array<grnxx::Record> create_input(const char *bool_name,
                                          const char *float_name) {
-  grnxx::Error error;
-
   // Create a cursor to read records.
-  auto cursor = test.table->create_cursor(&error);
-  assert(cursor);
+  auto cursor = test.table->create_cursor();
 
   // Read all the records.
   grnxx::Array<grnxx::Record> records;
-  auto result = cursor->read_all(&error, &records);
-  assert(result.is_ok);
-  assert(result.count == test.table->num_rows());
+  size_t count = cursor->read_all(&records);
+  assert(count == test.table->num_rows());
 
   // Create an object to create expressions.
-  auto expression_builder =
-      grnxx::ExpressionBuilder::create(&error, test.table);
-  assert(expression_builder);
+  auto expression_builder = grnxx::ExpressionBuilder::create(test.table);
 
   // Apply a filter to the records.
-  assert(expression_builder->push_column(&error, bool_name));
-  auto expression = expression_builder->release(&error);
-  assert(expression);
-  assert(expression->filter(&error, &records));
+  expression_builder->push_column(bool_name);
+  auto expression = expression_builder->release();
+  expression->filter(&records);
 
   // Apply an adjuster to the records.
-  assert(expression_builder->push_column(&error, float_name));
-  expression = expression_builder->release(&error);
-  assert(expression);
-  assert(expression->adjust(&error, &records));
+  expression_builder->push_column(float_name);
+  expression = expression_builder->release();
+  expression->adjust(&records);
 
   return records;
 }
@@ -147,502 +128,469 @@ grnxx::Array<grnxx::Record> merge_records(
     const grnxx::Array<grnxx::Record> &input_1,
     const grnxx::Array<grnxx::Record> &input_2,
     const grnxx::MergerOptions &options) {
-  grnxx::Error error;
-
   // Create a merger.
-  auto merger = grnxx::Merger::create(&error, options);
-  assert(merger);
+  auto merger = grnxx::Merger::create(options);
 
   // Create copies of input records.
   grnxx::Array<grnxx::Record> copy_1;
-  assert(copy_1.resize(&error, input_1.size()));
-  for (grnxx::Int i = 0; i < copy_1.size(); ++i) {
-    copy_1.set(i, input_1.get(i));
+  copy_1.resize(input_1.size());
+  for (size_t i = 0; i < copy_1.size(); ++i) {
+    copy_1[i] = input_1[i];
   }
   grnxx::Array<grnxx::Record> copy_2;
-  assert(copy_2.resize(&error, input_2.size()));
-  for (grnxx::Int i = 0; i < copy_2.size(); ++i) {
-    copy_2.set(i, input_2.get(i));
+  copy_2.resize(input_2.size());
+  for (size_t i = 0; i < copy_2.size(); ++i) {
+    copy_2[i] = input_2[i];
   }
 
   // Merge records.
   grnxx::Array<grnxx::Record> output;
-  assert(merger->merge(&error, &copy_1, &copy_2, &output));
+  merger->merge(&copy_1, &copy_2, &output);
   return output;
 }
 
 void test_and() {
-  grnxx::Error error;
-
   // Create input records.
   auto input_1 = create_input_1();
   auto input_2 = create_input_2();
 
   // Set options.
   grnxx::MergerOptions options;
-  options.type = grnxx::AND_MERGER;
-  options.null_score = NULL_SCORE;
+  options.logical_operator_type = grnxx::MERGER_LOGICAL_AND;
+  options.missing_score = MISSING_SCORE;
 
   // Merge records (PLUS).
-  options.operator_type = grnxx::PLUS_MERGER_OPERATOR;
+  options.score_operator_type = grnxx::MERGER_SCORE_PLUS;
   auto output = merge_records(input_1, input_2, options);
-  for (grnxx::Int i = 0; i < output.size(); ++i) {
-    grnxx::Int row_id = output.get_row_id(i);
-    assert(test.bool_values[row_id] && test.bool2_values[row_id]);
-    assert(output.get_score(i) ==
-           (test.scores[row_id] + test.scores2[row_id]));
+  for (size_t i = 0; i < output.size(); ++i) {
+    size_t row_id = output[i].row_id.value();
+    assert((test.bool_values[row_id] & test.bool2_values[row_id]).is_true());
+    assert(output[i].score.match(test.scores[row_id] + test.scores2[row_id]));
   }
-  grnxx::Int count = 0;
-  for (grnxx::Int i = 1; i <= test.table->max_row_id(); ++i) {
-    if (test.bool_values[i] && test.bool2_values[i]) {
-      assert(output.get_row_id(count) == i);
+  size_t count = 0;
+  for (size_t i = 0; i < test.table->num_rows(); ++i) {
+    if ((test.bool_values[i] & test.bool2_values[i]).is_true()) {
+      assert(output[count].row_id.match(grnxx::Int(i)));
       ++count;
     }
   }
   assert(count == output.size());
 
   // Merge records (MINUS).
-  options.operator_type = grnxx::MINUS_MERGER_OPERATOR;
+  options.score_operator_type = grnxx::MERGER_SCORE_MINUS;
   output = merge_records(input_1, input_2, options);
-  for (grnxx::Int i = 0; i < output.size(); ++i) {
-    grnxx::Int row_id = output.get_row_id(i);
-    assert(test.bool_values[row_id] && test.bool2_values[row_id]);
-    assert(output.get_score(i) ==
-           (test.scores[row_id] - test.scores2[row_id]));
+  for (size_t i = 0; i < output.size(); ++i) {
+    size_t row_id = output[i].row_id.value();
+    assert((test.bool_values[row_id] & test.bool2_values[row_id]).is_true());
+    assert(output[i].score.match(test.scores[row_id] - test.scores2[row_id]));
   }
 
   // Merge records (MULTIPLICATION).
-  options.operator_type = grnxx::MULTIPLICATION_MERGER_OPERATOR;
+  options.score_operator_type = grnxx::MERGER_SCORE_MULTIPLICATION;
   output = merge_records(input_1, input_2, options);
-  for (grnxx::Int i = 0; i < output.size(); ++i) {
-    grnxx::Int row_id = output.get_row_id(i);
-    assert(test.bool_values[row_id] && test.bool2_values[row_id]);
-    assert(output.get_score(i) ==
-           (test.scores[row_id] * test.scores2[row_id]));
+  for (size_t i = 0; i < output.size(); ++i) {
+    size_t row_id = output[i].row_id.value();
+    assert((test.bool_values[row_id] & test.bool2_values[row_id]).is_true());
+    assert(output[i].score.match(test.scores[row_id] * test.scores2[row_id]));
   }
 
-  // Merge records (LHS).
-  options.operator_type = grnxx::LHS_MERGER_OPERATOR;
+  // Merge records (LEFT).
+  options.score_operator_type = grnxx::MERGER_SCORE_LEFT;
   output = merge_records(input_1, input_2, options);
-  for (grnxx::Int i = 0; i < output.size(); ++i) {
-    grnxx::Int row_id = output.get_row_id(i);
-    assert(test.bool_values[row_id] && test.bool2_values[row_id]);
-    assert(output.get_score(i) == test.scores[row_id]);
+  for (size_t i = 0; i < output.size(); ++i) {
+    size_t row_id = output[i].row_id.value();
+    assert((test.bool_values[row_id] & test.bool2_values[row_id]).is_true());
+    assert(output[i].score.match(test.scores[row_id]));
   }
 
-  // Merge records (RHS).
-  options.operator_type = grnxx::RHS_MERGER_OPERATOR;
+  // Merge records (RIGHT).
+  options.score_operator_type = grnxx::MERGER_SCORE_RIGHT;
   output = merge_records(input_1, input_2, options);
-  for (grnxx::Int i = 0; i < output.size(); ++i) {
-    grnxx::Int row_id = output.get_row_id(i);
-    assert(test.bool_values[row_id] && test.bool2_values[row_id]);
-    assert(output.get_score(i) == test.scores2[row_id]);
+  for (size_t i = 0; i < output.size(); ++i) {
+    size_t row_id = output[i].row_id.value();
+    assert((test.bool_values[row_id] & test.bool2_values[row_id]).is_true());
+    assert(output[i].score.match(test.scores2[row_id]));
   }
 
   // Merge records (ZERO).
-  options.operator_type = grnxx::ZERO_MERGER_OPERATOR;
+  options.score_operator_type = grnxx::MERGER_SCORE_ZERO;
   output = merge_records(input_1, input_2, options);
-  for (grnxx::Int i = 0; i < output.size(); ++i) {
-    grnxx::Int row_id = output.get_row_id(i);
-    assert(test.bool_values[row_id] && test.bool2_values[row_id]);
-    assert(output.get_score(i) == 0.0);
+  for (size_t i = 0; i < output.size(); ++i) {
+    size_t row_id = output[i].row_id.value();
+    assert((test.bool_values[row_id] & test.bool2_values[row_id]).is_true());
+    assert(output[i].score.value() == 0.0);
   }
 }
 
 void test_or() {
-  grnxx::Error error;
-
   // Create input records.
   auto input_1 = create_input_1();
   auto input_2 = create_input_2();
 
   // Set options.
   grnxx::MergerOptions options;
-  options.type = grnxx::OR_MERGER;
-  options.null_score = NULL_SCORE;
+  options.logical_operator_type = grnxx::MERGER_LOGICAL_OR;
+  options.missing_score = MISSING_SCORE;
 
   // Merge records (PLUS).
-  options.operator_type = grnxx::PLUS_MERGER_OPERATOR;
+  options.score_operator_type = grnxx::MERGER_SCORE_PLUS;
   auto output = merge_records(input_1, input_2, options);
-  for (grnxx::Int i = 0; i < output.size(); ++i) {
-    grnxx::Int row_id = output.get_row_id(i);
-    assert(test.bool_values[row_id] || test.bool2_values[row_id]);
-    assert(output.get_score(i) ==
-           (test.scores[row_id] + test.scores2[row_id]));
+  for (size_t i = 0; i < output.size(); ++i) {
+    size_t row_id = output[i].row_id.value();
+    assert((test.bool_values[row_id] | test.bool2_values[row_id]).is_true());
+    assert(output[i].score.match(test.scores[row_id] + test.scores2[row_id]));
   }
-  grnxx::Int count = 0;
-  for (grnxx::Int i = 1; i <= test.table->max_row_id(); ++i) {
-    if (test.bool_values[i] || test.bool2_values[i]) {
+  size_t count = 0;
+  for (size_t i = 0; i < test.table->num_rows(); ++i) {
+    if ((test.bool_values[i] | test.bool2_values[i]).is_true()) {
       ++count;
     }
   }
   assert(count == output.size());
 
   // Merge records (MINUS).
-  options.operator_type = grnxx::MINUS_MERGER_OPERATOR;
+  options.score_operator_type = grnxx::MERGER_SCORE_MINUS;
   output = merge_records(input_1, input_2, options);
-  for (grnxx::Int i = 0; i < output.size(); ++i) {
-    grnxx::Int row_id = output.get_row_id(i);
-    assert(test.bool_values[row_id] || test.bool2_values[row_id]);
-    assert(output.get_score(i) ==
-           (test.scores[row_id] - test.scores2[row_id]));
+  for (size_t i = 0; i < output.size(); ++i) {
+    size_t row_id = output[i].row_id.value();
+    assert((test.bool_values[row_id] | test.bool2_values[row_id]).is_true());
+    assert(output[i].score.match(test.scores[row_id] - test.scores2[row_id]));
   }
 
   // Merge records (MULTIPLICATION).
-  options.operator_type = grnxx::MULTIPLICATION_MERGER_OPERATOR;
+  options.score_operator_type = grnxx::MERGER_SCORE_MULTIPLICATION;
   output = merge_records(input_1, input_2, options);
-  for (grnxx::Int i = 0; i < output.size(); ++i) {
-    grnxx::Int row_id = output.get_row_id(i);
-    assert(test.bool_values[row_id] || test.bool2_values[row_id]);
-    assert(output.get_score(i) ==
-           (test.scores[row_id] * test.scores2[row_id]));
+  for (size_t i = 0; i < output.size(); ++i) {
+    size_t row_id = output[i].row_id.value();
+    assert((test.bool_values[row_id] | test.bool2_values[row_id]).is_true());
+    assert(output[i].score.match(test.scores[row_id] * test.scores2[row_id]));
   }
 
-  // Merge records (LHS).
-  options.operator_type = grnxx::LHS_MERGER_OPERATOR;
+  // Merge records (LEFT).
+  options.score_operator_type = grnxx::MERGER_SCORE_LEFT;
   output = merge_records(input_1, input_2, options);
-  for (grnxx::Int i = 0; i < output.size(); ++i) {
-    grnxx::Int row_id = output.get_row_id(i);
-    assert(test.bool_values[row_id] || test.bool2_values[row_id]);
-    assert(output.get_score(i) == test.scores[row_id]);
+  for (size_t i = 0; i < output.size(); ++i) {
+    size_t row_id = output[i].row_id.value();
+    assert((test.bool_values[row_id] | test.bool2_values[row_id]).is_true());
+    assert(output[i].score.match(test.scores[row_id]));
   }
 
-  // Merge records (RHS).
-  options.operator_type = grnxx::RHS_MERGER_OPERATOR;
+  // Merge records (RIGHT).
+  options.score_operator_type = grnxx::MERGER_SCORE_RIGHT;
   output = merge_records(input_1, input_2, options);
-  for (grnxx::Int i = 0; i < output.size(); ++i) {
-    grnxx::Int row_id = output.get_row_id(i);
-    assert(test.bool_values[row_id] || test.bool2_values[row_id]);
-    assert(output.get_score(i) == test.scores2[row_id]);
+  for (size_t i = 0; i < output.size(); ++i) {
+    size_t row_id = output[i].row_id.value();
+    assert((test.bool_values[row_id] | test.bool2_values[row_id]).is_true());
+    assert(output[i].score.match(test.scores2[row_id]));
   }
 
   // Merge records (ZERO).
-  options.operator_type = grnxx::ZERO_MERGER_OPERATOR;
+  options.score_operator_type = grnxx::MERGER_SCORE_ZERO;
   output = merge_records(input_1, input_2, options);
-  for (grnxx::Int i = 0; i < output.size(); ++i) {
-    grnxx::Int row_id = output.get_row_id(i);
-    assert(test.bool_values[row_id] || test.bool2_values[row_id]);
-    assert(output.get_score(i) == 0.0);
+  for (size_t i = 0; i < output.size(); ++i) {
+    size_t row_id = output[i].row_id.value();
+    assert((test.bool_values[row_id] | test.bool2_values[row_id]).is_true());
+    assert(output[i].score.value() == 0.0);
   }
 }
 
 void test_xor() {
-  grnxx::Error error;
-
   // Create input records.
   auto input_1 = create_input_1();
   auto input_2 = create_input_2();
 
   // Set options.
   grnxx::MergerOptions options;
-  options.type = grnxx::XOR_MERGER;
-  options.null_score = NULL_SCORE;
+  options.logical_operator_type = grnxx::MERGER_LOGICAL_XOR;
+  options.missing_score = MISSING_SCORE;
 
   // Merge records (PLUS).
-  options.operator_type = grnxx::PLUS_MERGER_OPERATOR;
+  options.score_operator_type = grnxx::MERGER_SCORE_PLUS;
   auto output = merge_records(input_1, input_2, options);
-  for (grnxx::Int i = 0; i < output.size(); ++i) {
-    grnxx::Int row_id = output.get_row_id(i);
-    assert(test.bool_values[row_id] ^ test.bool2_values[row_id]);
-    assert(output.get_score(i) ==
-           (test.scores[row_id] + test.scores2[row_id]));
+  for (size_t i = 0; i < output.size(); ++i) {
+    size_t row_id = output[i].row_id.value();
+    assert((test.bool_values[row_id] ^ test.bool2_values[row_id]).is_true());
+    assert(output[i].score.match(test.scores[row_id] + test.scores2[row_id]));
   }
-  grnxx::Int count = 0;
-  for (grnxx::Int i = 1; i <= test.table->max_row_id(); ++i) {
-    if (test.bool_values[i] ^ test.bool2_values[i]) {
+  size_t count = 0;
+  for (size_t i = 0; i < test.table->num_rows(); ++i) {
+    if ((test.bool_values[i] ^ test.bool2_values[i]).is_true()) {
       ++count;
     }
   }
   assert(count == output.size());
 
   // Merge records (MINUS).
-  options.operator_type = grnxx::MINUS_MERGER_OPERATOR;
+  options.score_operator_type = grnxx::MERGER_SCORE_MINUS;
   output = merge_records(input_1, input_2, options);
-  for (grnxx::Int i = 0; i < output.size(); ++i) {
-    grnxx::Int row_id = output.get_row_id(i);
-    assert(test.bool_values[row_id] ^ test.bool2_values[row_id]);
-    assert(output.get_score(i) ==
-           (test.scores[row_id] - test.scores2[row_id]));
+  for (size_t i = 0; i < output.size(); ++i) {
+    size_t row_id = output[i].row_id.value();
+    assert((test.bool_values[row_id] ^ test.bool2_values[row_id]).is_true());
+    assert(output[i].score.match(test.scores[row_id] - test.scores2[row_id]));
   }
 
   // Merge records (MULTIPLICATION).
-  options.operator_type = grnxx::MULTIPLICATION_MERGER_OPERATOR;
+  options.score_operator_type = grnxx::MERGER_SCORE_MULTIPLICATION;
   output = merge_records(input_1, input_2, options);
-  for (grnxx::Int i = 0; i < output.size(); ++i) {
-    grnxx::Int row_id = output.get_row_id(i);
-    assert(test.bool_values[row_id] ^ test.bool2_values[row_id]);
-    assert(output.get_score(i) ==
-           (test.scores[row_id] * test.scores2[row_id]));
+  for (size_t i = 0; i < output.size(); ++i) {
+    size_t row_id = output[i].row_id.value();
+    assert((test.bool_values[row_id] ^ test.bool2_values[row_id]).is_true());
+    assert(output[i].score.match(test.scores[row_id] * test.scores2[row_id]));
   }
 
-  // Merge records (LHS).
-  options.operator_type = grnxx::LHS_MERGER_OPERATOR;
+  // Merge records (LEFT).
+  options.score_operator_type = grnxx::MERGER_SCORE_LEFT;
   output = merge_records(input_1, input_2, options);
-  for (grnxx::Int i = 0; i < output.size(); ++i) {
-    grnxx::Int row_id = output.get_row_id(i);
-    assert(test.bool_values[row_id] ^ test.bool2_values[row_id]);
-    assert(output.get_score(i) == test.scores[row_id]);
+  for (size_t i = 0; i < output.size(); ++i) {
+    size_t row_id = output[i].row_id.value();
+    assert((test.bool_values[row_id] ^ test.bool2_values[row_id]).is_true());
+    assert(output[i].score.match(test.scores[row_id]));
   }
 
-  // Merge records (RHS).
-  options.operator_type = grnxx::RHS_MERGER_OPERATOR;
+  // Merge records (RIGHT).
+  options.score_operator_type = grnxx::MERGER_SCORE_RIGHT;
   output = merge_records(input_1, input_2, options);
-  for (grnxx::Int i = 0; i < output.size(); ++i) {
-    grnxx::Int row_id = output.get_row_id(i);
-    assert(test.bool_values[row_id] ^ test.bool2_values[row_id]);
-    assert(output.get_score(i) == test.scores2[row_id]);
+  for (size_t i = 0; i < output.size(); ++i) {
+    size_t row_id = output[i].row_id.value();
+    assert((test.bool_values[row_id] ^ test.bool2_values[row_id]).is_true());
+    assert(output[i].score.match(test.scores2[row_id]));
   }
 
   // Merge records (ZERO).
-  options.operator_type = grnxx::ZERO_MERGER_OPERATOR;
+  options.score_operator_type = grnxx::MERGER_SCORE_ZERO;
   output = merge_records(input_1, input_2, options);
-  for (grnxx::Int i = 0; i < output.size(); ++i) {
-    grnxx::Int row_id = output.get_row_id(i);
-    assert(test.bool_values[row_id] ^ test.bool2_values[row_id]);
-    assert(output.get_score(i) == 0.0);
+  for (size_t i = 0; i < output.size(); ++i) {
+    size_t row_id = output[i].row_id.value();
+    assert((test.bool_values[row_id] ^ test.bool2_values[row_id]).is_true());
+    assert(output[i].score.value() == 0.0);
   }
 }
 
 void test_minus() {
-  grnxx::Error error;
-
   // Create input records.
   auto input_1 = create_input_1();
   auto input_2 = create_input_2();
 
   // Set options.
   grnxx::MergerOptions options;
-  options.type = grnxx::MINUS_MERGER;
-  options.null_score = NULL_SCORE;
+  options.logical_operator_type = grnxx::MERGER_LOGICAL_MINUS;
+  options.missing_score = MISSING_SCORE;
 
   // Merge records (PLUS).
-  options.operator_type = grnxx::PLUS_MERGER_OPERATOR;
+  options.score_operator_type = grnxx::MERGER_SCORE_PLUS;
   auto output = merge_records(input_1, input_2, options);
-  for (grnxx::Int i = 0; i < output.size(); ++i) {
-    grnxx::Int row_id = output.get_row_id(i);
-    assert(test.bool_values[row_id] && !test.bool2_values[row_id]);
-    assert(output.get_score(i) ==
-           (test.scores[row_id] + test.scores2[row_id]));
+  for (size_t i = 0; i < output.size(); ++i) {
+    size_t row_id = output[i].row_id.value();
+    assert((test.bool_values[row_id] & !test.bool2_values[row_id]).is_true());
+    assert(output[i].score.match(test.scores[row_id] + test.scores2[row_id]));
   }
-  grnxx::Int count = 0;
-  for (grnxx::Int i = 1; i <= test.table->max_row_id(); ++i) {
-    if (test.bool_values[i] && !test.bool2_values[i]) {
+  size_t count = 0;
+  for (size_t i = 0; i < test.table->num_rows(); ++i) {
+    if ((test.bool_values[i] & !test.bool2_values[i]).is_true()) {
       ++count;
     }
   }
   assert(count == output.size());
 
   // Merge records (MINUS).
-  options.operator_type = grnxx::MINUS_MERGER_OPERATOR;
+  options.score_operator_type = grnxx::MERGER_SCORE_MINUS;
   output = merge_records(input_1, input_2, options);
-  for (grnxx::Int i = 0; i < output.size(); ++i) {
-    grnxx::Int row_id = output.get_row_id(i);
-    assert(test.bool_values[row_id] && !test.bool2_values[row_id]);
-    assert(output.get_score(i) ==
-           (test.scores[row_id] - test.scores2[row_id]));
+  for (size_t i = 0; i < output.size(); ++i) {
+    size_t row_id = output[i].row_id.value();
+    assert((test.bool_values[row_id] & !test.bool2_values[row_id]).is_true());
+    assert(output[i].score.match(test.scores[row_id] - test.scores2[row_id]));
   }
 
   // Merge records (MULTIPLICATION).
-  options.operator_type = grnxx::MULTIPLICATION_MERGER_OPERATOR;
+  options.score_operator_type = grnxx::MERGER_SCORE_MULTIPLICATION;
   output = merge_records(input_1, input_2, options);
-  for (grnxx::Int i = 0; i < output.size(); ++i) {
-    grnxx::Int row_id = output.get_row_id(i);
-    assert(test.bool_values[row_id] && !test.bool2_values[row_id]);
-    assert(output.get_score(i) ==
-           (test.scores[row_id] * test.scores2[row_id]));
+  for (size_t i = 0; i < output.size(); ++i) {
+    size_t row_id = output[i].row_id.value();
+    assert((test.bool_values[row_id] & !test.bool2_values[row_id]).is_true());
+    assert(output[i].score.match(test.scores[row_id] * test.scores2[row_id]));
   }
 
-  // Merge records (LHS).
-  options.operator_type = grnxx::LHS_MERGER_OPERATOR;
+  // Merge records (LEFT).
+  options.score_operator_type = grnxx::MERGER_SCORE_LEFT;
   output = merge_records(input_1, input_2, options);
-  for (grnxx::Int i = 0; i < output.size(); ++i) {
-    grnxx::Int row_id = output.get_row_id(i);
-    assert(test.bool_values[row_id] && !test.bool2_values[row_id]);
-    assert(output.get_score(i) == test.scores[row_id]);
+  for (size_t i = 0; i < output.size(); ++i) {
+    size_t row_id = output[i].row_id.value();
+    assert((test.bool_values[row_id] & !test.bool2_values[row_id]).is_true());
+    assert(output[i].score.match(test.scores[row_id]));
   }
 
-  // Merge records (RHS).
-  options.operator_type = grnxx::RHS_MERGER_OPERATOR;
+  // Merge records (RIGHT).
+  options.score_operator_type = grnxx::MERGER_SCORE_RIGHT;
   output = merge_records(input_1, input_2, options);
-  for (grnxx::Int i = 0; i < output.size(); ++i) {
-    grnxx::Int row_id = output.get_row_id(i);
-    assert(test.bool_values[row_id] && !test.bool2_values[row_id]);
-    assert(output.get_score(i) == test.scores2[row_id]);
+  for (size_t i = 0; i < output.size(); ++i) {
+    size_t row_id = output[i].row_id.value();
+    assert((test.bool_values[row_id] & !test.bool2_values[row_id]).is_true());
+    assert(output[i].score.match(test.scores2[row_id]));
   }
 
   // Merge records (ZERO).
-  options.operator_type = grnxx::ZERO_MERGER_OPERATOR;
+  options.score_operator_type = grnxx::MERGER_SCORE_ZERO;
   output = merge_records(input_1, input_2, options);
-  for (grnxx::Int i = 0; i < output.size(); ++i) {
-    grnxx::Int row_id = output.get_row_id(i);
-    assert(test.bool_values[row_id] && !test.bool2_values[row_id]);
-    assert(output.get_score(i) == 0.0);
+  for (size_t i = 0; i < output.size(); ++i) {
+    size_t row_id = output[i].row_id.value();
+    assert((test.bool_values[row_id] & !test.bool2_values[row_id]).is_true());
+    assert(output[i].score.value() == 0.0);
   }
 }
 
-void test_lhs() {
-  grnxx::Error error;
-
+void test_left() {
   // Create input records.
   auto input_1 = create_input_1();
   auto input_2 = create_input_2();
 
   // Set options.
   grnxx::MergerOptions options;
-  options.type = grnxx::LHS_MERGER;
-  options.null_score = NULL_SCORE;
+  options.logical_operator_type = grnxx::MERGER_LOGICAL_LEFT;
+  options.missing_score = MISSING_SCORE;
 
   // Merge records (PLUS).
-  options.operator_type = grnxx::PLUS_MERGER_OPERATOR;
+  options.score_operator_type = grnxx::MERGER_SCORE_PLUS;
   auto output = merge_records(input_1, input_2, options);
-  for (grnxx::Int i = 0; i < output.size(); ++i) {
-    grnxx::Int row_id = output.get_row_id(i);
-    assert(test.bool_values[row_id]);
-    assert(output.get_score(i) ==
-           (test.scores[row_id] + test.scores2[row_id]));
+  for (size_t i = 0; i < output.size(); ++i) {
+    size_t row_id = output[i].row_id.value();
+    assert(test.bool_values[row_id].is_true());
+    assert(output[i].score.match(test.scores[row_id] + test.scores2[row_id]));
   }
-  grnxx::Int count = 0;
-  for (grnxx::Int i = 1; i <= test.table->max_row_id(); ++i) {
-    if (test.bool_values[i]) {
+  size_t count = 0;
+  for (size_t i = 0; i < test.table->num_rows(); ++i) {
+    if (test.bool_values[i].is_true()) {
       ++count;
     }
   }
   assert(count == output.size());
 
   // Merge records (MINUS).
-  options.operator_type = grnxx::MINUS_MERGER_OPERATOR;
+  options.score_operator_type = grnxx::MERGER_SCORE_MINUS;
   output = merge_records(input_1, input_2, options);
-  for (grnxx::Int i = 0; i < output.size(); ++i) {
-    grnxx::Int row_id = output.get_row_id(i);
-    assert(test.bool_values[row_id]);
-    assert(output.get_score(i) ==
-           (test.scores[row_id] - test.scores2[row_id]));
+  for (size_t i = 0; i < output.size(); ++i) {
+    size_t row_id = output[i].row_id.value();
+    assert(test.bool_values[row_id].is_true());
+    assert(output[i].score.match(test.scores[row_id] - test.scores2[row_id]));
   }
 
   // Merge records (MULTIPLICATION).
-  options.operator_type = grnxx::MULTIPLICATION_MERGER_OPERATOR;
+  options.score_operator_type = grnxx::MERGER_SCORE_MULTIPLICATION;
   output = merge_records(input_1, input_2, options);
-  for (grnxx::Int i = 0; i < output.size(); ++i) {
-    grnxx::Int row_id = output.get_row_id(i);
-    assert(test.bool_values[row_id]);
-    assert(output.get_score(i) ==
-           (test.scores[row_id] * test.scores2[row_id]));
+  for (size_t i = 0; i < output.size(); ++i) {
+    size_t row_id = output[i].row_id.value();
+    assert(test.bool_values[row_id].is_true());
+    assert(output[i].score.match(test.scores[row_id] * test.scores2[row_id]));
   }
 
-  // Merge records (LHS).
-  options.operator_type = grnxx::LHS_MERGER_OPERATOR;
+  // Merge records (LEFT).
+  options.score_operator_type = grnxx::MERGER_SCORE_LEFT;
   output = merge_records(input_1, input_2, options);
-  for (grnxx::Int i = 0; i < output.size(); ++i) {
-    grnxx::Int row_id = output.get_row_id(i);
-    assert(test.bool_values[row_id]);
-    assert(output.get_score(i) == test.scores[row_id]);
+  for (size_t i = 0; i < output.size(); ++i) {
+    size_t row_id = output[i].row_id.value();
+    assert(test.bool_values[row_id].is_true());
+    assert(output[i].score.match(test.scores[row_id]));
   }
 
-  // Merge records (RHS).
-  options.operator_type = grnxx::RHS_MERGER_OPERATOR;
+  // Merge records (RIGHT).
+  options.score_operator_type = grnxx::MERGER_SCORE_RIGHT;
   output = merge_records(input_1, input_2, options);
-  for (grnxx::Int i = 0; i < output.size(); ++i) {
-    grnxx::Int row_id = output.get_row_id(i);
-    assert(test.bool_values[row_id]);
-    assert(output.get_score(i) == test.scores2[row_id]);
+  for (size_t i = 0; i < output.size(); ++i) {
+    size_t row_id = output[i].row_id.value();
+    assert(test.bool_values[row_id].is_true());
+    assert(output[i].score.match(test.scores2[row_id]));
   }
 
   // Merge records (ZERO).
-  options.operator_type = grnxx::ZERO_MERGER_OPERATOR;
+  options.score_operator_type = grnxx::MERGER_SCORE_ZERO;
   output = merge_records(input_1, input_2, options);
-  for (grnxx::Int i = 0; i < output.size(); ++i) {
-    grnxx::Int row_id = output.get_row_id(i);
-    assert(test.bool_values[row_id]);
-    assert(output.get_score(i) == 0.0);
+  for (size_t i = 0; i < output.size(); ++i) {
+    size_t row_id = output[i].row_id.value();
+    assert(test.bool_values[row_id].is_true());
+    assert(output[i].score.value() == 0.0);
   }
 }
 
-void test_rhs() {
-  grnxx::Error error;
-
+void test_right() {
   // Create input records.
   auto input_1 = create_input_1();
   auto input_2 = create_input_2();
 
   // Set options.
   grnxx::MergerOptions options;
-  options.type = grnxx::RHS_MERGER;
-  options.null_score = NULL_SCORE;
+  options.logical_operator_type = grnxx::MERGER_LOGICAL_RIGHT;
+  options.missing_score = MISSING_SCORE;
 
   // Merge records (PLUS).
-  options.operator_type = grnxx::PLUS_MERGER_OPERATOR;
+  options.score_operator_type = grnxx::MERGER_SCORE_PLUS;
   auto output = merge_records(input_1, input_2, options);
-  for (grnxx::Int i = 0; i < output.size(); ++i) {
-    grnxx::Int row_id = output.get_row_id(i);
-    assert(test.bool2_values[row_id]);
-    assert(output.get_score(i) ==
-           (test.scores[row_id] + test.scores2[row_id]));
+  for (size_t i = 0; i < output.size(); ++i) {
+    size_t row_id = output[i].row_id.value();
+    assert(test.bool2_values[row_id].is_true());
+    assert(output[i].score.match(test.scores[row_id] + test.scores2[row_id]));
   }
-  grnxx::Int count = 0;
-  for (grnxx::Int i = 1; i <= test.table->max_row_id(); ++i) {
-    if (test.bool2_values[i]) {
+  size_t count = 0;
+  for (size_t i = 0; i < test.table->num_rows(); ++i) {
+    if (test.bool2_values[i].is_true()) {
       ++count;
     }
   }
   assert(count == output.size());
 
   // Merge records (MINUS).
-  options.operator_type = grnxx::MINUS_MERGER_OPERATOR;
+  options.score_operator_type = grnxx::MERGER_SCORE_MINUS;
   output = merge_records(input_1, input_2, options);
-  for (grnxx::Int i = 0; i < output.size(); ++i) {
-    grnxx::Int row_id = output.get_row_id(i);
-    assert(test.bool2_values[row_id]);
-    assert(output.get_score(i) ==
-           (test.scores[row_id] - test.scores2[row_id]));
+  for (size_t i = 0; i < output.size(); ++i) {
+    size_t row_id = output[i].row_id.value();
+    assert(test.bool2_values[row_id].is_true());
+    assert(output[i].score.match(test.scores[row_id] - test.scores2[row_id]));
   }
 
   // Merge records (MULTIPLICATION).
-  options.operator_type = grnxx::MULTIPLICATION_MERGER_OPERATOR;
+  options.score_operator_type = grnxx::MERGER_SCORE_MULTIPLICATION;
   output = merge_records(input_1, input_2, options);
-  for (grnxx::Int i = 0; i < output.size(); ++i) {
-    grnxx::Int row_id = output.get_row_id(i);
-    assert(test.bool2_values[row_id]);
-    assert(output.get_score(i) ==
-           (test.scores[row_id] * test.scores2[row_id]));
+  for (size_t i = 0; i < output.size(); ++i) {
+    size_t row_id = output[i].row_id.value();
+    assert(test.bool2_values[row_id].is_true());
+    assert(output[i].score.match(test.scores[row_id] * test.scores2[row_id]));
   }
 
-  // Merge records (LHS).
-  options.operator_type = grnxx::LHS_MERGER_OPERATOR;
+  // Merge records (LEFT).
+  options.score_operator_type = grnxx::MERGER_SCORE_LEFT;
   output = merge_records(input_1, input_2, options);
-  for (grnxx::Int i = 0; i < output.size(); ++i) {
-    grnxx::Int row_id = output.get_row_id(i);
-    assert(test.bool2_values[row_id]);
-    assert(output.get_score(i) == test.scores[row_id]);
+  for (size_t i = 0; i < output.size(); ++i) {
+    size_t row_id = output[i].row_id.value();
+    assert(test.bool2_values[row_id].is_true());
+    assert(output[i].score.match(test.scores[row_id]));
   }
 
-  // Merge records (RHS).
-  options.operator_type = grnxx::RHS_MERGER_OPERATOR;
+  // Merge records (RIGHT).
+  options.score_operator_type = grnxx::MERGER_SCORE_RIGHT;
   output = merge_records(input_1, input_2, options);
-  for (grnxx::Int i = 0; i < output.size(); ++i) {
-    grnxx::Int row_id = output.get_row_id(i);
-    assert(test.bool2_values[row_id]);
-    assert(output.get_score(i) == test.scores2[row_id]);
+  for (size_t i = 0; i < output.size(); ++i) {
+    size_t row_id = output[i].row_id.value();
+    assert(test.bool2_values[row_id].is_true());
+    assert(output[i].score.match(test.scores2[row_id]));
   }
 
   // Merge records (ZERO).
-  options.operator_type = grnxx::ZERO_MERGER_OPERATOR;
+  options.score_operator_type = grnxx::MERGER_SCORE_ZERO;
   output = merge_records(input_1, input_2, options);
-  for (grnxx::Int i = 0; i < output.size(); ++i) {
-    grnxx::Int row_id = output.get_row_id(i);
-    assert(test.bool2_values[row_id]);
-    assert(output.get_score(i) == 0.0);
+  for (size_t i = 0; i < output.size(); ++i) {
+    size_t row_id = output[i].row_id.value();
+    assert(test.bool2_values[row_id].is_true());
+    assert(output[i].score.value() == 0.0);
   }
 }
 
 int main() {
-  for (int i = 0; i < 5; ++i) {
+  for (size_t i = 0; i < 5; ++i) {
     init_test();
     test_and();
     test_or();
     test_xor();
     test_minus();
-    test_lhs();
-    test_rhs();
+    test_left();
+    test_right();
   }
   return 0;
 }
