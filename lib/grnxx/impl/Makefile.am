@@ -11,6 +11,7 @@ libgrnxx_impl_la_LDFLAGS = @AM_LTLDFLAGS@
 libgrnxx_impl_la_SOURCES =		\
 	db.cpp				\
 	expression.cpp			\
+	merger.cpp			\
 	sorter.cpp			\
 	table.cpp
 
@@ -21,5 +22,6 @@ libgrnxx_impl_include_HEADERS =		\
 	db.hpp				\
 	expression.hpp			\
 	index.hpp			\
+	merger.hpp			\
 	sorter.hpp			\
 	table.hpp
