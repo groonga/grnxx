@@ -1459,7 +1459,8 @@ using namespace expression;
 Expression::Expression(const Table *table,
                        std::unique_ptr<Node> &&root,
                        const ExpressionOptions &options)
-    : table_(table),
+    : ExpressionInterface(),
+      table_(table),
       root_(std::move(root)),
       block_size_(options.block_size) {}
 
@@ -1665,7 +1666,8 @@ void Expression::_evaluate(ArrayCRef<Record> records, ArrayRef<T> results) {
 // -- ExpressionBuilder --
 
 ExpressionBuilder::ExpressionBuilder(const Table *table)
-    : table_(table),
+    : ExpressionBuilderInterface(),
+      table_(table),
       node_stack_(),
       subexpression_builder_() {}
 
