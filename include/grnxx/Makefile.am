@@ -14,8 +14,7 @@ pkginclude_HEADERS =	\
 	index.hpp	\
 	library.hpp	\
 	merger.hpp	\
+	pipeline.hpp	\
 	sorter.hpp	\
 	string.hpp	\
 	table.hpp
-
-#	pipeline.hpp

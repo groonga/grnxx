@@ -14,11 +14,11 @@ libgrnxx_la_SOURCES =			\
 	expression.cpp			\
 	library.cpp			\
 	merger.cpp			\
+	pipeline.cpp			\
 	sorter.cpp			\
 	string.cpp
 
-#	index.cpp			\
-#	pipeline.cpp
+#	index.cpp
 
 libgrnxx_includedir = ${includedir}/grnxx
 libgrnxx_include_HEADERS =		\

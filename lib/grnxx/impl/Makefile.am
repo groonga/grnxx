@@ -12,6 +12,7 @@ libgrnxx_impl_la_SOURCES =		\
 	db.cpp				\
 	expression.cpp			\
 	merger.cpp			\
+	pipeline.cpp			\
 	sorter.cpp			\
 	table.cpp
 
@@ -23,5 +24,6 @@ libgrnxx_impl_include_HEADERS =		\
 	expression.hpp			\
 	index.hpp			\
 	merger.hpp			\
+	pipeline.hpp			\
 	sorter.hpp			\
 	table.hpp
