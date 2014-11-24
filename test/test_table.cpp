@@ -420,70 +420,59 @@ void test_cursor() {
   records.clear();
 }
 
-//void test_reference() {
-//  grnxx::Error error;
+void test_reference() {
+  // Create a database with the default options.
+  auto db = grnxx::open_db("");
 
-//  // Create a database with the default options.
-//  auto db = grnxx::open_db(&error, "");
-//  assert(db);
+  // Create tables.
+  auto to_table = db->create_table("To");
+  auto from_table = db->create_table("From");
 
-//  // Create a table named "Table".
-//  auto to_table = db->create_table(&error, "To");
-//  assert(to_table);
-//  auto from_table = db->create_table(&error, "From");
-//  assert(from_table);
+  // Create a column named "Ref".
+  grnxx::ColumnOptions options;
+  options.reference_table_name = "To";
+  auto ref_column = from_table->create_column("Ref", grnxx::INT_DATA, options);
+  assert(ref_column);
 
-//  // Create a column named "Ref".
-//  grnxx::ColumnOptions options;
-//  options.ref_table_name = "To";
-//  auto ref_column = from_table->create_column(&error, "Ref", grnxx::INT_DATA,
-//                                              options);
-//  assert(ref_column);
+  // Append rows.
+  to_table->insert_row();
+  to_table->insert_row();
+  to_table->insert_row();
+  from_table->insert_row();
+  from_table->insert_row();
+  from_table->insert_row();
 
-//  // Append rows.
-//  grnxx::Int row_id;
-//  assert(to_table->insert_row(&error, grnxx::NULL_ROW_ID,
-//                              grnxx::Datum(), &row_id));
-//  assert(to_table->insert_row(&error, grnxx::NULL_ROW_ID,
-//                              grnxx::Datum(), &row_id));
-//  assert(to_table->insert_row(&error, grnxx::NULL_ROW_ID,
-//                              grnxx::Datum(), &row_id));
-//  assert(from_table->insert_row(&error, grnxx::NULL_ROW_ID,
-//                                grnxx::Datum(), &row_id));
-//  assert(from_table->insert_row(&error, grnxx::NULL_ROW_ID,
-//                                grnxx::Datum(), &row_id));
-//  assert(from_table->insert_row(&error, grnxx::NULL_ROW_ID,
-//                                grnxx::Datum(), &row_id));
+  ref_column->set(grnxx::Int(0), grnxx::Int(0));
+  ref_column->set(grnxx::Int(1), grnxx::Int(1));
+  ref_column->set(grnxx::Int(2), grnxx::Int(1));
 
-//  assert(ref_column->set(&error, 1, grnxx::Int(1)));
-//  assert(ref_column->set(&error, 2, grnxx::Int(2)));
-//  assert(ref_column->set(&error, 3, grnxx::Int(2)));
+  // TODO: "from_table" will be updated in "to_table->remove_row()".
 
-//  assert(to_table->remove_row(&error, 1));
+  to_table->remove_row(grnxx::Int(0));
 
-//  grnxx::Datum datum;
-//  assert(ref_column->get(&error, 1, &datum));
-//  assert(datum.type() == grnxx::INT_DATA);
-//  assert(datum.force_int() == grnxx::NULL_ROW_ID);
-//  assert(ref_column->get(&error, 2, &datum));
-//  assert(datum.type() == grnxx::INT_DATA);
-//  assert(datum.force_int() == 2);
-//  assert(ref_column->get(&error, 3, &datum));
-//  assert(datum.type() == grnxx::INT_DATA);
-//  assert(datum.force_int() == 2);
+  grnxx::Datum datum;
+  ref_column->get(grnxx::Int(0), &datum);
+  assert(datum.type() == grnxx::INT_DATA);
+  assert(datum.as_int().value() == 0);
+  ref_column->get(grnxx::Int(1), &datum);
+  assert(datum.type() == grnxx::INT_DATA);
+  assert(datum.as_int().value() == 1);
+  ref_column->get(grnxx::Int(2), &datum);
+  assert(datum.type() == grnxx::INT_DATA);
+  assert(datum.as_int().value() == 1);
 
-//  assert(to_table->remove_row(&error, 2));
+  to_table->remove_row(grnxx::Int(1));
 
-//  assert(ref_column->get(&error, 1, &datum));
-//  assert(datum.type() == grnxx::INT_DATA);
-//  assert(datum.force_int() == grnxx::NULL_ROW_ID);
-//  assert(ref_column->get(&error, 2, &datum));
-//  assert(datum.type() == grnxx::INT_DATA);
-//  assert(datum.force_int() == grnxx::NULL_ROW_ID);
-//  assert(ref_column->get(&error, 3, &datum));
-//  assert(datum.type() == grnxx::INT_DATA);
-//  assert(datum.force_int() == grnxx::NULL_ROW_ID);
-//}
+  ref_column->get(grnxx::Int(0), &datum);
+  assert(datum.type() == grnxx::INT_DATA);
+  assert(datum.as_int().value() == 0);
+  ref_column->get(grnxx::Int(1), &datum);
+  assert(datum.type() == grnxx::INT_DATA);
+  assert(datum.as_int().value() == 1);
+  ref_column->get(grnxx::Int(2), &datum);
+  assert(datum.type() == grnxx::INT_DATA);
+  assert(datum.as_int().value() == 1);
+}
 
 int main() {
   test_table();
@@ -492,6 +481,6 @@ int main() {
 //  test_int_key();
 //  test_text_key();
   test_cursor();
-//  test_reference();
+  test_reference();
   return 0;
 }
