@@ -58,6 +58,8 @@ void init_test() {
   auto float2_column = test.table->create_column("Float2", data_type);
 
   // Generate random values.
+  // Bool: true, false, and N/A.
+  // Float: [0.0, 1.0) and N/A.
   constexpr size_t NUM_ROWS = 1 << 12;
   test.bool_values.resize(NUM_ROWS);
   test.bool2_values.resize(NUM_ROWS);
@@ -66,18 +68,37 @@ void init_test() {
   test.scores.resize(NUM_ROWS);
   test.scores2.resize(NUM_ROWS);
   for (size_t i = 0; i < NUM_ROWS; ++i) {
-    test.bool_values[i] = grnxx::Bool((mersenne_twister() & 1) != 0);
-    test.bool2_values[i] = grnxx::Bool((mersenne_twister() & 1) != 0);
+    uint64_t source = mersenne_twister() % 3;
+    test.bool_values[i] = (source == 0) ? grnxx::Bool::na() :
+        ((source == 1) ? grnxx::Bool(false) : grnxx::Bool(true));
+    source = mersenne_twister() % 3;
+    test.bool2_values[i] = (source == 0) ? grnxx::Bool::na() :
+        ((source == 1) ? grnxx::Bool(false) : grnxx::Bool(true));
 
+    source = mersenne_twister() % 129;
     test.float_values[i] =
-        grnxx::Float(1.0 * mersenne_twister() / mersenne_twister.max());
+        (source == 128) ? grnxx::Float::na() : grnxx::Float(source / 128.0);
+    source = mersenne_twister() % 129;
     test.float2_values[i] =
-        grnxx::Float(1.0 * mersenne_twister() / mersenne_twister.max());
+        (source == 128) ? grnxx::Float::na() : grnxx::Float(source / 128.0);
 
     test.scores[i] = test.bool_values[i].is_true() ?
                      test.float_values[i] : MISSING_SCORE;
     test.scores2[i] = test.bool2_values[i].is_true() ?
                       test.float2_values[i] : MISSING_SCORE;
+
+//    test.bool_values[i] = grnxx::Bool((mersenne_twister() & 1) != 0);
+//    test.bool2_values[i] = grnxx::Bool((mersenne_twister() & 1) != 0);
+
+//    test.float_values[i] =
+//        grnxx::Float(1.0 * mersenne_twister() / mersenne_twister.max());
+//    test.float2_values[i] =
+//        grnxx::Float(1.0 * mersenne_twister() / mersenne_twister.max());
+
+//    test.scores[i] = test.bool_values[i].is_true() ?
+//                     test.float_values[i] : MISSING_SCORE;
+//    test.scores2[i] = test.bool2_values[i].is_true() ?
+//                      test.float2_values[i] : MISSING_SCORE;
   }
 
   // Store generated values into columns.
@@ -164,12 +185,13 @@ void test_and() {
   auto output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.value();
-    assert((test.bool_values[row_id] & test.bool2_values[row_id]).is_true());
+    assert(test.bool_values[row_id].is_true() &
+           test.bool2_values[row_id].is_true());
     assert(output[i].score.match(test.scores[row_id] + test.scores2[row_id]));
   }
   size_t count = 0;
   for (size_t i = 0; i < test.table->num_rows(); ++i) {
-    if ((test.bool_values[i] & test.bool2_values[i]).is_true()) {
+    if (test.bool_values[i].is_true() & test.bool2_values[i].is_true()) {
       assert(output[count].row_id.match(grnxx::Int(i)));
       ++count;
     }
@@ -181,7 +203,8 @@ void test_and() {
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.value();
-    assert((test.bool_values[row_id] & test.bool2_values[row_id]).is_true());
+    assert(test.bool_values[row_id].is_true() &
+           test.bool2_values[row_id].is_true());
     assert(output[i].score.match(test.scores[row_id] - test.scores2[row_id]));
   }
 
@@ -190,7 +213,8 @@ void test_and() {
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.value();
-    assert((test.bool_values[row_id] & test.bool2_values[row_id]).is_true());
+    assert(test.bool_values[row_id].is_true() &
+           test.bool2_values[row_id].is_true());
     assert(output[i].score.match(test.scores[row_id] * test.scores2[row_id]));
   }
 
@@ -199,7 +223,8 @@ void test_and() {
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.value();
-    assert((test.bool_values[row_id] & test.bool2_values[row_id]).is_true());
+    assert(test.bool_values[row_id].is_true() &
+           test.bool2_values[row_id].is_true());
     assert(output[i].score.match(test.scores[row_id]));
   }
 
@@ -208,7 +233,8 @@ void test_and() {
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.value();
-    assert((test.bool_values[row_id] & test.bool2_values[row_id]).is_true());
+    assert(test.bool_values[row_id].is_true() &
+           test.bool2_values[row_id].is_true());
     assert(output[i].score.match(test.scores2[row_id]));
   }
 
@@ -217,7 +243,8 @@ void test_and() {
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.value();
-    assert((test.bool_values[row_id] & test.bool2_values[row_id]).is_true());
+    assert(test.bool_values[row_id].is_true() &
+           test.bool2_values[row_id].is_true());
     assert(output[i].score.value() == 0.0);
   }
 }
@@ -237,12 +264,14 @@ void test_or() {
   auto output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.value();
-    assert((test.bool_values[row_id] | test.bool2_values[row_id]).is_true());
+    assert(test.bool_values[row_id].is_true() |
+           test.bool2_values[row_id].is_true());
     assert(output[i].score.match(test.scores[row_id] + test.scores2[row_id]));
   }
   size_t count = 0;
   for (size_t i = 0; i < test.table->num_rows(); ++i) {
-    if ((test.bool_values[i] | test.bool2_values[i]).is_true()) {
+    if (test.bool_values[i].is_true() |
+        test.bool2_values[i].is_true()) {
       ++count;
     }
   }
@@ -253,7 +282,8 @@ void test_or() {
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.value();
-    assert((test.bool_values[row_id] | test.bool2_values[row_id]).is_true());
+    assert(test.bool_values[row_id].is_true() |
+           test.bool2_values[row_id].is_true());
     assert(output[i].score.match(test.scores[row_id] - test.scores2[row_id]));
   }
 
@@ -262,7 +292,8 @@ void test_or() {
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.value();
-    assert((test.bool_values[row_id] | test.bool2_values[row_id]).is_true());
+    assert(test.bool_values[row_id].is_true() |
+           test.bool2_values[row_id].is_true());
     assert(output[i].score.match(test.scores[row_id] * test.scores2[row_id]));
   }
 
@@ -271,7 +302,8 @@ void test_or() {
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.value();
-    assert((test.bool_values[row_id] | test.bool2_values[row_id]).is_true());
+    assert(test.bool_values[row_id].is_true() |
+           test.bool2_values[row_id].is_true());
     assert(output[i].score.match(test.scores[row_id]));
   }
 
@@ -280,7 +312,8 @@ void test_or() {
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.value();
-    assert((test.bool_values[row_id] | test.bool2_values[row_id]).is_true());
+    assert(test.bool_values[row_id].is_true() |
+           test.bool2_values[row_id].is_true());
     assert(output[i].score.match(test.scores2[row_id]));
   }
 
@@ -289,7 +322,8 @@ void test_or() {
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.value();
-    assert((test.bool_values[row_id] | test.bool2_values[row_id]).is_true());
+    assert(test.bool_values[row_id].is_true() |
+           test.bool2_values[row_id].is_true());
     assert(output[i].score.value() == 0.0);
   }
 }
@@ -309,12 +343,13 @@ void test_xor() {
   auto output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.value();
-    assert((test.bool_values[row_id] ^ test.bool2_values[row_id]).is_true());
+    assert(test.bool_values[row_id].is_true() ^
+           test.bool2_values[row_id].is_true());
     assert(output[i].score.match(test.scores[row_id] + test.scores2[row_id]));
   }
   size_t count = 0;
   for (size_t i = 0; i < test.table->num_rows(); ++i) {
-    if ((test.bool_values[i] ^ test.bool2_values[i]).is_true()) {
+    if (test.bool_values[i].is_true() ^ test.bool2_values[i].is_true()) {
       ++count;
     }
   }
@@ -325,7 +360,8 @@ void test_xor() {
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.value();
-    assert((test.bool_values[row_id] ^ test.bool2_values[row_id]).is_true());
+    assert(test.bool_values[row_id].is_true() ^
+           test.bool2_values[row_id].is_true());
     assert(output[i].score.match(test.scores[row_id] - test.scores2[row_id]));
   }
 
@@ -334,7 +370,8 @@ void test_xor() {
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.value();
-    assert((test.bool_values[row_id] ^ test.bool2_values[row_id]).is_true());
+    assert(test.bool_values[row_id].is_true() ^
+           test.bool2_values[row_id].is_true());
     assert(output[i].score.match(test.scores[row_id] * test.scores2[row_id]));
   }
 
@@ -343,7 +380,8 @@ void test_xor() {
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.value();
-    assert((test.bool_values[row_id] ^ test.bool2_values[row_id]).is_true());
+    assert(test.bool_values[row_id].is_true() ^
+           test.bool2_values[row_id].is_true());
     assert(output[i].score.match(test.scores[row_id]));
   }
 
@@ -352,7 +390,8 @@ void test_xor() {
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.value();
-    assert((test.bool_values[row_id] ^ test.bool2_values[row_id]).is_true());
+    assert(test.bool_values[row_id].is_true() ^
+           test.bool2_values[row_id].is_true());
     assert(output[i].score.match(test.scores2[row_id]));
   }
 
@@ -361,7 +400,8 @@ void test_xor() {
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.value();
-    assert((test.bool_values[row_id] ^ test.bool2_values[row_id]).is_true());
+    assert(test.bool_values[row_id].is_true() ^
+           test.bool2_values[row_id].is_true());
     assert(output[i].score.value() == 0.0);
   }
 }
@@ -381,12 +421,13 @@ void test_minus() {
   auto output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.value();
-    assert((test.bool_values[row_id] & !test.bool2_values[row_id]).is_true());
+    assert(test.bool_values[row_id].is_true() &
+           !test.bool2_values[row_id].is_true());
     assert(output[i].score.match(test.scores[row_id] + test.scores2[row_id]));
   }
   size_t count = 0;
   for (size_t i = 0; i < test.table->num_rows(); ++i) {
-    if ((test.bool_values[i] & !test.bool2_values[i]).is_true()) {
+    if (test.bool_values[i].is_true() & !test.bool2_values[i].is_true()) {
       ++count;
     }
   }
@@ -397,7 +438,8 @@ void test_minus() {
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.value();
-    assert((test.bool_values[row_id] & !test.bool2_values[row_id]).is_true());
+    assert(test.bool_values[row_id].is_true() &
+           !test.bool2_values[row_id].is_true());
     assert(output[i].score.match(test.scores[row_id] - test.scores2[row_id]));
   }
 
@@ -406,7 +448,8 @@ void test_minus() {
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.value();
-    assert((test.bool_values[row_id] & !test.bool2_values[row_id]).is_true());
+    assert(test.bool_values[row_id].is_true() &
+           !test.bool2_values[row_id].is_true());
     assert(output[i].score.match(test.scores[row_id] * test.scores2[row_id]));
   }
 
@@ -415,7 +458,8 @@ void test_minus() {
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.value();
-    assert((test.bool_values[row_id] & !test.bool2_values[row_id]).is_true());
+    assert(test.bool_values[row_id].is_true() &
+           !test.bool2_values[row_id].is_true());
     assert(output[i].score.match(test.scores[row_id]));
   }
 
@@ -424,7 +468,8 @@ void test_minus() {
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.value();
-    assert((test.bool_values[row_id] & !test.bool2_values[row_id]).is_true());
+    assert(test.bool_values[row_id].is_true() &
+           !test.bool2_values[row_id].is_true());
     assert(output[i].score.match(test.scores2[row_id]));
   }
 
@@ -433,7 +478,8 @@ void test_minus() {
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.value();
-    assert((test.bool_values[row_id] & !test.bool2_values[row_id]).is_true());
+    assert(test.bool_values[row_id].is_true() &
+           !test.bool2_values[row_id].is_true());
     assert(output[i].score.value() == 0.0);
   }
 }
