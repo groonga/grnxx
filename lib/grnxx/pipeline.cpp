@@ -8,9 +8,8 @@ namespace grnxx {
 
 std::unique_ptr<PipelineBuilder> PipelineBuilder::create(
     const Table *table) try {
-  throw "Not supported yet";  // TODO
-//  return std::unique_ptr<PipelineBuilder>(
-//      new impl::PipelineBuilder(static_cast<const impl::Table *>(table)));
+  return std::unique_ptr<PipelineBuilder>(
+      new impl::PipelineBuilder(static_cast<const impl::Table *>(table)));
 } catch (const std::bad_alloc &) {
   throw "Memory allocation failed";  // TODO
 }

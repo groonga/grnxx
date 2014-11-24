@@ -1,19 +1,31 @@
 #ifndef GRNXX_IMPL_PIPELINE_HPP
 #define GRNXX_IMPL_PIPELINE_HPP
 
+#include <memory>
+
+#include "grnxx/array.hpp"
 #include "grnxx/impl/table.hpp"
 #include "grnxx/pipeline.hpp"
 
 namespace grnxx {
 namespace impl {
+namespace pipeline {
+
+class Node;
+
+}  // namespace pipeline
 
 using PipelineInterface = grnxx::Pipeline;
 using PipelineBuilderInterface = grnxx::PipelineBuilder;
 
 class Pipeline : public PipelineInterface {
  public:
+  using Node = pipeline::Node;
+
   // -- Public API (grnxx/expression.hpp) --
-  Pipeline();
+  explicit Pipeline(const Table *table,
+                    std::unique_ptr<Node> &&root,
+                    const PipelineOptions &options);
   ~Pipeline() = default;
 
   const Table *table() const {
@@ -24,13 +36,16 @@ class Pipeline : public PipelineInterface {
 
  private:
   const Table *table_;
+  std::unique_ptr<Node> root_;
 };
 
 class PipelineBuilder : public PipelineBuilderInterface {
  public:
+  using Node = pipeline::Node;
+
   // -- Public API (grnxx/expression.hpp) --
 
-  PipelineBuilder();
+  explicit PipelineBuilder(const Table *table);
   ~PipelineBuilder() = default;
 
   const Table *table() const {
@@ -51,6 +66,7 @@ class PipelineBuilder : public PipelineBuilderInterface {
 
  private:
   const Table *table_;
+  Array<std::unique_ptr<Node>> node_stack_;
 };
 
 }  // namespace impl
