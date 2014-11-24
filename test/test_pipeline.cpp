@@ -48,19 +48,44 @@ void init_test() {
   auto float_column = test.table->create_column("Float", grnxx::FLOAT_DATA);
 
   // Generate random values.
-  // Bool: true or false.
-  // Int: [0, 100).
-  // Float: [0.0, 1.0].
+  // Bool: true, false, or N/A.
+  // Int: [0, 128) or N/A.
+  // Float: [0.0, 1.0) or N/A.
   constexpr size_t NUM_ROWS = 1 << 16;
   std::mt19937_64 mersenne_twister;
   test.bool_values.resize(NUM_ROWS);
   test.int_values.resize(NUM_ROWS);
   test.float_values.resize(NUM_ROWS);
   for (size_t i = 0; i < NUM_ROWS; ++i) {
-    test.bool_values[i] = grnxx::Bool((mersenne_twister() & 1) != 0);
-    test.int_values[i] = grnxx::Int(mersenne_twister() % 100);
-    test.float_values[i] =
-        grnxx::Float(1.0 * mersenne_twister() / mersenne_twister.max());
+    uint64_t source = mersenne_twister() % 3;
+    switch (source) {
+      case 0: {
+        test.bool_values[i] = grnxx::Bool(false);
+        break;
+      }
+      case 1: {
+        test.bool_values[i] = grnxx::Bool(true);
+        break;
+      }
+      case 2: {
+        test.bool_values[i] = grnxx::Bool::na();
+        break;
+      }
+    }
+
+    source = mersenne_twister() % 129;
+    if (source == 128) {
+      test.int_values[i] = grnxx::Int::na();
+    } else {
+      test.int_values[i] = grnxx::Int(source);
+    }
+
+    source = mersenne_twister() % 129;
+    if (source == 128) {
+      test.float_values[i] = grnxx::Float::na();
+    } else {
+      test.float_values[i] = grnxx::Float(source / 128.0);
+    }
   }
 
   // Store generated values into columns.
@@ -253,7 +278,7 @@ void test_sorter() {
   pipeline->flush(&records);
 
   size_t count = 0;
-  for (size_t i = 1; i < test.bool_values.size(); ++i) {
+  for (size_t i = 0; i < test.bool_values.size(); ++i) {
     if (test.bool_values[i].is_true()) {
       ++count;
     }
