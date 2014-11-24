@@ -8,10 +8,10 @@ TESTS =				\
 	test_expression		\
 	test_sorter		\
 	test_merger		\
+	test_pipeline		\
 	test_issue_62
 
-#	test_index		\
-#	test_pipeline
+#	test_index
 
 check_PROGRAMS = $(TESTS)
 
@@ -45,8 +45,8 @@ test_merger_LDADD = $(top_srcdir)/lib/grnxx/libgrnxx.la
 test_sorter_SOURCES = test_sorter.cpp
 test_sorter_LDADD = $(top_srcdir)/lib/grnxx/libgrnxx.la
 
-#test_pipeline_SOURCES = test_pipeline.cpp
-#test_pipeline_LDADD = $(top_srcdir)/lib/grnxx/libgrnxx.la
+test_pipeline_SOURCES = test_pipeline.cpp
+test_pipeline_LDADD = $(top_srcdir)/lib/grnxx/libgrnxx.la
 
 test_issue_62_SOURCES = test_issue_62.cpp
 test_issue_62_LDADD = $(top_srcdir)/lib/grnxx/libgrnxx.la

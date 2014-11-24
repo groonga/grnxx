@@ -28,7 +28,7 @@
 #include "grnxx/table.hpp"
 
 struct {
-  grnxx::unique_ptr<grnxx::DB> db;
+  std::unique_ptr<grnxx::DB> db;
   grnxx::Table *table;
   grnxx::Array<grnxx::Bool> bool_values;
   grnxx::Array<grnxx::Int> int_values;
@@ -36,164 +36,132 @@ struct {
 } test;
 
 void init_test() {
-  grnxx::Error error;
-
   // Create a database with the default options.
-  test.db = grnxx::open_db(&error, "");
-  assert(test.db);
+  test.db = grnxx::open_db("");
 
   // Create a table with the default options.
-  test.table = test.db->create_table(&error, "Table");
-  assert(test.table);
+  test.table = test.db->create_table("Table");
 
-  // Create columns for Bool, Int, and Float values.
-  grnxx::DataType data_type = grnxx::BOOL_DATA;
-  auto bool_column = test.table->create_column(&error, "Bool", data_type);
-  assert(bool_column);
-
-  data_type = grnxx::INT_DATA;
-  auto int_column = test.table->create_column(&error, "Int", data_type);
-  assert(int_column);
-
-  data_type = grnxx::FLOAT_DATA;
-  auto float_column = test.table->create_column(&error, "Float", data_type);
-  assert(float_column);
+  // Create columns for various data types.
+  auto bool_column = test.table->create_column("Bool", grnxx::BOOL_DATA);
+  auto int_column = test.table->create_column("Int", grnxx::INT_DATA);
+  auto float_column = test.table->create_column("Float", grnxx::FLOAT_DATA);
 
   // Generate random values.
   // Bool: true or false.
   // Int: [0, 100).
   // Float: [0.0, 1.0].
-  constexpr grnxx::Int NUM_ROWS = 1 << 16;
+  constexpr size_t NUM_ROWS = 1 << 16;
   std::mt19937_64 mersenne_twister;
-  assert(test.bool_values.resize(&error, NUM_ROWS + 1));
-  assert(test.int_values.resize(&error, NUM_ROWS + 1));
-  assert(test.float_values.resize(&error, NUM_ROWS + 1));
-  for (grnxx::Int i = 1; i <= NUM_ROWS; ++i) {
-    test.bool_values.set(i, (mersenne_twister() & 1) != 0);
-    test.int_values.set(i, mersenne_twister() % 100);
-    constexpr auto MAX_VALUE = mersenne_twister.max();
-    test.float_values.set(i, 1.0 * mersenne_twister() / MAX_VALUE);
+  test.bool_values.resize(NUM_ROWS);
+  test.int_values.resize(NUM_ROWS);
+  test.float_values.resize(NUM_ROWS);
+  for (size_t i = 0; i < NUM_ROWS; ++i) {
+    test.bool_values[i] = grnxx::Bool((mersenne_twister() & 1) != 0);
+    test.int_values[i] = grnxx::Int(mersenne_twister() % 100);
+    test.float_values[i] =
+        grnxx::Float(1.0 * mersenne_twister() / mersenne_twister.max());
   }
 
   // Store generated values into columns.
-  for (grnxx::Int i = 1; i <= NUM_ROWS; ++i) {
-    grnxx::Int row_id;
-    assert(test.table->insert_row(&error, grnxx::NULL_ROW_ID,
-                                  grnxx::Datum(), &row_id));
-    assert(bool_column->set(&error, row_id, test.bool_values[i]));
-    assert(int_column->set(&error, row_id, test.int_values[i]));
-    assert(float_column->set(&error, row_id, test.float_values[i]));
+  for (size_t i = 0; i < NUM_ROWS; ++i) {
+    grnxx::Int row_id = test.table->insert_row();
+    bool_column->set(row_id, test.bool_values[i]);
+    int_column->set(row_id, test.int_values[i]);
+    float_column->set(row_id, test.float_values[i]);
   }
 }
 
 void test_cursor() {
-  grnxx::Error error;
-
   // Create an object for building a pipeline.
-  auto pipeline_builder = grnxx::PipelineBuilder::create(&error, test.table);
-  assert(pipeline_builder);
+  auto pipeline_builder = grnxx::PipelineBuilder::create(test.table);
 
   // Create a cursor which reads all the records.
-  auto cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  assert(pipeline_builder->push_cursor(&error, std::move(cursor)));
+  auto cursor = test.table->create_cursor();
+  pipeline_builder->push_cursor(std::move(cursor));
 
   // Complete a pipeline.
-  auto pipeline = pipeline_builder->release(&error);
-  assert(pipeline);
+  auto pipeline = pipeline_builder->release();
 
   // Read records through the pipeline.
   grnxx::Array<grnxx::Record> records;
-  assert(pipeline->flush(&error, &records));
+  pipeline->flush(&records);
   assert(records.size() == test.table->num_rows());
 }
 
 void test_filter() {
-  grnxx::Error error;
-
   // Create an object for building a pipeline.
-  auto pipeline_builder = grnxx::PipelineBuilder::create(&error, test.table);
-  assert(pipeline_builder);
+  auto pipeline_builder = grnxx::PipelineBuilder::create(test.table);
 
   // Create a cursor which reads all the records.
-  auto cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  assert(pipeline_builder->push_cursor(&error, std::move(cursor)));
+  auto cursor = test.table->create_cursor();
+  pipeline_builder->push_cursor(std::move(cursor));
 
   // Create an object for building expressions.
-  auto expression_builder =
-      grnxx::ExpressionBuilder::create(&error, test.table);
-  assert(expression_builder);
+  auto expression_builder = grnxx::ExpressionBuilder::create(test.table);
 
   // Create a filter (Bool && (Int < 50) && (Float < 0.5)).
-  assert(expression_builder->push_column(&error, "Bool"));
-  assert(expression_builder->push_column(&error, "Int"));
-  assert(expression_builder->push_constant(&error, grnxx::Int(50)));
-  assert(expression_builder->push_operator(&error, grnxx::LESS_OPERATOR));
-  assert(expression_builder->push_column(&error, "Float"));
-  assert(expression_builder->push_constant(&error, grnxx::Float(0.5)));
-  assert(expression_builder->push_operator(&error, grnxx::LESS_OPERATOR));
-  assert(expression_builder->push_operator(&error,
-                                           grnxx::LOGICAL_AND_OPERATOR));
-  assert(expression_builder->push_operator(&error,
-                                           grnxx::LOGICAL_AND_OPERATOR));
-  auto expression = expression_builder->release(&error);
-  assert(expression);
-  assert(pipeline_builder->push_filter(&error, std::move(expression)));
+  expression_builder->push_column("Bool");
+  expression_builder->push_column("Int");
+  expression_builder->push_constant(grnxx::Int(50));
+  expression_builder->push_operator(grnxx::LESS_OPERATOR);
+  expression_builder->push_column("Float");
+  expression_builder->push_constant(grnxx::Float(0.5));
+  expression_builder->push_operator(grnxx::LESS_OPERATOR);
+  expression_builder->push_operator(grnxx::LOGICAL_AND_OPERATOR);
+  expression_builder->push_operator(grnxx::LOGICAL_AND_OPERATOR);
+  auto expression = expression_builder->release();
+  pipeline_builder->push_filter(std::move(expression));
 
   // Complete a pipeline.
-  auto pipeline = pipeline_builder->release(&error);
-  assert(pipeline);
+  auto pipeline = pipeline_builder->release();
 
   // Read records through the pipeline.
   grnxx::Array<grnxx::Record> records;
-  assert(pipeline->flush(&error, &records));
+  pipeline->flush(&records);
 
-  grnxx::Int count = 0;
-  for (grnxx::Int i = 1; i < test.bool_values.size(); ++i) {
-    if (test.bool_values[i] &&
-        (test.int_values[i] < 50) &&
-        (test.float_values[i] < 0.5)) {
-      assert(records.get_row_id(count) == i);
+  size_t count = 0;
+  for (size_t i = 0; i < test.bool_values.size(); ++i) {
+    if (test.bool_values[i].is_true() &&
+        (test.int_values[i] < grnxx::Int(50)).is_true() &&
+        (test.float_values[i] < grnxx::Float(0.5)).is_true()) {
+      assert(records[count].row_id.match(grnxx::Int(i)));
       ++count;
     }
   }
   assert(records.size() == count);
 
   // Create a cursor which reads all the records.
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  assert(pipeline_builder->push_cursor(&error, std::move(cursor)));
+  cursor = test.table->create_cursor();
+  pipeline_builder->push_cursor(std::move(cursor));
 
   // Create a filter (Bool && (Int < 50)).
-  constexpr grnxx::Int FILTER_OFFSET = 1234;
-  constexpr grnxx::Int FILTER_LIMIT  = 2345;
-  assert(expression_builder->push_column(&error, "Bool"));
-  assert(expression_builder->push_column(&error, "Int"));
-  assert(expression_builder->push_constant(&error, grnxx::Int(50)));
-  assert(expression_builder->push_operator(&error, grnxx::LESS_OPERATOR));
-  assert(expression_builder->push_operator(&error,
-                                           grnxx::LOGICAL_AND_OPERATOR));
-  expression = expression_builder->release(&error);
-  assert(expression);
-  assert(pipeline_builder->push_filter(&error, std::move(expression),
-                                       FILTER_OFFSET, FILTER_LIMIT));
+  constexpr size_t FILTER_OFFSET = 1234;
+  constexpr size_t FILTER_LIMIT  = 2345;
+  expression_builder->push_column("Bool");
+  expression_builder->push_column("Int");
+  expression_builder->push_constant(grnxx::Int(50));
+  expression_builder->push_operator(grnxx::LESS_OPERATOR);
+  expression_builder->push_operator(grnxx::LOGICAL_AND_OPERATOR);
+  expression = expression_builder->release();
+  pipeline_builder->push_filter(std::move(expression),
+                                FILTER_OFFSET, FILTER_LIMIT);
 
   // Complete a pipeline.
-  pipeline = pipeline_builder->release(&error);
-  assert(pipeline);
+  pipeline = pipeline_builder->release();
 
   // Read records through the pipeline.
   records.clear();
-  assert(pipeline->flush(&error, &records));
+  pipeline->flush(&records);
   assert(records.size() == FILTER_LIMIT);
 
   count = 0;
-  for (grnxx::Int i = 1; i < test.bool_values.size(); ++i) {
-    if (test.bool_values[i] && (test.int_values[i] < 50)) {
+  for (size_t i = 0; i < test.bool_values.size(); ++i) {
+    if (test.bool_values[i].is_true() &&
+        (test.int_values[i] < grnxx::Int(50)).is_true()) {
       if ((count >= FILTER_OFFSET) &&
           (count < (FILTER_OFFSET + FILTER_LIMIT))) {
-        assert(records.get_row_id(count - FILTER_OFFSET) == i);
+        assert(records[count - FILTER_OFFSET].row_id.match(grnxx::Int(i)));
         ++count;
       }
     }
@@ -201,50 +169,41 @@ void test_filter() {
 }
 
 void test_adjuster() {
-  grnxx::Error error;
-
   // Create an object for building a pipeline.
-  auto pipeline_builder = grnxx::PipelineBuilder::create(&error, test.table);
-  assert(pipeline_builder);
+  auto pipeline_builder = grnxx::PipelineBuilder::create(test.table);
 
   // Create a cursor which reads all the records.
-  auto cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  assert(pipeline_builder->push_cursor(&error, std::move(cursor)));
+  auto cursor = test.table->create_cursor();
+  pipeline_builder->push_cursor(std::move(cursor));
 
   // Create an object for building expressions.
-  auto expression_builder =
-      grnxx::ExpressionBuilder::create(&error, test.table);
-  assert(expression_builder);
+  auto expression_builder = grnxx::ExpressionBuilder::create(test.table);
 
   // Create a filter (Bool).
-  assert(expression_builder->push_column(&error, "Bool"));
-  auto expression = expression_builder->release(&error);
-  assert(expression);
-  assert(pipeline_builder->push_filter(&error, std::move(expression)));
+  expression_builder->push_column("Bool");
+  auto expression = expression_builder->release();
+  pipeline_builder->push_filter(std::move(expression));
 
   // Create an adjuster (Float * 100.0).
-  assert(expression_builder->push_column(&error, "Float"));
-  assert(expression_builder->push_constant(&error, grnxx::Float(100.0)));
-  assert(expression_builder->push_operator(&error,
-                                           grnxx::MULTIPLICATION_OPERATOR));
-  expression = expression_builder->release(&error);
-  assert(expression);
-  assert(pipeline_builder->push_adjuster(&error, std::move(expression)));
+  expression_builder->push_column("Float");
+  expression_builder->push_constant(grnxx::Float(100.0));
+  expression_builder->push_operator(grnxx::MULTIPLICATION_OPERATOR);
+  expression = expression_builder->release();
+  pipeline_builder->push_adjuster(std::move(expression));
 
   // Complete a pipeline.
-  auto pipeline = pipeline_builder->release(&error);
-  assert(pipeline);
+  auto pipeline = pipeline_builder->release();
 
   // Read records through the pipeline.
   grnxx::Array<grnxx::Record> records;
-  assert(pipeline->flush(&error, &records));
+  pipeline->flush(&records);
 
-  grnxx::Int count = 0;
-  for (grnxx::Int i = 1; i < test.bool_values.size(); ++i) {
-    if (test.bool_values[i]) {
-      assert(records.get_row_id(count) == i);
-      assert(records.get_score(count) == (test.float_values[i] * 100.0));
+  size_t count = 0;
+  for (size_t i = 0; i < test.bool_values.size(); ++i) {
+    if (test.bool_values[i].is_true()) {
+      assert(records[count].row_id.match(grnxx::Int(i)));
+      assert(records[count].score.match(
+          test.float_values[i] * grnxx::Float(100.0)));
       ++count;
     }
   }
@@ -252,161 +211,144 @@ void test_adjuster() {
 }
 
 void test_sorter() {
-  grnxx::Error error;
-
   // Create an object for building a pipeline.
-  auto pipeline_builder = grnxx::PipelineBuilder::create(&error, test.table);
-  assert(pipeline_builder);
+  auto pipeline_builder = grnxx::PipelineBuilder::create(test.table);
 
   // Create a cursor which reads all the records.
-  auto cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  assert(pipeline_builder->push_cursor(&error, std::move(cursor)));
+  auto cursor = test.table->create_cursor();
+  pipeline_builder->push_cursor(std::move(cursor));
 
   // Create an object for building expressions.
-  auto expression_builder =
-      grnxx::ExpressionBuilder::create(&error, test.table);
-  assert(expression_builder);
+  auto expression_builder = grnxx::ExpressionBuilder::create(test.table);
 
   // Create a filter (Bool).
-  assert(expression_builder->push_column(&error, "Bool"));
-  auto expression = expression_builder->release(&error);
-  assert(expression);
-  assert(pipeline_builder->push_filter(&error, std::move(expression)));
+  expression_builder->push_column("Bool");
+  auto expression = expression_builder->release();
+  pipeline_builder->push_filter(std::move(expression));
 
   // Create an adjuster (Float).
-  assert(expression_builder->push_column(&error, "Float"));
-  expression = expression_builder->release(&error);
-  assert(expression);
-  assert(pipeline_builder->push_adjuster(&error, std::move(expression)));
+  expression_builder->push_column("Float");
+  expression = expression_builder->release();
+  pipeline_builder->push_adjuster(std::move(expression));
 
   // Create a sorter (Int, _id).
-  grnxx::Array<grnxx::SortOrder> orders;
-  assert(orders.resize(&error, 2));
-  assert(expression_builder->push_column(&error, "Int"));
-  expression = expression_builder->release(&error);
-  assert(expression);
+  grnxx::Array<grnxx::SorterOrder> orders;
+  orders.resize(2);
+  expression_builder->push_column("Int");
+  expression = expression_builder->release();
   orders[0].expression = std::move(expression);
-  orders[0].type = grnxx::REGULAR_ORDER;
-  assert(expression_builder->push_row_id(&error));
-  expression = expression_builder->release(&error);
-  assert(expression);
+  orders[0].type = grnxx::SORTER_REGULAR_ORDER;
+  expression_builder->push_row_id();
+  expression = expression_builder->release();
   orders[1].expression = std::move(expression);
-  orders[1].type = grnxx::REGULAR_ORDER;
-  auto sorter = grnxx::Sorter::create(&error, std::move(orders));
-  assert(pipeline_builder->push_sorter(&error, std::move(sorter)));
+  orders[1].type = grnxx::SORTER_REGULAR_ORDER;
+  auto sorter = grnxx::Sorter::create(std::move(orders));
+  pipeline_builder->push_sorter(std::move(sorter));
 
   // Complete a pipeline.
-  auto pipeline = pipeline_builder->release(&error);
-  assert(pipeline);
+  auto pipeline = pipeline_builder->release();
 
   // Read records through the pipeline.
   grnxx::Array<grnxx::Record> records;
-  assert(pipeline->flush(&error, &records));
+  pipeline->flush(&records);
 
-  grnxx::Int count = 0;
-  for (grnxx::Int i = 1; i < test.bool_values.size(); ++i) {
-    if (test.bool_values[i]) {
+  size_t count = 0;
+  for (size_t i = 1; i < test.bool_values.size(); ++i) {
+    if (test.bool_values[i].is_true()) {
       ++count;
     }
   }
   assert(records.size() == count);
 
-  for (grnxx::Int i = 0; i < records.size(); ++i) {
-    grnxx::Int row_id = records.get_row_id(i);
-    assert(test.bool_values[row_id]);
-    assert(records.get_score(i) == test.float_values[row_id]);
+  for (size_t i = 0; i < records.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert(test.bool_values[row_id].is_true());
+    assert(records[i].score.match(test.float_values[row_id]));
   }
 
-  for (grnxx::Int i = 1; i < records.size(); ++i) {
-    grnxx::Int prev_row_id = records.get_row_id(i - 1);
-    grnxx::Int this_row_id = records.get_row_id(i);
+  for (size_t i = 1; i < records.size(); ++i) {
+    size_t prev_row_id = records[i - 1].row_id.value();
+    size_t this_row_id = records[i].row_id.value();
     grnxx::Int prev_value = test.int_values[prev_row_id];
     grnxx::Int this_value = test.int_values[this_row_id];
-    assert(prev_value <= this_value);
-    if (prev_value == this_value) {
+    if (prev_value.is_na()) {
+      assert(this_value.is_na());
+    } else {
+      assert(this_value.is_na() || (prev_value <= this_value).is_true());
+    }
+    if (prev_value.match(this_value)) {
       assert(prev_row_id < this_row_id);
     }
   }
 }
 
 void test_merger() {
-  grnxx::Error error;
-
   // Create an object for building a pipeline.
-  auto pipeline_builder = grnxx::PipelineBuilder::create(&error, test.table);
-  assert(pipeline_builder);
+  auto pipeline_builder = grnxx::PipelineBuilder::create(test.table);
 
   // Create a cursor which reads all the records.
-  auto cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  assert(pipeline_builder->push_cursor(&error, std::move(cursor)));
+  auto cursor = test.table->create_cursor();
+  pipeline_builder->push_cursor(std::move(cursor));
 
   // Create an object for building expressions.
-  auto expression_builder =
-      grnxx::ExpressionBuilder::create(&error, test.table);
-  assert(expression_builder);
+  auto expression_builder = grnxx::ExpressionBuilder::create(test.table);
 
   // Create a filter (Bool).
-  assert(expression_builder->push_column(&error, "Bool"));
-  auto expression = expression_builder->release(&error);
-  assert(expression);
-  assert(pipeline_builder->push_filter(&error, std::move(expression)));
+  expression_builder->push_column("Bool");
+  auto expression = expression_builder->release();
+  pipeline_builder->push_filter(std::move(expression));
 
   // Create an adjuster (Float).
-  assert(expression_builder->push_column(&error, "Float"));
-  expression = expression_builder->release(&error);
-  assert(expression);
-  assert(pipeline_builder->push_adjuster(&error, std::move(expression)));
+  expression_builder->push_column("Float");
+  expression = expression_builder->release();
+  pipeline_builder->push_adjuster(std::move(expression));
 
   // Create a cursor which reads all the records.
-  cursor = test.table->create_cursor(&error);
-  assert(cursor);
-  assert(pipeline_builder->push_cursor(&error, std::move(cursor)));
+  cursor = test.table->create_cursor();
+  pipeline_builder->push_cursor(std::move(cursor));
 
   // Create a filter (Int < 50).
-  assert(expression_builder->push_column(&error, "Int"));
-  assert(expression_builder->push_constant(&error, grnxx::Int(50)));
-  assert(expression_builder->push_operator(&error, grnxx::LESS_OPERATOR));
-  expression = expression_builder->release(&error);
-  assert(expression);
-  assert(pipeline_builder->push_filter(&error, std::move(expression)));
+  expression_builder->push_column("Int");
+  expression_builder->push_constant(grnxx::Int(50));
+  expression_builder->push_operator(grnxx::LESS_OPERATOR);
+  expression = expression_builder->release();
+  pipeline_builder->push_filter(std::move(expression));
 
   // Create an adjuster (Float * 2.0).
-  assert(expression_builder->push_column(&error, "Float"));
-  assert(expression_builder->push_constant(&error, grnxx::Float(2.0)));
-  assert(expression_builder->push_operator(&error,
-                                           grnxx::MULTIPLICATION_OPERATOR));
-  expression = expression_builder->release(&error);
-  assert(expression);
-  assert(pipeline_builder->push_adjuster(&error, std::move(expression)));
+  expression_builder->push_column("Float");
+  expression_builder->push_constant(grnxx::Float(2.0));
+  expression_builder->push_operator(grnxx::MULTIPLICATION_OPERATOR);
+  expression = expression_builder->release();
+  pipeline_builder->push_adjuster(std::move(expression));
 
   // Create a merger.
   grnxx::MergerOptions options;
-  options.type = grnxx::AND_MERGER;
-  options.operator_type = grnxx::PLUS_MERGER_OPERATOR;
-  assert(pipeline_builder->push_merger(&error, options));
+  options.logical_operator_type = grnxx::MERGER_LOGICAL_AND;
+  options.score_operator_type = grnxx::MERGER_SCORE_PLUS;
+  pipeline_builder->push_merger(options);
 
   // Complete a pipeline.
-  auto pipeline = pipeline_builder->release(&error);
-  assert(pipeline);
+  auto pipeline = pipeline_builder->release();
 
   // Read records through the pipeline.
   grnxx::Array<grnxx::Record> records;
-  assert(pipeline->flush(&error, &records));
+  pipeline->flush(&records);
 
-  grnxx::Int count = 0;
-  for (grnxx::Int i = 1; i < test.bool_values.size(); ++i) {
-    if (test.bool_values[i] && (test.int_values[i] < 50)) {
+  size_t count = 0;
+  for (size_t i = 0; i < test.bool_values.size(); ++i) {
+    if (test.bool_values[i].is_true() &&
+        (test.int_values[i] < grnxx::Int(50)).is_true()) {
       ++count;
     }
   }
   assert(records.size() == count);
 
-  for (grnxx::Int i = 0; i < records.size(); ++i) {
-    grnxx::Int row_id = records.get_row_id(i);
-    assert(test.bool_values[row_id] && (test.int_values[row_id] < 50));
-    assert(records.get_score(i) == (test.float_values[row_id] * 3.0));
+  for (size_t i = 0; i < records.size(); ++i) {
+    size_t row_id = records[i].row_id.value();
+    assert(test.bool_values[row_id].is_true() &&
+           (test.int_values[row_id] < grnxx::Int(50)).is_true());
+    assert(records[i].score.match(
+        test.float_values[row_id] * grnxx::Float(3.0)));
   }
 }
 
