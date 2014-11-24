@@ -51,8 +51,8 @@ void init_test() {
 
   // Generate random values.
   // Bool: true, false, and N/A.
-  // Int: [0, 100) and N/A.
-  // Float: [0.0, 1.0] and N/A.
+  // Int: [0, 128) and N/A.
+  // Float: [0.0, 1.0) and N/A.
   // Text: length = [1, 4], byte = ['0', '9'], and N/A.
   constexpr size_t NUM_ROWS = 1 << 16;
   std::mt19937_64 mersenne_twister;
@@ -78,18 +78,18 @@ void init_test() {
       }
     }
 
-    source = mersenne_twister() % 101;
-    if (source == 0) {
+    source = mersenne_twister() % 129;
+    if (source == 128) {
       test.int_values[i] = grnxx::Int::na();
     } else {
-      test.int_values[i] = grnxx::Int(source - 1);
+      test.int_values[i] = grnxx::Int(source);
     }
 
-    source = mersenne_twister() % 101;
-    if (source == 0) {
+    source = mersenne_twister() % 129;
+    if (source == 128) {
       test.float_values[i] = grnxx::Float::na();
     } else {
-      test.float_values[i] = grnxx::Float(source / 16.0);
+      test.float_values[i] = grnxx::Float(source / 128.0);
     }
 
     source = mersenne_twister() % 5;
