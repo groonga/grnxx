@@ -26,91 +26,98 @@ class GeoPoint {
   //       a value less than min_latitude/longitude() or greater than
   //       max_latitude/longitude().
   GeoPoint(Int latitude_in_milliseconds, Int longitude_in_milliseconds)
-      : latitude_(),
-        longitude_() {
-    int64_t latitude = latitude_in_milliseconds.raw();
-    int64_t longitude = longitude_in_milliseconds.raw();
-    if ((latitude >= min_latitude()) && (latitude <= max_latitude()) &&
-        (longitude >= min_longitude()) && (longitude <= max_longitude())) {
-      if ((latitude == min_latitude()) || (latitude == max_latitude())) {
-        longitude = 0;
-      } else if (longitude == max_longitude()) {
-        longitude = min_longitude();
+      : raw_latitude_(),
+        raw_longitude_() {
+    int64_t raw_latitude = latitude_in_milliseconds.raw();
+    int64_t raw_longitude = longitude_in_milliseconds.raw();
+    if ((raw_latitude >= raw_min_latitude()) &&
+        (raw_latitude <= raw_max_latitude()) &&
+        (raw_longitude >= raw_min_longitude()) &&
+        (raw_longitude <= raw_max_longitude())) {
+      if ((raw_latitude == raw_min_latitude()) ||
+          (raw_latitude == raw_max_latitude())) {
+        raw_longitude = 0;
+      } else if (raw_longitude == raw_max_longitude()) {
+        raw_longitude = raw_min_longitude();
       }
-      latitude_ = latitude;
-      longitude_ = longitude;
+      raw_latitude_ = static_cast<int32_t>(raw_latitude);
+      raw_longitude_ = static_cast<int32_t>(raw_longitude);
     } else {
-      latitude_ = na_latitude();
-      longitude_ = na_longitude();
+      raw_latitude_ = static_cast<int32_t>(raw_na_latitude());
+      raw_longitude_ = static_cast<int32_t>(raw_na_longitude());
     }
   }
   GeoPoint(Float latitude_in_degrees, Float longitude_in_degrees)
-      : latitude_(),
-        longitude_() {
+      : raw_latitude_(),
+        raw_longitude_() {
     // N/A (NaN) is rejected due to LOGICAL_AND.
     if ((latitude_in_degrees.raw() >= -90.0) &&
         (latitude_in_degrees.raw() <= 90.0) &&
         (longitude_in_degrees.raw() >= -180.0) &&
         (longitude_in_degrees.raw() <= 180.0)) {
-      int64_t latitude = latitude_in_degrees.raw() * 60 * 60 * 1000;
-      int64_t longitude = longitude_in_degrees.raw() * 60 * 60 * 1000;
-      if ((latitude == min_latitude()) || (latitude == max_latitude())) {
-        longitude = 0;
-      } else if (longitude == max_longitude()) {
-        longitude = min_longitude();
+      int64_t raw_latitude = latitude_in_degrees.raw() * 60 * 60 * 1000;
+      int64_t raw_longitude = longitude_in_degrees.raw() * 60 * 60 * 1000;
+      if ((raw_latitude == raw_min_latitude()) ||
+          (raw_latitude == raw_max_latitude())) {
+        raw_longitude = 0;
+      } else if (raw_longitude == raw_max_longitude()) {
+        raw_longitude = raw_min_longitude();
       }
-      latitude_ = latitude;
-      longitude_ = longitude;
+      raw_latitude_ = raw_latitude;
+      raw_longitude_ = raw_longitude;
     } else {
-      latitude_ = na_latitude();
-      longitude_ = na_longitude();
+      raw_latitude_ = raw_na_latitude();
+      raw_longitude_ = raw_na_longitude();
     }
   }
   explicit constexpr GeoPoint(NA)
-      : latitude_(na_latitude()),
-        longitude_(na_longitude()) {}
+      : raw_latitude_(raw_na_latitude()),
+        raw_longitude_(raw_na_longitude()) {}
 
-  constexpr int64_t latitude() const {
-    return latitude_;
+  constexpr int64_t raw_latitude() const {
+    return raw_latitude_;
   }
   constexpr Int latitude_in_milliseconds() const {
-    return in_milliseconds(latitude_);
+    return in_milliseconds(raw_latitude_);
   }
   constexpr Float latitude_in_degrees() const {
-    return in_degrees(latitude_);
+    return in_degrees(raw_latitude_);
   }
 
-  constexpr int64_t longitude() const {
-    return longitude_;
+  constexpr int64_t raw_longitude() const {
+    return raw_longitude_;
   }
   constexpr Int longitude_in_milliseconds() const {
-    return in_milliseconds(longitude_);
+    return in_milliseconds(raw_longitude_);
   }
   constexpr Float longitude_in_degrees() const {
-    return in_degrees(longitude_);
+    return in_degrees(raw_longitude_);
   }
 
   constexpr bool is_na() const {
-    return latitude_ == na_latitude();
+    return raw_latitude_ == raw_na_latitude();
   }
 
+  // TODO: std::memcmp() might be better.
   constexpr Bool operator==(const GeoPoint &rhs) const {
     return (is_na() || rhs.is_na()) ? Bool::na() :
-           Bool((latitude_ == rhs.latitude_) &&
-                (longitude_ == rhs.longitude_));
+           Bool((raw_latitude_ == rhs.raw_latitude_) &&
+                (raw_longitude_ == rhs.raw_longitude_));
   }
   constexpr Bool operator!=(const GeoPoint &rhs) const {
     return (is_na() || rhs.is_na()) ? Bool::na() :
-           Bool((latitude_ != rhs.latitude_) ||
-                (longitude_ != rhs.longitude_));
+           Bool((raw_latitude_ != rhs.raw_latitude_) ||
+                (raw_longitude_ != rhs.raw_longitude_));
   }
 
   // TODO: std::memcmp() might be better.
   constexpr bool match(const GeoPoint &rhs) const {
-    return (latitude_ == rhs.latitude_) && (longitude_ == rhs.longitude_);
+    return (raw_latitude_ == rhs.raw_latitude_) &&
+           (raw_longitude_ == rhs.raw_longitude_);
   }
   constexpr bool unmatch(const GeoPoint &rhs) const {
-    return (latitude_ != rhs.latitude_) || (longitude_ != rhs.longitude_);
+    return (raw_latitude_ != rhs.raw_latitude_) ||
+           (raw_longitude_ != rhs.raw_longitude_);
   }
 
   static constexpr DataType type() {
@@ -121,56 +128,56 @@ class GeoPoint {
     return GeoPoint(NA());
   }
 
-  static constexpr int64_t min_latitude() {
+  static constexpr int64_t raw_min_latitude() {
     return degrees(-90);
   }
   static constexpr Int min_latitude_in_milliseconds() {
-    return in_milliseconds(min_latitude());
+    return in_milliseconds(raw_min_latitude());
   }
   static constexpr Float min_latitude_in_degrees() {
-    return in_degrees(min_latitude());
+    return in_degrees(raw_min_latitude());
   }
-  static constexpr int64_t max_latitude() {
+  static constexpr int64_t raw_max_latitude() {
     return degrees(90);
   }
   static constexpr Int max_latitude_in_milliseconds() {
-    return in_milliseconds(max_latitude());
+    return in_milliseconds(raw_max_latitude());
   }
   static constexpr Float max_latitude_in_degrees() {
-    return in_degrees(max_latitude());
+    return in_degrees(raw_max_latitude());
   }
-  static constexpr int64_t na_latitude() {
-    return na_value();
+  static constexpr int64_t raw_na_latitude() {
+    return raw_na();
   }
 
-  static constexpr int64_t min_longitude() {
+  static constexpr int64_t raw_min_longitude() {
     return degrees(-180);
   }
   static constexpr Int min_longitude_in_milliseconds() {
-    return in_milliseconds(min_longitude());
+    return in_milliseconds(raw_min_longitude());
   }
   static constexpr Float min_longitude_in_degrees() {
-    return in_degrees(min_longitude());
+    return in_degrees(raw_min_longitude());
   }
-  static constexpr int64_t max_longitude() {
+  static constexpr int64_t raw_max_longitude() {
     return degrees(180);
   }
   static constexpr Int max_longitude_in_milliseconds() {
-    return in_milliseconds(max_longitude());
+    return in_milliseconds(raw_max_longitude());
   }
   static constexpr Float max_longitude_in_degrees() {
-    return in_degrees(max_longitude());
+    return in_degrees(raw_max_longitude());
   }
-  static constexpr int64_t na_longitude() {
-    return na_value();
+  static constexpr int64_t raw_na_longitude() {
+    return raw_na();
   }
 
  private:
-  int32_t latitude_;   // Latitude in milliseconds.
-  int32_t longitude_;  // Longitude in milliseconds.
+  int32_t raw_latitude_;   // Latitude in milliseconds.
+  int32_t raw_longitude_;  // Longitude in milliseconds.
 
   // Return a value that indicates N/A.
-  static constexpr int64_t na_value() {
+  static constexpr int64_t raw_na() {
     return std::numeric_limits<int32_t>::min();
   }
 
@@ -179,14 +186,14 @@ class GeoPoint {
     return n * 60 * 60 * 1000;
   }
 
-  // Express "value" in milliseconds with Int.
-  static constexpr Int in_milliseconds(int64_t value) {
-    return (value == na_value()) ? Int::na() : Int(value);
+  // Express a raw value in milliseconds with Int.
+  static constexpr Int in_milliseconds(int64_t raw) {
+    return (raw == raw_na()) ? Int::na() : Int(raw);
   }
-  // Express "value" in degrees with Float.
-  static constexpr Float in_degrees(int64_t value) {
-    return (value == na_value()) ?
-           Float::na() : Float(value / double(60 * 60 * 1000));
+  // Express a raw value in degrees with Float.
+  static constexpr Float in_degrees(int64_t raw) {
+    return (raw == raw_na()) ?
+           Float::na() : Float(raw / double(60 * 60 * 1000));
   }
 };
 
