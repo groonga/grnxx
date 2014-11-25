@@ -29,9 +29,6 @@ class Text {
         size_(string.size()) {}
   explicit constexpr Text(NA) : data_(nullptr), size_(NA()) {}
 
-  const char &operator[](size_t i) const {
-    return data_[i];
-  }
   constexpr const char *data() const {
     return data_;
   }
