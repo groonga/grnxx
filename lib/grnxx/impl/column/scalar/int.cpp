@@ -4,7 +4,7 @@
 #include "grnxx/impl/table.hpp"
 //#include "grnxx/impl/index.hpp"
 
-//#include <unordered_set>
+#include <unordered_set>
 
 namespace grnxx {
 namespace impl {
@@ -156,46 +156,35 @@ void Column<Int>::set_key_attribute() {
   if (is_key_) {
     throw "Key column";  // TODO
   }
-  throw "Not supported yet";  // TODO
+  if (reference_table_ == table_) {
+    throw "Self reference";  // TODO
+  }
 
-//  // TODO: An index should be used if possible.
-//  try {
-//    std::unordered_set<Int> set;
-//    // TODO: Functor-based inline callback may be better in this case,
-//    //       because it does not require memory allocation.
-//    auto cursor = table_->create_cursor(nullptr);
-//    if (!cursor) {
-//      return false;
-//    }
-//    Array<Record> records;
-//    for ( ; ; ) {
-//      auto result = cursor->read(nullptr, 1024, &records);
-//      if (!result.is_ok) {
-//        return false;
-//      } else {
-//        break;
-//      }
-//      for (Int i = 0; i < result.count; ++i) {
-//        if (!set.insert(values_[records.get_row_id(i)]).second) {
-//          GRNXX_ERROR_SET(error, INVALID_OPERATION, "Key duplicate");
-//          return false;
-//        }
-//      }
-//      records.clear();
-//    }
-//  } catch (...) {
-//    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
-//    return false;
-//  }
-//  has_key_attribute_ = true;
-//  return true;
+  // TODO: An index should be used if available.
+  std::unordered_set<int64_t> set;
+  size_t size = values_.size();
+  if (table_->max_row_id().is_na()) {
+    size = 0;
+  } else if (static_cast<size_t>(table_->max_row_id().value()) < size) {
+    size = static_cast<size_t>(table_->max_row_id().value()) + 1;
+  }
+  for (size_t i = 0; i < size; ++i) try {
+    if (!values_[i].is_na()) {
+      if (!set.insert(values_[i].value()).second) {
+        throw "Key duplicate";  // TODO
+      }
+    }
+  } catch (const std::bad_alloc &) {
+    throw "Memory allocation failed";  // TODO
+  }
+  is_key_ = true;
 }
 
 void Column<Int>::unset_key_attribute() {
   if (!is_key_) {
     throw "Not key column";  // TODO
   }
-  is_key_ = true;
+  is_key_ = false;
 }
 
 void Column<Int>::set_key(Int row_id, const Datum &key) {
