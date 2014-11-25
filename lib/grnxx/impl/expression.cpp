@@ -290,6 +290,8 @@ class ConstantNode<Vector<T>> : public TypedNode<Vector<T>> {
   }
 
  private:
+  // TODO: ConstantNode should be specialized for Vector<Text> because
+  //       Array<T> stores only references.
   Array<T> value_;
 };
 
