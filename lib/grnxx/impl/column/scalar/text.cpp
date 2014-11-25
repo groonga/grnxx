@@ -61,7 +61,7 @@ void Column<Text>::set(Int row_id, const Datum &datum) {
 //  }
   // TODO: Error handling.
   size_t offset = bodies_.size();
-  size_t size = new_value.size().raw();
+  size_t size = new_value.raw_size();
   uint64_t header;
   if (size < 0xFFFF) {
     bodies_.resize(offset + size);
@@ -235,7 +235,7 @@ void Column<Text>::set_key_attribute() {
   for (size_t i = 0; i < valid_size; ++i) try {
     Text value = get(grnxx::Int(i));
     if (!value.is_na()) {
-      if (!set.insert(String(value.data(), value.size().raw())).second) {
+      if (!set.insert(String(value.data(), value.raw_size())).second) {
         throw "Key duplicate";  // TODO
       }
     }
@@ -315,7 +315,7 @@ void Column<Text>::set_key(Int row_id, const Datum &key) {
 //  }
   // TODO: Error handling.
   size_t offset = bodies_.size();
-  size_t size = value.size().raw();
+  size_t size = value.raw_size();
   uint64_t header;
   if (size < 0xFFFF) {
     bodies_.resize(offset + size);
