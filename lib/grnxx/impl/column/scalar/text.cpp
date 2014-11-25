@@ -1,7 +1,7 @@
 #include "grnxx/impl/column/scalar/text.hpp"
 
 #include <cstring>
-//#include <set>
+#include <set>
 
 #include "grnxx/impl/db.hpp"
 #include "grnxx/impl/table.hpp"
@@ -227,7 +227,25 @@ void Column<Text>::set_key_attribute() {
   if (is_key_) {
     throw "Key column";  // TODO
   }
-  throw "Not supported yet";  // TODO
+  // TODO: An index should be used if available.
+  std::set<String> set;
+  size_t size = headers_.size();
+  if (table_->max_row_id().is_na()) {
+    size = 0;
+  } else if (static_cast<size_t>(table_->max_row_id().value()) < size) {
+    size = static_cast<size_t>(table_->max_row_id().value()) + 1;
+  }
+  for (size_t i = 0; i < size; ++i) try {
+    Text value = get(grnxx::Int(i));
+    if (!value.is_na()) {
+      if (!set.insert(String(value.data(), value.size().value())).second) {
+        throw "Key duplicate";  // TODO
+      }
+    }
+  } catch (const std::bad_alloc &) {
+    throw "Memory allocation failed";  // TODO
+  }
+  is_key_ = true;
 }
 
 //bool Column<Text>::set_key_attribute(Error *error) {
@@ -273,7 +291,7 @@ void Column<Text>::unset_key_attribute() {
   if (!is_key_) {
     throw "Not key column";  // TODO
   }
-  is_key_ = true;
+  is_key_ = false;
 }
 
 void Column<Text>::set_key(Int row_id, const Datum &key) {
