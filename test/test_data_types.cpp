@@ -950,6 +950,12 @@ void test_text() {
   assert(empty.size().raw() == 0);
   assert(na.size().is_na());
 
+  assert(ab.raw_size() == 2);
+  assert(abc.raw_size() == 3);
+  assert(bc.raw_size() == 2);
+  assert(empty.raw_size() == 0);
+  assert(na.raw_size() == grnxx::Text::raw_na_size());
+
   assert(!ab.is_empty());
   assert(!abc.is_empty());
   assert(!bc.is_empty());
