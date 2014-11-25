@@ -68,7 +68,7 @@ void Column<Vector<Text>>::set(Int row_id, const Datum &datum) {
     text_headers_[text_headers_offset + i].size = new_value[i].size();
     if (!new_value[i].is_na()) {
       std::memcpy(&bodies_[bodies_offset],
-                  new_value[i].data(), new_value[i].raw_size());
+                  new_value[i].raw_data(), new_value[i].raw_size());
       bodies_offset += new_value[i].raw_size();
     }
   }

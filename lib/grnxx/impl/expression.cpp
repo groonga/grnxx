@@ -244,7 +244,7 @@ class ConstantNode<Text> : public TypedNode<Text> {
   explicit ConstantNode(const Value &value)
       : TypedNode<Value>(),
         value_() {
-    value_.assign(value.data(), value.raw_size());
+    value_.assign(value.raw_data(), value.raw_size());
   }
   ~ConstantNode() = default;
 

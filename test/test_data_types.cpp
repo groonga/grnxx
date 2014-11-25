@@ -940,9 +940,9 @@ void test_text() {
   assert(empty.type() == grnxx::TEXT_DATA);
   assert(na.type() == grnxx::TEXT_DATA);
 
-  assert(std::strcmp(ab.data(), "ab") == 0);
-  assert(std::strcmp(abc.data(), "abc") == 0);
-  assert(std::strcmp(bc.data(), "bc") == 0);
+  assert(std::strcmp(ab.raw_data(), "ab") == 0);
+  assert(std::strcmp(abc.raw_data(), "abc") == 0);
+  assert(std::strcmp(bc.raw_data(), "bc") == 0);
 
   assert(ab.size().raw() == 2);
   assert(abc.size().raw() == 3);
@@ -1539,12 +1539,12 @@ void test_text_vector() {
   assert(empty.type() == grnxx::TEXT_VECTOR_DATA);
   assert(na.type() == grnxx::TEXT_VECTOR_DATA);
 
-  assert(abc[0].data() == data[0].data());
-  assert(abc[1].data() == data[1].data());
-  assert(abc[2].data() == data[2].data());
+  assert(abc[0].match(data[0]));
+  assert(abc[1].match(data[1]));
+  assert(abc[2].match(data[2]));
 
-  assert(bcn[0].data() == data[1].data());
-  assert(bcn[1].data() == data[2].data());
+  assert(bcn[0].match(data[1]));
+  assert(bcn[1].match(data[2]));
   assert(bcn[2].is_na());
 
   assert(abc.size().raw() == 3);

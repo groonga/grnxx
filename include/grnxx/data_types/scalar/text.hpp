@@ -29,14 +29,14 @@ class Text {
         size_(string.size()) {}
   explicit constexpr Text(NA) : data_(nullptr), size_(NA()) {}
 
-  constexpr const char *data() const {
+  constexpr const char *raw_data() const {
     return data_;
-  }
-  constexpr Int size() const {
-    return size_;
   }
   constexpr size_t raw_size() const {
     return size_.raw();
+  }
+  constexpr Int size() const {
+    return size_;
   }
 
   constexpr bool is_empty() const {

@@ -65,7 +65,7 @@ void Column<Text>::set(Int row_id, const Datum &datum) {
   uint64_t header;
   if (size < 0xFFFF) {
     bodies_.resize(offset + size);
-    std::memcpy(&bodies_[offset], new_value.data(), size);
+    std::memcpy(&bodies_[offset], new_value.raw_data(), size);
     header = (offset << 16) | size;
   } else {
     // The size of a long text is stored in front of the body.
@@ -74,7 +74,8 @@ void Column<Text>::set(Int row_id, const Datum &datum) {
     }
     bodies_.resize(offset + sizeof(uint64_t) + size);
     *reinterpret_cast<uint64_t *>(&bodies_[offset]) = size;
-    std::memcpy(&bodies_[offset + sizeof(uint64_t)], new_value.data(), size);
+    std::memcpy(&bodies_[offset + sizeof(uint64_t)],
+                new_value.raw_data(), size);
     header = (offset << 16) | 0xFFFF;
   }
   headers_[value_id] = header;
@@ -235,7 +236,7 @@ void Column<Text>::set_key_attribute() {
   for (size_t i = 0; i < valid_size; ++i) try {
     Text value = get(grnxx::Int(i));
     if (!value.is_na()) {
-      if (!set.insert(String(value.data(), value.raw_size())).second) {
+      if (!set.insert(String(value.raw_data(), value.raw_size())).second) {
         throw "Key duplicate";  // TODO
       }
     }
@@ -319,7 +320,7 @@ void Column<Text>::set_key(Int row_id, const Datum &key) {
   uint64_t header;
   if (size < 0xFFFF) {
     bodies_.resize(offset + size);
-    std::memcpy(&bodies_[offset], value.data(), size);
+    std::memcpy(&bodies_[offset], value.raw_data(), size);
     header = (offset << 16) | size;
   } else {
     // The size of a long text is stored in front of the body.
@@ -328,7 +329,7 @@ void Column<Text>::set_key(Int row_id, const Datum &key) {
     }
     bodies_.resize(offset + sizeof(uint64_t) + size);
     *reinterpret_cast<uint64_t *>(&bodies_[offset]) = size;
-    std::memcpy(&bodies_[offset + sizeof(uint64_t)], value.data(), size);
+    std::memcpy(&bodies_[offset + sizeof(uint64_t)], value.raw_data(), size);
     header = (offset << 16) | 0xFFFF;
   }
   headers_[value_id] = header;
