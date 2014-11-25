@@ -77,10 +77,10 @@ void test_bool() {
   for (size_t i = 0; i < ARRAY_SIZE; ++i) {
     values[i] = grnxx::Bool((mersenne_twister() & 1) != 0);
     array.set(i, values[i]);
-    assert(array.get(i).value() == values[i].value());
+    assert(array.get(i).match(values[i]));
   }
   for (size_t i = 0; i < ARRAY_SIZE; ++i) {
-    assert(array.get(i).value() == values[i].value());
+    assert(array.get(i).match(values[i]));
   }
 
   grnxx::Array<grnxx::Bool> array2;
@@ -90,7 +90,7 @@ void test_bool() {
   assert(array2.size() == ARRAY_SIZE);
   assert(array2.capacity() == ARRAY_SIZE);
   for (size_t i = 0; i < ARRAY_SIZE; ++i) {
-    assert(array2.get(i).value() == values[i].value());
+    assert(array2.get(i).match(values[i]));
   }
 }
 
@@ -150,10 +150,10 @@ void test_int() {
     }
     values[i] = grnxx::Int(value);
     array.set(i, values[i]);
-    assert(array.get(i).value() == values[i].value());
+    assert(array.get(i).match(values[i]));
   }
   for (size_t i = 0; i < ARRAY_SIZE; ++i) {
-    assert(array[i].value() == values[i].value());
+    assert(array[i].match(values[i]));
   }
 
   grnxx::Array<grnxx::Int> array2;
@@ -163,7 +163,7 @@ void test_int() {
   assert(array2.size() == ARRAY_SIZE);
   assert(array2.capacity() == ARRAY_SIZE);
   for (size_t i = 0; i < ARRAY_SIZE; ++i) {
-    assert(array2[i].value() == values[i].value());
+    assert(array2[i].match(values[i]));
   }
 }
 
