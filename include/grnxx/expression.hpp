@@ -55,7 +55,13 @@ enum OperatorType {
   DIVISION_OPERATOR,        // For Int, Float.
   MODULUS_OPERATOR,         // For Int.
 
-  // Array operators.
+  // TODO: The following operators can support Vector.
+  // Search operators.
+  STARTS_WITH_OPERATOR,  // For Text.
+  ENDS_WITH_OPERATOR,    // For Text.
+  CONTAINS_OPERATOR,     // For Text.
+
+  // Vector operators.
   SUBSCRIPT_OPERATOR,
 
   // -- Ternary operators --

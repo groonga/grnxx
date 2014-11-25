@@ -180,6 +180,14 @@ class ExpressionBuilder : public ExpressionBuilderInterface {
                                std::unique_ptr<Node> &&arg1,
                                std::unique_ptr<Node> &&arg2);
 
+  // Create a node associated with a search operator.
+  //
+  // On failure, throws an exception.
+  template <typename T>
+  Node *create_search_node(OperatorType operator_type,
+                           std::unique_ptr<Node> &&arg1,
+                           std::unique_ptr<Node> &&arg2);
+
   // Create a node associated with a subscript operator.
   //
   // On failure, throws an exception.

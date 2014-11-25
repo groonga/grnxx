@@ -1234,6 +1234,51 @@ struct ModulusOperator {
 template <typename T>
 using ModulusNode = GenericBinaryNode<ModulusOperator<T>>;
 
+// ----- StartsWithNode -----
+
+template <typename T>
+struct StartsWithOperator {
+  using Value = Bool;
+  using Arg1 = T;
+  using Arg2 = T;
+  Value operator()(const Arg1 &arg1, const Arg2 &arg2) const {
+    return arg1.starts_with(arg2);
+  }
+};
+
+template <typename T>
+using StartsWithNode = GenericBinaryNode<StartsWithOperator<T>>;
+
+// ----- EndsWithNode -----
+
+template <typename T>
+struct EndsWithOperator {
+  using Value = Bool;
+  using Arg1 = T;
+  using Arg2 = T;
+  Value operator()(const Arg1 &arg1, const Arg2 &arg2) const {
+    return arg1.ends_with(arg2);
+  }
+};
+
+template <typename T>
+using EndsWithNode = GenericBinaryNode<EndsWithOperator<T>>;
+
+// ----- ContainsNode -----
+
+template <typename T>
+struct ContainsOperator {
+  using Value = Bool;
+  using Arg1 = T;
+  using Arg2 = T;
+  Value operator()(const Arg1 &arg1, const Arg2 &arg2) const {
+    return arg1.contains(arg2);
+  }
+};
+
+template <typename T>
+using ContainsNode = GenericBinaryNode<ContainsOperator<T>>;
+
 // ---- SubscriptNode ----
 
 template <typename T>
@@ -2130,6 +2175,20 @@ Node *ExpressionBuilder::create_binary_node(
         }
       }
     }
+    case STARTS_WITH_OPERATOR:
+    case ENDS_WITH_OPERATOR:
+    case CONTAINS_OPERATOR: {
+      switch (arg1->data_type()) {
+        case TEXT_DATA: {
+          return create_search_node<Text>(
+              operator_type, std::move(arg1), std::move(arg2));
+        }
+        // TODO: Search nodes can support Vector.
+        default: {
+          throw "Invalid data type";  // TODO
+        }
+      }
+    }
     case SUBSCRIPT_OPERATOR: {
       return create_subscript_node(std::move(arg1), std::move(arg2));
     }
@@ -2237,6 +2296,29 @@ Node *ExpressionBuilder::create_arithmetic_node(
     }
     case MODULUS_OPERATOR: {
       return new ModulusNode<T>(std::move(arg1), std::move(arg2));
+    }
+    default: {
+      throw "Invalid operator";  // TODO
+    }
+  }
+}
+
+template <typename T>
+Node *ExpressionBuilder::create_search_node(OperatorType operator_type,
+                                            std::unique_ptr<Node> &&arg1,
+                                            std::unique_ptr<Node> &&arg2) {
+  if (arg1->data_type() != arg2->data_type()) {
+    throw "Data type conflict";  // TODO
+  }
+  switch (operator_type) {
+    case STARTS_WITH_OPERATOR: {
+      return new StartsWithNode<T>(std::move(arg1), std::move(arg2));
+    }
+    case ENDS_WITH_OPERATOR: {
+      return new EndsWithNode<T>(std::move(arg1), std::move(arg2));
+    }
+    case CONTAINS_OPERATOR: {
+      return new ContainsNode<T>(std::move(arg1), std::move(arg2));
     }
     default: {
       throw "Invalid operator";  // TODO
