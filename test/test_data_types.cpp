@@ -31,9 +31,9 @@ void test_bool() {
   assert(false_object.type() == grnxx::BOOL_DATA);
   assert(na_object.type() == grnxx::BOOL_DATA);
 
-  assert(true_object.value() == grnxx::Bool::true_value());
-  assert(false_object.value() == grnxx::Bool::false_value());
-  assert(na_object.value() == grnxx::Bool::na_value());
+  assert(true_object.raw() == grnxx::Bool::raw_true());
+  assert(false_object.raw() == grnxx::Bool::raw_false());
+  assert(na_object.raw() == grnxx::Bool::raw_na());
 
   assert(true_object.is_true());
   assert(!true_object.is_false());
@@ -134,10 +134,10 @@ void test_int() {
   assert(grnxx::Int::max().type() == grnxx::INT_DATA);
   assert(grnxx::Int::na().type() == grnxx::INT_DATA);
 
-  assert(grnxx::Int(0).value() == 0);
-  assert(grnxx::Int::min().value() == grnxx::Int::min_value());
-  assert(grnxx::Int::max().value() == grnxx::Int::max_value());
-  assert(grnxx::Int::na().value() == grnxx::Int::na_value());
+  assert(grnxx::Int(0).raw() == 0);
+  assert(grnxx::Int::min().raw() == grnxx::Int::raw_min());
+  assert(grnxx::Int::max().raw() == grnxx::Int::raw_max());
+  assert(grnxx::Int::na().raw() == grnxx::Int::raw_na());
 
   assert(!grnxx::Int(0).is_min());
   assert(grnxx::Int::min().is_min());
@@ -154,33 +154,33 @@ void test_int() {
   assert(!grnxx::Int::max().is_na());
   assert(grnxx::Int::na().is_na());
 
-  assert((+grnxx::Int(0)).value() == 0);
-  assert((+grnxx::Int(1)).value() == 1);
+  assert((+grnxx::Int(0)).raw() == 0);
+  assert((+grnxx::Int(1)).raw() == 1);
   assert((+grnxx::Int::min()).is_min());
   assert((+grnxx::Int::max()).is_max());
   assert((+grnxx::Int::na()).is_na());
 
-  assert((-grnxx::Int(0)).value() == 0);
-  assert((-grnxx::Int(1)).value() == -1);
+  assert((-grnxx::Int(0)).raw() == 0);
+  assert((-grnxx::Int(1)).raw() == -1);
   assert((-grnxx::Int::min()).is_max());
   assert((-grnxx::Int::max()).is_min());
   assert((-grnxx::Int::na()).is_na());
 
-  assert((~grnxx::Int(0)).value() == -1);
-  assert((~grnxx::Int(1)).value() == -2);
-  assert((~grnxx::Int::min()).value() == (grnxx::Int::max_value() - 1));
+  assert((~grnxx::Int(0)).raw() == -1);
+  assert((~grnxx::Int(1)).raw() == -2);
+  assert((~grnxx::Int::min()).raw() == (grnxx::Int::raw_max() - 1));
   assert((~grnxx::Int::max()).is_na());
   assert((~grnxx::Int::na()).is_na());
 
   grnxx::Int object(0);
 
-  assert((++object).value() == 1);
-  assert((object++).value() == 1);
-  assert(object.value() == 2);
+  assert((++object).raw() == 1);
+  assert((object++).raw() == 1);
+  assert(object.raw() == 2);
 
-  assert((--object).value() == 1);
-  assert((object--).value() == 1);
-  assert(object.value() == 0);
+  assert((--object).raw() == 1);
+  assert((object--).raw() == 1);
+  assert(object.raw() == 0);
 
   object = grnxx::Int::na();
 
@@ -192,31 +192,31 @@ void test_int() {
   assert((object--).is_na());
   assert(object.is_na());
 
-  assert((grnxx::Int(0) & grnxx::Int(0)).value() == 0);
-  assert((grnxx::Int(0) & grnxx::Int(1)).value() == 0);
+  assert((grnxx::Int(0) & grnxx::Int(0)).raw() == 0);
+  assert((grnxx::Int(0) & grnxx::Int(1)).raw() == 0);
   assert((grnxx::Int(0) & grnxx::Int::na()).is_na());
-  assert((grnxx::Int(1) & grnxx::Int(0)).value() == 0);
-  assert((grnxx::Int(1) & grnxx::Int(1)).value() == 1);
+  assert((grnxx::Int(1) & grnxx::Int(0)).raw() == 0);
+  assert((grnxx::Int(1) & grnxx::Int(1)).raw() == 1);
   assert((grnxx::Int(1) & grnxx::Int::na()).is_na());
   assert((grnxx::Int::na() & grnxx::Int(0)).is_na());
   assert((grnxx::Int::na() & grnxx::Int(1)).is_na());
   assert((grnxx::Int::na() & grnxx::Int::na()).is_na());
 
-  assert((grnxx::Int(0) | grnxx::Int(0)).value() == 0);
-  assert((grnxx::Int(0) | grnxx::Int(1)).value() == 1);
+  assert((grnxx::Int(0) | grnxx::Int(0)).raw() == 0);
+  assert((grnxx::Int(0) | grnxx::Int(1)).raw() == 1);
   assert((grnxx::Int(0) | grnxx::Int::na()).is_na());
-  assert((grnxx::Int(1) | grnxx::Int(0)).value() == 1);
-  assert((grnxx::Int(1) | grnxx::Int(1)).value() == 1);
+  assert((grnxx::Int(1) | grnxx::Int(0)).raw() == 1);
+  assert((grnxx::Int(1) | grnxx::Int(1)).raw() == 1);
   assert((grnxx::Int(1) | grnxx::Int::na()).is_na());
   assert((grnxx::Int::na() | grnxx::Int(0)).is_na());
   assert((grnxx::Int::na() | grnxx::Int(1)).is_na());
   assert((grnxx::Int::na() | grnxx::Int::na()).is_na());
 
-  assert((grnxx::Int(0) ^ grnxx::Int(0)).value() == 0);
-  assert((grnxx::Int(0) ^ grnxx::Int(1)).value() == 1);
+  assert((grnxx::Int(0) ^ grnxx::Int(0)).raw() == 0);
+  assert((grnxx::Int(0) ^ grnxx::Int(1)).raw() == 1);
   assert((grnxx::Int(0) ^ grnxx::Int::na()).is_na());
-  assert((grnxx::Int(1) ^ grnxx::Int(0)).value() == 1);
-  assert((grnxx::Int(1) ^ grnxx::Int(1)).value() == 0);
+  assert((grnxx::Int(1) ^ grnxx::Int(0)).raw() == 1);
+  assert((grnxx::Int(1) ^ grnxx::Int(1)).raw() == 0);
   assert((grnxx::Int(1) ^ grnxx::Int::na()).is_na());
   assert((grnxx::Int::na() ^ grnxx::Int(0)).is_na());
   assert((grnxx::Int::na() ^ grnxx::Int(1)).is_na());
@@ -224,12 +224,12 @@ void test_int() {
 
   object = grnxx::Int(3);
 
-  assert((object &= grnxx::Int(1)).value() == 1);
-  assert(object.value() == 1);
-  assert((object |= grnxx::Int(2)).value() == 3);
-  assert(object.value() == 3);
-  assert((object ^= grnxx::Int(6)).value() == 5);
-  assert(object.value() == 5);
+  assert((object &= grnxx::Int(1)).raw() == 1);
+  assert(object.raw() == 1);
+  assert((object |= grnxx::Int(2)).raw() == 3);
+  assert(object.raw() == 3);
+  assert((object ^= grnxx::Int(6)).raw() == 5);
+  assert(object.raw() == 5);
 
   object = grnxx::Int(0);
 
@@ -252,8 +252,8 @@ void test_int() {
   assert((object ^= grnxx::Int(1)).is_na());
   assert(object.is_na());
 
-  assert((grnxx::Int(1) << grnxx::Int(0)).value() == 1);
-  assert((grnxx::Int(1) << grnxx::Int(1)).value() == 2);
+  assert((grnxx::Int(1) << grnxx::Int(0)).raw() == 1);
+  assert((grnxx::Int(1) << grnxx::Int(1)).raw() == 2);
   assert((grnxx::Int(1) << grnxx::Int(63)).is_na());
   assert((grnxx::Int(1) << grnxx::Int(64)).is_na());
   assert((grnxx::Int(1) << grnxx::Int(-1)).is_na());
@@ -261,9 +261,9 @@ void test_int() {
   assert((grnxx::Int::na() << grnxx::Int(1)).is_na());
   assert((grnxx::Int::na() << grnxx::Int::na()).is_na());
 
-  assert((grnxx::Int(4) >> grnxx::Int(0)).value() == 4);
-  assert((grnxx::Int(4) >> grnxx::Int(1)).value() == 2);
-  assert((grnxx::Int(4) >> grnxx::Int(63)).value() == 0);
+  assert((grnxx::Int(4) >> grnxx::Int(0)).raw() == 4);
+  assert((grnxx::Int(4) >> grnxx::Int(1)).raw() == 2);
+  assert((grnxx::Int(4) >> grnxx::Int(63)).raw() == 0);
   assert((grnxx::Int(4) >> grnxx::Int(64)).is_na());
   assert((grnxx::Int(4) >> grnxx::Int(-1)).is_na());
   assert((grnxx::Int(4) >> grnxx::Int::na()).is_na());
@@ -272,44 +272,44 @@ void test_int() {
 
   object = grnxx::Int(1);
 
-  assert((object <<= grnxx::Int(3)).value() == 8);
-  assert(object.value() == 8);
-  assert((object >>= grnxx::Int(2)).value() == 2);
-  assert(object.value() == 2);
+  assert((object <<= grnxx::Int(3)).raw() == 8);
+  assert(object.raw() == 8);
+  assert((object >>= grnxx::Int(2)).raw() == 2);
+  assert(object.raw() == 2);
 
   object = grnxx::Int(-1);
 
-  assert(object.arithmetic_right_shift(grnxx::Int(0)).value() == -1);
-  assert(object.arithmetic_right_shift(grnxx::Int(1)).value() == -1);
+  assert(object.arithmetic_right_shift(grnxx::Int(0)).raw() == -1);
+  assert(object.arithmetic_right_shift(grnxx::Int(1)).raw() == -1);
 
-  assert(object.logical_right_shift(grnxx::Int(0)).value() == -1);
+  assert(object.logical_right_shift(grnxx::Int(0)).raw() == -1);
   assert(object.logical_right_shift(grnxx::Int(1)).is_max());
 
-  assert((grnxx::Int(1) + grnxx::Int(1)).value() == 2);
+  assert((grnxx::Int(1) + grnxx::Int(1)).raw() == 2);
   assert((grnxx::Int(1) + grnxx::Int::max()).is_na());
   assert((grnxx::Int(1) + grnxx::Int::na()).is_na());
-  assert((grnxx::Int(-1) + grnxx::Int(-1)).value() == -2);
+  assert((grnxx::Int(-1) + grnxx::Int(-1)).raw() == -2);
   assert((grnxx::Int(-1) + grnxx::Int::min()).is_na());
   assert((grnxx::Int(-1) + grnxx::Int::na()).is_na());
   assert((grnxx::Int::na() + grnxx::Int(1)).is_na());
   assert((grnxx::Int::na() + grnxx::Int::na()).is_na());
 
-  assert((grnxx::Int(1) - grnxx::Int(1)).value() == 0);
+  assert((grnxx::Int(1) - grnxx::Int(1)).raw() == 0);
   assert((grnxx::Int(1) - grnxx::Int::min()).is_na());
   assert((grnxx::Int(1) - grnxx::Int::na()).is_na());
-  assert((grnxx::Int(-1) - grnxx::Int(-1)).value() == 0);
+  assert((grnxx::Int(-1) - grnxx::Int(-1)).raw() == 0);
   assert((grnxx::Int(-1) - grnxx::Int::max()).is_na());
   assert((grnxx::Int(-1) - grnxx::Int::na()).is_na());
   assert((grnxx::Int::na() - grnxx::Int(1)).is_na());
   assert((grnxx::Int::na() - grnxx::Int::na()).is_na());
 
-  assert((grnxx::Int(1) * grnxx::Int(0)).value() == 0);
-  assert((grnxx::Int(1) * grnxx::Int(2)).value() == 2);
+  assert((grnxx::Int(1) * grnxx::Int(0)).raw() == 0);
+  assert((grnxx::Int(1) * grnxx::Int(2)).raw() == 2);
   assert((grnxx::Int(1) * grnxx::Int::min()).is_min());
   assert((grnxx::Int(1) * grnxx::Int::max()).is_max());
   assert((grnxx::Int(1) * grnxx::Int::na()).is_na());
-  assert((grnxx::Int(2) * grnxx::Int(0)).value() == 0);
-  assert((grnxx::Int(2) * grnxx::Int(2)).value() == 4);
+  assert((grnxx::Int(2) * grnxx::Int(0)).raw() == 0);
+  assert((grnxx::Int(2) * grnxx::Int(2)).raw() == 4);
   assert((grnxx::Int(2) * grnxx::Int::min()).is_na());
   assert((grnxx::Int(2) * grnxx::Int::max()).is_na());
   assert((grnxx::Int(2) * grnxx::Int::na()).is_na());
@@ -319,12 +319,12 @@ void test_int() {
 
   object = grnxx::Int(1);
 
-  assert((object += grnxx::Int(2)).value() == 3);
-  assert(object.value() == 3);
-  assert((object -= grnxx::Int(1)).value() == 2);
-  assert(object.value() == 2);
-  assert((object *= grnxx::Int(4)).value() == 8);
-  assert(object.value() == 8);
+  assert((object += grnxx::Int(2)).raw() == 3);
+  assert(object.raw() == 3);
+  assert((object -= grnxx::Int(1)).raw() == 2);
+  assert(object.raw() == 2);
+  assert((object *= grnxx::Int(4)).raw() == 8);
+  assert(object.raw() == 8);
 
   object = grnxx::Int(1);
 
@@ -348,17 +348,17 @@ void test_int() {
   assert(object.is_na());
 
   assert((grnxx::Int(0) / grnxx::Int(0)).is_na());
-  assert((grnxx::Int(0) / grnxx::Int(1)).value() == 0);
-  assert((grnxx::Int(0) / grnxx::Int(2)).value() == 0);
+  assert((grnxx::Int(0) / grnxx::Int(1)).raw() == 0);
+  assert((grnxx::Int(0) / grnxx::Int(2)).raw() == 0);
   assert((grnxx::Int(0) / grnxx::Int::na()).is_na());
   assert((grnxx::Int(2) / grnxx::Int(0)).is_na());
-  assert((grnxx::Int(2) / grnxx::Int(1)).value() == 2);
-  assert((grnxx::Int(2) / grnxx::Int(2)).value() == 1);
+  assert((grnxx::Int(2) / grnxx::Int(1)).raw() == 2);
+  assert((grnxx::Int(2) / grnxx::Int(2)).raw() == 1);
   assert((grnxx::Int(2) / grnxx::Int::na()).is_na());
-  assert((grnxx::Int(3) / grnxx::Int(2)).value() == 1);
-  assert((grnxx::Int(3) / grnxx::Int(-2)).value() == -1);
-  assert((grnxx::Int(-3) / grnxx::Int(2)).value() == -1);
-  assert((grnxx::Int(-3) / grnxx::Int(-2)).value() == 1);
+  assert((grnxx::Int(3) / grnxx::Int(2)).raw() == 1);
+  assert((grnxx::Int(3) / grnxx::Int(-2)).raw() == -1);
+  assert((grnxx::Int(-3) / grnxx::Int(2)).raw() == -1);
+  assert((grnxx::Int(-3) / grnxx::Int(-2)).raw() == 1);
   assert((grnxx::Int::min() / grnxx::Int(-1)).is_max());
   assert((grnxx::Int::max() / grnxx::Int(-1)).is_min());
   assert((grnxx::Int::na() / grnxx::Int(0)).is_na());
@@ -366,26 +366,26 @@ void test_int() {
   assert((grnxx::Int::na() / grnxx::Int::na()).is_na());
 
   assert((grnxx::Int(0) % grnxx::Int(0)).is_na());
-  assert((grnxx::Int(0) % grnxx::Int(1)).value() == 0);
-  assert((grnxx::Int(0) % grnxx::Int(2)).value() == 0);
+  assert((grnxx::Int(0) % grnxx::Int(1)).raw() == 0);
+  assert((grnxx::Int(0) % grnxx::Int(2)).raw() == 0);
   assert((grnxx::Int(0) % grnxx::Int::na()).is_na());
   assert((grnxx::Int(3) % grnxx::Int(0)).is_na());
-  assert((grnxx::Int(3) % grnxx::Int(1)).value() == 0);
-  assert((grnxx::Int(3) % grnxx::Int(2)).value() == 1);
+  assert((grnxx::Int(3) % grnxx::Int(1)).raw() == 0);
+  assert((grnxx::Int(3) % grnxx::Int(2)).raw() == 1);
   assert((grnxx::Int(3) % grnxx::Int::na()).is_na());
-  assert((grnxx::Int(3) % grnxx::Int(-2)).value() == 1);
-  assert((grnxx::Int(-3) % grnxx::Int(2)).value() == -1);
-  assert((grnxx::Int(-3) % grnxx::Int(-2)).value() == -1);
+  assert((grnxx::Int(3) % grnxx::Int(-2)).raw() == 1);
+  assert((grnxx::Int(-3) % grnxx::Int(2)).raw() == -1);
+  assert((grnxx::Int(-3) % grnxx::Int(-2)).raw() == -1);
   assert((grnxx::Int::na() % grnxx::Int(0)).is_na());
   assert((grnxx::Int::na() % grnxx::Int(1)).is_na());
   assert((grnxx::Int::na() % grnxx::Int::na()).is_na());
 
   object = grnxx::Int(13);
 
-  assert((object /= grnxx::Int(2)).value() == 6);
-  assert(object.value() == 6);
-  assert((object %= grnxx::Int(3)).value() == 0);
-  assert(object.value() == 0);
+  assert((object /= grnxx::Int(2)).raw() == 6);
+  assert(object.raw() == 6);
+  assert((object %= grnxx::Int(3)).raw() == 0);
+  assert(object.raw() == 0);
 
   object = grnxx::Int(1);
 
@@ -502,16 +502,16 @@ void test_float() {
   assert(grnxx::Float::infinity().type() == grnxx::FLOAT_DATA);
   assert(grnxx::Float::na().type() == grnxx::FLOAT_DATA);
 
-  assert(grnxx::Float(0.0).value() == 0.0);
+  assert(grnxx::Float(0.0).raw() == 0.0);
   assert(grnxx::Float::min().is_min());
   assert(grnxx::Float::max().is_max());
-  assert(grnxx::Float::normal_min().value() ==
-         grnxx::Float::normal_min_value());
-  assert(grnxx::Float::subnormal_min().value() ==
-         grnxx::Float::subnormal_min_value());
-  assert(grnxx::Float::infinity().value() ==
-         grnxx::Float::infinity_value());
-  assert(std::isnan(grnxx::Float::na().value()));
+  assert(grnxx::Float::normal_min().raw() ==
+         grnxx::Float::raw_normal_min());
+  assert(grnxx::Float::subnormal_min().raw() ==
+         grnxx::Float::raw_subnormal_min());
+  assert(grnxx::Float::infinity().raw() ==
+         grnxx::Float::raw_infinity());
+  assert(std::isnan(grnxx::Float::na().raw()));
 
   assert(!grnxx::Float(0.0).is_min());
   assert(grnxx::Float::min().is_min());
@@ -543,47 +543,47 @@ void test_float() {
   assert(!grnxx::Float::infinity().is_na());
   assert(grnxx::Float::na().is_na());
 
-  assert((+grnxx::Float(0.0)).value() == 0.0);
-  assert((+grnxx::Float(1.0)).value() == 1.0);
+  assert((+grnxx::Float(0.0)).raw() == 0.0);
+  assert((+grnxx::Float(1.0)).raw() == 1.0);
   assert((+grnxx::Float::min()).is_min());
   assert((+grnxx::Float::max()).is_max());
-  assert((+grnxx::Float::infinity()).value() ==
-         grnxx::Float::infinity_value());
+  assert((+grnxx::Float::infinity()).raw() ==
+         grnxx::Float::raw_infinity());
   assert((+grnxx::Float::na()).is_na());
 
-  assert((-grnxx::Float(0.0)).value() == 0.0);
-  assert((-grnxx::Float(1.0)).value() == -1.0);
+  assert((-grnxx::Float(0.0)).raw() == 0.0);
+  assert((-grnxx::Float(1.0)).raw() == -1.0);
   assert((-grnxx::Float::min()).is_max());
   assert((-grnxx::Float::max()).is_min());
-  assert((-grnxx::Float::infinity()).value() ==
-         -grnxx::Float::infinity_value());
+  assert((-grnxx::Float::infinity()).raw() ==
+         -grnxx::Float::raw_infinity());
   assert((-grnxx::Float::na()).is_na());
 
-  assert((grnxx::Float(1.0) + grnxx::Float(1.0)).value() == 2.0);
-  assert((grnxx::Float::max() + grnxx::Float::max()).value() ==
-         grnxx::Float::infinity_value());
-  assert((grnxx::Float::infinity() + grnxx::Float::min()).value() ==
-         grnxx::Float::infinity_value());
+  assert((grnxx::Float(1.0) + grnxx::Float(1.0)).raw() == 2.0);
+  assert((grnxx::Float::max() + grnxx::Float::max()).raw() ==
+         grnxx::Float::raw_infinity());
+  assert((grnxx::Float::infinity() + grnxx::Float::min()).raw() ==
+         grnxx::Float::raw_infinity());
   assert((grnxx::Float::infinity() + -grnxx::Float::infinity()).is_na());
   assert((grnxx::Float(1.0) + grnxx::Float::na()).is_na());
   assert((grnxx::Float::na() + grnxx::Float(1.0)).is_na());
   assert((grnxx::Float::na() + grnxx::Float::na()).is_na());
 
-  assert((grnxx::Float(1.0) - grnxx::Float(1.0)).value() == 0.0);
-  assert((grnxx::Float::max() - -grnxx::Float::max()).value() ==
-         grnxx::Float::infinity_value());
-  assert((grnxx::Float::infinity() - grnxx::Float::max()).value() ==
-         grnxx::Float::infinity_value());
+  assert((grnxx::Float(1.0) - grnxx::Float(1.0)).raw() == 0.0);
+  assert((grnxx::Float::max() - -grnxx::Float::max()).raw() ==
+         grnxx::Float::raw_infinity());
+  assert((grnxx::Float::infinity() - grnxx::Float::max()).raw() ==
+         grnxx::Float::raw_infinity());
   assert((grnxx::Float::infinity() - grnxx::Float::infinity()).is_na());
   assert((grnxx::Float(1.0) - grnxx::Float::na()).is_na());
   assert((grnxx::Float::na() - grnxx::Float(1.0)).is_na());
   assert((grnxx::Float::na() - grnxx::Float::na()).is_na());
 
-  assert((grnxx::Float(2.0) * grnxx::Float(0.5)).value() == 1.0);
-  assert((grnxx::Float::max() * grnxx::Float::max()).value() ==
-         grnxx::Float::infinity_value());
-  assert((grnxx::Float::infinity() * grnxx::Float::subnormal_min()).value()
-         == grnxx::Float::infinity_value());
+  assert((grnxx::Float(2.0) * grnxx::Float(0.5)).raw() == 1.0);
+  assert((grnxx::Float::max() * grnxx::Float::max()).raw() ==
+         grnxx::Float::raw_infinity());
+  assert((grnxx::Float::infinity() * grnxx::Float::subnormal_min()).raw()
+         == grnxx::Float::raw_infinity());
   assert((grnxx::Float::infinity() * grnxx::Float(0.0)).is_na());
   assert((grnxx::Float(1.0) * grnxx::Float::na()).is_na());
   assert((grnxx::Float::na() * grnxx::Float(1.0)).is_na());
@@ -591,12 +591,12 @@ void test_float() {
 
   grnxx::Float object(1.0);
 
-  assert((object += grnxx::Float(2.0)).value() == 3.0);
-  assert(object.value() == 3.0);
-  assert((object -= grnxx::Float(1.0)).value() == 2.0);
-  assert(object.value() == 2.0);
-  assert((object *= grnxx::Float(4.0)).value() == 8.0);
-  assert(object.value() == 8.0);
+  assert((object += grnxx::Float(2.0)).raw() == 3.0);
+  assert(object.raw() == 3.0);
+  assert((object -= grnxx::Float(1.0)).raw() == 2.0);
+  assert(object.raw() == 2.0);
+  assert((object *= grnxx::Float(4.0)).raw() == 8.0);
+  assert(object.raw() == 8.0);
 
   object = grnxx::Float(1.0);
 
@@ -619,25 +619,25 @@ void test_float() {
   assert((object *= grnxx::Float(1.0)).is_na());
   assert(object.is_na());
 
-  assert((grnxx::Float(1.0) / grnxx::Float(2.0)).value() == 0.5);
-  assert((grnxx::Float(1.0) / grnxx::Float(0.0)).value() ==
-         grnxx::Float::infinity_value());
-  assert((grnxx::Float(1.0) / grnxx::Float::infinity()).value() == 0.0);
-  assert((grnxx::Float::max() / grnxx::Float::subnormal_min()).value() ==
-         grnxx::Float::infinity_value());
-  assert((grnxx::Float::infinity() / grnxx::Float::max()).value() ==
-         grnxx::Float::infinity_value());
+  assert((grnxx::Float(1.0) / grnxx::Float(2.0)).raw() == 0.5);
+  assert((grnxx::Float(1.0) / grnxx::Float(0.0)).raw() ==
+         grnxx::Float::raw_infinity());
+  assert((grnxx::Float(1.0) / grnxx::Float::infinity()).raw() == 0.0);
+  assert((grnxx::Float::max() / grnxx::Float::subnormal_min()).raw() ==
+         grnxx::Float::raw_infinity());
+  assert((grnxx::Float::infinity() / grnxx::Float::max()).raw() ==
+         grnxx::Float::raw_infinity());
   assert((grnxx::Float::infinity() / grnxx::Float::infinity()).is_na());
   assert((grnxx::Float(0.0) / grnxx::Float(0.0)).is_na());
   assert((grnxx::Float(1.0) / grnxx::Float::na()).is_na());
   assert((grnxx::Float::na() / grnxx::Float(1.0)).is_na());
   assert((grnxx::Float::na() / grnxx::Float::na()).is_na());
 
-  assert((grnxx::Float(1.0) % grnxx::Float(2.0)).value() == 1.0);
-  assert((grnxx::Float(1.0) % grnxx::Float(-2.0)).value() == 1.0);
-  assert((grnxx::Float(-1.0) % grnxx::Float(2.0)).value() == -1.0);
-  assert((grnxx::Float(-1.0) % grnxx::Float(-2.0)).value() == -1.0);
-  assert((grnxx::Float(1.0) % grnxx::Float::infinity()).value() == 1.0);
+  assert((grnxx::Float(1.0) % grnxx::Float(2.0)).raw() == 1.0);
+  assert((grnxx::Float(1.0) % grnxx::Float(-2.0)).raw() == 1.0);
+  assert((grnxx::Float(-1.0) % grnxx::Float(2.0)).raw() == -1.0);
+  assert((grnxx::Float(-1.0) % grnxx::Float(-2.0)).raw() == -1.0);
+  assert((grnxx::Float(1.0) % grnxx::Float::infinity()).raw() == 1.0);
   assert((grnxx::Float::infinity() % grnxx::Float(1.0)).is_na());
   assert((grnxx::Float::infinity() % grnxx::Float::infinity()).is_na());
   assert((grnxx::Float(0.0) % grnxx::Float(0.0)).is_na());
@@ -647,10 +647,10 @@ void test_float() {
 
   object = grnxx::Float(13.0);
 
-  assert((object /= grnxx::Float(2.0)).value() == 6.5);
-  assert(object.value() == 6.5);
-  assert((object %= grnxx::Float(3.0)).value() == 0.5);
-  assert(object.value() == 0.5);
+  assert((object /= grnxx::Float(2.0)).raw() == 6.5);
+  assert(object.raw() == 6.5);
+  assert((object %= grnxx::Float(3.0)).raw() == 0.5);
+  assert(object.raw() == 0.5);
 
   object = grnxx::Float(1.0);
 
@@ -802,18 +802,18 @@ void test_float() {
   assert(grnxx::Float::na().unmatch(grnxx::Float::infinity()));
   assert(!grnxx::Float::na().unmatch(grnxx::Float::na()));
 
-  assert((grnxx::Float(0.0).next_toward(grnxx::Float::max())).value() ==
-         grnxx::Float::subnormal_min_value());
-  assert((grnxx::Float(0.0).next_toward(-grnxx::Float::max())).value() ==
-         -grnxx::Float::subnormal_min_value());
-  assert((grnxx::Float(0.0).next_toward(grnxx::Float::infinity())).value() ==
-         grnxx::Float::subnormal_min_value());
-  assert((grnxx::Float(0.0).next_toward(-grnxx::Float::infinity())).value() ==
-         -grnxx::Float::subnormal_min_value());
-  assert((grnxx::Float::infinity().next_toward(grnxx::Float(0.0))).value()
-         == grnxx::Float::max_value());
-  assert((-grnxx::Float::infinity().next_toward(grnxx::Float(0.0))).value()
-         == grnxx::Float::min_value());
+  assert((grnxx::Float(0.0).next_toward(grnxx::Float::max())).raw() ==
+         grnxx::Float::raw_subnormal_min());
+  assert((grnxx::Float(0.0).next_toward(-grnxx::Float::max())).raw() ==
+         -grnxx::Float::raw_subnormal_min());
+  assert((grnxx::Float(0.0).next_toward(grnxx::Float::infinity())).raw() ==
+         grnxx::Float::raw_subnormal_min());
+  assert((grnxx::Float(0.0).next_toward(-grnxx::Float::infinity())).raw() ==
+         -grnxx::Float::raw_subnormal_min());
+  assert((grnxx::Float::infinity().next_toward(grnxx::Float(0.0))).raw()
+         == grnxx::Float::raw_max());
+  assert((-grnxx::Float::infinity().next_toward(grnxx::Float(0.0))).raw()
+         == grnxx::Float::raw_min());
   assert((grnxx::Float(0.0).next_toward(grnxx::Float::na())).is_na());
   assert((grnxx::Float::na().next_toward(grnxx::Float(0.0))).is_na());
   assert((grnxx::Float::na().next_toward(grnxx::Float::na())).is_na());
@@ -841,25 +841,25 @@ void test_geo_point() {
   assert(south_pole.longitude() == 0);
   assert(na.longitude() == grnxx::GeoPoint::na_longitude());
 
-  assert(zero.latitude_in_milliseconds().value() == 0);
-  assert(date_line.latitude_in_milliseconds().value() == 0);
+  assert(zero.latitude_in_milliseconds().raw() == 0);
+  assert(date_line.latitude_in_milliseconds().raw() == 0);
   assert(na.latitude_in_milliseconds().is_na());
 
-  assert(zero.longitude_in_milliseconds().value() == 0);
-  assert(north_pole.longitude_in_milliseconds().value() == 0);
-  assert(south_pole.longitude_in_milliseconds().value() == 0);
+  assert(zero.longitude_in_milliseconds().raw() == 0);
+  assert(north_pole.longitude_in_milliseconds().raw() == 0);
+  assert(south_pole.longitude_in_milliseconds().raw() == 0);
   assert(na.longitude_in_milliseconds().is_na());
 
-  assert(zero.latitude_in_degrees().value() == 0.0);
-  assert(north_pole.latitude_in_degrees().value() == 90.0);
-  assert(south_pole.latitude_in_degrees().value() == -90.0);
-  assert(date_line.latitude_in_degrees().value() == 0.0);
+  assert(zero.latitude_in_degrees().raw() == 0.0);
+  assert(north_pole.latitude_in_degrees().raw() == 90.0);
+  assert(south_pole.latitude_in_degrees().raw() == -90.0);
+  assert(date_line.latitude_in_degrees().raw() == 0.0);
   assert(na.latitude_in_degrees().is_na());
 
-  assert(zero.longitude_in_degrees().value() == 0.0);
-  assert(north_pole.longitude_in_degrees().value() == 0.0);
-  assert(south_pole.longitude_in_degrees().value() == 0.0);
-  assert(date_line.longitude_in_degrees().value() == -180.0);
+  assert(zero.longitude_in_degrees().raw() == 0.0);
+  assert(north_pole.longitude_in_degrees().raw() == 0.0);
+  assert(south_pole.longitude_in_degrees().raw() == 0.0);
+  assert(date_line.longitude_in_degrees().raw() == -180.0);
   assert(na.longitude_in_degrees().is_na());
 
   assert((zero == zero).is_true());
@@ -944,10 +944,10 @@ void test_text() {
   assert(std::strcmp(abc.data(), "abc") == 0);
   assert(std::strcmp(bc.data(), "bc") == 0);
 
-  assert(ab.size().value() == 2);
-  assert(abc.size().value() == 3);
-  assert(bc.size().value() == 2);
-  assert(empty.size().value() == 0);
+  assert(ab.size().raw() == 2);
+  assert(abc.size().raw() == 3);
+  assert(bc.size().raw() == 2);
+  assert(empty.size().raw() == 0);
   assert(na.size().is_na());
 
   assert(!ab.is_empty());
@@ -1169,9 +1169,9 @@ void test_bool_vector() {
   assert(ftn[1].is_true());
   assert(ftn[2].is_na());
 
-  assert(tft.size().value() == 3);
-  assert(ftn.size().value() == 3);
-  assert(empty.size().value() == 0);
+  assert(tft.size().raw() == 3);
+  assert(ftn.size().raw() == 3);
+  assert(empty.size().raw() == 0);
   assert(na.size().is_na());
 
   assert(!tft.is_empty());
@@ -1247,17 +1247,17 @@ void test_int_vector() {
   assert(empty.type() == grnxx::INT_VECTOR_DATA);
   assert(na.type() == grnxx::INT_VECTOR_DATA);
 
-  assert(abc[0].value() == 1);
-  assert(abc[1].value() == 2);
-  assert(abc[2].value() == 3);
+  assert(abc[0].raw() == 1);
+  assert(abc[1].raw() == 2);
+  assert(abc[2].raw() == 3);
 
-  assert(bcn[0].value() == 2);
-  assert(bcn[1].value() == 3);
+  assert(bcn[0].raw() == 2);
+  assert(bcn[1].raw() == 3);
   assert(bcn[2].is_na());
 
-  assert(abc.size().value() == 3);
-  assert(bcn.size().value() == 3);
-  assert(empty.size().value() == 0);
+  assert(abc.size().raw() == 3);
+  assert(bcn.size().raw() == 3);
+  assert(empty.size().raw() == 0);
   assert(na.size().is_na());
 
   assert(!abc.is_empty());
@@ -1333,17 +1333,17 @@ void test_float_vector() {
   assert(empty.type() == grnxx::FLOAT_VECTOR_DATA);
   assert(na.type() == grnxx::FLOAT_VECTOR_DATA);
 
-  assert(abc[0].value() == 1.25);
-  assert(abc[1].value() == 2.50);
-  assert(abc[2].value() == 6.25);
+  assert(abc[0].raw() == 1.25);
+  assert(abc[1].raw() == 2.50);
+  assert(abc[2].raw() == 6.25);
 
-  assert(bcn[0].value() == 2.50);
-  assert(bcn[1].value() == 6.25);
+  assert(bcn[0].raw() == 2.50);
+  assert(bcn[1].raw() == 6.25);
   assert(bcn[2].is_na());
 
-  assert(abc.size().value() == 3);
-  assert(bcn.size().value() == 3);
-  assert(empty.size().value() == 0);
+  assert(abc.size().raw() == 3);
+  assert(bcn.size().raw() == 3);
+  assert(empty.size().raw() == 0);
   assert(na.size().is_na());
 
   assert(!abc.is_empty());
@@ -1435,9 +1435,9 @@ void test_geo_point_vector() {
   assert(ton[1].longitude() == data[2].longitude());
   assert(ton[2].longitude() == data[3].longitude());
 
-  assert(sto.size().value() == 3);
-  assert(ton.size().value() == 3);
-  assert(empty.size().value() == 0);
+  assert(sto.size().raw() == 3);
+  assert(ton.size().raw() == 3);
+  assert(empty.size().raw() == 0);
   assert(na.size().is_na());
 
   assert(!sto.is_empty());
@@ -1521,9 +1521,9 @@ void test_text_vector() {
   assert(bcn[1].data() == data[2].data());
   assert(bcn[2].is_na());
 
-  assert(abc.size().value() == 3);
-  assert(bcn.size().value() == 3);
-  assert(empty.size().value() == 0);
+  assert(abc.size().raw() == 3);
+  assert(bcn.size().raw() == 3);
+  assert(empty.size().raw() == 0);
   assert(na.size().is_na());
 
   assert(!abc.is_empty());

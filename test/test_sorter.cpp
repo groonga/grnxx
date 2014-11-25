@@ -143,8 +143,8 @@ void test_bool() {
 
   sorter->sort(&records);
   for (size_t i = 1; i < records.size(); ++i) {
-    size_t lhs_row_id = records[i - 1].row_id.value();
-    size_t rhs_row_id = records[i].row_id.value();
+    size_t lhs_row_id = records[i - 1].row_id.raw();
+    size_t rhs_row_id = records[i].row_id.raw();
     grnxx::Bool lhs_value = test.bool_values[lhs_row_id];
     grnxx::Bool rhs_value = test.bool_values[rhs_row_id];
     if (lhs_value.is_true()) {
@@ -164,8 +164,8 @@ void test_bool() {
 
   sorter->sort(&records);
   for (size_t i = 1; i < records.size(); ++i) {
-    size_t lhs_row_id = records[i - 1].row_id.value();
-    size_t rhs_row_id = records[i].row_id.value();
+    size_t lhs_row_id = records[i - 1].row_id.raw();
+    size_t rhs_row_id = records[i].row_id.raw();
     grnxx::Bool lhs_value = test.bool_values[lhs_row_id];
     grnxx::Bool rhs_value = test.bool_values[rhs_row_id];
     if (lhs_value.is_false()) {
@@ -189,8 +189,8 @@ void test_bool() {
 
   sorter->sort(&records);
   for (size_t i = 1; i < records.size(); ++i) {
-    size_t lhs_row_id = records[i - 1].row_id.value();
-    size_t rhs_row_id = records[i].row_id.value();
+    size_t lhs_row_id = records[i - 1].row_id.raw();
+    size_t rhs_row_id = records[i].row_id.raw();
     grnxx::Bool lhs_value = test.bool_values[lhs_row_id];
     grnxx::Bool rhs_value = test.bool_values[rhs_row_id];
     if (lhs_value.is_true()) {
@@ -222,8 +222,8 @@ void test_int() {
 
   sorter->sort(&records);
   for (size_t i = 1; i < records.size(); ++i) {
-    size_t lhs_row_id = records[i - 1].row_id.value();
-    size_t rhs_row_id = records[i].row_id.value();
+    size_t lhs_row_id = records[i - 1].row_id.raw();
+    size_t rhs_row_id = records[i].row_id.raw();
     grnxx::Int lhs_value = test.int_values[lhs_row_id];
     grnxx::Int rhs_value = test.int_values[rhs_row_id];
     if (lhs_value.is_na()) {
@@ -243,8 +243,8 @@ void test_int() {
 
   sorter->sort(&records);
   for (size_t i = 1; i < records.size(); ++i) {
-    size_t lhs_row_id = records[i - 1].row_id.value();
-    size_t rhs_row_id = records[i].row_id.value();
+    size_t lhs_row_id = records[i - 1].row_id.raw();
+    size_t rhs_row_id = records[i].row_id.raw();
     grnxx::Int lhs_value = test.int_values[lhs_row_id];
     grnxx::Int rhs_value = test.int_values[rhs_row_id];
     if (lhs_value.is_na()) {
@@ -268,8 +268,8 @@ void test_int() {
 
   sorter->sort(&records);
   for (size_t i = 1; i < records.size(); ++i) {
-    size_t lhs_row_id = records[i - 1].row_id.value();
-    size_t rhs_row_id = records[i].row_id.value();
+    size_t lhs_row_id = records[i - 1].row_id.raw();
+    size_t rhs_row_id = records[i].row_id.raw();
     grnxx::Int lhs_value = test.int_values[lhs_row_id];
     grnxx::Int rhs_value = test.int_values[rhs_row_id];
     if (lhs_value.is_na()) {
@@ -301,8 +301,8 @@ void test_float() {
 
   sorter->sort(&records);
   for (size_t i = 1; i < records.size(); ++i) {
-    size_t lhs_row_id = records[i - 1].row_id.value();
-    size_t rhs_row_id = records[i].row_id.value();
+    size_t lhs_row_id = records[i - 1].row_id.raw();
+    size_t rhs_row_id = records[i].row_id.raw();
     grnxx::Float lhs_value = test.float_values[lhs_row_id];
     grnxx::Float rhs_value = test.float_values[rhs_row_id];
     if (lhs_value.is_na()) {
@@ -322,8 +322,8 @@ void test_float() {
 
   sorter->sort(&records);
   for (size_t i = 1; i < records.size(); ++i) {
-    size_t lhs_row_id = records[i - 1].row_id.value();
-    size_t rhs_row_id = records[i].row_id.value();
+    size_t lhs_row_id = records[i - 1].row_id.raw();
+    size_t rhs_row_id = records[i].row_id.raw();
     grnxx::Float lhs_value = test.float_values[lhs_row_id];
     grnxx::Float rhs_value = test.float_values[rhs_row_id];
     if (lhs_value.is_na()) {
@@ -347,8 +347,8 @@ void test_float() {
 
   sorter->sort(&records);
   for (size_t i = 1; i < records.size(); ++i) {
-    size_t lhs_row_id = records[i - 1].row_id.value();
-    size_t rhs_row_id = records[i].row_id.value();
+    size_t lhs_row_id = records[i - 1].row_id.raw();
+    size_t rhs_row_id = records[i].row_id.raw();
     grnxx::Float lhs_value = test.float_values[lhs_row_id];
     grnxx::Float rhs_value = test.float_values[rhs_row_id];
     if (lhs_value.is_na()) {
@@ -380,8 +380,8 @@ void test_text() {
 
   sorter->sort(&records);
   for (size_t i = 1; i < records.size(); ++i) {
-    size_t lhs_row_id = records[i - 1].row_id.value();
-    size_t rhs_row_id = records[i].row_id.value();
+    size_t lhs_row_id = records[i - 1].row_id.raw();
+    size_t rhs_row_id = records[i].row_id.raw();
     grnxx::Text lhs_value = test.text_values[lhs_row_id];
     grnxx::Text rhs_value = test.text_values[rhs_row_id];
     if (lhs_value.is_na()) {
@@ -401,8 +401,8 @@ void test_text() {
 
   sorter->sort(&records);
   for (size_t i = 1; i < records.size(); ++i) {
-    size_t lhs_row_id = records[i - 1].row_id.value();
-    size_t rhs_row_id = records[i].row_id.value();
+    size_t lhs_row_id = records[i - 1].row_id.raw();
+    size_t rhs_row_id = records[i].row_id.raw();
     grnxx::Text lhs_value = test.text_values[lhs_row_id];
     grnxx::Text rhs_value = test.text_values[rhs_row_id];
     if (lhs_value.is_na()) {
@@ -426,8 +426,8 @@ void test_text() {
 
   sorter->sort(&records);
   for (size_t i = 1; i < records.size(); ++i) {
-    size_t lhs_row_id = records[i - 1].row_id.value();
-    size_t rhs_row_id = records[i].row_id.value();
+    size_t lhs_row_id = records[i - 1].row_id.raw();
+    size_t rhs_row_id = records[i].row_id.raw();
     grnxx::Text lhs_value = test.text_values[lhs_row_id];
     grnxx::Text rhs_value = test.text_values[rhs_row_id];
     if (lhs_value.is_na()) {
@@ -468,8 +468,8 @@ void test_composite() {
 
   sorter->sort(&records);
   for (size_t i = 1; i < records.size(); ++i) {
-    size_t lhs_row_id = records[i - 1].row_id.value();
-    size_t rhs_row_id = records[i].row_id.value();
+    size_t lhs_row_id = records[i - 1].row_id.raw();
+    size_t rhs_row_id = records[i].row_id.raw();
     grnxx::Bool lhs_value = test.bool_values[lhs_row_id];
     grnxx::Bool rhs_value = test.bool_values[rhs_row_id];
     if (lhs_value.is_true()) {

@@ -212,12 +212,12 @@ void test_column() {
   int_column->set(row_id, grnxx::Int(123));
   int_column->get(row_id, &datum);
   assert(datum.type() == grnxx::INT_DATA);
-  assert(datum.as_int().value() == 123);
+  assert(datum.as_int().raw() == 123);
 
   float_column->set(row_id, grnxx::Float(1.25));
   float_column->get(row_id, &datum);
   assert(datum.type() == grnxx::FLOAT_DATA);
-  assert(datum.as_float().value() == 1.25);
+  assert(datum.as_float().raw() == 1.25);
 
   grnxx::GeoPoint geo_point(grnxx::Int(123), grnxx::Int(456));
   geo_point_column->set(row_id, geo_point);

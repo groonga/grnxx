@@ -184,7 +184,7 @@ void test_and() {
   options.score_operator_type = grnxx::MERGER_SCORE_PLUS;
   auto output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
-    size_t row_id = output[i].row_id.value();
+    size_t row_id = output[i].row_id.raw();
     assert(test.bool_values[row_id].is_true() &
            test.bool2_values[row_id].is_true());
     assert(output[i].score.match(test.scores[row_id] + test.scores2[row_id]));
@@ -202,7 +202,7 @@ void test_and() {
   options.score_operator_type = grnxx::MERGER_SCORE_MINUS;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
-    size_t row_id = output[i].row_id.value();
+    size_t row_id = output[i].row_id.raw();
     assert(test.bool_values[row_id].is_true() &
            test.bool2_values[row_id].is_true());
     assert(output[i].score.match(test.scores[row_id] - test.scores2[row_id]));
@@ -212,7 +212,7 @@ void test_and() {
   options.score_operator_type = grnxx::MERGER_SCORE_MULTIPLICATION;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
-    size_t row_id = output[i].row_id.value();
+    size_t row_id = output[i].row_id.raw();
     assert(test.bool_values[row_id].is_true() &
            test.bool2_values[row_id].is_true());
     assert(output[i].score.match(test.scores[row_id] * test.scores2[row_id]));
@@ -222,7 +222,7 @@ void test_and() {
   options.score_operator_type = grnxx::MERGER_SCORE_LEFT;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
-    size_t row_id = output[i].row_id.value();
+    size_t row_id = output[i].row_id.raw();
     assert(test.bool_values[row_id].is_true() &
            test.bool2_values[row_id].is_true());
     assert(output[i].score.match(test.scores[row_id]));
@@ -232,7 +232,7 @@ void test_and() {
   options.score_operator_type = grnxx::MERGER_SCORE_RIGHT;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
-    size_t row_id = output[i].row_id.value();
+    size_t row_id = output[i].row_id.raw();
     assert(test.bool_values[row_id].is_true() &
            test.bool2_values[row_id].is_true());
     assert(output[i].score.match(test.scores2[row_id]));
@@ -242,10 +242,10 @@ void test_and() {
   options.score_operator_type = grnxx::MERGER_SCORE_ZERO;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
-    size_t row_id = output[i].row_id.value();
+    size_t row_id = output[i].row_id.raw();
     assert(test.bool_values[row_id].is_true() &
            test.bool2_values[row_id].is_true());
-    assert(output[i].score.value() == 0.0);
+    assert(output[i].score.raw() == 0.0);
   }
 }
 
@@ -263,7 +263,7 @@ void test_or() {
   options.score_operator_type = grnxx::MERGER_SCORE_PLUS;
   auto output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
-    size_t row_id = output[i].row_id.value();
+    size_t row_id = output[i].row_id.raw();
     assert(test.bool_values[row_id].is_true() |
            test.bool2_values[row_id].is_true());
     assert(output[i].score.match(test.scores[row_id] + test.scores2[row_id]));
@@ -281,7 +281,7 @@ void test_or() {
   options.score_operator_type = grnxx::MERGER_SCORE_MINUS;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
-    size_t row_id = output[i].row_id.value();
+    size_t row_id = output[i].row_id.raw();
     assert(test.bool_values[row_id].is_true() |
            test.bool2_values[row_id].is_true());
     assert(output[i].score.match(test.scores[row_id] - test.scores2[row_id]));
@@ -291,7 +291,7 @@ void test_or() {
   options.score_operator_type = grnxx::MERGER_SCORE_MULTIPLICATION;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
-    size_t row_id = output[i].row_id.value();
+    size_t row_id = output[i].row_id.raw();
     assert(test.bool_values[row_id].is_true() |
            test.bool2_values[row_id].is_true());
     assert(output[i].score.match(test.scores[row_id] * test.scores2[row_id]));
@@ -301,7 +301,7 @@ void test_or() {
   options.score_operator_type = grnxx::MERGER_SCORE_LEFT;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
-    size_t row_id = output[i].row_id.value();
+    size_t row_id = output[i].row_id.raw();
     assert(test.bool_values[row_id].is_true() |
            test.bool2_values[row_id].is_true());
     assert(output[i].score.match(test.scores[row_id]));
@@ -311,7 +311,7 @@ void test_or() {
   options.score_operator_type = grnxx::MERGER_SCORE_RIGHT;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
-    size_t row_id = output[i].row_id.value();
+    size_t row_id = output[i].row_id.raw();
     assert(test.bool_values[row_id].is_true() |
            test.bool2_values[row_id].is_true());
     assert(output[i].score.match(test.scores2[row_id]));
@@ -321,10 +321,10 @@ void test_or() {
   options.score_operator_type = grnxx::MERGER_SCORE_ZERO;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
-    size_t row_id = output[i].row_id.value();
+    size_t row_id = output[i].row_id.raw();
     assert(test.bool_values[row_id].is_true() |
            test.bool2_values[row_id].is_true());
-    assert(output[i].score.value() == 0.0);
+    assert(output[i].score.raw() == 0.0);
   }
 }
 
@@ -342,7 +342,7 @@ void test_xor() {
   options.score_operator_type = grnxx::MERGER_SCORE_PLUS;
   auto output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
-    size_t row_id = output[i].row_id.value();
+    size_t row_id = output[i].row_id.raw();
     assert(test.bool_values[row_id].is_true() ^
            test.bool2_values[row_id].is_true());
     assert(output[i].score.match(test.scores[row_id] + test.scores2[row_id]));
@@ -359,7 +359,7 @@ void test_xor() {
   options.score_operator_type = grnxx::MERGER_SCORE_MINUS;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
-    size_t row_id = output[i].row_id.value();
+    size_t row_id = output[i].row_id.raw();
     assert(test.bool_values[row_id].is_true() ^
            test.bool2_values[row_id].is_true());
     assert(output[i].score.match(test.scores[row_id] - test.scores2[row_id]));
@@ -369,7 +369,7 @@ void test_xor() {
   options.score_operator_type = grnxx::MERGER_SCORE_MULTIPLICATION;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
-    size_t row_id = output[i].row_id.value();
+    size_t row_id = output[i].row_id.raw();
     assert(test.bool_values[row_id].is_true() ^
            test.bool2_values[row_id].is_true());
     assert(output[i].score.match(test.scores[row_id] * test.scores2[row_id]));
@@ -379,7 +379,7 @@ void test_xor() {
   options.score_operator_type = grnxx::MERGER_SCORE_LEFT;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
-    size_t row_id = output[i].row_id.value();
+    size_t row_id = output[i].row_id.raw();
     assert(test.bool_values[row_id].is_true() ^
            test.bool2_values[row_id].is_true());
     assert(output[i].score.match(test.scores[row_id]));
@@ -389,7 +389,7 @@ void test_xor() {
   options.score_operator_type = grnxx::MERGER_SCORE_RIGHT;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
-    size_t row_id = output[i].row_id.value();
+    size_t row_id = output[i].row_id.raw();
     assert(test.bool_values[row_id].is_true() ^
            test.bool2_values[row_id].is_true());
     assert(output[i].score.match(test.scores2[row_id]));
@@ -399,10 +399,10 @@ void test_xor() {
   options.score_operator_type = grnxx::MERGER_SCORE_ZERO;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
-    size_t row_id = output[i].row_id.value();
+    size_t row_id = output[i].row_id.raw();
     assert(test.bool_values[row_id].is_true() ^
            test.bool2_values[row_id].is_true());
-    assert(output[i].score.value() == 0.0);
+    assert(output[i].score.raw() == 0.0);
   }
 }
 
@@ -420,7 +420,7 @@ void test_minus() {
   options.score_operator_type = grnxx::MERGER_SCORE_PLUS;
   auto output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
-    size_t row_id = output[i].row_id.value();
+    size_t row_id = output[i].row_id.raw();
     assert(test.bool_values[row_id].is_true() &
            !test.bool2_values[row_id].is_true());
     assert(output[i].score.match(test.scores[row_id] + test.scores2[row_id]));
@@ -437,7 +437,7 @@ void test_minus() {
   options.score_operator_type = grnxx::MERGER_SCORE_MINUS;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
-    size_t row_id = output[i].row_id.value();
+    size_t row_id = output[i].row_id.raw();
     assert(test.bool_values[row_id].is_true() &
            !test.bool2_values[row_id].is_true());
     assert(output[i].score.match(test.scores[row_id] - test.scores2[row_id]));
@@ -447,7 +447,7 @@ void test_minus() {
   options.score_operator_type = grnxx::MERGER_SCORE_MULTIPLICATION;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
-    size_t row_id = output[i].row_id.value();
+    size_t row_id = output[i].row_id.raw();
     assert(test.bool_values[row_id].is_true() &
            !test.bool2_values[row_id].is_true());
     assert(output[i].score.match(test.scores[row_id] * test.scores2[row_id]));
@@ -457,7 +457,7 @@ void test_minus() {
   options.score_operator_type = grnxx::MERGER_SCORE_LEFT;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
-    size_t row_id = output[i].row_id.value();
+    size_t row_id = output[i].row_id.raw();
     assert(test.bool_values[row_id].is_true() &
            !test.bool2_values[row_id].is_true());
     assert(output[i].score.match(test.scores[row_id]));
@@ -467,7 +467,7 @@ void test_minus() {
   options.score_operator_type = grnxx::MERGER_SCORE_RIGHT;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
-    size_t row_id = output[i].row_id.value();
+    size_t row_id = output[i].row_id.raw();
     assert(test.bool_values[row_id].is_true() &
            !test.bool2_values[row_id].is_true());
     assert(output[i].score.match(test.scores2[row_id]));
@@ -477,10 +477,10 @@ void test_minus() {
   options.score_operator_type = grnxx::MERGER_SCORE_ZERO;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
-    size_t row_id = output[i].row_id.value();
+    size_t row_id = output[i].row_id.raw();
     assert(test.bool_values[row_id].is_true() &
            !test.bool2_values[row_id].is_true());
-    assert(output[i].score.value() == 0.0);
+    assert(output[i].score.raw() == 0.0);
   }
 }
 
@@ -498,7 +498,7 @@ void test_left() {
   options.score_operator_type = grnxx::MERGER_SCORE_PLUS;
   auto output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
-    size_t row_id = output[i].row_id.value();
+    size_t row_id = output[i].row_id.raw();
     assert(test.bool_values[row_id].is_true());
     assert(output[i].score.match(test.scores[row_id] + test.scores2[row_id]));
   }
@@ -514,7 +514,7 @@ void test_left() {
   options.score_operator_type = grnxx::MERGER_SCORE_MINUS;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
-    size_t row_id = output[i].row_id.value();
+    size_t row_id = output[i].row_id.raw();
     assert(test.bool_values[row_id].is_true());
     assert(output[i].score.match(test.scores[row_id] - test.scores2[row_id]));
   }
@@ -523,7 +523,7 @@ void test_left() {
   options.score_operator_type = grnxx::MERGER_SCORE_MULTIPLICATION;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
-    size_t row_id = output[i].row_id.value();
+    size_t row_id = output[i].row_id.raw();
     assert(test.bool_values[row_id].is_true());
     assert(output[i].score.match(test.scores[row_id] * test.scores2[row_id]));
   }
@@ -532,7 +532,7 @@ void test_left() {
   options.score_operator_type = grnxx::MERGER_SCORE_LEFT;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
-    size_t row_id = output[i].row_id.value();
+    size_t row_id = output[i].row_id.raw();
     assert(test.bool_values[row_id].is_true());
     assert(output[i].score.match(test.scores[row_id]));
   }
@@ -541,7 +541,7 @@ void test_left() {
   options.score_operator_type = grnxx::MERGER_SCORE_RIGHT;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
-    size_t row_id = output[i].row_id.value();
+    size_t row_id = output[i].row_id.raw();
     assert(test.bool_values[row_id].is_true());
     assert(output[i].score.match(test.scores2[row_id]));
   }
@@ -550,9 +550,9 @@ void test_left() {
   options.score_operator_type = grnxx::MERGER_SCORE_ZERO;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
-    size_t row_id = output[i].row_id.value();
+    size_t row_id = output[i].row_id.raw();
     assert(test.bool_values[row_id].is_true());
-    assert(output[i].score.value() == 0.0);
+    assert(output[i].score.raw() == 0.0);
   }
 }
 
@@ -570,7 +570,7 @@ void test_right() {
   options.score_operator_type = grnxx::MERGER_SCORE_PLUS;
   auto output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
-    size_t row_id = output[i].row_id.value();
+    size_t row_id = output[i].row_id.raw();
     assert(test.bool2_values[row_id].is_true());
     assert(output[i].score.match(test.scores[row_id] + test.scores2[row_id]));
   }
@@ -586,7 +586,7 @@ void test_right() {
   options.score_operator_type = grnxx::MERGER_SCORE_MINUS;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
-    size_t row_id = output[i].row_id.value();
+    size_t row_id = output[i].row_id.raw();
     assert(test.bool2_values[row_id].is_true());
     assert(output[i].score.match(test.scores[row_id] - test.scores2[row_id]));
   }
@@ -595,7 +595,7 @@ void test_right() {
   options.score_operator_type = grnxx::MERGER_SCORE_MULTIPLICATION;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
-    size_t row_id = output[i].row_id.value();
+    size_t row_id = output[i].row_id.raw();
     assert(test.bool2_values[row_id].is_true());
     assert(output[i].score.match(test.scores[row_id] * test.scores2[row_id]));
   }
@@ -604,7 +604,7 @@ void test_right() {
   options.score_operator_type = grnxx::MERGER_SCORE_LEFT;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
-    size_t row_id = output[i].row_id.value();
+    size_t row_id = output[i].row_id.raw();
     assert(test.bool2_values[row_id].is_true());
     assert(output[i].score.match(test.scores[row_id]));
   }
@@ -613,7 +613,7 @@ void test_right() {
   options.score_operator_type = grnxx::MERGER_SCORE_RIGHT;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
-    size_t row_id = output[i].row_id.value();
+    size_t row_id = output[i].row_id.raw();
     assert(test.bool2_values[row_id].is_true());
     assert(output[i].score.match(test.scores2[row_id]));
   }
@@ -622,9 +622,9 @@ void test_right() {
   options.score_operator_type = grnxx::MERGER_SCORE_ZERO;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
-    size_t row_id = output[i].row_id.value();
+    size_t row_id = output[i].row_id.raw();
     assert(test.bool2_values[row_id].is_true());
-    assert(output[i].score.value() == 0.0);
+    assert(output[i].score.raw() == 0.0);
   }
 }
 

@@ -56,7 +56,7 @@ void test_scored_subexpression() {
   // Store generated values into columns.
   for (size_t i = 0; i < NUM_ROWS; ++i) {
     grnxx::Int row_id = table->insert_row();
-    assert(row_id.value() == grnxx::Int(i).value());
+    assert(row_id.match(grnxx::Int(i)));
     float_column->set(row_id, float_values[i]);
   }
   for (size_t i = 0; i < NUM_ROWS; ++i) {
@@ -86,8 +86,8 @@ void test_scored_subexpression() {
   expression->filter(&records);
   size_t count = 0;
   for (size_t i = 0; i < NUM_ROWS; ++i) {
-    if (float_values[i].value() > 0.5) {
-      assert(records[count].row_id.value() == grnxx::Int(i).value());
+    if (float_values[i].raw() > 0.5) {
+      assert(records[count].row_id.match(grnxx::Int(i)));
       ++count;
     }
   }

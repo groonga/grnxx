@@ -286,14 +286,14 @@ void test_sorter() {
   assert(records.size() == count);
 
   for (size_t i = 0; i < records.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(test.bool_values[row_id].is_true());
     assert(records[i].score.match(test.float_values[row_id]));
   }
 
   for (size_t i = 1; i < records.size(); ++i) {
-    size_t prev_row_id = records[i - 1].row_id.value();
-    size_t this_row_id = records[i].row_id.value();
+    size_t prev_row_id = records[i - 1].row_id.raw();
+    size_t this_row_id = records[i].row_id.raw();
     grnxx::Int prev_value = test.int_values[prev_row_id];
     grnxx::Int this_value = test.int_values[this_row_id];
     if (prev_value.is_na()) {
@@ -369,7 +369,7 @@ void test_merger() {
   assert(records.size() == count);
 
   for (size_t i = 0; i < records.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(test.bool_values[row_id].is_true() &&
            (test.int_values[row_id] < grnxx::Int(50)).is_true());
     assert(records[i].score.match(

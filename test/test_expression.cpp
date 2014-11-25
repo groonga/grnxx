@@ -439,7 +439,7 @@ void test_constant() try {
   expression->evaluate(records, &int_results);
   assert(int_results.size() == test.table->num_rows());
   for (size_t i = 0; i < int_results.size(); ++i) {
-    assert(int_results[i].value() == 100);
+    assert(int_results[i].raw() == 100);
   }
 
   // Test an expression (1.25).
@@ -450,13 +450,13 @@ void test_constant() try {
   expression->evaluate(records, &float_results);
   assert(float_results.size() == test.table->num_rows());
   for (size_t i = 0; i < float_results.size(); ++i) {
-    assert(float_results[i].value() == 1.25);
+    assert(float_results[i].raw() == 1.25);
   }
 
   expression->adjust(&records);
   assert(records.size() == test.table->num_rows());
   for (size_t i = 0; i < records.size(); ++i) {
-    assert(records[i].score.value() == 1.25);
+    assert(records[i].score.raw() == 1.25);
   }
 
   // Test an expression ({ 123, 456 }).
@@ -611,7 +611,7 @@ void test_score() try {
   expression->adjust(&records);
   assert(records.size() == test.table->num_rows());
   for (size_t i = 0; i < records.size(); ++i) {
-    assert(records[i].score.value() == 0.0);
+    assert(records[i].score.raw() == 0.0);
   }
 } catch (const char *msg) {
   std::cout << msg << std::endl;
@@ -632,7 +632,7 @@ void test_column() {
   expression->evaluate(records, &bool_results);
   assert(bool_results.size() == test.table->num_rows());
   for (size_t i = 0; i < bool_results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(bool_results[i].match(test.bool_values[row_id]));
   }
 
@@ -656,7 +656,7 @@ void test_column() {
   expression->evaluate(records, &int_results);
   assert(int_results.size() == test.table->num_rows());
   for (size_t i = 0; i < int_results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(int_results[i].match(test.int_values[row_id]));
   }
 
@@ -668,14 +668,14 @@ void test_column() {
   expression->evaluate(records, &float_results);
   assert(float_results.size() == test.table->num_rows());
   for (size_t i = 0; i < float_results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(float_results[i].match(test.float_values[row_id]));
   }
 
   expression->adjust(&records);
   assert(records.size() == test.table->num_rows());
   for (size_t i = 0; i < records.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(records[i].score.match(test.float_values[row_id]));
   }
 
@@ -687,7 +687,7 @@ void test_column() {
   expression->evaluate(records, &geo_point_results);
   assert(geo_point_results.size() == test.table->num_rows());
   for (size_t i = 0; i < geo_point_results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(geo_point_results[i].match(test.geo_point_values[row_id]));
   }
 
@@ -701,7 +701,7 @@ void test_column() {
   expression->evaluate(records, &text_results);
   assert(text_results.size() == test.table->num_rows());
   for (size_t i = 0; i < text_results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(text_results[i].match(test.text_values[row_id]));
   }
 
@@ -715,7 +715,7 @@ void test_column() {
   expression->evaluate(records, &bool_vector_results);
   assert(bool_vector_results.size() == test.table->num_rows());
   for (size_t i = 0; i < bool_vector_results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(bool_vector_results[i].match(test.bool_vector_values[row_id]));
   }
 
@@ -729,7 +729,7 @@ void test_column() {
   expression->evaluate(records, &int_vector_results);
   assert(int_vector_results.size() == test.table->num_rows());
   for (size_t i = 0; i < int_vector_results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(int_vector_results[i].match(test.int_vector_values[row_id]));
   }
 
@@ -743,7 +743,7 @@ void test_column() {
   expression->evaluate(records, &float_vector_results);
   assert(float_vector_results.size() == test.table->num_rows());
   for (size_t i = 0; i < float_vector_results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(float_vector_results[i].match(test.float_vector_values[row_id]));
   }
 
@@ -757,7 +757,7 @@ void test_column() {
   expression->evaluate(records, &geo_point_vector_results);
   assert(geo_point_vector_results.size() == test.table->num_rows());
   for (size_t i = 0; i < geo_point_vector_results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(geo_point_vector_results[i].match(
            test.geo_point_vector_values[row_id]));
   }
@@ -772,7 +772,7 @@ void test_column() {
   expression->evaluate(records, &text_vector_results);
   assert(text_vector_results.size() == test.table->num_rows());
   for (size_t i = 0; i < text_vector_results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(text_vector_results[i].match(test.text_vector_values[row_id]));
   }
 
@@ -786,7 +786,7 @@ void test_column() {
   expression->evaluate(records, &ref_results);
   assert(ref_results.size() == test.table->num_rows());
   for (size_t i = 0; i < ref_results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(ref_results[i].match(test.ref_values[row_id]));
   }
 
@@ -800,7 +800,7 @@ void test_column() {
   expression->evaluate(records, &ref_vector_results);
   assert(ref_vector_results.size() == test.table->num_rows());
   for (size_t i = 0; i < ref_vector_results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(ref_vector_results[i].match(test.ref_vector_values[row_id]));
   }
 }
@@ -820,7 +820,7 @@ void test_logical_not() {
   expression->evaluate(records, &bool_results);
   assert(bool_results.size() == test.table->num_rows());
   for (size_t i = 0; i < bool_results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(bool_results[i].match(!test.bool_values[row_id]));
   }
 
@@ -850,7 +850,7 @@ void test_bitwise_not() {
   expression->evaluate(records, &bool_results);
   assert(bool_results.size() == test.table->num_rows());
   for (size_t i = 0; i < bool_results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(bool_results[i].match(~test.bool_values[row_id]));
   }
 
@@ -875,7 +875,7 @@ void test_bitwise_not() {
   expression->evaluate(records, &int_results);
   assert(int_results.size() == test.table->num_rows());
   for (size_t i = 0; i < int_results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(int_results[i].match(~test.int_values[row_id]));
   }
 }
@@ -895,7 +895,7 @@ void test_positive() {
   expression->evaluate(records, &int_results);
   assert(int_results.size() == test.table->num_rows());
   for (size_t i = 0; i < int_results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(int_results[i].match(test.int_values[row_id]));
   }
 
@@ -910,14 +910,14 @@ void test_positive() {
   expression->evaluate(records, &float_results);
   assert(float_results.size() == test.table->num_rows());
   for (size_t i = 0; i < float_results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(float_results[i].match(test.float_values[row_id]));
   }
 
   expression->adjust(&records);
   assert(records.size() == test.table->num_rows());
   for (size_t i = 0; i < records.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(records[i].score.match(test.float_values[row_id]));
   }
 }
@@ -937,7 +937,7 @@ void test_negative() {
   expression->evaluate(records, &int_results);
   assert(int_results.size() == test.table->num_rows());
   for (size_t i = 0; i < int_results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(int_results[i].match(-test.int_values[row_id]));
   }
 
@@ -952,14 +952,14 @@ void test_negative() {
   expression->evaluate(records, &float_results);
   assert(float_results.size() == test.table->num_rows());
   for (size_t i = 0; i < float_results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(float_results[i].match(-test.float_values[row_id]));
   }
 
   expression->adjust(&records);
   assert(records.size() == test.table->num_rows());
   for (size_t i = 0; i < records.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(records[i].score.match(-test.float_values[row_id]));
   }
 }
@@ -979,7 +979,7 @@ void test_to_int() {
   expression->evaluate(records, &int_results);
   assert(int_results.size() == test.table->num_rows());
   for (size_t i = 0; i < int_results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(int_results[i].match(test.float_values[row_id].to_int()));
   }
 }
@@ -1000,14 +1000,14 @@ void test_to_float() {
   expression->evaluate(records, &float_results);
   assert(float_results.size() == test.table->num_rows());
   for (size_t i = 0; i < float_results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(float_results[i].match(test.int_values[row_id].to_float()));
   }
 
   expression->adjust(&records);
   assert(records.size() == test.table->num_rows());
   for (size_t i = 0; i < records.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(records[i].score.match(test.int_values[row_id].to_float()));
   }
 }
@@ -1028,7 +1028,7 @@ void test_logical_and() {
   expression->evaluate(records, &bool_results);
   assert(bool_results.size() == test.table->num_rows());
   for (size_t i = 0; i < bool_results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(bool_results[i].match(test.bool_values[row_id] &
                                  test.bool2_values[row_id]));
   }
@@ -1060,7 +1060,7 @@ void test_logical_or() {
   expression->evaluate(records, &bool_results);
   assert(bool_results.size() == test.table->num_rows());
   for (size_t i = 0; i < bool_results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(bool_results[i].match(test.bool_values[row_id] |
                                  test.bool2_values[row_id]));
   }
@@ -1092,7 +1092,7 @@ void test_equal() {
   expression->evaluate(records, &results);
   assert(results.size() == test.table->num_rows());
   for (size_t i = 0; i < results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(results[i].match(test.bool_values[row_id] ==
                             test.bool2_values[row_id]));
   }
@@ -1119,7 +1119,7 @@ void test_equal() {
   expression->evaluate(records, &results);
   assert(results.size() == test.table->num_rows());
   for (size_t i = 0; i < results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(results[i].match(test.int_values[row_id] ==
                             test.int2_values[row_id]));
   }
@@ -1146,7 +1146,7 @@ void test_equal() {
   expression->evaluate(records, &results);
   assert(results.size() == test.table->num_rows());
   for (size_t i = 0; i < results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(results[i].match(test.float_values[row_id] ==
                             test.float2_values[row_id]));
   }
@@ -1173,7 +1173,7 @@ void test_equal() {
   expression->evaluate(records, &results);
   assert(results.size() == test.table->num_rows());
   for (size_t i = 0; i < results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(results[i].match(test.geo_point_values[row_id] ==
                             test.geo_point2_values[row_id]));
   }
@@ -1200,7 +1200,7 @@ void test_equal() {
   expression->evaluate(records, &results);
   assert(results.size() == test.table->num_rows());
   for (size_t i = 0; i < results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(results[i].match(test.text_values[row_id] ==
                             test.text2_values[row_id]));
   }
@@ -1227,7 +1227,7 @@ void test_equal() {
   expression->evaluate(records, &results);
   assert(results.size() == test.table->num_rows());
   for (size_t i = 0; i < results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(results[i].match(test.bool_vector_values[row_id] ==
                             test.bool_vector2_values[row_id]));
   }
@@ -1255,7 +1255,7 @@ void test_equal() {
   expression->evaluate(records, &results);
   assert(results.size() == test.table->num_rows());
   for (size_t i = 0; i < results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(results[i].match(test.int_vector_values[row_id] ==
                             test.int_vector2_values[row_id]));
   }
@@ -1282,7 +1282,7 @@ void test_equal() {
   expression->evaluate(records, &results);
   assert(results.size() == test.table->num_rows());
   for (size_t i = 0; i < results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(results[i].match(test.float_vector_values[row_id] ==
                             test.float_vector2_values[row_id]));
   }
@@ -1310,7 +1310,7 @@ void test_equal() {
   expression->evaluate(records, &results);
   assert(results.size() == test.table->num_rows());
   for (size_t i = 0; i < results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(results[i].match(test.geo_point_vector_values[row_id] ==
                             test.geo_point_vector2_values[row_id]));
   }
@@ -1338,7 +1338,7 @@ void test_equal() {
   expression->evaluate(records, &results);
   assert(results.size() == test.table->num_rows());
   for (size_t i = 0; i < results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(results[i].match(test.text_vector_values[row_id] ==
                             test.text_vector2_values[row_id]));
   }
@@ -1371,7 +1371,7 @@ void test_not_equal() {
   expression->evaluate(records, &results);
   assert(results.size() == test.table->num_rows());
   for (size_t i = 0; i < results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(results[i].match(test.bool_values[row_id] !=
                             test.bool2_values[row_id]));
   }
@@ -1398,7 +1398,7 @@ void test_not_equal() {
   expression->evaluate(records, &results);
   assert(results.size() == test.table->num_rows());
   for (size_t i = 0; i < results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(results[i].match(test.int_values[row_id] !=
                             test.int2_values[row_id]));
   }
@@ -1425,7 +1425,7 @@ void test_not_equal() {
   expression->evaluate(records, &results);
   assert(results.size() == test.table->num_rows());
   for (size_t i = 0; i < results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(results[i].match(test.float_values[row_id] !=
                             test.float2_values[row_id]));
   }
@@ -1452,7 +1452,7 @@ void test_not_equal() {
   expression->evaluate(records, &results);
   assert(results.size() == test.table->num_rows());
   for (size_t i = 0; i < results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(results[i].match(test.geo_point_values[row_id] !=
                             test.geo_point2_values[row_id]));
   }
@@ -1479,7 +1479,7 @@ void test_not_equal() {
   expression->evaluate(records, &results);
   assert(results.size() == test.table->num_rows());
   for (size_t i = 0; i < results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(results[i].match(test.text_values[row_id] !=
                             test.text2_values[row_id]));
   }
@@ -1506,7 +1506,7 @@ void test_not_equal() {
   expression->evaluate(records, &results);
   assert(results.size() == test.table->num_rows());
   for (size_t i = 0; i < results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(results[i].match(test.bool_vector_values[row_id] !=
                             test.bool_vector2_values[row_id]));
   }
@@ -1534,7 +1534,7 @@ void test_not_equal() {
   expression->evaluate(records, &results);
   assert(results.size() == test.table->num_rows());
   for (size_t i = 0; i < results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(results[i].match(test.int_vector_values[row_id] !=
                             test.int_vector2_values[row_id]));
   }
@@ -1561,7 +1561,7 @@ void test_not_equal() {
   expression->evaluate(records, &results);
   assert(results.size() == test.table->num_rows());
   for (size_t i = 0; i < results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(results[i].match(test.float_vector_values[row_id] !=
                             test.float_vector2_values[row_id]));
   }
@@ -1589,7 +1589,7 @@ void test_not_equal() {
   expression->evaluate(records, &results);
   assert(results.size() == test.table->num_rows());
   for (size_t i = 0; i < results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(results[i].match(test.geo_point_vector_values[row_id] !=
                             test.geo_point_vector2_values[row_id]));
   }
@@ -1617,7 +1617,7 @@ void test_not_equal() {
   expression->evaluate(records, &results);
   assert(results.size() == test.table->num_rows());
   for (size_t i = 0; i < results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(results[i].match(test.text_vector_values[row_id] !=
                             test.text_vector2_values[row_id]));
   }
@@ -1650,7 +1650,7 @@ void test_less() {
   expression->evaluate(records, &results);
   assert(results.size() == test.table->num_rows());
   for (size_t i = 0; i < results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(results[i].match(test.int_values[row_id] <
                             test.int2_values[row_id]));
   }
@@ -1677,7 +1677,7 @@ void test_less() {
   expression->evaluate(records, &results);
   assert(results.size() == test.table->num_rows());
   for (size_t i = 0; i < results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(results[i].match(test.float_values[row_id] <
                             test.float2_values[row_id]));
   }
@@ -1704,7 +1704,7 @@ void test_less() {
   expression->evaluate(records, &results);
   assert(results.size() == test.table->num_rows());
   for (size_t i = 0; i < results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(results[i].match(test.text_values[row_id] <
                             test.text2_values[row_id]));
   }
@@ -1736,7 +1736,7 @@ void test_less_equal() {
   expression->evaluate(records, &results);
   assert(results.size() == test.table->num_rows());
   for (size_t i = 0; i < results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(results[i].match(test.int_values[row_id] <=
                             test.int2_values[row_id]));
   }
@@ -1763,7 +1763,7 @@ void test_less_equal() {
   expression->evaluate(records, &results);
   assert(results.size() == test.table->num_rows());
   for (size_t i = 0; i < results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(results[i].match(test.float_values[row_id] <=
                             test.float2_values[row_id]));
   }
@@ -1790,7 +1790,7 @@ void test_less_equal() {
   expression->evaluate(records, &results);
   assert(results.size() == test.table->num_rows());
   for (size_t i = 0; i < results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(results[i].match(test.text_values[row_id] <=
                             test.text2_values[row_id]));
   }
@@ -1822,7 +1822,7 @@ void test_greater() {
   expression->evaluate(records, &results);
   assert(results.size() == test.table->num_rows());
   for (size_t i = 0; i < results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(results[i].match(test.int_values[row_id] >
                             test.int2_values[row_id]));
   }
@@ -1849,7 +1849,7 @@ void test_greater() {
   expression->evaluate(records, &results);
   assert(results.size() == test.table->num_rows());
   for (size_t i = 0; i < results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(results[i].match(test.float_values[row_id] >
                             test.float2_values[row_id]));
   }
@@ -1876,7 +1876,7 @@ void test_greater() {
   expression->evaluate(records, &results);
   assert(results.size() == test.table->num_rows());
   for (size_t i = 0; i < results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(results[i].match(test.text_values[row_id] >
                             test.text2_values[row_id]));
   }
@@ -1908,7 +1908,7 @@ void test_greater_equal() {
   expression->evaluate(records, &results);
   assert(results.size() == test.table->num_rows());
   for (size_t i = 0; i < results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(results[i].match(test.int_values[row_id] >=
                             test.int2_values[row_id]));
   }
@@ -1935,7 +1935,7 @@ void test_greater_equal() {
   expression->evaluate(records, &results);
   assert(results.size() == test.table->num_rows());
   for (size_t i = 0; i < results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(results[i].match(test.float_values[row_id] >=
                             test.float2_values[row_id]));
   }
@@ -1962,7 +1962,7 @@ void test_greater_equal() {
   expression->evaluate(records, &results);
   assert(results.size() == test.table->num_rows());
   for (size_t i = 0; i < results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(results[i].match(test.text_values[row_id] >=
                             test.text2_values[row_id]));
   }
@@ -1994,7 +1994,7 @@ void test_bitwise_and() {
   expression->evaluate(records, &bool_results);
   assert(bool_results.size() == test.table->num_rows());
   for (size_t i = 0; i < bool_results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(bool_results[i].match(test.bool_values[row_id] &
                                  test.bool2_values[row_id]));
   }
@@ -2021,7 +2021,7 @@ void test_bitwise_and() {
   expression->evaluate(records, &int_results);
   assert(int_results.size() == test.table->num_rows());
   for (size_t i = 0; i < int_results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(int_results[i].match(test.int_values[row_id] &
                                 test.int2_values[row_id]));
   }
@@ -2043,7 +2043,7 @@ void test_bitwise_or() {
   expression->evaluate(records, &bool_results);
   assert(bool_results.size() == test.table->num_rows());
   for (size_t i = 0; i < bool_results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(bool_results[i].match(test.bool_values[row_id] |
                                  test.bool2_values[row_id]));
   }
@@ -2070,7 +2070,7 @@ void test_bitwise_or() {
   expression->evaluate(records, &int_results);
   assert(int_results.size() == test.table->num_rows());
   for (size_t i = 0; i < int_results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(int_results[i].match(test.int_values[row_id] |
                                 test.int2_values[row_id]));
   }
@@ -2092,7 +2092,7 @@ void test_bitwise_xor() {
   expression->evaluate(records, &bool_results);
   assert(bool_results.size() == test.table->num_rows());
   for (size_t i = 0; i < bool_results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(bool_results[i].match(test.bool_values[row_id] ^
                                  test.bool2_values[row_id]));
   }
@@ -2119,7 +2119,7 @@ void test_bitwise_xor() {
   expression->evaluate(records, &int_results);
   assert(int_results.size() == test.table->num_rows());
   for (size_t i = 0; i < int_results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(int_results[i].match(test.int_values[row_id] ^
                                 test.int2_values[row_id]));
   }
@@ -2141,7 +2141,7 @@ void test_plus() {
   expression->evaluate(records, &int_results);
   assert(int_results.size() == test.table->num_rows());
   for (size_t i = 0; i < int_results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(int_results[i].match(test.int_values[row_id] +
                                 test.int2_values[row_id]));
   }
@@ -2158,7 +2158,7 @@ void test_plus() {
   expression->evaluate(records, &float_results);
   assert(float_results.size() == test.table->num_rows());
   for (size_t i = 0; i < float_results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(float_results[i].match(test.float_values[row_id] +
                                   test.float2_values[row_id]));
   }
@@ -2166,7 +2166,7 @@ void test_plus() {
   expression->adjust(&records);
   assert(records.size() == test.table->num_rows());
   for (size_t i = 0; i < records.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(records[i].score.match(test.float_values[row_id] +
                                   test.float2_values[row_id]));
   }
@@ -2188,7 +2188,7 @@ void test_minus() {
   expression->evaluate(records, &int_results);
   assert(int_results.size() == test.table->num_rows());
   for (size_t i = 0; i < int_results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(int_results[i].match(test.int_values[row_id] -
                                 test.int2_values[row_id]));
   }
@@ -2205,7 +2205,7 @@ void test_minus() {
   expression->evaluate(records, &float_results);
   assert(float_results.size() == test.table->num_rows());
   for (size_t i = 0; i < float_results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(float_results[i].match(test.float_values[row_id] -
                                   test.float2_values[row_id]));
   }
@@ -2213,7 +2213,7 @@ void test_minus() {
   expression->adjust(&records);
   assert(records.size() == test.table->num_rows());
   for (size_t i = 0; i < records.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(records[i].score.match(test.float_values[row_id] -
                                   test.float2_values[row_id]));
   }
@@ -2236,7 +2236,7 @@ void test_multiplication() {
   expression->evaluate(records, &int_results);
   assert(int_results.size() == test.table->num_rows());
   for (size_t i = 0; i < int_results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(int_results[i].match(test.int_values[row_id] *
                                 test.int2_values[row_id]));
   }
@@ -2253,7 +2253,7 @@ void test_multiplication() {
   expression->evaluate(records, &float_results);
   assert(float_results.size() == test.table->num_rows());
   for (size_t i = 0; i < float_results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(float_results[i].match(test.float_values[row_id] *
                                   test.float2_values[row_id]));
   }
@@ -2261,7 +2261,7 @@ void test_multiplication() {
   expression->adjust(&records);
   assert(records.size() == test.table->num_rows());
   for (size_t i = 0; i < records.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(records[i].score.match(test.float_values[row_id] *
                                   test.float2_values[row_id]));
   }
@@ -2284,7 +2284,7 @@ void test_division() {
   expression->evaluate(records, &int_results);
   assert(int_results.size() == test.table->num_rows());
   for (size_t i = 0; i < int_results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(int_results[i].match(test.int_values[row_id] /
                                 test.int2_values[row_id]));
   }
@@ -2301,7 +2301,7 @@ void test_division() {
   expression->evaluate(records, &float_results);
   assert(float_results.size() == test.table->num_rows());
   for (size_t i = 0; i < float_results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(float_results[i].match(test.float_values[row_id] /
                                   test.float2_values[row_id]));
   }
@@ -2309,7 +2309,7 @@ void test_division() {
   expression->adjust(&records);
   assert(records.size() == test.table->num_rows());
   for (size_t i = 0; i < records.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(records[i].score.match(test.float_values[row_id] /
                                   test.float2_values[row_id]));
   }
@@ -2332,7 +2332,7 @@ void test_modulus() {
   expression->evaluate(records, &int_results);
   assert(int_results.size() == test.table->num_rows());
   for (size_t i = 0; i < int_results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(int_results[i].match(test.int_values[row_id] %
                                 test.int2_values[row_id]));
   }
@@ -2349,7 +2349,7 @@ void test_modulus() {
   expression->evaluate(records, &float_results);
   assert(float_results.size() == test.table->num_rows());
   for (size_t i = 0; i < float_results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(float_results[i].match(test.float_values[row_id] %
                                   test.float2_values[row_id]));
   }
@@ -2357,7 +2357,7 @@ void test_modulus() {
   expression->adjust(&records);
   assert(records.size() == test.table->num_rows());
   for (size_t i = 0; i < records.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(records[i].score.match(test.float_values[row_id] %
                                   test.float2_values[row_id]));
   }
@@ -2379,7 +2379,7 @@ void test_subscript() {
   expression->evaluate(records, &bool_results);
   assert(bool_results.size() == test.table->num_rows());
   for (size_t i = 0; i < bool_results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     const auto int_value = test.int_values[row_id];
     const auto &bool_vector_value = test.bool_vector_values[row_id];
     assert(bool_results[i].match(bool_vector_value[int_value]));
@@ -2409,7 +2409,7 @@ void test_subscript() {
   expression->evaluate(records, &int_results);
   assert(int_results.size() == test.table->num_rows());
   for (size_t i = 0; i < int_results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     const auto int_value = test.int_values[row_id];
     const auto &int_vector_value = test.int_vector_values[row_id];
     assert(int_results[i].match(int_vector_value[int_value]));
@@ -2427,7 +2427,7 @@ void test_subscript() {
   expression->evaluate(records, &float_results);
   assert(float_results.size() == test.table->num_rows());
   for (size_t i = 0; i < float_results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     const auto int_value = test.int_values[row_id];
     const auto &float_vector_value = test.float_vector_values[row_id];
     assert(float_results[i].match(float_vector_value[int_value]));
@@ -2436,7 +2436,7 @@ void test_subscript() {
   expression->adjust(&records);
   assert(records.size() == test.table->num_rows());
   for (size_t i = 0; i < records.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     const auto int_value = test.int_values[row_id];
     const auto &float_vector_value = test.float_vector_values[row_id];
     assert(records[i].score.match(float_vector_value[int_value]));
@@ -2454,7 +2454,7 @@ void test_subscript() {
   expression->evaluate(records, &geo_point_results);
   assert(geo_point_results.size() == test.table->num_rows());
   for (size_t i = 0; i < geo_point_results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     const auto int_value = test.int_values[row_id];
     const auto &geo_point_vector_value = test.geo_point_vector_values[row_id];
     assert(geo_point_results[i].match(geo_point_vector_value[int_value]));
@@ -2472,7 +2472,7 @@ void test_subscript() {
   expression->evaluate(records, &text_results);
   assert(text_results.size() == test.table->num_rows());
   for (size_t i = 0; i < text_results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     const auto int_value = test.int_values[row_id];
     const auto &text_vector_value = test.text_vector_values[row_id];
     assert(text_results[i].match(text_vector_value[int_value]));
@@ -2497,7 +2497,7 @@ void test_subexpression() {
   assert(bool_results.size() == test.table->num_rows());
   for (size_t i = 0; i < bool_results.size(); ++i) {
     const auto ref_value = test.ref_values[i];
-    const auto bool_value = test.bool_values[ref_value.value()];
+    const auto bool_value = test.bool_values[ref_value.raw()];
     assert(bool_results[i].match(bool_value));
   }
 
@@ -2505,7 +2505,7 @@ void test_subexpression() {
   size_t count = 0;
   for (size_t i = 0; i < test.ref_values.size(); ++i) {
     const auto ref_value = test.ref_values[i];
-    const auto bool_value = test.bool_values[ref_value.value()];
+    const auto bool_value = test.bool_values[ref_value.raw()];
     if (bool_value.is_true()) {
       assert(records[count].row_id.match(grnxx::Int(i)));
       ++count;
@@ -2527,14 +2527,14 @@ void test_subexpression() {
   assert(float_results.size() == test.table->num_rows());
   for (size_t i = 0; i < float_results.size(); ++i) {
     const auto ref_value = test.ref_values[i];
-    const auto float_value = test.float_values[ref_value.value()];
+    const auto float_value = test.float_values[ref_value.raw()];
     assert(float_results[i].match(float_value));
   }
 
   expression->adjust(&records);
   for (size_t i = 0; i < float_results.size(); ++i) {
     const auto ref_value = test.ref_values[i];
-    const auto float_value = test.float_values[ref_value.value()];
+    const auto float_value = test.float_values[ref_value.raw()];
     assert(records[i].score.match(float_value));
   }
 
@@ -2552,7 +2552,7 @@ void test_subexpression() {
   assert(int_vector_results.size() == test.table->num_rows());
   for (size_t i = 0; i < int_vector_results.size(); ++i) {
     const auto ref_value = test.ref_values[i];
-    const auto int_vector_value = test.int_vector_values[ref_value.value()];
+    const auto int_vector_value = test.int_vector_values[ref_value.raw()];
     assert(int_vector_results[i].match(int_vector_value));
   }
 
@@ -2572,10 +2572,10 @@ void test_subexpression() {
   expression->evaluate(records, &text_results);
   assert(text_results.size() == test.table->num_rows());
   for (size_t i = 0; i < text_results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     const auto ref_value = test.ref_values[row_id];
-    const auto ref_ref_value = test.ref_values[ref_value.value()];
-    const auto text_value = test.text_values[ref_ref_value.value()];
+    const auto ref_ref_value = test.ref_values[ref_value.raw()];
+    const auto text_value = test.text_values[ref_ref_value.raw()];
     assert(text_results[i].match(text_value));
   }
 
@@ -2596,8 +2596,8 @@ void test_subexpression() {
   assert(int_results.size() == test.table->num_rows());
   for (size_t i = 0; i < int_results.size(); ++i) {
     const auto ref_value = test.ref_values[i];
-    const auto ref_ref_value = test.ref_values[ref_value.value()];
-    const auto int_value = test.int_values[ref_ref_value.value()];
+    const auto ref_ref_value = test.ref_values[ref_value.raw()];
+    const auto int_value = test.int_values[ref_ref_value.raw()];
     assert(int_results[i].match(int_value));
   }
 
@@ -2614,13 +2614,13 @@ void test_subexpression() {
   expression->evaluate(records, &int_vector_results);
   assert(int_vector_results.size() == test.table->num_rows());
   for (size_t i = 0; i < int_vector_results.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     const auto ref_vector_value = test.ref_vector_values[row_id];
     assert(int_vector_results[i].size().match(ref_vector_value.size()));
-    size_t value_size = ref_vector_value.size().value();
+    size_t value_size = ref_vector_value.size().raw();
     for (size_t j = 0; j < value_size; ++j) {
       grnxx::Int ref_value = ref_vector_value[j];
-      const auto int_value = test.int_values[ref_value.value()];
+      const auto int_value = test.int_values[ref_value.raw()];
       assert(int_vector_results[i][j].match(int_value));
     }
   }
@@ -2692,7 +2692,7 @@ void test_sequential_adjust() {
 
   assert(records.size() == test.table->num_rows());
   for (size_t i = 0; i < records.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(records[i].score.match(test.int_values[row_id].to_float() +
                                   test.float_values[row_id]));
   }
@@ -2730,7 +2730,7 @@ void test_sequential_evaluate() {
 
   assert(records.size() == test.table->num_rows());
   for (size_t i = 0; i < records.size(); ++i) {
-    size_t row_id = records[i].row_id.value();
+    size_t row_id = records[i].row_id.raw();
     assert(results[i].match(
            (test.int_values[row_id] +
             (test.float_values[row_id] * grnxx::Float(100.0)).to_int())));

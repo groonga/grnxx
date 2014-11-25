@@ -96,7 +96,7 @@ void test_rows() {
   // Append the first row.
   grnxx::Int row_id;
   row_id = table->insert_row();
-  assert(row_id.value() == 0);
+  assert(row_id.raw() == 0);
   assert(table->num_rows() == 1);
   assert(table->max_row_id().match(row_id));
   assert(!table->test_row(grnxx::Int(-1)));
@@ -104,10 +104,10 @@ void test_rows() {
   assert(!table->test_row(grnxx::Int(1)));
 
   // Append two more rows.
-  assert(table->insert_row().value() == 1);
-  assert(table->insert_row().value() == 2);
+  assert(table->insert_row().raw() == 1);
+  assert(table->insert_row().raw() == 2);
   assert(table->num_rows() == 3);
-  assert(table->max_row_id().value() == 2);
+  assert(table->max_row_id().raw() == 2);
   assert(table->test_row(grnxx::Int(0)));
   assert(table->test_row(grnxx::Int(1)));
   assert(table->test_row(grnxx::Int(2)));
@@ -116,7 +116,7 @@ void test_rows() {
   // Remove the second row.
   table->remove_row(grnxx::Int(1));
   assert(table->num_rows() == 2);
-  assert(table->max_row_id().value() == 2);
+  assert(table->max_row_id().raw() == 2);
   assert(table->test_row(grnxx::Int(0)));
   assert(!table->test_row(grnxx::Int(1)));
   assert(table->test_row(grnxx::Int(2)));
@@ -125,7 +125,7 @@ void test_rows() {
   // Remove the first row.
   table->remove_row(grnxx::Int(0));
   assert(table->num_rows() == 1);
-  assert(table->max_row_id().value() == 2);
+  assert(table->max_row_id().raw() == 2);
   assert(!table->test_row(grnxx::Int(0)));
   assert(!table->test_row(grnxx::Int(1)));
   assert(table->test_row(grnxx::Int(2)));
@@ -156,7 +156,7 @@ void test_bitmap() {
     assert(table->insert_row().match(row_id));
   }
   assert(table->num_rows() == NUM_ROWS);
-  assert(table->max_row_id().value() == (NUM_ROWS - 1));
+  assert(table->max_row_id().raw() == (NUM_ROWS - 1));
 
   // Remove all rows.
   for (size_t i = 0; i < NUM_ROWS; ++i) {
@@ -172,7 +172,7 @@ void test_bitmap() {
     assert(table->insert_row().match(row_id));
   }
   assert(table->num_rows() == NUM_ROWS);
-  assert(table->max_row_id().value() == (NUM_ROWS - 1));
+  assert(table->max_row_id().raw() == (NUM_ROWS - 1));
 
   // Remove rows with even IDs.
   for (size_t i = 0; i < NUM_ROWS; i += 2) {
@@ -180,7 +180,7 @@ void test_bitmap() {
     table->remove_row(row_id);
   }
   assert(table->num_rows() == (NUM_ROWS / 2));
-  assert(table->max_row_id().value() == (NUM_ROWS - 1));
+  assert(table->max_row_id().raw() == (NUM_ROWS - 1));
 
   // Insert rows again.
   for (size_t i = 0; i < NUM_ROWS; i += 2) {
@@ -188,7 +188,7 @@ void test_bitmap() {
     assert(table->insert_row().match(row_id));
   }
   assert(table->num_rows() == NUM_ROWS);
-  assert(table->max_row_id().value() == (NUM_ROWS - 1));
+  assert(table->max_row_id().raw() == (NUM_ROWS - 1));
 
   // Remove rows in reverse order.
   for (size_t i = 0; i < NUM_ROWS; ++i) {
@@ -204,7 +204,7 @@ void test_bitmap() {
     assert(table->insert_row().match(row_id));
   }
   assert(table->num_rows() == NUM_ROWS);
-  assert(table->max_row_id().value() == (NUM_ROWS - 1));
+  assert(table->max_row_id().raw() == (NUM_ROWS - 1));
 }
 
 void test_int_key() {
@@ -246,21 +246,21 @@ void test_int_key() {
   row_id = table->find_or_insert_row(grnxx::Int(2), &inserted);
   assert(inserted);
   column->get(row_id, &datum);
-  assert(datum.as_int().value() == 2);
+  assert(datum.as_int().raw() == 2);
   row_id = table->find_or_insert_row(grnxx::Int(20), &inserted);
   column->get(row_id, &datum);
-  assert(datum.as_int().value() == 20);
+  assert(datum.as_int().raw() == 20);
   row_id = table->find_or_insert_row(grnxx::Int(200), &inserted);
   column->get(row_id, &datum);
-  assert(datum.as_int().value() == 200);
+  assert(datum.as_int().raw() == 200);
 
   // Find rows by key.
-  assert(table->find_row(grnxx::Int(1)).value() == 0);
-  assert(table->find_row(grnxx::Int(10)).value() == 1);
-  assert(table->find_row(grnxx::Int(100)).value() == 2);
-  assert(table->find_row(grnxx::Int(2)).value() == 3);
-  assert(table->find_row(grnxx::Int(20)).value() == 4);
-  assert(table->find_row(grnxx::Int(200)).value() == 5);
+  assert(table->find_row(grnxx::Int(1)).raw() == 0);
+  assert(table->find_row(grnxx::Int(10)).raw() == 1);
+  assert(table->find_row(grnxx::Int(100)).raw() == 2);
+  assert(table->find_row(grnxx::Int(2)).raw() == 3);
+  assert(table->find_row(grnxx::Int(20)).raw() == 4);
+  assert(table->find_row(grnxx::Int(200)).raw() == 5);
   assert(table->find_row(grnxx::Int::na()).is_na());
 
   // Unset key column.
@@ -293,34 +293,34 @@ void test_text_key() {
   // Duplicate keys must be rejected.
   bool inserted = true;
   row_id = table->find_or_insert_row(grnxx::Text("1"), &inserted);
-  assert(row_id.value() == 0);
+  assert(row_id.raw() == 0);
   assert(!inserted);
   row_id = table->find_or_insert_row(grnxx::Text("12"), &inserted);
-  assert(row_id.value() == 1);
+  assert(row_id.raw() == 1);
   assert(!inserted);
   row_id = table->find_or_insert_row(grnxx::Text("123"), &inserted);
-  assert(row_id.value() == 2);
+  assert(row_id.raw() == 2);
   assert(!inserted);
 
   // Append new keys.
   grnxx::Datum datum;
   row_id = table->find_or_insert_row(grnxx::Text("A"), &inserted);
-  assert(row_id.value() == 3);
+  assert(row_id.raw() == 3);
   assert(inserted);
   row_id = table->find_or_insert_row(grnxx::Text("AB"), &inserted);
-  assert(row_id.value() == 4);
+  assert(row_id.raw() == 4);
   assert(inserted);
   row_id = table->find_or_insert_row(grnxx::Text("ABC"), &inserted);
-  assert(row_id.value() == 5);
+  assert(row_id.raw() == 5);
   assert(inserted);
 
   // Find rows by key.
-  assert(table->find_row(grnxx::Text("1")).value() == 0);
-  assert(table->find_row(grnxx::Text("12")).value() == 1);
-  assert(table->find_row(grnxx::Text("123")).value() == 2);
-  assert(table->find_row(grnxx::Text("A")).value() == 3);
-  assert(table->find_row(grnxx::Text("AB")).value() == 4);
-  assert(table->find_row(grnxx::Text("ABC")).value() == 5);
+  assert(table->find_row(grnxx::Text("1")).raw() == 0);
+  assert(table->find_row(grnxx::Text("12")).raw() == 1);
+  assert(table->find_row(grnxx::Text("123")).raw() == 2);
+  assert(table->find_row(grnxx::Text("A")).raw() == 3);
+  assert(table->find_row(grnxx::Text("AB")).raw() == 4);
+  assert(table->find_row(grnxx::Text("ABC")).raw() == 5);
   assert(table->find_row(grnxx::Text::na()).is_na());
 
   // Unset key column.
@@ -353,7 +353,7 @@ void test_cursor() {
   for (size_t i = 0; i < NUM_ROWS; ++i) {
     grnxx::Int row_id(i);
     assert(records[i].row_id.match(row_id));
-    assert(records[i].score.value() == 0.0);
+    assert(records[i].score.raw() == 0.0);
   }
   records.clear();
 
@@ -366,7 +366,7 @@ void test_cursor() {
   for (size_t i = 0; i < NUM_ROWS; ++i) {
     grnxx::Int row_id(NUM_ROWS - i - 1);
     assert(records[i].row_id.match(row_id));
-    assert(records[i].score.value() == 0.0);
+    assert(records[i].score.raw() == 0.0);
   }
   records.clear();
 
@@ -432,25 +432,25 @@ void test_reference() {
   grnxx::Datum datum;
   ref_column->get(grnxx::Int(0), &datum);
   assert(datum.type() == grnxx::INT_DATA);
-  assert(datum.as_int().value() == 0);
+  assert(datum.as_int().raw() == 0);
   ref_column->get(grnxx::Int(1), &datum);
   assert(datum.type() == grnxx::INT_DATA);
-  assert(datum.as_int().value() == 1);
+  assert(datum.as_int().raw() == 1);
   ref_column->get(grnxx::Int(2), &datum);
   assert(datum.type() == grnxx::INT_DATA);
-  assert(datum.as_int().value() == 1);
+  assert(datum.as_int().raw() == 1);
 
   to_table->remove_row(grnxx::Int(1));
 
   ref_column->get(grnxx::Int(0), &datum);
   assert(datum.type() == grnxx::INT_DATA);
-  assert(datum.as_int().value() == 0);
+  assert(datum.as_int().raw() == 0);
   ref_column->get(grnxx::Int(1), &datum);
   assert(datum.type() == grnxx::INT_DATA);
-  assert(datum.as_int().value() == 1);
+  assert(datum.as_int().raw() == 1);
   ref_column->get(grnxx::Int(2), &datum);
   assert(datum.type() == grnxx::INT_DATA);
-  assert(datum.as_int().value() == 1);
+  assert(datum.as_int().raw() == 1);
 }
 
 int main() {
