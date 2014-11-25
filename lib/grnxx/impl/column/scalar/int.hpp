@@ -52,6 +52,10 @@ class Column<Int> : public ColumnBase {
  private:
   Array<Int> values_;
 
+  // Parse "datum" as Int.
+  //
+  // On success, returns the result.
+  // On failure, throws an exception.
   static Int parse_datum(const Datum &datum);
 };
 

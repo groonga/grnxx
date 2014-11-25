@@ -75,6 +75,10 @@ class Column<Text> : public ColumnBase {
     return std::numeric_limits<uint64_t>::max();
   }
 
+  // Parse "datum" as Text.
+  //
+  // On success, returns the result.
+  // On failure, throws an exception.
   static Text parse_datum(const Datum &datum);
 };
 

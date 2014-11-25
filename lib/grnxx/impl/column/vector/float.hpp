@@ -71,6 +71,10 @@ class Column<Vector<Float>> : public ColumnBase {
     return std::numeric_limits<uint64_t>::max();
   }
 
+  // Parse "datum" as Vector<Float>.
+  //
+  // On success, returns the result.
+  // On failure, throws an exception.
   static Vector<Float> parse_datum(const Datum &datum);
 };
 

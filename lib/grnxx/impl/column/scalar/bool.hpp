@@ -48,6 +48,10 @@ class Column<Bool> : public ColumnBase {
  protected:
   Array<Bool> values_;
 
+  // Parse "datum" as Bool.
+  //
+  // On success, returns the result.
+  // On failure, throws an exception.
   static Bool parse_datum(const Datum &datum);
 };
 

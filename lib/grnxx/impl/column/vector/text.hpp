@@ -63,6 +63,10 @@ class Column<Vector<Text>> : public ColumnBase {
     return Header{ 0, Int::na() };
   }
 
+  // Parse "datum" as Vector<Text>.
+  //
+  // On success, returns the result.
+  // On failure, throws an exception.
   static Vector<Text> parse_datum(const Datum &datum);
 };
 

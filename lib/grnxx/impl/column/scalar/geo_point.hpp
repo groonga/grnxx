@@ -48,6 +48,10 @@ class Column<GeoPoint> : public ColumnBase {
  protected:
   Array<GeoPoint> values_;
 
+  // Parse "datum" as GeoPoint.
+  //
+  // On success, returns the result.
+  // On failure, throws an exception.
   static GeoPoint parse_datum(const Datum &datum);
 };
 

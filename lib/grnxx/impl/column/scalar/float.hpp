@@ -48,6 +48,10 @@ class Column<Float> : public ColumnBase {
  protected:
   Array<Float> values_;
 
+  // Parse "datum" as Float.
+  //
+  // On success, returns the result.
+  // On failure, throws an exception.
   static Float parse_datum(const Datum &datum);
 };
 
