@@ -1180,6 +1180,11 @@ void test_bool_vector() {
   assert(empty.size().raw() == 0);
   assert(na.size().is_na());
 
+  assert(tft.raw_size() == 3);
+  assert(ftn.raw_size() == 3);
+  assert(empty.raw_size() == 0);
+  assert(na.raw_size() == grnxx::BoolVector::raw_na_size());
+
   assert(!tft.is_empty());
   assert(!tft.is_empty());
   assert(empty.is_empty());
@@ -1266,6 +1271,11 @@ void test_int_vector() {
   assert(empty.size().raw() == 0);
   assert(na.size().is_na());
 
+  assert(abc.raw_size() == 3);
+  assert(bcn.raw_size() == 3);
+  assert(empty.raw_size() == 0);
+  assert(na.raw_size() == grnxx::IntVector::raw_na_size());
+
   assert(!abc.is_empty());
   assert(!abc.is_empty());
   assert(empty.is_empty());
@@ -1351,6 +1361,11 @@ void test_float_vector() {
   assert(bcn.size().raw() == 3);
   assert(empty.size().raw() == 0);
   assert(na.size().is_na());
+
+  assert(abc.raw_size() == 3);
+  assert(bcn.raw_size() == 3);
+  assert(empty.raw_size() == 0);
+  assert(na.raw_size() == grnxx::FloatVector::raw_na_size());
 
   assert(!abc.is_empty());
   assert(!abc.is_empty());
@@ -1446,6 +1461,11 @@ void test_geo_point_vector() {
   assert(empty.size().raw() == 0);
   assert(na.size().is_na());
 
+  assert(sto.raw_size() == 3);
+  assert(ton.raw_size() == 3);
+  assert(empty.raw_size() == 0);
+  assert(na.raw_size() == grnxx::GeoPointVector::raw_na_size());
+
   assert(!sto.is_empty());
   assert(!sto.is_empty());
   assert(empty.is_empty());
@@ -1531,6 +1551,11 @@ void test_text_vector() {
   assert(bcn.size().raw() == 3);
   assert(empty.size().raw() == 0);
   assert(na.size().is_na());
+
+  assert(abc.raw_size() == 3);
+  assert(bcn.raw_size() == 3);
+  assert(empty.raw_size() == 0);
+  assert(na.raw_size() == grnxx::TextVector::raw_na_size());
 
   assert(!abc.is_empty());
   assert(!abc.is_empty());
