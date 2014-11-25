@@ -223,8 +223,8 @@ void test_column() {
   geo_point_column->set(row_id, geo_point);
   geo_point_column->get(row_id, &datum);
   assert(datum.type() == grnxx::GEO_POINT_DATA);
-  assert(datum.as_geo_point().latitude() == 123);
-  assert(datum.as_geo_point().longitude() == 456);
+  assert(datum.as_geo_point().raw_latitude() == 123);
+  assert(datum.as_geo_point().raw_longitude() == 456);
 
   grnxx::Text text(grnxx::Text("ABC"));
   text_column->set(row_id, text);

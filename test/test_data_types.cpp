@@ -832,14 +832,14 @@ void test_geo_point() {
   assert(date_line.type() == grnxx::GEO_POINT_DATA);
   assert(na.type() == grnxx::GEO_POINT_DATA);
 
-  assert(zero.latitude() == 0);
-  assert(date_line.latitude() == 0);
-  assert(na.latitude() == grnxx::GeoPoint::na_latitude());
+  assert(zero.raw_latitude() == 0);
+  assert(date_line.raw_latitude() == 0);
+  assert(na.raw_latitude() == grnxx::GeoPoint::raw_na_latitude());
 
-  assert(zero.longitude() == 0);
-  assert(north_pole.longitude() == 0);
-  assert(south_pole.longitude() == 0);
-  assert(na.longitude() == grnxx::GeoPoint::na_longitude());
+  assert(zero.raw_longitude() == 0);
+  assert(north_pole.raw_longitude() == 0);
+  assert(south_pole.raw_longitude() == 0);
+  assert(na.raw_longitude() == grnxx::GeoPoint::raw_na_longitude());
 
   assert(zero.latitude_in_milliseconds().raw() == 0);
   assert(date_line.latitude_in_milliseconds().raw() == 0);
@@ -1419,21 +1419,21 @@ void test_geo_point_vector() {
   assert(empty.type() == grnxx::GEO_POINT_VECTOR_DATA);
   assert(na.type() == grnxx::GEO_POINT_VECTOR_DATA);
 
-  assert(sto[0].latitude() == data[0].latitude());
-  assert(sto[1].latitude() == data[1].latitude());
-  assert(sto[2].latitude() == data[2].latitude());
+  assert(sto[0].raw_latitude() == data[0].raw_latitude());
+  assert(sto[1].raw_latitude() == data[1].raw_latitude());
+  assert(sto[2].raw_latitude() == data[2].raw_latitude());
 
-  assert(ton[0].latitude() == data[1].latitude());
-  assert(ton[1].latitude() == data[2].latitude());
-  assert(ton[2].latitude() == data[3].latitude());
+  assert(ton[0].raw_latitude() == data[1].raw_latitude());
+  assert(ton[1].raw_latitude() == data[2].raw_latitude());
+  assert(ton[2].raw_latitude() == data[3].raw_latitude());
 
-  assert(sto[0].longitude() == data[0].longitude());
-  assert(sto[1].longitude() == data[1].longitude());
-  assert(sto[2].longitude() == data[2].longitude());
+  assert(sto[0].raw_longitude() == data[0].raw_longitude());
+  assert(sto[1].raw_longitude() == data[1].raw_longitude());
+  assert(sto[2].raw_longitude() == data[2].raw_longitude());
 
-  assert(ton[0].longitude() == data[1].longitude());
-  assert(ton[1].longitude() == data[2].longitude());
-  assert(ton[2].longitude() == data[3].longitude());
+  assert(ton[0].raw_longitude() == data[1].raw_longitude());
+  assert(ton[1].raw_longitude() == data[2].raw_longitude());
+  assert(ton[2].raw_longitude() == data[3].raw_longitude());
 
   assert(sto.size().raw() == 3);
   assert(ton.size().raw() == 3);
