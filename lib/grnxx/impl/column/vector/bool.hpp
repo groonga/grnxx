@@ -71,6 +71,9 @@ class Column<Vector<Bool>> : public ColumnBase {
     return std::numeric_limits<uint64_t>::max();
   }
 
+  // Return the active column size.
+  size_t get_valid_size() const;
+
   // Parse "datum" as Vector<Bool>.
   //
   // On success, returns the result.

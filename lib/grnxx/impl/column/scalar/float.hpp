@@ -48,6 +48,9 @@ class Column<Float> : public ColumnBase {
  protected:
   Array<Float> values_;
 
+  // Return the active column size.
+  size_t get_valid_size() const;
+
   // Parse "datum" as Float.
   //
   // On success, returns the result.

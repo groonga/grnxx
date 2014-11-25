@@ -84,14 +84,15 @@ void Column<Vector<Bool>>::get(Int row_id, Datum *datum) const {
 bool Column<Vector<Bool>>::contains(const Datum &datum) const {
   // TODO: Use an index if exists.
   Vector<Bool> value = parse_datum(datum);
+  size_t valid_size = get_valid_size();
   if (value.is_na()) {
-    for (size_t i = 0; i < headers_.size(); ++i) {
+    for (size_t i = 0; i < valid_size; ++i) {
       if (headers_[i] == na_header()) {
         return true;
       }
     }
   } else {
-    for (size_t i = 0; i < headers_.size(); ++i) {
+    for (size_t i = 0; i < valid_size; ++i) {
       // TODO: Improve this.
       if (get(Int(i)).match(value)) {
         return true;
@@ -104,14 +105,15 @@ bool Column<Vector<Bool>>::contains(const Datum &datum) const {
 Int Column<Vector<Bool>>::find_one(const Datum &datum) const {
   // TODO: Use an index if exists.
   Vector<Bool> value = parse_datum(datum);
+  size_t valid_size = get_valid_size();
   if (value.is_na()) {
-    for (size_t i = 0; i < headers_.size(); ++i) {
+    for (size_t i = 0; i < valid_size; ++i) {
       if (headers_[i] == na_header()) {
         return Int(i);
       }
     }
   } else {
-    for (size_t i = 0; i < headers_.size(); ++i) {
+    for (size_t i = 0; i < valid_size; ++i) {
       // TODO: Improve this.
       if (get(Int(i)).match(value)) {
         return Int(i);
@@ -130,6 +132,17 @@ void Column<Vector<Bool>>::unset(Int row_id) {
 //    }
     headers_[row_id.value()] = na_header();
   }
+}
+
+size_t Column<Vector<Bool>>::get_valid_size() const {
+  if (table_->max_row_id().is_na()) {
+    return 0;
+  }
+  size_t table_size = table_->max_row_id().value() + 1;
+  if (table_size < headers_.size()) {
+    return table_size;
+  }
+  return headers_.size();
 }
 
 void Column<Vector<Bool>>::read(ArrayCRef<Record> records,

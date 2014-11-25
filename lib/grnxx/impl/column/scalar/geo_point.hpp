@@ -48,6 +48,9 @@ class Column<GeoPoint> : public ColumnBase {
  protected:
   Array<GeoPoint> values_;
 
+  // Return the active column size.
+  size_t get_valid_size() const;
+
   // Parse "datum" as GeoPoint.
   //
   // On success, returns the result.

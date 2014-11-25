@@ -63,6 +63,9 @@ class Column<Vector<Text>> : public ColumnBase {
     return Header{ 0, Int::na() };
   }
 
+  // Return the active column size.
+  size_t get_valid_size() const;
+
   // Parse "datum" as Vector<Text>.
   //
   // On success, returns the result.

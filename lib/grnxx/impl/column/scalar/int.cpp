@@ -279,6 +279,17 @@ void Column<Int>::read(ArrayCRef<Record> records, ArrayRef<Int> values) const {
 //  }
 //}
 
+size_t Column<Int>::get_valid_size() const {
+  if (table_->max_row_id().is_na()) {
+    return 0;
+  }
+  size_t table_size = table_->max_row_id().value() + 1;
+  if (table_size < values_.size()) {
+    return table_size;
+  }
+  return values_.size();
+}
+
 Int Column<Int>::parse_datum(const Datum &datum) {
   switch (datum.type()) {
     case NA_DATA: {

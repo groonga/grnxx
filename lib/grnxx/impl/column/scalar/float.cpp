@@ -61,14 +61,15 @@ void Column<Float>::get(Int row_id, Datum *datum) const {
 bool Column<Float>::contains(const Datum &datum) const {
   // TODO: Use an index if exists.
   Float value = parse_datum(datum);
+  size_t valid_size = get_valid_size();
   if (value.is_na()) {
-    for (size_t i = 0; i < values_.size(); ++i) {
+    for (size_t i = 0; i < valid_size; ++i) {
       if (values_[i].is_na() && table_->_test_row(i)) {
         return true;
       }
     }
   } else {
-    for (size_t i = 0; i < values_.size(); ++i) {
+    for (size_t i = 0; i < valid_size; ++i) {
       if (values_[i].match(value)) {
         return true;
       }
@@ -80,14 +81,15 @@ bool Column<Float>::contains(const Datum &datum) const {
 Int Column<Float>::find_one(const Datum &datum) const {
   // TODO: Use an index if exists.
   Float value = parse_datum(datum);
+  size_t valid_size = get_valid_size();
   if (value.is_na()) {
-    for (size_t i = 0; i < values_.size(); ++i) {
+    for (size_t i = 0; i < valid_size; ++i) {
       if (values_[i].is_na() && table_->_test_row(i)) {
         return Int(i);
       }
     }
   } else {
-    for (size_t i = 0; i < values_.size(); ++i) {
+    for (size_t i = 0; i < valid_size; ++i) {
       if (values_[i].match(value)) {
         return Int(i);
       }
@@ -115,6 +117,17 @@ void Column<Float>::read(ArrayCRef<Record> records,
   for (size_t i = 0; i < records.size(); ++i) {
     values.set(i, get(records[i].row_id));
   }
+}
+
+size_t Column<Float>::get_valid_size() const {
+  if (table_->max_row_id().is_na()) {
+    return 0;
+  }
+  size_t table_size = table_->max_row_id().value() + 1;
+  if (table_size < values_.size()) {
+    return table_size;
+  }
+  return values_.size();
 }
 
 Float Column<Float>::parse_datum(const Datum &datum) {

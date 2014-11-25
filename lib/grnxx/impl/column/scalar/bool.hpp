@@ -48,6 +48,9 @@ class Column<Bool> : public ColumnBase {
  protected:
   Array<Bool> values_;
 
+  // Return the active column size.
+  size_t get_valid_size() const;
+
   // Parse "datum" as Bool.
   //
   // On success, returns the result.

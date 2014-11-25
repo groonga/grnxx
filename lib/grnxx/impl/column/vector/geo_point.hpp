@@ -72,6 +72,9 @@ class Column<Vector<GeoPoint>> : public ColumnBase {
     return std::numeric_limits<uint64_t>::max();
   }
 
+  // Return the active column size.
+  size_t get_valid_size() const;
+
   // Parse "datum" as Vector<GeoPoint>.
   //
   // On success, returns the result.

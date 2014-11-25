@@ -87,14 +87,15 @@ void Column<Vector<Text>>::get(Int row_id, Datum *datum) const {
 bool Column<Vector<Text>>::contains(const Datum &datum) const {
   // TODO: Use an index if exists.
   Vector<Text> value = parse_datum(datum);
+  size_t valid_size = get_valid_size();
   if (value.is_na()) {
-    for (size_t i = 0; i < headers_.size(); ++i) {
+    for (size_t i = 0; i < valid_size; ++i) {
       if (headers_[i].size.is_na()) {
         return true;
       }
     }
   } else {
-    for (size_t i = 0; i < headers_.size(); ++i) {
+    for (size_t i = 0; i < valid_size; ++i) {
       // TODO: Improve this.
       if (get(Int(i)).match(value)) {
         return true;
@@ -107,14 +108,15 @@ bool Column<Vector<Text>>::contains(const Datum &datum) const {
 Int Column<Vector<Text>>::find_one(const Datum &datum) const {
   // TODO: Use an index if exists.
   Vector<Text> value = parse_datum(datum);
+  size_t valid_size = get_valid_size();
   if (value.is_na()) {
-    for (size_t i = 0; i < headers_.size(); ++i) {
+    for (size_t i = 0; i < valid_size; ++i) {
       if (headers_[i].size.is_na()) {
         return Int(i);
       }
     }
   } else {
-    for (size_t i = 0; i < headers_.size(); ++i) {
+    for (size_t i = 0; i < valid_size; ++i) {
       // TODO: Improve this.
       if (get(Int(i)).match(value)) {
         return Int(i);
@@ -143,6 +145,17 @@ void Column<Vector<Text>>::read(ArrayCRef<Record> records,
   for (size_t i = 0; i < records.size(); ++i) {
     values.set(i, get(records[i].row_id));
   }
+}
+
+size_t Column<Vector<Text>>::get_valid_size() const {
+  if (table_->max_row_id().is_na()) {
+    return 0;
+  }
+  size_t table_size = table_->max_row_id().value() + 1;
+  if (table_size < headers_.size()) {
+    return table_size;
+  }
+  return headers_.size();
 }
 
 Vector<Text> Column<Vector<Text>>::parse_datum(const Datum &datum) {
