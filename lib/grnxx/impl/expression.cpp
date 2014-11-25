@@ -1785,6 +1785,9 @@ void ExpressionBuilder::push_operator(OperatorType operator_type) {
       case MULTIPLICATION_OPERATOR:
       case DIVISION_OPERATOR:
       case MODULUS_OPERATOR:
+      case STARTS_WITH_OPERATOR:
+      case ENDS_WITH_OPERATOR:
+      case CONTAINS_OPERATOR:
       case SUBSCRIPT_OPERATOR: {
         return push_binary_operator(operator_type);
       }
