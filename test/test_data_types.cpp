@@ -1116,6 +1116,32 @@ void test_text() {
   assert((na.ends_with(empty)).is_na());
   assert((na.ends_with(na)).is_na());
 
+  assert((ab.contains(ab)).is_true());
+  assert((ab.contains(abc)).is_false());
+  assert((ab.contains(bc)).is_false());
+  assert((ab.contains(empty)).is_true());
+  assert((ab.contains(na)).is_na());
+  assert((abc.contains(ab)).is_true());
+  assert((abc.contains(abc)).is_true());
+  assert((abc.contains(bc)).is_true());
+  assert((abc.contains(empty)).is_true());
+  assert((abc.contains(na)).is_na());
+  assert((bc.contains(ab)).is_false());
+  assert((bc.contains(abc)).is_false());
+  assert((bc.contains(bc)).is_true());
+  assert((bc.contains(empty)).is_true());
+  assert((bc.contains(na)).is_na());
+  assert((empty.contains(ab)).is_false());
+  assert((empty.contains(abc)).is_false());
+  assert((empty.contains(bc)).is_false());
+  assert((empty.contains(empty)).is_true());
+  assert((empty.contains(na)).is_na());
+  assert((na.contains(ab)).is_na());
+  assert((na.contains(abc)).is_na());
+  assert((na.contains(bc)).is_na());
+  assert((na.contains(empty)).is_na());
+  assert((na.contains(na)).is_na());
+
   assert(ab.match(ab));
   assert(!ab.match(abc));
   assert(!ab.match(bc));
