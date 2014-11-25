@@ -57,14 +57,14 @@ class SeparatorNode : public TypedNode<Bool> {
  public:
   explicit SeparatorNode(SorterOrder &&order)
       : TypedNode<Bool>(std::move(order)),
-        prior_value_((order.type == SORTER_REGULAR_ORDER) ?
-                     Bool::false_value() : Bool::true_value()) {}
+        prior_raw_((order.type == SORTER_REGULAR_ORDER) ?
+                   Bool::raw_false() : Bool::raw_true()) {}
   ~SeparatorNode() = default;
 
   void sort(ArrayRef<Record> records, size_t begin, size_t end);
 
  private:
-  uint8_t prior_value_;
+  uint8_t prior_raw_;
 };
 
 void SeparatorNode::sort(ArrayRef<Record> records, size_t begin, size_t end) {
@@ -81,7 +81,7 @@ void SeparatorNode::sort(ArrayRef<Record> records, size_t begin, size_t end) {
       values_[i] = values_[na_offset - 1];
       --na_offset;
     } else {
-      if (values_[i].value() == prior_value_) {
+      if (values_[i].raw() == prior_raw_) {
         std::swap(records[posterior_offset], records[i]);
         ++posterior_offset;
       }
