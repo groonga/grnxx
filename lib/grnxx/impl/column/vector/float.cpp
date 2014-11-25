@@ -56,7 +56,7 @@ void Column<Vector<Float>>::set(Int row_id, const Datum &datum) {
   uint64_t header;
   if (size < 0xFFFF) {
     bodies_.resize(offset + size);
-    std::memcpy(&bodies_[offset], new_value.data(), sizeof(Float) * size);
+    std::memcpy(&bodies_[offset], new_value.raw_data(), sizeof(Float) * size);
     header = (offset << 16) | size;
   } else {
     // The size of a long vector is stored in front of the body.
@@ -66,7 +66,7 @@ void Column<Vector<Float>>::set(Int row_id, const Datum &datum) {
     bodies_.resize(offset + sizeof(uint64_t) + size);
     *reinterpret_cast<uint64_t *>(&bodies_[offset]) = size;
     std::memcpy(&bodies_[offset + sizeof(uint64_t)],
-                new_value.data(), sizeof(Float) * size);
+                new_value.raw_data(), sizeof(Float) * size);
     header = (offset << 16) | 0xFFFF;
   }
   headers_[value_id] = header;

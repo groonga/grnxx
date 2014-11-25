@@ -33,7 +33,7 @@ class Vector<Float> {
   const Float &operator[](size_t i) const {
     return data_[i];
   }
-  constexpr const Float *data() const {
+  constexpr const Float *raw_data() const {
     return data_;
   }
   constexpr Int size() const {

@@ -31,7 +31,7 @@ class Vector<Int> {
   const Int &operator[](size_t i) const {
     return data_[i];
   }
-  constexpr const Int *data() const {
+  constexpr const Int *raw_data() const {
     return data_;
   }
   constexpr Int size() const {

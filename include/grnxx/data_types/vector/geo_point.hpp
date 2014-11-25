@@ -33,7 +33,7 @@ class Vector<GeoPoint> {
   const GeoPoint &operator[](size_t i) const {
     return data_[i];
   }
-  constexpr const GeoPoint *data() const {
+  constexpr const GeoPoint *raw_data() const {
     return data_;
   }
   constexpr Int size() const {
