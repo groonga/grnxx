@@ -45,7 +45,7 @@ class Column<Float> : public ColumnBase {
   // On failure, throws an exception.
   void read(ArrayCRef<Record> records, ArrayRef<Float> values) const;
 
- protected:
+ private:
   Array<Float> values_;
 
   // Return the active column size.

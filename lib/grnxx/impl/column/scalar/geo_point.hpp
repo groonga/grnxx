@@ -45,7 +45,7 @@ class Column<GeoPoint> : public ColumnBase {
   // On failure, throws an exception.
   void read(ArrayCRef<Record> records, ArrayRef<GeoPoint> values) const;
 
- protected:
+ private:
   Array<GeoPoint> values_;
 
   // Return the active column size.
