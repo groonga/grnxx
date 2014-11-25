@@ -17,7 +17,7 @@ inline constexpr Float Int::to_float() const {
 //       results in the value associated with N/A (0x80...).
 //       The CVTTSD2SI instruction of x86_64 works as mentioned.
 inline constexpr Int Float::to_int() const {
-  return Int(static_cast<int64_t>(value_));
+  return Int(static_cast<int64_t>(raw_));
 }
 
 }  // namespace grnxx

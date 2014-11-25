@@ -54,7 +54,7 @@ class Vector<Float> {
     if (has_equal_size.is_true()) {
       size_t size = size_.raw();
       for (size_t i = 0; i < size; ++i) {
-        if ((data_[i].value() != rhs.data_[i].value()) &&
+        if ((data_[i].raw() != rhs.data_[i].raw()) &&
             (!data_[i].is_na() || !rhs.data_[i].is_na())) {
           return Bool(false);
         }
@@ -68,7 +68,7 @@ class Vector<Float> {
     if (has_not_equal_size.is_false()) {
       size_t size = size_.raw();
       for (size_t i = 0; i < size; ++i) {
-        if ((data_[i].value() != rhs.data_[i].value()) &&
+        if ((data_[i].raw() != rhs.data_[i].raw()) &&
             (!data_[i].is_na() || !rhs.data_[i].is_na())) {
           return Bool(true);
         }

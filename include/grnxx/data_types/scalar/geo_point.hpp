@@ -22,7 +22,7 @@ class GeoPoint {
   GeoPoint(const GeoPoint &) = default;
   GeoPoint &operator=(const GeoPoint &) = default;
 
-  // NOTE: The following implementation assumes that Int::na()::value() returns
+  // NOTE: The following implementation assumes that Int::na()::raw() returns
   //       a value less than min_latitude/longitude() or greater than
   //       max_latitude/longitude().
   GeoPoint(Int latitude_in_milliseconds, Int longitude_in_milliseconds)
@@ -48,12 +48,12 @@ class GeoPoint {
       : latitude_(),
         longitude_() {
     // N/A (NaN) is rejected due to LOGICAL_AND.
-    if ((latitude_in_degrees.value() >= -90.0) &&
-        (latitude_in_degrees.value() <= 90.0) &&
-        (longitude_in_degrees.value() >= -180.0) &&
-        (longitude_in_degrees.value() <= 180.0)) {
-      int64_t latitude = latitude_in_degrees.value() * 60 * 60 * 1000;
-      int64_t longitude = longitude_in_degrees.value() * 60 * 60 * 1000;
+    if ((latitude_in_degrees.raw() >= -90.0) &&
+        (latitude_in_degrees.raw() <= 90.0) &&
+        (longitude_in_degrees.raw() >= -180.0) &&
+        (longitude_in_degrees.raw() <= 180.0)) {
+      int64_t latitude = latitude_in_degrees.raw() * 60 * 60 * 1000;
+      int64_t longitude = longitude_in_degrees.raw() * 60 * 60 * 1000;
       if ((latitude == min_latitude()) || (latitude == max_latitude())) {
         longitude = 0;
       } else if (longitude == max_longitude()) {

@@ -22,27 +22,27 @@ class Float {
 
   // TODO: +/-0.0 and NaN may be normalized.
   //       -0.0 to +0.0 and various NaN to the quiet NaN.
-  explicit constexpr Float(double value) : value_(value) {}
-  explicit constexpr Float(NA) : value_(na_value()) {}
+  explicit constexpr Float(double raw) : raw_(raw) {}
+  explicit constexpr Float(NA) : raw_(raw_na()) {}
 
-  constexpr double value() const {
-    return value_;
+  constexpr double raw() const {
+    return raw_;
   }
 
   constexpr bool is_min() const {
-    return value_ == min_value();
+    return raw_ == raw_min();
   }
   constexpr bool is_max() const {
-    return value_ == max_value();
+    return raw_ == raw_max();
   }
   constexpr bool is_finite() const {
-    return std::isfinite(value_);
+    return std::isfinite(raw_);
   }
   constexpr bool is_infinite() const {
-    return std::isinf(value_);
+    return std::isinf(raw_);
   }
   constexpr bool is_na() const {
-    return std::isnan(value_);
+    return std::isnan(raw_);
   }
 
   // -- Unary operators --
@@ -51,7 +51,7 @@ class Float {
     return *this;
   }
   constexpr Float operator-() const {
-    return Float(-value_);
+    return Float(-raw_);
   }
 
   // -- Binary operators --
@@ -59,73 +59,73 @@ class Float {
   // -- Arithmetic operators --
 
   constexpr Float operator+(Float rhs) const {
-    return Float(value_ + rhs.value_);
+    return Float(raw_ + rhs.raw_);
   }
   constexpr Float operator-(Float rhs) const {
-    return Float(value_ - rhs.value_);
+    return Float(raw_ - rhs.raw_);
   }
   constexpr Float operator*(Float rhs) const {
-    return Float(value_ * rhs.value_);
+    return Float(raw_ * rhs.raw_);
   };
   constexpr Float operator/(Float rhs) const {
-    return Float(value_ / rhs.value_);
+    return Float(raw_ / rhs.raw_);
   }
   Float operator%(Float rhs) const {
-    return Float(std::fmod(value_, rhs.value_));
+    return Float(std::fmod(raw_, rhs.raw_));
   }
 
   Float &operator+=(Float rhs) & {
-    value_ += rhs.value_;
+    raw_ += rhs.raw_;
     return *this;
   }
   Float &operator-=(Float rhs) & {
-    value_ -= rhs.value_;
+    raw_ -= rhs.raw_;
     return *this;
   }
   Float &operator*=(Float rhs) & {
-    value_ *= rhs.value_;
+    raw_ *= rhs.raw_;
     return *this;
   }
   Float &operator/=(Float rhs) &{
-    value_ /= rhs.value_;
+    raw_ /= rhs.raw_;
     return *this;
   }
   Float &operator%=(Float rhs) &{
-    value_ = std::fmod(value_, rhs.value_);
+    raw_ = std::fmod(raw_, rhs.raw_);
     return *this;
   }
 
   // -- Comparison operators --
 
   constexpr Bool operator==(Float rhs) const {
-    return (is_na() || rhs.is_na()) ? Bool::na() : Bool(value_ == rhs.value_);
+    return (is_na() || rhs.is_na()) ? Bool::na() : Bool(raw_ == rhs.raw_);
   }
   constexpr Bool operator!=(Float rhs) const {
-    return (is_na() || rhs.is_na()) ? Bool::na() : Bool(value_ != rhs.value_);
+    return (is_na() || rhs.is_na()) ? Bool::na() : Bool(raw_ != rhs.raw_);
   }
   constexpr Bool operator<(Float rhs) const {
-    return (is_na() || rhs.is_na()) ? Bool::na() : Bool(value_ < rhs.value_);
+    return (is_na() || rhs.is_na()) ? Bool::na() : Bool(raw_ < rhs.raw_);
   }
   constexpr Bool operator>(Float rhs) const {
-    return (is_na() || rhs.is_na()) ? Bool::na() : Bool(value_ > rhs.value_);
+    return (is_na() || rhs.is_na()) ? Bool::na() : Bool(raw_ > rhs.raw_);
   }
   constexpr Bool operator<=(Float rhs) const {
-    return (is_na() || rhs.is_na()) ? Bool::na() : Bool(value_ <= rhs.value_);
+    return (is_na() || rhs.is_na()) ? Bool::na() : Bool(raw_ <= rhs.raw_);
   }
   constexpr Bool operator>=(Float rhs) const {
-    return (is_na() || rhs.is_na()) ? Bool::na() : Bool(value_ >= rhs.value_);
+    return (is_na() || rhs.is_na()) ? Bool::na() : Bool(raw_ >= rhs.raw_);
   }
 
   constexpr bool match(Float rhs) const {
-    return (is_na() && rhs.is_na()) || (value_ == rhs.value_);
+    return (is_na() && rhs.is_na()) || (raw_ == rhs.raw_);
   }
   constexpr bool unmatch(Float rhs) const {
-    return !(is_na() && rhs.is_na()) && (value_ != rhs.value_);
+    return !(is_na() && rhs.is_na()) && (raw_ != rhs.raw_);
   }
 
   // Return the next representable toward "to".
   Float next_toward(Float to) const {
-    return Float(std::nextafter(value_, to.value_));
+    return Float(std::nextafter(raw_, to.raw_));
   }
 
   // -- Typecast (grnxx/data_types/typecast.hpp) --
@@ -137,45 +137,45 @@ class Float {
   }
 
   static constexpr Float min() {
-    return Float(min_value());
+    return Float(raw_min());
   }
   static constexpr Float max() {
-    return Float(max_value());
+    return Float(raw_max());
   }
   static constexpr Float normal_min() {
-    return Float(normal_min_value());
+    return Float(raw_normal_min());
   }
   static constexpr Float subnormal_min() {
-    return Float(subnormal_min_value());
+    return Float(raw_subnormal_min());
   }
   static constexpr Float infinity() {
-    return Float(infinity_value());
+    return Float(raw_infinity());
   }
   static constexpr Float na() {
     return Float(NA());
   }
 
-  static constexpr double min_value() {
+  static constexpr double raw_min() {
     return std::numeric_limits<double>::lowest();
   }
-  static constexpr double max_value() {
+  static constexpr double raw_max() {
     return std::numeric_limits<double>::max();
   }
-  static constexpr double normal_min_value() {
+  static constexpr double raw_normal_min() {
     return std::numeric_limits<double>::min();
   }
-  static constexpr double subnormal_min_value() {
+  static constexpr double raw_subnormal_min() {
     return std::numeric_limits<double>::denorm_min();
   }
-  static constexpr double infinity_value() {
+  static constexpr double raw_infinity() {
     return std::numeric_limits<double>::infinity();
   }
-  static constexpr double na_value() {
+  static constexpr double raw_na() {
     return std::numeric_limits<double>::quiet_NaN();
   }
 
  private:
-  double value_;
+  double raw_;
 };
 
 }  // namespace grnxx
