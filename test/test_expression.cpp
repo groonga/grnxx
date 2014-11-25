@@ -2617,7 +2617,7 @@ void test_subexpression() {
     size_t row_id = records[i].row_id.raw();
     const auto ref_vector_value = test.ref_vector_values[row_id];
     assert(int_vector_results[i].size().match(ref_vector_value.size()));
-    size_t value_size = ref_vector_value.size().raw();
+    size_t value_size = ref_vector_value.raw_size();
     for (size_t j = 0; j < value_size; ++j) {
       grnxx::Int ref_value = ref_vector_value[j];
       const auto int_value = test.int_values[ref_value.raw()];
