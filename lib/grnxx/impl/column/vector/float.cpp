@@ -37,7 +37,7 @@ void Column<Vector<Float>>::set(Int row_id, const Datum &datum) {
 //      indexes_[i]->remove(row_id, old_value);
 //    }
   }
-  size_t value_id = row_id.value();
+  size_t value_id = row_id.raw();
   if (value_id >= headers_.size()) {
     headers_.resize(value_id + 1, na_header());
   }
@@ -52,7 +52,7 @@ void Column<Vector<Float>>::set(Int row_id, const Datum &datum) {
 //  }
   // TODO: Error handling.
   size_t offset = bodies_.size();
-  size_t size = new_value.size().value();
+  size_t size = new_value.size().raw();
   uint64_t header;
   if (size < 0xFFFF) {
     bodies_.resize(offset + size);
@@ -73,7 +73,7 @@ void Column<Vector<Float>>::set(Int row_id, const Datum &datum) {
 }
 
 void Column<Vector<Float>>::get(Int row_id, Datum *datum) const {
-  size_t value_id = row_id.value();
+  size_t value_id = row_id.raw();
   if (value_id >= headers_.size()) {
     *datum = Vector<Float>::na();
   } else {
@@ -131,7 +131,7 @@ void Column<Vector<Float>>::unset(Int row_id) {
 //    for (size_t i = 0; i < num_indexes(); ++i) {
 //      indexes_[i]->remove(row_id, value);
 //    }
-    headers_[row_id.value()] = na_header();
+    headers_[row_id.raw()] = na_header();
   }
 }
 
@@ -149,7 +149,7 @@ size_t Column<Vector<Float>>::get_valid_size() const {
   if (table_->max_row_id().is_na()) {
     return 0;
   }
-  size_t table_size = table_->max_row_id().value() + 1;
+  size_t table_size = table_->max_row_id().raw() + 1;
   if (table_size < headers_.size()) {
     return table_size;
   }

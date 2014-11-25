@@ -34,7 +34,7 @@ class Column<GeoPoint> : public ColumnBase {
   // If "row_id" is valid, returns the stored value.
   // If "row_id" is invalid, returns N/A.
   GeoPoint get(Int row_id) const {
-    size_t value_id = row_id.value();
+    size_t value_id = row_id.raw();
     if (value_id >= values_.size()) {
       return GeoPoint::na();
     }

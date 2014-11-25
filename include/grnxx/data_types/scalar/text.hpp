@@ -40,7 +40,7 @@ class Text {
   }
 
   constexpr bool is_empty() const {
-    return size_.value() == 0;
+    return size_.raw() == 0;
   }
   constexpr bool is_na() const {
     return size_.is_na();
@@ -49,14 +49,14 @@ class Text {
   Bool operator==(const Text &rhs) const {
     Bool has_equal_size = (size_ == rhs.size_);
     if (has_equal_size.is_true()) {
-      return Bool(std::memcmp(data_, rhs.data_, size_.value()) == 0);
+      return Bool(std::memcmp(data_, rhs.data_, size_.raw()) == 0);
     }
     return has_equal_size;
   }
   Bool operator!=(const Text &rhs) const {
     Bool has_not_equal_size = (size_ != rhs.size_);
     if (has_not_equal_size.is_false()) {
-      return Bool(std::memcmp(data_, rhs.data_, size_.value()) != 0);
+      return Bool(std::memcmp(data_, rhs.data_, size_.raw()) != 0);
     }
     return has_not_equal_size;
   }
@@ -66,7 +66,7 @@ class Text {
       return Bool::na();
     }
     size_t min_size = has_less_size.is_true() ?
-                      size_.value() : rhs.size_.value();
+                      size_.raw() : rhs.size_.raw();
     int data_result = std::memcmp(data_, rhs.data_, min_size);
     return (data_result < 0) ? Bool(true) :
            ((data_result == 0) ? has_less_size : Bool(false));
@@ -80,7 +80,7 @@ class Text {
       return Bool::na();
     }
     size_t min_size = has_less_or_equal_size.is_true() ?
-                      size_.value() : rhs.size_.value();
+                      size_.raw() : rhs.size_.raw();
     int data_result = std::memcmp(data_, rhs.data_, min_size);
     return (data_result < 0) ? Bool(true) :
            ((data_result == 0) ? has_less_or_equal_size : Bool(false));
@@ -92,15 +92,15 @@ class Text {
   Bool starts_with(const Text &rhs) const {
     Bool has_greater_or_equal_size = (size_ >= rhs.size_);
     if (has_greater_or_equal_size.is_true()) {
-      return Bool(std::memcmp(data_, rhs.data_, rhs.size_.value()) == 0);
+      return Bool(std::memcmp(data_, rhs.data_, rhs.size_.raw()) == 0);
     }
     return has_greater_or_equal_size;
   }
   Bool ends_with(const Text &rhs) const {
     Bool has_greater_or_equal_size = (size_ >= rhs.size_);
     if (has_greater_or_equal_size.is_true()) {
-      return Bool(std::memcmp(data_ + size_.value() - rhs.size_.value(),
-                              rhs.data_, rhs.size_.value()) == 0);
+      return Bool(std::memcmp(data_ + size_.raw() - rhs.size_.raw(),
+                              rhs.data_, rhs.size_.raw()) == 0);
     }
     return has_greater_or_equal_size;
   }
@@ -112,7 +112,7 @@ class Text {
     if (is_na()) {
       return true;
     }
-    return std::memcmp(data_, rhs.data_, size_.value()) == 0;
+    return std::memcmp(data_, rhs.data_, size_.raw()) == 0;
   }
   bool unmatch(const Text &rhs) const {
     if (size_.unmatch(rhs.size_)) {
@@ -121,7 +121,7 @@ class Text {
     if (is_na()) {
       return false;
     }
-    return std::memcmp(data_, rhs.data_, size_.value()) != 0;
+    return std::memcmp(data_, rhs.data_, size_.raw()) != 0;
   }
 
   static constexpr DataType type() {

@@ -22,11 +22,11 @@ class Vector<Int> {
   explicit constexpr Vector(NA) : data_(nullptr), size_(NA()) {}
 
   Int operator[](Int i) const {
-    if (is_na() || (static_cast<uint64_t>(i.value()) >=
-                    static_cast<uint64_t>(size_.value()))) {
+    if (is_na() || (static_cast<uint64_t>(i.raw()) >=
+                    static_cast<uint64_t>(size_.raw()))) {
       return Int::na();
     }
-    return data_[i.value()];
+    return data_[i.raw()];
   }
   // TODO: To be removed.
   const Int &operator[](size_t i) const {
@@ -40,7 +40,7 @@ class Vector<Int> {
   }
 
   constexpr bool is_empty() const {
-    return size_.value() == 0;
+    return size_.raw() == 0;
   }
   constexpr bool is_na() const {
     return size_.is_na();
@@ -51,7 +51,7 @@ class Vector<Int> {
     Bool has_equal_size = (size_ == rhs.size_);
     if (has_equal_size.is_true()) {
       return Bool(std::memcmp(data_, rhs.data_,
-                              sizeof(Int) * size_.value()) == 0);
+                              sizeof(Int) * size_.raw()) == 0);
     }
     return has_equal_size;
   }
@@ -60,7 +60,7 @@ class Vector<Int> {
     Bool has_not_equal_size = (size_ != rhs.size_);
     if (has_not_equal_size.is_false()) {
       return Bool(std::memcmp(data_, rhs.data_,
-                              sizeof(Int) * size_.value()) != 0);
+                              sizeof(Int) * size_.raw()) != 0);
     }
     return has_not_equal_size;
   }
@@ -72,7 +72,7 @@ class Vector<Int> {
     if (is_na()) {
       return true;
     }
-    return std::memcmp(data_, rhs.data_, sizeof(Int) * size_.value()) == 0;
+    return std::memcmp(data_, rhs.data_, sizeof(Int) * size_.raw()) == 0;
   }
   bool unmatch(const Vector &rhs) const {
     if (size_.unmatch(rhs.size_)) {
@@ -81,7 +81,7 @@ class Vector<Int> {
     if (is_na()) {
       return false;
     }
-    return std::memcmp(data_, rhs.data_, sizeof(Int) * size_.value()) != 0;
+    return std::memcmp(data_, rhs.data_, sizeof(Int) * size_.raw()) != 0;
   }
 
   static constexpr DataType type() {

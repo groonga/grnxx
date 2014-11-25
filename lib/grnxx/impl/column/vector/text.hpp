@@ -35,7 +35,7 @@ class Column<Vector<Text>> : public ColumnBase {
   //
   // TODO: Vector cannot reuse allocated memory because of this interface.
   Vector<Text> get(Int row_id) const {
-    size_t value_id = row_id.value();
+    size_t value_id = row_id.raw();
     if (value_id >= headers_.size()) {
       return Vector<Text>::na();
     }

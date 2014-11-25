@@ -28,8 +28,8 @@ class GeoPoint {
   GeoPoint(Int latitude_in_milliseconds, Int longitude_in_milliseconds)
       : latitude_(),
         longitude_() {
-    int64_t latitude = latitude_in_milliseconds.value();
-    int64_t longitude = longitude_in_milliseconds.value();
+    int64_t latitude = latitude_in_milliseconds.raw();
+    int64_t longitude = longitude_in_milliseconds.raw();
     if ((latitude >= min_latitude()) && (latitude <= max_latitude()) &&
         (longitude >= min_longitude()) && (longitude <= max_longitude())) {
       if ((latitude == min_latitude()) || (latitude == max_latitude())) {

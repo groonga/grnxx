@@ -9,7 +9,7 @@
 namespace grnxx {
 
 inline constexpr Float Int::to_float() const {
-  return is_na() ? Float::na() : Float(static_cast<double>(value_));
+  return is_na() ? Float::na() : Float(static_cast<double>(raw_));
 }
 
 // NOTE: This implementation assumes that an integer overflow in conversion

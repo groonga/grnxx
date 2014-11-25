@@ -38,7 +38,7 @@ class Column<Vector<GeoPoint>> : public ColumnBase {
   //
   // TODO: Vector cannot reuse allocated memory because of this interface.
   Vector<GeoPoint> get(Int row_id) const {
-    size_t value_id = row_id.value();
+    size_t value_id = row_id.raw();
     if (value_id >= headers_.size()) {
       return Vector<GeoPoint>::na();
     }

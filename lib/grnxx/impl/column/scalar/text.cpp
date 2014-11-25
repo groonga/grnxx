@@ -46,7 +46,7 @@ void Column<Text>::set(Int row_id, const Datum &datum) {
 //      indexes_[i]->remove(row_id, old_value);
 //    }
   }
-  size_t value_id = row_id.value();
+  size_t value_id = row_id.raw();
   if (value_id >= headers_.size()) {
     headers_.resize(value_id + 1, na_header());
   }
@@ -61,7 +61,7 @@ void Column<Text>::set(Int row_id, const Datum &datum) {
 //  }
   // TODO: Error handling.
   size_t offset = bodies_.size();
-  size_t size = new_value.size().value();
+  size_t size = new_value.size().raw();
   uint64_t header;
   if (size < 0xFFFF) {
     bodies_.resize(offset + size);
@@ -133,7 +133,7 @@ void Column<Text>::set(Int row_id, const Datum &datum) {
 //}
 
 void Column<Text>::get(Int row_id, Datum *datum) const {
-  size_t value_id = row_id.value();
+  size_t value_id = row_id.raw();
   if (value_id >= headers_.size()) {
     *datum = Text::na();
   } else {
@@ -231,16 +231,11 @@ void Column<Text>::set_key_attribute() {
   }
   // TODO: An index should be used if available.
   std::set<String> set;
-  size_t size = headers_.size();
-  if (table_->max_row_id().is_na()) {
-    size = 0;
-  } else if (static_cast<size_t>(table_->max_row_id().value()) < size) {
-    size = static_cast<size_t>(table_->max_row_id().value()) + 1;
-  }
-  for (size_t i = 0; i < size; ++i) try {
+  size_t valid_size = get_valid_size();
+  for (size_t i = 0; i < valid_size; ++i) try {
     Text value = get(grnxx::Int(i));
     if (!value.is_na()) {
-      if (!set.insert(String(value.data(), value.size().value())).second) {
+      if (!set.insert(String(value.data(), value.size().raw())).second) {
         throw "Key duplicate";  // TODO
       }
     }
@@ -303,7 +298,7 @@ void Column<Text>::set_key(Int row_id, const Datum &key) {
   if (contains(key)) {
     throw "Key already exists";  // TODO
   }
-  size_t value_id = row_id.value();
+  size_t value_id = row_id.raw();
   if (value_id >= headers_.size()) {
     headers_.resize(value_id + 1, na_header());
   }
@@ -320,7 +315,7 @@ void Column<Text>::set_key(Int row_id, const Datum &key) {
 //  }
   // TODO: Error handling.
   size_t offset = bodies_.size();
-  size_t size = value.size().value();
+  size_t size = value.size().raw();
   uint64_t header;
   if (size < 0xFFFF) {
     bodies_.resize(offset + size);
@@ -396,7 +391,7 @@ void Column<Text>::unset(Int row_id) {
 //    for (size_t i = 0; i < num_indexes(); ++i) {
 //      indexes_[i]->remove(row_id, value);
 //    }
-    headers_[row_id.value()] = na_header();
+    headers_[row_id.raw()] = na_header();
   }
 }
 
@@ -414,7 +409,7 @@ size_t Column<Text>::get_valid_size() const {
   if (table_->max_row_id().is_na()) {
     return 0;
   }
-  size_t table_size = table_->max_row_id().value() + 1;
+  size_t table_size = table_->max_row_id().raw() + 1;
   if (table_size < headers_.size()) {
     return table_size;
   }

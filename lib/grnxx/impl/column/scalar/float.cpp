@@ -33,7 +33,7 @@ void Column<Float>::set(Int row_id, const Datum &datum) {
 //      indexes_[i]->remove(row_id, old_value);
 //    }
   }
-  size_t value_id = row_id.value();
+  size_t value_id = row_id.raw();
   if (value_id >= values_.size()) {
     values_.resize(value_id + 1, Float::na());
   }
@@ -50,7 +50,7 @@ void Column<Float>::set(Int row_id, const Datum &datum) {
 }
 
 void Column<Float>::get(Int row_id, Datum *datum) const {
-  size_t value_id = row_id.value();
+  size_t value_id = row_id.raw();
   if (value_id >= values_.size()) {
     *datum = Float::na();
   } else {
@@ -105,7 +105,7 @@ void Column<Float>::unset(Int row_id) {
 //    for (size_t i = 0; i < num_indexes(); ++i) {
 //      indexes_[i]->remove(row_id, value);
 //    }
-    values_[row_id.value()] = Float::na();
+    values_[row_id.raw()] = Float::na();
   }
 }
 
@@ -123,7 +123,7 @@ size_t Column<Float>::get_valid_size() const {
   if (table_->max_row_id().is_na()) {
     return 0;
   }
-  size_t table_size = table_->max_row_id().value() + 1;
+  size_t table_size = table_->max_row_id().raw() + 1;
   if (table_size < values_.size()) {
     return table_size;
   }

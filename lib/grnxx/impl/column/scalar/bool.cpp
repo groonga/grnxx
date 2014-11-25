@@ -32,7 +32,7 @@ void Column<Bool>::set(Int row_id, const Datum &datum) {
 //      indexes_[i]->remove(row_id, old_value);
 //    }
   }
-  size_t value_id = row_id.value();
+  size_t value_id = row_id.raw();
   if (value_id >= values_.size()) {
     values_.resize(value_id + 1, Bool::na());
   }
@@ -49,7 +49,7 @@ void Column<Bool>::set(Int row_id, const Datum &datum) {
 }
 
 void Column<Bool>::get(Int row_id, Datum *datum) const {
-  size_t value_id = row_id.value();
+  size_t value_id = row_id.raw();
   if (value_id >= values_.size()) {
     *datum = Bool::na();
   } else {
@@ -100,7 +100,7 @@ Int Column<Bool>::find_one(const Datum &datum) const {
 void Column<Bool>::unset(Int row_id) {
   Bool value = get(row_id);
   if (!value.is_na()) {
-    values_[row_id.value()] = Bool::na();
+    values_[row_id.raw()] = Bool::na();
     // TODO: Update indexes if exist.
   }
 }
@@ -119,7 +119,7 @@ size_t Column<Bool>::get_valid_size() const {
   if (table_->max_row_id().is_na()) {
     return 0;
   }
-  size_t table_size = table_->max_row_id().value() + 1;
+  size_t table_size = table_->max_row_id().raw() + 1;
   if (table_size < values_.size()) {
     return table_size;
   }

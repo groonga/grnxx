@@ -101,7 +101,7 @@ std::unique_ptr<Cursor> TableRegularCursor::create(
 TableRegularCursor::TableRegularCursor(const Table *table,
                                        const CursorOptions &options)
     : table_(table),
-      max_row_id_(table->max_row_id().value()),
+      max_row_id_(table->max_row_id().raw()),
       is_full_(table->is_full()),
       offset_left_(options.offset),
       limit_left_(options.limit),
@@ -204,7 +204,7 @@ TableReverseCursor::TableReverseCursor(const Table *table,
       is_full_(table->is_full()),
       offset_left_(options.offset),
       limit_left_(options.limit),
-      next_row_id_(table->max_row_id().value()) {}
+      next_row_id_(table->max_row_id().raw()) {}
 
 // -- Table --
 
@@ -371,7 +371,7 @@ void Table::insert_row_at(Int row_id, const Datum &key) {
   if (test_row(row_id)) {
     throw "Row ID already validated";  // TODO
   }
-  if (row_id.value() < 0) {
+  if (row_id.raw() < 0) {
     throw "Negative row ID";  // TODO
   }
   if (key_column_) {
@@ -476,7 +476,7 @@ Int Table::find_next_row_id() const {
   if (is_empty()) {
     return Int(0);
   } else if (is_full()) {
-    return Int(max_row_id_.value() + 1);
+    return Int(max_row_id_.raw() + 1);
   }
   size_t pos = 0;
   for (size_t i = bitmap_indexes_.size(); i > 0; ) {
@@ -489,11 +489,11 @@ Int Table::find_next_row_id() const {
 
 void Table::reserve_row(Int row_id) {
   // TODO: Define the upper limit for row ID.
-//  if (row_id.value() > MAX_ROW_ID_VALUE) {
+//  if (row_id.raw() > MAX_ROW_ID_VALUE) {
 //    throw "Too large row ID";  // TODO
 //  }
   // Resize the bitmap if required.
-  size_t block_id = static_cast<size_t>(row_id.value()) / 64;
+  size_t block_id = static_cast<size_t>(row_id.raw()) / 64;
   if (block_id >= bitmap_.size()) {
     bitmap_.resize(block_id + 1, 0);
   }
@@ -520,7 +520,7 @@ void Table::reserve_row(Int row_id) {
 
 void Table::validate_row(Int row_id) {
   // Update the bitmap and its indexes.
-  size_t bit_id = static_cast<size_t>(row_id.value());
+  size_t bit_id = static_cast<size_t>(row_id.raw());
   bitmap_[bit_id / 64] |= uint64_t(1) << (bit_id % 64);
   if (bitmap_[bit_id / 64] == ~uint64_t(0)) {
     for (size_t index_id = 0; index_id < bitmap_indexes_.size(); ++index_id) {
@@ -532,7 +532,7 @@ void Table::validate_row(Int row_id) {
     }
   }
   // This works well even if "max_row_id_" is N/A.
-  if (row_id.value() > max_row_id_.value()) {
+  if (row_id.raw() > max_row_id_.raw()) {
     max_row_id_ = row_id;
   }
   ++num_rows_;
@@ -540,7 +540,7 @@ void Table::validate_row(Int row_id) {
 
 void Table::invalidate_row(Int row_id) {
   // Update the bitmap and its indexes.
-  size_t bit_id = static_cast<size_t>(row_id.value());
+  size_t bit_id = row_id.raw();
   bool is_full = (bitmap_[bit_id / 64] == ~uint64_t(0));
   bitmap_[bit_id / 64] &= ~(uint64_t(1) << (bit_id % 64));
   if (is_full) {
@@ -557,8 +557,8 @@ void Table::invalidate_row(Int row_id) {
   --num_rows_;
   if (is_empty()) {
     max_row_id_ = Int::na();
-  } else if (row_id.value() == max_row_id_.value()) {
-    int64_t block_id = (row_id.value() - 1) / 64;
+  } else if (row_id.match(max_row_id_)) {
+    int64_t block_id = (row_id.raw() - 1) / 64;
     while (block_id >= 0) {
       if (bitmap_[block_id] != 0) {
         break;

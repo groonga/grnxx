@@ -21,21 +21,21 @@ class Int {
   constexpr Int(const Int &) = default;
   Int &operator=(const Int &) = default;
 
-  explicit constexpr Int(int64_t value) : value_(value) {}
-  explicit constexpr Int(NA) : value_(na_value()) {}
+  explicit constexpr Int(int64_t raw) : raw_(raw) {}
+  explicit constexpr Int(NA) : raw_(raw_na()) {}
 
-  constexpr int64_t value() const {
-    return value_;
+  constexpr int64_t raw() const {
+    return raw_;
   }
 
   constexpr bool is_min() const {
-    return value_ == min_value();
+    return raw_ == raw_min();
   }
   constexpr bool is_max() const {
-    return value_ == max_value();
+    return raw_ == raw_max();
   }
   constexpr bool is_na() const {
-    return value_ == na_value();
+    return raw_ == raw_na();
   }
 
   // -- Unary operators --
@@ -43,20 +43,20 @@ class Int {
   constexpr Int operator+() const {
     return *this;
   }
-  // NOTE: This implementation assumes that -na_value() returns na_value(),
-  //       although -na_value() in two's complement causes an overflow and
+  // NOTE: This implementation assumes that -raw_na() returns raw_na(),
+  //       although -raw_na() in two's complement causes an overflow and
   //       the behavior is undefined in C/C++.
   //       If this assumption is wrong, N/A must be excluded.
   constexpr Int operator-() const {
-    return Int(-value_);
+    return Int(-raw_);
   }
   constexpr Int operator~() const {
-    return is_na() ? na() : Int(~value_);
+    return is_na() ? na() : Int(~raw_);
   }
 
   Int &operator++() & {
     if (!is_na()) {
-      ++value_;
+      ++raw_;
     }
     return *this;
   }
@@ -64,11 +64,11 @@ class Int {
     if (is_na()) {
       return na();
     }
-    return Int(value_++);
+    return Int(raw_++);
   }
   Int &operator--() & {
     if (!is_na()) {
-      --value_;
+      --raw_;
     }
     return *this;
   }
@@ -76,36 +76,36 @@ class Int {
     if (is_na()) {
       return na();
     }
-    return Int(value_--);
+    return Int(raw_--);
   }
 
   // -- Binary operators --
 
   constexpr Int operator&(Int rhs) const {
-    return (is_na() || rhs.is_na()) ? na() : Int(value_ & rhs.value_);
+    return (is_na() || rhs.is_na()) ? na() : Int(raw_ & rhs.raw_);
   }
   constexpr Int operator|(Int rhs) const {
-    return (is_na() || rhs.is_na()) ? na() : Int(value_ | rhs.value_);
+    return (is_na() || rhs.is_na()) ? na() : Int(raw_ | rhs.raw_);
   }
   constexpr Int operator^(Int rhs) const {
-    return (is_na() || rhs.is_na()) ? na() : Int(value_ ^ rhs.value_);
+    return (is_na() || rhs.is_na()) ? na() : Int(raw_ ^ rhs.raw_);
   }
 
   Int &operator&=(Int rhs) & {
     if (!is_na()) {
-      value_ = rhs.is_na() ? na_value() : (value_ & rhs.value_);
+      raw_ = rhs.is_na() ? raw_na() : (raw_ & rhs.raw_);
     }
     return *this;
   }
   Int &operator|=(Int rhs) & {
     if (!is_na()) {
-      value_ = rhs.is_na() ? na_value() : (value_ | rhs.value_);
+      raw_ = rhs.is_na() ? raw_na() : (raw_ | rhs.raw_);
     }
     return *this;
   }
   Int &operator^=(Int rhs) & {
     if (!is_na()) {
-      value_ = rhs.is_na() ? na_value() : (value_ ^ rhs.value_);
+      raw_ = rhs.is_na() ? raw_na() : (raw_ ^ rhs.raw_);
     }
     return *this;
   }
@@ -114,8 +114,8 @@ class Int {
 
   constexpr Int operator<<(Int rhs) const {
     return (is_na() || rhs.is_na() ||
-            (static_cast<uint64_t>(rhs.value_) >= 64)) ?
-           na() : Int(value_ << rhs.value_);
+            (static_cast<uint64_t>(rhs.raw_) >= 64)) ?
+             na() : Int(raw_ << rhs.raw_);
   }
   // NOTE: This is an arithmetic shift.
   constexpr Int operator>>(Int rhs) const {
@@ -124,10 +124,10 @@ class Int {
 
   Int &operator<<=(Int rhs) & {
     if (!is_na()) {
-      if (rhs.is_na() || (static_cast<uint64_t>(rhs.value_) >= 64)) {
-        value_ = na_value();
+      if (rhs.is_na() || (static_cast<uint64_t>(rhs.raw_) >= 64)) {
+        raw_ = raw_na();
       } else {
-        value_ <<= rhs.value_;
+        raw_ <<= rhs.raw_;
       }
     }
     return *this;
@@ -135,10 +135,10 @@ class Int {
   // NOTE: This is an arithmetic shift.
   Int &operator>>=(Int rhs) & {
     if (!is_na()) {
-      if (rhs.is_na() || (static_cast<uint64_t>(rhs.value_) >= 64)) {
-        value_ = na_value();
+      if (rhs.is_na() || (static_cast<uint64_t>(rhs.raw_) >= 64)) {
+        raw_ = raw_na();
       } else {
-        value_ >>= rhs.value_;
+        raw_ >>= rhs.raw_;
       }
     }
     return *this;
@@ -146,13 +146,13 @@ class Int {
 
   constexpr Int arithmetic_right_shift(Int rhs) const {
     return (is_na() || rhs.is_na() ||
-            (static_cast<uint64_t>(rhs.value_) >= 64)) ?
-           na() : Int(value_ >> rhs.value_);
+            (static_cast<uint64_t>(rhs.raw_) >= 64)) ?
+           na() : Int(raw_ >> rhs.raw_);
   }
   constexpr Int logical_right_shift(Int rhs) const {
     return (is_na() || rhs.is_na() ||
-            (static_cast<uint64_t>(rhs.value_) >= 64)) ?
-           na() : Int(static_cast<uint64_t>(value_) >> rhs.value_);
+            (static_cast<uint64_t>(rhs.raw_) >= 64)) ?
+           na() : Int(static_cast<uint64_t>(raw_) >> rhs.raw_);
   }
 
   // -- Arithmetic operators --
@@ -168,12 +168,12 @@ class Int {
     return multiply(*this, rhs);
   };
   Int operator/(Int rhs) const {
-    return (is_na() || rhs.is_na() || (rhs.value_ == 0)) ?
-           na() : Int(value_ / rhs.value_);
+    return (is_na() || rhs.is_na() || (rhs.raw_ == 0)) ?
+           na() : Int(raw_ / rhs.raw_);
   }
   Int operator%(Int rhs) const {
-    return (is_na() || rhs.is_na() || (rhs.value_ == 0)) ?
-           na() : Int(value_ % rhs.value_);
+    return (is_na() || rhs.is_na() || (rhs.raw_ == 0)) ?
+           na() : Int(raw_ % rhs.raw_);
   }
 
   Int &operator+=(Int rhs) & {
@@ -187,15 +187,13 @@ class Int {
   }
   Int &operator/=(Int rhs) &{
     if (!is_na()) {
-      value_ = (rhs.is_na() || (rhs.value_ == 0)) ?
-               na_value() : (value_ / rhs.value_);
+      raw_ = (rhs.is_na() || (rhs.raw_ == 0)) ? raw_na() : (raw_ / rhs.raw_);
     }
     return *this;
   }
   Int &operator%=(Int rhs) &{
     if (!is_na()) {
-      value_ = (rhs.is_na() || (rhs.value_ == 0)) ?
-               na_value() : (value_ % rhs.value_);
+      raw_ = (rhs.is_na() || (rhs.raw_ == 0)) ? raw_na() : (raw_ % rhs.raw_);
     }
     return *this;
   }
@@ -203,29 +201,29 @@ class Int {
   // -- Comparison operators --
 
   constexpr Bool operator==(Int rhs) const {
-    return (is_na() || rhs.is_na()) ? Bool::na() : Bool(value_ == rhs.value_);
+    return (is_na() || rhs.is_na()) ? Bool::na() : Bool(raw_ == rhs.raw_);
   }
   constexpr Bool operator!=(Int rhs) const {
-    return (is_na() || rhs.is_na()) ? Bool::na() : Bool(value_ != rhs.value_);
+    return (is_na() || rhs.is_na()) ? Bool::na() : Bool(raw_ != rhs.raw_);
   }
   constexpr Bool operator<(Int rhs) const {
-    return (is_na() || rhs.is_na()) ? Bool::na() : Bool(value_ < rhs.value_);
+    return (is_na() || rhs.is_na()) ? Bool::na() : Bool(raw_ < rhs.raw_);
   }
   constexpr Bool operator>(Int rhs) const {
-    return (is_na() || rhs.is_na()) ? Bool::na() : Bool(value_ > rhs.value_);
+    return (is_na() || rhs.is_na()) ? Bool::na() : Bool(raw_ > rhs.raw_);
   }
   constexpr Bool operator<=(Int rhs) const {
-    return (is_na() || rhs.is_na()) ? Bool::na() : Bool(value_ <= rhs.value_);
+    return (is_na() || rhs.is_na()) ? Bool::na() : Bool(raw_ <= rhs.raw_);
   }
   constexpr Bool operator>=(Int rhs) const {
-    return (is_na() || rhs.is_na()) ? Bool::na() : Bool(value_ >= rhs.value_);
+    return (is_na() || rhs.is_na()) ? Bool::na() : Bool(raw_ >= rhs.raw_);
   }
 
   constexpr bool match(Int rhs) const {
-    return value_ == rhs.value_;
+    return raw_ == rhs.raw_;
   }
   constexpr bool unmatch(Int rhs) const {
-    return value_ != rhs.value_;
+    return raw_ != rhs.raw_;
   }
 
   // -- Typecast (grnxx/data_types/typecast.hpp) --
@@ -237,27 +235,27 @@ class Int {
   }
 
   static constexpr Int min() {
-    return Int(min_value());
+    return Int(raw_min());
   }
   static constexpr Int max() {
-    return Int(max_value());
+    return Int(raw_max());
   }
   static constexpr Int na() {
     return Int(NA());
   }
 
-  static constexpr int64_t min_value() {
+  static constexpr int64_t raw_min() {
     return std::numeric_limits<int64_t>::min() + 1;
   }
-  static constexpr int64_t max_value() {
+  static constexpr int64_t raw_max() {
     return std::numeric_limits<int64_t>::max();
   }
-  static constexpr int64_t na_value() {
+  static constexpr int64_t raw_na() {
     return std::numeric_limits<int64_t>::min();
   }
 
  private:
-  int64_t value_;
+  int64_t raw_;
 
 #if defined(GRNXX_GNUC) && defined(GRNXX_X86_64)
   // TODO: Implementations for MSC should be written.
@@ -270,8 +268,8 @@ class Int {
              "JNO GRNXX_INT_ADD_OVERFLOW%=;"
              "MOV %2, %0;"
              "GRNXX_INT_ADD_OVERFLOW%=:"
-             : "+r" (lhs.value_)
-             : "r" (rhs.value_), "r" (na_value())
+             : "+r" (lhs.raw_)
+             : "r" (rhs.raw_), "r" (raw_na())
              : "cc");
     return lhs;
   }
@@ -283,8 +281,8 @@ class Int {
              "JNO GRNXX_INT_SUBTRACT_OVERFLOW%=;"
              "MOV %2, %0;"
              "GRNXX_INT_SUBTRACT_OVERFLOW%=:"
-             : "+r" (lhs.value_)
-             : "r" (rhs.value_), "r" (na_value())
+             : "+r" (lhs.raw_)
+             : "r" (rhs.raw_), "r" (raw_na())
              : "cc");
     return lhs;
   }
@@ -296,8 +294,8 @@ class Int {
              "JNO GRNXX_INT_MULTIPLY_OVERFLOW%=;"
              "MOV %2, %0;"
              "GRNXX_INT_MULTIPLY_OVERFLOW%=:"
-             : "+r" (lhs.value_)
-             : "r" (rhs.value_), "r" (na_value())
+             : "+r" (lhs.raw_)
+             : "r" (rhs.raw_), "r" (raw_na())
              : "cc");
     return lhs;
   }
@@ -311,35 +309,35 @@ class Int {
     if (lhs.is_na() || rhs.is_na()) {
       return na();
     }
-    int64_t result_value = lhs.value_ + rhs.value_;
-    lhs.value_ ^= result_value;
-    rhs.value_ ^= result_value;
-    if (static_cast<uint64_t>(lhs.value_ & rhs.value_) >> 63) {
+    int64_t result_raw = lhs.raw_ + rhs.raw_;
+    lhs.raw_ ^= result_raw;
+    rhs.raw_ ^= result_raw;
+    if (static_cast<uint64_t>(lhs.raw_ & rhs.raw_) >> 63) {
       return na();
     }
-    return Int(result_value);
+    return Int(result_raw);
   }
   static Int subtract(Int lhs, Int rhs) {
     if (lhs.is_na() || rhs.is_na()) {
       return na();
     }
-    int64_t result_value = lhs.value_ - rhs.value_;
-    lhs.value_ ^= result_value;
-    rhs.value_ ^= result_value;
-    if (static_cast<uint64_t>(lhs.value_ & rhs.value_) >> 63) {
+    int64_t result_raw = lhs.raw_ - rhs.raw_;
+    lhs.raw_ ^= result_raw;
+    rhs.raw_ ^= result_raw;
+    if (static_cast<uint64_t>(lhs.raw_ & rhs.raw_) >> 63) {
       return na();
     }
-    return Int(result_value);
+    return Int(result_raw);
   }
   static Int multiply(Int lhs, Int rhs) {
     if (lhs.is_na() || rhs.is_na()) {
       return na();
     }
-    if (rhs.value_ == 0) {
+    if (rhs.raw_ == 0) {
       return Int(0);
     }
-    int64_t result = lhs.value_ * rhs.value_;
-    if ((result / rhs.value_) != lhs.value_) {
+    int64_t result = lhs.raw_ * rhs.raw_;
+    if ((result / rhs.raw_) != lhs.raw_) {
       return na();
     }
     return Int(result);
@@ -350,59 +348,59 @@ class Int {
     if (lhs.is_na() || rhs.is_na()) {
       return na();
     }
-    if (lhs.value_ >= 0) {
-      if (rhs.value_ > (max_value() - lhs.value_)) {
+    if (lhs.raw_ >= 0) {
+      if (rhs.raw_ > (raw_max() - lhs.raw_)) {
         return na();
       }
     } else {
-      if (rhs.value_ < (min_value() - lhs.value_)) {
+      if (rhs.raw_ < (raw_min() - lhs.raw_)) {
         return na();
       }
     }
-    return Int(lhs.value_ + rhs.value_);
+    return Int(lhs.raw_ + rhs.raw_);
   }
   static Int subtract(Int lhs, Int rhs) {
     if (lhs.is_na() || rhs.is_na()) {
       return na();
     }
-    if (rhs.value_ >= 0) {
-      if (lhs.value_ < (min_value() + rhs.value_)) {
+    if (rhs.raw_ >= 0) {
+      if (lhs.raw_ < (raw_min() + rhs.raw_)) {
         return na();
       }
     } else {
-      if (lhs.value_ > (max_value() + rhs.value_)) {
+      if (lhs.raw_ > (raw_max() + rhs.raw_)) {
         return na();
       }
     }
-    return Int(lhs.value_ - rhs.value_);
+    return Int(lhs.raw_ - rhs.raw_);
   }
   static Int multiply(Int lhs, Int rhs) {
     if (lhs.is_na() || rhs.is_na()) {
       return na();
     }
-    if (rhs.value_ == 0) {
+    if (rhs.raw_ == 0) {
       return Int(0);
     }
-    if (lhs.value_ >= 0) {
-      if (rhs.value_ > 0) {
-        if (lhs.value_ > (max_value() / rhs.value_)) {
+    if (lhs.raw_ >= 0) {
+      if (rhs.raw_ > 0) {
+        if (lhs.raw_ > (raw_max() / rhs.raw_)) {
           return na();
         }
       } else {
-        if (lhs.value_ > (min_value() / rhs.value_)) {
+        if (lhs.raw_ > (raw_min() / rhs.raw_)) {
           return na();
         }
       }
-    } else if (rhs.value_ > 0) {
-      if (lhs.value_ < (min_value() / rhs.value_)) {
+    } else if (rhs.raw_ > 0) {
+      if (lhs.raw_ < (raw_min() / rhs.raw_)) {
         return na();
       }
     } else {
-      if (lhs.value_ < (max_value() / rhs.value_)) {
+      if (lhs.raw_ < (raw_max() / rhs.raw_)) {
         return na();
       }
     }
-    return Int(lhs.value_ * rhs.value_);
+    return Int(lhs.raw_ * rhs.raw_);
   }
 # endif  // GRNXX_WRAP_AROUND
 };

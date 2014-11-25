@@ -37,7 +37,7 @@ void Column<Vector<Text>>::set(Int row_id, const Datum &datum) {
 //      indexes_[i]->remove(row_id, old_value);
 //    }
   }
-  size_t value_id = row_id.value();
+  size_t value_id = row_id.raw();
   if (value_id >= headers_.size()) {
     headers_.resize(value_id + 1, na_header());
   }
@@ -51,13 +51,13 @@ void Column<Vector<Text>>::set(Int row_id, const Datum &datum) {
 //    throw;
 //  }
   // TODO: Error handling.
-  size_t new_value_size = new_value.size().value();
+  size_t new_value_size = new_value.size().raw();
   size_t text_headers_offset = text_headers_.size();
   text_headers_.resize(text_headers_offset + new_value_size);
   size_t total_size = 0;
   for (size_t i = 0; i < new_value_size; ++i) {
     if (!new_value[i].is_na()) {
-      total_size += new_value[i].size().value();
+      total_size += new_value[i].size().raw();
     }
   }
   size_t bodies_offset = bodies_.size();
@@ -68,14 +68,14 @@ void Column<Vector<Text>>::set(Int row_id, const Datum &datum) {
     text_headers_[text_headers_offset + i].size = new_value[i].size();
     if (!new_value[i].is_na()) {
       std::memcpy(&bodies_[bodies_offset],
-                  new_value[i].data(), new_value[i].size().value());
-      bodies_offset += new_value[i].size().value();
+                  new_value[i].data(), new_value[i].size().raw());
+      bodies_offset += new_value[i].size().raw();
     }
   }
 }
 
 void Column<Vector<Text>>::get(Int row_id, Datum *datum) const {
-  size_t value_id = row_id.value();
+  size_t value_id = row_id.raw();
   if (value_id >= headers_.size()) {
     *datum = Vector<Text>::na();
   } else {
@@ -133,7 +133,7 @@ void Column<Vector<Text>>::unset(Int row_id) {
 //    for (size_t i = 0; i < num_indexes(); ++i) {
 //      indexes_[i]->remove(row_id, value);
 //    }
-    headers_[row_id.value()] = na_header();
+    headers_[row_id.raw()] = na_header();
   }
 }
 
@@ -151,7 +151,7 @@ size_t Column<Vector<Text>>::get_valid_size() const {
   if (table_->max_row_id().is_na()) {
     return 0;
   }
-  size_t table_size = table_->max_row_id().value() + 1;
+  size_t table_size = table_->max_row_id().raw() + 1;
   if (table_size < headers_.size()) {
     return table_size;
   }

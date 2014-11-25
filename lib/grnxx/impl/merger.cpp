@@ -32,7 +32,7 @@ void AndMerger::finish() {
   }
   std::unordered_map<int64_t, Float> filter;
   for (size_t i = 0; i < filter_records->size(); ++i) try {
-    filter[(*filter_records)[i].row_id.value()] = (*filter_records)[i].score;
+    filter[(*filter_records)[i].row_id.raw()] = (*filter_records)[i].score;
   } catch (const std::bad_alloc &) {
     throw "Memory allocation failed";  // TODO
   }
@@ -40,7 +40,7 @@ void AndMerger::finish() {
   // Filter the stream (the larger input) with the hash table.
   const bool stream_is_1 = (stream_records == input_records_1_);
   for (size_t i = 0; i < stream_records->size(); ++i) {
-    auto it = filter.find((*stream_records)[i].row_id.value());
+    auto it = filter.find((*stream_records)[i].row_id.raw());
     if (it != filter.end()) {
       Record record;
       record.row_id = Int(it->first);
@@ -125,7 +125,7 @@ void OrMerger::finish() {
   }
   std::unordered_map<int64_t, Float> filter;
   for (size_t i = 0; i < filter_records->size(); ++i) try {
-    filter[(*filter_records)[i].row_id.value()] = (*filter_records)[i].score;
+    filter[(*filter_records)[i].row_id.raw()] = (*filter_records)[i].score;
   } catch (const std::bad_alloc &) {
     throw "Memory allocation failed";  // TODO
   }
@@ -135,7 +135,7 @@ void OrMerger::finish() {
   for (size_t i = 0; i < stream_records->size(); ++i) {
     Record record;
     record.row_id = (*stream_records)[i].row_id;
-    auto it = filter.find((*stream_records)[i].row_id.value());
+    auto it = filter.find((*stream_records)[i].row_id.raw());
     if (it == filter.end()) {
       switch (score_operator_type_) {
         case MERGER_SCORE_PLUS: {
@@ -294,7 +294,7 @@ void XorMerger::finish() {
   }
   std::unordered_map<int64_t, Float> filter;
   for (size_t i = 0; i < filter_records->size(); ++i) try {
-    filter[(*filter_records)[i].row_id.value()] = (*filter_records)[i].score;
+    filter[(*filter_records)[i].row_id.raw()] = (*filter_records)[i].score;
   } catch (...) {
     throw "Memory allocation failed";  // TODO
   }
@@ -302,7 +302,7 @@ void XorMerger::finish() {
   // Filter the stream (the larger input) with the hash table.
   const bool stream_is_1 = (stream_records == input_records_1_);
   for (size_t i = 0; i < stream_records->size(); ++i) {
-    auto it = filter.find((*stream_records)[i].row_id.value());
+    auto it = filter.find((*stream_records)[i].row_id.raw());
     if (it != filter.end()) {
       filter.erase(it);
     } else {
@@ -425,7 +425,7 @@ void MinusMerger::finish() {
   }
   std::unordered_map<int64_t, Float> filter;
   for (size_t i = 0; i < filter_records->size(); ++i) try {
-    filter[(*filter_records)[i].row_id.value()] = (*filter_records)[i].score;
+    filter[(*filter_records)[i].row_id.raw()] = (*filter_records)[i].score;
   } catch (...) {
     throw "Memory allocation failed";  // TODO
   }
@@ -434,7 +434,7 @@ void MinusMerger::finish() {
   const bool stream_is_1 = (stream_records == input_records_1_);
   if (stream_is_1) {
     for (size_t i = 0; i < stream_records->size(); ++i) {
-      auto it = filter.find((*stream_records)[i].row_id.value());
+      auto it = filter.find((*stream_records)[i].row_id.raw());
       if (it != filter.end()) {
         continue;
       }
@@ -468,7 +468,7 @@ void MinusMerger::finish() {
     }
   } else {
     for (size_t i = 0; i < stream_records->size(); ++i) {
-      auto it = filter.find((*stream_records)[i].row_id.value());
+      auto it = filter.find((*stream_records)[i].row_id.raw());
       if (it != filter.end()) {
         filter.erase(it);
       }
@@ -534,14 +534,14 @@ void LeftMerger::finish() {
   // Create a hash table from the second input.
   std::unordered_map<int64_t, Float> filter;
   for (size_t i = 0; i < input_records_2_->size(); ++i) {
-    filter[(*input_records_2_)[i].row_id.value()] =
+    filter[(*input_records_2_)[i].row_id.raw()] =
         (*input_records_2_)[i].score;
   }
 
   // Adjust score of the first input.
   for (size_t i = 0; i < input_records_1_->size(); ++i) {
     Record record = input_records_1_->get(i);
-    auto it = filter.find(record.row_id.value());
+    auto it = filter.find(record.row_id.raw());
     if (it != filter.end()) {
       switch (score_operator_type_) {
         case MERGER_SCORE_PLUS: {
@@ -626,7 +626,7 @@ void RightMerger::finish() {
   // Create a hash table from the first input.
   std::unordered_map<int64_t, Float> filter;
   for (size_t i = 0; i < input_records_1_->size(); ++i) {
-    filter[(*input_records_1_)[i].row_id.value()] =
+    filter[(*input_records_1_)[i].row_id.raw()] =
         (*input_records_1_)[i].score;
   }
 
@@ -634,7 +634,7 @@ void RightMerger::finish() {
   for (size_t i = 0; i < input_records_2_->size(); ++i) {
     Record record;
     record.row_id = (*input_records_2_)[i].row_id;
-    auto it = filter.find(record.row_id.value());
+    auto it = filter.find(record.row_id.raw());
     if (it != filter.end()) {
       switch (score_operator_type_) {
         case MERGER_SCORE_PLUS: {

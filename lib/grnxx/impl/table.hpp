@@ -44,7 +44,7 @@ class Table : public TableInterface {
   }
   bool is_full() const {
     return is_empty() ||
-           (num_rows_ == static_cast<size_t>(max_row_id_.value() + 1));
+           (num_rows_ == static_cast<size_t>(max_row_id_.raw() + 1));
   }
 
   ColumnBase *create_column(const String &name,
@@ -69,7 +69,7 @@ class Table : public TableInterface {
   void remove_row(Int row_id);
 
   bool test_row(Int row_id) const {
-    size_t bit_id = static_cast<size_t>(row_id.value());
+    size_t bit_id = row_id.raw();
     size_t block_id = bit_id / 64;
     return (block_id < bitmap_.size()) &&
            ((bitmap_[block_id] & (uint64_t(1) << (bit_id % 64))) != 0);

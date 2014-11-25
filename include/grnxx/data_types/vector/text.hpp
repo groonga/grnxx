@@ -33,15 +33,15 @@ class Vector<Text> {
         data_(nullptr) {}
 
   Text operator[](Int i) const {
-    if (is_na() || (static_cast<uint64_t>(i.value()) >=
-                    static_cast<uint64_t>(size_.value()))) {
+    if (is_na() || (static_cast<uint64_t>(i.raw()) >=
+                    static_cast<uint64_t>(size_.raw()))) {
       return Text::na();
     }
     if (is_direct_) {
-      return data_[i.value()];
+      return data_[i.raw()];
     } else {
-      return Text(&bodies_[headers_[i.value()].offset],
-                  headers_[i.value()].size.value());
+      return Text(&bodies_[headers_[i.raw()].offset],
+                  headers_[i.raw()].size.raw());
     }
   }
   // TODO: To be removed.
@@ -53,7 +53,7 @@ class Vector<Text> {
   }
 
   constexpr bool is_empty() const {
-    return size_.value() == 0;
+    return size_.raw() == 0;
   }
   constexpr bool is_na() const {
     return size_.is_na();
@@ -63,7 +63,7 @@ class Vector<Text> {
   Bool operator==(const Vector &rhs) const {
     Bool has_equal_size = (size_ == rhs.size_);
     if (has_equal_size.is_true()) {
-      size_t size = size_.value();
+      size_t size = size_.raw();
       for (size_t i = 0; i < size; ++i) {
         Text lhs_text = (*this)[grnxx::Int(i)];
         Text rhs_text = rhs[grnxx::Int(i)];
@@ -80,7 +80,7 @@ class Vector<Text> {
   Bool operator!=(const Vector &rhs) const {
     Bool has_not_equal_size = (size_ != rhs.size_);
     if (has_not_equal_size.is_false()) {
-      size_t size = size_.value();
+      size_t size = size_.raw();
       for (size_t i = 0; i < size; ++i) {
         Text lhs_text = (*this)[grnxx::Int(i)];
         Text rhs_text = rhs[grnxx::Int(i)];
@@ -102,7 +102,7 @@ class Vector<Text> {
       return true;
     }
     // TODO: This is because raw values are not normalized.
-    size_t size = size_.value();
+    size_t size = size_.raw();
     for (size_t i = 0; i < size; ++i) {
       // TODO: This can be improved.
       if (operator[](grnxx::Int(i)).unmatch(rhs[grnxx::Int(i)])) {
@@ -119,7 +119,7 @@ class Vector<Text> {
       return false;
     }
     // TODO: This is because raw values are not normalized.
-    size_t size = size_.value();
+    size_t size = size_.raw();
     for (size_t i = 0; i < size; ++i) {
       // TODO: This can be improved.
       if (operator[](grnxx::Int(i)).unmatch(rhs[grnxx::Int(i)])) {

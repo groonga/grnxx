@@ -24,11 +24,11 @@ class Vector<Float> {
   explicit constexpr Vector(NA) : data_(nullptr), size_(NA()) {}
 
   Float operator[](Int i) const {
-    if (is_na() || (static_cast<uint64_t>(i.value()) >=
-                    static_cast<uint64_t>(size_.value()))) {
+    if (is_na() || (static_cast<uint64_t>(i.raw()) >=
+                    static_cast<uint64_t>(size_.raw()))) {
       return Float::na();
     }
-    return data_[i.value()];
+    return data_[i.raw()];
   }
   // TODO: To be removed.
   const Float &operator[](size_t i) const {
@@ -42,7 +42,7 @@ class Vector<Float> {
   }
 
   constexpr bool is_empty() const {
-    return size_.value() == 0;
+    return size_.raw() == 0;
   }
   constexpr bool is_na() const {
     return size_.is_na();
@@ -52,7 +52,7 @@ class Vector<Float> {
   Bool operator==(const Vector &rhs) const {
     Bool has_equal_size = (size_ == rhs.size_);
     if (has_equal_size.is_true()) {
-      size_t size = size_.value();
+      size_t size = size_.raw();
       for (size_t i = 0; i < size; ++i) {
         if ((data_[i].value() != rhs.data_[i].value()) &&
             (!data_[i].is_na() || !rhs.data_[i].is_na())) {
@@ -66,7 +66,7 @@ class Vector<Float> {
   Bool operator!=(const Vector &rhs) const {
     Bool has_not_equal_size = (size_ != rhs.size_);
     if (has_not_equal_size.is_false()) {
-      size_t size = size_.value();
+      size_t size = size_.raw();
       for (size_t i = 0; i < size; ++i) {
         if ((data_[i].value() != rhs.data_[i].value()) &&
             (!data_[i].is_na() || !rhs.data_[i].is_na())) {
@@ -85,7 +85,7 @@ class Vector<Float> {
       return true;
     }
     // TODO: This is because raw values are not normalized.
-    size_t size = size_.value();
+    size_t size = size_.raw();
     for (size_t i = 0; i < size; ++i) {
       if (data_[i].unmatch(rhs.data_[i])) {
         return false;
@@ -101,7 +101,7 @@ class Vector<Float> {
       return false;
     }
     // TODO: This is because raw values are not normalized.
-    size_t size = size_.value();
+    size_t size = size_.raw();
     for (size_t i = 0; i < size; ++i) {
       if (data_[i].unmatch(rhs.data_[i])) {
         return true;

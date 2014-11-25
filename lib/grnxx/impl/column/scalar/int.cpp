@@ -56,7 +56,7 @@ void Column<Int>::set(Int row_id, const Datum &datum) {
 //      indexes_[i]->remove(row_id, old_value);
 //    }
   }
-  size_t value_id = row_id.value();
+  size_t value_id = row_id.raw();
   if (value_id >= values_.size()) {
     values_.resize(value_id + 1, Int::na());
   }
@@ -73,7 +73,7 @@ void Column<Int>::set(Int row_id, const Datum &datum) {
 }
 
 void Column<Int>::get(Int row_id, Datum *datum) const {
-  size_t value_id = row_id.value();
+  size_t value_id = row_id.raw();
   if (value_id >= values_.size()) {
     *datum = Int::na();
   } else {
@@ -162,15 +162,10 @@ void Column<Int>::set_key_attribute() {
 
   // TODO: An index should be used if available.
   std::unordered_set<int64_t> set;
-  size_t size = values_.size();
-  if (table_->max_row_id().is_na()) {
-    size = 0;
-  } else if (static_cast<size_t>(table_->max_row_id().value()) < size) {
-    size = static_cast<size_t>(table_->max_row_id().value()) + 1;
-  }
-  for (size_t i = 0; i < size; ++i) try {
+  size_t valid_size = get_valid_size();
+  for (size_t i = 0; i < valid_size; ++i) try {
     if (!values_[i].is_na()) {
-      if (!set.insert(values_[i].value()).second) {
+      if (!set.insert(values_[i].raw()).second) {
         throw "Key duplicate";  // TODO
       }
     }
@@ -194,7 +189,7 @@ void Column<Int>::set_key(Int row_id, const Datum &key) {
   if (contains(key)) {
     throw "Key already exists";  // TODO
   }
-  size_t value_id = row_id.value();
+  size_t value_id = row_id.raw();
   if (value_id >= values_.size()) {
     values_.resize(value_id + 1, Int::na());
   }
@@ -219,7 +214,7 @@ void Column<Int>::unset(Int row_id) {
 //    for (size_t i = 0; i < num_indexes(); ++i) {
 //      indexes_[i]->remove(row_id, value);
 //    }
-    values_[row_id.value()] = Int::na();
+    values_[row_id.raw()] = Int::na();
   }
 }
 
@@ -283,7 +278,7 @@ size_t Column<Int>::get_valid_size() const {
   if (table_->max_row_id().is_na()) {
     return 0;
   }
-  size_t table_size = table_->max_row_id().value() + 1;
+  size_t table_size = table_->max_row_id().raw() + 1;
   if (table_size < values_.size()) {
     return table_size;
   }

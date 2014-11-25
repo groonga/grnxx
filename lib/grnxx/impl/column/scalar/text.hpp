@@ -42,7 +42,7 @@ class Column<Text> : public ColumnBase {
   //
   // TODO: Text cannot reuse allocated memory because of this interface.
   Text get(Int row_id) const {
-    size_t value_id = row_id.value();
+    size_t value_id = row_id.raw();
     if (value_id >= headers_.size()) {
       return Text::na();
     }
