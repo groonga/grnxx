@@ -105,6 +105,20 @@ class Text {
     return has_greater_or_equal_size;
   }
 
+  Bool contains(const Text &rhs) const {
+    Bool has_greater_or_equal_size = (size_ >= rhs.size_);
+    if (has_greater_or_equal_size.is_true()) {
+      size_t end_offset = raw_size() - rhs.raw_size() + 1;
+      for (size_t offset = 0; offset < end_offset; ++offset) {
+        if (std::memcmp(data_ + offset, rhs.data_, rhs.raw_size()) == 0) {
+          return Bool(true);
+        }
+      }
+      return Bool(false);
+    }
+    return has_greater_or_equal_size;
+  }
+
   bool match(const Text &rhs) const {
     if (size_.unmatch(rhs.size_)) {
       return false;
