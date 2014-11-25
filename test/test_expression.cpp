@@ -2363,6 +2363,102 @@ void test_modulus() {
   }
 }
 
+void test_starts_with() {
+  // Create an object for building expressions.
+  auto builder = grnxx::ExpressionBuilder::create(test.table);
+
+  // Test an expression (Text.starts_with(Text2)).
+  builder->push_column("Text");
+  builder->push_column("Text2");
+  builder->push_operator(grnxx::STARTS_WITH_OPERATOR);
+  auto expression = builder->release();
+
+  auto records = create_input_records();
+
+  grnxx::Array<grnxx::Bool> results;
+  expression->evaluate(records, &results);
+  assert(results.size() == test.table->num_rows());
+  for (size_t i = 0; i < results.size(); ++i) {
+    size_t row_id = records[i].row_id.raw();
+    assert(results[i].match(
+        test.text_values[row_id].starts_with(test.text2_values[row_id])));
+  }
+
+  expression->filter(&records);
+  size_t count = 0;
+  for (size_t i = 0; i < test.text_values.size(); ++i) {
+    if ((test.text_values[i].starts_with(test.text2_values[i])).is_true()) {
+      assert(records[count].row_id.match(grnxx::Int(i)));
+      ++count;
+    }
+  }
+  assert(records.size() == count);
+}
+
+void test_ends_with() {
+  // Create an object for building expressions.
+  auto builder = grnxx::ExpressionBuilder::create(test.table);
+
+  // Test an expression (Text.ends_with(Text2)).
+  builder->push_column("Text");
+  builder->push_column("Text2");
+  builder->push_operator(grnxx::ENDS_WITH_OPERATOR);
+  auto expression = builder->release();
+
+  auto records = create_input_records();
+
+  grnxx::Array<grnxx::Bool> results;
+  expression->evaluate(records, &results);
+  assert(results.size() == test.table->num_rows());
+  for (size_t i = 0; i < results.size(); ++i) {
+    size_t row_id = records[i].row_id.raw();
+    assert(results[i].match(
+        test.text_values[row_id].ends_with(test.text2_values[row_id])));
+  }
+
+  expression->filter(&records);
+  size_t count = 0;
+  for (size_t i = 0; i < test.text_values.size(); ++i) {
+    if ((test.text_values[i].ends_with(test.text2_values[i])).is_true()) {
+      assert(records[count].row_id.match(grnxx::Int(i)));
+      ++count;
+    }
+  }
+  assert(records.size() == count);
+}
+
+void test_contains() {
+  // Create an object for building expressions.
+  auto builder = grnxx::ExpressionBuilder::create(test.table);
+
+  // Test an expression (Text.contains(Text2)).
+  builder->push_column("Text");
+  builder->push_column("Text2");
+  builder->push_operator(grnxx::CONTAINS_OPERATOR);
+  auto expression = builder->release();
+
+  auto records = create_input_records();
+
+  grnxx::Array<grnxx::Bool> results;
+  expression->evaluate(records, &results);
+  assert(results.size() == test.table->num_rows());
+  for (size_t i = 0; i < results.size(); ++i) {
+    size_t row_id = records[i].row_id.raw();
+    assert(results[i].match(
+        test.text_values[row_id].contains(test.text2_values[row_id])));
+  }
+
+  expression->filter(&records);
+  size_t count = 0;
+  for (size_t i = 0; i < test.text_values.size(); ++i) {
+    if ((test.text_values[i].contains(test.text2_values[i])).is_true()) {
+      assert(records[count].row_id.match(grnxx::Int(i)));
+      ++count;
+    }
+  }
+  assert(records.size() == count);
+}
+
 void test_subscript() {
   // Create an object for building expressions.
   auto builder = grnxx::ExpressionBuilder::create(test.table);
@@ -2826,6 +2922,9 @@ int main() {
   test_multiplication();
   test_division();
   test_modulus();
+  test_starts_with();
+  test_ends_with();
+  test_contains();
   test_subscript();
 
   // Subexpression.
