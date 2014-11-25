@@ -35,7 +35,7 @@ void Column<Vector<Int>>::set(Int row_id, const Datum &datum) {
     return;
   }
   if (reference_table_) {
-    size_t new_value_size = new_value.size().raw();
+    size_t new_value_size = new_value.raw_size();
     for (size_t i = 0; i < new_value_size; ++i) {
       if (!reference_table_->test_row(new_value[i])) {
         throw "Invalid reference";  // TODO
@@ -67,7 +67,7 @@ void Column<Vector<Int>>::set(Int row_id, const Datum &datum) {
 //  }
   // TODO: Error handling.
   size_t offset = bodies_.size();
-  size_t size = new_value.size().raw();
+  size_t size = new_value.raw_size();
   uint64_t header;
   if (size < 0xFFFF) {
     bodies_.resize(offset + size);

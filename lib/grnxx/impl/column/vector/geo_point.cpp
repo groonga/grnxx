@@ -52,7 +52,7 @@ void Column<Vector<GeoPoint>>::set(Int row_id, const Datum &datum) {
 //  }
   // TODO: Error handling.
   size_t offset = bodies_.size();
-  size_t size = new_value.size().raw();
+  size_t size = new_value.raw_size();
   uint64_t header;
   if (size < 0xFFFF) {
     bodies_.resize(offset + size);

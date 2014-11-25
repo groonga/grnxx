@@ -51,7 +51,7 @@ void Column<Vector<Text>>::set(Int row_id, const Datum &datum) {
 //    throw;
 //  }
   // TODO: Error handling.
-  size_t new_value_size = new_value.size().raw();
+  size_t new_value_size = new_value.raw_size();
   size_t text_headers_offset = text_headers_.size();
   text_headers_.resize(text_headers_offset + new_value_size);
   size_t total_size = 0;

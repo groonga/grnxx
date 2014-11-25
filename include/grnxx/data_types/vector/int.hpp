@@ -22,8 +22,7 @@ class Vector<Int> {
   explicit constexpr Vector(NA) : data_(nullptr), size_(NA()) {}
 
   Int operator[](Int i) const {
-    if (is_na() || (static_cast<uint64_t>(i.raw()) >=
-                    static_cast<uint64_t>(size_.raw()))) {
+    if (is_na() || (static_cast<size_t>(i.raw()) >= raw_size())) {
       return Int::na();
     }
     return data_[i.raw()];
@@ -38,9 +37,12 @@ class Vector<Int> {
   constexpr Int size() const {
     return size_;
   }
+  constexpr size_t raw_size() const {
+    return size_.raw();
+  }
 
   constexpr bool is_empty() const {
-    return size_.raw() == 0;
+    return raw_size() == 0;
   }
   constexpr bool is_na() const {
     return size_.is_na();
@@ -51,7 +53,7 @@ class Vector<Int> {
     Bool has_equal_size = (size_ == rhs.size_);
     if (has_equal_size.is_true()) {
       return Bool(std::memcmp(data_, rhs.data_,
-                              sizeof(Int) * size_.raw()) == 0);
+                              sizeof(Int) * raw_size()) == 0);
     }
     return has_equal_size;
   }
@@ -60,7 +62,7 @@ class Vector<Int> {
     Bool has_not_equal_size = (size_ != rhs.size_);
     if (has_not_equal_size.is_false()) {
       return Bool(std::memcmp(data_, rhs.data_,
-                              sizeof(Int) * size_.raw()) != 0);
+                              sizeof(Int) * raw_size()) != 0);
     }
     return has_not_equal_size;
   }
@@ -72,7 +74,7 @@ class Vector<Int> {
     if (is_na()) {
       return true;
     }
-    return std::memcmp(data_, rhs.data_, sizeof(Int) * size_.raw()) == 0;
+    return std::memcmp(data_, rhs.data_, sizeof(Int) * raw_size()) == 0;
   }
   bool unmatch(const Vector &rhs) const {
     if (size_.unmatch(rhs.size_)) {
@@ -81,7 +83,7 @@ class Vector<Int> {
     if (is_na()) {
       return false;
     }
-    return std::memcmp(data_, rhs.data_, sizeof(Int) * size_.raw()) != 0;
+    return std::memcmp(data_, rhs.data_, sizeof(Int) * raw_size()) != 0;
   }
 
   static constexpr DataType type() {
@@ -93,6 +95,10 @@ class Vector<Int> {
   }
   static constexpr Vector na() {
     return Vector(NA());
+  }
+
+  static constexpr size_t raw_na_size() {
+    return Int::na().raw();
   }
 
  private:

@@ -24,8 +24,7 @@ class Vector<Float> {
   explicit constexpr Vector(NA) : data_(nullptr), size_(NA()) {}
 
   Float operator[](Int i) const {
-    if (is_na() || (static_cast<uint64_t>(i.raw()) >=
-                    static_cast<uint64_t>(size_.raw()))) {
+    if (is_na() || (static_cast<size_t>(i.raw()) >= raw_size())) {
       return Float::na();
     }
     return data_[i.raw()];
@@ -40,9 +39,12 @@ class Vector<Float> {
   constexpr Int size() const {
     return size_;
   }
+  constexpr size_t raw_size() const {
+    return size_.raw();
+  }
 
   constexpr bool is_empty() const {
-    return size_.raw() == 0;
+    return raw_size() == 0;
   }
   constexpr bool is_na() const {
     return size_.is_na();
@@ -52,7 +54,7 @@ class Vector<Float> {
   Bool operator==(const Vector &rhs) const {
     Bool has_equal_size = (size_ == rhs.size_);
     if (has_equal_size.is_true()) {
-      size_t size = size_.raw();
+      size_t size = raw_size();
       for (size_t i = 0; i < size; ++i) {
         if ((data_[i].raw() != rhs.data_[i].raw()) &&
             (!data_[i].is_na() || !rhs.data_[i].is_na())) {
@@ -66,7 +68,7 @@ class Vector<Float> {
   Bool operator!=(const Vector &rhs) const {
     Bool has_not_equal_size = (size_ != rhs.size_);
     if (has_not_equal_size.is_false()) {
-      size_t size = size_.raw();
+      size_t size = raw_size();
       for (size_t i = 0; i < size; ++i) {
         if ((data_[i].raw() != rhs.data_[i].raw()) &&
             (!data_[i].is_na() || !rhs.data_[i].is_na())) {
@@ -85,7 +87,7 @@ class Vector<Float> {
       return true;
     }
     // TODO: This is because raw values are not normalized.
-    size_t size = size_.raw();
+    size_t size = raw_size();
     for (size_t i = 0; i < size; ++i) {
       if (data_[i].unmatch(rhs.data_[i])) {
         return false;
@@ -101,7 +103,7 @@ class Vector<Float> {
       return false;
     }
     // TODO: This is because raw values are not normalized.
-    size_t size = size_.raw();
+    size_t size = raw_size();
     for (size_t i = 0; i < size; ++i) {
       if (data_[i].unmatch(rhs.data_[i])) {
         return true;
@@ -119,6 +121,10 @@ class Vector<Float> {
   }
   static constexpr Vector na() {
     return Vector(NA());
+  }
+
+  static constexpr size_t raw_na_size() {
+    return Int::na().raw();
   }
 
  private:

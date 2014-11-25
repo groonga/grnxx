@@ -271,7 +271,7 @@ class ConstantNode<Vector<T>> : public TypedNode<Vector<T>> {
   explicit ConstantNode(const Value &value)
       : TypedNode<Value>(),
         value_() {
-    size_t value_size = value.size().raw();
+    size_t value_size = value.raw_size();
     value_.resize(value_size);
     for (size_t i = 0; i < value_size; ++i) {
       value_[i] = value[i];
@@ -1409,7 +1409,7 @@ void VectorDereferenceNode<T>::evaluate(ArrayCRef<Record> records,
   size_t total_size = 0;
   for (size_t i = 0; i < records.size(); ++i) {
     if (!this->arg1_values_[i].is_na()) {
-      total_size += this->arg1_values_[i].size().raw();
+      total_size += this->arg1_values_[i].raw_size();
     }
   }
   temp_records_.resize(block_size_);
@@ -1422,7 +1422,7 @@ void VectorDereferenceNode<T>::evaluate(ArrayCRef<Record> records,
       continue;
     }
     Float score = records[i].score;
-    size_t value_size = this->arg1_values_[i].size().raw();
+    size_t value_size = this->arg1_values_[i].raw_size();
     for (size_t j = 0; j < value_size; ++j) {
       temp_records_[count] = Record(this->arg1_values_[i][j], score);
       ++count;
@@ -1442,7 +1442,7 @@ void VectorDereferenceNode<T>::evaluate(ArrayCRef<Record> records,
     if (this->arg1_values_[i].is_na()) {
       results[i] = Value::na();
     } else {
-      size_t size = this->arg1_values_[i].size().raw();
+      size_t size = this->arg1_values_[i].raw_size();
       results[i] = Value(&result_pool[offset], size);
       offset += size;
     }
