@@ -83,6 +83,10 @@ class Expression {
   virtual const Table *table() const = 0;
   // Return the result data type.
   virtual DataType data_type() const = 0;
+  // Return whether "*this" is equal to RowID or not.
+  virtual bool is_row_id() const = 0;
+  // Return whether "*this" is equal to Score or not.
+  virtual bool is_score() const = 0;
   // Return the evaluation block size.
   virtual size_t block_size() const = 0;
 

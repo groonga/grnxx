@@ -32,6 +32,8 @@ class Expression : public ExpressionInterface {
     return table_;
   }
   DataType data_type() const;
+  bool is_row_id() const;
+  bool is_score() const;
   size_t block_size() const {
     return block_size_;
   }

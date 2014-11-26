@@ -1515,6 +1515,14 @@ DataType Expression::data_type() const {
   return root_->data_type();
 }
 
+bool Expression::is_row_id() const {
+  return root_->node_type() == ROW_ID_NODE;
+}
+
+bool Expression::is_score() const {
+  return root_->node_type() == SCORE_NODE;
+}
+
 void Expression::filter(Array<Record> *records,
                         size_t input_offset,
                         size_t output_offset,
