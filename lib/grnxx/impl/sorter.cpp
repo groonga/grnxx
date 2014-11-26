@@ -368,6 +368,7 @@ using IntNode = ConvertNode<Int, T>;
 
 // TODO: Sorter for Score should be specialized.
 
+// NOTE: This implementation assumes IEEE754.
 struct RegularFloatConverter {
   uint64_t operator()(Float value) const {
     if (value.is_na()) {
@@ -384,6 +385,7 @@ struct RegularFloatConverter {
   }
 };
 
+// NOTE: This implementation assumes IEEE754.
 struct ReverseFloatConverter {
   uint64_t operator()(Float value) const {
     if (value.is_na()) {
