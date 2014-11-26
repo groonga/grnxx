@@ -1129,11 +1129,13 @@ Node *Sorter::create_node(SorterOrder &&order) try {
       return new RowIDNode<ReverseRowIDComparer>(std::move(order));
     }
   } else if (order.expression->is_score()) {
-    if (order.type == SORTER_REGULAR_ORDER) {
-      return new ScoreNode<RegularScoreComparer>(std::move(order));
-    } else {
-      return new ScoreNode<ReverseScoreComparer>(std::move(order));
-    }
+    // NOTE: Specialization for Score is disabled because the implementation
+    //       showed poor performance.
+//    if (order.type == SORTER_REGULAR_ORDER) {
+//      return new ScoreNode<RegularScoreComparer>(std::move(order));
+//    } else {
+//      return new ScoreNode<ReverseScoreComparer>(std::move(order));
+//    }
   }
 
   switch (order.expression->data_type()) {
