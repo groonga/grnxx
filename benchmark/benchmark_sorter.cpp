@@ -17,6 +17,7 @@
 */
 #include <time.h>
 
+#include <algorithm>
 #include <cassert>
 #include <iostream>
 #include <random>
@@ -52,6 +53,139 @@ grnxx::Array<grnxx::Record> create_records(grnxx::Table *table) {
   size_t count = cursor->read_all(&records);
   assert(count == table->num_rows());
   return records;
+}
+
+void benchmark_row_id() {
+  constexpr size_t NUM_ROWS = 1 << 21;
+  auto db = grnxx::open_db("");
+  auto table = db->create_table("Table");
+  std::mt19937_64 rng;
+  for (size_t i = 0; i < NUM_ROWS; ++i) {
+    table->insert_row();
+  }
+
+  {
+    double best_elapsed = std::numeric_limits<double>::max();
+    for (int i = 0; i < 5; ++i) {
+      std::vector<grnxx::Int> row_ids(NUM_ROWS);
+      for (size_t i = 0; i < NUM_ROWS; ++i) {
+        row_ids[i] = grnxx::Int(i);
+      }
+      std::shuffle(row_ids.begin(), row_ids.end(), rng);
+      grnxx::Array<grnxx::Record> records;
+      records.resize(NUM_ROWS);
+      for (size_t i = 0; i < NUM_ROWS; ++i) {
+        records[i].row_id = row_ids[i];
+        records[i].score = grnxx::Float(0.0);
+      }
+      Timer timer;
+      auto expression_builder = grnxx::ExpressionBuilder::create(table);
+      grnxx::Array<grnxx::SorterOrder> orders;
+      orders.resize(1);
+      expression_builder->push_row_id();
+      orders[0].expression = std::move(expression_builder->release());
+      orders[0].type = grnxx::SORTER_REGULAR_ORDER;
+      auto sorter = grnxx::Sorter::create(std::move(orders));
+      sorter->sort(&records);
+      double elapsed = timer.elapsed();
+      if (elapsed < best_elapsed) {
+        best_elapsed = elapsed;
+      }
+    }
+    std::cout << "RowID" << std::endl;
+    std::cout << "best elapsed [s] = " << best_elapsed << std::endl;
+  }
+}
+
+void benchmark_score() {
+  constexpr size_t NUM_ROWS = 1 << 21;
+  auto db = grnxx::open_db("");
+  auto table = db->create_table("Table");
+  std::mt19937_64 rng;
+  for (size_t i = 0; i < NUM_ROWS; ++i) {
+    table->insert_row();
+  }
+
+  {
+    double best_elapsed = std::numeric_limits<double>::max();
+    for (int i = 0; i < 5; ++i) {
+      grnxx::Array<grnxx::Record> records = create_records(table);
+      for (size_t i = 0; i < NUM_ROWS; ++i) {
+        if ((rng() % 4) != 0) {
+          records[i].score = grnxx::Float(1.0 * (rng() % 256) / 255);
+        }
+      }
+      Timer timer;
+      auto expression_builder = grnxx::ExpressionBuilder::create(table);
+      grnxx::Array<grnxx::SorterOrder> orders;
+      orders.resize(1);
+      expression_builder->push_score();
+      orders[0].expression = std::move(expression_builder->release());
+      orders[0].type = grnxx::SORTER_REGULAR_ORDER;
+      auto sorter = grnxx::Sorter::create(std::move(orders));
+      sorter->sort(&records);
+      double elapsed = timer.elapsed();
+      if (elapsed < best_elapsed) {
+        best_elapsed = elapsed;
+      }
+    }
+    std::cout << "Score_1" << std::endl;
+    std::cout << "best elapsed [s] = " << best_elapsed << std::endl;
+  }
+
+  {
+    double best_elapsed = std::numeric_limits<double>::max();
+    for (int i = 0; i < 5; ++i) {
+      grnxx::Array<grnxx::Record> records = create_records(table);
+      for (size_t i = 0; i < NUM_ROWS; ++i) {
+        if ((rng() % 4) != 0) {
+          records[i].score = grnxx::Float(1.0 * (rng() % 65536) / 65536);
+        }
+      }
+      Timer timer;
+      auto expression_builder = grnxx::ExpressionBuilder::create(table);
+      grnxx::Array<grnxx::SorterOrder> orders;
+      orders.resize(1);
+      expression_builder->push_score();
+      orders[0].expression = std::move(expression_builder->release());
+      orders[0].type = grnxx::SORTER_REGULAR_ORDER;
+      auto sorter = grnxx::Sorter::create(std::move(orders));
+      sorter->sort(&records);
+      double elapsed = timer.elapsed();
+      if (elapsed < best_elapsed) {
+        best_elapsed = elapsed;
+      }
+    }
+    std::cout << "Score_2" << std::endl;
+    std::cout << "best elapsed [s] = " << best_elapsed << std::endl;
+  }
+
+  {
+    double best_elapsed = std::numeric_limits<double>::max();
+    for (int i = 0; i < 5; ++i) {
+      grnxx::Array<grnxx::Record> records = create_records(table);
+      for (size_t i = 0; i < NUM_ROWS; ++i) {
+        if ((rng() % 4) != 0) {
+          records[i].score = grnxx::Float(1.0 * rng() / rng.max());
+        }
+      }
+      Timer timer;
+      auto expression_builder = grnxx::ExpressionBuilder::create(table);
+      grnxx::Array<grnxx::SorterOrder> orders;
+      orders.resize(1);
+      expression_builder->push_score();
+      orders[0].expression = std::move(expression_builder->release());
+      orders[0].type = grnxx::SORTER_REGULAR_ORDER;
+      auto sorter = grnxx::Sorter::create(std::move(orders));
+      sorter->sort(&records);
+      double elapsed = timer.elapsed();
+      if (elapsed < best_elapsed) {
+        best_elapsed = elapsed;
+      }
+    }
+    std::cout << "Score_3" << std::endl;
+    std::cout << "best elapsed [s] = " << best_elapsed << std::endl;
+  }
 }
 
 void benchmark_int() {
@@ -437,6 +571,8 @@ void benchmark_float() {
 }
 
 int main() {
+  benchmark_row_id();
+  benchmark_score();
   benchmark_int();
   benchmark_float();
   return 0;
