@@ -20,7 +20,6 @@ class Node {
 
   // Sort records in [begin, end).
   //
-  // On success, returns true.
   // On failure, throws an exception.
   virtual void sort(ArrayRef<Record> ref, size_t begin, size_t end) = 0;
 
@@ -74,7 +73,6 @@ class ScoreNode : public Node {
   //
   // Switches to insertion sort when the sorting range becomes small enough.
   //
-  // On success, returns true.
   // On failure, throws an exception.
   void quick_sort(ArrayRef<Record> records, size_t begin, size_t end);
 
@@ -82,7 +80,6 @@ class ScoreNode : public Node {
   //
   // Insertion sort should be used when there few records.
   //
-  // On success, returns true.
   // On failure, throws an exception.
   void insertion_sort(ArrayRef<Record> records);
 
@@ -347,7 +344,6 @@ class ConvertNode : public Node {
   //
   // Switches to insertion sort when the sorting range becomes small enough.
   //
-  // On success, returns true.
   // On failure, throws an exception.
   void quick_sort(ArrayRef<Record> records,
                   uint64_t *values,
@@ -358,7 +354,6 @@ class ConvertNode : public Node {
   //
   // Insertion sort should be used when there few records.
   //
-  // On success, returns true.
   // On failure, throws an exception.
   void insertion_sort(ArrayRef<Record> records, uint64_t *values);
 
