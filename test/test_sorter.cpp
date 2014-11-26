@@ -127,6 +127,98 @@ grnxx::Array<grnxx::Record> create_input_records() {
   return records;
 }
 
+void test_score() {
+  // Create a cursor which reads all the records.
+  auto records = create_input_records();
+
+  // Create an object for building expressions.
+  auto expression_builder = grnxx::ExpressionBuilder::create(test.table);
+
+  expression_builder->push_column("Float");
+  auto expression = expression_builder->release();
+  expression->adjust(&records);
+
+  // Create a regular sorter.
+  grnxx::Array<grnxx::SorterOrder> orders;
+  orders.resize(1);
+  expression_builder->push_score();
+  expression = expression_builder->release();
+  orders[0].expression = std::move(expression);
+  orders[0].type = grnxx::SORTER_REGULAR_ORDER;
+  auto sorter = grnxx::Sorter::create(std::move(orders));
+
+  sorter->sort(&records);
+  for (size_t i = 0; i < records.size(); ++i) {
+    size_t row_id = records[i].row_id.raw();
+    grnxx::Float value = test.float_values[row_id];
+    assert(records[i].score.match(value));
+  }
+  for (size_t i = 1; i < records.size(); ++i) {
+    grnxx::Float lhs_score = records[i - 1].score;
+    grnxx::Float rhs_score = records[i].score;
+    if (lhs_score.is_na()) {
+      assert(rhs_score.is_na());
+    } else {
+      assert(rhs_score.is_na() || (lhs_score <= rhs_score).is_true());
+    }
+  }
+
+  // Create a reverse sorter.
+  orders.resize(1);
+  expression_builder->push_score();
+  expression = expression_builder->release();
+  orders[0].expression = std::move(expression);
+  orders[0].type = grnxx::SORTER_REVERSE_ORDER;
+  sorter = grnxx::Sorter::create(std::move(orders));
+
+  sorter->sort(&records);
+  for (size_t i = 0; i < records.size(); ++i) {
+    size_t row_id = records[i].row_id.raw();
+    grnxx::Float value = test.float_values[row_id];
+    assert(records[i].score.match(value));
+  }
+  for (size_t i = 1; i < records.size(); ++i) {
+    grnxx::Float lhs_score = records[i - 1].score;
+    grnxx::Float rhs_score = records[i].score;
+    if (lhs_score.is_na()) {
+      assert(rhs_score.is_na());
+    } else {
+      assert(rhs_score.is_na() || (lhs_score >= rhs_score).is_true());
+    }
+  }
+
+  // Create a multiple order sorter.
+  orders.resize(2);
+  expression_builder->push_score();
+  expression = expression_builder->release();
+  orders[0].expression = std::move(expression);
+  orders[0].type = grnxx::SORTER_REGULAR_ORDER;
+  expression_builder->push_row_id();
+  expression = expression_builder->release();
+  orders[1].expression = std::move(expression);
+  orders[1].type = grnxx::SORTER_REGULAR_ORDER;
+  sorter = grnxx::Sorter::create(std::move(orders));
+
+  sorter->sort(&records);
+  for (size_t i = 0; i < records.size(); ++i) {
+    size_t row_id = records[i].row_id.raw();
+    grnxx::Float value = test.float_values[row_id];
+    assert(records[i].score.match(value));
+  }
+  for (size_t i = 1; i < records.size(); ++i) {
+    grnxx::Float lhs_score = records[i - 1].score;
+    grnxx::Float rhs_score = records[i].score;
+    if (lhs_score.is_na()) {
+      assert(rhs_score.is_na());
+    } else {
+      assert(rhs_score.is_na() || (lhs_score <= rhs_score).is_true());
+    }
+    if (lhs_score.match(rhs_score)) {
+      assert(records[i - 1].row_id.raw() < records[i].row_id.raw());
+    }
+  }
+}
+
 void test_bool() {
   // Create a cursor which reads all the records.
   auto records = create_input_records();
@@ -502,6 +594,7 @@ void test_composite() {
 
 int main() {
   init_test();
+  test_score();
   test_bool();
   test_int();
   test_float();
