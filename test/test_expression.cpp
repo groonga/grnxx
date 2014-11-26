@@ -2720,6 +2720,30 @@ void test_subexpression() {
       assert(int_vector_results[i][j].match(int_value));
     }
   }
+
+  // Test an expression (RefVector.Text).
+  builder->push_column("RefVector");
+  builder->begin_subexpression();
+  builder->push_column("Text");
+  builder->end_subexpression();
+  expression = builder->release();
+
+  records = create_input_records();
+
+  grnxx::Array<grnxx::TextVector> text_vector_results;
+  expression->evaluate(records, &text_vector_results);
+  assert(text_vector_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < text_vector_results.size(); ++i) {
+    size_t row_id = records[i].row_id.raw();
+    const auto ref_vector_value = test.ref_vector_values[row_id];
+    assert(text_vector_results[i].size().match(ref_vector_value.size()));
+    size_t value_size = ref_vector_value.raw_size();
+    for (size_t j = 0; j < value_size; ++j) {
+      grnxx::Int ref_value = ref_vector_value[j];
+      const auto text_value = test.text_values[ref_value.raw()];
+      assert(text_vector_results[i][j].match(text_value));
+    }
+  }
 }
 
 void test_sequential_filter() {
