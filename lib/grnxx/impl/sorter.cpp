@@ -8,12 +8,6 @@ namespace sorter {
 
 class Node {
  public:
-  // Create a node for sorting records in "order".
-  //
-  // On success, returns the node.
-  // On failure, throws an exception.
-  static Node *create(SorterOrder &&order);
-
   explicit Node(SorterOrder &&order)
       : order_(std::move(order)),
         next_(nullptr) {}
@@ -35,39 +29,25 @@ class Node {
   Node *next_;
 };
 
-// --- TypedNode ---
+// --- BoolNode ---
 
-template <typename T>
-class TypedNode : public Node {
+class BoolNode : public Node {
  public:
-  using Value = T;
-
-  explicit TypedNode(SorterOrder &&order)
+  explicit BoolNode(SorterOrder &&order)
       : Node(std::move(order)),
-        values_() {}
-  virtual ~TypedNode() = default;
-
- protected:
-  Array<Value> values_;
-};
-
-// ---- SeparatorNode ----
-
-class SeparatorNode : public TypedNode<Bool> {
- public:
-  explicit SeparatorNode(SorterOrder &&order)
-      : TypedNode<Bool>(std::move(order)),
         prior_raw_((order.type == SORTER_REGULAR_ORDER) ?
-                   Bool::raw_false() : Bool::raw_true()) {}
-  ~SeparatorNode() = default;
+                   Bool::raw_false() : Bool::raw_true()),
+        values_() {}
+  virtual ~BoolNode() = default;
 
   void sort(ArrayRef<Record> records, size_t begin, size_t end);
 
  private:
   uint8_t prior_raw_;
+  Array<Bool> values_;
 };
 
-void SeparatorNode::sort(ArrayRef<Record> records, size_t begin, size_t end) {
+void BoolNode::sort(ArrayRef<Record> records, size_t begin, size_t end) {
   // Sort "records" as follows:
   // - Prior values: [0, posterior_offset)
   // - Posterior values: [posterior_offset, na_offset)
@@ -113,30 +93,27 @@ void SeparatorNode::sort(ArrayRef<Record> records, size_t begin, size_t end) {
   }
 }
 
-// ---- QuickSortNode ----
+// --- ConvertNode ---
 
-template <typename T>
-struct Equal {
-  bool operator()(const T &lhs, const T &rhs) const {
-    return lhs.match(rhs);
-  }
-};
-
-template <typename T>
-class QuickSortNode : public TypedNode<typename T::Value> {
+template <typename T, typename U>
+class ConvertNode : public Node {
  public:
-  using Comparer = T;
-  using Value    = typename Comparer::Value;
+  using Value     = T;
+  using Converter = U;
 
-  explicit QuickSortNode(SorterOrder &&order)
-      : TypedNode<Value>(std::move(order)),
-        comparer_() {}
-  ~QuickSortNode() = default;
+  explicit ConvertNode(SorterOrder &&order)
+      : Node(std::move(order)),
+        converter_(),
+        values_(),
+        internal_values_() {}
+  ~ConvertNode() = default;
 
   void sort(ArrayRef<Record> records, size_t begin, size_t end);
 
  private:
-  Comparer comparer_;
+  Converter converter_;
+  Array<Value> values_;
+  Array<uint64_t> internal_values_;
 
   // Sort records with ternary quick sort.
   //
@@ -145,7 +122,7 @@ class QuickSortNode : public TypedNode<typename T::Value> {
   // On success, returns true.
   // On failure, throws an exception.
   void quick_sort(ArrayRef<Record> records,
-                  Value *values,
+                  uint64_t *values,
                   size_t begin,
                   size_t end);
 
@@ -155,32 +132,49 @@ class QuickSortNode : public TypedNode<typename T::Value> {
   //
   // On success, returns true.
   // On failure, throws an exception.
-  void insertion_sort(ArrayRef<Record> records, Value *values);
+  void insertion_sort(ArrayRef<Record> records, uint64_t *values);
 
   // Choose the pivot and move it to the front.
-  void move_pivot_first(ArrayRef<Record> records, Value *values);
+  void move_pivot_first(ArrayRef<Record> records, uint64_t *values);
 };
 
-template <typename T>
-void QuickSortNode<T>::sort(ArrayRef<Record> records,
-                            size_t begin,
-                            size_t end) {
-  this->order_.expression->evaluate(records, &this->values_);
-  quick_sort(records, this->values_.buffer(), begin, end);
+template <typename T, typename U>
+void ConvertNode<T, U>::sort(ArrayRef<Record> records,
+                             size_t begin,
+                             size_t end) {
+  // TODO: A magic number (1024) should not be used.
+  if (internal_values_.size() < records.size()) {
+    internal_values_.resize(records.size());
+  }
+  values_.resize(1024);
+  size_t offset = 0;
+  while (offset < records.size()) {
+    size_t block_size = records.size() - offset;
+    if (block_size > values_.size()) {
+      block_size = values_.size();
+    }
+    this->order_.expression->evaluate(
+        records.cref(offset, block_size), &values_);
+    for (size_t i = 0; i < block_size; ++i) {
+      internal_values_[offset + i] = converter_(values_[i]);
+    }
+    offset += block_size;
+  }
+  quick_sort(records, internal_values_.buffer(), begin, end);
 }
 
-template <typename T>
-void QuickSortNode<T>::quick_sort(ArrayRef<Record> records,
-                                  Value *values,
-                                  size_t begin,
-                                  size_t end) {
+template <typename T, typename U>
+void ConvertNode<T, U>::quick_sort(ArrayRef<Record> records,
+                                   uint64_t *values,
+                                   size_t begin,
+                                   size_t end) {
   // Use ternary quick sort if there are enough records.
   //
   // TODO: Currently, the threshold is 16.
   //       This value should be optimized and replaced with a named constant.
   while (records.size() >= 16) {
     move_pivot_first(records, values);
-    const Value pivot = values[0];
+    const uint64_t pivot = values[0];
     size_t left = 1;
     size_t right = records.size();
     size_t pivot_left = 1;
@@ -191,9 +185,9 @@ void QuickSortNode<T>::quick_sort(ArrayRef<Record> records,
       // Less prior entries are moved to right.
       // Entries which equal to the pivot are moved to the edges.
       while (left < right) {
-        if (comparer_(pivot, values[left])) {
+        if (pivot < values[left]) {
           break;
-        } else if (Equal<Value>()(pivot, values[left])) {
+        } else if (pivot == values[left]) {
           std::swap(values[left], values[pivot_left]);
           std::swap(records[left], records[pivot_left]);
           ++pivot_left;
@@ -202,9 +196,9 @@ void QuickSortNode<T>::quick_sort(ArrayRef<Record> records,
       }
       while (left < right) {
         --right;
-        if (comparer_(values[right], pivot)) {
+        if (values[right] < pivot) {
           break;
-        } else if (Equal<Value>()(values[right], pivot)) {
+        } else if (values[right] == pivot) {
           --pivot_right;
           std::swap(values[right], values[pivot_right]);
           std::swap(records[right], records[pivot_right]);
@@ -264,8 +258,316 @@ void QuickSortNode<T>::quick_sort(ArrayRef<Record> records,
       if ((end > right) && ((records.size() - right) >= 2)) {
         size_t next_begin = (begin < right) ? 0 : (begin - right);
         size_t next_end = end - right;
-        quick_sort(records.ref(right),
-                   values + right, next_begin, next_end);
+        quick_sort(records.ref(right), values + right, next_begin, next_end);
+      }
+      if (begin >= left) {
+        return;
+      }
+      records = records.ref(0, left);
+      if (end > left) {
+        end = left;
+      }
+    }
+  }
+
+  if (records.size() >= 2) {
+    insertion_sort(records, values);
+  }
+}
+
+template <typename T, typename U>
+void ConvertNode<T, U>::insertion_sort(ArrayRef<Record> records,
+                                       uint64_t *values) {
+  for (size_t i = 1; i < records.size(); ++i) {
+    for (size_t j = i; j > 0; --j) {
+      if (values[j] < values[j - 1]) {
+        std::swap(values[j], values[j - 1]);
+        std::swap(records[j], records[j - 1]);
+      } else {
+        break;
+      }
+    }
+  }
+
+  // Apply the next sorting if there are records having the same value.
+  if (this->next_) {
+    size_t begin = 0;
+    for (size_t i = 1; i < records.size(); ++i) {
+      if (values[i] != values[begin]) {
+        if ((i - begin) >= 2) {
+          this->next_->sort(records.ref(begin, i - begin), 0, i - begin);
+        }
+        begin = i;
+      }
+    }
+    if ((records.size() - begin) >= 2) {
+      this->next_->sort(records.ref(begin), 0, records.size() - begin);
+    }
+  }
+}
+
+template <typename T, typename U>
+void ConvertNode<T, U>::move_pivot_first(ArrayRef<Record> records,
+                                         uint64_t *values) {
+  // Choose the median from values[1], values[1 / size], and values[size - 2].
+  // The reason why not using values[0] and values[size - 1] is to avoid the
+  // worst case which occurs when the records are sorted in reverse order.
+  size_t first = 1;
+  size_t middle = records.size() / 2;
+  size_t last = records.size() - 2;
+  if (values[first] < values[middle]) {
+    // first < middle.
+    if (values[middle] < values[last]) {
+      // first < middle < last.
+      std::swap(values[0], values[middle]);
+      std::swap(records[0], records[middle]);
+    } else if (values[first] < values[last]) {
+      // first < last < middle.
+      std::swap(values[0], values[last]);
+      std::swap(records[0], records[last]);
+    } else {
+      // last < first < middle.
+      std::swap(values[0], values[first]);
+      std::swap(records[0], records[first]);
+    }
+  } else if (values[last] < values[middle]) {
+    // last < middle < first.
+    std::swap(values[0], values[middle]);
+    std::swap(records[0], records[middle]);
+  } else if (values[last] < values[first]) {
+    // middle < last < first.
+    std::swap(values[0], values[last]);
+    std::swap(records[0], records[last]);
+  } else {
+    // middle < first < last.
+    std::swap(values[0], values[first]);
+    std::swap(records[0], records[first]);
+  }
+}
+
+// --- IntNode ---
+
+// TODO: Sorter for RowID should be specialized.
+
+struct RegularIntConverter {
+  uint64_t operator()(Int value) const {
+    return static_cast<uint64_t>(value.raw()) + (~uint64_t(0) >> 1);
+  }
+};
+
+struct ReverseIntConverter {
+  uint64_t operator()(Int value) const {
+    return (~uint64_t(0) >> 1) - static_cast<uint64_t>(value.raw());
+  }
+};
+
+template <typename T>
+using IntNode = ConvertNode<Int, T>;
+
+// --- FloatNode ---
+
+// TODO: Sorter for Score should be specialized.
+
+struct RegularFloatConverter {
+  uint64_t operator()(Float value) const {
+    if (value.is_na()) {
+      return ~uint64_t(0);
+    } else {
+      double raw = value.raw();
+      if (raw == 0.0) {
+        raw = 0.0;
+      }
+      int64_t temp;
+      std::memcpy(&temp, &raw, sizeof(int64_t));
+      return temp ^ ((temp >> 63) | (uint64_t(1) << 63));
+    }
+  }
+};
+
+struct ReverseFloatConverter {
+  uint64_t operator()(Float value) const {
+    if (value.is_na()) {
+      return ~uint64_t(0);
+    } else {
+      double raw = value.raw();
+      if (raw == 0.0) {
+        raw = 0.0;
+      }
+      int64_t temp;
+      std::memcpy(&temp, &raw, sizeof(int64_t));
+      return temp ^ (((temp ^ (int64_t(1) << 63)) >> 63) &
+                     (~uint64_t(0) >> 1));
+    }
+  }
+};
+
+template <typename T>
+using FloatNode = ConvertNode<Float, T>;
+
+// --- TextNode ---
+
+// TODO: Sorter for Text should be specialized.
+
+struct RegularTextComparer {
+  // Return whether "lhs" is prior to "rhs" or not.
+  bool operator()(const Text &lhs, const Text &rhs) const {
+    if (lhs.is_na()) {
+      return false;
+    } else if (rhs.is_na()) {
+      return true;
+    }
+    return (lhs < rhs).is_true();
+  }
+};
+
+struct ReverseTextComparer {
+  // Return whether "lhs" is prior to "rhs" or not.
+  bool operator()(const Text &lhs, const Text &rhs) const {
+    if (lhs.is_na()) {
+      return false;
+    } else if (rhs.is_na()) {
+      return true;
+    }
+    return (lhs > rhs).is_true();
+  }
+};
+
+template <typename T>
+class TextNode : public Node {
+ public:
+  explicit TextNode(SorterOrder &&order)
+      : Node(std::move(order)),
+        comparer_(),
+        values_() {}
+  ~TextNode() = default;
+
+  void sort(ArrayRef<Record> records, size_t begin, size_t end);
+
+ private:
+  T comparer_;
+  Array<Text> values_;
+
+  // Sort records with ternary quick sort.
+  //
+  // Switches to insertion sort when the there are few records.
+  //
+  // On failure, throws an exception.
+  void quick_sort(ArrayRef<Record> records,
+                  Text *values,
+                  size_t begin,
+                  size_t end);
+
+  // Sort records with insertion sort.
+  //
+  // On failure, throws an exception.
+  void insertion_sort(ArrayRef<Record> records, Text *values);
+
+  // Choose the pivot and move it to the front.
+  void move_pivot_first(ArrayRef<Record> records, Text *values);
+};
+
+template <typename T>
+void TextNode<T>::sort(ArrayRef<Record> records, size_t begin, size_t end) {
+  this->order_.expression->evaluate(records, &this->values_);
+  quick_sort(records, this->values_.buffer(), begin, end);
+}
+
+template <typename T>
+void TextNode<T>::quick_sort(ArrayRef<Record> records,
+                             Text *values,
+                             size_t begin,
+                             size_t end) {
+  // Use ternary quick sort if there are enough records.
+  //
+  // TODO: Currently, the threshold is 16.
+  //       This value should be optimized and replaced with a named constant.
+  while (records.size() >= 16) {
+    move_pivot_first(records, values);
+    const Text pivot = values[0];
+    size_t left = 1;
+    size_t right = records.size();
+    size_t pivot_left = 1;
+    size_t pivot_right = records.size();
+    for ( ; ; ) {
+      // Move entries based on comparison against the pivot.
+      // Prior entries are moved to left.
+      // Less prior entries are moved to right.
+      // Entries which equal to the pivot are moved to the edges.
+      while (left < right) {
+        if (comparer_(pivot, values[left])) {
+          break;
+        } else if (pivot.match(values[left])) {
+          std::swap(values[left], values[pivot_left]);
+          std::swap(records[left], records[pivot_left]);
+          ++pivot_left;
+        }
+        ++left;
+      }
+      while (left < right) {
+        --right;
+        if (comparer_(values[right], pivot)) {
+          break;
+        } else if (values[right].match(pivot)) {
+          --pivot_right;
+          std::swap(values[right], values[pivot_right]);
+          std::swap(records[right], records[pivot_right]);
+        }
+      }
+      if (left >= right) {
+        break;
+      }
+      std::swap(values[left], values[right]);
+      std::swap(records[left], records[right]);
+      ++left;
+    }
+
+    // Move left pivot-equivalent entries to the left side of the boundary.
+    while (pivot_left > 0) {
+      --pivot_left;
+      --left;
+      std::swap(values[pivot_left], values[left]);
+      std::swap(records[pivot_left], records[left]);
+    }
+    // Move right pivot-equivalent entries to the right side of the boundary.
+    while (pivot_right < records.size()) {
+      std::swap(values[pivot_right], values[right]);
+      std::swap(records[pivot_right], records[right]);
+      ++pivot_right;
+      ++right;
+    }
+
+    // Apply the next sort condition to the pivot-equivalent records.
+    if (this->next_) {
+      if (((right - left) >= 2) && (begin < right) && (end > left)) {
+        size_t next_begin = (begin < left) ? 0 : (begin - left);
+        size_t next_end = ((end > right) ? right : end) - left;
+        this->next_->sort(records.ref(left, right - left),
+                          next_begin, next_end);
+      }
+    }
+
+    // There are the left group and the right group.
+    // A recursive call is used for sorting the smaller group.
+    // The recursion depth is less than log_2(n) where n is the number of
+    // records.
+    // The next loop of the current call is used for sorting the larger group.
+    if (left < (records.size() - right)) {
+      if ((begin < left) && (left >= 2)) {
+        size_t next_end = (end < left) ? end : left;
+        quick_sort(records.ref(0, left), values, begin, next_end);
+      }
+      if (end <= right) {
+        return;
+      }
+      records = records.ref(right);
+      values += right;
+      begin = (begin < right) ? 0 : (begin - right);
+      end -= right;
+    } else {
+      if ((end > right) && ((records.size() - right) >= 2)) {
+        size_t next_begin = (begin < right) ? 0 : (begin - right);
+        size_t next_end = end - right;
+        quick_sort(records.ref(right), values + right, next_begin, next_end);
       }
       if (begin >= left) {
         return;
@@ -283,8 +585,7 @@ void QuickSortNode<T>::quick_sort(ArrayRef<Record> records,
 }
 
 template <typename T>
-void QuickSortNode<T>::insertion_sort(ArrayRef<Record> records,
-                                      Value *values) {
+void TextNode<T>::insertion_sort(ArrayRef<Record> records, Text *values) {
   for (size_t i = 1; i < records.size(); ++i) {
     for (size_t j = i; j > 0; --j) {
       if (comparer_(values[j], values[j - 1])) {
@@ -300,7 +601,7 @@ void QuickSortNode<T>::insertion_sort(ArrayRef<Record> records,
   if (this->next_) {
     size_t begin = 0;
     for (size_t i = 1; i < records.size(); ++i) {
-      if (!Equal<Value>()(values[i], values[begin])) {
+      if (values[i].unmatch(values[begin])) {
         if ((i - begin) >= 2) {
           this->next_->sort(records.ref(begin, i - begin), 0, i - begin);
         }
@@ -314,8 +615,7 @@ void QuickSortNode<T>::insertion_sort(ArrayRef<Record> records,
 }
 
 template <typename T>
-void QuickSortNode<T>::move_pivot_first(ArrayRef<Record> records,
-                                        Value *values) {
+void TextNode<T>::move_pivot_first(ArrayRef<Record> records, Text *values) {
   // Choose the median from values[1], values[1 / size], and values[size - 2].
   // The reason why not using values[0] and values[size - 1] is to avoid the
   // worst case which occurs when the records are sorted in reverse order.
@@ -352,80 +652,6 @@ void QuickSortNode<T>::move_pivot_first(ArrayRef<Record> records,
   }
 }
 
-// ----- RegularComparer -----
-
-template <typename T>
-struct RegularComparer {
-  using Value = T;
-
-  // Return whether "lhs" is prior to "rhs" or not.
-  bool operator()(const Value &lhs, const Value &rhs) const {
-    if (lhs.is_na()) {
-      return false;
-    } else if (rhs.is_na()) {
-      return true;
-    }
-    return (lhs < rhs).is_true();
-  }
-};
-
-// ----- ReverseComparer -----
-
-template <typename T>
-struct ReverseComparer {
-  using Value = T;
-
-  // Return whether "lhs" is prior to "rhs" or not.
-  bool operator()(const Value &lhs, const Value &rhs) const {
-    if (lhs.is_na()) {
-      return false;
-    } else if (rhs.is_na()) {
-      return true;
-    }
-    return (lhs > rhs).is_true();
-  }
-};
-
-// -- Node --
-
-Node *Node::create(SorterOrder &&order) try {
-  switch (order.expression->data_type()) {
-    case BOOL_DATA: {
-      return new SeparatorNode(std::move(order));
-    }
-    case INT_DATA: {
-      if (order.type == SORTER_REGULAR_ORDER) {
-        return new QuickSortNode<RegularComparer<Int>>(std::move(order));
-      } else {
-        return new QuickSortNode<ReverseComparer<Int>>(std::move(order));
-      }
-    }
-    case FLOAT_DATA: {
-      if (order.type == SORTER_REGULAR_ORDER) {
-        return new QuickSortNode<RegularComparer<Float>>(std::move(order));
-      } else {
-        return new QuickSortNode<ReverseComparer<Float>>(std::move(order));
-      }
-    }
-    case TEXT_DATA: {
-      if (order.type == SORTER_REGULAR_ORDER) {
-        return new QuickSortNode<RegularComparer<Text>>(std::move(order));
-      } else {
-        return new QuickSortNode<ReverseComparer<Text>>(std::move(order));
-      }
-    }
-    default: {
-      throw "Invalid data type";  // TODO
-    }
-  }
-} catch (const std::bad_alloc &) {
-  throw "Memory allocation failed";  // TODO
-}
-
-// TODO: Sorter for RowID and Score should be specialized.
-
-// TODO: Sorter for Text should be specialized.
-
 }  // namespace sorter
 
 using namespace sorter;
@@ -456,7 +682,7 @@ Sorter::Sorter(Array<SorterOrder> &&orders, const SorterOptions &options)
 
   nodes_.resize(orders.size());
   for (size_t i = 0; i < orders.size(); ++i) {
-    nodes_[i].reset(Node::create(std::move(orders[i])));
+    nodes_[i].reset(create_node(std::move(orders[i])));
   }
   for (size_t i = 1; i < orders.size(); ++i) {
     nodes_[i - 1]->set_next(nodes_[i].get());
@@ -502,6 +728,40 @@ void Sorter::finish() {
 void Sorter::sort(Array<Record> *records) {
   reset(records);
   finish();
+}
+
+Node *Sorter::create_node(SorterOrder &&order) try {
+  switch (order.expression->data_type()) {
+    case BOOL_DATA: {
+      return new BoolNode(std::move(order));
+    }
+    case INT_DATA: {
+      if (order.type == SORTER_REGULAR_ORDER) {
+        return new IntNode<RegularIntConverter>(std::move(order));
+      } else {
+        return new IntNode<ReverseIntConverter>(std::move(order));
+      }
+    }
+    case FLOAT_DATA: {
+      if (order.type == SORTER_REGULAR_ORDER) {
+        return new FloatNode<RegularFloatConverter>(std::move(order));
+      } else {
+        return new FloatNode<ReverseFloatConverter>(std::move(order));
+      }
+    }
+    case TEXT_DATA: {
+      if (order.type == SORTER_REGULAR_ORDER) {
+        return new TextNode<RegularTextComparer>(std::move(order));
+      } else {
+        return new TextNode<ReverseTextComparer>(std::move(order));
+      }
+    }
+    default: {
+      throw "Invalid data type";  // TODO
+    }
+  }
+} catch (const std::bad_alloc &) {
+  throw "Memory allocation failed";  // TODO
 }
 
 }  // namespace impl
