@@ -2,8 +2,6 @@
 
 #include <new>
 
-#include "grnxx/impl/column.hpp"
-
 namespace grnxx {
 namespace impl {
 namespace expression {
@@ -1752,7 +1750,11 @@ void ExpressionBuilder::push_column(const String &name) {
   if (subexpression_builder_) {
     subexpression_builder_->push_column(name);
   } else {
-    node_stack_.push_back(std::unique_ptr<Node>(create_column_node(name)));
+    ColumnBase *column = table_->find_column(name);
+    if (!column) {
+      throw "Column not found";  // TODO
+    }
+    node_stack_.push_back(std::unique_ptr<Node>(create_column_node(column)));
   }
 }
 
@@ -1928,12 +1930,7 @@ Node *ExpressionBuilder::create_constant_node(
   throw "Memory allocation failed";  // TODO
 }
 
-Node *ExpressionBuilder::create_column_node(
-    const String &name) try {
-  ColumnBase *column = table_->find_column(name);
-  if (!column) {
-    throw "Column not found";  // TODO
-  }
+Node *ExpressionBuilder::create_column_node(ColumnBase *column) try {
   switch (column->data_type()) {
     case BOOL_DATA: {
       return new ColumnNode<Bool>(column);

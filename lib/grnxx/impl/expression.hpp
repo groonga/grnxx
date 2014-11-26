@@ -3,6 +3,7 @@
 
 #include "grnxx/expression.hpp"
 #include "grnxx/impl/table.hpp"
+#include "grnxx/impl/column.hpp"
 
 namespace grnxx {
 namespace impl {
@@ -128,78 +129,78 @@ class ExpressionBuilder : public ExpressionBuilderInterface {
   // Create a node associated with a constant.
   //
   // On failure, throws an exception.
-  Node *create_constant_node(const Datum &datum);
+  static Node *create_constant_node(const Datum &datum);
 
   // Create a node associated with a column.
   //
   // On failure, throws an exception.
-  Node *create_column_node(const String &name);
+  static Node *create_column_node(ColumnBase *column);
 
   // Create a node associated with a unary operator.
   //
   // On failure, throws an exception.
-  Node *create_unary_node(OperatorType operator_type,
-                          std::unique_ptr<Node> &&arg);
+  static Node *create_unary_node(OperatorType operator_type,
+                                 std::unique_ptr<Node> &&arg);
 
   // Create a node associated with a binary operator.
   //
   // On failure, throws an exception.
-  Node *create_binary_node(OperatorType operator_type,
-                           std::unique_ptr<Node> &&arg1,
-                           std::unique_ptr<Node> &&arg2);
+  static Node *create_binary_node(OperatorType operator_type,
+                                  std::unique_ptr<Node> &&arg1,
+                                  std::unique_ptr<Node> &&arg2);
 
   // Create a node associated with an equality test operator.
   //
   // On failure, throws an exception.
   template <typename T>
-  Node *create_equality_test_node(OperatorType operator_type,
-                                  std::unique_ptr<Node> &&arg1,
-                                  std::unique_ptr<Node> &&arg2);
+  static Node *create_equality_test_node(OperatorType operator_type,
+                                         std::unique_ptr<Node> &&arg1,
+                                         std::unique_ptr<Node> &&arg2);
 
   // Create a node associated with a comparison operator.
   //
   // On failure, throws an exception.
   template <typename T>
-  Node *create_comparison_node(OperatorType operator_type,
-                               std::unique_ptr<Node> &&arg1,
-                               std::unique_ptr<Node> &&arg2);
+  static Node *create_comparison_node(OperatorType operator_type,
+                                      std::unique_ptr<Node> &&arg1,
+                                      std::unique_ptr<Node> &&arg2);
 
   // Create a node associated with a bitwise binary operator.
   //
   // On failure, throws an exception.
   template <typename T>
-  Node *create_bitwise_binary_node(OperatorType operator_type,
-                                   std::unique_ptr<Node> &&arg1,
-                                   std::unique_ptr<Node> &&arg2);
+  static Node *create_bitwise_binary_node(OperatorType operator_type,
+                                          std::unique_ptr<Node> &&arg1,
+                                          std::unique_ptr<Node> &&arg2);
 
   // Create a node associated with an arithmetic operator.
   //
   // On failure, throws an exception.
   template <typename T>
-  Node *create_arithmetic_node(OperatorType operator_type,
-                               std::unique_ptr<Node> &&arg1,
-                               std::unique_ptr<Node> &&arg2);
+  static Node *create_arithmetic_node(OperatorType operator_type,
+                                      std::unique_ptr<Node> &&arg1,
+                                      std::unique_ptr<Node> &&arg2);
 
   // Create a node associated with a search operator.
   //
   // On failure, throws an exception.
   template <typename T>
-  Node *create_search_node(OperatorType operator_type,
-                           std::unique_ptr<Node> &&arg1,
-                           std::unique_ptr<Node> &&arg2);
+  static Node *create_search_node(OperatorType operator_type,
+                                  std::unique_ptr<Node> &&arg1,
+                                  std::unique_ptr<Node> &&arg2);
 
   // Create a node associated with a subscript operator.
   //
   // On failure, throws an exception.
-  Node *create_subscript_node(std::unique_ptr<Node> &&arg1,
-                              std::unique_ptr<Node> &&arg2);
+  static Node *create_subscript_node(std::unique_ptr<Node> &&arg1,
+                                     std::unique_ptr<Node> &&arg2);
 
   // Create a node associated with a dereference operator.
   //
   // On failure, throws an exception.
-  Node *create_dereference_node(std::unique_ptr<Node> &&arg1,
-                                std::unique_ptr<Node> &&arg2,
-                                const ExpressionOptions &options);
+  static Node *create_dereference_node(std::unique_ptr<Node> &&arg1,
+                                       std::unique_ptr<Node> &&arg2,
+                                       const ExpressionOptions &options);
 };
 
 }  // namespace impl
