@@ -2423,10 +2423,10 @@ Node *ExpressionBuilder::create_dereference_node(
           return new VectorDereferenceNode<GeoPoint>(
               std::move(arg1), std::move(arg2), options);
         }
-//        case TEXT_DATA: {
-//          return new VectorDereferenceNode<Text>(
-//              std::move(arg1), std::move(arg2), options);
-//        }
+        case TEXT_DATA: {
+          return new VectorDereferenceNode<Text>(
+              std::move(arg1), std::move(arg2), options);
+        }
         default: {
           throw "Invalid data type";  // TODO
         }
