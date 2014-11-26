@@ -28,6 +28,174 @@ class Node {
   Node *next_;
 };
 
+// --- RowIDNode ---
+
+// NOTE: The following implementation assumes that there are no duplicates.
+
+struct RegularRowIDComparer {
+  bool operator()(const Record &lhs, const Record &rhs) const {
+    return lhs.row_id.raw() < rhs.row_id.raw();
+  }
+};
+
+struct ReverseRowIDComparer {
+  bool operator()(const Record &lhs, const Record &rhs) const {
+    return lhs.row_id.raw() > rhs.row_id.raw();
+  }
+};
+
+template <typename T>
+class RowIDNode : public Node {
+ public:
+  using Comparer = T;
+
+  explicit RowIDNode(SorterOrder &&order)
+      : Node(std::move(order)),
+        comparer_() {}
+  ~RowIDNode() = default;
+
+  void sort(ArrayRef<Record> records, size_t begin, size_t end) {
+    return quick_sort(records, begin, end);
+  }
+
+ private:
+  Comparer comparer_;
+
+  // Sort records with quick sort.
+  //
+  // Switches to insertion sort when there are few records.
+  //
+  // On failure, throws an exception.
+  void quick_sort(ArrayRef<Record> records, size_t begin, size_t end);
+
+  // Sort records with insertion sort.
+  //
+  // On failure, throws an exception.
+  void insertion_sort(ArrayRef<Record> records);
+
+  // Choose the pivot and move it to the front.
+  void move_pivot_first(ArrayRef<Record> records);
+};
+
+template <typename T>
+void RowIDNode<T>::quick_sort(ArrayRef<Record> records,
+                              size_t begin,
+                              size_t end) {
+  // TODO: Currently, the threshold is 16.
+  //       This value should be optimized and replaced with a named constant.
+  while (records.size() >= 16) {
+    move_pivot_first(records);
+    const Record pivot = records[0];
+    size_t left = 1;
+    size_t right = records.size();
+    for ( ; ; ) {
+      // Move prior records to left.
+      while (left < right) {
+        if (comparer_(pivot, records[left])) {
+          break;
+        }
+        ++left;
+      }
+      while (left < right) {
+        --right;
+        if (comparer_(records[right], pivot)) {
+          break;
+        }
+      }
+      if (left >= right) {
+        break;
+      }
+      std::swap(records[left], records[right]);
+      ++left;
+    }
+
+    // Move the pivot to the boundary.
+    --left;
+    std::swap(records[0], records[left]);
+
+    // There are the left group and the right group.
+    // A recursive call is used for sorting the smaller group.
+    // The recursion depth is less than log_2(n) where n is the number of
+    // records.
+    // The next loop of the current call is used for sorting the larger group.
+    if (left < (records.size() - right)) {
+      if ((begin < left) && (left >= 2)) {
+        size_t next_end = (end < left) ? end : left;
+        quick_sort(records.ref(0, left), begin, next_end);
+      }
+      if (end <= right) {
+        return;
+      }
+      records = records.ref(right);
+      begin = (begin < right) ? 0 : (begin - right);
+      end -= right;
+    } else {
+      if ((end > right) && ((records.size() - right) >= 2)) {
+        size_t next_begin = (begin < right) ? 0 : (begin - right);
+        size_t next_end = end - right;
+        quick_sort(records.ref(right), next_begin, next_end);
+      }
+      if (begin >= left) {
+        return;
+      }
+      records = records.ref(0, left);
+      if (end > left) {
+        end = left;
+      }
+    }
+  }
+
+  if (records.size() >= 2) {
+    insertion_sort(records);
+  }
+}
+
+template <typename T>
+void RowIDNode<T>::insertion_sort(ArrayRef<Record> records) {
+  for (size_t i = 1; i < records.size(); ++i) {
+    for (size_t j = i; j > 0; --j) {
+      if (comparer_(records[j], records[j - 1])) {
+        std::swap(records[j], records[j - 1]);
+      } else {
+        break;
+      }
+    }
+  }
+}
+
+template <typename T>
+void RowIDNode<T>::move_pivot_first(ArrayRef<Record> records) {
+  // Choose the median from records[1], records[1 / size], and
+  // records[size - 2].
+  // The reason why not using records[0] and records[size - 1] is to avoid the
+  // worst case which occurs when the records are sorted in reverse order.
+  size_t first = 1;
+  size_t middle = records.size() / 2;
+  size_t last = records.size() - 2;
+  if (comparer_(records[first], records[middle])) {
+    // first < middle.
+    if (comparer_(records[middle], records[last])) {
+      // first < middle < last.
+      std::swap(records[0], records[middle]);
+    } else if (comparer_(records[first], records[last])) {
+      // first < last < middle.
+      std::swap(records[0], records[last]);
+    } else {
+      // last < first < middle.
+      std::swap(records[0], records[first]);
+    }
+  } else if (comparer_(records[last], records[middle])) {
+    // last < middle < first.
+    std::swap(records[0], records[middle]);
+  } else if (comparer_(records[last], records[first])) {
+    // middle < last < first.
+    std::swap(records[0], records[last]);
+  } else {
+    // middle < first < last.
+    std::swap(records[0], records[first]);
+  }
+}
+
 // --- ScoreNode ---
 
 struct RegularScoreComparer {
@@ -954,13 +1122,20 @@ void Sorter::sort(Array<Record> *records) {
 }
 
 Node *Sorter::create_node(SorterOrder &&order) try {
-  if (order.expression->is_score()) {
+  if (order.expression->is_row_id()) {
+    if (order.type == SORTER_REGULAR_ORDER) {
+      return new RowIDNode<RegularRowIDComparer>(std::move(order));
+    } else {
+      return new RowIDNode<ReverseRowIDComparer>(std::move(order));
+    }
+  } else if (order.expression->is_score()) {
     if (order.type == SORTER_REGULAR_ORDER) {
       return new ScoreNode<RegularScoreComparer>(std::move(order));
     } else {
       return new ScoreNode<ReverseScoreComparer>(std::move(order));
     }
   }
+
   switch (order.expression->data_type()) {
     case BOOL_DATA: {
       return new BoolNode(std::move(order));
