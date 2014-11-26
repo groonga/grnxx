@@ -577,6 +577,7 @@ void test_row_id() try {
   // Test an expression (_id).
   builder->push_row_id();
   auto expression = builder->release();
+  assert(expression->is_row_id());
 
   auto records = create_input_records();
 
@@ -598,6 +599,7 @@ void test_score() try {
   // Test an expression (_score).
   builder->push_score();
   auto expression = builder->release();
+  assert(expression->is_score());
 
   auto records = create_input_records();
 
