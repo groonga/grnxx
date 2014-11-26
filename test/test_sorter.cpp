@@ -127,6 +127,45 @@ grnxx::Array<grnxx::Record> create_input_records() {
   return records;
 }
 
+void test_row_id() {
+  // Create a cursor which reads all the records.
+  auto records = create_input_records();
+
+  // Create an object for building expressions.
+  auto expression_builder = grnxx::ExpressionBuilder::create(test.table);
+
+  // Create a reverse sorter.
+  grnxx::Array<grnxx::SorterOrder> orders;
+  orders.resize(1);
+  expression_builder->push_row_id();
+  auto expression = expression_builder->release();
+  orders[0].expression = std::move(expression);
+  orders[0].type = grnxx::SORTER_REVERSE_ORDER;
+  auto sorter = grnxx::Sorter::create(std::move(orders));
+
+  sorter->sort(&records);
+  for (size_t i = 1; i < records.size(); ++i) {
+    size_t lhs_row_id = records[i - 1].row_id.raw();
+    size_t rhs_row_id = records[i].row_id.raw();
+    assert(lhs_row_id > rhs_row_id);
+  }
+
+  // Create a regular sorter.
+  orders.resize(1);
+  expression_builder->push_row_id();
+  expression = expression_builder->release();
+  orders[0].expression = std::move(expression);
+  orders[0].type = grnxx::SORTER_REGULAR_ORDER;
+  sorter = grnxx::Sorter::create(std::move(orders));
+
+  sorter->sort(&records);
+  for (size_t i = 1; i < records.size(); ++i) {
+    size_t lhs_row_id = records[i - 1].row_id.raw();
+    size_t rhs_row_id = records[i].row_id.raw();
+    assert(lhs_row_id < rhs_row_id);
+  }
+}
+
 void test_score() {
   // Create a cursor which reads all the records.
   auto records = create_input_records();
@@ -594,6 +633,7 @@ void test_composite() {
 
 int main() {
   init_test();
+  test_row_id();
   test_score();
   test_bool();
   test_int();
