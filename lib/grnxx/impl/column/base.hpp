@@ -53,9 +53,6 @@ class ColumnBase : public ColumnInterface {
   virtual void set(Int row_id, const Datum &datum) = 0;
   virtual void get(Int row_id, Datum *datum) const = 0;
 
-  virtual bool contains(const Datum &datum) const;
-  virtual Int find_one(const Datum &datum) const;
-
   // -- Internal API --
 
   // Create a new column.
@@ -114,15 +111,12 @@ class ColumnBase : public ColumnInterface {
   bool is_key_;
   Array<std::unique_ptr<Index>> indexes_;
 
-// private:
-//  // Find an index with its ID.
-//  //
-//  // On success, returns a pointer to the index.
-//  // On failure, returns nullptr and stores error information into "*error" if
-//  // "error" != nullptr.
-//  Index *find_index_with_id(Error *error,
-//                            const String &name,
-//                            Int *column_id) const;
+ private:
+  // Find an index with its ID.
+  //
+  // If found, returns the index.
+  // If not found, returns nullptr;
+  Index *find_index_with_id(const String &name, size_t *index_id) const;
 };
 
 }  // namespace impl

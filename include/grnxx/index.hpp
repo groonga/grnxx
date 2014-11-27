@@ -83,7 +83,48 @@ struct IndexOptions {
 
 class Index {
  public:
+  Index() = default;
+
+  // Return the owner column.
+  virtual Column *column() const = 0;
+  // Return the name.
+  virtual String name() const = 0;
+  // Return the index type.
+  virtual IndexType type() const = 0;
+
+  // Insert a new entry.
+  //
+  // On failure, throws an exception.
+  virtual void insert(Int row_id, const Datum &value) = 0;
+  // Remove an entry.
+  //
+  // On failure, throws an exception.
+  virtual bool remove(Int row_id, const Datum &value) = 0;
+
+  // Return whether "value" is registered or not.
+  virtual bool contains(const Datum &value) const;
+
+  // Find "datum".
+  //
+  // If found, returns the row ID.
+  // If not found, returns N/A.
+  virtual Int find_one(const Datum &value) const;
+
+  // Create a cursor to get records.
+  //
+  // On success, returns the cursor.
+  // On failure, throws an exception.
+  virtual std::unique_ptr<Cursor> find(
+      const Datum &value,
+      const CursorOptions &options = CursorOptions()) const;
+
+ protected:
   virtual ~Index() = default;
+};
+
+//class Index {
+// public:
+//  virtual ~Index() = default;
 
 //  // Return the owner column.
 //  Column *column() const {
@@ -204,9 +245,9 @@ class Index {
 //  // Return whether the index is removable or not.
 //  bool is_removable();
 
- protected:
-  Index() = default;
-};
+// protected:
+//  Index() = default;
+//};
 
 }  // namespace grnxx
 

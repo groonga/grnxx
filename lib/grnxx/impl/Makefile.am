@@ -11,6 +11,7 @@ libgrnxx_impl_la_LDFLAGS = @AM_LTLDFLAGS@
 libgrnxx_impl_la_SOURCES =		\
 	db.cpp				\
 	expression.cpp			\
+	index.cpp			\
 	merger.cpp			\
 	pipeline.cpp			\
 	sorter.cpp			\

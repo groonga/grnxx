@@ -2,6 +2,7 @@
 
 #include "grnxx/impl/column/scalar.hpp"
 #include "grnxx/impl/column/vector.hpp"
+#include "grnxx/impl/index.hpp"
 #include "grnxx/impl/table.hpp"
 
 namespace grnxx {
@@ -33,144 +34,78 @@ Index *ColumnBase::create_index(
     IndexType type,
     const IndexOptions &options) {
   throw "Not supported yet";  // TODO
+
+//  if (find_index(name)) {
+//    throw "Index already exists";  // TODO
+//  }
+//  indexes_.reserve(indexes_.size() + 1);
+//  std::unique_ptr<Index> new_index = Index::create(this, name, type, options);
+//  indexes_.push_back(std::move(new_index));
+//  return indexes_.back().get();
 }
 
 void ColumnBase::remove_index(const String &name) {
   throw "Not supported yet";  // TODO
+
+//  size_t index_id;
+//  if (!find_index_with_id(name, &index_id)) {
+//    throw "Index not found";  // TODO
+//  }
+//  if (!indexes_[index_id]->is_removable()) {
+//    throw "Index not removable";  // TODO
+//  }
+//  indexes_.erase(index_id);
 }
 
 void ColumnBase::rename_index(const String &name, const String &new_name) {
   throw "Not supported yet";  // TODO
+
+//  size_t index_id;
+//  if (!find_index_with_id(name, &index_id)) {
+//    throw "Index not found";  // TODO
+//  }
+//  if (name == new_name) {
+//    return;
+//  }
+//  if (find_index(new_name)) {
+//    throw "Index already exists";  // TODO
+//  }
+//  indexes_[index_id]->rename(new_name);
 }
 
 void ColumnBase::reorder_index(const String &name, const String &prev_name) {
-  throw "Not supported yet";  // TODO
+  size_t index_id;
+  if (!find_index_with_id(name, &index_id)) {
+    throw "Index not found";  // TODO
+  }
+  size_t new_index_id = 0;
+  if (prev_name.size() != 0) {
+    size_t prev_index_id;
+    if (!find_index_with_id(prev_name, &prev_index_id)) {
+      throw "Index not found";  // TODO
+    }
+    if (index_id <= prev_index_id) {
+      new_index_id = prev_index_id;
+    } else {
+      new_index_id = prev_index_id + 1;
+    }
+  }
+  for ( ; index_id < new_index_id; ++index_id) {
+    std::swap(indexes_[index_id], indexes_[index_id + 1]);
+  }
+  for ( ; index_id > new_index_id; --index_id) {
+    std::swap(indexes_[index_id], indexes_[index_id - 1]);
+  }
 }
 
 Index *ColumnBase::find_index(const String &name) const {
-  throw "Not supported yet";  // TODO
+  for (size_t i = 0; i < num_indexes(); ++i) {
+    if (name == indexes_[i]->name()) {
+      return indexes_[i].get();
+    }
+  }
+  return nullptr;
 }
-
-bool ColumnBase::contains(const Datum &datum) const {
-  throw "Not supported yet";  // TODO
-}
-
-Int ColumnBase::find_one(const Datum &datum) const {
-  throw "Not supported yet";  // TODO
-}
-
-//Index *ColumnBase::create_index(Error *error,
-//                                const StringCRef &name,
-//                                IndexType type,
-//                                const IndexOptions &options) {
-//  if (find_index(nullptr, name)) {
-//    GRNXX_ERROR_SET(error, ALREADY_EXISTS,
-//                    "Index already exists: name = \"%.*s\"",
-//                    static_cast<int>(name.size()), name.data());
-//    return nullptr;
-//  }
-//  if (!indexes_.reserve(error, indexes_.size() + 1)) {
-//    return nullptr;
-//  }
-//  unique_ptr<Index> new_index =
-//      Index::create(error, this, name, type, options);
-//  if (!new_index) {
-//    return nullptr;
-//  }
-//  indexes_.push_back(error, std::move(new_index));
-//  return indexes_.back().get();
-//}
-
-//bool ColumnBase::remove_index(Error *error, const StringCRef &name) {
-//  Int index_id;
-//  if (!find_index_with_id(error, name, &index_id)) {
-//    return false;
-//  }
-//  if (!indexes_[index_id]->is_removable()) {
-//    GRNXX_ERROR_SET(error, NOT_REMOVABLE,
-//                    "Index is not removable: name = \"%.*s\"",
-//                    static_cast<int>(name.size()), name.data());
-//    return false;
-//  }
-//  indexes_.erase(index_id);
-//  return true;
-//}
-
-//bool ColumnBase::rename_index(Error *error,
-//                              const StringCRef &name,
-//                              const StringCRef &new_name) {
-//  Int index_id;
-//  if (!find_index_with_id(error, name, &index_id)) {
-//    return false;
-//  }
-//  if (name == new_name) {
-//    return true;
-//  }
-//  if (find_index(nullptr, new_name)) {
-//    GRNXX_ERROR_SET(error, ALREADY_EXISTS,
-//                    "Index already exists: new_name = \"%.*s\"",
-//                    static_cast<int>(new_name.size()), new_name.data());
-//    return false;
-//  }
-//  return indexes_[index_id]->rename(error, new_name);
-//}
-
-//bool ColumnBase::reorder_index(Error *error,
-//                               const StringCRef &name,
-//                               const StringCRef &prev_name) {
-//  Int index_id;
-//  if (!find_index_with_id(error, name, &index_id)) {
-//    return false;
-//  }
-//  Int new_index_id = 0;
-//  if (prev_name.size() != 0) {
-//    Int prev_index_id;
-//    if (!find_index_with_id(error, prev_name, &prev_index_id)) {
-//      return false;
-//    }
-//    if (index_id <= prev_index_id) {
-//      new_index_id = prev_index_id;
-//    } else {
-//      new_index_id = prev_index_id + 1;
-//    }
-//  }
-//  for ( ; index_id < new_index_id; ++index_id) {
-//    std::swap(indexes_[index_id], indexes_[index_id + 1]);
-//  }
-//  for ( ; index_id > new_index_id; --index_id) {
-//    std::swap(indexes_[index_id], indexes_[index_id - 1]);
-//  }
-//  return true;
-//}
-
-//Index *ColumnBase::find_index(Error *error, const StringCRef &name) const {
-//  for (Int index_id = 0; index_id < num_indexes(); ++index_id) {
-//    if (name == indexes_[index_id]->name()) {
-//      return indexes_[index_id].get();
-//    }
-//  }
-//  GRNXX_ERROR_SET(error, NOT_FOUND, "Index not found");
-//  return nullptr;
-//}
-
-//bool ColumnBase::set(Error *error, Int, const Datum &) {
-//  GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not suported yet");
-//  return false;
-//}
-
-//bool ColumnBase::get(Error *error, Int, Datum *) const {
-//  GRNXX_ERROR_SET(error, NOT_SUPPORTED_YET, "Not suported yet");
-//  return false;
-//}
-
-//bool ColumnBase::contains(const Datum &datum) const {
-//  return find_one(datum) != NULL_ROW_ID;
-//}
-
-//Int ColumnBase::find_one(const Datum &) const {
-//  // TODO: This function should be pure virtual.
-//  return Int::na();
-//}
 
 std::unique_ptr<ColumnBase> ColumnBase::create(
     Table *table,
@@ -253,21 +188,18 @@ void ColumnBase::set_key(Int, const Datum &) {
 //  throw "Not supported";  // TODO
 //}
 
-//Index *ColumnBase::find_index_with_id(Error *error,
-//                                      const StringCRef &name,
-//                                      Int *index_id) const {
-//  for (Int i = 0; i < num_indexes(); ++i) {
-//    if (name == indexes_[i]->name()) {
-//      if (index_id != nullptr) {
-//        *index_id = i;
-//      }
-//      return indexes_[i].get();
-//    }
-//  }
-//  GRNXX_ERROR_SET(error, NOT_FOUND, "Index not found: name = \"%.*s\"",
-//                  static_cast<int>(name.size()), name.data());
-//  return nullptr;
-//}
+Index *ColumnBase::find_index_with_id(const String &name,
+                                      size_t *index_id) const {
+  for (size_t i = 0; i < num_indexes(); ++i) {
+    if (name == indexes_[i]->name()) {
+      if (index_id) {
+        *index_id = i;
+      }
+      return indexes_[i].get();
+    }
+  }
+  return nullptr;
+}
 
 }  // namespace impl
 }  // namespace grnxx
