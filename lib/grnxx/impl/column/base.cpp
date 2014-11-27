@@ -13,7 +13,7 @@ ColumnBase::ColumnBase(Table *table,
                        DataType data_type)
     : ColumnInterface(),
       table_(table),
-      name_(name),
+      name_(name.clone()),
       data_type_(data_type),
       reference_table_(nullptr),
       is_key_(false),
