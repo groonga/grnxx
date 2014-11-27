@@ -47,6 +47,12 @@ String::String(size_t size, char byte)
   capacity_ = size;
 }
 
+String String::clone() const {
+  String clone(size_);
+  std::memcpy(clone.buffer_, data_, size_);
+  return clone;
+}
+
 String &String::instantiate() {
   if (is_empty() || is_instance()) {
     // Nothing to do.

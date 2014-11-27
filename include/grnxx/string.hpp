@@ -79,6 +79,12 @@ class String {
     return capacity_ != 0;
   }
 
+  // Create a clone instance of "this".
+  //
+  // On success, returns the instance.
+  // On failure, throws an exception.
+  String clone() const;
+
   // Instanciate the string.
   //
   // On success, returns a reference to "this".
