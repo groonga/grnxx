@@ -123,7 +123,19 @@ void test_string() {
   }
 }
 
+void test_clone() {
+  grnxx::String original;
+  original.assign("abc");
+
+  grnxx::String clone(original.clone());
+  original.assign("def");
+
+  assert(original == "def");
+  assert(clone == "abc");
+}
+
 int main() {
   test_string();
+  test_clone();
   return 0;
 }
