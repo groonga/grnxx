@@ -192,197 +192,6 @@ void benchmark_int() {
   constexpr size_t NUM_ROWS = 1 << 21;
   auto db = grnxx::open_db("");
   auto table = db->create_table("Table");
-  auto float_1 = table->create_column("Float_1", grnxx::FLOAT_DATA);
-  auto float_2 = table->create_column("Float_2", grnxx::FLOAT_DATA);
-  auto float_3 = table->create_column("Float_3", grnxx::FLOAT_DATA);
-  std::mt19937_64 rng;
-  for (size_t i = 0; i < NUM_ROWS; ++i) {
-    grnxx::Int row_id = table->insert_row();
-    if ((rng() % 4) != 0) {
-      float_1->set(row_id, grnxx::Float(1.0 * (rng() % 256) / 255));
-    }
-    if ((rng() % 4) != 0) {
-      float_2->set(row_id, grnxx::Float(1.0 * (rng() % 65536) / 65535));
-    }
-    if ((rng() % 4) != 0) {
-      float_3->set(row_id, grnxx::Float(1.0 * rng() / rng.max()));
-    }
-  }
-
-  {
-    double best_elapsed = std::numeric_limits<double>::max();
-    for (int i = 0; i < 5; ++i) {
-      grnxx::Array<grnxx::Record> records = create_records(table);
-      Timer timer;
-      auto expression_builder = grnxx::ExpressionBuilder::create(table);
-      grnxx::Array<grnxx::SorterOrder> orders;
-      orders.resize(1);
-      expression_builder->push_column("Float_1");
-      orders[0].expression = std::move(expression_builder->release());
-      orders[0].type = grnxx::SORTER_REGULAR_ORDER;
-      auto sorter = grnxx::Sorter::create(std::move(orders));
-      sorter->sort(&records);
-      double elapsed = timer.elapsed();
-      if (elapsed < best_elapsed) {
-        best_elapsed = elapsed;
-      }
-    }
-    std::cout << "Float_1" << std::endl;
-    std::cout << "best elapsed [s] = " << best_elapsed << std::endl;
-  }
-
-  {
-    double best_elapsed = std::numeric_limits<double>::max();
-    for (int i = 0; i < 5; ++i) {
-      grnxx::Array<grnxx::Record> records = create_records(table);
-      Timer timer;
-      auto expression_builder = grnxx::ExpressionBuilder::create(table);
-      grnxx::Array<grnxx::SorterOrder> orders;
-      orders.resize(1);
-      expression_builder->push_column("Float_2");
-      orders[0].expression = std::move(expression_builder->release());
-      orders[0].type = grnxx::SORTER_REGULAR_ORDER;
-      auto sorter = grnxx::Sorter::create(std::move(orders));
-      sorter->sort(&records);
-      double elapsed = timer.elapsed();
-      if (elapsed < best_elapsed) {
-        best_elapsed = elapsed;
-      }
-    }
-    std::cout << "Float_2" << std::endl;
-    std::cout << "best elapsed [s] = " << best_elapsed << std::endl;
-  }
-
-  {
-    double best_elapsed = std::numeric_limits<double>::max();
-    for (int i = 0; i < 5; ++i) {
-      grnxx::Array<grnxx::Record> records = create_records(table);
-      Timer timer;
-      auto expression_builder = grnxx::ExpressionBuilder::create(table);
-      grnxx::Array<grnxx::SorterOrder> orders;
-      orders.resize(1);
-      expression_builder->push_column("Float_3");
-      orders[0].expression = std::move(expression_builder->release());
-      orders[0].type = grnxx::SORTER_REGULAR_ORDER;
-      auto sorter = grnxx::Sorter::create(std::move(orders));
-      sorter->sort(&records);
-      double elapsed = timer.elapsed();
-      if (elapsed < best_elapsed) {
-        best_elapsed = elapsed;
-      }
-    }
-    std::cout << "Float_3" << std::endl;
-    std::cout << "best elapsed [s] = " << best_elapsed << std::endl;
-  }
-
-  {
-    double best_elapsed = std::numeric_limits<double>::max();
-    for (int i = 0; i < 5; ++i) {
-      grnxx::Array<grnxx::Record> records = create_records(table);
-      Timer timer;
-      auto expression_builder = grnxx::ExpressionBuilder::create(table);
-      grnxx::Array<grnxx::SorterOrder> orders;
-      orders.resize(2);
-      expression_builder->push_column("Float_1");
-      orders[0].expression = std::move(expression_builder->release());
-      orders[0].type = grnxx::SORTER_REGULAR_ORDER;
-      expression_builder->push_column("Float_2");
-      orders[1].expression = std::move(expression_builder->release());
-      orders[1].type = grnxx::SORTER_REGULAR_ORDER;
-      auto sorter = grnxx::Sorter::create(std::move(orders));
-      sorter->sort(&records);
-      double elapsed = timer.elapsed();
-      if (elapsed < best_elapsed) {
-        best_elapsed = elapsed;
-      }
-    }
-    std::cout << "Float_1, Float_2" << std::endl;
-    std::cout << "best elapsed [s] = " << best_elapsed << std::endl;
-  }
-
-  {
-    double best_elapsed = std::numeric_limits<double>::max();
-    for (int i = 0; i < 5; ++i) {
-      grnxx::Array<grnxx::Record> records = create_records(table);
-      Timer timer;
-      auto expression_builder = grnxx::ExpressionBuilder::create(table);
-      grnxx::Array<grnxx::SorterOrder> orders;
-      orders.resize(2);
-      expression_builder->push_column("Float_1");
-      orders[0].expression = std::move(expression_builder->release());
-      orders[0].type = grnxx::SORTER_REGULAR_ORDER;
-      expression_builder->push_column("Float_3");
-      orders[1].expression = std::move(expression_builder->release());
-      orders[1].type = grnxx::SORTER_REGULAR_ORDER;
-      auto sorter = grnxx::Sorter::create(std::move(orders));
-      sorter->sort(&records);
-      double elapsed = timer.elapsed();
-      if (elapsed < best_elapsed) {
-        best_elapsed = elapsed;
-      }
-    }
-    std::cout << "Float_1, Float_3" << std::endl;
-    std::cout << "best elapsed [s] = " << best_elapsed << std::endl;
-  }
-
-  {
-    double best_elapsed = std::numeric_limits<double>::max();
-    for (int i = 0; i < 5; ++i) {
-      grnxx::Array<grnxx::Record> records = create_records(table);
-      Timer timer;
-      auto expression_builder = grnxx::ExpressionBuilder::create(table);
-      grnxx::Array<grnxx::SorterOrder> orders;
-      orders.resize(2);
-      expression_builder->push_column("Float_2");
-      orders[0].expression = std::move(expression_builder->release());
-      orders[0].type = grnxx::SORTER_REGULAR_ORDER;
-      expression_builder->push_column("Float_3");
-      orders[1].expression = std::move(expression_builder->release());
-      orders[1].type = grnxx::SORTER_REGULAR_ORDER;
-      auto sorter = grnxx::Sorter::create(std::move(orders));
-      sorter->sort(&records);
-      double elapsed = timer.elapsed();
-      if (elapsed < best_elapsed) {
-        best_elapsed = elapsed;
-      }
-    }
-    std::cout << "Float_2, Float_3" << std::endl;
-    std::cout << "best elapsed [s] = " << best_elapsed << std::endl;
-  }
-
-  {
-    double best_elapsed = std::numeric_limits<double>::max();
-    for (int i = 0; i < 5; ++i) {
-      grnxx::Array<grnxx::Record> records = create_records(table);
-      Timer timer;
-      auto expression_builder = grnxx::ExpressionBuilder::create(table);
-      grnxx::Array<grnxx::SorterOrder> orders;
-      orders.resize(3);
-      expression_builder->push_column("Float_1");
-      orders[0].expression = std::move(expression_builder->release());
-      orders[0].type = grnxx::SORTER_REGULAR_ORDER;
-      expression_builder->push_column("Float_2");
-      orders[1].expression = std::move(expression_builder->release());
-      orders[1].type = grnxx::SORTER_REGULAR_ORDER;
-      expression_builder->push_column("Float_3");
-      orders[2].expression = std::move(expression_builder->release());
-      orders[2].type = grnxx::SORTER_REGULAR_ORDER;
-      auto sorter = grnxx::Sorter::create(std::move(orders));
-      sorter->sort(&records);
-      double elapsed = timer.elapsed();
-      if (elapsed < best_elapsed) {
-        best_elapsed = elapsed;
-      }
-    }
-    std::cout << "Float_1, Float_2, Float_3" << std::endl;
-    std::cout << "best elapsed [s] = " << best_elapsed << std::endl;
-  }
-}
-
-void benchmark_float() {
-  constexpr size_t NUM_ROWS = 1 << 21;
-  auto db = grnxx::open_db("");
-  auto table = db->create_table("Table");
   auto int_1 = table->create_column("Int_1", grnxx::INT_DATA);
   auto int_2 = table->create_column("Int_2", grnxx::INT_DATA);
   auto int_3 = table->create_column("Int_3", grnxx::INT_DATA);
@@ -566,6 +375,197 @@ void benchmark_float() {
       }
     }
     std::cout << "Int_1, Int_2, Int_3" << std::endl;
+    std::cout << "best elapsed [s] = " << best_elapsed << std::endl;
+  }
+}
+
+void benchmark_float() {
+  constexpr size_t NUM_ROWS = 1 << 21;
+  auto db = grnxx::open_db("");
+  auto table = db->create_table("Table");
+  auto float_1 = table->create_column("Float_1", grnxx::FLOAT_DATA);
+  auto float_2 = table->create_column("Float_2", grnxx::FLOAT_DATA);
+  auto float_3 = table->create_column("Float_3", grnxx::FLOAT_DATA);
+  std::mt19937_64 rng;
+  for (size_t i = 0; i < NUM_ROWS; ++i) {
+    grnxx::Int row_id = table->insert_row();
+    if ((rng() % 4) != 0) {
+      float_1->set(row_id, grnxx::Float(1.0 * (rng() % 256) / 255));
+    }
+    if ((rng() % 4) != 0) {
+      float_2->set(row_id, grnxx::Float(1.0 * (rng() % 65536) / 65535));
+    }
+    if ((rng() % 4) != 0) {
+      float_3->set(row_id, grnxx::Float(1.0 * rng() / rng.max()));
+    }
+  }
+
+  {
+    double best_elapsed = std::numeric_limits<double>::max();
+    for (int i = 0; i < 5; ++i) {
+      grnxx::Array<grnxx::Record> records = create_records(table);
+      Timer timer;
+      auto expression_builder = grnxx::ExpressionBuilder::create(table);
+      grnxx::Array<grnxx::SorterOrder> orders;
+      orders.resize(1);
+      expression_builder->push_column("Float_1");
+      orders[0].expression = std::move(expression_builder->release());
+      orders[0].type = grnxx::SORTER_REGULAR_ORDER;
+      auto sorter = grnxx::Sorter::create(std::move(orders));
+      sorter->sort(&records);
+      double elapsed = timer.elapsed();
+      if (elapsed < best_elapsed) {
+        best_elapsed = elapsed;
+      }
+    }
+    std::cout << "Float_1" << std::endl;
+    std::cout << "best elapsed [s] = " << best_elapsed << std::endl;
+  }
+
+  {
+    double best_elapsed = std::numeric_limits<double>::max();
+    for (int i = 0; i < 5; ++i) {
+      grnxx::Array<grnxx::Record> records = create_records(table);
+      Timer timer;
+      auto expression_builder = grnxx::ExpressionBuilder::create(table);
+      grnxx::Array<grnxx::SorterOrder> orders;
+      orders.resize(1);
+      expression_builder->push_column("Float_2");
+      orders[0].expression = std::move(expression_builder->release());
+      orders[0].type = grnxx::SORTER_REGULAR_ORDER;
+      auto sorter = grnxx::Sorter::create(std::move(orders));
+      sorter->sort(&records);
+      double elapsed = timer.elapsed();
+      if (elapsed < best_elapsed) {
+        best_elapsed = elapsed;
+      }
+    }
+    std::cout << "Float_2" << std::endl;
+    std::cout << "best elapsed [s] = " << best_elapsed << std::endl;
+  }
+
+  {
+    double best_elapsed = std::numeric_limits<double>::max();
+    for (int i = 0; i < 5; ++i) {
+      grnxx::Array<grnxx::Record> records = create_records(table);
+      Timer timer;
+      auto expression_builder = grnxx::ExpressionBuilder::create(table);
+      grnxx::Array<grnxx::SorterOrder> orders;
+      orders.resize(1);
+      expression_builder->push_column("Float_3");
+      orders[0].expression = std::move(expression_builder->release());
+      orders[0].type = grnxx::SORTER_REGULAR_ORDER;
+      auto sorter = grnxx::Sorter::create(std::move(orders));
+      sorter->sort(&records);
+      double elapsed = timer.elapsed();
+      if (elapsed < best_elapsed) {
+        best_elapsed = elapsed;
+      }
+    }
+    std::cout << "Float_3" << std::endl;
+    std::cout << "best elapsed [s] = " << best_elapsed << std::endl;
+  }
+
+  {
+    double best_elapsed = std::numeric_limits<double>::max();
+    for (int i = 0; i < 5; ++i) {
+      grnxx::Array<grnxx::Record> records = create_records(table);
+      Timer timer;
+      auto expression_builder = grnxx::ExpressionBuilder::create(table);
+      grnxx::Array<grnxx::SorterOrder> orders;
+      orders.resize(2);
+      expression_builder->push_column("Float_1");
+      orders[0].expression = std::move(expression_builder->release());
+      orders[0].type = grnxx::SORTER_REGULAR_ORDER;
+      expression_builder->push_column("Float_2");
+      orders[1].expression = std::move(expression_builder->release());
+      orders[1].type = grnxx::SORTER_REGULAR_ORDER;
+      auto sorter = grnxx::Sorter::create(std::move(orders));
+      sorter->sort(&records);
+      double elapsed = timer.elapsed();
+      if (elapsed < best_elapsed) {
+        best_elapsed = elapsed;
+      }
+    }
+    std::cout << "Float_1, Float_2" << std::endl;
+    std::cout << "best elapsed [s] = " << best_elapsed << std::endl;
+  }
+
+  {
+    double best_elapsed = std::numeric_limits<double>::max();
+    for (int i = 0; i < 5; ++i) {
+      grnxx::Array<grnxx::Record> records = create_records(table);
+      Timer timer;
+      auto expression_builder = grnxx::ExpressionBuilder::create(table);
+      grnxx::Array<grnxx::SorterOrder> orders;
+      orders.resize(2);
+      expression_builder->push_column("Float_1");
+      orders[0].expression = std::move(expression_builder->release());
+      orders[0].type = grnxx::SORTER_REGULAR_ORDER;
+      expression_builder->push_column("Float_3");
+      orders[1].expression = std::move(expression_builder->release());
+      orders[1].type = grnxx::SORTER_REGULAR_ORDER;
+      auto sorter = grnxx::Sorter::create(std::move(orders));
+      sorter->sort(&records);
+      double elapsed = timer.elapsed();
+      if (elapsed < best_elapsed) {
+        best_elapsed = elapsed;
+      }
+    }
+    std::cout << "Float_1, Float_3" << std::endl;
+    std::cout << "best elapsed [s] = " << best_elapsed << std::endl;
+  }
+
+  {
+    double best_elapsed = std::numeric_limits<double>::max();
+    for (int i = 0; i < 5; ++i) {
+      grnxx::Array<grnxx::Record> records = create_records(table);
+      Timer timer;
+      auto expression_builder = grnxx::ExpressionBuilder::create(table);
+      grnxx::Array<grnxx::SorterOrder> orders;
+      orders.resize(2);
+      expression_builder->push_column("Float_2");
+      orders[0].expression = std::move(expression_builder->release());
+      orders[0].type = grnxx::SORTER_REGULAR_ORDER;
+      expression_builder->push_column("Float_3");
+      orders[1].expression = std::move(expression_builder->release());
+      orders[1].type = grnxx::SORTER_REGULAR_ORDER;
+      auto sorter = grnxx::Sorter::create(std::move(orders));
+      sorter->sort(&records);
+      double elapsed = timer.elapsed();
+      if (elapsed < best_elapsed) {
+        best_elapsed = elapsed;
+      }
+    }
+    std::cout << "Float_2, Float_3" << std::endl;
+    std::cout << "best elapsed [s] = " << best_elapsed << std::endl;
+  }
+
+  {
+    double best_elapsed = std::numeric_limits<double>::max();
+    for (int i = 0; i < 5; ++i) {
+      grnxx::Array<grnxx::Record> records = create_records(table);
+      Timer timer;
+      auto expression_builder = grnxx::ExpressionBuilder::create(table);
+      grnxx::Array<grnxx::SorterOrder> orders;
+      orders.resize(3);
+      expression_builder->push_column("Float_1");
+      orders[0].expression = std::move(expression_builder->release());
+      orders[0].type = grnxx::SORTER_REGULAR_ORDER;
+      expression_builder->push_column("Float_2");
+      orders[1].expression = std::move(expression_builder->release());
+      orders[1].type = grnxx::SORTER_REGULAR_ORDER;
+      expression_builder->push_column("Float_3");
+      orders[2].expression = std::move(expression_builder->release());
+      orders[2].type = grnxx::SORTER_REGULAR_ORDER;
+      auto sorter = grnxx::Sorter::create(std::move(orders));
+      sorter->sort(&records);
+      double elapsed = timer.elapsed();
+      if (elapsed < best_elapsed) {
+        best_elapsed = elapsed;
+      }
+    }
+    std::cout << "Float_1, Float_2, Float_3" << std::endl;
     std::cout << "best elapsed [s] = " << best_elapsed << std::endl;
   }
 }
