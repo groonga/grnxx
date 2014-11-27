@@ -446,18 +446,38 @@ void BoolNode::sort(ArrayRef<Record> records, size_t begin, size_t end) {
   // - Posterior values: [posterior_offset, na_offset)
   // - N/A: [na_offset, records.size())
   order_.expression->evaluate(records, &values_);
-  size_t posterior_offset = 0;
+  size_t posterior_offset = records.size();
   size_t na_offset = records.size();
-  for (size_t i = 0; i < na_offset; ) {
-    if (values_[i].is_na()) {
-      std::swap(records[i], records[na_offset - 1]);
-      values_[i] = values_[na_offset - 1];
-      --na_offset;
-    } else {
-      if (values_[i].raw() == prior_raw_) {
-        std::swap(records[posterior_offset], records[i]);
-        ++posterior_offset;
+  for (size_t i = 0; i < posterior_offset; ) {
+    while (i < posterior_offset) {
+      if (values_[i].is_na()) {
+        Record temp = records[i];
+        records[i] = records[posterior_offset - 1];
+        values_[i] = values_[posterior_offset - 1];
+        records[posterior_offset - 1] = records[na_offset - 1];
+        records[na_offset - 1] = temp;
+        --posterior_offset;
+        --na_offset;
+      } else if (values_[i].raw() == prior_raw_) {
+        ++i;
+      } else {
+        break;
       }
+    }
+    while (i < posterior_offset) {
+      if (values_[posterior_offset - 1].is_na()) {
+        --posterior_offset;
+        --na_offset;
+        std::swap(records[posterior_offset], records[na_offset]);
+      } else if (values_[posterior_offset - 1].raw() == prior_raw_) {
+        break;
+      } else {
+        --posterior_offset;
+      }
+    }
+    if (i < posterior_offset) {
+      --posterior_offset;
+      std::swap(records[i], records[posterior_offset]);
       ++i;
     }
   }
