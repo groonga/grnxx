@@ -288,9 +288,42 @@ class ConstantNode<Vector<T>> : public TypedNode<Vector<T>> {
   }
 
  private:
-  // TODO: ConstantNode should be specialized for Vector<Text> because
-  //       Array<T> stores only references.
   Array<T> value_;
+};
+
+// TODO: Vector will have ownership in future.
+template <>
+class ConstantNode<Vector<Text>> : public TypedNode<Vector<Text>> {
+ public:
+  using Value = Vector<Text>;
+
+  explicit ConstantNode(const Value &value)
+      : TypedNode<Value>(),
+        value_(),
+        bodies_() {
+    size_t value_size = value.raw_size();
+    value_.resize(value_size);
+    bodies_.resize(value_size);
+    for (size_t i = 0; i < value_size; ++i) {
+      bodies_[i].assign(value[i].raw_data(), value[i].raw_size());
+      value_[i] = Text(bodies_[i].data(), bodies_[i].size());
+    }
+  }
+  ~ConstantNode() = default;
+
+  NodeType node_type() const {
+    return CONSTANT_NODE;
+  }
+
+  void evaluate(ArrayCRef<Record> records, ArrayRef<Value> results) {
+    for (size_t i = 0; i < records.size(); ++i) {
+      results[i] = Value(value_.data(), value_.size());
+    }
+  }
+
+ private:
+  Array<Text> value_;
+  Array<String> bodies_;
 };
 
 // -- RowIDNode --
