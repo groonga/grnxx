@@ -40,50 +40,53 @@ void test_table() {
   assert(table->is_empty());
   assert(table->is_full());
 
-//  // Create a column named "Column_1".
-//  auto column = table->create_column(&error, "Column_1", grnxx::BOOL_DATA);
-//  assert(column);
-//  assert(column->name() == "Column_1");
-//  assert(table->num_columns() == 1);
+  // Create a column named "Column_1".
+  auto column = table->create_column("Column_1", grnxx::BOOL_DATA);
+  assert(column->name() == "Column_1");
+  assert(table->num_columns() == 1);
 
-//  assert(table->get_column(0) == column);
-//  assert(table->find_column(&error, "Column_1") == column);
+  assert(table->get_column(0) == column);
+  assert(table->find_column("Column_1") == column);
 
-//  // The following create_column() must fail because "Column_1" already exists.
-//  assert(!table->create_column(&error, "Column_1", grnxx::BOOL_DATA));
+  // The following create_column() must fail because "Column_1" already exists.
+  try {
+    table->create_column("Column_1", grnxx::BOOL_DATA);
+    assert(false);
+  } catch (...) {
+  }
 
-//  // Create columns named "Column_2" and Column_3".
-//  assert(table->create_column(&error, "Column_2", grnxx::BOOL_DATA));
-//  assert(table->create_column(&error, "Column_3", grnxx::BOOL_DATA));
-//  assert(table->num_columns() == 3);
+  // Create columns named "Column_2" and Column_3".
+  table->create_column("Column_2", grnxx::BOOL_DATA);
+  table->create_column("Column_3", grnxx::BOOL_DATA);
+  assert(table->num_columns() == 3);
 
-//  // Remove "Column_2".
-//  assert(table->remove_column(&error, "Column_2"));
-//  assert(table->num_columns() == 2);
+  // Remove "Column_2".
+  table->remove_column("Column_2");
+  assert(table->num_columns() == 2);
 
-//  assert(table->get_column(0)->name() == "Column_1");
-//  assert(table->get_column(1)->name() == "Column_3");
+  assert(table->get_column(0)->name() == "Column_1");
+  assert(table->get_column(1)->name() == "Column_3");
 
-//  // Recreate "Column_2".
-//  assert(table->create_column(&error, "Column_2", grnxx::BOOL_DATA));
+  // Recreate "Column_2".
+  table->create_column("Column_2", grnxx::BOOL_DATA);
 
-//  // Move "Column_3" to the next to "Column_2".
-//  assert(table->reorder_column(&error, "Column_3", "Column_2"));
-//  assert(table->get_column(0)->name() == "Column_1");
-//  assert(table->get_column(1)->name() == "Column_2");
-//  assert(table->get_column(2)->name() == "Column_3");
+  // Move "Column_3" to the next to "Column_2".
+  table->reorder_column("Column_3", "Column_2");
+  assert(table->get_column(0)->name() == "Column_1");
+  assert(table->get_column(1)->name() == "Column_2");
+  assert(table->get_column(2)->name() == "Column_3");
 
-//  // Move "Column_3" to the head.
-//  assert(table->reorder_column(&error, "Column_3", ""));
-//  assert(table->get_column(0)->name() == "Column_3");
-//  assert(table->get_column(1)->name() == "Column_1");
-//  assert(table->get_column(2)->name() == "Column_2");
+  // Move "Column_3" to the head.
+  table->reorder_column("Column_3", "");
+  assert(table->get_column(0)->name() == "Column_3");
+  assert(table->get_column(1)->name() == "Column_1");
+  assert(table->get_column(2)->name() == "Column_2");
 
-//  // Move "Column_2" to the next to "Column3".
-//  assert(table->reorder_column(&error, "Column_2", "Column_3"));
-//  assert(table->get_column(0)->name() == "Column_3");
-//  assert(table->get_column(1)->name() == "Column_2");
-//  assert(table->get_column(2)->name() == "Column_1");
+  // Move "Column_2" to the next to "Column3".
+  table->reorder_column("Column_2", "Column_3");
+  assert(table->get_column(0)->name() == "Column_3");
+  assert(table->get_column(1)->name() == "Column_2");
+  assert(table->get_column(2)->name() == "Column_1");
 }
 
 void test_rows() {
