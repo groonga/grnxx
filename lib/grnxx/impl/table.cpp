@@ -211,7 +211,7 @@ TableReverseCursor::TableReverseCursor(const Table *table,
 Table::Table(DB *db, const String &name)
     : TableInterface(),
       db_(db),
-      name_(name),
+      name_(name.clone()),
       columns_(),
       referrer_columns_(),
       key_column_(nullptr),
