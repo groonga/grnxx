@@ -99,16 +99,16 @@ class Index {
   // Remove an entry.
   //
   // On failure, throws an exception.
-  virtual bool remove(Int row_id, const Datum &value) = 0;
+  virtual void remove(Int row_id, const Datum &value) = 0;
 
   // Return whether "value" is registered or not.
-  virtual bool contains(const Datum &value) const;
+  virtual bool contains(const Datum &value) const = 0;
 
   // Find "datum".
   //
   // If found, returns the row ID.
   // If not found, returns N/A.
-  virtual Int find_one(const Datum &value) const;
+  virtual Int find_one(const Datum &value) const = 0;
 
   // Create a cursor to get records.
   //
@@ -116,7 +116,7 @@ class Index {
   // On failure, throws an exception.
   virtual std::unique_ptr<Cursor> find(
       const Datum &value,
-      const CursorOptions &options = CursorOptions()) const;
+      const CursorOptions &options = CursorOptions()) const = 0;
 
  protected:
   virtual ~Index() = default;

@@ -33,44 +33,38 @@ Index *ColumnBase::create_index(
     const String &name,
     IndexType type,
     const IndexOptions &options) {
-  throw "Not supported yet";  // TODO
-
-//  if (find_index(name)) {
-//    throw "Index already exists";  // TODO
-//  }
-//  indexes_.reserve(indexes_.size() + 1);
-//  std::unique_ptr<Index> new_index = Index::create(this, name, type, options);
-//  indexes_.push_back(std::move(new_index));
-//  return indexes_.back().get();
+  if (find_index(name)) {
+    throw "Index already exists";  // TODO
+  }
+  indexes_.reserve(indexes_.size() + 1);
+  std::unique_ptr<Index> new_index(Index::create(this, name, type, options));
+  indexes_.push_back(std::move(new_index));
+  return indexes_.back().get();
 }
 
 void ColumnBase::remove_index(const String &name) {
-  throw "Not supported yet";  // TODO
-
-//  size_t index_id;
-//  if (!find_index_with_id(name, &index_id)) {
-//    throw "Index not found";  // TODO
-//  }
-//  if (!indexes_[index_id]->is_removable()) {
-//    throw "Index not removable";  // TODO
-//  }
-//  indexes_.erase(index_id);
+  size_t index_id;
+  if (!find_index_with_id(name, &index_id)) {
+    throw "Index not found";  // TODO
+  }
+  if (!indexes_[index_id]->is_removable()) {
+    throw "Index not removable";  // TODO
+  }
+  indexes_.erase(index_id);
 }
 
 void ColumnBase::rename_index(const String &name, const String &new_name) {
-  throw "Not supported yet";  // TODO
-
-//  size_t index_id;
-//  if (!find_index_with_id(name, &index_id)) {
-//    throw "Index not found";  // TODO
-//  }
-//  if (name == new_name) {
-//    return;
-//  }
-//  if (find_index(new_name)) {
-//    throw "Index already exists";  // TODO
-//  }
-//  indexes_[index_id]->rename(new_name);
+  size_t index_id;
+  if (!find_index_with_id(name, &index_id)) {
+    throw "Index not found";  // TODO
+  }
+  if (name == new_name) {
+    return;
+  }
+  if (find_index(new_name)) {
+    throw "Index already exists";  // TODO
+  }
+  indexes_[index_id]->rename(new_name);
 }
 
 void ColumnBase::reorder_index(const String &name, const String &prev_name) {

@@ -12,19 +12,28 @@ namespace impl {
 using ColumnInterface = grnxx::Column;
 using IndexInterface = grnxx::Index;
 
+class ColumnBase;
+
 class Index : public IndexInterface {
  public:
   // -- Public API (grnxx/index.hpp) --
 
-  Index(Column *column, const String &name);
+  Index(ColumnBase *column, const String &name);
   virtual ~Index();
 
-  // Return the owner column.
   ColumnInterface *column() const;
-  // Return the name.
   String name() const {
     return name_;
   }
+
+  virtual void insert(Int row_id, const Datum &value) = 0;
+  virtual void remove(Int row_id, const Datum &value) = 0;
+
+  virtual bool contains(const Datum &value) const;
+  virtual Int find_one(const Datum &value) const;
+  virtual std::unique_ptr<Cursor> find(
+      const Datum &value,
+      const CursorOptions &options = CursorOptions()) const;
 
   // -- Internal API --
 
@@ -32,14 +41,13 @@ class Index : public IndexInterface {
   //
   // On success, returns the column.
   // On failure, throws an exception.
-  static std::unique_ptr<Index> create(
-      Column *column,
-      const String &name,
-      IndexType type,
-      const IndexOptions &options);
+  static Index *create(ColumnBase *column,
+                       const String &name,
+                       IndexType type,
+                       const IndexOptions &options);
 
   // Return the owner table.
-  Column *_column() const {
+  ColumnBase *_column() const {
     return column_;
   }
 
@@ -52,7 +60,7 @@ class Index : public IndexInterface {
   bool is_removable() const;
 
  private:
-  Column *column_;
+  ColumnBase *column_;
   String name_;
 };
 
