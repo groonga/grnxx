@@ -41,24 +41,24 @@ void Column<Text>::set(Int row_id, const Datum &datum) {
     throw "Key already exists";  // TODO
   }
   if (!old_value.is_na()) {
-    // TODO: Remove the old value from indexes.
-//    for (size_t i = 0; i < num_indexes(); ++i) {
-//      indexes_[i]->remove(row_id, old_value);
-//    }
+    // Remove the old value from indexes.
+    for (size_t i = 0; i < num_indexes(); ++i) {
+      indexes_[i]->remove(row_id, old_value);
+    }
   }
   size_t value_id = row_id.raw();
   if (value_id >= headers_.size()) {
     headers_.resize(value_id + 1, na_header());
   }
-  // TODO: Insert the new value into indexes.
-//  for (size_t i = 0; i < num_indexes(); ++i) try {
-//    indexes_[i]->insert(row_id, datum)) {
-//  } catch (...) {
-//    for (size_t j = 0; j < i; ++i) {
-//      indexes_[j]->remove(row_id, datum);
-//    }
-//    throw;
-//  }
+  // Insert the new value into indexes.
+  for (size_t i = 0; i < num_indexes(); ++i) try {
+    indexes_[i]->insert(row_id, datum);
+  } catch (...) {
+    for (size_t j = 0; j < i; ++i) {
+      indexes_[j]->remove(row_id, datum);
+    }
+    throw;
+  }
   // TODO: Error handling.
   size_t offset = bodies_.size();
   size_t size = new_value.raw_size();
@@ -303,17 +303,16 @@ void Column<Text>::set_key(Int row_id, const Datum &key) {
   if (value_id >= headers_.size()) {
     headers_.resize(value_id + 1, na_header());
   }
-  // TODO: N/A is not available.
   Text value = parse_datum(key);
-  // TODO: Update indexes if exist.
-//  for (size_t i = 0; i < num_indexes(); ++i) try {
-//    indexes_[i]->insert(row_id, value);
-//  } catch (...) {
-//    for (size_t j = 0; j < i; ++j) {
-//      indexes_[j]->remove(row_id, value);
-//    }
-//    throw;
-//  }
+  // Update indexes if exist.
+  for (size_t i = 0; i < num_indexes(); ++i) try {
+    indexes_[i]->insert(row_id, value);
+  } catch (...) {
+    for (size_t j = 0; j < i; ++j) {
+      indexes_[j]->remove(row_id, value);
+    }
+    throw;
+  }
   // TODO: Error handling.
   size_t offset = bodies_.size();
   size_t size = value.raw_size();
@@ -388,10 +387,10 @@ void Column<Text>::set_key(Int row_id, const Datum &key) {
 void Column<Text>::unset(Int row_id) {
   Text value = get(row_id);
   if (!value.is_na()) {
-    // TODO: Update indexes if exist.
-//    for (size_t i = 0; i < num_indexes(); ++i) {
-//      indexes_[i]->remove(row_id, value);
-//    }
+    // Update indexes if exist.
+    for (size_t i = 0; i < num_indexes(); ++i) {
+      indexes_[i]->remove(row_id, value);
+    }
     headers_[row_id.raw()] = na_header();
   }
 }

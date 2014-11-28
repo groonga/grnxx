@@ -28,24 +28,24 @@ void Column<Float>::set(Int row_id, const Datum &datum) {
     return;
   }
   if (!old_value.is_na()) {
-    // TODO: Remove the old value from indexes.
-//    for (size_t i = 0; i < num_indexes(); ++i) {
-//      indexes_[i]->remove(row_id, old_value);
-//    }
+    // Remove the old value from indexes.
+    for (size_t i = 0; i < num_indexes(); ++i) {
+      indexes_[i]->remove(row_id, old_value);
+    }
   }
   size_t value_id = row_id.raw();
   if (value_id >= values_.size()) {
     values_.resize(value_id + 1, Float::na());
   }
-  // TODO: Insert the new value into indexes.
-//  for (size_t i = 0; i < num_indexes(); ++i) try {
-//    indexes_[i]->insert(row_id, datum)) {
-//  } catch (...) {
-//    for (size_t j = 0; j < i; ++i) {
-//      indexes_[j]->remove(row_id, datum);
-//    }
-//    throw;
-//  }
+  // Insert the new value into indexes.
+  for (size_t i = 0; i < num_indexes(); ++i) try {
+    indexes_[i]->insert(row_id, datum);
+  } catch (...) {
+    for (size_t j = 0; j < i; ++i) {
+      indexes_[j]->remove(row_id, datum);
+    }
+    throw;
+  }
   values_[value_id] = new_value;
 }
 
@@ -101,10 +101,10 @@ Int Column<Float>::find_one(const Datum &datum) const {
 void Column<Float>::unset(Int row_id) {
   Float value = get(row_id);
   if (!value.is_na()) {
-    // TODO: Update indexes if exist.
-//    for (size_t i = 0; i < num_indexes(); ++i) {
-//      indexes_[i]->remove(row_id, value);
-//    }
+    // Update indexes if exist.
+    for (size_t i = 0; i < num_indexes(); ++i) {
+      indexes_[i]->remove(row_id, value);
+    }
     values_[row_id.raw()] = Float::na();
   }
 }

@@ -51,24 +51,24 @@ void Column<Int>::set(Int row_id, const Datum &datum) {
     throw "Key already exists";  // TODO
   }
   if (!old_value.is_na()) {
-    // TODO: Remove the old value from indexes.
-//    for (size_t i = 0; i < num_indexes(); ++i) {
-//      indexes_[i]->remove(row_id, old_value);
-//    }
+    // Remove the old value from indexes.
+    for (size_t i = 0; i < num_indexes(); ++i) {
+      indexes_[i]->remove(row_id, old_value);
+    }
   }
   size_t value_id = row_id.raw();
   if (value_id >= values_.size()) {
     values_.resize(value_id + 1, Int::na());
   }
-  // TODO: Insert the new value into indexes.
-//  for (size_t i = 0; i < num_indexes(); ++i) try {
-//    indexes_[i]->insert(row_id, datum)) {
-//  } catch (...) {
-//    for (size_t j = 0; j < i; ++i) {
-//      indexes_[j]->remove(row_id, datum);
-//    }
-//    throw;
-//  }
+  // Insert the new value into indexes.
+  for (size_t i = 0; i < num_indexes(); ++i) try {
+    indexes_[i]->insert(row_id, datum);
+  } catch (...) {
+    for (size_t j = 0; j < i; ++i) {
+      indexes_[j]->remove(row_id, datum);
+    }
+    throw;
+  }
   values_[value_id] = new_value;
 }
 
@@ -193,27 +193,26 @@ void Column<Int>::set_key(Int row_id, const Datum &key) {
   if (value_id >= values_.size()) {
     values_.resize(value_id + 1, Int::na());
   }
-  // TODO: N/A is not available.
   Int value = parse_datum(key);
-  // TODO: Update indexes if exist.
-//  for (size_t i = 0; i < num_indexes(); ++i) try {
-//    indexes_[i]->insert(row_id, value);
-//  } catch (...) {
-//    for (size_t j = 0; j < i; ++j) {
-//      indexes_[j]->remove(row_id, value);
-//    }
-//    throw;
-//  }
+  // Update indexes if exist.
+  for (size_t i = 0; i < num_indexes(); ++i) try {
+    indexes_[i]->insert(row_id, value);
+  } catch (...) {
+    for (size_t j = 0; j < i; ++j) {
+      indexes_[j]->remove(row_id, value);
+    }
+    throw;
+  }
   values_[value_id] = value;
 }
 
 void Column<Int>::unset(Int row_id) {
   Int value = get(row_id);
   if (!value.is_na()) {
-    // TODO: Update indexes if exist.
-//    for (size_t i = 0; i < num_indexes(); ++i) {
-//      indexes_[i]->remove(row_id, value);
-//    }
+    // Update indexes if exist.
+    for (size_t i = 0; i < num_indexes(); ++i) {
+      indexes_[i]->remove(row_id, value);
+    }
     values_[row_id.raw()] = Int::na();
   }
 }
