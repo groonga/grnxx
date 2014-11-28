@@ -101,4 +101,4 @@ class Error {
                             (error)->set_function(__PRETTY_FUNCTION__), \
                             (error)->set_message(format, ## __VA_ARGS__)))
 
-#endif  // GRNXX_TYPES_ERROR_HPP
+#endif  // GRNXX_ERROR_HPP
