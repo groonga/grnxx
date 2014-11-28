@@ -39,7 +39,7 @@ void test_column() {
   assert(bool_column->data_type() == grnxx::BOOL_DATA);
   assert(!bool_column->reference_table());
   assert(!bool_column->is_key());
-//  assert(bool_column->num_indexes() == 0);
+  assert(bool_column->num_indexes() == 0);
 
   // Create a column named "Int".
   auto int_column = table->create_column("Int", grnxx::INT_DATA);
@@ -48,7 +48,7 @@ void test_column() {
   assert(int_column->data_type() == grnxx::INT_DATA);
   assert(!int_column->reference_table());
   assert(!int_column->is_key());
-//  assert(int_column->num_indexes() == 0);
+  assert(int_column->num_indexes() == 0);
 
   // Create a column named "Float".
   auto float_column = table->create_column("Float", grnxx::FLOAT_DATA);
@@ -57,7 +57,7 @@ void test_column() {
   assert(float_column->data_type() == grnxx::FLOAT_DATA);
   assert(!float_column->reference_table());
   assert(!float_column->is_key());
-//  assert(float_column->num_indexes() == 0);
+  assert(float_column->num_indexes() == 0);
 
   // Create a column named "GeoPoint".
   auto geo_point_column =
@@ -67,7 +67,7 @@ void test_column() {
   assert(geo_point_column->data_type() == grnxx::GEO_POINT_DATA);
   assert(!geo_point_column->reference_table());
   assert(!geo_point_column->is_key());
-//  assert(geo_point_column->num_indexes() == 0);
+  assert(geo_point_column->num_indexes() == 0);
 
 //  // Create a column named "Text".
   auto text_column = table->create_column("Text", grnxx::TEXT_DATA);
@@ -76,7 +76,7 @@ void test_column() {
   assert(text_column->data_type() == grnxx::TEXT_DATA);
   assert(!text_column->reference_table());
   assert(!text_column->is_key());
-//  assert(text_column->num_indexes() == 0);
+  assert(text_column->num_indexes() == 0);
 
   // Create a column named "Reference".
   grnxx::ColumnOptions options;
@@ -88,7 +88,7 @@ void test_column() {
   assert(reference_column->data_type() == grnxx::INT_DATA);
   assert(reference_column->reference_table() == table);
   assert(!reference_column->is_key());
-//  assert(int_column->num_indexes() == 0);
+  assert(int_column->num_indexes() == 0);
 
   // Create a column named "BoolVector".
   auto bool_vector_column =
@@ -98,10 +98,9 @@ void test_column() {
   assert(bool_vector_column->data_type() == grnxx::BOOL_VECTOR_DATA);
   assert(!bool_vector_column->reference_table());
   assert(!bool_vector_column->is_key());
-//  assert(bool_vector_column->num_indexes() == 0);
+  assert(bool_vector_column->num_indexes() == 0);
 
   // Create a column named "IntVector".
-  // The column stores Text values.
   auto int_vector_column =
       table->create_column("IntVector", grnxx::INT_VECTOR_DATA);
   assert(int_vector_column->table() == table);
@@ -109,7 +108,7 @@ void test_column() {
   assert(int_vector_column->data_type() == grnxx::INT_VECTOR_DATA);
   assert(!int_vector_column->reference_table());
   assert(!int_vector_column->is_key());
-//  assert(int_vector_column->num_indexes() == 0);
+  assert(int_vector_column->num_indexes() == 0);
 
   // Create a column named "FloatVector".
   auto float_vector_column =
@@ -119,7 +118,7 @@ void test_column() {
   assert(float_vector_column->data_type() == grnxx::FLOAT_VECTOR_DATA);
   assert(!float_vector_column->reference_table());
   assert(!float_vector_column->is_key());
-//  assert(float_vector_column->num_indexes() == 0);
+  assert(float_vector_column->num_indexes() == 0);
 
   // Create a column named "GeoPointVector".
   auto geo_point_vector_column =
@@ -129,7 +128,7 @@ void test_column() {
   assert(geo_point_vector_column->data_type() == grnxx::GEO_POINT_VECTOR_DATA);
   assert(!geo_point_vector_column->reference_table());
   assert(!geo_point_vector_column->is_key());
-//  assert(geo_point_vector_column->num_indexes() == 0);
+  assert(geo_point_vector_column->num_indexes() == 0);
 
   // Create a column named "TextVector".
   auto text_vector_column =
@@ -139,7 +138,7 @@ void test_column() {
   assert(text_vector_column->data_type() == grnxx::TEXT_VECTOR_DATA);
   assert(!text_vector_column->reference_table());
   assert(!text_vector_column->is_key());
-//  assert(text_vector_column->num_indexes() == 0);
+  assert(text_vector_column->num_indexes() == 0);
 
   // Create a column named "ReferenceVector".
   options.reference_table_name = "Table";
@@ -150,7 +149,7 @@ void test_column() {
   assert(reference_vector_column->data_type() == grnxx::INT_VECTOR_DATA);
   assert(reference_vector_column->reference_table() == table);
   assert(!reference_vector_column->is_key());
-//  assert(reference_vector_column->num_indexes() == 0);
+  assert(reference_vector_column->num_indexes() == 0);
 
   // Check that the default values are stored.
   grnxx::Datum datum;
