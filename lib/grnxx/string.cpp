@@ -24,11 +24,15 @@ String::String(size_t size)
     : buffer_(),
       size_(),
       capacity_() {
-  char *new_buffer = static_cast<char *>(std::malloc(size));
-  if (!new_buffer) {
-    throw "Failed";  // TODO
+  if (size != 0) {
+    char *new_buffer = static_cast<char *>(std::malloc(size));
+    if (!new_buffer) {
+      throw "Memory allocation failed";  // TODO
+    }
+    buffer_ = new_buffer;
+  } else {
+    buffer_ = nullptr;
   }
-  buffer_ = new_buffer;
   size_ = size;
   capacity_ = size;
 }
@@ -37,12 +41,16 @@ String::String(size_t size, char byte)
     : buffer_(),
       size_(),
       capacity_() {
-  char *new_buffer = static_cast<char *>(std::malloc(size));
-  if (!new_buffer) {
-    throw "Failed";  // TODO
+  if (size != 0) {
+    char *new_buffer = static_cast<char *>(std::malloc(size));
+    if (!new_buffer) {
+      throw "Failed";  // TODO
+    }
+    std::memset(new_buffer, byte, size);
+    buffer_ = new_buffer;
+  } else {
+    buffer_ = nullptr;
   }
-  std::memset(new_buffer, byte, size);
-  buffer_ = new_buffer;
   size_ = size;
   capacity_ = size;
 }
