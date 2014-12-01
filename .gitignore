@@ -18,6 +18,7 @@ autom4te.cache/
 benchmark/*.trs
 benchmark/benchmark_adjuster
 benchmark/benchmark_dummy
+benchmark/benchmark_filter
 benchmark/benchmark_sorter
 compile
 config.*
