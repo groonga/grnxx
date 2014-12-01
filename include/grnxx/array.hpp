@@ -508,12 +508,6 @@ class Array<T, true> {
     if (new_size > capacity_) {
       resize_buffer(new_size);
     }
-    for (size_t i = new_size; i < size_; ++i) {
-      buffer()[i].~Value();
-    }
-    for (size_t i = size_; i < new_size; ++i) {
-      new (&buffer()[i]) Value;
-    }
     size_ = new_size;
   }
   // Resize "this" and fill the new values with "value".
@@ -523,29 +517,21 @@ class Array<T, true> {
     if (new_size > capacity_) {
       resize_buffer(new_size);
     }
-    for (size_t i = new_size; i < size_; ++i) {
-      buffer()[i].~Value();
-    }
     for (size_t i = size_; i < new_size; ++i) {
-      new (&buffer()[i]) Value(value);
+      buffer()[i] = value;
     }
     size_ = new_size;
   }
 
   // Clear the contents.
   void clear() {
-    for (size_t i = 0; i < size_; ++i) {
-      buffer()[i].~Value();
-    }
     size_ = 0;
   }
 
   // Remove the "i"-th value.
   void erase(size_t i) {
-    for (size_t j = i + 1; j < size_; ++j) {
-      buffer()[j - 1] = std::move(buffer()[j]);
-    }
-    buffer()[size_ - 1].~Value();
+    std::memmove(&buffer()[i], &buffer()[i + 1],
+                 sizeof(Value) * (size_ - i - 1));
     --size_;
   }
 
@@ -556,22 +542,11 @@ class Array<T, true> {
     if (size_ == capacity_) {
       resize_buffer(size_ + 1);
     }
-    new (&buffer()[size_]) Value(value);
-    ++size_;
-  }
-  // Append "value" to the end.
-  //
-  // On failure, throws an exception.
-  void push_back(Value &&value) {
-    if (size_ == capacity_) {
-      resize_buffer(size_ + 1);
-    }
-    new (&buffer()[size_]) Value(std::move(value));
+    buffer()[size_] = value;
     ++size_;
   }
   // Remove the last value.
   void pop_back() {
-    buffer()[size_ - 1].~Value();
     --size_;
   }
 
