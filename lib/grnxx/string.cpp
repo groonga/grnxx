@@ -77,20 +77,26 @@ String &String::instantiate() {
 }
 
 void String::resize_buffer(size_t new_size) {
-  size_t new_capacity = capacity_ * 2;
-  if (new_size > new_capacity) {
-    new_capacity = new_size;
-  }
-  char *new_buffer = static_cast<char *>(std::malloc(new_capacity));
-  if (!new_buffer) {
-    throw "Memory allocation failed";  // TODO
-  }
-  std::memcpy(new_buffer, data_, size_);
   if (capacity_ != 0) {
-    std::free(buffer_);
+    size_t new_capacity = capacity_ * 2;
+    if (new_size > new_capacity) {
+      new_capacity = new_size;
+    }
+    char *new_buffer =
+        static_cast<char *>(std::realloc(buffer_, new_capacity));
+    if (!new_buffer) {
+      throw "Memory allocation failed";  // TODO
+    }
+    buffer_ = new_buffer;
+    capacity_ = new_capacity;
+  } else {
+    char *new_buffer = static_cast<char *>(std::malloc(new_size));
+    if (!new_buffer) {
+      throw "Memory allocation failed";  // TODO
+    }
+    buffer_ = new_buffer;
+    capacity_ = new_size;
   }
-  buffer_ = new_buffer;
-  capacity_ = new_capacity;
 }
 
 void String::append_overlap(const char *data, size_t size) {
