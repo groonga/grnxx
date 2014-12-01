@@ -65,6 +65,54 @@ void generate_data() {
   }
 }
 
+void benchmark_grnxx_not_and(const grnxx::Table *table,
+                             grnxx::Int upper_limit) {
+  std::cout << "LOGICAL_NOT/AND: ";
+  std::cout << "ratio = " << (100 * upper_limit.raw() / 256) << '%';
+  double min_elapsed = std::numeric_limits<double>::max();
+  for (size_t i = 0; i < LOOP; ++i) {
+    Timer timer;
+
+    auto pipeline_builder = grnxx::PipelineBuilder::create(table);
+    auto cursor = table->create_cursor();
+    pipeline_builder->push_cursor(std::move(cursor));
+    auto expression_builder = grnxx::ExpressionBuilder::create(table);
+    expression_builder->push_column("A");
+    expression_builder->push_constant(upper_limit);
+    expression_builder->push_operator(grnxx::GREATER_EQUAL_OPERATOR);
+    expression_builder->push_column("B");
+    expression_builder->push_constant(upper_limit);
+    expression_builder->push_operator(grnxx::GREATER_EQUAL_OPERATOR);
+    expression_builder->push_column("C");
+    expression_builder->push_constant(upper_limit);
+    expression_builder->push_operator(grnxx::GREATER_EQUAL_OPERATOR);
+    expression_builder->push_operator(grnxx::LOGICAL_AND_OPERATOR);
+    expression_builder->push_operator(grnxx::LOGICAL_AND_OPERATOR);
+    expression_builder->push_operator(grnxx::LOGICAL_NOT_OPERATOR);
+    auto expression = expression_builder->release();
+    pipeline_builder->push_filter(std::move(expression));
+    auto pipeline = pipeline_builder->release();
+    grnxx::Array<grnxx::Record> records;
+    pipeline->flush(&records);
+
+    double elapsed = timer.elapsed();
+    if (elapsed < min_elapsed) {
+      min_elapsed = elapsed;
+    }
+  }
+  std::cout << ", min. elapsed [s] = " << min_elapsed << std::endl;
+}
+
+void benchmark_grnxx_not_and(const grnxx::Table *table) {
+  benchmark_grnxx_not_and(table, grnxx::Int(16));
+  benchmark_grnxx_not_and(table, grnxx::Int(32));
+  benchmark_grnxx_not_and(table, grnxx::Int(64));
+  benchmark_grnxx_not_and(table, grnxx::Int(128));
+  benchmark_grnxx_not_and(table, grnxx::Int(192));
+  benchmark_grnxx_not_and(table, grnxx::Int(224));
+  benchmark_grnxx_not_and(table, grnxx::Int(240));
+}
+
 void benchmark_grnxx(const grnxx::Table *table,
                      grnxx::OperatorType logical_operator_type,
                      grnxx::Int upper_limit) {
@@ -153,6 +201,7 @@ void benchmark_grnxx() {
   benchmark_grnxx(table, grnxx::LOGICAL_OR_OPERATOR);
   benchmark_grnxx(table, grnxx::BITWISE_AND_OPERATOR);
   benchmark_grnxx(table, grnxx::BITWISE_OR_OPERATOR);
+  benchmark_grnxx_not_and(table);
 }
 
 void benchmark_native_batch_and(grnxx::Int upper_limit) {
