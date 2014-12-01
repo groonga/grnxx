@@ -251,9 +251,10 @@ class String {
   // On failure, throws an exception.
   String &append(const char *data, size_t size) {
     if ((size_ + size) > capacity_) {
-      // NOTE: If the given string is a part of "this", it is destoyed in
-      //       resize_buffer(), so append_overlap() is required.
-      if ((data >= buffer_) && (data < (buffer_ + size_))) {
+      // NOTE: If the given string is a part of this instance, it will be
+      //       moved to the new address in resize_buffer().
+      if ((capacity_ != 0) &&
+          (data >= buffer_) && (data < (buffer_ + size_))) {
         append_overlap(data, size);
         return *this;
       } else {

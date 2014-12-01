@@ -105,15 +105,13 @@ void String::append_overlap(const char *data, size_t size) {
   if (new_size > new_capacity) {
     new_capacity = new_size;
   }
-  char *new_buffer = static_cast<char *>(std::malloc(new_capacity));
+  char *new_buffer =
+      static_cast<char *>(std::realloc(buffer_, new_capacity));
   if (!new_buffer) {
     throw "Memory allocation failed";  // TODO
   }
-  std::memcpy(new_buffer, buffer_, size_);
+  data = new_buffer + (data - buffer_);
   std::memcpy(new_buffer + size_, data, size);
-  if (capacity_ != 0) {
-    std::free(buffer_);
-  }
   buffer_ = new_buffer;
   size_ = new_size;
   capacity_ = new_capacity;
