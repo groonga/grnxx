@@ -438,10 +438,6 @@ class Array<T, true> {
   void set(size_t i, const Value &value) {
     buffer()[i] = value;
   }
-  // Set the "i"-th value.
-  void set(size_t i, Value &&value) {
-    buffer()[i] = std::move(value);
-  }
 
   // Return a reference to the "i"-th value.
   Value &operator[](size_t i) {
