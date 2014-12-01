@@ -34,6 +34,15 @@ class Index : public IndexInterface {
   virtual std::unique_ptr<Cursor> find(
       const Datum &value,
       const CursorOptions &options = CursorOptions()) const;
+  virtual std::unique_ptr<Cursor> find_in_range(
+      const IndexRange &range = IndexRange(),
+      const CursorOptions &options = CursorOptions()) const;
+  virtual std::unique_ptr<Cursor> find_starts_with(
+      const EndPoint &prefix,
+      const CursorOptions &options = CursorOptions()) const;
+  virtual std::unique_ptr<Cursor> find_prefixes(
+      const Datum &datum,
+      const CursorOptions &options = CursorOptions()) const;
 
   // -- Internal API --
 

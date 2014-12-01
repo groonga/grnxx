@@ -12,64 +12,52 @@ namespace grnxx {
 
 class Column;
 
-//enum EndPointType {
-//  INCLUSIVE_END_POINT,
-//  EXCLUSIVE_END_POINT
-//};
+enum EndPointType {
+  INCLUSIVE_END_POINT,
+  EXCLUSIVE_END_POINT
+};
 
-//struct EndPoint {
-//  Datum value;
-//  EndPointType type;
-//};
+struct EndPoint {
+  Datum value;
+  EndPointType type;
 
-//class IndexRange {
-// public:
-//  IndexRange()
-//      : has_lower_bound_(false),
-//        has_upper_bound_(false),
-//        lower_bound_(),
-//        upper_bound_() {}
+  EndPoint() : value(NA()), type(INCLUSIVE_END_POINT) {}
+};
 
-//  bool has_lower_bound() const {
-//    return has_lower_bound_;
-//  }
-//  bool has_upper_bound() const {
-//    return has_upper_bound_;
-//  }
+class IndexRange {
+ public:
+  IndexRange() = default;
+  ~IndexRange() = default;
 
-//  const EndPoint &lower_bound() const {
-//    return lower_bound_;
-//  }
-//  const EndPoint &upper_bound() const {
-//    return upper_bound_;
-//  }
+  const EndPoint &lower_bound() const {
+    return lower_bound_;
+  }
+  const EndPoint &upper_bound() const {
+    return upper_bound_;
+  }
 
-//  void set_lower_bound(const Datum &value,
-//                       EndPointType type = INCLUSIVE_END_POINT) {
-//    has_lower_bound_ = true;
-//    lower_bound_.value = value;
-//    lower_bound_.type = type;
-//  }
-//  void set_upper_bound(const Datum &value,
-//                       EndPointType type = INCLUSIVE_END_POINT) {
-//    has_upper_bound_ = true;
-//    upper_bound_.value = value;
-//    upper_bound_.type = type;
-//  }
+  void set_lower_bound(const Datum &value,
+                       EndPointType type = INCLUSIVE_END_POINT) {
+    lower_bound_.value = value;
+    lower_bound_.type = type;
+  }
+  void set_upper_bound(const Datum &value,
+                       EndPointType type = INCLUSIVE_END_POINT) {
+    upper_bound_.value = value;
+    upper_bound_.type = type;
+  }
 
-//  void unset_lower_bound() {
-//    has_lower_bound_ = false;
-//  }
-//  void unset_upper_bound() {
-//    has_lower_bound_ = false;
-//  }
+  void unset_lower_bound() {
+    lower_bound_.value = NA();
+  }
+  void unset_upper_bound() {
+    upper_bound_.value = NA();
+  }
 
-// private:
-//  bool has_lower_bound_;
-//  bool has_upper_bound_;
-//  EndPoint lower_bound_;
-//  EndPoint upper_bound_;
-//};
+ private:
+  EndPoint lower_bound_;
+  EndPoint upper_bound_;
+};
 
 enum IndexType {
   // TODO: Tree indexes support range search.
@@ -116,6 +104,30 @@ class Index {
   // On failure, throws an exception.
   virtual std::unique_ptr<Cursor> find(
       const Datum &value,
+      const CursorOptions &options = CursorOptions()) const = 0;
+
+  // Create a cursor to get records.
+  //
+  // On success, returns the cursor.
+  // On failure, throws an exception.
+  virtual std::unique_ptr<Cursor> find_in_range(
+      const IndexRange &range = IndexRange(),
+      const CursorOptions &options = CursorOptions()) const = 0;
+
+  // Create a cursor to get records.
+  //
+  // On success, returns the cursor.
+  // On failure, throws an exception.
+  virtual std::unique_ptr<Cursor> find_starts_with(
+      const EndPoint &prefix,
+      const CursorOptions &options = CursorOptions()) const = 0;
+
+  // Create a cursor to get records.
+  //
+  // On success, returns the cursor.
+  // On failure, throws an exception.
+  virtual std::unique_ptr<Cursor> find_prefixes(
+      const Datum &datum,
       const CursorOptions &options = CursorOptions()) const = 0;
 
  protected:

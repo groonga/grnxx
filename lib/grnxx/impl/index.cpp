@@ -446,6 +446,24 @@ std::unique_ptr<Cursor> Index::find(
   throw "Not supported yet";  // TODO
 }
 
+std::unique_ptr<Cursor> Index::find_in_range(
+    const IndexRange &range,
+    const CursorOptions &options) const {
+  throw "Not supported yet";  // TODO
+}
+
+std::unique_ptr<Cursor> Index::find_starts_with(
+    const EndPoint &prefix,
+    const CursorOptions &options) const {
+  throw "Not supported yet";  // TODO
+}
+
+std::unique_ptr<Cursor> Index::find_prefixes(
+    const Datum &datum,
+    const CursorOptions &options) const {
+  throw "Not supported yet";  // TODO
+}
+
 Index *Index::create(ColumnBase *column,
                      const String &name,
                      IndexType type,
