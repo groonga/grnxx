@@ -44,7 +44,7 @@ String::String(size_t size, char byte)
   if (size != 0) {
     char *new_buffer = static_cast<char *>(std::malloc(size));
     if (!new_buffer) {
-      throw "Failed";  // TODO
+      throw "Memory allocation failed";  // TODO
     }
     std::memset(new_buffer, byte, size);
     buffer_ = new_buffer;
@@ -68,7 +68,7 @@ String &String::instantiate() {
   }
   char *new_buffer = static_cast<char *>(std::malloc(size_));
   if (!new_buffer) {
-    throw "Failed";  // TODO
+    throw "Memory allocation failed";  // TODO
   }
   std::memcpy(new_buffer, data_, size_);
   buffer_ = new_buffer;
@@ -83,7 +83,7 @@ void String::resize_buffer(size_t new_size) {
   }
   char *new_buffer = static_cast<char *>(std::malloc(new_capacity));
   if (!new_buffer) {
-    throw "Failed";  // TODO
+    throw "Memory allocation failed";  // TODO
   }
   std::memcpy(new_buffer, data_, size_);
   if (capacity_ != 0) {
@@ -101,7 +101,7 @@ void String::append_overlap(const char *data, size_t size) {
   }
   char *new_buffer = static_cast<char *>(std::malloc(new_capacity));
   if (!new_buffer) {
-    throw "Failed";  // TODO
+    throw "Memory allocation failed";  // TODO
   }
   std::memcpy(new_buffer, buffer_, size_);
   std::memcpy(new_buffer + size_, data, size);
