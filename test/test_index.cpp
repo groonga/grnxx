@@ -752,7 +752,7 @@ void test_text_find_starts_with() {
 
   // Test cursors for each value.
   for (int int_value = 0; int_value < 100; ++int_value) {
-    grnxx::Text value = grnxx::Text(bodies[int_value]);
+    grnxx::Text value(bodies[int_value]);
 
     grnxx::EndPoint prefix;
     prefix.value = value;
@@ -777,7 +777,7 @@ void test_text_find_starts_with() {
 
   // Test cursors for each value.
   for (int int_value = 0; int_value < 100; ++int_value) {
-    grnxx::Text value = grnxx::Text(bodies[int_value]);
+    grnxx::Text value(bodies[int_value]);
 
     grnxx::EndPoint prefix;
     prefix.value = value;
