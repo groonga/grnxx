@@ -205,6 +205,8 @@ std::unique_ptr<Cursor> create_reverse_range_cursor(T begin,
 
 template <typename T> class TreeIndex;
 
+// -- TreeIndex<Int> --
+
 template <>
 class TreeIndex<Int> : public Index {
  public:
@@ -359,6 +361,8 @@ std::unique_ptr<Cursor> TreeIndex<Int>::find_in_range(
   }
 }
 
+// -- TreeIndex<Float> --
+
 template <>
 class TreeIndex<Float> : public Index {
  public:
@@ -389,6 +393,9 @@ class TreeIndex<Float> : public Index {
 
   std::unique_ptr<Cursor> find(const Datum &datum,
                                const CursorOptions &options) const;
+  std::unique_ptr<Cursor> find_in_range(
+      const IndexRange &range,
+      const CursorOptions &options) const;
 
  private:
   mutable Map map_;
@@ -460,6 +467,70 @@ std::unique_ptr<Cursor> TreeIndex<Float>::find(
     }
   }
 }
+
+std::unique_ptr<Cursor> TreeIndex<Float>::find_in_range(
+    const IndexRange &range,
+    const CursorOptions &options) const {
+  Float lower_bound_value = Float::min();
+  // TODO: Datum should provide is_na()?
+  if (range.lower_bound().value.type() != NA_DATA) {
+    // TODO: Typecast will be supported in future?
+    if (range.lower_bound().value.type() != FLOAT_DATA) {
+      throw "Data type conflict";  // TODO
+    }
+    if (!range.lower_bound().value.as_float().is_na()) {
+      lower_bound_value = range.lower_bound().value.as_float();
+      if (range.lower_bound().type == EXCLUSIVE_END_POINT) {
+        if (lower_bound_value.raw() == Float::raw_infinity()) {
+          return create_empty_cursor();
+        } else if (lower_bound_value.raw() == -Float::raw_infinity()) {
+          lower_bound_value = Float::min();
+        } else if (lower_bound_value.is_max()) {
+          lower_bound_value = Float::infinity();
+        } else {
+          lower_bound_value = lower_bound_value.next_toward(Float::max());
+        }
+      }
+    }
+  }
+
+  Float upper_bound_value = Float::max();
+  if (range.upper_bound().value.type() != NA_DATA) {
+    if (range.upper_bound().value.type() != FLOAT_DATA) {
+      throw "Data type conflict";  // TODO
+    }
+    if (!range.upper_bound().value.as_float().is_na()) {
+      upper_bound_value = range.upper_bound().value.as_float();
+      if (range.upper_bound().type == EXCLUSIVE_END_POINT) {
+        if (upper_bound_value.raw() == -Float::raw_infinity()) {
+          return create_empty_cursor();
+        } else if (upper_bound_value.raw() == Float::raw_infinity()) {
+          upper_bound_value = Float::max();
+        } else if (upper_bound_value.is_min()) {
+          upper_bound_value = -Float::infinity();
+        } else {
+          upper_bound_value = upper_bound_value.next_toward(Float::min());
+        }
+      }
+    }
+  }
+
+  if ((upper_bound_value < lower_bound_value).is_true()) {
+    return create_empty_cursor();
+  }
+
+  auto begin = map_.lower_bound(lower_bound_value);
+  auto end = map_.upper_bound(upper_bound_value);
+  if (options.order_type == CURSOR_REGULAR_ORDER) {
+    return create_range_cursor(
+        begin, end, options.offset, options.limit);
+  } else {
+    return create_reverse_range_cursor(
+        begin, end, options.offset, options.limit);
+  }
+}
+
+// -- TreeIndex<Text> --
 
 template <>
 class TreeIndex<Text> : public Index {
