@@ -86,6 +86,106 @@ std::unique_ptr<Cursor> create_reverse_exact_match_cursor(T begin,
                                             limit));
 }
 
+// -- ExactMatchCursor --
+
+template <typename T>
+class RangeCursor : public Cursor {
+ public:
+  using MapIterator = T;
+  using SetIterator = typename MapIterator::value_type::second_type::iterator;
+
+  RangeCursor(MapIterator begin,
+              MapIterator end,
+              size_t offset,
+              size_t limit)
+      : Cursor(),
+        map_it_(begin),
+        map_end_(end),
+        set_it_(),
+        set_end_(),
+        offset_(offset),
+        limit_(limit) {
+    if (map_it_ != map_end_) {
+      set_it_ = map_it_->second.begin();
+      set_end_ = map_it_->second.end();
+    }
+  }
+  ~RangeCursor() = default;
+
+  size_t read(ArrayRef<Record> records);
+
+ private:
+  MapIterator map_it_;
+  MapIterator map_end_;
+  SetIterator set_it_;
+  SetIterator set_end_;
+  size_t offset_;
+  size_t limit_;
+};
+
+template <typename T>
+size_t RangeCursor<T>::read(ArrayRef<Record> records) {
+  size_t max_count = records.size();
+  if (max_count > limit_) {
+    max_count = limit_;
+  }
+  if (max_count <= 0) {
+    return 0;
+  }
+  size_t count = 0;
+  while ((count < max_count) && (map_it_ != map_end_)) {
+    if (set_it_ == set_end_) {
+      ++map_it_;
+      if (map_it_ == map_end_) {
+        break;
+      }
+      set_it_ = map_it_->second.begin();
+      set_end_ = map_it_->second.end();
+      if (set_it_ == set_end_) {
+        continue;
+      }
+    }
+    if (offset_ > 0) {
+      --offset_;
+    } else {
+      records[count] = Record(*set_it_, Float(0.0));
+      ++count;
+    }
+    ++set_it_;
+  }
+  limit_ -= count;
+  return count;
+}
+
+// Helper function to create a range cursor.
+template <typename T>
+std::unique_ptr<Cursor> create_range_cursor(T begin,
+                                            T end,
+                                            size_t offset,
+                                            size_t limit) {
+  return std::unique_ptr<Cursor>(
+      new RangeCursor<T>(begin, end, offset, limit));
+}
+
+// TODO: It's not clear that a reverse cursor should return row IDs in
+//       reverse order or not.
+//
+// Helper function to create a reverse range cursor.
+template <typename T>
+std::unique_ptr<Cursor> create_reverse_range_cursor(T begin,
+                                                    T end,
+                                                    size_t offset,
+                                                    size_t limit) {
+  using ReverseIterator = std::reverse_iterator<T>;
+  return std::unique_ptr<Cursor>(
+      new RangeCursor<ReverseIterator>(ReverseIterator(end),
+                                       ReverseIterator(begin),
+                                       offset,
+                                       limit));
+}
+
+// -- TreeIndex --
+
 template <typename T> class TreeIndex;
 
 template <>
