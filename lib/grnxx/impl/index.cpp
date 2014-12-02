@@ -12,20 +12,20 @@ namespace index {
 
 // TODO: These are test implementations.
 
-// -- IteratorCursor --
+// -- ExactMatchCursor --
 
 template <typename T>
-class IteratorCursor : public Cursor {
+class ExactMatchCursor : public Cursor {
  public:
   using Iterator = T;
 
-  IteratorCursor(Iterator begin, Iterator end, size_t offset, size_t limit)
+  ExactMatchCursor(Iterator begin, Iterator end, size_t offset, size_t limit)
       : Cursor(),
         it_(begin),
         end_(end),
         offset_(offset),
         limit_(limit) {}
-  ~IteratorCursor() = default;
+  ~ExactMatchCursor() = default;
 
   size_t read(ArrayRef<Record> records);
 
@@ -37,7 +37,7 @@ class IteratorCursor : public Cursor {
 };
 
 template <typename T>
-size_t IteratorCursor<T>::read(ArrayRef<Record> records) {
+size_t ExactMatchCursor<T>::read(ArrayRef<Record> records) {
   size_t max_count = records.size();
   if (max_count > limit_) {
     max_count = limit_;
@@ -59,31 +59,31 @@ size_t IteratorCursor<T>::read(ArrayRef<Record> records) {
   return count;
 }
 
-// Helper function to create an iterator cursor.
+// Helper function to create a cursor for exact match search.
 template <typename T>
-std::unique_ptr<Cursor> create_iterator_cursor(T begin,
-                                               T end,
-                                               size_t offset,
-                                               size_t limit) {
+std::unique_ptr<Cursor> create_exact_match_cursor(T begin,
+                                                  T end,
+                                                  size_t offset,
+                                                  size_t limit) {
   return std::unique_ptr<Cursor>(
-      new IteratorCursor<T>(begin, end, offset, limit));
+      new ExactMatchCursor<T>(begin, end, offset, limit));
 }
 
 // TODO: It's not clear that a reverse cursor should return row IDs in
 //       reverse order or not.
 //
-// Helper function to create a reverse iterator cursor.
+// Helper function to create a reverse cursor for exact match search.
 template <typename T>
-std::unique_ptr<Cursor> create_reverse_iterator_cursor(T begin,
-                                                       T end,
-                                                       size_t offset,
-                                                       size_t limit) {
+std::unique_ptr<Cursor> create_reverse_exact_match_cursor(T begin,
+                                                          T end,
+                                                          size_t offset,
+                                                          size_t limit) {
   using ReverseIterator = std::reverse_iterator<T>;
   return std::unique_ptr<Cursor>(
-      new IteratorCursor<ReverseIterator>(ReverseIterator(end),
-                                          ReverseIterator(begin),
-                                          offset,
-                                          limit));
+      new ExactMatchCursor<ReverseIterator>(ReverseIterator(end),
+                                            ReverseIterator(begin),
+                                            offset,
+                                            limit));
 }
 
 template <typename T> class TreeIndex;
@@ -178,15 +178,11 @@ std::unique_ptr<Cursor> TreeIndex<Int>::find(
     auto set_begin = map_it->second.begin();
     auto set_end = map_it->second.end();
     if (options.order_type == CURSOR_REGULAR_ORDER) {
-      return create_iterator_cursor(set_begin,
-                                    set_end,
-                                    options.offset,
-                                    options.limit);
+      return create_exact_match_cursor(
+          set_begin, set_end, options.offset, options.limit);
     } else {
-      return create_reverse_iterator_cursor(set_begin,
-                                            set_end,
-                                            options.offset,
-                                            options.limit);
+      return create_reverse_exact_match_cursor(
+          set_begin, set_end, options.offset, options.limit);
     }
   }
 }
@@ -284,15 +280,11 @@ std::unique_ptr<Cursor> TreeIndex<Float>::find(
     auto set_begin = map_it->second.begin();
     auto set_end = map_it->second.end();
     if (options.order_type == CURSOR_REGULAR_ORDER) {
-      return create_iterator_cursor(set_begin,
-                                    set_end,
-                                    options.offset,
-                                    options.limit);
+      return create_exact_match_cursor(
+          set_begin, set_end, options.offset, options.limit);
     } else {
-      return create_reverse_iterator_cursor(set_begin,
-                                            set_end,
-                                            options.offset,
-                                            options.limit);
+      return create_reverse_exact_match_cursor(
+          set_begin, set_end, options.offset, options.limit);
     }
   }
 }
@@ -394,15 +386,11 @@ std::unique_ptr<Cursor> TreeIndex<Text>::find(
     auto set_begin = map_it->second.begin();
     auto set_end = map_it->second.end();
     if (options.order_type == CURSOR_REGULAR_ORDER) {
-      return create_iterator_cursor(set_begin,
-                                    set_end,
-                                    options.offset,
-                                    options.limit);
+      return create_exact_match_cursor(
+          set_begin, set_end, options.offset, options.limit);
     } else {
-      return create_reverse_iterator_cursor(set_begin,
-                                            set_end,
-                                            options.offset,
-                                            options.limit);
+      return create_reverse_exact_match_cursor(
+          set_begin, set_end, options.offset, options.limit);
     }
   }
 }
