@@ -94,6 +94,7 @@ void String::resize_buffer(size_t new_size) {
     if (!new_buffer) {
       throw "Memory allocation failed";  // TODO
     }
+    std::memcpy(new_buffer, data_, size_);
     buffer_ = new_buffer;
     capacity_ = new_size;
   }

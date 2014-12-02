@@ -232,7 +232,7 @@ class String {
   //
   // On failure, throws an exception.
   String &append(char byte) {
-    if (size_ == capacity_) {
+    if (size_ >= capacity_) {
       resize_buffer(size_ + 1);
     }
     buffer_[size_] = byte;
