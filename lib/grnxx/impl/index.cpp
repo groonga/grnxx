@@ -559,6 +559,8 @@ class TreeIndex<Text> : public Index {
                                const CursorOptions &options) const;
   std::unique_ptr<Cursor> find_in_range(const IndexRange &range,
                                         const CursorOptions &options) const;
+  std::unique_ptr<Cursor> find_starts_with(const EndPoint &prefix,
+                                           const CursorOptions &options) const;
 
  private:
   mutable Map map_;
@@ -682,6 +684,45 @@ std::unique_ptr<Cursor> TreeIndex<Text>::find_in_range(
   auto begin = map_.lower_bound(lower_bound_value);
   auto end = upper_bound_value.is_empty() ?
       map_.end() : map_.lower_bound(upper_bound_value);
+  if (options.order_type == CURSOR_REGULAR_ORDER) {
+    return create_range_cursor(
+        begin, end, options.offset, options.limit);
+  } else {
+    return create_reverse_range_cursor(
+        begin, end, options.offset, options.limit);
+  }
+}
+
+std::unique_ptr<Cursor> TreeIndex<Text>::find_starts_with(
+    const EndPoint &prefix,
+    const CursorOptions &options) const {
+  String lower_bound_value;
+  // TODO: Typecast will be supported in future?
+  if (prefix.value.type() != TEXT_DATA) {
+    throw "Data type conflict";  // TODO
+  }
+  Text text = prefix.value.as_text();
+  if (text.is_na()) {
+    throw "No prefix";  // TODO
+  }
+  lower_bound_value = String(text.raw_data(), text.raw_size());
+
+  String upper_bound_value = lower_bound_value.clone();
+  while (!upper_bound_value.is_empty() &&
+         (static_cast<unsigned char>(upper_bound_value.back()) == 0xFF)) {
+    upper_bound_value.resize(upper_bound_value.size() - 1);
+  }
+  if (!upper_bound_value.is_empty()) {
+    ++upper_bound_value.back();
+  }
+
+  if (prefix.type == EXCLUSIVE_END_POINT) {
+    lower_bound_value.append('\0');
+  }
+
+  auto begin = map_.lower_bound(lower_bound_value);
+  auto end = (upper_bound_value.size() != 0) ?
+      map_.lower_bound(upper_bound_value) : map_.end();
   if (options.order_type == CURSOR_REGULAR_ORDER) {
     return create_range_cursor(
         begin, end, options.offset, options.limit);
