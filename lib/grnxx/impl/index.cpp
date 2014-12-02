@@ -64,9 +64,11 @@ template <typename T>
 std::unique_ptr<Cursor> create_exact_match_cursor(T begin,
                                                   T end,
                                                   size_t offset,
-                                                  size_t limit) {
+                                                  size_t limit) try {
   return std::unique_ptr<Cursor>(
       new ExactMatchCursor<T>(begin, end, offset, limit));
+} catch (const std::bad_alloc &) {
+  throw "Memory allocation failed";  // TODO
 }
 
 // TODO: It's not clear that a reverse cursor should return row IDs in
@@ -77,13 +79,15 @@ template <typename T>
 std::unique_ptr<Cursor> create_reverse_exact_match_cursor(T begin,
                                                           T end,
                                                           size_t offset,
-                                                          size_t limit) {
+                                                          size_t limit) try {
   using ReverseIterator = std::reverse_iterator<T>;
   return std::unique_ptr<Cursor>(
       new ExactMatchCursor<ReverseIterator>(ReverseIterator(end),
                                             ReverseIterator(begin),
                                             offset,
                                             limit));
+} catch (const std::bad_alloc &) {
+  throw "Memory allocation failed";  // TODO
 }
 
 // -- ExactMatchCursor --
@@ -162,9 +166,11 @@ template <typename T>
 std::unique_ptr<Cursor> create_range_cursor(T begin,
                                             T end,
                                             size_t offset,
-                                            size_t limit) {
+                                            size_t limit) try {
   return std::unique_ptr<Cursor>(
       new RangeCursor<T>(begin, end, offset, limit));
+} catch (const std::bad_alloc &) {
+  throw "Memory allocation failed";  // TODO
 }
 
 // TODO: It's not clear that a reverse cursor should return row IDs in
@@ -175,13 +181,15 @@ template <typename T>
 std::unique_ptr<Cursor> create_reverse_range_cursor(T begin,
                                                     T end,
                                                     size_t offset,
-                                                    size_t limit) {
+                                                    size_t limit) try {
   using ReverseIterator = std::reverse_iterator<T>;
   return std::unique_ptr<Cursor>(
       new RangeCursor<ReverseIterator>(ReverseIterator(end),
                                        ReverseIterator(begin),
                                        offset,
                                        limit));
+} catch (const std::bad_alloc &) {
+  throw "Memory allocation failed";  // TODO
 }
 
 // -- TreeIndex --
