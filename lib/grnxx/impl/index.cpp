@@ -786,12 +786,14 @@ std::unique_ptr<Cursor> TreeIndex<Text>::find_starts_with(
     const EndPoint &prefix,
     const CursorOptions &options) const {
   // TODO: Typecast will be supported in future?
-  if (prefix.value.type() != TEXT_DATA) {
+  if (prefix.value.type() == NA_DATA) {
+    return create_empty_cursor();
+  } else if (prefix.value.type() != TEXT_DATA) {
     throw "Data type conflict";  // TODO
   }
   Text text = prefix.value.as_text();
   if (text.is_na()) {
-    throw "No prefix";  // TODO
+    return create_empty_cursor();
   }
   String lower_bound_value(text.raw_data(), text.raw_size());
 
@@ -824,12 +826,14 @@ std::unique_ptr<Cursor> TreeIndex<Text>::find_prefixes(
     const Datum &value,
     const CursorOptions &options) const {
   // TODO: Typecast will be supported in future?
-  if (value.type() != TEXT_DATA) {
+  if (value.type() == NA_DATA) {
+    return create_empty_cursor();
+  } else if (value.type() != TEXT_DATA) {
     throw "Data type conflict";  // TODO
   }
   Text text = value.as_text();
   if (text.is_na()) {
-    throw "No value";  // TODO
+    return create_empty_cursor();
   }
   String string(text.raw_data(), text.raw_size());
   Array<Map::iterator> array;
