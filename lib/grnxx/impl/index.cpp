@@ -395,10 +395,6 @@ std::unique_ptr<Cursor> TreeIndex<Text>::find(
   }
 }
 
-//std::unique_ptr<Cursor> TreeIndex<Text>::find(
-//    const Datum &datum,
-//    const CursorOptions &options) const;
-
 }  // namespace index
 
 using namespace index;
