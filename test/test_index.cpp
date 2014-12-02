@@ -713,124 +713,95 @@ void test_text_range() {
   assert(count == records.size());
 }
 
-//bool inclusive_starts_with(const grnxx::Text &arg1, const grnxx::Text &arg2) {
-//  if (arg1.size() < arg2.size()) {
-//    return false;
-//  }
-//  for (grnxx::Int i = 0; i < arg2.size(); ++i) {
-//    if (arg1[i] != arg2[i]) {
-//      return false;
-//    }
-//  }
-//  return true;
-//}
+void test_text_find_starts_with() {
+  constexpr size_t NUM_ROWS = 1 << 16;
 
-//bool exclusive_starts_with(const grnxx::Text &arg1, const grnxx::Text &arg2) {
-//  if (arg1.size() <= arg2.size()) {
-//    return false;
-//  }
-//  for (grnxx::Int i = 0; i < arg2.size(); ++i) {
-//    if (arg1[i] != arg2[i]) {
-//      return false;
-//    }
-//  }
-//  return true;
-//}
+  // Create a database with the default options.
+  auto db = grnxx::open_db("");
 
-//void test_text_find_starts_with() {
-//  constexpr grnxx::Int NUM_ROWS = 1 << 16;
+  // Create a table with the default options.
+  auto table = db->create_table("Table");
 
-//  grnxx::Error error;
+  // Create a column.
+  auto column = table->create_column("Text", grnxx::TEXT_DATA);
 
-//  // Create a database with the default options.
-//  auto db = grnxx::open_db(&error, "");
-//  assert(db);
+  // Create an index.
+  auto index = column->create_index("Index", grnxx::TREE_INDEX);
 
-//  // Create a table with the default options.
-//  auto table = db->create_table(&error, "Table");
-//  assert(table);
+  // Generate random values.
+  // Text: ["0", "99"].
+  grnxx::Array<grnxx::Text> values;
+  char bodies[100][3];
+  values.resize(NUM_ROWS);
+  for (int i = 0; i < 100; ++i) {
+    std::sprintf(bodies[i], "%d", i);
+  }
+  for (size_t i = 0; i < NUM_ROWS; ++i) {
+    if ((mersenne_twister() % 100) == 0) {
+      values[i] = grnxx::Text::na();
+    } else {
+      values[i] = grnxx::Text(bodies[mersenne_twister() % 100]);
+    }
+  }
 
-//  // Create a column.
-//  auto column = table->create_column(&error, "Text", grnxx::TEXT_DATA);
-//  assert(column);
+  // Store generated values into columns.
+  for (size_t i = 0; i < NUM_ROWS; ++i) {
+    grnxx::Int row_id = table->insert_row();
+    column->set(row_id, values[i]);
+  }
 
-//  // Create an index.
-//  auto index = column->create_index(&error, "Index", grnxx::TREE_INDEX);
-//  assert(index);
+  // Test cursors for each value.
+  for (int int_value = 0; int_value < 100; ++int_value) {
+    grnxx::Text value = grnxx::Text(bodies[int_value]);
 
-//  // Generate random values.
-//  // Text: ["0", "99"].
-//  grnxx::Array<grnxx::Text> values;
-//  char bodies[100][3];
-//  assert(values.resize(&error, NUM_ROWS + 1));
-//  for (int i = 0; i < 100; ++i) {
-//    std::sprintf(bodies[i], "%d", i);
-//  }
-//  for (grnxx::Int i = 1; i <= NUM_ROWS; ++i) {
-//    values.set(i, bodies[mersenne_twister() % 100]);
-//  }
+    grnxx::EndPoint prefix;
+    prefix.value = value;
+    prefix.type = grnxx::INCLUSIVE_END_POINT;
+    auto cursor = index->find_starts_with(prefix);
 
-//  // Store generated values into columns.
-//  for (grnxx::Int i = 1; i <= NUM_ROWS; ++i) {
-//    grnxx::Int row_id;
-//    assert(table->insert_row(&error, grnxx::NULL_ROW_ID,
-//                             grnxx::Datum(), &row_id));
-//    assert(row_id == i);
-//    assert(column->set(&error, row_id, values[i]));
-//  }
+    grnxx::Array<grnxx::Record> records;
+    size_t count = cursor->read_all(&records);
+    for (size_t i = 0; i < records.size(); ++i) {
+      size_t row_id = records[i].row_id.raw();
+      assert(values[row_id].starts_with(value).is_true());
+    }
 
-//  // Test cursors for each value.
-//  for (int int_value = 0; int_value < 100; ++int_value) {
-//    grnxx::Text value = bodies[int_value];
+    count = 0;
+    for (size_t i = 0; i < NUM_ROWS; ++i) {
+      if (values[i].starts_with(value).is_true()) {
+        ++count;
+      }
+    }
+    assert(count == records.size());
+  }
 
-//    grnxx::EndPoint prefix;
-//    prefix.value = value;
-//    prefix.type = grnxx::INCLUSIVE_END_POINT;
-//    auto cursor = index->find_starts_with(&error, prefix);
-//    assert(cursor);
+  // Test cursors for each value.
+  for (int int_value = 0; int_value < 100; ++int_value) {
+    grnxx::Text value = grnxx::Text(bodies[int_value]);
 
-//    grnxx::Array<grnxx::Record> records;
-//    auto result = cursor->read_all(&error, &records);
-//    assert(result.is_ok);
-//    for (grnxx::Int i = 1; i < records.size(); ++i) {
-//      assert(inclusive_starts_with(values[records.get_row_id(i)], value));
-//    }
+    grnxx::EndPoint prefix;
+    prefix.value = value;
+    prefix.type = grnxx::EXCLUSIVE_END_POINT;
+    auto cursor = index->find_starts_with(prefix);
 
-//    grnxx::Int count = 0;
-//    for (grnxx::Int i = 1; i <= NUM_ROWS; ++i) {
-//      if (inclusive_starts_with(values[i], value)) {
-//        ++count;
-//      }
-//    }
-//    assert(count == records.size());
-//  }
+    grnxx::Array<grnxx::Record> records;
+    size_t count = cursor->read_all(&records);
+    for (size_t i = 0; i < records.size(); ++i) {
+      size_t row_id = records[i].row_id.raw();
+      assert(values[row_id].unmatch(value) &&
+             values[row_id].starts_with(value).is_true());
+    }
 
-//  // Test cursors for each value.
-//  for (int int_value = 0; int_value < 100; ++int_value) {
-//    grnxx::Text value = bodies[int_value];
-
-//    grnxx::EndPoint prefix;
-//    prefix.value = value;
-//    prefix.type = grnxx::EXCLUSIVE_END_POINT;
-//    auto cursor = index->find_starts_with(&error, prefix);
-//    assert(cursor);
-
-//    grnxx::Array<grnxx::Record> records;
-//    auto result = cursor->read_all(&error, &records);
-//    assert(result.is_ok);
-//    for (grnxx::Int i = 1; i < records.size(); ++i) {
-//      assert(exclusive_starts_with(values[records.get_row_id(i)], value));
-//    }
-
-//    grnxx::Int count = 0;
-//    for (grnxx::Int i = 1; i <= NUM_ROWS; ++i) {
-//      if (exclusive_starts_with(values[i], value)) {
-//        ++count;
-//      }
-//    }
-//    assert(count == records.size());
-//  }
-//}
+    count = 0;
+    for (size_t i = 0; i < NUM_ROWS; ++i) {
+      if (values[i].unmatch(value) &&
+          values[i].starts_with(value).is_true()) {
+        ++count;
+      }
+    }
+    assert(count == records.size());
+  }
+}
 
 //void test_text_find_prefixes() {
 //  constexpr grnxx::Int NUM_ROWS = 1 << 16;
@@ -1057,7 +1028,7 @@ int main() {
   test_float_range();
   test_text_range();
 
-//  test_text_find_starts_with();
+  test_text_find_starts_with();
 //  test_text_find_prefixes();
 
 //  test_reverse();
