@@ -559,6 +559,9 @@ class TreeIndex<Text> : public Index {
 
   std::unique_ptr<Cursor> find(const Datum &datum,
                                const CursorOptions &options) const;
+  std::unique_ptr<Cursor> find_in_range(
+      const IndexRange &range,
+      const CursorOptions &options) const;
 
  private:
   mutable Map map_;
@@ -635,6 +638,59 @@ std::unique_ptr<Cursor> TreeIndex<Text>::find(
       return create_reverse_exact_match_cursor(
           set_begin, set_end, options.offset, options.limit);
     }
+  }
+}
+
+std::unique_ptr<Cursor> TreeIndex<Text>::find_in_range(
+    const IndexRange &range,
+    const CursorOptions &options) const {
+  String lower_bound_value;
+//  // TODO: Datum should provide is_na()?
+  if (range.lower_bound().value.type() != NA_DATA) {
+//    // TODO: Typecast will be supported in future?
+    if (range.lower_bound().value.type() != TEXT_DATA) {
+      throw "Data type conflict";  // TODO
+    }
+    Text text = range.lower_bound().value.as_text();
+    if (!text.is_na()) {
+      lower_bound_value = String(text.raw_data(), text.raw_size());
+      if (range.lower_bound().type == EXCLUSIVE_END_POINT) {
+        lower_bound_value.append('\0');
+      }
+    }
+  }
+
+  String upper_bound_value;
+  if (range.upper_bound().value.type() != NA_DATA) {
+    if (range.upper_bound().value.type() != TEXT_DATA) {
+      throw "Data type conflict";  // TODO
+    }
+    Text text = range.upper_bound().value.as_text();
+    if (!text.is_na()) {
+      upper_bound_value = String(text.raw_data(), text.raw_size());
+      if (range.upper_bound().type == INCLUSIVE_END_POINT) {
+        upper_bound_value.append('\0');
+      } else if (upper_bound_value.is_empty()) {
+        return create_empty_cursor();
+      }
+    }
+  }
+
+  if (!upper_bound_value.is_empty()) {
+    if (lower_bound_value >= upper_bound_value) {
+      return create_empty_cursor();
+    }
+  }
+
+  auto begin = map_.lower_bound(lower_bound_value);
+  auto end = upper_bound_value.is_empty() ?
+      map_.end() : map_.lower_bound(upper_bound_value);
+  if (options.order_type == CURSOR_REGULAR_ORDER) {
+    return create_range_cursor(
+        begin, end, options.offset, options.limit);
+  } else {
+    return create_reverse_range_cursor(
+        begin, end, options.offset, options.limit);
   }
 }
 
