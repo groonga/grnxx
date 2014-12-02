@@ -319,7 +319,7 @@ class TreeIndex<Int> : public Index {
   void insert(Int row_id, const Datum &value);
   void remove(Int row_id, const Datum &value);
 
-  std::unique_ptr<Cursor> find(const Datum &datum,
+  std::unique_ptr<Cursor> find(const Datum &value,
                                const CursorOptions &options) const;
   std::unique_ptr<Cursor> find_in_range(const IndexRange &range,
                                         const CursorOptions &options) const;
@@ -374,12 +374,12 @@ void TreeIndex<Int>::remove(Int row_id, const Datum &value) {
 }
 
 std::unique_ptr<Cursor> TreeIndex<Int>::find(
-    const Datum &datum,
+    const Datum &value,
     const CursorOptions &options) const {
-  if (datum.type() != INT_DATA) {
+  if (value.type() != INT_DATA) {
     throw "Data type conflict";  // TODO
   }
-  auto map_it = map_.find(datum.as_int());
+  auto map_it = map_.find(value.as_int());
   if (map_it == map_.end()) {
     return create_empty_cursor();
   } else {
@@ -477,7 +477,7 @@ class TreeIndex<Float> : public Index {
   void insert(Int row_id, const Datum &value);
   void remove(Int row_id, const Datum &value);
 
-  std::unique_ptr<Cursor> find(const Datum &datum,
+  std::unique_ptr<Cursor> find(const Datum &value,
                                const CursorOptions &options) const;
   std::unique_ptr<Cursor> find_in_range(const IndexRange &range,
                                         const CursorOptions &options) const;
@@ -532,12 +532,12 @@ void TreeIndex<Float>::remove(Int row_id, const Datum &value) {
 }
 
 std::unique_ptr<Cursor> TreeIndex<Float>::find(
-    const Datum &datum,
+    const Datum &value,
     const CursorOptions &options) const {
-  if (datum.type() != FLOAT_DATA) {
+  if (value.type() != FLOAT_DATA) {
     throw "Data type conflict";  // TODO
   }
-  auto map_it = map_.find(datum.as_float());
+  auto map_it = map_.find(value.as_float());
   if (map_it == map_.end()) {
     return create_empty_cursor();
   } else {
@@ -636,7 +636,7 @@ class TreeIndex<Text> : public Index {
   void insert(Int row_id, const Datum &value);
   void remove(Int row_id, const Datum &value);
 
-  std::unique_ptr<Cursor> find(const Datum &datum,
+  std::unique_ptr<Cursor> find(const Datum &value,
                                const CursorOptions &options) const;
   std::unique_ptr<Cursor> find_in_range(const IndexRange &range,
                                         const CursorOptions &options) const;
@@ -700,12 +700,12 @@ void TreeIndex<Text>::remove(Int row_id, const Datum &value) {
 }
 
 std::unique_ptr<Cursor> TreeIndex<Text>::find(
-    const Datum &datum,
+    const Datum &value,
     const CursorOptions &options) const {
-  if (datum.type() != TEXT_DATA) {
+  if (value.type() != TEXT_DATA) {
     throw "Data type conflict";  // TODO
   }
-  Text text = datum.as_text();
+  Text text = value.as_text();
   String string(text.raw_data(), text.raw_size());
   auto map_it = map_.find(string);
   if (map_it == map_.end()) {
@@ -890,7 +890,7 @@ std::unique_ptr<Cursor> Index::find_starts_with(
 }
 
 std::unique_ptr<Cursor> Index::find_prefixes(
-    const Datum &datum,
+    const Datum &value,
     const CursorOptions &options) const {
   throw "Not supported yet";  // TODO
 }
