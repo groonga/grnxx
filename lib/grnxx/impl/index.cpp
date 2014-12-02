@@ -779,7 +779,6 @@ std::unique_ptr<Cursor> TreeIndex<Text>::find_in_range(
 std::unique_ptr<Cursor> TreeIndex<Text>::find_starts_with(
     const EndPoint &prefix,
     const CursorOptions &options) const {
-  String lower_bound_value;
   // TODO: Typecast will be supported in future?
   if (prefix.value.type() != TEXT_DATA) {
     throw "Data type conflict";  // TODO
@@ -788,7 +787,7 @@ std::unique_ptr<Cursor> TreeIndex<Text>::find_starts_with(
   if (text.is_na()) {
     throw "No prefix";  // TODO
   }
-  lower_bound_value = String(text.raw_data(), text.raw_size());
+  String lower_bound_value(text.raw_data(), text.raw_size());
 
   String upper_bound_value = lower_bound_value.clone();
   while (!upper_bound_value.is_empty() &&
