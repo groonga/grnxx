@@ -12,6 +12,15 @@ namespace index {
 
 // TODO: These are test implementations.
 
+// -- EmptyCursor --
+
+// Helper function to create an empty cursor.
+std::unique_ptr<Cursor> create_empty_cursor() try {
+  return std::unique_ptr<Cursor>(new EmptyCursor);
+} catch (const std::bad_alloc &) {
+  throw "Memory allocation failed";  // TODO
+}
+
 // -- ExactMatchCursor --
 
 template <typename T>
@@ -284,7 +293,7 @@ std::unique_ptr<Cursor> TreeIndex<Int>::find(
   }
   auto map_it = map_.find(datum.as_int());
   if (map_it == map_.end()) {
-    return std::unique_ptr<Cursor>(new EmptyCursor);
+    return create_empty_cursor();
   } else {
     auto set_begin = map_it->second.begin();
     auto set_end = map_it->second.end();
@@ -312,7 +321,7 @@ std::unique_ptr<Cursor> TreeIndex<Int>::find_in_range(
       lower_bound_value = range.lower_bound().value.as_int();
       if (range.lower_bound().type == EXCLUSIVE_END_POINT) {
         if (lower_bound_value.is_max()) {
-          return std::unique_ptr<Cursor>(new EmptyCursor);
+          return create_empty_cursor();
         }
         ++lower_bound_value;
       }
@@ -328,7 +337,7 @@ std::unique_ptr<Cursor> TreeIndex<Int>::find_in_range(
       upper_bound_value = range.upper_bound().value.as_int();
       if (range.upper_bound().type == EXCLUSIVE_END_POINT) {
         if (upper_bound_value.is_min()) {
-          return std::unique_ptr<Cursor>(new EmptyCursor);
+          return create_empty_cursor();
         }
         --upper_bound_value;
       }
@@ -336,7 +345,7 @@ std::unique_ptr<Cursor> TreeIndex<Int>::find_in_range(
   }
 
   if ((lower_bound_value > upper_bound_value).is_true()) {
-    return std::unique_ptr<Cursor>(new EmptyCursor);
+    return create_empty_cursor();
   }
 
   auto begin = map_.lower_bound(lower_bound_value);
@@ -438,7 +447,7 @@ std::unique_ptr<Cursor> TreeIndex<Float>::find(
   }
   auto map_it = map_.find(datum.as_float());
   if (map_it == map_.end()) {
-    return std::unique_ptr<Cursor>(new EmptyCursor);
+    return create_empty_cursor();
   } else {
     auto set_begin = map_it->second.begin();
     auto set_end = map_it->second.end();
@@ -544,7 +553,7 @@ std::unique_ptr<Cursor> TreeIndex<Text>::find(
   String string(text.raw_data(), text.raw_size());
   auto map_it = map_.find(string);
   if (map_it == map_.end()) {
-    return std::unique_ptr<Cursor>(new EmptyCursor);
+    return create_empty_cursor();
   } else {
     auto set_begin = map_it->second.begin();
     auto set_end = map_it->second.end();
