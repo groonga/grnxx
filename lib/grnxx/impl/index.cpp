@@ -330,7 +330,7 @@ class TreeIndex<Int> : public Index {
 
 TreeIndex<Int>::TreeIndex(ColumnBase *column,
                           const String &name,
-                          const IndexOptions &options)
+                          const IndexOptions &)
     : Index(column, name),
       map_() {
   auto cursor = column->table()->create_cursor();
@@ -490,7 +490,7 @@ class TreeIndex<Float> : public Index {
 
 TreeIndex<Float>::TreeIndex(ColumnBase *column,
                             const String &name,
-                            const IndexOptions &options)
+                            const IndexOptions &)
     : Index(column, name),
       map_() {
   auto cursor = column->table()->create_cursor();
@@ -655,7 +655,7 @@ class TreeIndex<Text> : public Index {
 
 TreeIndex<Text>::TreeIndex(ColumnBase *column,
                            const String &name,
-                           const IndexOptions &options)
+                           const IndexOptions &)
     : Index(column, name),
       map_() {
   auto cursor = column->table()->create_cursor();
@@ -881,26 +881,26 @@ Int Index::find_one(const Datum &value) const {
 }
 
 std::unique_ptr<Cursor> Index::find(
-    const Datum &value,
-    const CursorOptions &options) const {
+    const Datum &,
+    const CursorOptions &) const {
   throw "Not supported yet";  // TODO
 }
 
 std::unique_ptr<Cursor> Index::find_in_range(
-    const IndexRange &range,
-    const CursorOptions &options) const {
+    const IndexRange &,
+    const CursorOptions &) const {
   throw "Not supported yet";  // TODO
 }
 
 std::unique_ptr<Cursor> Index::find_starts_with(
-    const EndPoint &prefix,
-    const CursorOptions &options) const {
+    const EndPoint &,
+    const CursorOptions &) const {
   throw "Not supported yet";  // TODO
 }
 
 std::unique_ptr<Cursor> Index::find_prefixes(
-    const Datum &value,
-    const CursorOptions &options) const {
+    const Datum &,
+    const CursorOptions &) const {
   throw "Not supported yet";  // TODO
 }
 
