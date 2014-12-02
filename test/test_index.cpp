@@ -532,66 +532,64 @@ void test_text_exact_match() {
 //  }
 //}
 
-//void test_int_range() {
-//  constexpr grnxx::Int NUM_ROWS = 1 << 16;
+void test_int_range() {
+  constexpr size_t NUM_ROWS = 1 << 16;
 
-//  grnxx::Error error;
+  // Create a database with the default options.
+  auto db = grnxx::open_db("");
 
-//  // Create a database with the default options.
-//  auto db = grnxx::open_db(&error, "");
-//  assert(db);
+  // Create a table with the default options.
+  auto table = db->create_table("Table");
 
-//  // Create a table with the default options.
-//  auto table = db->create_table(&error, "Table");
-//  assert(table);
+  // Create a column.
+  auto column = table->create_column("Int", grnxx::INT_DATA);
 
-//  // Create a column.
-//  auto column = table->create_column(&error, "Int", grnxx::INT_DATA);
-//  assert(column);
+  // Create an index.
+  auto index = column->create_index("Index", grnxx::TREE_INDEX);
 
-//  // Create an index.
-//  auto index = column->create_index(&error, "Index", grnxx::TREE_INDEX);
-//  assert(index);
+  // Generate random values.
+  // Int: [0, 100).
+  grnxx::Array<grnxx::Int> values;
+  values.resize(NUM_ROWS);
+  for (size_t i = 0; i < NUM_ROWS; ++i) {
+    if ((mersenne_twister() % 100) == 0) {
+      values[i] = grnxx::Int::na();
+    } else {
+      values[i] = grnxx::Int(mersenne_twister() % 100);
+    }
+  }
 
-//  // Generate random values.
-//  // Int: [0, 100).
-//  grnxx::Array<grnxx::Int> values;
-//  assert(values.resize(&error, NUM_ROWS + 1));
-//  for (grnxx::Int i = 1; i <= NUM_ROWS; ++i) {
-//    values.set(i, mersenne_twister() % 100);
-//  }
+  // Store generated values into columns.
+  for (size_t i = 0; i < NUM_ROWS; ++i) {
+    grnxx::Int row_id = table->insert_row();
+    column->set(row_id, values[i]);
+  }
 
-//  // Store generated values into columns.
-//  for (grnxx::Int i = 1; i <= NUM_ROWS; ++i) {
-//    grnxx::Int row_id;
-//    assert(table->insert_row(&error, grnxx::NULL_ROW_ID,
-//                             grnxx::Datum(), &row_id));
-//    assert(row_id == i);
-//    assert(column->set(&error, row_id, values[i]));
-//  }
+  // Create a cursor.
+  grnxx::IndexRange range;
+  range.set_lower_bound(grnxx::Int(10), grnxx::INCLUSIVE_END_POINT);
+  range.set_upper_bound(grnxx::Int(90), grnxx::EXCLUSIVE_END_POINT);
+  auto cursor = index->find_in_range(range);
 
-//  // Create a cursor.
-//  grnxx::IndexRange range;
-//  range.set_lower_bound(grnxx::Int(10), grnxx::INCLUSIVE_END_POINT);
-//  range.set_upper_bound(grnxx::Int(90), grnxx::EXCLUSIVE_END_POINT);
-//  auto cursor = index->find_in_range(&error, range);
-//  assert(cursor);
+  grnxx::Array<grnxx::Record> records;
+  size_t count = cursor->read_all(&records);
+  for (size_t i = 1; i < records.size(); ++i) {
+    size_t lhs_row_id = records[i - 1].row_id.raw();
+    size_t rhs_row_id = records[i].row_id.raw();
+    assert(!values[lhs_row_id].is_na());
+    assert(!values[rhs_row_id].is_na());
+    assert((values[lhs_row_id] <= values[rhs_row_id]).is_true());
+  }
 
-//  grnxx::Array<grnxx::Record> records;
-//  auto result = cursor->read_all(&error, &records);
-//  assert(result.is_ok);
-//  for (grnxx::Int i = 1; i < records.size(); ++i) {
-//    assert(values[records.get_row_id(i - 1)] <= values[records.get_row_id(i)]);
-//  }
-
-//  grnxx::Int count = 0;
-//  for (grnxx::Int i = 1; i <= NUM_ROWS; ++i) {
-//    if ((values[i] >= 10) && (values[i] < 90)) {
-//      ++count;
-//    }
-//  }
-//  assert(count == records.size());
-//}
+  count = 0;
+  for (size_t i = 0; i < NUM_ROWS; ++i) {
+    if ((values[i] >= grnxx::Int(10)).is_true() &&
+        (values[i] < grnxx::Int(90)).is_true()) {
+      ++count;
+    }
+  }
+  assert(count == records.size());
+}
 
 //void test_float_range() {
 //  constexpr grnxx::Int NUM_ROWS = 1 << 16;
@@ -1059,7 +1057,7 @@ int main() {
   test_float_exact_match();
   test_text_exact_match();
 
-//  test_int_range();
+  test_int_range();
 //  test_float_range();
 //  test_text_range();
 
