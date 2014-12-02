@@ -12,6 +12,14 @@ namespace index {
 
 // TODO: These are test implementations.
 
+// -- RowIDLess --
+
+struct RowIDLess {
+  bool operator()(Int lhs, Int rhs) const {
+    return lhs.raw() < rhs.raw();
+  }
+};
+
 // -- EmptyCursor --
 
 // Helper function to create an empty cursor.
@@ -197,6 +205,85 @@ std::unique_ptr<Cursor> create_reverse_range_cursor(T begin,
                                        ReverseIterator(begin),
                                        offset,
                                        limit));
+} catch (const std::bad_alloc &) {
+  throw "Memory allocation failed";  // TODO
+}
+
+// -- PrefixCursor --
+
+class PrefixCursor : public Cursor {
+ public:
+
+  using Set = std::set<Int, RowIDLess>;
+  using Map = std::map<String, Set>;
+
+  PrefixCursor(Array<Map::iterator> &&array, size_t offset, size_t limit)
+      : Cursor(),
+        array_(std::move(array)),
+        pos_(0),
+        set_it_(),
+        set_end_(),
+        offset_(offset),
+        limit_(limit) {
+    if (array_.size() != 0) {
+      set_it_ = array_[0]->second.begin();
+      set_end_ = array_[0]->second.end();
+    }
+  }
+  ~PrefixCursor() = default;
+
+  size_t read(ArrayRef<Record> records);
+
+ private:
+  Array<Map::iterator> array_;
+  size_t pos_;
+  Set::iterator set_it_;
+  Set::iterator set_end_;
+  size_t offset_;
+  size_t limit_;
+};
+
+size_t PrefixCursor::read(ArrayRef<Record> records) {
+  size_t max_count = records.size();
+  if (max_count > limit_) {
+    max_count = limit_;
+  }
+  if (max_count <= 0) {
+    return 0;
+  }
+  size_t count = 0;
+  while ((count < max_count) && (pos_ < array_.size())) {
+    if (set_it_ == set_end_) {
+      ++pos_;
+      if (pos_ >= array_.size()) {
+        break;
+      }
+      set_it_ = array_[pos_]->second.begin();
+      set_end_ = array_[pos_]->second.end();
+      if (set_it_ == set_end_) {
+        continue;
+      }
+    }
+
+    if (offset_ > 0) {
+      --offset_;
+    } else {
+      records[count] = Record(*set_it_, Float(0.0));
+      ++count;
+    }
+    ++set_it_;
+  }
+  limit_ -= count;
+  return count;
+}
+
+// Helper function to create a prefix cursor.
+std::unique_ptr<Cursor> create_prefix_cursor(
+    Array<std::map<String, std::set<Int, RowIDLess>>::iterator> &&array,
+    size_t offset,
+    size_t limit) try {
+  return std::unique_ptr<Cursor>(
+      new PrefixCursor(std::move(array), offset, limit));
 } catch (const std::bad_alloc &) {
   throw "Memory allocation failed";  // TODO
 }
@@ -533,14 +620,8 @@ std::unique_ptr<Cursor> TreeIndex<Float>::find_in_range(
 template <>
 class TreeIndex<Text> : public Index {
  public:
-  struct Less {
-    bool operator()(Int lhs, Int rhs) const {
-      return lhs.raw() < rhs.raw();
-    }
-  };
-
   using Value = Text;
-  using Set = std::set<Int, Less>;
+  using Set = std::set<Int, RowIDLess>;
   using Map = std::map<String, Set>;
 
   TreeIndex(ColumnBase *column,
@@ -561,6 +642,8 @@ class TreeIndex<Text> : public Index {
                                         const CursorOptions &options) const;
   std::unique_ptr<Cursor> find_starts_with(const EndPoint &prefix,
                                            const CursorOptions &options) const;
+  std::unique_ptr<Cursor> find_prefixes(const Datum &value,
+                                        const CursorOptions &options) const;
 
  private:
   mutable Map map_;
@@ -730,6 +813,33 @@ std::unique_ptr<Cursor> TreeIndex<Text>::find_starts_with(
     return create_reverse_range_cursor(
         begin, end, options.offset, options.limit);
   }
+}
+
+std::unique_ptr<Cursor> TreeIndex<Text>::find_prefixes(
+    const Datum &value,
+    const CursorOptions &options) const {
+  // TODO: Typecast will be supported in future?
+  if (value.type() != TEXT_DATA) {
+    throw "Data type conflict";  // TODO
+  }
+  Text text = value.as_text();
+  if (text.is_na()) {
+    throw "No value";  // TODO
+  }
+  String string(text.raw_data(), text.raw_size());
+  Array<Map::iterator> array;
+  for (size_t i = 0; i <= string.size(); ++i) {
+    auto it = map_.find(string.substring(0, i));
+    if (it != map_.end()) {
+      array.push_back(it);
+    }
+  }
+  if (options.order_type == CURSOR_REVERSE_ORDER) {
+    for (size_t i = 0; i < (array.size() / 2); ++i) {
+      std::swap(array[i], array[array.size() - i - 1]);
+    }
+  }
+  return create_prefix_cursor(std::move(array), options.offset, options.limit);
 }
 
 }  // namespace index

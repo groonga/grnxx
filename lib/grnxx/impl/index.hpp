@@ -41,7 +41,7 @@ class Index : public IndexInterface {
       const EndPoint &prefix,
       const CursorOptions &options = CursorOptions()) const;
   virtual std::unique_ptr<Cursor> find_prefixes(
-      const Datum &datum,
+      const Datum &value,
       const CursorOptions &options = CursorOptions()) const;
 
   // -- Internal API --

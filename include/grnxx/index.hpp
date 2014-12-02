@@ -127,7 +127,7 @@ class Index {
   // On success, returns the cursor.
   // On failure, throws an exception.
   virtual std::unique_ptr<Cursor> find_prefixes(
-      const Datum &datum,
+      const Datum &value,
       const CursorOptions &options = CursorOptions()) const = 0;
 
  protected:
