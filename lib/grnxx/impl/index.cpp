@@ -376,7 +376,9 @@ void TreeIndex<Int>::remove(Int row_id, const Datum &value) {
 std::unique_ptr<Cursor> TreeIndex<Int>::find(
     const Datum &value,
     const CursorOptions &options) const {
-  if (value.type() != INT_DATA) {
+  if (value.type() == NA_DATA) {
+    return create_empty_cursor();
+  } else if (value.type() != INT_DATA) {
     throw "Data type conflict";  // TODO
   }
   auto map_it = map_.find(value.as_int());
@@ -534,7 +536,9 @@ void TreeIndex<Float>::remove(Int row_id, const Datum &value) {
 std::unique_ptr<Cursor> TreeIndex<Float>::find(
     const Datum &value,
     const CursorOptions &options) const {
-  if (value.type() != FLOAT_DATA) {
+  if (value.type() == NA_DATA) {
+    return create_empty_cursor();
+  } else if (value.type() != FLOAT_DATA) {
     throw "Data type conflict";  // TODO
   }
   auto map_it = map_.find(value.as_float());
@@ -702,7 +706,9 @@ void TreeIndex<Text>::remove(Int row_id, const Datum &value) {
 std::unique_ptr<Cursor> TreeIndex<Text>::find(
     const Datum &value,
     const CursorOptions &options) const {
-  if (value.type() != TEXT_DATA) {
+  if (value.type() == NA_DATA) {
+    return create_empty_cursor();
+  } else if (value.type() != TEXT_DATA) {
     throw "Data type conflict";  // TODO
   }
   Text text = value.as_text();
