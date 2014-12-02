@@ -803,70 +803,64 @@ void test_text_find_starts_with() {
   }
 }
 
-//void test_text_find_prefixes() {
-//  constexpr grnxx::Int NUM_ROWS = 1 << 16;
+void test_text_find_prefixes() {
+  constexpr size_t NUM_ROWS = 1 << 16;
 
-//  grnxx::Error error;
+  // Create a database with the default options.
+  auto db = grnxx::open_db("");
 
-//  // Create a database with the default options.
-//  auto db = grnxx::open_db(&error, "");
-//  assert(db);
+  // Create a table with the default options.
+  auto table = db->create_table("Table");
 
-//  // Create a table with the default options.
-//  auto table = db->create_table(&error, "Table");
-//  assert(table);
+  // Create a column.
+  auto column = table->create_column("Text", grnxx::TEXT_DATA);
 
-//  // Create a column.
-//  auto column = table->create_column(&error, "Text", grnxx::TEXT_DATA);
-//  assert(column);
+  // Create an index.
+  auto index = column->create_index("Index", grnxx::TREE_INDEX);
 
-//  // Create an index.
-//  auto index = column->create_index(&error, "Index", grnxx::TREE_INDEX);
-//  assert(index);
+  // Generate random values.
+  // Text: ["0", "99"].
+  grnxx::Array<grnxx::Text> values;
+  char bodies[100][3];
+  values.resize(NUM_ROWS);
+  for (int i = 0; i < 100; ++i) {
+    std::sprintf(bodies[i], "%d", i);
+  }
+  for (size_t i = 0; i < NUM_ROWS; ++i) {
+    if ((mersenne_twister() % 100) == 0) {
+      values[i] = grnxx::Text::na();
+    } else {
+      values[i] = grnxx::Text(bodies[mersenne_twister() % 100]);
+    }
+  }
 
-//  // Generate random values.
-//  // Text: ["0", "99"].
-//  grnxx::Array<grnxx::Text> values;
-//  char bodies[100][3];
-//  assert(values.resize(&error, NUM_ROWS + 1));
-//  for (int i = 0; i < 100; ++i) {
-//    std::sprintf(bodies[i], "%d", i);
-//  }
-//  for (grnxx::Int i = 1; i <= NUM_ROWS; ++i) {
-//    values.set(i, bodies[mersenne_twister() % 100]);
-//  }
+  // Store generated values into columns.
+  for (size_t i = 0; i < NUM_ROWS; ++i) {
+    grnxx::Int row_id = table->insert_row();
+    column->set(row_id, values[i]);
+  }
 
-//  // Store generated values into columns.
-//  for (grnxx::Int i = 1; i <= NUM_ROWS; ++i) {
-//    grnxx::Int row_id;
-//    assert(table->insert_row(&error, grnxx::NULL_ROW_ID,
-//                             grnxx::Datum(), &row_id));
-//    assert(row_id == i);
-//    assert(column->set(&error, row_id, values[i]));
-//  }
+  // Test cursors for each value.
+  for (int int_value = 0; int_value < 100; ++int_value) {
+    grnxx::Text value(bodies[int_value]);
+    auto cursor = index->find_prefixes(value);
 
-//  // Test cursors for each value.
-//  for (int int_value = 0; int_value < 100; ++int_value) {
-//    grnxx::Text value = bodies[int_value];
-//    auto cursor = index->find_prefixes(&error, value);
-//    assert(cursor);
+    grnxx::Array<grnxx::Record> records;
+    size_t count = cursor->read_all(&records);
+    for (size_t i = 0; i < records.size(); ++i) {
+      size_t row_id = records[i].row_id.raw();
+      assert(value.starts_with(values[row_id]).is_true());
+    }
 
-//    grnxx::Array<grnxx::Record> records;
-//    auto result = cursor->read_all(&error, &records);
-//    assert(result.is_ok);
-//    for (grnxx::Int i = 1; i < records.size(); ++i) {
-//      assert(inclusive_starts_with(value, values[records.get_row_id(i)]));
-//    }
-
-//    grnxx::Int count = 0;
-//    for (grnxx::Int i = 1; i <= NUM_ROWS; ++i) {
-//      if (inclusive_starts_with(value, values[i])) {
-//        ++count;
-//      }
-//    }
-//    assert(count == records.size());
-//  }
-//}
+    count = 0;
+    for (size_t i = 0; i < NUM_ROWS; ++i) {
+      if (value.starts_with(values[i]).is_true()) {
+        ++count;
+      }
+    }
+    assert(count == records.size());
+  }
+}
 
 //void test_reverse() {
 //  constexpr grnxx::Int NUM_ROWS = 1 << 16;
@@ -1029,7 +1023,7 @@ int main() {
   test_text_range();
 
   test_text_find_starts_with();
-//  test_text_find_prefixes();
+  test_text_find_prefixes();
 
 //  test_reverse();
 //  test_offset_and_limit();
