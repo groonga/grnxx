@@ -234,7 +234,7 @@ void Column<Text>::set_key_attribute() {
   std::set<String> set;
   size_t valid_size = get_valid_size();
   for (size_t i = 0; i < valid_size; ++i) try {
-    Text value = get(grnxx::Int(i));
+    Text value = get(Int(i));
     if (!value.is_na()) {
       if (!set.insert(String(value.raw_data(), value.raw_size())).second) {
         throw "Key duplicate";  // TODO
