@@ -234,9 +234,8 @@ class TreeIndex<Int> : public Index {
 
   std::unique_ptr<Cursor> find(const Datum &datum,
                                const CursorOptions &options) const;
-  std::unique_ptr<Cursor> find_in_range(
-      const IndexRange &range,
-      const CursorOptions &options) const;
+  std::unique_ptr<Cursor> find_in_range(const IndexRange &range,
+                                        const CursorOptions &options) const;
 
  private:
   mutable Map map_;
@@ -393,9 +392,8 @@ class TreeIndex<Float> : public Index {
 
   std::unique_ptr<Cursor> find(const Datum &datum,
                                const CursorOptions &options) const;
-  std::unique_ptr<Cursor> find_in_range(
-      const IndexRange &range,
-      const CursorOptions &options) const;
+  std::unique_ptr<Cursor> find_in_range(const IndexRange &range,
+                                        const CursorOptions &options) const;
 
  private:
   mutable Map map_;
@@ -559,9 +557,8 @@ class TreeIndex<Text> : public Index {
 
   std::unique_ptr<Cursor> find(const Datum &datum,
                                const CursorOptions &options) const;
-  std::unique_ptr<Cursor> find_in_range(
-      const IndexRange &range,
-      const CursorOptions &options) const;
+  std::unique_ptr<Cursor> find_in_range(const IndexRange &range,
+                                        const CursorOptions &options) const;
 
  private:
   mutable Map map_;
