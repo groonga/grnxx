@@ -1,3 +1,6 @@
+// TODO: Exception classes and utility macros should be provided for detailed
+//       error handling.
+
 #ifndef GRNXX_ERROR_HPP
 #define GRNXX_ERROR_HPP
 

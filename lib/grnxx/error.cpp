@@ -1,3 +1,6 @@
+// TODO: Exception classes and utility macros should be provided for detailed
+//       error handling.
+
 #include "grnxx/error.hpp"
 
 #include <cstdio>
