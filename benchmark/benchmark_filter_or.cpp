@@ -117,16 +117,8 @@ void benchmark_grnxx(const grnxx::Table *table,
                      grnxx::OperatorType logical_operator_type,
                      grnxx::Int upper_limit) {
   switch (logical_operator_type) {
-    case grnxx::LOGICAL_AND_OPERATOR: {
-      std::cout << "LOGICAL_AND: ";
-      break;
-    }
     case grnxx::LOGICAL_OR_OPERATOR: {
       std::cout << "LOGICAL_OR: ";
-      break;
-    }
-    case grnxx::BITWISE_AND_OPERATOR: {
-      std::cout << "BITWISE_AND: ";
       break;
     }
     case grnxx::BITWISE_OR_OPERATOR: {
@@ -197,56 +189,12 @@ void benchmark_grnxx() {
     col_c->set(row_id, c[i]);
   }
 
-  benchmark_grnxx(table, grnxx::LOGICAL_AND_OPERATOR);
   benchmark_grnxx(table, grnxx::LOGICAL_OR_OPERATOR);
-  benchmark_grnxx(table, grnxx::BITWISE_AND_OPERATOR);
   benchmark_grnxx(table, grnxx::BITWISE_OR_OPERATOR);
   benchmark_grnxx_not_and(table);
 }
 
-void benchmark_native_batch_and(grnxx::Int upper_limit) {
-  std::cout << "LOGICAL_AND: ";
-  std::cout << "ratio = " << (100 * upper_limit.raw() / 256) << '%';
-  double min_elapsed = std::numeric_limits<double>::max();
-  for (size_t i = 0; i < LOOP; ++i) {
-    Timer timer;
-
-    grnxx::Array<grnxx::Record> records;
-    records.resize(SIZE);
-    for (size_t j = 0; j < SIZE; ++j) {
-      records[j].row_id = grnxx::Int(j);
-      records[j].score = grnxx::Float(0.0);
-    }
-    size_t count = 0;
-    for (size_t j = 0; j < SIZE; ++j) {
-      if ((a[records[j].row_id.raw()] < upper_limit).is_true() &&
-          (b[records[j].row_id.raw()] < upper_limit).is_true() &&
-          (c[records[j].row_id.raw()] < upper_limit).is_true()) {
-        records[count] = grnxx::Record(grnxx::Int(j), grnxx::Float(0.0));
-        ++count;
-      }
-    }
-    records.resize(count);
-
-    double elapsed = timer.elapsed();
-    if (elapsed < min_elapsed) {
-      min_elapsed = elapsed;
-    }
-  }
-  std::cout << ", min. elapsed [s] = " << min_elapsed << std::endl;
-}
-
-void benchmark_native_batch_and() {
-  benchmark_native_batch_and(grnxx::Int(16));
-  benchmark_native_batch_and(grnxx::Int(32));
-  benchmark_native_batch_and(grnxx::Int(64));
-  benchmark_native_batch_and(grnxx::Int(128));
-  benchmark_native_batch_and(grnxx::Int(192));
-  benchmark_native_batch_and(grnxx::Int(224));
-  benchmark_native_batch_and(grnxx::Int(240));
-}
-
-void benchmark_native_batch_or(grnxx::Int upper_limit) {
+void benchmark_native_batch(grnxx::Int upper_limit) {
   std::cout << "LOGICAL_OR: ";
   std::cout << "ratio = " << (100 * upper_limit.raw() / 256) << '%';
   double min_elapsed = std::numeric_limits<double>::max();
@@ -278,58 +226,19 @@ void benchmark_native_batch_or(grnxx::Int upper_limit) {
   std::cout << ", min. elapsed [s] = " << min_elapsed << std::endl;
 }
 
-void benchmark_native_batch_or() {
-  benchmark_native_batch_or(grnxx::Int(16));
-  benchmark_native_batch_or(grnxx::Int(32));
-  benchmark_native_batch_or(grnxx::Int(64));
-  benchmark_native_batch_or(grnxx::Int(128));
-  benchmark_native_batch_or(grnxx::Int(192));
-  benchmark_native_batch_or(grnxx::Int(224));
-  benchmark_native_batch_or(grnxx::Int(240));
-}
-
 void benchmark_native_batch() {
   std::cout << __PRETTY_FUNCTION__ << std::endl;
 
-  benchmark_native_batch_and();
-  benchmark_native_batch_or();
+  benchmark_native_batch(grnxx::Int(16));
+  benchmark_native_batch(grnxx::Int(32));
+  benchmark_native_batch(grnxx::Int(64));
+  benchmark_native_batch(grnxx::Int(128));
+  benchmark_native_batch(grnxx::Int(192));
+  benchmark_native_batch(grnxx::Int(224));
+  benchmark_native_batch(grnxx::Int(240));
 }
 
-void benchmark_native_sequential_and(grnxx::Int upper_limit) {
-  std::cout << "LOGICAL_AND: ";
-  std::cout << "ratio = " << (100 * upper_limit.raw() / 256) << '%';
-  double min_elapsed = std::numeric_limits<double>::max();
-  for (size_t i = 0; i < LOOP; ++i) {
-    Timer timer;
-
-    grnxx::Array<grnxx::Record> records;
-    for (size_t j = 0; j < SIZE; ++j) {
-      if ((a[j] < upper_limit).is_true() &&
-          (b[j] < upper_limit).is_true() &&
-          (c[j] < upper_limit).is_true()) {
-        records.push_back(grnxx::Record(grnxx::Int(j), grnxx::Float(0.0)));
-      }
-    }
-
-    double elapsed = timer.elapsed();
-    if (elapsed < min_elapsed) {
-      min_elapsed = elapsed;
-    }
-  }
-  std::cout << ", min. elapsed [s] = " << min_elapsed << std::endl;
-}
-
-void benchmark_native_sequential_and() {
-  benchmark_native_sequential_and(grnxx::Int(16));
-  benchmark_native_sequential_and(grnxx::Int(32));
-  benchmark_native_sequential_and(grnxx::Int(64));
-  benchmark_native_sequential_and(grnxx::Int(128));
-  benchmark_native_sequential_and(grnxx::Int(192));
-  benchmark_native_sequential_and(grnxx::Int(224));
-  benchmark_native_sequential_and(grnxx::Int(240));
-}
-
-void benchmark_native_sequential_or(grnxx::Int upper_limit) {
+void benchmark_native_sequential(grnxx::Int upper_limit) {
   std::cout << "LOGICAL_OR: ";
   std::cout << "ratio = " << (100 * upper_limit.raw() / 256) << '%';
   double min_elapsed = std::numeric_limits<double>::max();
@@ -353,21 +262,16 @@ void benchmark_native_sequential_or(grnxx::Int upper_limit) {
   std::cout << ", min. elapsed [s] = " << min_elapsed << std::endl;
 }
 
-void benchmark_native_sequential_or() {
-  benchmark_native_sequential_or(grnxx::Int(16));
-  benchmark_native_sequential_or(grnxx::Int(32));
-  benchmark_native_sequential_or(grnxx::Int(64));
-  benchmark_native_sequential_or(grnxx::Int(128));
-  benchmark_native_sequential_or(grnxx::Int(192));
-  benchmark_native_sequential_or(grnxx::Int(224));
-  benchmark_native_sequential_or(grnxx::Int(240));
-}
-
 void benchmark_native_sequential() {
   std::cout << __PRETTY_FUNCTION__ << std::endl;
 
-  benchmark_native_sequential_and();
-  benchmark_native_sequential_or();
+  benchmark_native_sequential(grnxx::Int(16));
+  benchmark_native_sequential(grnxx::Int(32));
+  benchmark_native_sequential(grnxx::Int(64));
+  benchmark_native_sequential(grnxx::Int(128));
+  benchmark_native_sequential(grnxx::Int(192));
+  benchmark_native_sequential(grnxx::Int(224));
+  benchmark_native_sequential(grnxx::Int(240));
 }
 
 void benchmark_native() {

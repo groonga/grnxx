@@ -17,7 +17,8 @@ aclocal.m4
 autom4te.cache/
 benchmark/*.trs
 benchmark/benchmark_adjuster
-benchmark/benchmark_filter
+benchmark/benchmark_filter_and
+benchmark/benchmark_filter_or
 benchmark/benchmark_sorter
 compile
 config.*
