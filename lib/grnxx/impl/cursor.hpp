@@ -8,7 +8,7 @@ namespace impl {
 
 class EmptyCursor : public Cursor {
  public:
-  // -- Public API --
+  // -- Public API (grnxx/cursor.hpp) --
 
   EmptyCursor() = default;
   ~EmptyCursor() = default;

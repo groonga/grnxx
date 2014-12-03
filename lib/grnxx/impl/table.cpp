@@ -10,7 +10,7 @@ namespace impl {
 
 class TableRegularCursor : public Cursor {
  public:
-  // -- Public API --
+  // -- Public API (grnxx/cursor.hpp) --
 
   ~TableRegularCursor() {}
 
@@ -111,7 +111,7 @@ TableRegularCursor::TableRegularCursor(const Table *table,
 
 class TableReverseCursor : public Cursor {
  public:
-  // -- Public API --
+  // -- Public API (grnxx/cursor.hpp) --
 
   ~TableReverseCursor() {}
 
