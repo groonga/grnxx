@@ -86,19 +86,6 @@ void init_test() {
                      test.float_values[i] : MISSING_SCORE;
     test.scores2[i] = test.bool2_values[i].is_true() ?
                       test.float2_values[i] : MISSING_SCORE;
-
-//    test.bool_values[i] = grnxx::Bool((mersenne_twister() & 1) != 0);
-//    test.bool2_values[i] = grnxx::Bool((mersenne_twister() & 1) != 0);
-
-//    test.float_values[i] =
-//        grnxx::Float(1.0 * mersenne_twister() / mersenne_twister.max());
-//    test.float2_values[i] =
-//        grnxx::Float(1.0 * mersenne_twister() / mersenne_twister.max());
-
-//    test.scores[i] = test.bool_values[i].is_true() ?
-//                     test.float_values[i] : MISSING_SCORE;
-//    test.scores2[i] = test.bool2_values[i].is_true() ?
-//                      test.float2_values[i] : MISSING_SCORE;
   }
 
   // Store generated values into columns.
