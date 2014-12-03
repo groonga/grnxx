@@ -25,19 +25,14 @@
 #include "grnxx/index.hpp"
 #include "grnxx/table.hpp"
 
-std::mt19937_64 mersenne_twister;
+constexpr size_t NUM_ROWS = 1 << 16;
+
+std::mt19937_64 rng;
 
 void test_index() {
-  // Create a database with the default options.
+  // Create a column.
   auto db = grnxx::open_db("");
-
-  // Create a table with the default options.
   auto table = db->create_table("Table");
-
-  // Append the first row.
-  grnxx::Int row_id = table->insert_row();
-
-  // Create a column named "Column".
   auto column = table->create_column("Column", grnxx::INT_DATA);
 
   // Create an index named "Index".
@@ -45,19 +40,17 @@ void test_index() {
   assert(index->column() == column);
   assert(index->name() == "Index");
   assert(index->type() == grnxx::TREE_INDEX);
+
+  assert(column->num_indexes() == 1);
+  assert(column->get_index(0) == index);
+  assert(column->find_index("Index") == index);
 }
 
 void test_set_and_index() {
-  constexpr size_t NUM_ROWS = 1 << 16;
-
-  // Create a database with the default options.
-  auto db = grnxx::open_db("");
-
-  // Create a table with the default options.
-  auto table = db->create_table("Table");
-
   // Create a column.
-  auto column = table->create_column("Int", grnxx::INT_DATA);
+  auto db = grnxx::open_db("");
+  auto table = db->create_table("Table");
+  auto column = table->create_column("Column", grnxx::INT_DATA);
 
   // Generate random values.
   // Int: [0, 100) or N/A.
@@ -65,8 +58,8 @@ void test_set_and_index() {
   values.resize(NUM_ROWS);
   size_t total_count = 0;
   for (size_t i = 0; i < NUM_ROWS; ++i) {
-    if ((mersenne_twister() % 128) != 0) {
-      values[i] = grnxx::Int(mersenne_twister() % 100);
+    if ((rng() % 128) != 0) {
+      values[i] = grnxx::Int(rng() % 100);
       ++total_count;
     } else {
       values[i] = grnxx::Int::na();
@@ -76,44 +69,37 @@ void test_set_and_index() {
   // Store generated values into columns.
   for (size_t i = 0; i < NUM_ROWS; ++i) {
     grnxx::Int row_id = table->insert_row();
-    assert(row_id.match(grnxx::Int(i)));
     column->set(row_id, values[i]);
   }
 
   // Create an index.
   auto index = column->create_index("Index", grnxx::TREE_INDEX);
 
-//  // Create a cursor.
-//  auto cursor = index->find_in_range();
+  // Create a cursor.
+  auto cursor = index->find_in_range();
 
-//  grnxx::Array<grnxx::Record> records;
-//  size_t count = cursor->read_all(&records);
-//  assert(count == total_count);
-//  for (size_t i = 1; i < NUM_ROWS; ++i) {
-//    size_t lhs_row_id = records[i - 1].row_id.raw();
-//    size_t rhs_row_id = records[i].row_id.raw();
-//    grnxx::Int lhs_value = values[lhs_row_id];
-//    grnxx::Int rhs_value = values[rhs_row_id];
-//    assert(!lhs_value.is_na());
-//    assert(!rhs_value.is_na());
-//    assert(lhs_value.raw() <= rhs_value.raw());
-//    if (lhs_value.match(rhs_value)) {
-//      assert(lhs_row_id < rhs_row_id);
-//    }
-//  }
+  grnxx::Array<grnxx::Record> records;
+  size_t count = cursor->read_all(&records);
+  assert(count == total_count);
+  for (size_t i = 1; i < count; ++i) {
+    size_t lhs_row_id = records[i - 1].row_id.raw();
+    size_t rhs_row_id = records[i].row_id.raw();
+    grnxx::Int lhs_value = values[lhs_row_id];
+    grnxx::Int rhs_value = values[rhs_row_id];
+    assert(!lhs_value.is_na());
+    assert(!rhs_value.is_na());
+    assert(lhs_value.raw() <= rhs_value.raw());
+    if (lhs_value.match(rhs_value)) {
+      assert(lhs_row_id < rhs_row_id);
+    }
+  }
 }
 
 void test_index_and_set() {
-  constexpr size_t NUM_ROWS = 1 << 16;
-
-  // Create a database with the default options.
-  auto db = grnxx::open_db("");
-
-  // Create a table with the default options.
-  auto table = db->create_table("Table");
-
   // Create a column.
-  auto column = table->create_column("Int", grnxx::INT_DATA);
+  auto db = grnxx::open_db("");
+  auto table = db->create_table("Table");
+  auto column = table->create_column("Column", grnxx::INT_DATA);
 
   // Create an index.
   auto index = column->create_index("Index", grnxx::TREE_INDEX);
@@ -124,8 +110,8 @@ void test_index_and_set() {
   values.resize(NUM_ROWS);
   size_t total_count = 0;
   for (size_t i = 0; i < NUM_ROWS; ++i) {
-    if ((mersenne_twister() % 128) != 0) {
-      values[i] = grnxx::Int(mersenne_twister() % 100);
+    if ((rng() % 128) != 0) {
+      values[i] = grnxx::Int(rng() % 100);
       ++total_count;
     } else {
       values[i] = grnxx::Int::na();
@@ -135,41 +121,34 @@ void test_index_and_set() {
   // Store generated values into columns.
   for (size_t i = 0; i < NUM_ROWS; ++i) {
     grnxx::Int row_id = table->insert_row();
-    assert(row_id.match(grnxx::Int(i)));
     column->set(row_id, values[i]);
   }
 
-//  // Create a cursor.
-//  auto cursor = index->find_in_range();
+  // Create a cursor.
+  auto cursor = index->find_in_range();
 
-//  grnxx::Array<grnxx::Record> records;
-//  size_t count = cursor->read_all(&records);
-//  assert(count == NUM_ROWS);
-//  for (size_t i = 1; i < NUM_ROWS; ++i) {
-//    size_t lhs_row_id = records[i - 1].row_id.raw();
-//    size_t rhs_row_id = records[i].row_id.raw();
-//    grnxx::Int lhs_value = values[lhs_row_id];
-//    grnxx::Int rhs_value = values[rhs_row_id];
-//    assert(!lhs_value.is_na());
-//    assert(!rhs_value.is_na());
-//    assert(lhs_value.raw() <= rhs_value.raw());
-//    if (lhs_value.match(rhs_value)) {
-//      assert(lhs_row_id < rhs_row_id);
-//    }
-//  }
+  grnxx::Array<grnxx::Record> records;
+  size_t count = cursor->read_all(&records);
+  assert(count == total_count);
+  for (size_t i = 1; i < count; ++i) {
+    size_t lhs_row_id = records[i - 1].row_id.raw();
+    size_t rhs_row_id = records[i].row_id.raw();
+    grnxx::Int lhs_value = values[lhs_row_id];
+    grnxx::Int rhs_value = values[rhs_row_id];
+    assert(!lhs_value.is_na());
+    assert(!rhs_value.is_na());
+    assert(lhs_value.raw() <= rhs_value.raw());
+    if (lhs_value.match(rhs_value)) {
+      assert(lhs_row_id < rhs_row_id);
+    }
+  }
 }
 
 void test_remove() {
-  constexpr size_t NUM_ROWS = 1 << 16;
-
-  // Create a database with the default options.
-  auto db = grnxx::open_db("");
-
-  // Create a table with the default options.
-  auto table = db->create_table("Table");
-
   // Create a column.
-  auto column = table->create_column("Int", grnxx::INT_DATA);
+  auto db = grnxx::open_db("");
+  auto table = db->create_table("Table");
+  auto column = table->create_column("Column", grnxx::INT_DATA);
 
   // Generate random values.
   // Int: [0, 100) or N/A.
@@ -177,8 +156,8 @@ void test_remove() {
   values.resize(NUM_ROWS);
   size_t total_count = 0;
   for (size_t i = 0; i < NUM_ROWS; ++i) {
-    if ((mersenne_twister() % 128) != 0) {
-      values[i] = grnxx::Int(mersenne_twister() % 100);
+    if ((rng() % 128) != 0) {
+      values[i] = grnxx::Int(rng() % 100);
       ++total_count;
     } else {
       values[i] = grnxx::Int::na();
@@ -188,7 +167,6 @@ void test_remove() {
   // Store generated values into columns.
   for (size_t i = 0; i < NUM_ROWS; ++i) {
     grnxx::Int row_id = table->insert_row();
-    assert(row_id.match(grnxx::Int(i)));
     column->set(row_id, values[i]);
   }
 
@@ -201,7 +179,7 @@ void test_remove() {
     grnxx::Int row_id(i);
     grnxx::Datum datum;
     column->get(row_id, &datum);
-    if (datum.as_int().is_na()) {
+    if (!datum.as_int().is_na()) {
       --odd_count;
     }
     table->remove_row(row_id);
@@ -209,98 +187,29 @@ void test_remove() {
   }
 
   // Create a cursor.
-//  auto cursor = index->find_in_range();
+  auto cursor = index->find_in_range();
 
-//  grnxx::Array<grnxx::Record> records;
-//  size_t count = cursor->read_all(&records);
-//  assert(count == odd_count);
-//  for (size_t i = 0; i < count; ++i) {
-//    size_t lhs_row_id = records[i - 1].row_id.raw();
-//    size_t rhs_row_id = records[i].row_id.raw();
-//    grnxx::Int lhs_value = values[lhs_row_id];
-//    grnxx::Int rhs_value = values[rhs_row_id];
-//    assert(!lhs_value.is_na());
-//    assert(!rhs_value.is_na());
-//    assert(lhs_value.raw() <= rhs_value.raw());
-//    if (lhs_value.match(rhs_value)) {
-//      assert(lhs_row_id < rhs_row_id);
-//    }
-//  }
+  grnxx::Array<grnxx::Record> records;
+  size_t count = cursor->read_all(&records);
+  assert(count == odd_count);
+  for (size_t i = 1; i < count; ++i) {
+    size_t lhs_row_id = records[i - 1].row_id.raw();
+    size_t rhs_row_id = records[i].row_id.raw();
+    grnxx::Int lhs_value = values[lhs_row_id];
+    grnxx::Int rhs_value = values[rhs_row_id];
+    assert(!lhs_value.is_na());
+    assert(!rhs_value.is_na());
+    assert(lhs_value.raw() <= rhs_value.raw());
+    if (lhs_value.match(rhs_value)) {
+      assert(lhs_row_id < rhs_row_id);
+    }
+  }
 }
 
-//void test_bool_exact_match() {
-//  constexpr grnxx::Int NUM_ROWS = 1 << 16;
-
-//  grnxx::Error error;
-
-//  // Create a database with the default options.
-//  auto db = grnxx::open_db(&error, "");
-//  assert(db);
-
-//  // Create a table with the default options.
-//  auto table = db->create_table(&error, "Table");
-//  assert(table);
-
-//  // Create a column.
-//  auto column = table->create_column(&error, "Bool", grnxx::BOOL_DATA);
-//  assert(column);
-
-//  // Create an index.
-//  auto index = column->create_index(&error, "Index", grnxx::TREE_INDEX);
-//  assert(index);
-
-//  // Generate random values.
-//  // Bool: [false, true].
-//  grnxx::Array<grnxx::Bool> values;
-//  assert(values.resize(&error, NUM_ROWS + 1));
-//  for (grnxx::Int i = 1; i <= NUM_ROWS; ++i) {
-//    values.set(i, (mersenne_twister() & 1) == 1);
-//  }
-
-//  // Store generated values into columns.
-//  for (grnxx::Int i = 1; i <= NUM_ROWS; ++i) {
-//    grnxx::Int row_id;
-//    assert(table->insert_row(&error, grnxx::NULL_ROW_ID,
-//                             grnxx::Datum(), &row_id));
-//    assert(row_id == i);
-//    assert(column->set(&error, row_id, values[i]));
-//  }
-
-//  // Test cursors for each value.
-//  grnxx::Bool possible_values[2] = { false, true };
-//  for (int possible_value_id = 0; possible_value_id < 2; ++possible_value_id) {
-//    grnxx::Bool value = possible_values[possible_value_id];
-
-//    auto cursor = index->find(&error, value);
-//    assert(cursor);
-
-//    grnxx::Array<grnxx::Record> records;
-//    auto result = cursor->read_all(&error, &records);
-//    assert(result.is_ok);
-//    for (grnxx::Int i = 1; i < records.size(); ++i) {
-//      assert(values[records.get_row_id(i)] == value);
-//    }
-
-//    grnxx::Int count = 0;
-//    for (grnxx::Int i = 1; i <= NUM_ROWS; ++i) {
-//      if (values[i] == value) {
-//        ++count;
-//      }
-//    }
-//    assert(count == records.size());
-//  }
-//}
-
 void test_int_exact_match() {
-  constexpr size_t NUM_ROWS = 1 << 16;
-
-  // Create a database with the default options.
-  auto db = grnxx::open_db("");
-
-  // Create a table with the default options.
-  auto table = db->create_table("Table");
-
   // Create a column.
+  auto db = grnxx::open_db("");
+  auto table = db->create_table("Table");
   auto column = table->create_column("Int", grnxx::INT_DATA);
 
   // Create an index.
@@ -312,8 +221,8 @@ void test_int_exact_match() {
   values.resize(NUM_ROWS);
   size_t total_count = 0;
   for (size_t i = 0; i < NUM_ROWS; ++i) {
-    if ((mersenne_twister() % 128) != 0) {
-      values[i] = grnxx::Int(mersenne_twister() % 100);
+    if ((rng() % 128) != 0) {
+      values[i] = grnxx::Int(rng() % 100);
       ++total_count;
     } else {
       values[i] = grnxx::Int::na();
@@ -349,15 +258,9 @@ void test_int_exact_match() {
 }
 
 void test_float_exact_match() {
-  constexpr size_t NUM_ROWS = 1 << 16;
-
-  // Create a database with the default options.
-  auto db = grnxx::open_db("");
-
-  // Create a table with the default options.
-  auto table = db->create_table("Table");
-
   // Create a column.
+  auto db = grnxx::open_db("");
+  auto table = db->create_table("Table");
   auto column = table->create_column("Float", grnxx::FLOAT_DATA);
 
   // Create an index.
@@ -369,8 +272,8 @@ void test_float_exact_match() {
   values.resize(NUM_ROWS);
   size_t total_count = 0;
   for (size_t i = 0; i < NUM_ROWS; ++i) {
-    if ((mersenne_twister() % 256) != 0) {
-      values[i] = grnxx::Float((mersenne_twister() % 256) / 256.0);
+    if ((rng() % 256) != 0) {
+      values[i] = grnxx::Float((rng() % 256) / 256.0);
       ++total_count;
     } else {
       values[i] = grnxx::Float::na();
@@ -406,15 +309,9 @@ void test_float_exact_match() {
 }
 
 void test_text_exact_match() {
-  constexpr size_t NUM_ROWS = 1 << 16;
-
-  // Create a database with the default options.
-  auto db = grnxx::open_db("");
-
-  // Create a table with the default options.
-  auto table = db->create_table("Table");
-
   // Create a column.
+  auto db = grnxx::open_db("");
+  auto table = db->create_table("Table");
   auto column = table->create_column("Text", grnxx::TEXT_DATA);
 
   // Create an index.
@@ -430,8 +327,8 @@ void test_text_exact_match() {
   values.resize(NUM_ROWS);
   size_t total_count = 0;
   for (size_t i = 0; i < NUM_ROWS; ++i) {
-    if ((mersenne_twister() % 256) != 0) {
-      values[i] = grnxx::Text(bodies[mersenne_twister() % 256]);
+    if ((rng() % 256) != 0) {
+      values[i] = grnxx::Text(bodies[rng() % 256]);
       ++total_count;
     } else {
       values[i] = grnxx::Text::na();
@@ -467,8 +364,6 @@ void test_text_exact_match() {
 }
 
 //void test_text_exact_match() {
-//  constexpr grnxx::Int NUM_ROWS = 1 << 16;
-
 //  grnxx::Error error;
 
 //  // Create a database with the default options.
@@ -496,7 +391,7 @@ void test_text_exact_match() {
 //    std::sprintf(bodies[i], "%d", i);
 //  }
 //  for (grnxx::Int i = 1; i <= NUM_ROWS; ++i) {
-//    values.set(i, bodies[mersenne_twister() % 100]);
+//    values.set(i, bodies[rng() % 100]);
 //  }
 
 //  // Store generated values into columns.
@@ -533,15 +428,9 @@ void test_text_exact_match() {
 //}
 
 void test_int_range() {
-  constexpr size_t NUM_ROWS = 1 << 16;
-
-  // Create a database with the default options.
-  auto db = grnxx::open_db("");
-
-  // Create a table with the default options.
-  auto table = db->create_table("Table");
-
   // Create a column.
+  auto db = grnxx::open_db("");
+  auto table = db->create_table("Table");
   auto column = table->create_column("Int", grnxx::INT_DATA);
 
   // Create an index.
@@ -552,10 +441,10 @@ void test_int_range() {
   grnxx::Array<grnxx::Int> values;
   values.resize(NUM_ROWS);
   for (size_t i = 0; i < NUM_ROWS; ++i) {
-    if ((mersenne_twister() % 100) == 0) {
+    if ((rng() % 100) == 0) {
       values[i] = grnxx::Int::na();
     } else {
-      values[i] = grnxx::Int(mersenne_twister() % 100);
+      values[i] = grnxx::Int(rng() % 100);
     }
   }
 
@@ -592,15 +481,9 @@ void test_int_range() {
 }
 
 void test_float_range() {
-  constexpr size_t NUM_ROWS = 1 << 16;
-
-  // Create a database with the default options.
-  auto db = grnxx::open_db("");
-
-  // Create a table with the default options.
-  auto table = db->create_table("Table");
-
   // Create a column.
+  auto db = grnxx::open_db("");
+  auto table = db->create_table("Table");
   auto column = table->create_column("Float", grnxx::FLOAT_DATA);
 
   // Create an index.
@@ -611,10 +494,10 @@ void test_float_range() {
   grnxx::Array<grnxx::Float> values;
   values.resize(NUM_ROWS);
   for (size_t i = 0; i < NUM_ROWS; ++i) {
-    if ((mersenne_twister() % 100) == 0) {
+    if ((rng() % 100) == 0) {
       values[i] = grnxx::Float::na();
     } else {
-      values[i] = grnxx::Float((mersenne_twister() % 256) / 256.0);
+      values[i] = grnxx::Float((rng() % 256) / 256.0);
     }
   }
 
@@ -651,15 +534,9 @@ void test_float_range() {
 }
 
 void test_text_range() {
-  constexpr size_t NUM_ROWS = 1 << 16;
-
-  // Create a database with the default options.
-  auto db = grnxx::open_db("");
-
-  // Create a table with the default options.
-  auto table = db->create_table("Table");
-
   // Create a column.
+  auto db = grnxx::open_db("");
+  auto table = db->create_table("Table");
   auto column = table->create_column("Text", grnxx::TEXT_DATA);
 
   // Create an index.
@@ -674,10 +551,10 @@ void test_text_range() {
     std::sprintf(bodies[i], "%d", i);
   }
   for (size_t i = 0; i < NUM_ROWS; ++i) {
-    if ((mersenne_twister() % 100) == 0) {
+    if ((rng() % 100) == 0) {
       values[i] = grnxx::Text::na();
     } else {
-      values[i] = grnxx::Text(bodies[mersenne_twister() % 100]);
+      values[i] = grnxx::Text(bodies[rng() % 100]);
     }
   }
 
@@ -714,15 +591,9 @@ void test_text_range() {
 }
 
 void test_text_find_starts_with() {
-  constexpr size_t NUM_ROWS = 1 << 16;
-
-  // Create a database with the default options.
-  auto db = grnxx::open_db("");
-
-  // Create a table with the default options.
-  auto table = db->create_table("Table");
-
   // Create a column.
+  auto db = grnxx::open_db("");
+  auto table = db->create_table("Table");
   auto column = table->create_column("Text", grnxx::TEXT_DATA);
 
   // Create an index.
@@ -737,10 +608,10 @@ void test_text_find_starts_with() {
     std::sprintf(bodies[i], "%d", i);
   }
   for (size_t i = 0; i < NUM_ROWS; ++i) {
-    if ((mersenne_twister() % 100) == 0) {
+    if ((rng() % 100) == 0) {
       values[i] = grnxx::Text::na();
     } else {
-      values[i] = grnxx::Text(bodies[mersenne_twister() % 100]);
+      values[i] = grnxx::Text(bodies[rng() % 100]);
     }
   }
 
@@ -804,15 +675,9 @@ void test_text_find_starts_with() {
 }
 
 void test_text_find_prefixes() {
-  constexpr size_t NUM_ROWS = 1 << 16;
-
-  // Create a database with the default options.
-  auto db = grnxx::open_db("");
-
-  // Create a table with the default options.
-  auto table = db->create_table("Table");
-
   // Create a column.
+  auto db = grnxx::open_db("");
+  auto table = db->create_table("Table");
   auto column = table->create_column("Text", grnxx::TEXT_DATA);
 
   // Create an index.
@@ -827,10 +692,10 @@ void test_text_find_prefixes() {
     std::sprintf(bodies[i], "%d", i);
   }
   for (size_t i = 0; i < NUM_ROWS; ++i) {
-    if ((mersenne_twister() % 100) == 0) {
+    if ((rng() % 100) == 0) {
       values[i] = grnxx::Text::na();
     } else {
-      values[i] = grnxx::Text(bodies[mersenne_twister() % 100]);
+      values[i] = grnxx::Text(bodies[rng() % 100]);
     }
   }
 
@@ -863,8 +728,6 @@ void test_text_find_prefixes() {
 }
 
 //void test_reverse() {
-//  constexpr grnxx::Int NUM_ROWS = 1 << 16;
-
 //  grnxx::Error error;
 
 //  // Create a database with the default options.
@@ -888,7 +751,7 @@ void test_text_find_prefixes() {
 //  grnxx::Array<grnxx::Int> values;
 //  assert(values.resize(&error, NUM_ROWS + 1));
 //  for (grnxx::Int i = 1; i <= NUM_ROWS; ++i) {
-//    values.set(i, mersenne_twister() % 100);
+//    values.set(i, rng() % 100);
 //  }
 
 //  // Store generated values into columns.
@@ -926,8 +789,6 @@ void test_text_find_prefixes() {
 //}
 
 //void test_offset_and_limit() {
-//  constexpr grnxx::Int NUM_ROWS = 1 << 16;
-
 //  grnxx::Error error;
 
 //  // Create a database with the default options.
@@ -947,7 +808,7 @@ void test_text_find_prefixes() {
 //  grnxx::Array<grnxx::Int> values;
 //  assert(values.resize(&error, NUM_ROWS + 1));
 //  for (grnxx::Int i = 1; i <= NUM_ROWS; ++i) {
-//    values.set(i, mersenne_twister() % 100);
+//    values.set(i, rng() % 100);
 //  }
 
 //  // Store generated values into columns.
@@ -1013,7 +874,6 @@ int main() {
   test_index_and_set();
   test_remove();
 
-//  test_bool_exact_match();
   test_int_exact_match();
   test_float_exact_match();
   test_text_exact_match();
