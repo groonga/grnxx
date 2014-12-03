@@ -50,7 +50,7 @@ class GeoPoint {
   GeoPoint(Float latitude_in_degrees, Float longitude_in_degrees)
       : raw_latitude_(),
         raw_longitude_() {
-    // N/A (NaN) is rejected due to LOGICAL_AND.
+    // N/A (NaN) is rejected because a comparison for NaN returns false.
     if ((latitude_in_degrees.raw() >= -90.0) &&
         (latitude_in_degrees.raw() <= 90.0) &&
         (longitude_in_degrees.raw() >= -180.0) &&
