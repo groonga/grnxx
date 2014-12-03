@@ -17,12 +17,9 @@
 */
 #include <cassert>
 #include <ctime>
-#include <functional>
 #include <iostream>
 #include <random>
 
-#include "grnxx/array.hpp"
-#include "grnxx/data_types.hpp"
 #include "grnxx/db.hpp"
 #include "grnxx/pipeline.hpp"
 
