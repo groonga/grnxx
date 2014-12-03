@@ -90,15 +90,12 @@ void test_table() {
 }
 
 void test_rows() {
-  // Create a database with the default options.
-  auto db = grnxx::open_db("");
-
   // Create a table named "Table".
+  auto db = grnxx::open_db("");
   auto table = db->create_table("Table");
 
   // Append the first row.
-  grnxx::Int row_id;
-  row_id = table->insert_row();
+  grnxx::Int row_id = table->insert_row();
   assert(row_id.raw() == 0);
   assert(table->num_rows() == 1);
   assert(table->max_row_id().match(row_id));
@@ -147,16 +144,14 @@ void test_rows() {
 void test_bitmap() {
   constexpr size_t NUM_ROWS = 1 << 16;
 
-  // Create a database with the default options.
-  auto db = grnxx::open_db("");
-
   // Create a table named "Table".
+  auto db = grnxx::open_db("");
   auto table = db->create_table("Table");
 
   // Insert rows.
   for (size_t i = 0; i < NUM_ROWS; ++i) {
-    grnxx::Int row_id(i);
-    assert(table->insert_row().match(row_id));
+    grnxx::Int expected_row_id(i);
+    assert(table->insert_row().match(expected_row_id));
   }
   assert(table->num_rows() == NUM_ROWS);
   assert(table->max_row_id().raw() == (NUM_ROWS - 1));
@@ -171,8 +166,8 @@ void test_bitmap() {
 
   // Insert rows again.
   for (size_t i = 0; i < NUM_ROWS; ++i) {
-    grnxx::Int row_id(i);
-    assert(table->insert_row().match(row_id));
+    grnxx::Int exptected_row_id(i);
+    assert(table->insert_row().match(exptected_row_id));
   }
   assert(table->num_rows() == NUM_ROWS);
   assert(table->max_row_id().raw() == (NUM_ROWS - 1));
@@ -187,8 +182,8 @@ void test_bitmap() {
 
   // Insert rows again.
   for (size_t i = 0; i < NUM_ROWS; i += 2) {
-    grnxx::Int row_id(i);
-    assert(table->insert_row().match(row_id));
+    grnxx::Int exptected_row_id(i);
+    assert(table->insert_row().match(exptected_row_id));
   }
   assert(table->num_rows() == NUM_ROWS);
   assert(table->max_row_id().raw() == (NUM_ROWS - 1));
@@ -203,18 +198,16 @@ void test_bitmap() {
 
   // Insert rows again.
   for (size_t i = 0; i < NUM_ROWS; ++i) {
-    grnxx::Int row_id(i);
-    assert(table->insert_row().match(row_id));
+    grnxx::Int exptected_row_id(i);
+    assert(table->insert_row().match(exptected_row_id));
   }
   assert(table->num_rows() == NUM_ROWS);
   assert(table->max_row_id().raw() == (NUM_ROWS - 1));
 }
 
 void test_int_key() {
-  // Create a database with the default options.
-  auto db = grnxx::open_db("");
-
   // Create a table named "Table".
+  auto db = grnxx::open_db("");
   auto table = db->create_table("Table");
 
   // Create a column named "Column".
@@ -272,10 +265,8 @@ void test_int_key() {
 }
 
 void test_text_key() {
-  // Create a database with the default options.
-  auto db = grnxx::open_db("");
-
   // Create a table named "Table".
+  auto db = grnxx::open_db("");
   auto table = db->create_table("Table");
 
   // Create a column named "Column".
@@ -332,10 +323,8 @@ void test_text_key() {
 }
 
 void test_cursor() {
-  // Create a database with the default options.
-  auto db = grnxx::open_db("");
-
   // Create a table named "Table".
+  auto db = grnxx::open_db("");
   auto table = db->create_table("Table");
 
   // Insert rows.
@@ -354,8 +343,8 @@ void test_cursor() {
   assert(cursor->read_all(&records) == (NUM_ROWS / 2));
   assert(records.size() == NUM_ROWS);
   for (size_t i = 0; i < NUM_ROWS; ++i) {
-    grnxx::Int row_id(i);
-    assert(records[i].row_id.match(row_id));
+    grnxx::Int exptected_row_id(i);
+    assert(records[i].row_id.match(exptected_row_id));
     assert(records[i].score.raw() == 0.0);
   }
   records.clear();
@@ -367,8 +356,8 @@ void test_cursor() {
   assert(cursor->read_all(&records) == NUM_ROWS);
   assert(records.size() == NUM_ROWS);
   for (size_t i = 0; i < NUM_ROWS; ++i) {
-    grnxx::Int row_id(NUM_ROWS - i - 1);
-    assert(records[i].row_id.match(row_id));
+    grnxx::Int exptected_row_id(NUM_ROWS - i - 1);
+    assert(records[i].row_id.match(exptected_row_id));
     assert(records[i].score.raw() == 0.0);
   }
   records.clear();
@@ -403,10 +392,8 @@ void test_cursor() {
 }
 
 void test_reference() {
-  // Create a database with the default options.
-  auto db = grnxx::open_db("");
-
   // Create tables.
+  auto db = grnxx::open_db("");
   auto to_table = db->create_table("To");
   auto from_table = db->create_table("From");
 
@@ -414,7 +401,6 @@ void test_reference() {
   grnxx::ColumnOptions options;
   options.reference_table_name = "To";
   auto ref_column = from_table->create_column("Ref", grnxx::INT_DATA, options);
-  assert(ref_column);
 
   // Append rows.
   to_table->insert_row();
@@ -428,7 +414,7 @@ void test_reference() {
   ref_column->set(grnxx::Int(1), grnxx::Int(1));
   ref_column->set(grnxx::Int(2), grnxx::Int(1));
 
-  // TODO: "from_table" will be updated in "to_table->remove_row()".
+  // TODO: "from_table" may be updated in "to_table->remove_row()".
 
   to_table->remove_row(grnxx::Int(0));
 
