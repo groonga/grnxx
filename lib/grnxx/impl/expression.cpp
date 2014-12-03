@@ -61,9 +61,7 @@ class TypedNode : public Node {
   //
   // The evaluation results are stored into "*results".
   //
-  // On success, returns true.
-  // On failure, returns false and stores error information into "*error" if
-  // "error" != nullptr.
+  // On failure, throws an exception.
   virtual void evaluate(ArrayCRef<Record> records,
                         ArrayRef<Value> results) = 0;
 };
