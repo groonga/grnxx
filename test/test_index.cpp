@@ -441,7 +441,7 @@ void test_int_range() {
   grnxx::Array<grnxx::Int> values;
   values.resize(NUM_ROWS);
   for (size_t i = 0; i < NUM_ROWS; ++i) {
-    if ((rng() % 100) == 0) {
+    if ((rng() % 128) != 0) {
       values[i] = grnxx::Int::na();
     } else {
       values[i] = grnxx::Int(rng() % 100);
@@ -494,7 +494,7 @@ void test_float_range() {
   grnxx::Array<grnxx::Float> values;
   values.resize(NUM_ROWS);
   for (size_t i = 0; i < NUM_ROWS; ++i) {
-    if ((rng() % 100) == 0) {
+    if ((rng() % 128) != 0) {
       values[i] = grnxx::Float::na();
     } else {
       values[i] = grnxx::Float((rng() % 256) / 256.0);
@@ -551,7 +551,7 @@ void test_text_range() {
     std::sprintf(bodies[i], "%d", i);
   }
   for (size_t i = 0; i < NUM_ROWS; ++i) {
-    if ((rng() % 100) == 0) {
+    if ((rng() % 128) != 0) {
       values[i] = grnxx::Text::na();
     } else {
       values[i] = grnxx::Text(bodies[rng() % 100]);
@@ -608,7 +608,7 @@ void test_text_find_starts_with() {
     std::sprintf(bodies[i], "%d", i);
   }
   for (size_t i = 0; i < NUM_ROWS; ++i) {
-    if ((rng() % 100) == 0) {
+    if ((rng() % 128) != 0) {
       values[i] = grnxx::Text::na();
     } else {
       values[i] = grnxx::Text(bodies[rng() % 100]);
@@ -692,7 +692,7 @@ void test_text_find_prefixes() {
     std::sprintf(bodies[i], "%d", i);
   }
   for (size_t i = 0; i < NUM_ROWS; ++i) {
-    if ((rng() % 100) == 0) {
+    if ((rng() % 128) != 0) {
       values[i] = grnxx::Text::na();
     } else {
       values[i] = grnxx::Text(bodies[rng() % 100]);
@@ -727,66 +727,65 @@ void test_text_find_prefixes() {
   }
 }
 
-//void test_reverse() {
-//  grnxx::Error error;
+void test_reverse() {
+  // Create a column.
+  auto db = grnxx::open_db("");
+  auto table = db->create_table("Table");
+  auto column = table->create_column("Int", grnxx::INT_DATA);
 
-//  // Create a database with the default options.
-//  auto db = grnxx::open_db(&error, "");
-//  assert(db);
+  // Create an index.
+  auto index = column->create_index("Index", grnxx::TREE_INDEX);
 
-//  // Create a table with the default options.
-//  auto table = db->create_table(&error, "Table");
-//  assert(table);
+  // Generate random values.
+  // Int: [0, 100).
+  grnxx::Array<grnxx::Int> values;
+  values.resize(NUM_ROWS);
+  for (size_t i = 0; i < NUM_ROWS; ++i) {
+    if ((rng() % 128) != 0) {
+      values[i] = grnxx::Int(rng() % 100);
+    } else {
+      values[i] = grnxx::Int::na();
+    }
+  }
 
-//  // Create a column.
-//  auto column = table->create_column(&error, "Int", grnxx::INT_DATA);
-//  assert(column);
+  // Store generated values into columns.
+  for (size_t i = 0; i < NUM_ROWS; ++i) {
+    grnxx::Int row_id = table->insert_row();
+    column->set(row_id, values[i]);
+  }
 
-//  // Create an index.
-//  auto index = column->create_index(&error, "Index", grnxx::TREE_INDEX);
-//  assert(index);
+  // Create a cursor.
+  grnxx::IndexRange range;
+  range.set_lower_bound(grnxx::Int(10), grnxx::INCLUSIVE_END_POINT);
+  range.set_upper_bound(grnxx::Int(90), grnxx::EXCLUSIVE_END_POINT);
+  grnxx::CursorOptions options;
+  options.order_type = grnxx::CURSOR_REVERSE_ORDER;
+  auto cursor = index->find_in_range(range, options);
 
-//  // Generate random values.
-//  // Int: [0, 100).
-//  grnxx::Array<grnxx::Int> values;
-//  assert(values.resize(&error, NUM_ROWS + 1));
-//  for (grnxx::Int i = 1; i <= NUM_ROWS; ++i) {
-//    values.set(i, rng() % 100);
-//  }
+  grnxx::Array<grnxx::Record> records;
+  cursor->read_all(&records);
+  for (size_t i = 1; i < records.size(); ++i) {
+    size_t lhs_row_id = records[i - 1].row_id.raw();
+    size_t rhs_row_id = records[i].row_id.raw();
+    grnxx::Int lhs_value = values[lhs_row_id];
+    grnxx::Int rhs_value = values[rhs_row_id];
+    assert(!lhs_value.is_na());
+    assert(!rhs_value.is_na());
+    assert(lhs_value.raw() >= rhs_value.raw());
+    if (lhs_value.match(rhs_value)) {
+      assert(lhs_row_id < rhs_row_id);
+    }
+  }
 
-//  // Store generated values into columns.
-//  for (grnxx::Int i = 1; i <= NUM_ROWS; ++i) {
-//    grnxx::Int row_id;
-//    assert(table->insert_row(&error, grnxx::NULL_ROW_ID,
-//                             grnxx::Datum(), &row_id));
-//    assert(row_id == i);
-//    assert(column->set(&error, row_id, values[i]));
-//  }
-
-//  // Create a cursor.
-//  grnxx::IndexRange range;
-//  range.set_lower_bound(grnxx::Int(10), grnxx::INCLUSIVE_END_POINT);
-//  range.set_upper_bound(grnxx::Int(90), grnxx::EXCLUSIVE_END_POINT);
-//  grnxx::CursorOptions options;
-//  options.order_type = grnxx::REVERSE_ORDER;
-//  auto cursor = index->find_in_range(&error, range, options);
-//  assert(cursor);
-
-//  grnxx::Array<grnxx::Record> records;
-//  auto result = cursor->read_all(&error, &records);
-//  assert(result.is_ok);
-//  for (grnxx::Int i = 1; i < records.size(); ++i) {
-//    assert(values[records.get_row_id(i - 1)] >= values[records.get_row_id(i)]);
-//  }
-
-//  grnxx::Int count = 0;
-//  for (grnxx::Int i = 1; i <= NUM_ROWS; ++i) {
-//    if ((values[i] >= 10) && (values[i] < 90)) {
-//      ++count;
-//    }
-//  }
-//  assert(count == records.size());
-//}
+  size_t count = 0;
+  for (size_t i = 0; i < NUM_ROWS; ++i) {
+    if ((values[i] >= grnxx::Int(10)).is_true() &&
+        (values[i] < grnxx::Int(90)).is_true()) {
+      ++count;
+    }
+  }
+  assert(count == records.size());
+}
 
 //void test_offset_and_limit() {
 //  grnxx::Error error;
@@ -885,7 +884,7 @@ int main() {
   test_text_find_starts_with();
   test_text_find_prefixes();
 
-//  test_reverse();
+  test_reverse();
 //  test_offset_and_limit();
 
   return 0;
