@@ -87,14 +87,15 @@ bool Column<Int>::contains(const Datum &datum) const {
     return indexes_[0]->contains(datum);
   }
   Int value = parse_datum(datum);
+  size_t valid_size = get_valid_size();
   if (value.is_na()) {
-    for (size_t i = 0; i < values_.size(); ++i) {
+    for (size_t i = 0; i < valid_size; ++i) {
       if (values_[i].is_na() && table_->_test_row(i)) {
         return true;
       }
     }
   } else {
-    for (size_t i = 0; i < values_.size(); ++i) {
+    for (size_t i = 0; i < valid_size; ++i) {
       if (values_[i].match(value)) {
         return true;
       }
@@ -109,14 +110,15 @@ Int Column<Int>::find_one(const Datum &datum) const {
     return indexes_[0]->find_one(datum);
   }
   Int value = parse_datum(datum);
+  size_t valid_size = get_valid_size();
   if (value.is_na()) {
-    for (size_t i = 0; i < values_.size(); ++i) {
+    for (size_t i = 0; i < valid_size; ++i) {
       if (values_[i].is_na() && table_->_test_row(i)) {
         return Int(i);
       }
     }
   } else {
-    for (size_t i = 0; i < values_.size(); ++i) {
+    for (size_t i = 0; i < valid_size; ++i) {
       if (values_[i].match(value)) {
         return Int(i);
       }
