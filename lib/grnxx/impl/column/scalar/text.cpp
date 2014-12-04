@@ -217,45 +217,6 @@ void Column<Text>::set_key_attribute() {
   is_key_ = true;
 }
 
-//bool Column<Text>::set_key_attribute(Error *error) {
-//  if (has_key_attribute_) {
-//    GRNXX_ERROR_SET(error, INVALID_OPERATION,
-//                    "This column is a key column");
-//    return false;
-//  }
-//  // TODO: An index should be used if possible.
-//  try {
-//    std::set<Text> set;
-//    // TODO: Functor-based inline callback may be better in this case,
-//    //       because it does not require memory allocation.
-//    auto cursor = table_->create_cursor(nullptr);
-//    if (!cursor) {
-//      return false;
-//    }
-//    Array<Record> records;
-//    for ( ; ; ) {
-//      auto result = cursor->read(nullptr, 1024, &records);
-//      if (!result.is_ok) {
-//        return false;
-//      } else {
-//        break;
-//      }
-//      for (Int i = 0; i < result.count; ++i) {
-//        if (!set.insert(get(records.get_row_id(i))).second) {
-//          GRNXX_ERROR_SET(error, INVALID_OPERATION, "Key duplicate");
-//          return false;
-//        }
-//      }
-//      records.clear();
-//    }
-//  } catch (...) {
-//    GRNXX_ERROR_SET(error, NO_MEMORY, "Memory allocation failed");
-//    return false;
-//  }
-//  has_key_attribute_ = true;
-//  return true;
-//}
-
 void Column<Text>::unset_key_attribute() {
   if (!is_key_) {
     throw "Not key column";  // TODO
