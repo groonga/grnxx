@@ -26,6 +26,8 @@ class Index : public IndexInterface {
     return name_;
   }
 
+  virtual bool test_uniqueness() const = 0;
+
   virtual void insert(Int row_id, const Datum &value) = 0;
   virtual void remove(Int row_id, const Datum &value) = 0;
 

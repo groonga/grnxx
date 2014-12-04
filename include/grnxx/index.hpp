@@ -80,6 +80,12 @@ class Index {
   // Return the index type.
   virtual IndexType type() const = 0;
 
+  // Test the uniqueness of the owner column.
+  //
+  // If the onwer column has no duplicate values, except N/A, returns true.
+  // Otherwise, returns false.
+  virtual bool test_uniqueness() const = 0;
+
   // Insert a new entry.
   //
   // On failure, throws an exception.

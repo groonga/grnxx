@@ -316,6 +316,8 @@ class TreeIndex<Int> : public Index {
     return TREE_INDEX;
   }
 
+  bool test_uniqueness() const;
+
   void insert(Int row_id, const Datum &value);
   void remove(Int row_id, const Datum &value);
 
@@ -349,6 +351,15 @@ TreeIndex<Int>::TreeIndex(ColumnBase *column,
     }
     records.clear();
   }
+}
+
+bool TreeIndex<Int>::test_uniqueness() const {
+  for (const auto &it : map_) {
+    if (it.second.size() > 1) {
+      return false;
+    }
+  }
+  return true;
 }
 
 void TreeIndex<Int>::insert(Int row_id, const Datum &value) {
@@ -476,6 +487,8 @@ class TreeIndex<Float> : public Index {
     return TREE_INDEX;
   }
 
+  bool test_uniqueness() const;
+
   void insert(Int row_id, const Datum &value);
   void remove(Int row_id, const Datum &value);
 
@@ -509,6 +522,15 @@ TreeIndex<Float>::TreeIndex(ColumnBase *column,
     }
     records.clear();
   }
+}
+
+bool TreeIndex<Float>::test_uniqueness() const {
+  for (const auto &it : map_) {
+    if (it.second.size() > 1) {
+      return false;
+    }
+  }
+  return true;
 }
 
 void TreeIndex<Float>::insert(Int row_id, const Datum &value) {
@@ -637,6 +659,8 @@ class TreeIndex<Text> : public Index {
     return TREE_INDEX;
   }
 
+  bool test_uniqueness() const;
+
   void insert(Int row_id, const Datum &value);
   void remove(Int row_id, const Datum &value);
 
@@ -674,6 +698,15 @@ TreeIndex<Text>::TreeIndex(ColumnBase *column,
     }
     records.clear();
   }
+}
+
+bool TreeIndex<Text>::test_uniqueness() const {
+  for (const auto &it : map_) {
+    if (it.second.size() > 1) {
+      return false;
+    }
+  }
+  return true;
 }
 
 void TreeIndex<Text>::insert(Int row_id, const Datum &value) {
