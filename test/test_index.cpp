@@ -853,6 +853,45 @@ void test_offset_and_limit() {
   }
 }
 
+void test_uniqueness() {
+  // Create a column.
+  auto db = grnxx::open_db("");
+  auto table = db->create_table("Table");
+  auto column = table->create_column("Column", grnxx::INT_DATA);
+
+  // Create an index.
+  auto index = column->create_index("Index", grnxx::TREE_INDEX);
+  assert(index->test_uniqueness());
+
+  grnxx::Int row_id = table->insert_row();
+  assert(index->test_uniqueness());
+  column->set(row_id, grnxx::Int(123));
+  assert(index->test_uniqueness());
+
+  row_id = table->insert_row();
+  assert(index->test_uniqueness());
+  column->set(row_id, grnxx::Int(456));
+  assert(index->test_uniqueness());
+
+  row_id = table->insert_row();
+  assert(index->test_uniqueness());
+  column->set(row_id, grnxx::Int::na());
+  assert(index->test_uniqueness());
+
+  row_id = table->insert_row();
+  assert(index->test_uniqueness());
+  column->set(row_id, grnxx::Int::na());
+  assert(index->test_uniqueness());
+
+  row_id = table->insert_row();
+  assert(index->test_uniqueness());
+  column->set(row_id, grnxx::Int(123));
+  assert(!index->test_uniqueness());
+
+  table->remove_row(row_id);
+  assert(index->test_uniqueness());
+}
+
 int main() {
   test_index();
 
@@ -873,6 +912,8 @@ int main() {
 
   test_reverse();
   test_offset_and_limit();
+
+  test_uniqueness();
 
   return 0;
 }
