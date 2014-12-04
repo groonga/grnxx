@@ -210,7 +210,7 @@ void test_int_exact_match() {
   // Create a column.
   auto db = grnxx::open_db("");
   auto table = db->create_table("Table");
-  auto column = table->create_column("Int", grnxx::INT_DATA);
+  auto column = table->create_column("Column", grnxx::INT_DATA);
 
   // Create an index.
   auto index = column->create_index("Index", grnxx::TREE_INDEX);
@@ -261,7 +261,7 @@ void test_float_exact_match() {
   // Create a column.
   auto db = grnxx::open_db("");
   auto table = db->create_table("Table");
-  auto column = table->create_column("Float", grnxx::FLOAT_DATA);
+  auto column = table->create_column("Column", grnxx::FLOAT_DATA);
 
   // Create an index.
   auto index = column->create_index("Index", grnxx::TREE_INDEX);
@@ -312,7 +312,7 @@ void test_text_exact_match() {
   // Create a column.
   auto db = grnxx::open_db("");
   auto table = db->create_table("Table");
-  auto column = table->create_column("Text", grnxx::TEXT_DATA);
+  auto column = table->create_column("Column", grnxx::TEXT_DATA);
 
   // Create an index.
   auto index = column->create_index("Index", grnxx::TREE_INDEX);
@@ -375,7 +375,7 @@ void test_text_exact_match() {
 //  assert(table);
 
 //  // Create a column.
-//  auto column = table->create_column(&error, "Text", grnxx::TEXT_DATA);
+//  auto column = table->create_column(&error, "Column", grnxx::TEXT_DATA);
 //  assert(column);
 
 //  // Create an index.
@@ -431,7 +431,7 @@ void test_int_range() {
   // Create a column.
   auto db = grnxx::open_db("");
   auto table = db->create_table("Table");
-  auto column = table->create_column("Int", grnxx::INT_DATA);
+  auto column = table->create_column("Column", grnxx::INT_DATA);
 
   // Create an index.
   auto index = column->create_index("Index", grnxx::TREE_INDEX);
@@ -484,7 +484,7 @@ void test_float_range() {
   // Create a column.
   auto db = grnxx::open_db("");
   auto table = db->create_table("Table");
-  auto column = table->create_column("Float", grnxx::FLOAT_DATA);
+  auto column = table->create_column("Column", grnxx::FLOAT_DATA);
 
   // Create an index.
   auto index = column->create_index("Index", grnxx::TREE_INDEX);
@@ -537,7 +537,7 @@ void test_text_range() {
   // Create a column.
   auto db = grnxx::open_db("");
   auto table = db->create_table("Table");
-  auto column = table->create_column("Text", grnxx::TEXT_DATA);
+  auto column = table->create_column("Column", grnxx::TEXT_DATA);
 
   // Create an index.
   auto index = column->create_index("Index", grnxx::TREE_INDEX);
@@ -594,7 +594,7 @@ void test_text_find_starts_with() {
   // Create a column.
   auto db = grnxx::open_db("");
   auto table = db->create_table("Table");
-  auto column = table->create_column("Text", grnxx::TEXT_DATA);
+  auto column = table->create_column("Column", grnxx::TEXT_DATA);
 
   // Create an index.
   auto index = column->create_index("Index", grnxx::TREE_INDEX);
@@ -678,7 +678,7 @@ void test_text_find_prefixes() {
   // Create a column.
   auto db = grnxx::open_db("");
   auto table = db->create_table("Table");
-  auto column = table->create_column("Text", grnxx::TEXT_DATA);
+  auto column = table->create_column("Column", grnxx::TEXT_DATA);
 
   // Create an index.
   auto index = column->create_index("Index", grnxx::TREE_INDEX);
@@ -731,7 +731,7 @@ void test_reverse() {
   // Create a column.
   auto db = grnxx::open_db("");
   auto table = db->create_table("Table");
-  auto column = table->create_column("Int", grnxx::INT_DATA);
+  auto column = table->create_column("Column", grnxx::INT_DATA);
 
   // Create an index.
   auto index = column->create_index("Index", grnxx::TREE_INDEX);
@@ -787,84 +787,71 @@ void test_reverse() {
   assert(count == records.size());
 }
 
-//void test_offset_and_limit() {
-//  grnxx::Error error;
+void test_offset_and_limit() {
+  // Create a column.
+  auto db = grnxx::open_db("");
+  auto table = db->create_table("Table");
+  auto column = table->create_column("Column", grnxx::INT_DATA);
 
-//  // Create a database with the default options.
-//  auto db = grnxx::open_db(&error, "");
-//  assert(db);
+  // Create an index.
+  auto index = column->create_index("Index", grnxx::TREE_INDEX);
 
-//  // Create a table with the default options.
-//  auto table = db->create_table(&error, "Table");
-//  assert(table);
+  // Generate random values.
+  // Int: [0, 100).
+  grnxx::Array<grnxx::Int> values;
+  values.resize(NUM_ROWS);
+  size_t total_count = 0;
+  for (size_t i = 0; i < NUM_ROWS; ++i) {
+    if ((rng() % 128) != 0) {
+      values[i] = grnxx::Int(rng() % 100);
+      ++total_count;
+    } else {
+      values[i] = grnxx::Int::na();
+    }
+  }
 
-//  // Create a column.
-//  auto column = table->create_column(&error, "Int", grnxx::INT_DATA);
-//  assert(column);
+  // Store generated values into columns.
+  for (size_t i = 0; i < NUM_ROWS; ++i) {
+    grnxx::Int row_id = table->insert_row();
+    column->set(row_id, values[i]);
+  }
 
-//  // Generate random values.
-//  // Int: [0, 100).
-//  grnxx::Array<grnxx::Int> values;
-//  assert(values.resize(&error, NUM_ROWS + 1));
-//  for (grnxx::Int i = 1; i <= NUM_ROWS; ++i) {
-//    values.set(i, rng() % 100);
-//  }
+  // Create a cursor.
+  auto cursor = index->find_in_range();
 
-//  // Store generated values into columns.
-//  for (grnxx::Int i = 1; i <= NUM_ROWS; ++i) {
-//    grnxx::Int row_id;
-//    assert(table->insert_row(&error, grnxx::NULL_ROW_ID,
-//                             grnxx::Datum(), &row_id));
-//    assert(row_id == i);
-//    assert(column->set(&error, row_id, values[i]));
-//  }
+  grnxx::Array<grnxx::Record> records;
+  size_t count = cursor->read_all(&records);
+  assert(count == total_count);
 
-//  // Create an index.
-//  auto index = column->create_index(&error, "Index", grnxx::TREE_INDEX);
-//  assert(index);
+  constexpr size_t OFFSET = 1000;
 
-//  // Create a cursor.
-//  auto cursor = index->find_in_range(&error);
-//  assert(cursor);
+  // Create a cursor with an offset.
+  grnxx::CursorOptions options;
+  options.offset = OFFSET;
+  cursor = index->find_in_range(grnxx::IndexRange(), options);
 
-//  grnxx::Array<grnxx::Record> records;
-//  auto result = cursor->read_all(&error, &records);
-//  assert(result.is_ok);
-//  assert(result.count == NUM_ROWS);
+  grnxx::Array<grnxx::Record> records_with_offset;
+  count = cursor->read_all(&records_with_offset);
+  assert(count == (total_count - OFFSET));
 
-//  constexpr grnxx::Int OFFSET = 1000;
+  for (size_t i = 0; i < records_with_offset.size(); ++i) {
+    assert(records[i + OFFSET].row_id.match(records_with_offset[i].row_id));
+  }
 
-//  // Create a cursor with an offset.
-//  grnxx::CursorOptions options;
-//  options.offset = OFFSET;
-//  cursor = index->find_in_range(&error, grnxx::IndexRange(), options);
+  constexpr size_t LIMIT = 100;
 
-//  grnxx::Array<grnxx::Record> records_with_offset;
-//  result = cursor->read_all(&error, &records_with_offset);
-//  assert(result.is_ok);
-//  assert(result.count == (NUM_ROWS - OFFSET));
+  // Create a cursor with an offset and a limit.
+  options.limit = LIMIT;
+  cursor = index->find_in_range(grnxx::IndexRange(), options);
 
-//  for (grnxx::Int i = 0; i < records_with_offset.size(); ++i) {
-//    assert(records.get_row_id(OFFSET + i) ==
-//           records_with_offset.get_row_id(i));
-//  }
+  grnxx::Array<grnxx::Record> records_with_offset_and_limit;
+  count = cursor->read_all(&records_with_offset_and_limit);
+  assert(count == LIMIT);
 
-//  constexpr grnxx::Int LIMIT = 100;
-
-//  // Create a cursor with an offset and a limit.
-//  options.limit = LIMIT;
-//  cursor = index->find_in_range(&error, grnxx::IndexRange(), options);
-
-//  grnxx::Array<grnxx::Record> records_with_offset_and_limit;
-//  result = cursor->read_all(&error, &records_with_offset_and_limit);
-//  assert(result.is_ok);
-//  assert(result.count == LIMIT);
-
-//  for (grnxx::Int i = 0; i < records_with_offset_and_limit.size(); ++i) {
-//    assert(records.get_row_id(OFFSET + i) ==
-//           records_with_offset_and_limit.get_row_id(i));
-//  }
-//}
+  for (size_t i = 0; i < records_with_offset_and_limit.size(); ++i) {
+    assert(records[i + OFFSET].row_id.match(records_with_offset[i].row_id));
+  }
+}
 
 int main() {
   test_index();
@@ -885,7 +872,7 @@ int main() {
   test_text_find_prefixes();
 
   test_reverse();
-//  test_offset_and_limit();
+  test_offset_and_limit();
 
   return 0;
 }
