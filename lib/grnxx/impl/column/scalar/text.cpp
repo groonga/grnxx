@@ -3,9 +3,8 @@
 #include <cstring>
 #include <set>
 
-#include "grnxx/impl/db.hpp"
 #include "grnxx/impl/table.hpp"
-//#include "grnxx/impl/index.hpp"
+#include "grnxx/impl/index.hpp"
 
 namespace grnxx {
 namespace impl {
@@ -144,7 +143,10 @@ void Column<Text>::get(Int row_id, Datum *datum) const {
 }
 
 bool Column<Text>::contains(const Datum &datum) const {
-  // TODO: Use an index if exists.
+  // TODO: Choose the best index.
+  if (!indexes_.is_empty()) {
+    return indexes_[0]->contains(datum);
+  }
   Text value = parse_datum(datum);
   size_t valid_size = get_valid_size();
   if (value.is_na()) {
@@ -165,7 +167,10 @@ bool Column<Text>::contains(const Datum &datum) const {
 }
 
 Int Column<Text>::find_one(const Datum &datum) const {
-  // TODO: Use an index if exists.
+  // TODO: Choose the best index.
+  if (!indexes_.is_empty()) {
+    return indexes_[0]->find_one(datum);
+  }
   Text value = parse_datum(datum);
   size_t valid_size = get_valid_size();
   if (value.is_na()) {
@@ -184,47 +189,6 @@ Int Column<Text>::find_one(const Datum &datum) const {
   }
   return Int::na();
 }
-
-//Int Column<Text>::find_one(const Datum &datum) const {
-//  // TODO: Cursor should not be used because it takes time.
-//  // Also, cursor operations can fail due to memory allocation.
-//  Text value = datum.force_text();
-//  if (indexes_.size() != 0) {
-//    auto cursor = indexes_[0]->find(nullptr, value);
-//    Array<Record> records;
-//    auto result = cursor->read(nullptr, 1, &records);
-//    if (!result.is_ok || (result.count == 0)) {
-//      return NULL_ROW_ID;
-//    }
-//    return true;
-//  } else {
-//    // TODO: A full scan takes time.
-//    // An index should be required for a key column.
-
-//    // TODO: Functor-based inline callback may be better in this case,
-//    // because it does not require memory allocation.
-
-//    // Scan the column to find "value".
-//    auto cursor = table_->create_cursor(nullptr);
-//    if (!cursor) {
-//      return NULL_ROW_ID;
-//    }
-//    Array<Record> records;
-//    for ( ; ; ) {
-//      auto result = cursor->read(nullptr, 1024, &records);
-//      if (!result.is_ok || result.count == 0) {
-//        return NULL_ROW_ID;
-//      }
-//      for (Int i = 0; i < result.count; ++i) {
-//        if (get(records.get_row_id(i)) == value) {
-//          return records.get_row_id(i);
-//        }
-//      }
-//      records.clear();
-//    }
-//  }
-//  return NULL_ROW_ID;
-//}
 
 void Column<Text>::set_key_attribute() {
   if (is_key_) {

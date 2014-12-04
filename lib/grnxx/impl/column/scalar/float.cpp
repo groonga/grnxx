@@ -1,7 +1,7 @@
 #include "grnxx/impl/column/scalar/float.hpp"
 
 #include "grnxx/impl/table.hpp"
-//#include "grnxx/index.hpp"
+#include "grnxx/impl/index.hpp"
 
 namespace grnxx {
 namespace impl {
@@ -59,7 +59,10 @@ void Column<Float>::get(Int row_id, Datum *datum) const {
 }
 
 bool Column<Float>::contains(const Datum &datum) const {
-  // TODO: Use an index if exists.
+  // TODO: Choose the best index.
+  if (!indexes_.is_empty()) {
+    return indexes_[0]->contains(datum);
+  }
   Float value = parse_datum(datum);
   size_t valid_size = get_valid_size();
   if (value.is_na()) {
@@ -79,7 +82,10 @@ bool Column<Float>::contains(const Datum &datum) const {
 }
 
 Int Column<Float>::find_one(const Datum &datum) const {
-  // TODO: Use an index if exists.
+  // TODO: Choose the best index.
+  if (!indexes_.is_empty()) {
+    return indexes_[0]->find_one(datum);
+  }
   Float value = parse_datum(datum);
   size_t valid_size = get_valid_size();
   if (value.is_na()) {

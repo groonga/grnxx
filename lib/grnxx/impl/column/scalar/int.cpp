@@ -2,7 +2,7 @@
 
 #include "grnxx/impl/db.hpp"
 #include "grnxx/impl/table.hpp"
-//#include "grnxx/impl/index.hpp"
+#include "grnxx/impl/index.hpp"
 
 #include <unordered_set>
 
@@ -82,7 +82,10 @@ void Column<Int>::get(Int row_id, Datum *datum) const {
 }
 
 bool Column<Int>::contains(const Datum &datum) const {
-  // TODO: Use an index if exists.
+  // TODO: Choose the best index.
+  if (!indexes_.is_empty()) {
+    return indexes_[0]->contains(datum);
+  }
   Int value = parse_datum(datum);
   if (value.is_na()) {
     for (size_t i = 0; i < values_.size(); ++i) {
@@ -101,7 +104,10 @@ bool Column<Int>::contains(const Datum &datum) const {
 }
 
 Int Column<Int>::find_one(const Datum &datum) const {
-  // TODO: Use an index if exists.
+  // TODO: Choose the best index.
+  if (!indexes_.is_empty()) {
+    return indexes_[0]->find_one(datum);
+  }
   Int value = parse_datum(datum);
   if (value.is_na()) {
     for (size_t i = 0; i < values_.size(); ++i) {
@@ -117,39 +123,6 @@ Int Column<Int>::find_one(const Datum &datum) const {
     }
   }
   return Int::na();
-
-//  // TODO: Cursor should not be used because it takes time.
-//  //       Also, cursor operations can fail due to memory allocation.
-//  Int value = datum.force_int();
-//  if (indexes_.size() != 0) {
-//    return indexes_[0]->find_one(datum);
-//  } else {
-//    // TODO: A full scan takes time.
-//    //       An index should be required for a key column.
-
-//    // TODO: Functor-based inline callback may be better in this case,
-//    //       because it does not require memory allocation.
-
-//    // Scan the column to find "value".
-//    auto cursor = table_->create_cursor(nullptr);
-//    if (!cursor) {
-//      return NULL_ROW_ID;
-//    }
-//    Array<Record> records;
-//    for ( ; ; ) {
-//      auto result = cursor->read(nullptr, 1024, &records);
-//      if (!result.is_ok || result.count == 0) {
-//        return NULL_ROW_ID;
-//      }
-//      for (Int i = 0; i < result.count; ++i) {
-//        if (values_[records.get_row_id(i)] == value) {
-//          return records.get_row_id(i);
-//        }
-//      }
-//      records.clear();
-//    }
-//  }
-//  return NULL_ROW_ID;
 }
 
 void Column<Int>::set_key_attribute() {
