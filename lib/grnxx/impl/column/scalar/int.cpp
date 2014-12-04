@@ -135,17 +135,23 @@ void Column<Int>::set_key_attribute() {
     throw "Self reference";  // TODO
   }
 
-  // TODO: An index should be used if available.
-  std::unordered_set<int64_t> set;
-  size_t valid_size = get_valid_size();
-  for (size_t i = 0; i < valid_size; ++i) try {
-    if (!values_[i].is_na()) {
-      if (!set.insert(values_[i].raw()).second) {
-        throw "Key duplicate";  // TODO
-      }
+  if (!indexes_.is_empty()) {
+    // TODO: Choose the best index.
+    if (!indexes_[0]->test_uniqueness()) {
+      throw "Key duplicate";  // TODO
     }
-  } catch (const std::bad_alloc &) {
-    throw "Memory allocation failed";  // TODO
+  } else {
+    std::unordered_set<int64_t> set;
+    size_t valid_size = get_valid_size();
+    for (size_t i = 0; i < valid_size; ++i) try {
+      if (!values_[i].is_na()) {
+        if (!set.insert(values_[i].raw()).second) {
+          throw "Key duplicate";  // TODO
+        }
+      }
+    } catch (const std::bad_alloc &) {
+      throw "Memory allocation failed";  // TODO
+    }
   }
   is_key_ = true;
 }

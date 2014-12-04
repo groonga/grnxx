@@ -194,18 +194,25 @@ void Column<Text>::set_key_attribute() {
   if (is_key_) {
     throw "Key column";  // TODO
   }
-  // TODO: An index should be used if available.
-  std::set<String> set;
-  size_t valid_size = get_valid_size();
-  for (size_t i = 0; i < valid_size; ++i) try {
-    Text value = get(Int(i));
-    if (!value.is_na()) {
-      if (!set.insert(String(value.raw_data(), value.raw_size())).second) {
-        throw "Key duplicate";  // TODO
-      }
+
+  if (!indexes_.is_empty()) {
+    // TODO: Choose the best index.
+    if (!indexes_[0]->test_uniqueness()) {
+      throw "Key duplicate";  // TODO
     }
-  } catch (const std::bad_alloc &) {
-    throw "Memory allocation failed";  // TODO
+  } else {
+    std::set<String> set;
+    size_t valid_size = get_valid_size();
+    for (size_t i = 0; i < valid_size; ++i) try {
+      Text value = get(Int(i));
+      if (!value.is_na()) {
+        if (!set.insert(String(value.raw_data(), value.raw_size())).second) {
+          throw "Key duplicate";  // TODO
+        }
+      }
+    } catch (const std::bad_alloc &) {
+      throw "Memory allocation failed";  // TODO
+    }
   }
   is_key_ = true;
 }
