@@ -908,7 +908,7 @@ Int Index::find_one(const Datum &value) const {
   Array<Record> records;
   auto count = cursor->read(1, &records);
   if (count == 0) {
-    Int::na();
+    return Int::na();
   }
   return records[0].row_id;
 }
