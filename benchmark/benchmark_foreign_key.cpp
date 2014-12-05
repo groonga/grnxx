@@ -75,7 +75,7 @@ void generate_data() {
   }
 }
 
-void benchmark_direct_build() {
+void benchmark_direct_build() try {
   std::cout << __PRETTY_FUNCTION__ << std::endl;
 
   double min_elapsed = std::numeric_limits<double>::max();
@@ -105,6 +105,8 @@ void benchmark_direct_build() {
     }
   }
   std::cout << "min. elapsed [s] = " << min_elapsed << std::endl;
+} catch (const char *message) {
+  std::cout << "message = " << message << std::endl;
 }
 
 void benchmark_indirect_build() try {
@@ -138,8 +140,41 @@ void benchmark_indirect_build() try {
     }
   }
   std::cout << "min. elapsed [s] = " << min_elapsed << std::endl;
-} catch (const char *x) {
-  std::cout << "x = " << x << std::endl;
+} catch (const char *message) {
+  std::cout << "message = " << message << std::endl;
+}
+
+void benchmark_sequential_build() try {
+  std::cout << __PRETTY_FUNCTION__ << std::endl;
+
+  double min_elapsed = std::numeric_limits<double>::max();
+  for (size_t i = 0; i < LOOP; ++i) {
+    Timer timer;
+
+    auto db = grnxx::open_db("");
+    auto to_table = db->create_table("Values");
+    auto value_column = to_table->create_column("Value", grnxx::TEXT_DATA);
+    value_column->create_index("Index", grnxx::TREE_INDEX);
+    to_table->set_key_column("Value");
+    auto from_table = db->create_table("Refs");
+    grnxx::ColumnOptions options;
+    options.reference_table_name = "Values";
+    auto ref_column =
+        from_table->create_column("Ref", grnxx::INT_DATA, options);
+    for (size_t j = 0; j < REFS_SIZE; ++j) {
+      grnxx::Int row_id = from_table->insert_row();
+      grnxx::Int ref = to_table->find_or_insert_row(values[refs[j].raw()]);
+      ref_column->set(row_id, ref);
+    }
+
+    double elapsed = timer.elapsed();
+    if (elapsed < min_elapsed) {
+      min_elapsed = elapsed;
+    }
+  }
+  std::cout << "min. elapsed [s] = " << min_elapsed << std::endl;
+} catch (const char *message) {
+  std::cout << "message = " << message << std::endl;
 }
 
 }  // namespace
@@ -149,6 +184,7 @@ int main() {
 
   benchmark_direct_build();
   benchmark_indirect_build();
+  benchmark_sequential_build();
 
   return 0;
 }
