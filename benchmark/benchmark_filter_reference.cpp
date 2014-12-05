@@ -68,15 +68,36 @@ void generate_data() {
   }
 }
 
+// Parse "column_names" as comma-separated column names.
+grnxx::Array<grnxx::String> parse_column_names(const char *column_names) {
+  grnxx::Array<grnxx::String> column_name_array;
+  grnxx::String string(column_names);
+  while (!string.is_empty()) {
+    size_t delim_pos = 0;
+    while (delim_pos < string.size()) {
+      if (string[delim_pos] == ',') {
+        break;
+      }
+      ++delim_pos;
+    }
+    column_name_array.push_back(string.substring(0, delim_pos));
+    if (delim_pos == string.size()) {
+      break;
+    }
+    string = string.substring(delim_pos + 1);
+  }
+  return column_name_array;
+}
+
 void benchmark_grnxx(grnxx::Table *table,
                      grnxx::OperatorType logical_operator_type,
                      const grnxx::Array<grnxx::String> &column_names,
                      grnxx::Int upper_limit) {
-
   std::cout << "ratio = " << (100 * upper_limit.raw() / 256) << '%';
 
   // Use subexpressions to get column values.
   double min_elapsed = std::numeric_limits<double>::max();
+  size_t count_1 = 0;
   for (size_t i = 0; i < LOOP; ++i) {
     Timer timer;
 
@@ -105,11 +126,13 @@ void benchmark_grnxx(grnxx::Table *table,
     if (elapsed < min_elapsed) {
       min_elapsed = elapsed;
     }
+    count_1 = records.size();
   }
   std::cout << ", min. elapsed [s] = " << min_elapsed;
 
   // Use a subexpression to get evaluation results.
   min_elapsed = std::numeric_limits<double>::max();
+  size_t count_2 = 0;
   for (size_t i = 0; i < LOOP; ++i) {
     Timer timer;
 
@@ -138,8 +161,12 @@ void benchmark_grnxx(grnxx::Table *table,
     if (elapsed < min_elapsed) {
       min_elapsed = elapsed;
     }
+    count_2 = records.size();
   }
   std::cout << ", " << min_elapsed << std::endl;
+
+  assert(count_1 == count_2);
+  std::cout << "count = " << count_1 << std::endl;
 }
 
 void benchmark_grnxx(grnxx::Table *table,
@@ -169,22 +196,8 @@ void benchmark_grnxx(grnxx::Table *table,
   std::cout << column_names << ':' << std::endl;
 
   // Parse "column_names" as comma-separated column names.
-  grnxx::Array<grnxx::String> column_name_array;
-  grnxx::String string(column_names);
-  while (!string.is_empty()) {
-    size_t delim_pos = 0;
-    while (delim_pos < string.size()) {
-      if (string[delim_pos] == ',') {
-        break;
-      }
-      ++delim_pos;
-    }
-    column_name_array.push_back(string.substring(0, delim_pos));
-    if (delim_pos == string.size()) {
-      break;
-    }
-    string = string.substring(delim_pos + 1);
-  }
+  grnxx::Array<grnxx::String> column_name_array =
+      parse_column_names(column_names);
 
   benchmark_grnxx(table, logical_operator_type, column_name_array,
                   grnxx::Int(16));
@@ -202,6 +215,65 @@ void benchmark_grnxx(grnxx::Table *table,
                   grnxx::Int(240));
 }
 
+void benchmark_grnxx_not_and(grnxx::Table *table,
+                             const grnxx::Array<grnxx::String> &column_names,
+                             grnxx::Int upper_limit) {
+  std::cout << "ratio = " << (100 * upper_limit.raw() / 256) << '%';
+
+  // Use subexpressions to get column values.
+  double min_elapsed = std::numeric_limits<double>::max();
+  size_t count = 0;
+  for (size_t i = 0; i < LOOP; ++i) {
+    Timer timer;
+
+    auto pipeline_builder = grnxx::PipelineBuilder::create(table);
+    auto cursor = table->create_cursor();
+    pipeline_builder->push_cursor(std::move(cursor));
+    auto expression_builder = grnxx::ExpressionBuilder::create(table);
+    for (size_t j = 0; j < column_names.size(); ++j) {
+      expression_builder->push_column("Ref");
+      expression_builder->begin_subexpression();
+      expression_builder->push_column(column_names[j]);
+      expression_builder->end_subexpression();
+      expression_builder->push_constant(upper_limit);
+      expression_builder->push_operator(grnxx::GREATER_EQUAL_OPERATOR);
+    }
+    for (size_t j = 1; j < column_names.size(); ++j) {
+      expression_builder->push_operator(grnxx::LOGICAL_AND_OPERATOR);
+    }
+    expression_builder->push_operator(grnxx::LOGICAL_NOT_OPERATOR);
+    auto expression = expression_builder->release();
+    pipeline_builder->push_filter(std::move(expression));
+    auto pipeline = pipeline_builder->release();
+    grnxx::Array<grnxx::Record> records;
+    pipeline->flush(&records);
+
+    double elapsed = timer.elapsed();
+    if (elapsed < min_elapsed) {
+      min_elapsed = elapsed;
+    }
+    count = records.size();
+  }
+  std::cout << ", min. elapsed [s] = " << min_elapsed << std::endl;
+  std::cout << "count = " << count << std::endl;
+}
+
+void benchmark_grnxx_not_and(grnxx::Table *table, const char *column_names) {
+  std::cout << "LOGICAL_NOT/AND: " << column_names << ':' << std::endl;
+
+  // Parse "column_names" as comma-separated column names.
+  grnxx::Array<grnxx::String> column_name_array =
+      parse_column_names(column_names);
+
+  benchmark_grnxx_not_and(table, column_name_array, grnxx::Int(16));
+  benchmark_grnxx_not_and(table, column_name_array, grnxx::Int(32));
+  benchmark_grnxx_not_and(table, column_name_array, grnxx::Int(64));
+  benchmark_grnxx_not_and(table, column_name_array, grnxx::Int(128));
+  benchmark_grnxx_not_and(table, column_name_array, grnxx::Int(192));
+  benchmark_grnxx_not_and(table, column_name_array, grnxx::Int(224));
+  benchmark_grnxx_not_and(table, column_name_array, grnxx::Int(240));
+}
+
 void benchmark_grnxx(grnxx::Table *table) {
   benchmark_grnxx(table, grnxx::LOGICAL_AND_OPERATOR, "A");
   benchmark_grnxx(table, grnxx::LOGICAL_AND_OPERATOR, "A,B");
@@ -209,11 +281,13 @@ void benchmark_grnxx(grnxx::Table *table) {
   benchmark_grnxx(table, grnxx::LOGICAL_OR_OPERATOR, "A,B");
   benchmark_grnxx(table, grnxx::LOGICAL_OR_OPERATOR, "A,B,C");
 
-  benchmark_grnxx(table, grnxx::BITWISE_AND_OPERATOR, "A");
   benchmark_grnxx(table, grnxx::BITWISE_AND_OPERATOR, "A,B");
   benchmark_grnxx(table, grnxx::BITWISE_AND_OPERATOR, "A,B,C");
   benchmark_grnxx(table, grnxx::BITWISE_OR_OPERATOR, "A,B");
   benchmark_grnxx(table, grnxx::BITWISE_OR_OPERATOR, "A,B,C");
+
+  benchmark_grnxx_not_and(table, "A,B");
+  benchmark_grnxx_not_and(table, "A,B,C");
 }
 
 void benchmark_grnxx() {
@@ -245,6 +319,7 @@ template <typename T>
 void benchmark_native(grnxx::Int upper_limit, T filter) {
   std::cout << "ratio = " << (100 * upper_limit.raw() / 256) << '%';
   double min_elapsed = std::numeric_limits<double>::max();
+  size_t count = 0;
   for (size_t i = 0; i < LOOP; ++i) {
     Timer timer;
 
@@ -260,8 +335,10 @@ void benchmark_native(grnxx::Int upper_limit, T filter) {
     if (elapsed < min_elapsed) {
       min_elapsed = elapsed;
     }
+    count = records.size();
   }
   std::cout << ", min. elapsed [s] = " << min_elapsed << std::endl;
+  std::cout << "count = " << count << std::endl;
 }
 
 struct FilterA {
