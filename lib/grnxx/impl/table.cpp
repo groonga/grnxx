@@ -330,6 +330,9 @@ void Table::unset_key_column() {
 
 Int Table::insert_row(const Datum &key) {
   if (key_column_) {
+    if (key.type() == NA_DATA) {
+      throw "No key";  // TODO
+    }
     if (!find_row(key).is_na()) {
       throw "Key already exists";  // TODO
     }
