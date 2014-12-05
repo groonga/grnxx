@@ -16,6 +16,7 @@ Makefile.in
 aclocal.m4
 autom4te.cache/
 benchmark/*.trs
+benchmark/benchmark_filter_less
 benchmark/benchmark_filter_and
 benchmark/benchmark_filter_or
 benchmark/benchmark_sorter
