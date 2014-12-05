@@ -366,7 +366,9 @@ Int Table::find_or_insert_row(const Datum &key, bool *inserted) {
     key_column_->set_key(row_id, key);
   }
   validate_row(row_id);
-  *inserted = true;
+  if (inserted) {
+    *inserted = true;
+  }
   return row_id;
 }
 
