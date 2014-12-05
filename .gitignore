@@ -20,6 +20,7 @@ benchmark/benchmark_filter_less
 benchmark/benchmark_filter_and
 benchmark/benchmark_filter_or
 benchmark/benchmark_filter_reference
+benchmark/benchmark_foreign_key
 benchmark/benchmark_sorter
 compile
 config.*
