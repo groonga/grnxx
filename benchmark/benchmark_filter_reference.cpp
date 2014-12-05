@@ -154,6 +154,14 @@ void benchmark_grnxx(grnxx::Table *table,
       std::cout << "LOGICAL_OR: ";
       break;
     }
+    case grnxx::BITWISE_AND_OPERATOR: {
+      std::cout << "BITWISE_AND: ";
+      break;
+    }
+    case grnxx::BITWISE_OR_OPERATOR: {
+      std::cout << "BITWISE_OR: ";
+      break;
+    }
     default: {
       break;
     }
@@ -200,6 +208,12 @@ void benchmark_grnxx(grnxx::Table *table) {
   benchmark_grnxx(table, grnxx::LOGICAL_AND_OPERATOR, "A,B,C");
   benchmark_grnxx(table, grnxx::LOGICAL_OR_OPERATOR, "A,B");
   benchmark_grnxx(table, grnxx::LOGICAL_OR_OPERATOR, "A,B,C");
+
+  benchmark_grnxx(table, grnxx::BITWISE_AND_OPERATOR, "A");
+  benchmark_grnxx(table, grnxx::BITWISE_AND_OPERATOR, "A,B");
+  benchmark_grnxx(table, grnxx::BITWISE_AND_OPERATOR, "A,B,C");
+  benchmark_grnxx(table, grnxx::BITWISE_OR_OPERATOR, "A,B");
+  benchmark_grnxx(table, grnxx::BITWISE_OR_OPERATOR, "A,B,C");
 }
 
 void benchmark_grnxx() {
