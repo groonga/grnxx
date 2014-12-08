@@ -163,11 +163,14 @@ class SorterNode : public Node {
 };
 
 size_t SorterNode::read_next(Array<Record> *records) {
-  size_t count = arg_->read_all(records);
-  if (count == 0) {
+  if (arg_->read_next(records) == 0) {
     return 0;
   }
-  sorter_->sort(records);
+  sorter_->reset(records);
+  do {
+    sorter_->progress();
+  } while (arg_->read_next(records) != 0);
+  sorter_->finish();
   return records->size();
 }
 
