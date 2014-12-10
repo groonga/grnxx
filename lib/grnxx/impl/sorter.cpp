@@ -18,6 +18,12 @@ class Node {
     next_ = next;
   }
 
+  // Sort new records.
+  virtual void progress(Array<Record> *records,
+                        size_t offset,
+                        size_t limit,
+                        size_t progress);
+
   // Sort records in [begin, end).
   //
   // On failure, throws an exception.
@@ -27,6 +33,10 @@ class Node {
   SorterOrder order_;
   Node *next_;
 };
+
+void Node::progress(Array<Record> *, size_t, size_t, size_t) {
+  // Not supported.
+}
 
 // --- RowIDNode ---
 
@@ -1063,6 +1073,42 @@ void TextNode<T>::move_pivot_first(ArrayRef<Record> records, Text *values) {
   }
 }
 
+// --- RowIDNodeS ---
+
+template <typename T>
+class RowIDNodeS : public Node {
+ public:
+  using Comparer = T;
+
+  explicit RowIDNodeS(SorterOrder &&order)
+      : Node(std::move(order)),
+        comparer_() {}
+  ~RowIDNodeS() = default;
+
+  void progress(Array<Record> *records,
+                size_t offset,
+                size_t limit,
+                size_t progress);
+
+  void sort(ArrayRef<Record> ref, size_t begin, size_t end);
+
+ private:
+  Comparer comparer_;
+};
+
+template <typename T>
+void RowIDNodeS<T>::progress(Array<Record> *records,
+                             size_t offset,
+                             size_t limit,
+                             size_t progress) {
+  // TODO
+}
+
+template <typename T>
+void RowIDNodeS<T>::sort(ArrayRef<Record>, size_t, size_t) {
+  // Nothing to do because there are no duplicates.
+}
+
 }  // namespace sorter
 
 using namespace sorter;
@@ -1073,7 +1119,8 @@ Sorter::Sorter(Array<SorterOrder> &&orders, const SorterOptions &options)
       nodes_(),
       records_(nullptr),
       offset_(options.offset),
-      limit_(options.limit) {
+      limit_(options.limit),
+      progress_(0) {
   // A sorter requires one or more orders.
   // Also, expressions must be valid and associated tables must be the same.
   if (orders.size() == 0) {
@@ -1089,6 +1136,10 @@ Sorter::Sorter(Array<SorterOrder> &&orders, const SorterOptions &options)
     if (orders[i].expression->table() != table_) {
       throw "Table conflict";  // TODO
     }
+  }
+
+  if (limit_ > (std::numeric_limits<size_t>::max() - offset_)) {
+    limit_ = std::numeric_limits<size_t>::max() - offset_;
   }
 
   nodes_.resize(orders.size());
@@ -1108,13 +1159,19 @@ void Sorter::reset(Array<Record> *records) {
 }
 
 void Sorter::progress() {
-  // TODO: Incremental sorting is not supported yet.
+  if (!records_) {
+    throw "No target";  // TODO
+  }
+  nodes_[0]->progress(records_, offset_, limit_, progress_);
+  progress_ = records_->size();
 }
 
 void Sorter::finish() {
   if (!records_) {
     throw "No target";  // TODO
   }
+  nodes_[0]->progress(records_, offset_, limit_, progress_);
+  progress_ = records_->size();
   if ((offset_ >= records_->size()) || (limit_ <= 0)) {
     records_->clear();
     return;
@@ -1143,11 +1200,19 @@ void Sorter::sort(Array<Record> *records) {
 
 Node *Sorter::create_node(SorterOrder &&order) try {
   if (order.expression->is_row_id()) {
-    if (order.type == SORTER_REGULAR_ORDER) {
-      return new RowIDNode<RegularRowIDComparer>(std::move(order));
-    } else {
-      return new RowIDNode<ReverseRowIDComparer>(std::move(order));
-    }
+//    if ((offset_ + limit_) < 1000) {
+//      if (order.type == SORTER_REGULAR_ORDER) {
+//        return new RowIDNodeS<RegularRowIDComparer>(std::move(order));
+//      } else {
+//        return new RowIDNodeS<ReverseRowIDComparer>(std::move(order));
+//      }
+//    } else {
+      if (order.type == SORTER_REGULAR_ORDER) {
+        return new RowIDNode<RegularRowIDComparer>(std::move(order));
+      } else {
+        return new RowIDNode<ReverseRowIDComparer>(std::move(order));
+      }
+//    }
   } else if (order.expression->is_score()) {
     // NOTE: Specialization for Score is disabled because the implementation
     //       showed poor performance.

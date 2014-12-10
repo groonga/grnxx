@@ -37,12 +37,13 @@ class Sorter : public SorterInterface {
   Array<Record> *records_;
   size_t offset_;
   size_t limit_;
+  size_t progress_;
 
   // Create a node for sorting records in "order".
   //
   // On success, returns the node.
   // On failure, throws an exception.
-  static Node *create_node(SorterOrder &&order);
+  Node *create_node(SorterOrder &&order);
 };
 
 }  // namespace impl
