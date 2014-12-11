@@ -144,10 +144,9 @@ void test_row_id() {
   auto sorter = grnxx::Sorter::create(std::move(orders));
 
   sorter->sort(&records);
-  for (size_t i = 1; i < records.size(); ++i) {
-    size_t lhs_row_id = records[i - 1].row_id.raw();
-    size_t rhs_row_id = records[i].row_id.raw();
-    assert(lhs_row_id > rhs_row_id);
+  for (size_t i = 0; i < records.size(); ++i) {
+    assert(records[i].row_id.raw() ==
+           static_cast<int64_t>(test.table->num_rows() - i - 1));
   }
 
   // Create a regular sorter.
@@ -159,10 +158,42 @@ void test_row_id() {
   sorter = grnxx::Sorter::create(std::move(orders));
 
   sorter->sort(&records);
-  for (size_t i = 1; i < records.size(); ++i) {
-    size_t lhs_row_id = records[i - 1].row_id.raw();
-    size_t rhs_row_id = records[i].row_id.raw();
-    assert(lhs_row_id < rhs_row_id);
+  for (size_t i = 0; i < records.size(); ++i) {
+    assert(records[i].row_id.raw() == static_cast<int64_t>(i));
+  }
+
+  // Create a reverse range sorter.
+  orders.resize(1);
+  expression_builder->push_row_id();
+  expression = expression_builder->release();
+  orders[0].expression = std::move(expression);
+  orders[0].type = grnxx::SORTER_REVERSE_ORDER;
+  grnxx::SorterOptions options;
+  options.limit = 500;
+  sorter = grnxx::Sorter::create(std::move(orders), options);
+
+  sorter->sort(&records);
+  assert(records.size() == options.limit);
+  for (size_t i = 0; i < records.size(); ++i) {
+    assert(records[i].row_id.raw() ==
+           static_cast<int64_t>(test.table->num_rows() - i - 1));
+  }
+
+  // Create a regular range sorter.
+  orders.resize(1);
+  expression_builder->push_row_id();
+  expression = expression_builder->release();
+  orders[0].expression = std::move(expression);
+  orders[0].type = grnxx::SORTER_REGULAR_ORDER;
+  options.offset = 100;
+  options.limit = 100;
+  sorter = grnxx::Sorter::create(std::move(orders), options);
+
+  sorter->sort(&records);
+  assert(records.size() == options.limit);
+  for (size_t i = 0; i < records.size(); ++i) {
+    assert(records[i].row_id.raw() ==
+           static_cast<int64_t>(test.table->num_rows() - 500 + 100 + i));
   }
 }
 
