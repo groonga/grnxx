@@ -1101,12 +1101,78 @@ void RowIDNodeS<T>::progress(Array<Record> *records,
                              size_t offset,
                              size_t limit,
                              size_t progress) {
-  // TODO
+  ArrayRef<Record> ref = records->ref();
+  size_t boundary = offset + limit;
+  if (progress < boundary) {
+    size_t end = (boundary < ref.size()) ? boundary : ref.size();
+    for (size_t i = progress; i < end; ++i) {
+      for (size_t j = i; j != 0; ) {
+        size_t parent = (j - 1) / 2;
+        if (comparer_(ref[j], ref[parent])) {
+          break;
+        }
+        std::swap(ref[parent], ref[j]);
+        j = parent;
+      }
+    }
+    progress = end;
+  }
+  for (size_t i = boundary; i < ref.size(); ++i) {
+    if (comparer_(ref[i], ref[0])) {
+      std::swap(ref[0], ref[i]);
+      size_t parent = 0;
+      size_t inprior = 0;
+      for ( ; ; ) {
+        size_t left = (parent * 2) + 1;
+        size_t right = left + 1;
+        if (left >= boundary) {
+          break;
+        }
+        if (comparer_(ref[parent], ref[left])) {
+          inprior = left;
+        }
+        if ((right < boundary) && comparer_(ref[inprior], ref[right])) {
+          inprior = right;
+        }
+        if (inprior == parent) {
+          break;
+        }
+        std::swap(ref[inprior], ref[parent]);
+        parent = inprior;
+      }
+    }
+  }
+  if (records->size() > boundary) {
+    records->resize(boundary);
+  }
 }
 
 template <typename T>
-void RowIDNodeS<T>::sort(ArrayRef<Record>, size_t, size_t) {
-  // Nothing to do because there are no duplicates.
+void RowIDNodeS<T>::sort(ArrayRef<Record> ref, size_t begin, size_t end) {
+  for (size_t i = end; i > begin; ) {
+    --i;
+    std::swap(ref[0], ref[i]);
+    size_t parent = 0;
+    size_t inprior = 0;
+    for ( ; ; ) {
+      size_t left = (parent * 2) + 1;
+      size_t right = left + 1;
+      if (left >= i) {
+        break;
+      }
+      if (comparer_(ref[parent], ref[left])) {
+        inprior = left;
+      }
+      if ((right < i) && comparer_(ref[inprior], ref[right])) {
+        inprior = right;
+      }
+      if (inprior == parent) {
+        break;
+      }
+      std::swap(ref[inprior], ref[parent]);
+      parent = inprior;
+    }
+  }
 }
 
 }  // namespace sorter
@@ -1200,19 +1266,19 @@ void Sorter::sort(Array<Record> *records) {
 
 Node *Sorter::create_node(SorterOrder &&order) try {
   if (order.expression->is_row_id()) {
-//    if ((offset_ + limit_) < 1000) {
-//      if (order.type == SORTER_REGULAR_ORDER) {
-//        return new RowIDNodeS<RegularRowIDComparer>(std::move(order));
-//      } else {
-//        return new RowIDNodeS<ReverseRowIDComparer>(std::move(order));
-//      }
-//    } else {
+    if ((offset_ + limit_) < 1000) {
+      if (order.type == SORTER_REGULAR_ORDER) {
+        return new RowIDNodeS<RegularRowIDComparer>(std::move(order));
+      } else {
+        return new RowIDNodeS<ReverseRowIDComparer>(std::move(order));
+      }
+    } else {
       if (order.type == SORTER_REGULAR_ORDER) {
         return new RowIDNode<RegularRowIDComparer>(std::move(order));
       } else {
         return new RowIDNode<ReverseRowIDComparer>(std::move(order));
       }
-//    }
+    }
   } else if (order.expression->is_score()) {
     // NOTE: Specialization for Score is disabled because the implementation
     //       showed poor performance.
