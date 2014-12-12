@@ -189,6 +189,8 @@ void benchmark_row_id(grnxx::Table *table) {
   benchmark_row_id(table, 10);
   benchmark_row_id(table, 100);
   benchmark_row_id(table, 1000);
+  benchmark_row_id(table, 10000);
+  benchmark_row_id(table, 100000);
   benchmark_row_id(table, std::numeric_limits<size_t>::max());
 }
 
