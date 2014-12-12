@@ -194,7 +194,16 @@ void benchmark_row_id(grnxx::Table *table) {
   benchmark_row_id(table, std::numeric_limits<size_t>::max());
 }
 
-void benchmark_score(grnxx::Table *table, const char *column_name) {
+void benchmark_score(grnxx::Table *table,
+                     const char *column_name,
+                     size_t limit) {
+  std::cout << column_name << ": ";
+  if (limit != std::numeric_limits<size_t>::max()) {
+    std::cout << "limit = " << limit << ", ";
+  } else {
+    std::cout << "limit = N/A, ";
+  }
+
   double min_elapsed = std::numeric_limits<double>::max();
   for (size_t i = 0; i < LOOP; ++i) {
     auto records = create_records(table);
@@ -208,15 +217,25 @@ void benchmark_score(grnxx::Table *table, const char *column_name) {
     expression_builder->push_score();
     orders[0].expression = std::move(expression_builder->release());
     orders[0].type = grnxx::SORTER_REGULAR_ORDER;
-    auto sorter = grnxx::Sorter::create(std::move(orders));
+    grnxx::SorterOptions options;
+    options.limit = limit;
+    auto sorter = grnxx::Sorter::create(std::move(orders), options);
     sorter->sort(&records);
     double elapsed = timer.elapsed();
     if (elapsed < min_elapsed) {
       min_elapsed = elapsed;
     }
   }
-  std::cout << column_name << ": "
-            << "RowID: min. elapsed [s] = " << min_elapsed << std::endl;
+  std::cout << "min. elapsed [s] = " << min_elapsed << std::endl;
+}
+
+void benchmark_score(grnxx::Table *table, const char *column_name) {
+  benchmark_score(table, column_name, 10);
+  benchmark_score(table, column_name, 100);
+  benchmark_score(table, column_name, 1000);
+  benchmark_score(table, column_name, 10000);
+  benchmark_score(table, column_name, 100000);
+  benchmark_score(table, column_name, std::numeric_limits<size_t>::max());
 }
 
 void benchmark_score(grnxx::Table *table) {
