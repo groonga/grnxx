@@ -15,6 +15,7 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
+#include <algorithm>
 #include <cassert>
 #include <iostream>
 #include <random>
@@ -127,6 +128,11 @@ grnxx::Array<grnxx::Record> create_input_records() {
   return records;
 }
 
+void shuffle_records(grnxx::Array<grnxx::Record> *records) {
+  std::shuffle(records->buffer(), records->buffer() + records->size(),
+               std::mt19937_64());
+}
+
 void test_row_id() {
   // Create a cursor which reads all the records.
   auto records = create_input_records();
@@ -134,46 +140,31 @@ void test_row_id() {
   // Create an object for building expressions.
   auto expression_builder = grnxx::ExpressionBuilder::create(test.table);
 
-  // Create a reverse sorter.
+  // Create a regular sorter.
   grnxx::Array<grnxx::SorterOrder> orders;
   orders.resize(1);
   expression_builder->push_row_id();
   auto expression = expression_builder->release();
   orders[0].expression = std::move(expression);
-  orders[0].type = grnxx::SORTER_REVERSE_ORDER;
+  orders[0].type = grnxx::SORTER_REGULAR_ORDER;
   auto sorter = grnxx::Sorter::create(std::move(orders));
 
-  sorter->sort(&records);
-  for (size_t i = 0; i < records.size(); ++i) {
-    assert(records[i].row_id.raw() ==
-           static_cast<int64_t>(test.table->num_rows() - i - 1));
-  }
-
-  // Create a regular sorter.
-  orders.resize(1);
-  expression_builder->push_row_id();
-  expression = expression_builder->release();
-  orders[0].expression = std::move(expression);
-  orders[0].type = grnxx::SORTER_REGULAR_ORDER;
-  sorter = grnxx::Sorter::create(std::move(orders));
-
+  shuffle_records(&records);
   sorter->sort(&records);
   for (size_t i = 0; i < records.size(); ++i) {
     assert(records[i].row_id.raw() == static_cast<int64_t>(i));
   }
 
-  // Create a reverse range sorter.
+  // Create a reverse sorter.
   orders.resize(1);
   expression_builder->push_row_id();
   expression = expression_builder->release();
   orders[0].expression = std::move(expression);
   orders[0].type = grnxx::SORTER_REVERSE_ORDER;
-  grnxx::SorterOptions options;
-  options.limit = 500;
-  sorter = grnxx::Sorter::create(std::move(orders), options);
+  sorter = grnxx::Sorter::create(std::move(orders));
 
+  shuffle_records(&records);
   sorter->sort(&records);
-  assert(records.size() == options.limit);
   for (size_t i = 0; i < records.size(); ++i) {
     assert(records[i].row_id.raw() ==
            static_cast<int64_t>(test.table->num_rows() - i - 1));
@@ -185,15 +176,32 @@ void test_row_id() {
   expression = expression_builder->release();
   orders[0].expression = std::move(expression);
   orders[0].type = grnxx::SORTER_REGULAR_ORDER;
+  grnxx::SorterOptions options;
+  options.limit = 500;
+  sorter = grnxx::Sorter::create(std::move(orders), options);
+
+  shuffle_records(&records);
+  sorter->sort(&records);
+  assert(records.size() == options.limit);
+  for (size_t i = 0; i < records.size(); ++i) {
+    assert(records[i].row_id.raw() == static_cast<int64_t>(i));
+  }
+
+  // Create a reverse range sorter.
+  orders.resize(1);
+  expression_builder->push_row_id();
+  expression = expression_builder->release();
+  orders[0].expression = std::move(expression);
+  orders[0].type = grnxx::SORTER_REVERSE_ORDER;
   options.offset = 100;
   options.limit = 100;
   sorter = grnxx::Sorter::create(std::move(orders), options);
 
+  shuffle_records(&records);
   sorter->sort(&records);
   assert(records.size() == options.limit);
   for (size_t i = 0; i < records.size(); ++i) {
-    assert(records[i].row_id.raw() ==
-           static_cast<int64_t>(test.table->num_rows() - 500 + 100 + i));
+    assert(records[i].row_id.raw() == static_cast<int64_t>(399 - i));
   }
 }
 
