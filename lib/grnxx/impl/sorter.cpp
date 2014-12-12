@@ -1208,9 +1208,8 @@ Sorter::Sorter(Array<SorterOrder> &&orders, const SorterOptions &options)
     limit_ = std::numeric_limits<size_t>::max() - offset_;
   }
 
-  nodes_.resize(orders.size());
   for (size_t i = 0; i < orders.size(); ++i) {
-    nodes_[i].reset(create_node(std::move(orders[i])));
+    nodes_.push_back(std::unique_ptr<Node>(create_node(std::move(orders[i]))));
   }
   for (size_t i = 1; i < orders.size(); ++i) {
     nodes_[i - 1]->set_next(nodes_[i].get());
