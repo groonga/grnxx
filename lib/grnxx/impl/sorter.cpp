@@ -1266,7 +1266,7 @@ void Sorter::sort(Array<Record> *records) {
 
 Node *Sorter::create_node(SorterOrder &&order) try {
   if (order.expression->is_row_id()) {
-    if ((offset_ + limit_) < 1000) {
+    if (nodes_.is_empty() && ((offset_ + limit_) < 1000)) {
       if (order.type == SORTER_REGULAR_ORDER) {
         return new RowIDNodeS<RegularRowIDComparer>(std::move(order));
       } else {
