@@ -1175,6 +1175,160 @@ void RowIDNodeS<T>::sort(ArrayRef<Record> ref, size_t begin, size_t end) {
   }
 }
 
+// --- ConvertNodeS ---
+
+template <typename T, typename U>
+class ConvertNodeS : public Node {
+ public:
+  using Value     = T;
+  using Converter = U;
+
+  explicit ConvertNodeS(SorterOrder &&order)
+      : Node(std::move(order)),
+        converter_(),
+        values_(),
+        internal_values_() {}
+  ~ConvertNodeS() = default;
+
+  void progress(Array<Record> *records,
+                size_t offset,
+                size_t limit,
+                size_t progress);
+
+  void sort(ArrayRef<Record> ref, size_t begin, size_t end);
+
+ private:
+  Converter converter_;
+  Array<Value> values_;
+  Array<uint64_t> internal_values_;
+};
+
+template <typename T, typename U>
+void ConvertNodeS<T, U>::progress(Array<Record> *records,
+                                  size_t offset,
+                                  size_t limit,
+                                  size_t progress) {
+  ArrayRef<Record> ref = records->ref();
+  size_t plus_size = ref.size() - progress;
+  this->order_.expression->evaluate(ref.cref(progress, plus_size), &values_);
+  internal_values_.resize(ref.size());
+  for (size_t i = 0; i < plus_size; ++i) {
+    internal_values_[progress + i] = converter_(values_[i]);
+  }
+  size_t boundary = offset + limit;
+  if (progress < boundary) {
+    size_t end = (boundary < ref.size()) ? boundary : ref.size();
+    for (size_t i = progress; i < end; ++i) {
+      for (size_t j = i; j != 0; ) {
+        size_t parent = (j - 1) / 2;
+        if (internal_values_[j] < internal_values_[parent]) {
+          break;
+        }
+        std::swap(ref[parent], ref[j]);
+        std::swap(internal_values_[parent], internal_values_[j]);
+        j = parent;
+      }
+    }
+    progress = end;
+  }
+  for (size_t i = progress; i < ref.size(); ++i) {
+    if (internal_values_[i] == internal_values_[0]) {
+      ref[progress] = ref[i];
+      internal_values_[progress] = internal_values_[0];
+      ++progress;
+    } else if (internal_values_[i] < internal_values_[0]) {
+      std::swap(ref[0], ref[i]);
+      std::swap(internal_values_[0], internal_values_[i]);
+      ref[progress] = ref[i];
+      internal_values_[progress] = internal_values_[i];
+      size_t parent = 0;
+      size_t inprior = 0;
+      for ( ; ; ) {
+        size_t left = (parent * 2) + 1;
+        size_t right = left + 1;
+        if (left >= boundary) {
+          break;
+        }
+        if (internal_values_[parent] < internal_values_[left]) {
+          inprior = left;
+        }
+        if ((right < boundary) &&
+            (internal_values_[inprior] < internal_values_[right])) {
+          inprior = right;
+        }
+        if (inprior == parent) {
+          break;
+        }
+        std::swap(ref[inprior], ref[parent]);
+        std::swap(internal_values_[inprior], internal_values_[parent]);
+        parent = inprior;
+      }
+      if (internal_values_[0] == internal_values_[progress]) {
+        ++progress;
+      } else {
+        progress = boundary;
+      }
+    }
+  }
+  records->resize(progress);
+
+  // TODO: Same values can be dropped if "!this->next_".
+}
+
+template <typename T, typename U>
+void ConvertNodeS<T, U>::sort(ArrayRef<Record> ref, size_t begin, size_t end) {
+  for (size_t i = end; i > begin; ) {
+    --i;
+    std::swap(ref[0], ref[i]);
+    std::swap(internal_values_[0], internal_values_[i]);
+    size_t parent = 0;
+    size_t inprior = 0;
+    for ( ; ; ) {
+      size_t left = (parent * 2) + 1;
+      size_t right = left + 1;
+      if (left >= i) {
+        break;
+      }
+      if (internal_values_[parent] < internal_values_[left]) {
+        inprior = left;
+      }
+      if ((right < i) &&
+          (internal_values_[inprior] < internal_values_[right])) {
+        inprior = right;
+      }
+      if (inprior == parent) {
+        break;
+      }
+      std::swap(ref[inprior], ref[parent]);
+      std::swap(internal_values_[inprior], internal_values_[parent]);
+      parent = inprior;
+    }
+  }
+
+  // Apply the next sorting if there are records having the same value.
+  if (this->next_) {
+    size_t begin = 0;
+    for (size_t i = 1; i < end; ++i) {
+      if (internal_values_[i] != internal_values_[begin]) {
+        if ((i - begin) >= 2) {
+          this->next_->sort(ref.ref(begin, i - begin), 0, i - begin);
+        }
+        begin = i;
+      }
+    }
+    if ((ref.size() - begin) >= 2) {
+      this->next_->sort(ref.ref(begin), 0, ref.size() - begin);
+    }
+  }
+
+  // TODO: Same values can be dropped if "!this->next_".
+}
+
+template <typename T>
+using IntNodeS = ConvertNodeS<Int, T>;
+template <typename T>
+using FloatNodeS = ConvertNodeS<Float, T>;
+
 }  // namespace sorter
 
 using namespace sorter;
@@ -1293,17 +1447,33 @@ Node *Sorter::create_node(SorterOrder &&order) try {
       return new BoolNode(std::move(order));
     }
     case INT_DATA: {
-      if (order.type == SORTER_REGULAR_ORDER) {
-        return new IntNode<RegularIntConverter>(std::move(order));
+      if (nodes_.is_empty() && ((offset_ + limit_) < 1000)) {
+        if (order.type == SORTER_REGULAR_ORDER) {
+          return new IntNodeS<RegularIntConverter>(std::move(order));
+        } else {
+          return new IntNodeS<ReverseIntConverter>(std::move(order));
+        }
       } else {
-        return new IntNode<ReverseIntConverter>(std::move(order));
+        if (order.type == SORTER_REGULAR_ORDER) {
+          return new IntNode<RegularIntConverter>(std::move(order));
+        } else {
+          return new IntNode<ReverseIntConverter>(std::move(order));
+        }
       }
     }
     case FLOAT_DATA: {
-      if (order.type == SORTER_REGULAR_ORDER) {
-        return new FloatNode<RegularFloatConverter>(std::move(order));
+      if (nodes_.is_empty() && ((offset_ + limit_) < 1000)) {
+        if (order.type == SORTER_REGULAR_ORDER) {
+          return new FloatNodeS<RegularFloatConverter>(std::move(order));
+        } else {
+          return new FloatNodeS<ReverseFloatConverter>(std::move(order));
+        }
       } else {
-        return new FloatNode<ReverseFloatConverter>(std::move(order));
+        if (order.type == SORTER_REGULAR_ORDER) {
+          return new FloatNode<RegularFloatConverter>(std::move(order));
+        } else {
+          return new FloatNode<ReverseFloatConverter>(std::move(order));
+        }
       }
     }
     case TEXT_DATA: {
