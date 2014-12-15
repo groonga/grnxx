@@ -19,6 +19,7 @@
 #include <cassert>
 #include <iostream>
 #include <random>
+#include <string>
 
 #include "grnxx/column.hpp"
 #include "grnxx/cursor.hpp"
@@ -37,14 +38,52 @@ struct {
   grnxx::Array<std::string> text_bodies;
 } test;
 
+std::mt19937_64 rng;
+
+void generate_value(grnxx::Bool *value) {
+  if ((rng() % 256) == 0) {
+    *value = grnxx::Bool::na();
+  } else {
+    *value = grnxx::Bool((rng() % 2) == 1);
+  }
+}
+
+void generate_value(grnxx::Int *value) {
+  if ((rng() % 256) == 0) {
+    *value = grnxx::Int::na();
+  } else {
+    *value = grnxx::Int(static_cast<int64_t>(rng() % 256) - 128);
+  }
+}
+
+void generate_value(grnxx::Float *value) {
+  if ((rng() % 256) == 0) {
+    *value = grnxx::Float::na();
+  } else {
+    *value = grnxx::Float(static_cast<int64_t>((rng() % 256) - 128) / 128.0);
+  }
+}
+
+void generate_value(grnxx::Text *value) {
+  static std::vector<std::string> bodies;
+  if ((rng() % 256) == 0) {
+    *value = grnxx::Text::na();
+  } else {
+    size_t size = rng() % 4;
+    std::string body;
+    body.resize(size);
+    for (size_t i = 0; i < size; ++i) {
+      body[i] = '0' + (rng() % 10);
+    }
+    bodies.push_back(std::move(body));
+    *value = grnxx::Text(body.data(), body.size());
+  }
+}
+
 void init_test() {
-  // Create a database with the default options.
+  // Create columns for various data types.
   test.db = grnxx::open_db("");
-
-  // Create a table with the default options.
   test.table = test.db->create_table("Table");
-
-  // Create columns for Bool, Int, Float, and Text values.
   auto bool_column = test.table->create_column("Bool", grnxx::BOOL_DATA);
   auto int_column = test.table->create_column("Int", grnxx::INT_DATA);
   auto float_column = test.table->create_column("Float", grnxx::FLOAT_DATA);
@@ -63,49 +102,10 @@ void init_test() {
   test.text_values.resize(NUM_ROWS);
   test.text_bodies.resize(NUM_ROWS);
   for (size_t i = 0; i < NUM_ROWS; ++i) {
-    uint64_t source = mersenne_twister() % 3;
-    switch (source) {
-      case 0: {
-        test.bool_values[i] = grnxx::Bool(false);
-        break;
-      }
-      case 1: {
-        test.bool_values[i] = grnxx::Bool(true);
-        break;
-      }
-      case 2: {
-        test.bool_values[i] = grnxx::Bool::na();
-        break;
-      }
-    }
-
-    source = mersenne_twister() % 257;
-    if (source == 256) {
-      test.int_values[i] = grnxx::Int::na();
-    } else {
-      test.int_values[i] =
-          grnxx::Int(static_cast<int64_t>(source) - 128);
-    }
-
-    source = mersenne_twister() % 257;
-    if (source == 256) {
-      test.float_values[i] = grnxx::Float::na();
-    } else {
-      test.float_values[i] =
-          grnxx::Float((static_cast<int64_t>(source) - 128) / 128.0);
-    }
-
-    source = mersenne_twister() % 5;
-    if (source == 0) {
-      test.text_values[i] = grnxx::Text::na();
-    } else {
-      size_t size = source - 1;
-      test.text_bodies[i].resize(size);
-      for (size_t j = 0; j < size; ++j) {
-        test.text_bodies[i][j] = '0' + (mersenne_twister() % 10);
-      }
-      test.text_values[i] = grnxx::Text(test.text_bodies[i].data(), size);
-    }
+    generate_value(&test.bool_values[i]);
+    generate_value(&test.int_values[i]);
+    generate_value(&test.float_values[i]);
+    generate_value(&test.text_values[i]);
   }
 
   // Store generated values into columns.
