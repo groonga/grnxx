@@ -1329,6 +1329,147 @@ using IntNodeS = ConvertNodeS<Int, T>;
 template <typename T>
 using FloatNodeS = ConvertNodeS<Float, T>;
 
+// -- TextNodeS --
+
+template <typename T>
+class TextNodeS : public Node {
+ public:
+  explicit TextNodeS(SorterOrder &&order)
+      : Node(std::move(order)),
+        comparer_(),
+        values_() {}
+  ~TextNodeS() = default;
+
+  void progress(Array<Record> *records,
+                size_t offset,
+                size_t limit,
+                size_t progress);
+
+  void sort(ArrayRef<Record> ref, size_t begin, size_t end);
+
+ private:
+  T comparer_;
+  Array<Text> values_;
+};
+
+template <typename T>
+void TextNodeS<T>::progress(Array<Record> *records,
+                            size_t offset,
+                            size_t limit,
+                            size_t progress) {
+  ArrayRef<Record> ref = records->ref();
+  size_t plus_size = ref.size() - progress;
+  values_.resize(ref.size());
+  this->order_.expression->evaluate(ref.cref(progress, plus_size),
+                                    values_.ref(progress, plus_size));
+  size_t boundary = offset + limit;
+  if (progress < boundary) {
+    size_t end = (boundary < ref.size()) ? boundary : ref.size();
+    for (size_t i = progress; i < end; ++i) {
+      for (size_t j = i; j != 0; ) {
+        size_t parent = (j - 1) / 2;
+        if (comparer_(values_[j], values_[parent])) {
+          break;
+        }
+        std::swap(ref[parent], ref[j]);
+        std::swap(values_[parent], values_[j]);
+        j = parent;
+      }
+    }
+    progress = end;
+  }
+  for (size_t i = progress; i < ref.size(); ++i) {
+    if (values_[i].match(values_[0])) {
+      ref[progress] = ref[i];
+      values_[progress] = values_[0];
+      ++progress;
+    } else if (comparer_(values_[i], values_[0])) {
+      std::swap(ref[0], ref[i]);
+      std::swap(values_[0], values_[i]);
+      ref[progress] = ref[i];
+      values_[progress] = values_[i];
+      size_t parent = 0;
+      size_t inprior = 0;
+      for ( ; ; ) {
+        size_t left = (parent * 2) + 1;
+        size_t right = left + 1;
+        if (left >= boundary) {
+          break;
+        }
+        if (comparer_(values_[parent], values_[left])) {
+          inprior = left;
+        }
+        if ((right < boundary) &&
+            comparer_(values_[inprior], values_[right])) {
+          inprior = right;
+        }
+        if (inprior == parent) {
+          break;
+        }
+        std::swap(ref[inprior], ref[parent]);
+        std::swap(values_[inprior], values_[parent]);
+        parent = inprior;
+      }
+      if (values_[0].match(values_[progress])) {
+        ++progress;
+      } else {
+        progress = boundary;
+      }
+    }
+  }
+  records->resize(progress);
+
+  // TODO: Same values can be dropped if "!this->next_".
+}
+
+template <typename T>
+void TextNodeS<T>::sort(ArrayRef<Record> ref, size_t begin, size_t end) {
+  for (size_t i = end; i > begin; ) {
+    --i;
+    std::swap(ref[0], ref[i]);
+    std::swap(values_[0], values_[i]);
+    size_t parent = 0;
+    size_t inprior = 0;
+    for ( ; ; ) {
+      size_t left = (parent * 2) + 1;
+      size_t right = left + 1;
+      if (left >= i) {
+        break;
+      }
+      if (comparer_(values_[parent], values_[left])) {
+        inprior = left;
+      }
+      if ((right < i) && comparer_(values_[inprior], values_[right])) {
+        inprior = right;
+      }
+      if (inprior == parent) {
+        break;
+      }
+      std::swap(ref[inprior], ref[parent]);
+      std::swap(values_[inprior], values_[parent]);
+      parent = inprior;
+    }
+  }
+
+  // Apply the next sorting if there are records having the same value.
+  if (this->next_) {
+    size_t begin = 0;
+    for (size_t i = 1; i < end; ++i) {
+      if (values_[i].unmatch(values_[begin])) {
+        if ((i - begin) >= 2) {
+          this->next_->sort(ref.ref(begin, i - begin), 0, i - begin);
+        }
+        begin = i;
+      }
+    }
+    if ((ref.size() - begin) >= 2) {
+      this->next_->sort(ref.ref(begin), 0, ref.size() - begin);
+    }
+  }
+
+  // TODO: Same values can be dropped if "!this->next_".
+}
+
 }  // namespace sorter
 
 using namespace sorter;
@@ -1477,10 +1618,18 @@ Node *Sorter::create_node(SorterOrder &&order) try {
       }
     }
     case TEXT_DATA: {
-      if (order.type == SORTER_REGULAR_ORDER) {
-        return new TextNode<RegularTextComparer>(std::move(order));
+      if (nodes_.is_empty() && ((offset_ + limit_) < 1000)) {
+        if (order.type == SORTER_REGULAR_ORDER) {
+          return new TextNodeS<RegularTextComparer>(std::move(order));
+        } else {
+          return new TextNodeS<ReverseTextComparer>(std::move(order));
+        }
       } else {
-        return new TextNode<ReverseTextComparer>(std::move(order));
+        if (order.type == SORTER_REGULAR_ORDER) {
+          return new TextNode<RegularTextComparer>(std::move(order));
+        } else {
+          return new TextNode<ReverseTextComparer>(std::move(order));
+        }
       }
     }
     default: {
