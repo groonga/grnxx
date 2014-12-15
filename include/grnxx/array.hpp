@@ -150,6 +150,9 @@ class Array<T, false> {
 
   Array() : buffer_(nullptr), size_(0), capacity_(0) {}
   ~Array() {
+    for (size_t i = 0; i < size_; ++i) {
+      buffer()[i].~Value();
+    }
     std::free(buffer_);
   }
 
@@ -167,6 +170,9 @@ class Array<T, false> {
   }
   // Move the ownership of an array.
   Array &operator=(Array &&array) & {
+    for (size_t i = 0; i < size_; ++i) {
+      buffer()[i].~Value();
+    }
     std::free(buffer_);
     buffer_ = array.buffer_;
     size_ = array.size_;
