@@ -398,7 +398,7 @@ void Table::remove_row(Int row_id) {
   // TODO: Check removability.
   for (size_t i = 0; i < referrer_columns_.size(); ++i) {
     if (referrer_columns_[i]->is_key()) {
-      throw "Reffered to from a key column";  // TODO
+      throw "Referred to from a key column";  // TODO
     }
   }
   // Unset column values.
