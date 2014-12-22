@@ -105,17 +105,73 @@ bool Column<Int>::contains(const Datum &datum) const {
   Int value = parse_datum(datum);
   size_t valid_size = get_valid_size();
   if (value.is_na()) {
-    for (size_t i = 0; i < valid_size; ++i) {
-      // TODO: Improve this loop.
-      if (_get(i).is_na() && table_->_test_row(i)) {
-        return true;
+    switch (value_size_) {
+      case 8: {
+        for (size_t i = 0; i < valid_size; ++i) {
+          if ((values_8_[i] == na_value_8()) && table_->_test_row(i)) {
+            return true;
+          }
+        }
+        break;
+      }
+      case 16: {
+        for (size_t i = 0; i < valid_size; ++i) {
+          if ((values_16_[i] == na_value_16()) && table_->_test_row(i)) {
+            return true;
+          }
+        }
+        break;
+      }
+      case 32: {
+        for (size_t i = 0; i < valid_size; ++i) {
+          if ((values_32_[i] == na_value_32()) && table_->_test_row(i)) {
+            return true;
+          }
+        }
+        break;
+      }
+      default: {
+        for (size_t i = 0; i < valid_size; ++i) {
+          if (values_64_[i].is_na() && table_->_test_row(i)) {
+            return true;
+          }
+        }
+        break;
       }
     }
   } else {
-    for (size_t i = 0; i < valid_size; ++i) {
-      // TODO: Improve this loop.
-      if (_get(i).match(value)) {
-        return true;
+    switch (value_size_) {
+      case 8: {
+        for (size_t i = 0; i < valid_size; ++i) {
+          if ((values_8_[i] == value.raw()) && table_->_test_row(i)) {
+            return true;
+          }
+        }
+        break;
+      }
+      case 16: {
+        for (size_t i = 0; i < valid_size; ++i) {
+          if ((values_16_[i] == value.raw()) && table_->_test_row(i)) {
+            return true;
+          }
+        }
+        break;
+      }
+      case 32: {
+        for (size_t i = 0; i < valid_size; ++i) {
+          if ((values_32_[i] == value.raw()) && table_->_test_row(i)) {
+            return true;
+          }
+        }
+        break;
+      }
+      default: {
+        for (size_t i = 0; i < valid_size; ++i) {
+          if (values_64_[i].match(value) && table_->_test_row(i)) {
+            return true;
+          }
+        }
+        break;
       }
     }
   }
@@ -130,19 +186,73 @@ Int Column<Int>::find_one(const Datum &datum) const {
   Int value = parse_datum(datum);
   size_t valid_size = get_valid_size();
   if (value.is_na()) {
-    for (size_t i = 0; i < valid_size; ++i) {
-      // TODO: Improve this loop.
-      Int stored_value = _get(i);
-      if (stored_value.is_na() && table_->_test_row(i)) {
-        return Int(i);
+    switch (value_size_) {
+      case 8: {
+        for (size_t i = 0; i < valid_size; ++i) {
+          if ((values_8_[i] == na_value_8()) && table_->_test_row(i)) {
+            return Int(i);
+          }
+        }
+        break;
+      }
+      case 16: {
+        for (size_t i = 0; i < valid_size; ++i) {
+          if ((values_16_[i] == na_value_16()) && table_->_test_row(i)) {
+            return Int(i);
+          }
+        }
+        break;
+      }
+      case 32: {
+        for (size_t i = 0; i < valid_size; ++i) {
+          if ((values_32_[i] == na_value_32()) && table_->_test_row(i)) {
+            return Int(i);
+          }
+        }
+        break;
+      }
+      default: {
+        for (size_t i = 0; i < valid_size; ++i) {
+          if (values_64_[i].is_na() && table_->_test_row(i)) {
+            return Int(i);
+          }
+        }
+        break;
       }
     }
   } else {
-    for (size_t i = 0; i < valid_size; ++i) {
-      // TODO: Improve this loop.
-      Int stored_value = _get(i);
-      if (stored_value.match(value)) {
-        return Int(i);
+    switch (value_size_) {
+      case 8: {
+        for (size_t i = 0; i < valid_size; ++i) {
+          if ((values_8_[i] == value.raw()) && table_->_test_row(i)) {
+            return Int(i);
+          }
+        }
+        break;
+      }
+      case 16: {
+        for (size_t i = 0; i < valid_size; ++i) {
+          if ((values_16_[i] == value.raw()) && table_->_test_row(i)) {
+            return Int(i);
+          }
+        }
+        break;
+      }
+      case 32: {
+        for (size_t i = 0; i < valid_size; ++i) {
+          if ((values_32_[i] == value.raw()) && table_->_test_row(i)) {
+            return Int(i);
+          }
+        }
+        break;
+      }
+      default: {
+        for (size_t i = 0; i < valid_size; ++i) {
+          if (values_64_[i].match(value) && table_->_test_row(i)) {
+            return Int(i);
+          }
+        }
+        break;
       }
     }
   }
