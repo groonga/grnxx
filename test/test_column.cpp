@@ -17,13 +17,16 @@
 */
 #include <cassert>
 #include <iostream>
+#include <random>
 
 #include "grnxx/column.hpp"
 #include "grnxx/db.hpp"
 #include "grnxx/table.hpp"
 
+std::mt19937_64 rng;
+
 template <typename T>
-void test_column(const T &value) {
+void test_basic_operations(const T &value) {
   constexpr grnxx::DataType data_type = T::type();
 
   // Create a table and insert the first row.
@@ -56,13 +59,14 @@ void test_column(const T &value) {
   assert(stored_value.match(value));
 }
 
-int main() {
-  test_column(grnxx::Bool(true));
-  test_column(grnxx::Int(123));
-  test_column(grnxx::Float(1.25));
-  test_column(grnxx::GeoPoint(grnxx::Int(123), grnxx::Int(456)));
-  test_column(grnxx::GeoPoint(grnxx::Float(1.25), grnxx::Float(-1.25)));
-  test_column(grnxx::Text("ABC"));
+void test_basic_operations() {
+  test_basic_operations(grnxx::Bool(true));
+  test_basic_operations(grnxx::Int(123));
+  test_basic_operations(grnxx::Float(1.25));
+  test_basic_operations(grnxx::GeoPoint(grnxx::Int(123), grnxx::Int(456)));
+  test_basic_operations(
+      grnxx::GeoPoint(grnxx::Float(35.681382), grnxx::Float(-139.766084)));
+  test_basic_operations(grnxx::Text("ABC"));
 
   grnxx::Bool bool_values[] = {
     grnxx::Bool(true),
@@ -70,7 +74,7 @@ int main() {
     grnxx::Bool(true)
   };
   grnxx::BoolVector bool_vector(bool_values, 3);
-  test_column(bool_vector);
+  test_basic_operations(bool_vector);
 
   grnxx::Int int_values[] = {
     grnxx::Int(123),
@@ -78,7 +82,7 @@ int main() {
     grnxx::Int(789)
   };
   grnxx::IntVector int_vector(int_values, 3);
-  test_column(int_vector);
+  test_basic_operations(int_vector);
 
   grnxx::Float float_values[] = {
     grnxx::Float(1.23),
@@ -86,7 +90,7 @@ int main() {
     grnxx::Float(7.89)
   };
   grnxx::FloatVector float_vector(float_values, 3);
-  test_column(float_vector);
+  test_basic_operations(float_vector);
 
   grnxx::GeoPoint geo_point_values[] = {
     { grnxx::Float(43.068661), grnxx::Float(141.350755) },  // Sapporo.
@@ -94,7 +98,7 @@ int main() {
     { grnxx::Float(34.702485), grnxx::Float(135.495951) },  // Osaka.
   };
   grnxx::GeoPointVector geo_point_vector(geo_point_values, 3);
-  test_column(geo_point_vector);
+  test_basic_operations(geo_point_vector);
 
   grnxx::Text text_values[] = {
     grnxx::Text("abc"),
@@ -102,7 +106,107 @@ int main() {
     grnxx::Text("ghi")
   };
   grnxx::TextVector text_vector(text_values, 3);
-  test_column(text_vector);
+  test_basic_operations(text_vector);
+}
+
+template <typename T>
+void generate_random_value(T *value);
+
+template <>
+void generate_random_value(grnxx::Bool *value) {
+  if ((rng() % 256) == 0) {
+    *value = grnxx::Bool::na();
+  } else {
+    *value = grnxx::Bool((rng() & 1) == 1);
+  }
+}
+
+template <>
+void generate_random_value(grnxx::Int *value) {
+  if ((rng() % 256) == 0) {
+    *value = grnxx::Int::na();
+  } else {
+    *value = grnxx::Int(static_cast<int64_t>(rng()));
+  }
+}
+
+template <>
+void generate_random_value(grnxx::Float *value) {
+  if ((rng() % 256) == 0) {
+    *value = grnxx::Float::na();
+  } else {
+    *value = grnxx::Float(1.0 * rng() / rng.max());
+  }
+}
+
+template <>
+void generate_random_value(grnxx::GeoPoint *value) {
+  if ((rng() % 256) == 0) {
+    *value = grnxx::GeoPoint::na();
+  } else {
+    grnxx::Float latitude(-90.0 + (180.0 * rng() / rng.max()));
+    grnxx::Float longitude(-180.0 + (360.0 * rng() / rng.max()));
+    *value = grnxx::GeoPoint(latitude, longitude);
+  }
+}
+
+template <>
+void generate_random_value(grnxx::Text *value) {
+  static grnxx::Array<grnxx::String> bodies;
+  if ((rng() % 256) == 0) {
+    *value = grnxx::Text::na();
+  } else {
+    grnxx::String body;
+    body.resize(rng() % 16);
+    for (size_t i = 0; i < body.size(); ++i) {
+      body[i] = 'A' + (rng() % 26);
+    }
+    *value = grnxx::Text(body.data(), body.size());
+    bodies.push_back(std::move(body));
+  }
+}
+
+template <typename T>
+void test_random_values() {
+  constexpr size_t NUM_ROWS = 1 << 16;
+
+  // Create a table and insert the first row.
+  auto db = grnxx::open_db("");
+  auto table = db->create_table("Table");
+  auto column = table->create_column("Column", T::type());
+  grnxx::Array<T> values;
+  values.resize(NUM_ROWS);
+  for (size_t i = 0; i < NUM_ROWS; ++i) {
+    generate_random_value<T>(&values[i]);
+    grnxx::Int row_id = table->insert_row();
+    column->set(row_id, values[i]);
+    grnxx::Datum datum;
+    column->get(row_id, &datum);
+
+    T stored_value;
+    datum.force(&stored_value);
+    assert(stored_value.match(values[i]));
+  }
+
+  // Test all the values again.
+  for (size_t i = 0; i < NUM_ROWS; ++i) {
+    grnxx::Int row_id = grnxx::Int(i);
+    grnxx::Datum datum;
+    column->get(row_id, &datum);
+    T stored_value;
+    datum.force(&stored_value);
+    assert(stored_value.match(values[i]));
+  }
+}
+
+int main() {
+  test_basic_operations();
+
+  test_random_values<grnxx::Bool>();
+  test_random_values<grnxx::Int>();
+  test_random_values<grnxx::Float>();
+  test_random_values<grnxx::GeoPoint>();
+  test_random_values<grnxx::Text>();
 
   return 0;
 }
