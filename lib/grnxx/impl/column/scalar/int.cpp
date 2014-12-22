@@ -13,7 +13,10 @@ Column<Int>::Column(Table *table,
                     const String &name,
                     const ColumnOptions &options)
     : ColumnBase(table, name, INT_DATA),
-      values_() {
+      value_size_(8),
+      buffer_(nullptr),
+      size_(0),
+      capacity_(0) {
   if (!options.reference_table_name.is_empty()) {
     reference_table_ = table->_db()->find_table(options.reference_table_name);
     if (!reference_table_) {
@@ -22,7 +25,9 @@ Column<Int>::Column(Table *table,
   }
 }
 
-Column<Int>::~Column() {}
+Column<Int>::~Column() {
+  std::free(buffer_);
+}
 
 void Column<Int>::set(Int row_id, const Datum &datum) {
   Int new_value = parse_datum(datum);
@@ -57,9 +62,7 @@ void Column<Int>::set(Int row_id, const Datum &datum) {
     }
   }
   size_t value_id = row_id.raw();
-  if (value_id >= values_.size()) {
-    values_.resize(value_id + 1, Int::na());
-  }
+  reserve(value_id + 1, new_value);
   // Insert the new value into indexes.
   for (size_t i = 0; i < num_indexes(); ++i) try {
     indexes_[i]->insert(row_id, datum);
@@ -69,16 +72,29 @@ void Column<Int>::set(Int row_id, const Datum &datum) {
     }
     throw;
   }
-  values_[value_id] = new_value;
+  switch (value_size_) {
+    case 8: {
+      values_8_[value_id] = static_cast<int8_t>(new_value.raw());
+      break;
+    }
+    case 16: {
+      values_16_[value_id] = static_cast<int16_t>(new_value.raw());
+      break;
+    }
+    case 32: {
+      values_32_[value_id] = static_cast<int32_t>(new_value.raw());
+      break;
+    }
+    default: {
+      values_64_[value_id] = new_value;
+      break;
+    }
+  }
 }
 
 void Column<Int>::get(Int row_id, Datum *datum) const {
   size_t value_id = row_id.raw();
-  if (value_id >= values_.size()) {
-    *datum = Int::na();
-  } else {
-    *datum = values_[value_id];
-  }
+  *datum = (value_id < size_) ? _get(value_id) : Int::na();
 }
 
 bool Column<Int>::contains(const Datum &datum) const {
@@ -90,13 +106,15 @@ bool Column<Int>::contains(const Datum &datum) const {
   size_t valid_size = get_valid_size();
   if (value.is_na()) {
     for (size_t i = 0; i < valid_size; ++i) {
-      if (values_[i].is_na() && table_->_test_row(i)) {
+      // TODO: Improve this loop.
+      if (_get(i).is_na() && table_->_test_row(i)) {
         return true;
       }
     }
   } else {
     for (size_t i = 0; i < valid_size; ++i) {
-      if (values_[i].match(value)) {
+      // TODO: Improve this loop.
+      if (_get(i).match(value)) {
         return true;
       }
     }
@@ -113,13 +131,17 @@ Int Column<Int>::find_one(const Datum &datum) const {
   size_t valid_size = get_valid_size();
   if (value.is_na()) {
     for (size_t i = 0; i < valid_size; ++i) {
-      if (values_[i].is_na() && table_->_test_row(i)) {
+      // TODO: Improve this loop.
+      Int stored_value = _get(i);
+      if (stored_value.is_na() && table_->_test_row(i)) {
         return Int(i);
       }
     }
   } else {
     for (size_t i = 0; i < valid_size; ++i) {
-      if (values_[i].match(value)) {
+      // TODO: Improve this loop.
+      Int stored_value = _get(i);
+      if (stored_value.match(value)) {
         return Int(i);
       }
     }
@@ -144,8 +166,10 @@ void Column<Int>::set_key_attribute() {
     std::unordered_set<int64_t> set;
     size_t valid_size = get_valid_size();
     for (size_t i = 0; i < valid_size; ++i) try {
-      if (!values_[i].is_na()) {
-        if (!set.insert(values_[i].raw()).second) {
+      // TODO: Improve this loop.
+      Int value = _get(i);
+      if (!value.is_na()) {
+        if (!set.insert(value.raw()).second) {
           throw "Key duplicate";  // TODO
         }
       }
@@ -171,10 +195,8 @@ void Column<Int>::set_key(Int row_id, const Datum &key) {
     throw "Key already exists";  // TODO
   }
   size_t value_id = row_id.raw();
-  if (value_id >= values_.size()) {
-    values_.resize(value_id + 1, Int::na());
-  }
   Int value = parse_datum(key);
+  reserve(value_id + 1, value);
   // Update indexes if exist.
   for (size_t i = 0; i < num_indexes(); ++i) try {
     indexes_[i]->insert(row_id, value);
@@ -184,7 +206,24 @@ void Column<Int>::set_key(Int row_id, const Datum &key) {
     }
     throw;
   }
-  values_[value_id] = value;
+  switch (value_size_) {
+    case 8: {
+      values_8_[value_id] = static_cast<int8_t>(value.raw());
+      break;
+    }
+    case 16: {
+      values_16_[value_id] = static_cast<int16_t>(value.raw());
+      break;
+    }
+    case 32: {
+      values_32_[value_id] = static_cast<int32_t>(value.raw());
+      break;
+    }
+    default: {
+      values_64_[value_id] = value;
+      break;
+    }
+  }
 }
 
 void Column<Int>::unset(Int row_id) {
@@ -194,7 +233,24 @@ void Column<Int>::unset(Int row_id) {
     for (size_t i = 0; i < num_indexes(); ++i) {
       indexes_[i]->remove(row_id, value);
     }
-    values_[row_id.raw()] = Int::na();
+    switch (value_size_) {
+      case 8: {
+        values_8_[row_id.raw()] = na_value_8();
+        break;
+      }
+      case 16: {
+        values_16_[row_id.raw()] = na_value_16();
+        break;
+      }
+      case 32: {
+        values_32_[row_id.raw()] = na_value_32();
+        break;
+      }
+      default: {
+        values_64_[row_id.raw()] = Int::na();
+        break;
+      }
+    }
   }
 }
 
@@ -202,8 +258,41 @@ void Column<Int>::read(ArrayCRef<Record> records, ArrayRef<Int> values) const {
   if (records.size() != values.size()) {
     throw "Data size conflict";  // TODO
   }
-  for (size_t i = 0; i < records.size(); ++i) {
-    values.set(i, get(records[i].row_id));
+  switch (value_size_) {
+    case 8: {
+      for (size_t i = 0; i < records.size(); ++i) {
+        size_t value_id = records[i].row_id.raw();
+        values[i] = ((value_id < size_) &&
+                     (values_8_[value_id] != na_value_8())) ?
+                    Int(values_8_[value_id]) : Int::na();
+      }
+      break;
+    }
+    case 16: {
+      for (size_t i = 0; i < records.size(); ++i) {
+        size_t value_id = records[i].row_id.raw();
+        values[i] = ((value_id < size_) &&
+                     (values_16_[value_id] != na_value_16())) ?
+                    Int(values_16_[value_id]) : Int::na();
+      }
+      break;
+    }
+    case 32: {
+      for (size_t i = 0; i < records.size(); ++i) {
+        size_t value_id = records[i].row_id.raw();
+        values[i] = ((value_id < size_) &&
+                     (values_32_[value_id] != na_value_32())) ?
+                    Int(values_32_[value_id]) : Int::na();
+      }
+      break;
+    }
+    default: {
+      for (size_t i = 0; i < records.size(); ++i) {
+        size_t value_id = records[i].row_id.raw();
+        values[i] = (value_id < size_) ? values_64_[value_id] : Int::na();
+      }
+      break;
+    }
   }
 }
 
@@ -259,10 +348,263 @@ size_t Column<Int>::get_valid_size() const {
     return 0;
   }
   size_t table_size = table_->max_row_id().raw() + 1;
-  if (table_size < values_.size()) {
-    return table_size;
+  return (table_size < size_) ? table_size : size_;
+}
+
+void Column<Int>::reserve(size_t size, Int value) {
+  if (!value.is_na()) {
+    int64_t raw = value.raw();
+    switch (value_size_) {
+      case 8: {
+        if ((raw >= min_value_8()) && (raw <= max_value_8())) {
+          // 8 -> 8.
+          if (size > capacity_) {
+            size_t new_capacity = (capacity_ != 0) ? capacity_ : 1;
+            while (new_capacity < size) {
+              new_capacity *= 2;
+            }
+            void *new_buffer =
+                std::realloc(buffer_, sizeof(int8_t) * new_capacity);
+            if (!new_buffer) {
+              throw "Memory allocation failed";
+            }
+            buffer_ = new_buffer;
+            capacity_ = new_capacity;
+          }
+          if (size > size_) {
+            for (size_t i = size_; i < size; ++i) {
+              values_8_[i] = na_value_8();
+            }
+            size_ = size;
+          }
+        } else if ((raw >= min_value_16()) && (raw <= max_value_16())) {
+          // 8 -> 16.
+          size_t new_capacity = (capacity_ != 0) ? capacity_ : 1;
+          while (new_capacity < size) {
+            new_capacity *= 2;
+          }
+          int16_t *new_values = static_cast<int16_t *>(
+              std::malloc(sizeof(int16_t) * new_capacity));
+          if (!new_values) {
+            throw "Memory allocation failed";
+          }
+          for (size_t i = 0; i < size_; ++i) {
+            new_values[i] = (values_8_[i] != na_value_8()) ?
+                            values_8_[i] : na_value_16();
+          }
+          for (size_t i = size_; i < size; ++i) {
+            new_values[i] = na_value_16();
+          }
+          std::free(buffer_);
+          buffer_ = new_values;
+          value_size_ = 16;
+          if (size > size_) {
+            size_ = size;
+          }
+          capacity_ = new_capacity;
+        } else if ((raw >= min_value_32()) && (raw <= max_value_32())) {
+          // 8 -> 32.
+          size_t new_capacity = (capacity_ != 0) ? capacity_ : 1;
+          while (new_capacity < size) {
+            new_capacity *= 2;
+          }
+          int32_t *new_values = static_cast<int32_t *>(
+              std::malloc(sizeof(int32_t) * new_capacity));
+          if (!new_values) {
+            throw "Memory allocation failed";
+          }
+          for (size_t i = 0; i < size_; ++i) {
+            new_values[i] = (values_8_[i] != na_value_8()) ?
+                            values_8_[i] : na_value_32();
+          }
+          for (size_t i = size_; i < size; ++i) {
+            new_values[i] = na_value_32();
+          }
+          std::free(buffer_);
+          buffer_ = new_values;
+          value_size_ = 32;
+          if (size > size_) {
+            size_ = size;
+          }
+          capacity_ = new_capacity;
+        } else {
+          // 8 -> 64.
+          size_t new_capacity = (capacity_ != 0) ? capacity_ : 1;
+          while (new_capacity < size) {
+            new_capacity *= 2;
+          }
+          Int *new_values = static_cast<Int *>(
+              std::malloc(sizeof(Int) * new_capacity));
+          if (!new_values) {
+            throw "Memory allocation failed";
+          }
+          for (size_t i = 0; i < size_; ++i) {
+            new_values[i] = (values_8_[i] != na_value_8()) ?
+                            Int(values_8_[i]) : Int::na();
+          }
+          for (size_t i = size_; i < size; ++i) {
+            new_values[i] = Int::na();
+          }
+          std::free(buffer_);
+          buffer_ = new_values;
+          value_size_ = 64;
+          if (size > size_) {
+            size_ = size;
+          }
+          capacity_ = new_capacity;
+        }
+        break;
+      }
+      case 16: {
+        if ((raw >= min_value_16()) && (raw <= max_value_16())) {
+          // 16 -> 16.
+          if (size > capacity_) {
+            size_t new_capacity = (capacity_ != 0) ? capacity_ : 1;
+            while (new_capacity < size) {
+              new_capacity *= 2;
+            }
+            void *new_buffer =
+                std::realloc(buffer_, sizeof(int16_t) * new_capacity);
+            if (!new_buffer) {
+              throw "Memory allocation failed";
+            }
+            buffer_ = new_buffer;
+            capacity_ = new_capacity;
+          }
+          if (size > size_) {
+            for (size_t i = size_; i < size; ++i) {
+              values_16_[i] = na_value_16();
+            }
+            size_ = size;
+          }
+        } else if ((raw >= min_value_32()) && (raw <= max_value_32())) {
+          // 16 -> 32.
+          size_t new_capacity = (capacity_ != 0) ? capacity_ : 1;
+          while (new_capacity < size) {
+            new_capacity *= 2;
+          }
+          int32_t *new_values = static_cast<int32_t *>(
+              std::malloc(sizeof(int32_t) * new_capacity));
+          if (!new_values) {
+            throw "Memory allocation failed";
+          }
+          for (size_t i = 0; i < size_; ++i) {
+            new_values[i] = (values_16_[i] != na_value_16()) ?
+                            values_16_[i] : na_value_32();
+          }
+          for (size_t i = size_; i < size; ++i) {
+            new_values[i] = na_value_32();
+          }
+          std::free(buffer_);
+          buffer_ = new_values;
+          value_size_ = 32;
+          if (size > size_) {
+            size_ = size;
+          }
+          capacity_ = new_capacity;
+        } else {
+          // 16 -> 64.
+          size_t new_capacity = (capacity_ != 0) ? capacity_ : 1;
+          while (new_capacity < size) {
+            new_capacity *= 2;
+          }
+          Int *new_values = static_cast<Int *>(
+              std::malloc(sizeof(Int) * new_capacity));
+          if (!new_values) {
+            throw "Memory allocation failed";
+          }
+          for (size_t i = 0; i < size_; ++i) {
+            new_values[i] = (values_16_[i] != na_value_16()) ?
+                            Int(values_16_[i]) : Int::na();
+          }
+          for (size_t i = size_; i < size; ++i) {
+            new_values[i] = Int::na();
+          }
+          std::free(buffer_);
+          buffer_ = new_values;
+          value_size_ = 64;
+          if (size > size_) {
+            size_ = size;
+          }
+          capacity_ = new_capacity;
+        }
+        break;
+      }
+      case 32: {
+        if ((raw >= min_value_32()) && (raw <= max_value_32())) {
+          // 32 -> 32.
+          if (size > capacity_) {
+            size_t new_capacity = (capacity_ != 0) ? capacity_ : 1;
+            while (new_capacity < size) {
+              new_capacity *= 2;
+            }
+            void *new_buffer =
+                std::realloc(buffer_, sizeof(int32_t) * new_capacity);
+            if (!new_buffer) {
+              throw "Memory allocation failed";
+            }
+            buffer_ = new_buffer;
+            capacity_ = new_capacity;
+          }
+          if (size > size_) {
+            for (size_t i = size_; i < size; ++i) {
+              values_32_[i] = na_value_32();
+            }
+            size_ = size;
+          }
+        } else {
+          // 32 -> 64.
+          size_t new_capacity = (capacity_ != 0) ? capacity_ : 1;
+          while (new_capacity < size) {
+            new_capacity *= 2;
+          }
+          Int *new_values = static_cast<Int *>(
+              std::malloc(sizeof(Int) * new_capacity));
+          if (!new_values) {
+            throw "Memory allocation failed";
+          }
+          for (size_t i = 0; i < size_; ++i) {
+            new_values[i] = (values_32_[i] != na_value_32()) ?
+                            Int(values_32_[i]) : Int::na();
+          }
+          for (size_t i = size_; i < size; ++i) {
+            new_values[i] = Int::na();
+          }
+          std::free(buffer_);
+          buffer_ = new_values;
+          value_size_ = 64;
+          if (size > size_) {
+            size_ = size;
+          }
+          capacity_ = new_capacity;
+        }
+        break;
+      }
+      default: {
+        // 64 -> 64.
+        if (size > capacity_) {
+          size_t new_capacity = (capacity_ != 0) ? capacity_ : 1;
+          while (new_capacity < size) {
+            new_capacity *= 2;
+          }
+          void *new_buffer =
+              std::realloc(buffer_, sizeof(Int) * new_capacity);
+          if (!new_buffer) {
+            throw "Memory allocation failed";
+          }
+          buffer_ = new_buffer;
+          capacity_ = new_capacity;
+        }
+        if (size > size_) {
+          for (size_t i = size_; i < size; ++i) {
+            values_64_[i] = Int::na();
+          }
+          size_ = size;
+        }
+        break;
+      }
+    }
   }
-  return values_.size();
 }
 
 Int Column<Int>::parse_datum(const Datum &datum) {
