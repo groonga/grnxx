@@ -249,6 +249,12 @@ void test_int_key() {
   row_id = table->find_or_insert_row(grnxx::Int(200), &inserted);
   column->get(row_id, &datum);
   assert(datum.as_int().raw() == 200);
+  row_id = table->find_or_insert_row(grnxx::Int(200000), &inserted);
+  column->get(row_id, &datum);
+  assert(datum.as_int().raw() == 200000);
+  row_id = table->find_or_insert_row(grnxx::Int(20000000000L), &inserted);
+  column->get(row_id, &datum);
+  assert(datum.as_int().raw() == 20000000000L);
 
   // Find rows by key.
   assert(table->find_row(grnxx::Int(1)).raw() == 0);
@@ -257,6 +263,8 @@ void test_int_key() {
   assert(table->find_row(grnxx::Int(2)).raw() == 3);
   assert(table->find_row(grnxx::Int(20)).raw() == 4);
   assert(table->find_row(grnxx::Int(200)).raw() == 5);
+  assert(table->find_row(grnxx::Int(200000)).raw() == 6);
+  assert(table->find_row(grnxx::Int(20000000000L)).raw() == 7);
   assert(table->find_row(grnxx::Int::na()).is_na());
 
   // Unset key column.
