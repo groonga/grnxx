@@ -199,6 +199,84 @@ void test_random_values() {
   }
 }
 
+void test_internal_type_conversion() {
+  // Create a table and insert the first row.
+  auto db = grnxx::open_db("");
+  auto table = db->create_table("Table");
+  table->insert_row();
+  table->insert_row();
+  table->insert_row();
+  table->insert_row();
+
+  auto column = table->create_column("Column", grnxx::INT_DATA);
+
+  // Set the first 8-bit integer.
+  column->set(grnxx::Int(0), grnxx::Int(int64_t(1) << 0));
+  grnxx::Datum datum;
+  column->get(grnxx::Int(0), &datum);
+  assert(datum.as_int().raw() == (int64_t(1) << 0));
+
+  // Conversion from 8-bit to 16-bit.
+  column->set(grnxx::Int(1), grnxx::Int(int64_t(1) << 8));
+  column->get(grnxx::Int(0), &datum);
+  assert(datum.as_int().raw() == (int64_t(1) << 0));
+  column->get(grnxx::Int(1), &datum);
+  assert(datum.as_int().raw() == (int64_t(1) << 8));
+
+  // Conversion from 16-bit to 32-bit.
+  column->set(grnxx::Int(2), grnxx::Int(int64_t(1) << 16));
+  column->get(grnxx::Int(0), &datum);
+  assert(datum.as_int().raw() == (int64_t(1) << 0));
+  column->get(grnxx::Int(1), &datum);
+  assert(datum.as_int().raw() == (int64_t(1) << 8));
+  column->get(grnxx::Int(2), &datum);
+  assert(datum.as_int().raw() == (int64_t(1) << 16));
+
+  // Conversion from 32-bit to 64-bit.
+  column->set(grnxx::Int(3), grnxx::Int(int64_t(1) << 32));
+  column->get(grnxx::Int(0), &datum);
+  assert(datum.as_int().raw() == (int64_t(1) << 0));
+  column->get(grnxx::Int(1), &datum);
+  assert(datum.as_int().raw() == (int64_t(1) << 8));
+  column->get(grnxx::Int(2), &datum);
+  assert(datum.as_int().raw() == (int64_t(1) << 16));
+  column->get(grnxx::Int(3), &datum);
+  assert(datum.as_int().raw() == (int64_t(1) << 32));
+
+  table->remove_column("Column");
+  column = table->create_column("Column", grnxx::INT_DATA);
+
+  // Conversion from 8-bit to 32-bit.
+  column->set(grnxx::Int(0), grnxx::Int(int64_t(1) << 0));
+  column->set(grnxx::Int(1), grnxx::Int(int64_t(1) << 16));
+  column->get(grnxx::Int(0), &datum);
+  assert(datum.as_int().raw() == (int64_t(1) << 0));
+  column->get(grnxx::Int(1), &datum);
+  assert(datum.as_int().raw() == (int64_t(1) << 16));
+
+  table->remove_column("Column");
+  column = table->create_column("Column", grnxx::INT_DATA);
+
+  // Conversion from 8-bit to 64-bit.
+  column->set(grnxx::Int(0), grnxx::Int(int64_t(1) << 0));
+  column->set(grnxx::Int(1), grnxx::Int(int64_t(1) << 32));
+  column->get(grnxx::Int(0), &datum);
+  assert(datum.as_int().raw() == (int64_t(1) << 0));
+  column->get(grnxx::Int(1), &datum);
+  assert(datum.as_int().raw() == (int64_t(1) << 32));
+
+  table->remove_column("Column");
+  column = table->create_column("Column", grnxx::INT_DATA);
+
+  // Conversion from 16-bit to 64-bit.
+  column->set(grnxx::Int(0), grnxx::Int(int64_t(1) << 8));
+  column->set(grnxx::Int(1), grnxx::Int(int64_t(1) << 32));
+  column->get(grnxx::Int(0), &datum);
+  assert(datum.as_int().raw() == (int64_t(1) << 8));
+  column->get(grnxx::Int(1), &datum);
+  assert(datum.as_int().raw() == (int64_t(1) << 32));
+}
+
 int main() {
   test_basic_operations();
 
@@ -207,6 +285,8 @@ int main() {
   test_random_values<grnxx::Float>();
   test_random_values<grnxx::GeoPoint>();
   test_random_values<grnxx::Text>();
+
+  test_internal_type_conversion();
 
   return 0;
 }
