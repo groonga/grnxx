@@ -63,22 +63,7 @@ bool Column<Float>::contains(const Datum &datum) const {
   if (!indexes_.is_empty()) {
     return indexes_[0]->contains(datum);
   }
-  Float value = parse_datum(datum);
-  size_t valid_size = get_valid_size();
-  if (value.is_na()) {
-    for (size_t i = 0; i < valid_size; ++i) {
-      if (values_[i].is_na() && table_->_test_row(i)) {
-        return true;
-      }
-    }
-  } else {
-    for (size_t i = 0; i < valid_size; ++i) {
-      if (values_[i].match(value)) {
-        return true;
-      }
-    }
-  }
-  return false;
+  return !scan(parse_datum(datum)).is_na();
 }
 
 Int Column<Float>::find_one(const Datum &datum) const {
@@ -86,22 +71,7 @@ Int Column<Float>::find_one(const Datum &datum) const {
   if (!indexes_.is_empty()) {
     return indexes_[0]->find_one(datum);
   }
-  Float value = parse_datum(datum);
-  size_t valid_size = get_valid_size();
-  if (value.is_na()) {
-    for (size_t i = 0; i < valid_size; ++i) {
-      if (values_[i].is_na() && table_->_test_row(i)) {
-        return Int(i);
-      }
-    }
-  } else {
-    for (size_t i = 0; i < valid_size; ++i) {
-      if (values_[i].match(value)) {
-        return Int(i);
-      }
-    }
-  }
-  return Int::na();
+  return scan(parse_datum(datum));
 }
 
 void Column<Float>::unset(Int row_id) {
@@ -125,15 +95,30 @@ void Column<Float>::read(ArrayCRef<Record> records,
   }
 }
 
-size_t Column<Float>::get_valid_size() const {
+Int Column<Float>::scan(Float value) const {
   if (table_->max_row_id().is_na()) {
-    return 0;
+    return Int::na();
   }
   size_t table_size = table_->max_row_id().raw() + 1;
-  if (table_size < values_.size()) {
-    return table_size;
+  size_t valid_size =
+      (values_.size() < table_size) ? values_.size() : table_size;
+  if (value.is_na()) {
+    if (values_.size() < table_size) {
+      return table_->max_row_id();
+    }
+    for (size_t i = 0; i < valid_size; ++i) {
+      if (values_[i].is_na() && table_->_test_row(i)) {
+        return Int(i);
+      }
+    }
+  } else {
+    for (size_t i = 0; i < valid_size; ++i) {
+      if (values_[i].match(value)) {
+        return Int(i);
+      }
+    }
   }
-  return values_.size();
+  return Int::na();
 }
 
 Float Column<Float>::parse_datum(const Datum &datum) {

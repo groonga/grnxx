@@ -48,8 +48,11 @@ class Column<Bool> : public ColumnBase {
  private:
   Array<Bool> values_;
 
-  // Return the active column size.
-  size_t get_valid_size() const;
+  // Scan the column to find "value".
+  //
+  // If found, returns the row ID.
+  // If not found, returns N/A.
+  Int scan(Bool value) const;
 
   // Parse "datum" as Bool.
   //

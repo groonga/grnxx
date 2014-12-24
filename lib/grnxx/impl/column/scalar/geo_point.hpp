@@ -48,8 +48,11 @@ class Column<GeoPoint> : public ColumnBase {
  private:
   Array<GeoPoint> values_;
 
-  // Return the active column size.
-  size_t get_valid_size() const;
+  // Scan the column to find "value".
+  //
+  // If found, returns the row ID.
+  // If not found, returns N/A.
+  Int scan(GeoPoint value) const;
 
   // Parse "datum" as GeoPoint.
   //

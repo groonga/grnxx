@@ -59,42 +59,12 @@ void Column<Bool>::get(Int row_id, Datum *datum) const {
 
 bool Column<Bool>::contains(const Datum &datum) const {
   // TODO: Use an index if exists.
-  Bool value = parse_datum(datum);
-  size_t valid_size = get_valid_size();
-  if (value.is_na()) {
-    for (size_t i = 0; i < valid_size; ++i) {
-      if (values_[i].is_na() && table_->_test_row(i)) {
-        return true;
-      }
-    }
-  } else {
-    for (size_t i = 0; i < valid_size; ++i) {
-      if (values_[i].match(value)) {
-        return true;
-      }
-    }
-  }
-  return false;
+  return !scan(parse_datum(datum)).is_na();
 }
 
 Int Column<Bool>::find_one(const Datum &datum) const {
   // TODO: Use an index if exists.
-  Bool value = parse_datum(datum);
-  size_t valid_size = get_valid_size();
-  if (value.is_na()) {
-    for (size_t i = 0; i < valid_size; ++i) {
-      if (values_[i].is_na() && table_->_test_row(i)) {
-        return Int(i);
-      }
-    }
-  } else {
-    for (size_t i = 0; i < valid_size; ++i) {
-      if (values_[i].match(value)) {
-        return Int(i);
-      }
-    }
-  }
-  return Int::na();
+  return scan(parse_datum(datum));
 }
 
 void Column<Bool>::unset(Int row_id) {
@@ -115,15 +85,30 @@ void Column<Bool>::read(ArrayCRef<Record> records,
   }
 }
 
-size_t Column<Bool>::get_valid_size() const {
+Int Column<Bool>::scan(Bool value) const {
   if (table_->max_row_id().is_na()) {
-    return 0;
+    return Int::na();
   }
   size_t table_size = table_->max_row_id().raw() + 1;
-  if (table_size < values_.size()) {
-    return table_size;
+  size_t valid_size =
+      (values_.size() < table_size) ? values_.size() : table_size;
+  if (value.is_na()) {
+    if (values_.size() < table_size) {
+      return table_->max_row_id();
+    }
+    for (size_t i = 0; i < valid_size; ++i) {
+      if (values_[i].is_na() && table_->_test_row(i)) {
+        return Int(i);
+      }
+    }
+  } else {
+    for (size_t i = 0; i < valid_size; ++i) {
+      if (values_[i].match(value)) {
+        return Int(i);
+      }
+    }
   }
-  return values_.size();
+  return Int::na();
 }
 
 Bool Column<Bool>::parse_datum(const Datum &datum) {
