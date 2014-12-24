@@ -143,7 +143,7 @@ bool Column<Int>::contains(const Datum &datum) const {
     switch (value_size_) {
       case 8: {
         for (size_t i = 0; i < valid_size; ++i) {
-          if ((values_8_[i] == value.raw()) && table_->_test_row(i)) {
+          if (values_8_[i] == value.raw()) {
             return true;
           }
         }
@@ -151,7 +151,7 @@ bool Column<Int>::contains(const Datum &datum) const {
       }
       case 16: {
         for (size_t i = 0; i < valid_size; ++i) {
-          if ((values_16_[i] == value.raw()) && table_->_test_row(i)) {
+          if (values_16_[i] == value.raw()) {
             return true;
           }
         }
@@ -159,7 +159,7 @@ bool Column<Int>::contains(const Datum &datum) const {
       }
       case 32: {
         for (size_t i = 0; i < valid_size; ++i) {
-          if ((values_32_[i] == value.raw()) && table_->_test_row(i)) {
+          if (values_32_[i] == value.raw()) {
             return true;
           }
         }
@@ -167,7 +167,7 @@ bool Column<Int>::contains(const Datum &datum) const {
       }
       default: {
         for (size_t i = 0; i < valid_size; ++i) {
-          if (values_64_[i].match(value) && table_->_test_row(i)) {
+          if (values_64_[i].match(value)) {
             return true;
           }
         }
@@ -224,7 +224,7 @@ Int Column<Int>::find_one(const Datum &datum) const {
     switch (value_size_) {
       case 8: {
         for (size_t i = 0; i < valid_size; ++i) {
-          if ((values_8_[i] == value.raw()) && table_->_test_row(i)) {
+          if (values_8_[i] == value.raw()) {
             return Int(i);
           }
         }
@@ -232,7 +232,7 @@ Int Column<Int>::find_one(const Datum &datum) const {
       }
       case 16: {
         for (size_t i = 0; i < valid_size; ++i) {
-          if ((values_16_[i] == value.raw()) && table_->_test_row(i)) {
+          if (values_16_[i] == value.raw()) {
             return Int(i);
           }
         }
@@ -240,7 +240,7 @@ Int Column<Int>::find_one(const Datum &datum) const {
       }
       case 32: {
         for (size_t i = 0; i < valid_size; ++i) {
-          if ((values_32_[i] == value.raw()) && table_->_test_row(i)) {
+          if (values_32_[i] == value.raw()) {
             return Int(i);
           }
         }
@@ -248,7 +248,7 @@ Int Column<Int>::find_one(const Datum &datum) const {
       }
       default: {
         for (size_t i = 0; i < valid_size; ++i) {
-          if (values_64_[i].match(value) && table_->_test_row(i)) {
+          if (values_64_[i].match(value)) {
             return Int(i);
           }
         }
