@@ -122,6 +122,9 @@ void Column<Int>::set_key_attribute() {
   }
 
   if (!indexes_.is_empty()) {
+    if (contains(grnxx::Int::na())) {
+      throw "N/A exist";  // TODO
+    }
     // TODO: Choose the best index.
     if (!indexes_[0]->test_uniqueness()) {
       throw "Key duplicate";  // TODO
@@ -132,7 +135,11 @@ void Column<Int>::set_key_attribute() {
     for (size_t i = 0; i < valid_size; ++i) try {
       // TODO: Improve this loop.
       Int value = _get(i);
-      if (!value.is_na()) {
+      if (value.is_na()) {
+        if (table_->test_row(grnxx::Int(i))) {
+          throw "N/A exist";  // TODO
+        }
+      } else {
         if (!set.insert(value.raw()).second) {
           throw "Key duplicate";  // TODO
         }
