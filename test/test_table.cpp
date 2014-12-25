@@ -270,6 +270,22 @@ void test_int_key() {
   // Unset key column.
   table->unset_key_column();
   assert(!table->key_column());
+
+  // Test an N/A value.
+  column->set(grnxx::Int(0), grnxx::Int::na());
+  try {
+    table->set_key_column("Column");
+    assert(false);
+  } catch (...) {
+  }
+
+  // Test a trailing N/A value.
+  table->insert_row();
+  try {
+    table->set_key_column("Column");
+    assert(false);
+  } catch (...) {
+  }
 }
 
 void test_text_key() {
