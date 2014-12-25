@@ -200,7 +200,7 @@ void test_random_values() {
 }
 
 void test_internal_type_conversion() {
-  // Create a table and insert the first row.
+  // Create a table and insert rows.
   auto db = grnxx::open_db("");
   auto table = db->create_table("Table");
   table->insert_row();
