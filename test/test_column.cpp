@@ -328,6 +328,57 @@ void test_contains() {
   assert(column->contains(grnxx::Int::na()));
 }
 
+void test_find_one() {
+  // Create a table and insert rows.
+  auto db = grnxx::open_db("");
+  auto table = db->create_table("Table");
+  table->insert_row();
+  table->insert_row();
+  table->insert_row();
+
+  auto column = table->create_column("Int", grnxx::INT_DATA);
+  assert(column->find_one(grnxx::Int(123)).is_na());
+  assert(column->find_one(grnxx::Int(456)).is_na());
+  assert(column->find_one(grnxx::Int(789)).is_na());
+  assert(!column->find_one(grnxx::Int::na()).is_na());
+  column->set(grnxx::Int(0), grnxx::Int(123));
+  assert(!column->find_one(grnxx::Int(123)).is_na());
+  assert(column->find_one(grnxx::Int(456)).is_na());
+  assert(column->find_one(grnxx::Int(789)).is_na());
+  assert(!column->find_one(grnxx::Int::na()).is_na());
+  column->set(grnxx::Int(1), grnxx::Int(456));
+  assert(!column->find_one(grnxx::Int(123)).is_na());
+  assert(!column->find_one(grnxx::Int(456)).is_na());
+  assert(column->find_one(grnxx::Int(789)).is_na());
+  assert(!column->find_one(grnxx::Int::na()).is_na());
+  column->set(grnxx::Int(2), grnxx::Int(789));
+  assert(!column->find_one(grnxx::Int(123)).is_na());
+  assert(!column->find_one(grnxx::Int(456)).is_na());
+  assert(!column->find_one(grnxx::Int(789)).is_na());
+  assert(column->find_one(grnxx::Int::na()).is_na());
+
+  column->create_index("Index", grnxx::TREE_INDEX);
+  assert(!column->find_one(grnxx::Int(123)).is_na());
+  assert(!column->find_one(grnxx::Int(456)).is_na());
+  assert(!column->find_one(grnxx::Int(789)).is_na());
+  assert(column->find_one(grnxx::Int::na()).is_na());
+  column->set(grnxx::Int(2), grnxx::Int::na());
+  assert(!column->find_one(grnxx::Int(123)).is_na());
+  assert(!column->find_one(grnxx::Int(456)).is_na());
+  assert(column->find_one(grnxx::Int(789)).is_na());
+  assert(!column->find_one(grnxx::Int::na()).is_na());
+  column->set(grnxx::Int(1), grnxx::Int::na());
+  assert(!column->find_one(grnxx::Int(123)).is_na());
+  assert(column->find_one(grnxx::Int(456)).is_na());
+  assert(column->find_one(grnxx::Int(789)).is_na());
+  assert(!column->find_one(grnxx::Int::na()).is_na());
+  column->set(grnxx::Int(0), grnxx::Int::na());
+  assert(column->find_one(grnxx::Int(123)).is_na());
+  assert(column->find_one(grnxx::Int(456)).is_na());
+  assert(column->find_one(grnxx::Int(789)).is_na());
+  assert(!column->find_one(grnxx::Int::na()).is_na());
+}
+
 int main() {
   test_basic_operations();
 
@@ -339,6 +390,7 @@ int main() {
 
   test_internal_type_conversion();
   test_contains();
+  test_find_one();
 
   return 0;
 }
