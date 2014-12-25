@@ -111,7 +111,8 @@ bool Column<Int>::contains(const Datum &datum) const {
 
 Int Column<Int>::find_one(const Datum &datum) const {
   // TODO: Choose the best index.
-  if (!indexes_.is_empty()) {
+  Int value = parse_datum(datum);
+  if (!value.is_na() && !indexes_.is_empty()) {
     return indexes_[0]->find_one(datum);
   }
   return scan(parse_datum(datum));

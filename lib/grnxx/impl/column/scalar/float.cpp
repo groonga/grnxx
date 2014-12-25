@@ -72,10 +72,11 @@ bool Column<Float>::contains(const Datum &datum) const {
 
 Int Column<Float>::find_one(const Datum &datum) const {
   // TODO: Choose the best index.
-  if (!indexes_.is_empty()) {
+  Float value = parse_datum(datum);
+  if (!value.is_na() && !indexes_.is_empty()) {
     return indexes_[0]->find_one(datum);
   }
-  return scan(parse_datum(datum));
+  return scan(value);
 }
 
 void Column<Float>::unset(Int row_id) {

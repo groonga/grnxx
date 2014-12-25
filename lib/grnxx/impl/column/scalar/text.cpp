@@ -171,10 +171,10 @@ bool Column<Text>::contains(const Datum &datum) const {
 
 Int Column<Text>::find_one(const Datum &datum) const {
   // TODO: Choose the best index.
-  if (!indexes_.is_empty()) {
+  Text value = parse_datum(datum);
+  if (!value.is_na() && !indexes_.is_empty()) {
     return indexes_[0]->find_one(datum);
   }
-  Text value = parse_datum(datum);
   size_t valid_size = get_valid_size();
   if (value.is_na()) {
     for (size_t i = 0; i < valid_size; ++i) {
