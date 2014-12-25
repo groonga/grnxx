@@ -99,10 +99,14 @@ void Column<Int>::get(Int row_id, Datum *datum) const {
 
 bool Column<Int>::contains(const Datum &datum) const {
   // TODO: Choose the best index.
+  Int value = parse_datum(datum);
   if (!indexes_.is_empty()) {
+    if (value.is_na()) {
+      return table_->num_rows() != indexes_[0]->num_entries();
+    }
     return indexes_[0]->contains(datum);
   }
-  return !scan(parse_datum(datum)).is_na();
+  return !scan(value).is_na();
 }
 
 Int Column<Int>::find_one(const Datum &datum) const {

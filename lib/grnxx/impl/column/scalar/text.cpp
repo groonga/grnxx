@@ -144,10 +144,13 @@ void Column<Text>::get(Int row_id, Datum *datum) const {
 
 bool Column<Text>::contains(const Datum &datum) const {
   // TODO: Choose the best index.
+  Text value = parse_datum(datum);
   if (!indexes_.is_empty()) {
+    if (value.is_na()) {
+      return table_->num_rows() != indexes_[0]->num_entries();
+    }
     return indexes_[0]->contains(datum);
   }
-  Text value = parse_datum(datum);
   size_t valid_size = get_valid_size();
   if (value.is_na()) {
     for (size_t i = 0; i < valid_size; ++i) {
