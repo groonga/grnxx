@@ -102,80 +102,7 @@ bool Column<Int>::contains(const Datum &datum) const {
   if (!indexes_.is_empty()) {
     return indexes_[0]->contains(datum);
   }
-  Int value = parse_datum(datum);
-  size_t valid_size = get_valid_size();
-  if (value.is_na()) {
-    switch (value_size_) {
-      case 8: {
-        for (size_t i = 0; i < valid_size; ++i) {
-          if ((values_8_[i] == na_value_8()) && table_->_test_row(i)) {
-            return true;
-          }
-        }
-        break;
-      }
-      case 16: {
-        for (size_t i = 0; i < valid_size; ++i) {
-          if ((values_16_[i] == na_value_16()) && table_->_test_row(i)) {
-            return true;
-          }
-        }
-        break;
-      }
-      case 32: {
-        for (size_t i = 0; i < valid_size; ++i) {
-          if ((values_32_[i] == na_value_32()) && table_->_test_row(i)) {
-            return true;
-          }
-        }
-        break;
-      }
-      default: {
-        for (size_t i = 0; i < valid_size; ++i) {
-          if (values_64_[i].is_na() && table_->_test_row(i)) {
-            return true;
-          }
-        }
-        break;
-      }
-    }
-  } else {
-    switch (value_size_) {
-      case 8: {
-        for (size_t i = 0; i < valid_size; ++i) {
-          if (values_8_[i] == value.raw()) {
-            return true;
-          }
-        }
-        break;
-      }
-      case 16: {
-        for (size_t i = 0; i < valid_size; ++i) {
-          if (values_16_[i] == value.raw()) {
-            return true;
-          }
-        }
-        break;
-      }
-      case 32: {
-        for (size_t i = 0; i < valid_size; ++i) {
-          if (values_32_[i] == value.raw()) {
-            return true;
-          }
-        }
-        break;
-      }
-      default: {
-        for (size_t i = 0; i < valid_size; ++i) {
-          if (values_64_[i].match(value)) {
-            return true;
-          }
-        }
-        break;
-      }
-    }
-  }
-  return false;
+  return !scan(parse_datum(datum)).is_na();
 }
 
 Int Column<Int>::find_one(const Datum &datum) const {
@@ -183,80 +110,7 @@ Int Column<Int>::find_one(const Datum &datum) const {
   if (!indexes_.is_empty()) {
     return indexes_[0]->find_one(datum);
   }
-  Int value = parse_datum(datum);
-  size_t valid_size = get_valid_size();
-  if (value.is_na()) {
-    switch (value_size_) {
-      case 8: {
-        for (size_t i = 0; i < valid_size; ++i) {
-          if ((values_8_[i] == na_value_8()) && table_->_test_row(i)) {
-            return Int(i);
-          }
-        }
-        break;
-      }
-      case 16: {
-        for (size_t i = 0; i < valid_size; ++i) {
-          if ((values_16_[i] == na_value_16()) && table_->_test_row(i)) {
-            return Int(i);
-          }
-        }
-        break;
-      }
-      case 32: {
-        for (size_t i = 0; i < valid_size; ++i) {
-          if ((values_32_[i] == na_value_32()) && table_->_test_row(i)) {
-            return Int(i);
-          }
-        }
-        break;
-      }
-      default: {
-        for (size_t i = 0; i < valid_size; ++i) {
-          if (values_64_[i].is_na() && table_->_test_row(i)) {
-            return Int(i);
-          }
-        }
-        break;
-      }
-    }
-  } else {
-    switch (value_size_) {
-      case 8: {
-        for (size_t i = 0; i < valid_size; ++i) {
-          if (values_8_[i] == value.raw()) {
-            return Int(i);
-          }
-        }
-        break;
-      }
-      case 16: {
-        for (size_t i = 0; i < valid_size; ++i) {
-          if (values_16_[i] == value.raw()) {
-            return Int(i);
-          }
-        }
-        break;
-      }
-      case 32: {
-        for (size_t i = 0; i < valid_size; ++i) {
-          if (values_32_[i] == value.raw()) {
-            return Int(i);
-          }
-        }
-        break;
-      }
-      default: {
-        for (size_t i = 0; i < valid_size; ++i) {
-          if (values_64_[i].match(value)) {
-            return Int(i);
-          }
-        }
-        break;
-      }
-    }
-  }
-  return Int::na();
+  return scan(parse_datum(datum));
 }
 
 void Column<Int>::set_key_attribute() {
@@ -452,6 +306,89 @@ void Column<Int>::read(ArrayCRef<Record> records, ArrayRef<Int> values) const {
 //    }
 //  }
 //}
+
+Int Column<Int>::scan(Int value) const {
+  if (table_->max_row_id().is_na()) {
+    return Int::na();
+  }
+  size_t table_size = table_->max_row_id().raw() + 1;
+  size_t valid_size = (size_ < table_size) ? size_ : table_size;
+  if (value.is_na()) {
+    if (size_ < table_size) {
+      return table_->max_row_id();
+    }
+    switch (value_size_) {
+      case 8: {
+        for (size_t i = 0; i < valid_size; ++i) {
+          if ((values_8_[i] == na_value_8()) && table_->_test_row(i)) {
+            return Int(i);
+          }
+        }
+        break;
+      }
+      case 16: {
+        for (size_t i = 0; i < valid_size; ++i) {
+          if ((values_16_[i] == na_value_16()) && table_->_test_row(i)) {
+            return Int(i);
+          }
+        }
+        break;
+      }
+      case 32: {
+        for (size_t i = 0; i < valid_size; ++i) {
+          if ((values_32_[i] == na_value_32()) && table_->_test_row(i)) {
+            return Int(i);
+          }
+        }
+        break;
+      }
+      default: {
+        for (size_t i = 0; i < valid_size; ++i) {
+          if (values_64_[i].is_na() && table_->_test_row(i)) {
+            return Int(i);
+          }
+        }
+        break;
+      }
+    }
+  } else {
+    switch (value_size_) {
+      case 8: {
+        for (size_t i = 0; i < valid_size; ++i) {
+          if (values_8_[i] == value.raw()) {
+            return Int(i);
+          }
+        }
+        break;
+      }
+      case 16: {
+        for (size_t i = 0; i < valid_size; ++i) {
+          if (values_16_[i] == value.raw()) {
+            return Int(i);
+          }
+        }
+        break;
+      }
+      case 32: {
+        for (size_t i = 0; i < valid_size; ++i) {
+          if (values_32_[i] == value.raw()) {
+            return Int(i);
+          }
+        }
+        break;
+      }
+      default: {
+        for (size_t i = 0; i < valid_size; ++i) {
+          if (values_64_[i].match(value)) {
+            return Int(i);
+          }
+        }
+        break;
+      }
+    }
+  }
+  return Int::na();
+}
 
 size_t Column<Int>::get_valid_size() const {
   if (table_->max_row_id().is_na()) {
