@@ -315,6 +315,9 @@ class TreeIndex<Int> : public Index {
   IndexType type() const {
     return TREE_INDEX;
   }
+  size_t num_entries() const {
+    return num_entries_;
+  }
 
   bool test_uniqueness() const;
 
@@ -328,13 +331,15 @@ class TreeIndex<Int> : public Index {
 
  private:
   mutable Map map_;
+  size_t num_entries_;
 };
 
 TreeIndex<Int>::TreeIndex(ColumnBase *column,
                           const String &name,
                           const IndexOptions &)
     : Index(column, name),
-      map_() {
+      map_(),
+      num_entries_(0) {
   auto cursor = column->table()->create_cursor();
   auto typed_column = static_cast<Column<Int> *>(column);
   Array<Record> records;
@@ -367,6 +372,7 @@ void TreeIndex<Int>::insert(Int row_id, const Datum &value) {
   if (!result.second) {
     throw "Entry already exists";  // TODO
   }
+  ++num_entries_;
 }
 
 void TreeIndex<Int>::remove(Int row_id, const Datum &value) {
@@ -382,6 +388,7 @@ void TreeIndex<Int>::remove(Int row_id, const Datum &value) {
   if (map_it->second.size() == 0) {
     map_.erase(map_it);
   }
+  --num_entries_;
 }
 
 std::unique_ptr<Cursor> TreeIndex<Int>::find(
@@ -486,6 +493,9 @@ class TreeIndex<Float> : public Index {
   IndexType type() const {
     return TREE_INDEX;
   }
+  size_t num_entries() const {
+    return num_entries_;
+  }
 
   bool test_uniqueness() const;
 
@@ -499,13 +509,15 @@ class TreeIndex<Float> : public Index {
 
  private:
   mutable Map map_;
+  size_t num_entries_;
 };
 
 TreeIndex<Float>::TreeIndex(ColumnBase *column,
                             const String &name,
                             const IndexOptions &)
     : Index(column, name),
-      map_() {
+      map_(),
+      num_entries_(0) {
   auto cursor = column->table()->create_cursor();
   auto typed_column = static_cast<Column<Float> *>(column);
   Array<Record> records;
@@ -538,6 +550,7 @@ void TreeIndex<Float>::insert(Int row_id, const Datum &value) {
   if (!result.second) {
     throw "Entry already exists";  // TODO
   }
+  ++num_entries_;
 }
 
 void TreeIndex<Float>::remove(Int row_id, const Datum &value) {
@@ -553,6 +566,7 @@ void TreeIndex<Float>::remove(Int row_id, const Datum &value) {
   if (map_it->second.size() == 0) {
     map_.erase(map_it);
   }
+  --num_entries_;
 }
 
 std::unique_ptr<Cursor> TreeIndex<Float>::find(
@@ -658,6 +672,9 @@ class TreeIndex<Text> : public Index {
   IndexType type() const {
     return TREE_INDEX;
   }
+  size_t num_entries() const {
+    return num_entries_;
+  }
 
   bool test_uniqueness() const;
 
@@ -675,13 +692,15 @@ class TreeIndex<Text> : public Index {
 
  private:
   mutable Map map_;
+  size_t num_entries_;
 };
 
 TreeIndex<Text>::TreeIndex(ColumnBase *column,
                            const String &name,
                            const IndexOptions &)
     : Index(column, name),
-      map_() {
+      map_(),
+      num_entries_(0) {
   auto cursor = column->table()->create_cursor();
   auto typed_column = static_cast<Column<Text> *>(column);
   Array<Record> records;
@@ -717,6 +736,7 @@ void TreeIndex<Text>::insert(Int row_id, const Datum &value) {
   if (!result.second) {
     throw "Entry already exists";  // TODO
   }
+  ++num_entries_;
 }
 
 void TreeIndex<Text>::remove(Int row_id, const Datum &value) {
@@ -734,6 +754,7 @@ void TreeIndex<Text>::remove(Int row_id, const Datum &value) {
   if (map_it->second.size() == 0) {
     map_.erase(map_it);
   }
+  --num_entries_;
 }
 
 std::unique_ptr<Cursor> TreeIndex<Text>::find(

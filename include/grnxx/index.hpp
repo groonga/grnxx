@@ -79,6 +79,8 @@ class Index {
   virtual String name() const = 0;
   // Return the index type.
   virtual IndexType type() const = 0;
+  // Return the number of entries.
+  virtual size_t num_entries() const = 0;
 
   // Test the uniqueness of the owner column.
   //
