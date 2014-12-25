@@ -277,6 +277,57 @@ void test_internal_type_conversion() {
   assert(datum.as_int().raw() == (int64_t(1) << 32));
 }
 
+void test_contains() {
+  // Create a table and insert rows.
+  auto db = grnxx::open_db("");
+  auto table = db->create_table("Table");
+  table->insert_row();
+  table->insert_row();
+  table->insert_row();
+
+  auto column = table->create_column("Int", grnxx::INT_DATA);
+  assert(!column->contains(grnxx::Int(123)));
+  assert(!column->contains(grnxx::Int(456)));
+  assert(!column->contains(grnxx::Int(789)));
+  assert(column->contains(grnxx::Int::na()));
+  column->set(grnxx::Int(0), grnxx::Int(123));
+  assert(column->contains(grnxx::Int(123)));
+  assert(!column->contains(grnxx::Int(456)));
+  assert(!column->contains(grnxx::Int(789)));
+  assert(column->contains(grnxx::Int::na()));
+  column->set(grnxx::Int(1), grnxx::Int(456));
+  assert(column->contains(grnxx::Int(123)));
+  assert(column->contains(grnxx::Int(456)));
+  assert(!column->contains(grnxx::Int(789)));
+  assert(column->contains(grnxx::Int::na()));
+  column->set(grnxx::Int(2), grnxx::Int(789));
+  assert(column->contains(grnxx::Int(123)));
+  assert(column->contains(grnxx::Int(456)));
+  assert(column->contains(grnxx::Int(789)));
+  assert(!column->contains(grnxx::Int::na()));
+
+  column->create_index("Index", grnxx::TREE_INDEX);
+  assert(column->contains(grnxx::Int(123)));
+  assert(column->contains(grnxx::Int(456)));
+  assert(column->contains(grnxx::Int(789)));
+  assert(!column->contains(grnxx::Int::na()));
+  column->set(grnxx::Int(2), grnxx::Int::na());
+  assert(column->contains(grnxx::Int(123)));
+  assert(column->contains(grnxx::Int(456)));
+  assert(!column->contains(grnxx::Int(789)));
+  assert(column->contains(grnxx::Int::na()));
+  column->set(grnxx::Int(1), grnxx::Int::na());
+  assert(column->contains(grnxx::Int(123)));
+  assert(!column->contains(grnxx::Int(456)));
+  assert(!column->contains(grnxx::Int(789)));
+  assert(column->contains(grnxx::Int::na()));
+  column->set(grnxx::Int(0), grnxx::Int::na());
+  assert(!column->contains(grnxx::Int(123)));
+  assert(!column->contains(grnxx::Int(456)));
+  assert(!column->contains(grnxx::Int(789)));
+  assert(column->contains(grnxx::Int::na()));
+}
+
 int main() {
   test_basic_operations();
 
@@ -287,6 +338,7 @@ int main() {
   test_random_values<grnxx::Text>();
 
   test_internal_type_conversion();
+  test_contains();
 
   return 0;
 }
