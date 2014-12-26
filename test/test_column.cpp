@@ -167,7 +167,23 @@ void generate_random_value(grnxx::Text *value) {
 }
 
 template <typename T>
-void test_random_values() {
+void generate_random_value(grnxx::Vector<T> *value) {
+  static grnxx::Array<grnxx::Array<T>> bodies;
+  if ((rng() % 256) == 0) {
+    *value = grnxx::Vector<T>::na();
+  } else {
+    grnxx::Array<T> body;
+    body.resize(rng() % 16);
+    for (size_t i = 0; i < body.size(); ++i) {
+      generate_random_value(&body[i]);
+    }
+    *value = grnxx::Vector<T>(body.data(), body.size());
+    bodies.push_back(std::move(body));
+  }
+}
+
+template <typename T>
+void test_set_and_get() {
   constexpr size_t NUM_ROWS = 1 << 16;
 
   // Create a table and insert the first row.
@@ -177,7 +193,7 @@ void test_random_values() {
   grnxx::Array<T> values;
   values.resize(NUM_ROWS);
   for (size_t i = 0; i < NUM_ROWS; ++i) {
-    generate_random_value<T>(&values[i]);
+    generate_random_value(&values[i]);
     grnxx::Int row_id = table->insert_row();
     column->set(row_id, values[i]);
     grnxx::Datum datum;
@@ -197,6 +213,19 @@ void test_random_values() {
     datum.force(&stored_value);
     assert(stored_value.match(values[i]));
   }
+}
+
+void test_set_and_get_for_all_data_types() {
+  test_set_and_get<grnxx::Bool>();
+  test_set_and_get<grnxx::Int>();
+  test_set_and_get<grnxx::Float>();
+  test_set_and_get<grnxx::GeoPoint>();
+  test_set_and_get<grnxx::Text>();
+  test_set_and_get<grnxx::BoolVector>();
+  test_set_and_get<grnxx::IntVector>();
+  test_set_and_get<grnxx::FloatVector>();
+  test_set_and_get<grnxx::GeoPointVector>();
+  test_set_and_get<grnxx::TextVector>();
 }
 
 void test_internal_type_conversion() {
@@ -382,11 +411,7 @@ void test_find_one() {
 int main() {
   test_basic_operations();
 
-  test_random_values<grnxx::Bool>();
-  test_random_values<grnxx::Int>();
-  test_random_values<grnxx::Float>();
-  test_random_values<grnxx::GeoPoint>();
-  test_random_values<grnxx::Text>();
+  test_set_and_get_for_all_data_types();
 
   test_internal_type_conversion();
   test_contains();
