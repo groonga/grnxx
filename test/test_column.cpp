@@ -228,6 +228,57 @@ void test_set_and_get_for_all_data_types() {
   test_set_and_get<grnxx::TextVector>();
 }
 
+template <typename T>
+void test_contains_and_find_one() {
+  constexpr size_t NUM_ROWS = 1 << 10;
+
+  // Create a table and insert the first row.
+  auto db = grnxx::open_db("");
+  auto table = db->create_table("Table");
+  auto column = table->create_column("Column", T::type());
+  grnxx::Array<T> values;
+  values.resize(NUM_ROWS);
+  for (size_t i = 0; i < NUM_ROWS; ++i) {
+    generate_random_value(&values[i]);
+    grnxx::Int row_id = table->insert_row();
+    column->set(row_id, values[i]);
+  }
+
+  // Test all the values.
+  for (size_t i = 0; i < NUM_ROWS; ++i) {
+    assert(column->contains(values[i]));
+    grnxx::Int row_id = column->find_one(values[i]);
+    assert(!row_id.is_na());
+    assert(values[i].match(values[row_id.raw()]));
+  }
+
+  // Test all the values with index if available.
+  try {
+    column->create_index("Index", grnxx::TREE_INDEX);
+    for (size_t i = 0; i < NUM_ROWS; ++i) {
+      assert(column->contains(values[i]));
+      grnxx::Int row_id = column->find_one(values[i]);
+      assert(!row_id.is_na());
+      assert(values[i].match(values[row_id.raw()]));
+    }
+    column->remove_index("Index");
+  } catch (...) {
+  }
+}
+
+void test_contains_and_find_one_for_all_data_types() {
+  test_contains_and_find_one<grnxx::Bool>();
+  test_contains_and_find_one<grnxx::Int>();
+  test_contains_and_find_one<grnxx::Float>();
+  test_contains_and_find_one<grnxx::GeoPoint>();
+  test_contains_and_find_one<grnxx::Text>();
+  test_contains_and_find_one<grnxx::BoolVector>();
+  test_contains_and_find_one<grnxx::IntVector>();
+  test_contains_and_find_one<grnxx::FloatVector>();
+  test_contains_and_find_one<grnxx::GeoPointVector>();
+  test_contains_and_find_one<grnxx::TextVector>();
+}
+
 void test_internal_type_conversion() {
   // Create a table and insert rows.
   auto db = grnxx::open_db("");
@@ -412,6 +463,7 @@ int main() {
   test_basic_operations();
 
   test_set_and_get_for_all_data_types();
+  test_contains_and_find_one_for_all_data_types();
 
   test_internal_type_conversion();
   test_contains();
