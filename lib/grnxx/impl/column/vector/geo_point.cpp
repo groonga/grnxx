@@ -125,8 +125,9 @@ Int Column<Vector<GeoPoint>>::scan(const Vector<GeoPoint> &value) const {
     if (headers_.size() < table_size) {
       return table_->max_row_id();
     }
+    bool is_full = table_->is_full();
     for (size_t i = 0; i < valid_size; ++i) {
-      if (headers_[i] == na_header() && table_->_test_row(i)) {
+      if (headers_[i] == na_header() && (is_full || table_->_test_row(i))) {
         return Int(i);
       }
     }

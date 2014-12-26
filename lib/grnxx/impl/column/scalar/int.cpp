@@ -329,10 +329,12 @@ Int Column<Int>::scan(Int value) const {
     if (size_ < table_size) {
       return table_->max_row_id();
     }
+    bool is_full = table_->is_full();
     switch (value_size_) {
       case 8: {
         for (size_t i = 0; i < valid_size; ++i) {
-          if ((values_8_[i] == na_value_8()) && table_->_test_row(i)) {
+          if ((values_8_[i] == na_value_8()) &&
+              (is_full || table_->_test_row(i))) {
             return Int(i);
           }
         }
@@ -340,7 +342,8 @@ Int Column<Int>::scan(Int value) const {
       }
       case 16: {
         for (size_t i = 0; i < valid_size; ++i) {
-          if ((values_16_[i] == na_value_16()) && table_->_test_row(i)) {
+          if ((values_16_[i] == na_value_16()) &&
+              (is_full || table_->_test_row(i))) {
             return Int(i);
           }
         }
@@ -348,7 +351,8 @@ Int Column<Int>::scan(Int value) const {
       }
       case 32: {
         for (size_t i = 0; i < valid_size; ++i) {
-          if ((values_32_[i] == na_value_32()) && table_->_test_row(i)) {
+          if ((values_32_[i] == na_value_32()) &&
+              (is_full || table_->_test_row(i))) {
             return Int(i);
           }
         }
@@ -356,7 +360,7 @@ Int Column<Int>::scan(Int value) const {
       }
       default: {
         for (size_t i = 0; i < valid_size; ++i) {
-          if (values_64_[i].is_na() && table_->_test_row(i)) {
+          if (values_64_[i].is_na() && (is_full || table_->_test_row(i))) {
             return Int(i);
           }
         }

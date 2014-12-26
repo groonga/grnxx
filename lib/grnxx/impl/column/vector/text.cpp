@@ -126,8 +126,9 @@ Int Column<Vector<Text>>::scan(const Vector<Text> &value) const {
     if (headers_.size() < table_size) {
       return table_->max_row_id();
     }
+    bool is_full = table_->is_full();
     for (size_t i = 0; i < valid_size; ++i) {
-      if (headers_[i].size.is_na() && table_->_test_row(i)) {
+      if (headers_[i].size.is_na() && (is_full || table_->_test_row(i))) {
         return Int(i);
       }
     }

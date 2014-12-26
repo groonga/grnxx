@@ -100,8 +100,9 @@ Int Column<GeoPoint>::scan(GeoPoint value) const {
     if (values_.size() < table_size) {
       return table_->max_row_id();
     }
+    bool is_full = table_->is_full();
     for (size_t i = 0; i < valid_size; ++i) {
-      if (values_[i].is_na() && table_->_test_row(i)) {
+      if (values_[i].is_na() && (is_full || table_->_test_row(i))) {
         return Int(i);
       }
     }
