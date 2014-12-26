@@ -151,22 +151,7 @@ bool Column<Text>::contains(const Datum &datum) const {
     }
     return indexes_[0]->contains(datum);
   }
-  size_t valid_size = get_valid_size();
-  if (value.is_na()) {
-    for (size_t i = 0; i < valid_size; ++i) {
-      if (headers_[i] == na_header()) {
-        return true;
-      }
-    }
-  } else {
-    for (size_t i = 0; i < valid_size; ++i) {
-      // TODO: Improve this (get() checks the range of its argument).
-      if (get(Int(i)).match(value)) {
-        return true;
-      }
-    }
-  }
-  return false;
+  return !scan(value).is_na();
 }
 
 Int Column<Text>::find_one(const Datum &datum) const {
@@ -175,22 +160,7 @@ Int Column<Text>::find_one(const Datum &datum) const {
   if (!value.is_na() && !indexes_.is_empty()) {
     return indexes_[0]->find_one(datum);
   }
-  size_t valid_size = get_valid_size();
-  if (value.is_na()) {
-    for (size_t i = 0; i < valid_size; ++i) {
-      if (headers_[i] == na_header()) {
-        return Int(i);
-      }
-    }
-  } else {
-    for (size_t i = 0; i < valid_size; ++i) {
-      // TODO: Improve this (get() checks the range of its argument).
-      if (get(Int(i)).match(value)) {
-        return Int(i);
-      }
-    }
-  }
-  return Int::na();
+  return scan(value);
 }
 
 void Column<Text>::set_key_attribute() {
@@ -345,6 +315,33 @@ void Column<Text>::read(ArrayCRef<Record> records,
   for (size_t i = 0; i < records.size(); ++i) {
     values.set(i, get(records[i].row_id));
   }
+}
+
+Int Column<Text>::scan(const Text &value) const {
+  if (table_->max_row_id().is_na()) {
+    return Int::na();
+  }
+  size_t table_size = table_->max_row_id().raw() + 1;
+  size_t valid_size =
+      (headers_.size() < table_size) ? headers_.size() : table_size;
+  if (value.is_na()) {
+    if (headers_.size() < table_size) {
+      return table_->max_row_id();
+    }
+    for (size_t i = 0; i < valid_size; ++i) {
+      if (headers_[i] == na_header() && table_->_test_row(i)) {
+        return Int(i);
+      }
+    }
+  } else {
+    for (size_t i = 0; i < valid_size; ++i) {
+      // TODO: Improve this (get() checks the range of its argument).
+      if (get(Int(i)).match(value)) {
+        return Int(i);
+      }
+    }
+  }
+  return Int::na();
 }
 
 size_t Column<Text>::get_valid_size() const {
