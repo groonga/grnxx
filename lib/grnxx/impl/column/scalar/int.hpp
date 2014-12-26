@@ -93,6 +93,8 @@ class Column<Int> : public ColumnBase {
 
   // Reserve memory for a new value.
   void reserve(size_t size, Int value);
+  void reserve_with_same_value_size(size_t size);
+  void reserve_with_different_value_size(size_t size, size_t value_size);
 
   // Parse "datum" as Int.
   //

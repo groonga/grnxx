@@ -421,25 +421,7 @@ void Column<Int>::reserve(size_t size, Int value) {
       case 8: {
         if ((raw >= min_value_8()) && (raw <= max_value_8())) {
           // 8 -> 8.
-          if (size > capacity_) {
-            size_t new_capacity = (capacity_ != 0) ? capacity_ : 1;
-            while (new_capacity < size) {
-              new_capacity *= 2;
-            }
-            void *new_buffer =
-                std::realloc(buffer_, sizeof(int8_t) * new_capacity);
-            if (!new_buffer) {
-              throw "Memory allocation failed";
-            }
-            buffer_ = new_buffer;
-            capacity_ = new_capacity;
-          }
-          if (size > size_) {
-            for (size_t i = size_; i < size; ++i) {
-              values_8_[i] = na_value_8();
-            }
-            size_ = size;
-          }
+          reserve_with_same_value_size(size);
         } else if ((raw >= min_value_16()) && (raw <= max_value_16())) {
           // 8 -> 16.
           size_t new_capacity = (capacity_ != 0) ? capacity_ : 1;
@@ -521,25 +503,7 @@ void Column<Int>::reserve(size_t size, Int value) {
       case 16: {
         if ((raw >= min_value_16()) && (raw <= max_value_16())) {
           // 16 -> 16.
-          if (size > capacity_) {
-            size_t new_capacity = (capacity_ != 0) ? capacity_ : 1;
-            while (new_capacity < size) {
-              new_capacity *= 2;
-            }
-            void *new_buffer =
-                std::realloc(buffer_, sizeof(int16_t) * new_capacity);
-            if (!new_buffer) {
-              throw "Memory allocation failed";
-            }
-            buffer_ = new_buffer;
-            capacity_ = new_capacity;
-          }
-          if (size > size_) {
-            for (size_t i = size_; i < size; ++i) {
-              values_16_[i] = na_value_16();
-            }
-            size_ = size;
-          }
+          reserve_with_same_value_size(size);
         } else if ((raw >= min_value_32()) && (raw <= max_value_32())) {
           // 16 -> 32.
           size_t new_capacity = (capacity_ != 0) ? capacity_ : 1;
@@ -596,25 +560,7 @@ void Column<Int>::reserve(size_t size, Int value) {
       case 32: {
         if ((raw >= min_value_32()) && (raw <= max_value_32())) {
           // 32 -> 32.
-          if (size > capacity_) {
-            size_t new_capacity = (capacity_ != 0) ? capacity_ : 1;
-            while (new_capacity < size) {
-              new_capacity *= 2;
-            }
-            void *new_buffer =
-                std::realloc(buffer_, sizeof(int32_t) * new_capacity);
-            if (!new_buffer) {
-              throw "Memory allocation failed";
-            }
-            buffer_ = new_buffer;
-            capacity_ = new_capacity;
-          }
-          if (size > size_) {
-            for (size_t i = size_; i < size; ++i) {
-              values_32_[i] = na_value_32();
-            }
-            size_ = size;
-          }
+          reserve_with_same_value_size(size);
         } else {
           // 32 -> 64.
           size_t new_capacity = (capacity_ != 0) ? capacity_ : 1;
@@ -645,29 +591,61 @@ void Column<Int>::reserve(size_t size, Int value) {
       }
       default: {
         // 64 -> 64.
-        if (size > capacity_) {
-          size_t new_capacity = (capacity_ != 0) ? capacity_ : 1;
-          while (new_capacity < size) {
-            new_capacity *= 2;
-          }
-          void *new_buffer =
-              std::realloc(buffer_, sizeof(Int) * new_capacity);
-          if (!new_buffer) {
-            throw "Memory allocation failed";
-          }
-          buffer_ = new_buffer;
-          capacity_ = new_capacity;
-        }
-        if (size > size_) {
-          for (size_t i = size_; i < size; ++i) {
-            values_64_[i] = Int::na();
-          }
-          size_ = size;
-        }
+        reserve_with_same_value_size(size);
         break;
       }
     }
   }
+}
+
+void Column<Int>::reserve_with_same_value_size(size_t size) {
+  if (size > capacity_) {
+    size_t new_capacity = (capacity_ != 0) ? capacity_ : 1;
+    while (new_capacity < size) {
+      new_capacity *= 2;
+    }
+    void *new_buffer =
+        std::realloc(buffer_, (value_size_ / 8) * new_capacity);
+    if (!new_buffer) {
+      throw "Memory allocation failed";
+    }
+    buffer_ = new_buffer;
+    capacity_ = new_capacity;
+  }
+  if (size > size_) {
+    switch (value_size_) {
+      case 8: {
+        for (size_t i = size_; i < size; ++i) {
+          values_8_[i] = na_value_8();
+        }
+        break;
+      }
+      case 16: {
+        for (size_t i = size_; i < size; ++i) {
+          values_16_[i] = na_value_16();
+        }
+        break;
+      }
+      case 32: {
+        for (size_t i = size_; i < size; ++i) {
+          values_32_[i] = na_value_32();
+        }
+        break;
+      }
+      default: {
+        for (size_t i = size_; i < size; ++i) {
+          values_64_[i] = Int::na();
+        }
+        break;
+      }
+    }
+    size_ = size;
+  }
+}
+
+void Column<Int>::reserve_with_different_value_size(size_t size,
+                                                    size_t value_size) {
+  // TODO
 }
 
 Int Column<Int>::parse_datum(const Datum &datum) {
