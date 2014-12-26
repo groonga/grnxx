@@ -63,6 +63,12 @@ class Column<Vector<Text>> : public ColumnBase {
     return Header{ 0, Int::na() };
   }
 
+  // Scan the column to find "value".
+  //
+  // If found, returns the row ID.
+  // If not found, returns N/A.
+  Int scan(const Vector<Text> &value) const;
+
   // Return the active column size.
   size_t get_valid_size() const;
 

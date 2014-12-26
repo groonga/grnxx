@@ -85,44 +85,12 @@ void Column<Vector<GeoPoint>>::get(Int row_id, Datum *datum) const {
 
 bool Column<Vector<GeoPoint>>::contains(const Datum &datum) const {
   // TODO: Use an index if exists.
-  Vector<GeoPoint> value = parse_datum(datum);
-  size_t valid_size = get_valid_size();
-  if (value.is_na()) {
-    for (size_t i = 0; i < valid_size; ++i) {
-      if (headers_[i] == na_header()) {
-        return true;
-      }
-    }
-  } else {
-    for (size_t i = 0; i < valid_size; ++i) {
-      // TODO: Improve this.
-      if (get(Int(i)).match(value)) {
-        return true;
-      }
-    }
-  }
-  return false;
+  return !scan(parse_datum(datum)).is_na();
 }
 
 Int Column<Vector<GeoPoint>>::find_one(const Datum &datum) const {
   // TODO: Use an index if exists.
-  Vector<GeoPoint> value = parse_datum(datum);
-  size_t valid_size = get_valid_size();
-  if (value.is_na()) {
-    for (size_t i = 0; i < valid_size; ++i) {
-      if (headers_[i] == na_header()) {
-        return Int(i);
-      }
-    }
-  } else {
-    for (size_t i = 0; i < valid_size; ++i) {
-      // TODO: Improve this.
-      if (get(Int(i)).match(value)) {
-        return Int(i);
-      }
-    }
-  }
-  return Int::na();
+  return scan(parse_datum(datum));
 }
 
 void Column<Vector<GeoPoint>>::unset(Int row_id) {
@@ -144,6 +112,33 @@ void Column<Vector<GeoPoint>>::read(ArrayCRef<Record> records,
   for (size_t i = 0; i < records.size(); ++i) {
     values.set(i, get(records[i].row_id));
   }
+}
+
+Int Column<Vector<GeoPoint>>::scan(const Vector<GeoPoint> &value) const {
+  if (table_->max_row_id().is_na()) {
+    return Int::na();
+  }
+  size_t table_size = table_->max_row_id().raw() + 1;
+  size_t valid_size =
+      (headers_.size() < table_size) ? headers_.size() : table_size;
+  if (value.is_na()) {
+    if (headers_.size() < table_size) {
+      return table_->max_row_id();
+    }
+    for (size_t i = 0; i < valid_size; ++i) {
+      if (headers_[i] == na_header() && table_->_test_row(i)) {
+        return Int(i);
+      }
+    }
+  } else {
+    for (size_t i = 0; i < valid_size; ++i) {
+      // TODO: Improve this (get() checks the range of its argument).
+      if (get(Int(i)).match(value)) {
+        return Int(i);
+      }
+    }
+  }
+  return Int::na();
 }
 
 size_t Column<Vector<GeoPoint>>::get_valid_size() const {

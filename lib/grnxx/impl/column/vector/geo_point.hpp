@@ -72,6 +72,12 @@ class Column<Vector<GeoPoint>> : public ColumnBase {
     return std::numeric_limits<uint64_t>::max();
   }
 
+  // Scan the column to find "value".
+  //
+  // If found, returns the row ID.
+  // If not found, returns N/A.
+  Int scan(const Vector<GeoPoint> &value) const;
+
   // Return the active column size.
   size_t get_valid_size() const;
 
