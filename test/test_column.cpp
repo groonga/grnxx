@@ -264,6 +264,54 @@ void test_contains_and_find_one() {
     column->remove_index("Index");
   } catch (...) {
   }
+
+  // Remove N/A values.
+  for (size_t i = 0; i < NUM_ROWS; ++i) {
+    if (values[i].is_na()) {
+      table->remove_row(grnxx::Int(i));
+    }
+  }
+
+  // Test all the values.
+  for (size_t i = 0; i < NUM_ROWS; ++i) {
+    if (!values[i].is_na()) {
+      assert(column->contains(values[i]));
+      grnxx::Int row_id = column->find_one(values[i]);
+      assert(!row_id.is_na());
+      assert(values[i].match(values[row_id.raw()]));
+    }
+  }
+  assert(!column->contains(T::na()));
+  assert(column->find_one(T::na()).is_na());
+
+  // Test all the values with index if available.
+  try {
+    column->create_index("Index", grnxx::TREE_INDEX);
+    for (size_t i = 0; i < NUM_ROWS; ++i) {
+      if (!values[i].is_na()) {
+        assert(column->contains(values[i]));
+        grnxx::Int row_id = column->find_one(values[i]);
+        assert(!row_id.is_na());
+        assert(values[i].match(values[row_id.raw()]));
+      }
+    }
+    assert(!column->contains(T::na()));
+    assert(column->find_one(T::na()).is_na());
+    column->remove_index("Index");
+  } catch (...) {
+  }
+
+  // Insert a trailing N/A value.
+  table->insert_row_at(grnxx::Int(NUM_ROWS));
+  assert(column->contains(T::na()));
+  assert(column->find_one(T::na()).match(grnxx::Int(NUM_ROWS)));
+  try {
+    column->create_index("Index", grnxx::TREE_INDEX);
+    assert(column->contains(T::na()));
+    assert(column->find_one(T::na()).match(grnxx::Int(NUM_ROWS)));
+    column->remove_index("Index");
+  } catch (...) {
+  }
 }
 
 void test_contains_and_find_one_for_all_data_types() {
