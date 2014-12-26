@@ -352,7 +352,9 @@ TreeIndex<Int>::TreeIndex(ColumnBase *column,
     values.resize(records.size());
     typed_column->read(records, values.ref());
     for (size_t i = 0; i < count; ++i) {
-      insert(records[i].row_id, values[i]);
+      if (!values[i].is_na()) {
+        insert(records[i].row_id, values[i]);
+      }
     }
     records.clear();
   }
@@ -530,7 +532,9 @@ TreeIndex<Float>::TreeIndex(ColumnBase *column,
     values.resize(records.size());
     typed_column->read(records, values.ref());
     for (size_t i = 0; i < count; ++i) {
-      insert(records[i].row_id, values[i]);
+      if (!values[i].is_na()) {
+        insert(records[i].row_id, values[i]);
+      }
     }
     records.clear();
   }
@@ -713,7 +717,9 @@ TreeIndex<Text>::TreeIndex(ColumnBase *column,
     values.resize(records.size());
     typed_column->read(records, values.ref());
     for (size_t i = 0; i < count; ++i) {
-      insert(records[i].row_id, values[i]);
+      if (!values[i].is_na()) {
+        insert(records[i].row_id, values[i]);
+      }
     }
     records.clear();
   }
