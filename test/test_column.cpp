@@ -312,6 +312,38 @@ void test_contains_and_find_one() {
     column->remove_index("Index");
   } catch (...) {
   }
+
+  // Remove non-N/A values.
+  for (size_t i = 0; i < NUM_ROWS; ++i) {
+    if (!values[i].is_na()) {
+      table->remove_row(grnxx::Int(i));
+    }
+  }
+
+  // Test all the values.
+  for (size_t i = 0; i < NUM_ROWS; ++i) {
+    if (!values[i].is_na()) {
+      assert(!column->contains(values[i]));
+      assert(column->find_one(values[i]).is_na());
+    }
+  }
+  assert(column->contains(T::na()));
+  assert(column->find_one(T::na()).match(grnxx::Int(NUM_ROWS)));
+
+  // Test all the values with index if available.
+  try {
+    column->create_index("Index", grnxx::TREE_INDEX);
+    for (size_t i = 0; i < NUM_ROWS; ++i) {
+      if (!values[i].is_na()) {
+        assert(!column->contains(values[i]));
+        assert(column->find_one(values[i]).is_na());
+      }
+    }
+    assert(column->contains(T::na()));
+    assert(column->find_one(T::na()).match(grnxx::Int(NUM_ROWS)));
+    column->remove_index("Index");
+  } catch (...) {
+  }
 }
 
 void test_contains_and_find_one_for_all_data_types() {
