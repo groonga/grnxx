@@ -420,177 +420,35 @@ void Column<Int>::reserve(size_t size, Int value) {
     switch (value_size_) {
       case 8: {
         if ((raw >= min_value_8()) && (raw <= max_value_8())) {
-          // 8 -> 8.
           reserve_with_same_value_size(size);
         } else if ((raw >= min_value_16()) && (raw <= max_value_16())) {
-          // 8 -> 16.
-          size_t new_capacity = (capacity_ != 0) ? capacity_ : 1;
-          while (new_capacity < size) {
-            new_capacity *= 2;
-          }
-          int16_t *new_values = static_cast<int16_t *>(
-              std::malloc(sizeof(int16_t) * new_capacity));
-          if (!new_values) {
-            throw "Memory allocation failed";
-          }
-          for (size_t i = 0; i < size_; ++i) {
-            new_values[i] = (values_8_[i] != na_value_8()) ?
-                            values_8_[i] : na_value_16();
-          }
-          for (size_t i = size_; i < size; ++i) {
-            new_values[i] = na_value_16();
-          }
-          std::free(buffer_);
-          buffer_ = new_values;
-          value_size_ = 16;
-          if (size > size_) {
-            size_ = size;
-          }
-          capacity_ = new_capacity;
+          reserve_with_different_value_size(size, 16);
         } else if ((raw >= min_value_32()) && (raw <= max_value_32())) {
-          // 8 -> 32.
-          size_t new_capacity = (capacity_ != 0) ? capacity_ : 1;
-          while (new_capacity < size) {
-            new_capacity *= 2;
-          }
-          int32_t *new_values = static_cast<int32_t *>(
-              std::malloc(sizeof(int32_t) * new_capacity));
-          if (!new_values) {
-            throw "Memory allocation failed";
-          }
-          for (size_t i = 0; i < size_; ++i) {
-            new_values[i] = (values_8_[i] != na_value_8()) ?
-                            values_8_[i] : na_value_32();
-          }
-          for (size_t i = size_; i < size; ++i) {
-            new_values[i] = na_value_32();
-          }
-          std::free(buffer_);
-          buffer_ = new_values;
-          value_size_ = 32;
-          if (size > size_) {
-            size_ = size;
-          }
-          capacity_ = new_capacity;
+          reserve_with_different_value_size(size, 32);
         } else {
-          // 8 -> 64.
-          size_t new_capacity = (capacity_ != 0) ? capacity_ : 1;
-          while (new_capacity < size) {
-            new_capacity *= 2;
-          }
-          Int *new_values = static_cast<Int *>(
-              std::malloc(sizeof(Int) * new_capacity));
-          if (!new_values) {
-            throw "Memory allocation failed";
-          }
-          for (size_t i = 0; i < size_; ++i) {
-            new_values[i] = (values_8_[i] != na_value_8()) ?
-                            Int(values_8_[i]) : Int::na();
-          }
-          for (size_t i = size_; i < size; ++i) {
-            new_values[i] = Int::na();
-          }
-          std::free(buffer_);
-          buffer_ = new_values;
-          value_size_ = 64;
-          if (size > size_) {
-            size_ = size;
-          }
-          capacity_ = new_capacity;
+          reserve_with_different_value_size(size, 64);
         }
         break;
       }
       case 16: {
         if ((raw >= min_value_16()) && (raw <= max_value_16())) {
-          // 16 -> 16.
           reserve_with_same_value_size(size);
         } else if ((raw >= min_value_32()) && (raw <= max_value_32())) {
-          // 16 -> 32.
-          size_t new_capacity = (capacity_ != 0) ? capacity_ : 1;
-          while (new_capacity < size) {
-            new_capacity *= 2;
-          }
-          int32_t *new_values = static_cast<int32_t *>(
-              std::malloc(sizeof(int32_t) * new_capacity));
-          if (!new_values) {
-            throw "Memory allocation failed";
-          }
-          for (size_t i = 0; i < size_; ++i) {
-            new_values[i] = (values_16_[i] != na_value_16()) ?
-                            values_16_[i] : na_value_32();
-          }
-          for (size_t i = size_; i < size; ++i) {
-            new_values[i] = na_value_32();
-          }
-          std::free(buffer_);
-          buffer_ = new_values;
-          value_size_ = 32;
-          if (size > size_) {
-            size_ = size;
-          }
-          capacity_ = new_capacity;
+          reserve_with_different_value_size(size, 32);
         } else {
-          // 16 -> 64.
-          size_t new_capacity = (capacity_ != 0) ? capacity_ : 1;
-          while (new_capacity < size) {
-            new_capacity *= 2;
-          }
-          Int *new_values = static_cast<Int *>(
-              std::malloc(sizeof(Int) * new_capacity));
-          if (!new_values) {
-            throw "Memory allocation failed";
-          }
-          for (size_t i = 0; i < size_; ++i) {
-            new_values[i] = (values_16_[i] != na_value_16()) ?
-                            Int(values_16_[i]) : Int::na();
-          }
-          for (size_t i = size_; i < size; ++i) {
-            new_values[i] = Int::na();
-          }
-          std::free(buffer_);
-          buffer_ = new_values;
-          value_size_ = 64;
-          if (size > size_) {
-            size_ = size;
-          }
-          capacity_ = new_capacity;
+          reserve_with_different_value_size(size, 64);
         }
         break;
       }
       case 32: {
         if ((raw >= min_value_32()) && (raw <= max_value_32())) {
-          // 32 -> 32.
           reserve_with_same_value_size(size);
         } else {
-          // 32 -> 64.
-          size_t new_capacity = (capacity_ != 0) ? capacity_ : 1;
-          while (new_capacity < size) {
-            new_capacity *= 2;
-          }
-          Int *new_values = static_cast<Int *>(
-              std::malloc(sizeof(Int) * new_capacity));
-          if (!new_values) {
-            throw "Memory allocation failed";
-          }
-          for (size_t i = 0; i < size_; ++i) {
-            new_values[i] = (values_32_[i] != na_value_32()) ?
-                            Int(values_32_[i]) : Int::na();
-          }
-          for (size_t i = size_; i < size; ++i) {
-            new_values[i] = Int::na();
-          }
-          std::free(buffer_);
-          buffer_ = new_values;
-          value_size_ = 64;
-          if (size > size_) {
-            size_ = size;
-          }
-          capacity_ = new_capacity;
+          reserve_with_different_value_size(size, 64);
         }
         break;
       }
       default: {
-        // 64 -> 64.
         reserve_with_same_value_size(size);
         break;
       }
@@ -645,7 +503,104 @@ void Column<Int>::reserve_with_same_value_size(size_t size) {
 
 void Column<Int>::reserve_with_different_value_size(size_t size,
                                                     size_t value_size) {
-  // TODO
+  size_t new_capacity = (capacity_ != 0) ? capacity_ : 1;
+  while (new_capacity < size) {
+    new_capacity *= 2;
+  }
+  void *new_buffer = std::malloc((value_size / 8) * new_capacity);
+  if (!new_buffer) {
+    throw "Memory allocation failed";
+  }
+  switch (value_size_) {
+    case 8: {
+      switch (value_size) {
+        case 16: {
+          for (size_t i = 0; i < size_; ++i) {
+            static_cast<int16_t *>(new_buffer)[i] =
+                (values_8_[i] != na_value_8()) ? values_8_[i] : na_value_16();
+          }
+          break;
+        }
+        case 32: {
+          for (size_t i = 0; i < size_; ++i) {
+            static_cast<int32_t *>(new_buffer)[i] =
+                (values_8_[i] != na_value_8()) ? values_8_[i] : na_value_32();
+          }
+          break;
+        }
+        case 64: {
+          for (size_t i = 0; i < size_; ++i) {
+            static_cast<Int *>(new_buffer)[i] =
+                (values_8_[i] != na_value_8()) ? Int(values_8_[i]) : Int::na();
+          }
+          break;
+        }
+      }
+      break;
+    }
+    case 16: {
+      switch (value_size) {
+        case 32: {
+          for (size_t i = 0; i < size_; ++i) {
+            static_cast<int32_t *>(new_buffer)[i] =
+                (values_16_[i] != na_value_16()) ?
+                values_16_[i] : na_value_32();
+          }
+          break;
+        }
+        case 64: {
+          for (size_t i = 0; i < size_; ++i) {
+            static_cast<Int *>(new_buffer)[i] =
+                (values_16_[i] != na_value_16()) ?
+                Int(values_16_[i]) : Int::na();
+          }
+          break;
+        }
+      }
+      break;
+    }
+    case 32: {
+      for (size_t i = 0; i < size_; ++i) {
+        static_cast<Int *>(new_buffer)[i] =
+            (values_32_[i] != na_value_32()) ?
+            Int(values_32_[i]) : Int::na();
+      }
+      break;
+    }
+  }
+  std::free(buffer_);
+  buffer_ = new_buffer;
+  value_size_ = value_size;
+  if (size > size_) {
+    switch (value_size) {
+      case 8: {
+        for (size_t i = size_; i < size; ++i) {
+          values_8_[i] = na_value_8();
+        }
+        break;
+      }
+      case 16: {
+        for (size_t i = size_; i < size; ++i) {
+          values_16_[i] = na_value_16();
+        }
+        break;
+      }
+      case 32: {
+        for (size_t i = size_; i < size; ++i) {
+          values_32_[i] = na_value_32();
+        }
+        break;
+      }
+      default: {
+        for (size_t i = size_; i < size; ++i) {
+          values_64_[i] = Int::na();
+        }
+        break;
+      }
+    }
+    size_ = size;
+  }
+  capacity_ = new_capacity;
 }
 
 Int Column<Int>::parse_datum(const Datum &datum) {
