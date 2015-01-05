@@ -46,6 +46,8 @@ class Text {
     return size_.is_na();
   }
 
+  uint64_t hash() const;
+
   Bool operator==(const Text &rhs) const {
     Bool has_equal_size = (size_ == rhs.size_);
     if (has_equal_size.is_true()) {
@@ -156,7 +158,146 @@ class Text {
  private:
   const char *data_;
   Int size_;
+
+  static uint64_t rotate(uint64_t x, uint8_t n) {
+    return (x << n) | (x >> (64 - n));
+  }
+  static uint64_t mix(uint64_t x) {
+    x ^= x >> 33;
+    x *= uint64_t(0xFF51AFD7ED558CCDULL);
+    x ^= x >> 33;
+    x *= uint64_t(0xC4CEB9FE1A85EC53ULL);
+    x ^= x >> 33;
+    return x;
+  }
 };
+
+// NOTE: This returns the first 64-bit of MurmurHash3's output (128-bit).
+//
+// TODO: This implementation should not be inlined.
+inline uint64_t Text::hash() const {
+  if (is_na()) {
+    return 0;
+  }
+
+  const uint8_t *data = reinterpret_cast<const uint8_t *>(data_);
+  const size_t len = size_.raw();
+  const size_t nblocks = len / 16;
+
+  uint64_t h1 = 0;
+  uint64_t h2 = 0;
+
+  const uint64_t c1 = uint64_t(0x87C37B91114253D5ULL);
+  const uint64_t c2 = uint64_t(0x4CF5AD432745937FULL);
+
+  //----------
+  // body
+
+  const uint64_t *blocks = reinterpret_cast<const uint64_t *>(data);
+  for (size_t i = 0; i < nblocks; i++) {
+    uint64_t k1 = blocks[i * 2];
+    uint64_t k2 = blocks[(i * 2) + 1];
+
+    k1 *= c1;
+    k1  = rotate(k1, 31);
+    k1 *= c2;
+    h1 ^= k1;
+
+    h1 = rotate(h1, 27);
+    h1 += h2;
+    h1 = (h1 * 5) + 0x52DCE729;
+
+    k2 *= c2;
+    k2  = rotate(k2, 33);
+    k2 *= c1;
+    h2 ^= k2;
+
+    h2 = rotate(h2, 31);
+    h2 += h1;
+    h2 = (h2 * 5) + 0x38495AB5;
+  }
+
+  //----------
+  // tail
+
+  const uint8_t *tail = data + (nblocks * 16);
+
+  uint64_t k1 = 0;
+  uint64_t k2 = 0;
+
+  switch (len & 15) {
+    case 15: {
+      k2 ^= static_cast<uint64_t>(tail[14]) << 48;
+    }
+    case 14: {
+      k2 ^= static_cast<uint64_t>(tail[13]) << 40;
+    }
+    case 13: {
+      k2 ^= static_cast<uint64_t>(tail[12]) << 32;
+    }
+    case 12: {
+      k2 ^= static_cast<uint64_t>(tail[11]) << 24;
+    }
+    case 11: {
+      k2 ^= static_cast<uint64_t>(tail[10]) << 16;
+    }
+    case 10: {
+      k2 ^= static_cast<uint64_t>(tail[9]) << 8;
+    }
+    case 9: {
+      k2 ^= static_cast<uint64_t>(tail[8]) << 0;
+      k2 *= c2;
+      k2 = rotate(k2, 33);
+      k2 *= c1;
+      h2 ^= k2;
+    }
+    case 8: {
+      k1 ^= static_cast<uint64_t>(tail[7]) << 56;
+    }
+    case 7: {
+      k1 ^= static_cast<uint64_t>(tail[6]) << 48;
+    }
+    case 6: {
+      k1 ^= static_cast<uint64_t>(tail[5]) << 40;
+    }
+    case 5: {
+      k1 ^= static_cast<uint64_t>(tail[4]) << 32;
+    }
+    case 4: {
+      k1 ^= static_cast<uint64_t>(tail[3]) << 24;
+    }
+    case 3: {
+      k1 ^= static_cast<uint64_t>(tail[2]) << 16;
+    }
+    case 2: {
+      k1 ^= static_cast<uint64_t>(tail[1]) << 8;
+    }
+    case 1: {
+      k1 ^= static_cast<uint64_t>(tail[0]) << 0;
+      k1 *= c1;
+      k1 = rotate(k1, 31);
+      k1 *= c2;
+      h1 ^= k1;
+    }
+  };
+
+  //----------
+  // finalization
+
+  h1 ^= len;
+  h2 ^= len;
+
+  h1 += h2;
+  h2 += h1;
+
+  h1 = mix(h1);
+  h2 = mix(h2);
+
+  h1 += h2;
+  h2 += h1;
+
+  return h1;
+}
 
 }  // namespace grnxx
 
