@@ -45,6 +45,18 @@ class Float {
     return std::isnan(raw_);
   }
 
+  uint64_t hash() const {
+    double normalized_raw = (raw_ != 0.0) ? raw_ : 0.0;
+    uint64_t x;
+    std::memcpy(&x, &normalized_raw, sizeof(x));
+    x ^= x >> 33;
+    x *= uint64_t(0xFF51AFD7ED558CCDULL);
+    x ^= x >> 33;
+    x *= uint64_t(0xC4CEB9FE1A85EC53ULL);
+    x ^= x >> 33;
+    return x;
+  }
+
   // -- Unary operators --
 
   constexpr Float operator+() const {
