@@ -38,6 +38,16 @@ class Int {
     return raw_ == raw_na();
   }
 
+  uint64_t hash() const {
+    uint64_t x = raw_;
+    x ^= x >> 33;
+    x *= uint64_t(0xFF51AFD7ED558CCDULL);
+    x ^= x >> 33;
+    x *= uint64_t(0xC4CEB9FE1A85EC53ULL);
+    x ^= x >> 33;
+    return x;
+  }
+
   // -- Unary operators --
 
   constexpr Int operator+() const {
