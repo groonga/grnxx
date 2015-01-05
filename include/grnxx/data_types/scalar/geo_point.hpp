@@ -98,6 +98,17 @@ class GeoPoint {
     return raw_latitude_ == raw_na_latitude();
   }
 
+  uint64_t hash() const {
+    uint64_t x = static_cast<uint64_t>(raw_latitude_) |
+                 (static_cast<uint64_t>(raw_longitude_) << 32);
+    x ^= x >> 33;
+    x *= uint64_t(0xFF51AFD7ED558CCDULL);
+    x ^= x >> 33;
+    x *= uint64_t(0xC4CEB9FE1A85EC53ULL);
+    x ^= x >> 33;
+    return x;
+  }
+
   // TODO: std::memcmp() might be better.
   constexpr Bool operator==(const GeoPoint &rhs) const {
     return (is_na() || rhs.is_na()) ? Bool::na() :
