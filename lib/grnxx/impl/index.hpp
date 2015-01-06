@@ -50,7 +50,7 @@ class Index : public IndexInterface {
 
   // Create a new index.
   //
-  // On success, returns the column.
+  // On success, returns the index.
   // On failure, throws an exception.
   static Index *create(ColumnBase *column,
                        const String &name,
@@ -67,7 +67,7 @@ class Index : public IndexInterface {
   // On failure, throws an exception.
   void rename(const String &new_name);
 
-  // Return whether the column is removable or not.
+  // Return whether the index is removable or not.
   bool is_removable() const;
 
  private:
