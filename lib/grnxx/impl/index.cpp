@@ -2,6 +2,7 @@
 
 #include <map>
 #include <set>
+#include <unordered_map>
 
 #include "grnxx/impl/column.hpp"
 #include "grnxx/impl/cursor.hpp"
@@ -911,6 +912,406 @@ std::unique_ptr<Cursor> TreeIndex<Text>::find_prefixes(
   return create_prefix_cursor(std::move(array), options.offset, options.limit);
 }
 
+// -- HashIndex --
+
+template <typename T> class HashIndex;
+
+// -- HashIndex<Int> --
+
+template <>
+class HashIndex<Int> : public Index {
+ public:
+  struct Less {
+    bool operator()(Int lhs, Int rhs) const {
+      return lhs.raw() < rhs.raw();
+    }
+  };
+  struct Hash {
+    uint64_t operator()(Int value) const {
+      return value.hash();
+    }
+  };
+  struct Equal {
+    bool operator()(Int lhs, Int rhs) const {
+      return lhs.match(rhs);
+    }
+  };
+
+  using Value = Int;
+  using Set = std::set<Int, Less>;
+  using Map = std::unordered_map<Value, Set, Hash, Equal>;
+
+  HashIndex(ColumnBase *column,
+            const String &name,
+            const IndexOptions &options);
+  ~HashIndex() = default;
+
+  IndexType type() const {
+    return HASH_INDEX;
+  }
+  size_t num_entries() const {
+    return num_entries_;
+  }
+
+  bool test_uniqueness() const;
+
+  void insert(Int row_id, const Datum &value);
+  void remove(Int row_id, const Datum &value);
+
+  std::unique_ptr<Cursor> find(const Datum &value,
+                               const CursorOptions &options) const;
+
+ private:
+  mutable Map map_;
+  size_t num_entries_;
+};
+
+HashIndex<Int>::HashIndex(ColumnBase *column,
+                          const String &name,
+                          const IndexOptions &)
+    : Index(column, name),
+      map_(),
+      num_entries_(0) {
+  auto cursor = column->table()->create_cursor();
+  auto typed_column = static_cast<Column<Int> *>(column);
+  Array<Record> records;
+  Array<Value> values;
+  for ( ; ; ) {
+    size_t count = cursor->read(1024, &records);
+    if (count == 0) {
+      break;
+    }
+    values.resize(records.size());
+    typed_column->read(records, values.ref());
+    for (size_t i = 0; i < count; ++i) {
+      if (!values[i].is_na()) {
+        insert(records[i].row_id, values[i]);
+      }
+    }
+    records.clear();
+  }
+}
+
+bool HashIndex<Int>::test_uniqueness() const {
+  for (const auto &it : map_) {
+    if (it.second.size() > 1) {
+      return false;
+    }
+  }
+  return true;
+}
+
+void HashIndex<Int>::insert(Int row_id, const Datum &value) {
+  auto result = map_[value.as_int()].insert(row_id);
+  if (!result.second) {
+    throw "Entry already exists";  // TODO
+  }
+  ++num_entries_;
+}
+
+void HashIndex<Int>::remove(Int row_id, const Datum &value) {
+  auto map_it = map_.find(value.as_int());
+  if (map_it == map_.end()) {
+    throw "Entry not found";  // TODO
+  }
+  auto set_it = map_it->second.find(row_id);
+  if (set_it == map_it->second.end()) {
+    throw "Entry not found";  // TODO
+  }
+  map_it->second.erase(set_it);
+  if (map_it->second.size() == 0) {
+    map_.erase(map_it);
+  }
+  --num_entries_;
+}
+
+std::unique_ptr<Cursor> HashIndex<Int>::find(
+    const Datum &value,
+    const CursorOptions &options) const {
+  if (value.type() == NA_DATA) {
+    return create_empty_cursor();
+  } else if (value.type() != INT_DATA) {
+    throw "Data type conflict";  // TODO
+  }
+  auto map_it = map_.find(value.as_int());
+  if (map_it == map_.end()) {
+    return create_empty_cursor();
+  } else {
+    auto set_begin = map_it->second.begin();
+    auto set_end = map_it->second.end();
+    if (options.order_type == CURSOR_REGULAR_ORDER) {
+      return create_exact_match_cursor(
+          set_begin, set_end, options.offset, options.limit);
+    } else {
+      return create_reverse_exact_match_cursor(
+          set_begin, set_end, options.offset, options.limit);
+    }
+  }
+}
+
+// -- HashIndex<Float> --
+
+template <>
+class HashIndex<Float> : public Index {
+ public:
+  struct Less {
+    bool operator()(Int lhs, Int rhs) const {
+      return lhs.raw() < rhs.raw();
+    }
+  };
+  struct Hash {
+    uint64_t operator()(Float value) const {
+      return value.hash();
+    }
+  };
+  struct Equal {
+    bool operator()(Float lhs, Float rhs) const {
+      return lhs.match(rhs);
+    }
+  };
+
+  using Value = Float;
+  using Set = std::set<Int, Less>;
+  using Map = std::unordered_map<Value, Set, Hash, Equal>;
+
+  HashIndex(ColumnBase *column,
+            const String &name,
+            const IndexOptions &options);
+  ~HashIndex() = default;
+
+  IndexType type() const {
+    return HASH_INDEX;
+  }
+  size_t num_entries() const {
+    return num_entries_;
+  }
+
+  bool test_uniqueness() const;
+
+  void insert(Int row_id, const Datum &value);
+  void remove(Int row_id, const Datum &value);
+
+  std::unique_ptr<Cursor> find(const Datum &value,
+                               const CursorOptions &options) const;
+
+ private:
+  mutable Map map_;
+  size_t num_entries_;
+};
+
+HashIndex<Float>::HashIndex(ColumnBase *column,
+                            const String &name,
+                            const IndexOptions &)
+    : Index(column, name),
+      map_(),
+      num_entries_(0) {
+  auto cursor = column->table()->create_cursor();
+  auto typed_column = static_cast<Column<Float> *>(column);
+  Array<Record> records;
+  Array<Value> values;
+  for ( ; ; ) {
+    size_t count = cursor->read(1024, &records);
+    if (count == 0) {
+      break;
+    }
+    values.resize(records.size());
+    typed_column->read(records, values.ref());
+    for (size_t i = 0; i < count; ++i) {
+      if (!values[i].is_na()) {
+        insert(records[i].row_id, values[i]);
+      }
+    }
+    records.clear();
+  }
+}
+
+bool HashIndex<Float>::test_uniqueness() const {
+  for (const auto &it : map_) {
+    if (it.second.size() > 1) {
+      return false;
+    }
+  }
+  return true;
+}
+
+void HashIndex<Float>::insert(Int row_id, const Datum &value) {
+  auto result = map_[value.as_float()].insert(row_id);
+  if (!result.second) {
+    throw "Entry already exists";  // TODO
+  }
+  ++num_entries_;
+}
+
+void HashIndex<Float>::remove(Int row_id, const Datum &value) {
+  auto map_it = map_.find(value.as_float());
+  if (map_it == map_.end()) {
+    throw "Entry not found";  // TODO
+  }
+  auto set_it = map_it->second.find(row_id);
+  if (set_it == map_it->second.end()) {
+    throw "Entry not found";  // TODO
+  }
+  map_it->second.erase(set_it);
+  if (map_it->second.size() == 0) {
+    map_.erase(map_it);
+  }
+  --num_entries_;
+}
+
+std::unique_ptr<Cursor> HashIndex<Float>::find(
+    const Datum &value,
+    const CursorOptions &options) const {
+  if (value.type() == NA_DATA) {
+    return create_empty_cursor();
+  } else if (value.type() != FLOAT_DATA) {
+    throw "Data type conflict";  // TODO
+  }
+  auto map_it = map_.find(value.as_float());
+  if (map_it == map_.end()) {
+    return create_empty_cursor();
+  } else {
+    auto set_begin = map_it->second.begin();
+    auto set_end = map_it->second.end();
+    if (options.order_type == CURSOR_REGULAR_ORDER) {
+      return create_exact_match_cursor(
+          set_begin, set_end, options.offset, options.limit);
+    } else {
+      return create_reverse_exact_match_cursor(
+          set_begin, set_end, options.offset, options.limit);
+    }
+  }
+}
+
+// -- HashIndex<Text> --
+
+template <>
+class HashIndex<Text> : public Index {
+ public:
+  struct Hash {
+    uint64_t operator()(const String &value) const {
+      return Text(value).hash();
+    }
+  };
+
+  using Value = Text;
+  using Set = std::set<Int, RowIDLess>;
+  using Map = std::unordered_map<String, Set, Hash>;
+
+  HashIndex(ColumnBase *column,
+            const String &name,
+            const IndexOptions &options);
+  ~HashIndex() = default;
+
+  IndexType type() const {
+    return HASH_INDEX;
+  }
+  size_t num_entries() const {
+    return num_entries_;
+  }
+
+  bool test_uniqueness() const;
+
+  void insert(Int row_id, const Datum &value);
+  void remove(Int row_id, const Datum &value);
+
+  std::unique_ptr<Cursor> find(const Datum &value,
+                               const CursorOptions &options) const;
+
+ private:
+  mutable Map map_;
+  size_t num_entries_;
+};
+
+HashIndex<Text>::HashIndex(ColumnBase *column,
+                           const String &name,
+                           const IndexOptions &)
+    : Index(column, name),
+      map_(),
+      num_entries_(0) {
+  auto cursor = column->table()->create_cursor();
+  auto typed_column = static_cast<Column<Text> *>(column);
+  Array<Record> records;
+  Array<Value> values;
+  for ( ; ; ) {
+    size_t count = cursor->read(1024, &records);
+    if (count == 0) {
+      break;
+    }
+    values.resize(records.size());
+    typed_column->read(records, values.ref());
+    for (size_t i = 0; i < count; ++i) {
+      if (!values[i].is_na()) {
+        insert(records[i].row_id, values[i]);
+      }
+    }
+    records.clear();
+  }
+}
+
+bool HashIndex<Text>::test_uniqueness() const {
+  for (const auto &it : map_) {
+    if (it.second.size() > 1) {
+      return false;
+    }
+  }
+  return true;
+}
+
+void HashIndex<Text>::insert(Int row_id, const Datum &value) {
+  Text text = value.as_text();
+  String string;
+  string.assign(text.raw_data(), text.raw_size());
+  auto result = map_[std::move(string)].insert(row_id);
+  if (!result.second) {
+    throw "Entry already exists";  // TODO
+  }
+  ++num_entries_;
+}
+
+void HashIndex<Text>::remove(Int row_id, const Datum &value) {
+  Text text = value.as_text();
+  String string(text.raw_data(), text.raw_size());
+  auto map_it = map_.find(string);
+  if (map_it == map_.end()) {
+    throw "Entry not found";  // TODO
+  }
+  auto set_it = map_it->second.find(row_id);
+  if (set_it == map_it->second.end()) {
+    throw "Entry not found";  // TODO
+  }
+  map_it->second.erase(set_it);
+  if (map_it->second.size() == 0) {
+    map_.erase(map_it);
+  }
+  --num_entries_;
+}
+
+std::unique_ptr<Cursor> HashIndex<Text>::find(
+    const Datum &value,
+    const CursorOptions &options) const {
+  if (value.type() == NA_DATA) {
+    return create_empty_cursor();
+  } else if (value.type() != TEXT_DATA) {
+    throw "Data type conflict";  // TODO
+  }
+  Text text = value.as_text();
+  String string(text.raw_data(), text.raw_size());
+  auto map_it = map_.find(string);
+  if (map_it == map_.end()) {
+    return create_empty_cursor();
+  } else {
+    auto set_begin = map_it->second.begin();
+    auto set_end = map_it->second.end();
+    if (options.order_type == CURSOR_REGULAR_ORDER) {
+      return create_exact_match_cursor(
+          set_begin, set_end, options.offset, options.limit);
+    } else {
+      return create_reverse_exact_match_cursor(
+          set_begin, set_end, options.offset, options.limit);
+    }
+  }
+}
+
 }  // namespace index
 
 using namespace index;
@@ -968,32 +1369,60 @@ Index *Index::create(ColumnBase *column,
                      const String &name,
                      IndexType type,
                      const IndexOptions &options) try {
-  if (type != TREE_INDEX) {
-    throw "Not supoprted yet";  // TODO
-  }
-  switch (column->data_type()) {
-    case BOOL_DATA: {
-      throw "Not supported yet";  // TODO
+  switch (type) {
+    case TREE_INDEX: {
+      switch (column->data_type()) {
+        case BOOL_DATA: {
+          throw "Not supported yet";  // TODO
+        }
+        case INT_DATA: {
+          return new TreeIndex<Int>(column, name, options);
+        }
+        case FLOAT_DATA: {
+          return new TreeIndex<Float>(column, name, options);
+        }
+        case GEO_POINT_DATA: {
+          throw "Not supported yet";  // TODO
+        }
+        case TEXT_DATA: {
+          return new TreeIndex<Text>(column, name, options);
+        }
+        case BOOL_VECTOR_DATA:
+        case INT_VECTOR_DATA:
+        case FLOAT_VECTOR_DATA:
+        case GEO_POINT_VECTOR_DATA:
+        case TEXT_VECTOR_DATA:
+        default: {
+          throw "Not supported yet";  // TODO
+        }
+      }
     }
-    case INT_DATA: {
-      return new TreeIndex<Int>(column, name, options);
-    }
-    case FLOAT_DATA: {
-      return new TreeIndex<Float>(column, name, options);
-    }
-    case GEO_POINT_DATA: {
-      throw "Not supported yet";  // TODO
-    }
-    case TEXT_DATA: {
-      return new TreeIndex<Text>(column, name, options);
-    }
-    case BOOL_VECTOR_DATA:
-    case INT_VECTOR_DATA:
-    case FLOAT_VECTOR_DATA:
-    case GEO_POINT_VECTOR_DATA:
-    case TEXT_VECTOR_DATA:
-    default: {
-      throw "Not supported yet";  // TODO
+    case HASH_INDEX: {
+      switch (column->data_type()) {
+        case BOOL_DATA: {
+          throw "Not supported yet";  // TODO
+        }
+        case INT_DATA: {
+          return new HashIndex<Int>(column, name, options);
+        }
+        case FLOAT_DATA: {
+          return new HashIndex<Float>(column, name, options);
+        }
+        case GEO_POINT_DATA: {
+          throw "Not supported yet";  // TODO
+        }
+        case TEXT_DATA: {
+          return new HashIndex<Text>(column, name, options);
+        }
+        case BOOL_VECTOR_DATA:
+        case INT_VECTOR_DATA:
+        case FLOAT_VECTOR_DATA:
+        case GEO_POINT_VECTOR_DATA:
+        case TEXT_VECTOR_DATA:
+        default: {
+          throw "Not supported yet";  // TODO
+        }
+      }
     }
   }
 } catch (const std::bad_alloc &) {
