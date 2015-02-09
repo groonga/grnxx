@@ -438,7 +438,7 @@ class BoolNode : public Node {
  public:
   explicit BoolNode(SorterOrder &&order)
       : Node(std::move(order)),
-        prior_raw_((order.type == SORTER_REGULAR_ORDER) ?
+        prior_raw_((order.type == GRNXX_REGULAR_ORDER) ?
                    Bool::raw_false() : Bool::raw_true()),
         values_() {}
   virtual ~BoolNode() = default;
@@ -1561,13 +1561,13 @@ void Sorter::sort(Array<Record> *records) {
 Node *Sorter::create_node(SorterOrder &&order) try {
   if (order.expression->is_row_id()) {
     if (nodes_.is_empty() && ((offset_ + limit_) < 1000)) {
-      if (order.type == SORTER_REGULAR_ORDER) {
+      if (order.type == GRNXX_REGULAR_ORDER) {
         return new RowIDNodeS<RegularRowIDComparer>(std::move(order));
       } else {
         return new RowIDNodeS<ReverseRowIDComparer>(std::move(order));
       }
     } else {
-      if (order.type == SORTER_REGULAR_ORDER) {
+      if (order.type == GRNXX_REGULAR_ORDER) {
         return new RowIDNode<RegularRowIDComparer>(std::move(order));
       } else {
         return new RowIDNode<ReverseRowIDComparer>(std::move(order));
@@ -1576,7 +1576,7 @@ Node *Sorter::create_node(SorterOrder &&order) try {
   } else if (order.expression->is_score()) {
     // NOTE: Specialization for Score is disabled because the implementation
     //       showed poor performance.
-//    if (order.type == SORTER_REGULAR_ORDER) {
+//    if (order.type == GRNXX_REGULAR_ORDER) {
 //      return new ScoreNode<RegularScoreComparer>(std::move(order));
 //    } else {
 //      return new ScoreNode<ReverseScoreComparer>(std::move(order));
@@ -1589,13 +1589,13 @@ Node *Sorter::create_node(SorterOrder &&order) try {
     }
     case GRNXX_INT: {
       if (nodes_.is_empty() && ((offset_ + limit_) < 1000)) {
-        if (order.type == SORTER_REGULAR_ORDER) {
+        if (order.type == GRNXX_REGULAR_ORDER) {
           return new IntNodeS<RegularIntConverter>(std::move(order));
         } else {
           return new IntNodeS<ReverseIntConverter>(std::move(order));
         }
       } else {
-        if (order.type == SORTER_REGULAR_ORDER) {
+        if (order.type == GRNXX_REGULAR_ORDER) {
           return new IntNode<RegularIntConverter>(std::move(order));
         } else {
           return new IntNode<ReverseIntConverter>(std::move(order));
@@ -1604,13 +1604,13 @@ Node *Sorter::create_node(SorterOrder &&order) try {
     }
     case GRNXX_FLOAT: {
       if (nodes_.is_empty() && ((offset_ + limit_) < 1000)) {
-        if (order.type == SORTER_REGULAR_ORDER) {
+        if (order.type == GRNXX_REGULAR_ORDER) {
           return new FloatNodeS<RegularFloatConverter>(std::move(order));
         } else {
           return new FloatNodeS<ReverseFloatConverter>(std::move(order));
         }
       } else {
-        if (order.type == SORTER_REGULAR_ORDER) {
+        if (order.type == GRNXX_REGULAR_ORDER) {
           return new FloatNode<RegularFloatConverter>(std::move(order));
         } else {
           return new FloatNode<ReverseFloatConverter>(std::move(order));
@@ -1619,13 +1619,13 @@ Node *Sorter::create_node(SorterOrder &&order) try {
     }
     case GRNXX_TEXT: {
       if (nodes_.is_empty() && ((offset_ + limit_) < 1000)) {
-        if (order.type == SORTER_REGULAR_ORDER) {
+        if (order.type == GRNXX_REGULAR_ORDER) {
           return new TextNodeS<RegularTextComparer>(std::move(order));
         } else {
           return new TextNodeS<ReverseTextComparer>(std::move(order));
         }
       } else {
-        if (order.type == SORTER_REGULAR_ORDER) {
+        if (order.type == GRNXX_REGULAR_ORDER) {
           return new TextNode<RegularTextComparer>(std::move(order));
         } else {
           return new TextNode<ReverseTextComparer>(std::move(order));

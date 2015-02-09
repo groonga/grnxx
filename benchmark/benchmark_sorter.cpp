@@ -170,7 +170,7 @@ void benchmark_row_id(grnxx::Table *table, size_t limit) {
     orders.resize(1);
     expression_builder->push_row_id();
     orders[0].expression = std::move(expression_builder->release());
-    orders[0].type = grnxx::SORTER_REGULAR_ORDER;
+    orders[0].type = GRNXX_REGULAR_ORDER;
     grnxx::SorterOptions options;
     options.limit = limit;
     auto sorter = grnxx::Sorter::create(std::move(orders), options);
@@ -216,7 +216,7 @@ void benchmark_score(grnxx::Table *table,
     orders.resize(1);
     expression_builder->push_score();
     orders[0].expression = std::move(expression_builder->release());
-    orders[0].type = grnxx::SORTER_REGULAR_ORDER;
+    orders[0].type = GRNXX_REGULAR_ORDER;
     grnxx::SorterOptions options;
     options.limit = limit;
     auto sorter = grnxx::Sorter::create(std::move(orders), options);
@@ -276,7 +276,7 @@ void benchmark_columns(grnxx::Table *table, const char *column_names) {
     for (size_t j = 0; j < orders.size(); ++j) {
       expression_builder->push_column(column_name_array[j]);
       orders[j].expression = std::move(expression_builder->release());
-      orders[j].type = grnxx::SORTER_REGULAR_ORDER;
+      orders[j].type = GRNXX_REGULAR_ORDER;
     }
     auto sorter = grnxx::Sorter::create(std::move(orders));
     sorter->sort(&records);

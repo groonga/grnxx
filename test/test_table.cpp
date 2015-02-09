@@ -375,7 +375,7 @@ void test_cursor() {
 
   // Test a cursor that scans a table in reverse order.
   grnxx::CursorOptions cursor_options;
-  cursor_options.order_type = grnxx::CURSOR_REVERSE_ORDER;
+  cursor_options.order_type = GRNXX_REVERSE_ORDER;
   cursor = table->create_cursor(cursor_options);
   assert(cursor->read_all(&records) == NUM_ROWS);
   assert(records.size() == NUM_ROWS);

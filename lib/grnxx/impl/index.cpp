@@ -408,7 +408,7 @@ std::unique_ptr<Cursor> TreeIndex<Int>::find(
   } else {
     auto set_begin = map_it->second.begin();
     auto set_end = map_it->second.end();
-    if (options.order_type == CURSOR_REGULAR_ORDER) {
+    if (options.order_type == GRNXX_REGULAR_ORDER) {
       return create_exact_match_cursor(
           set_begin, set_end, options.offset, options.limit);
     } else {
@@ -461,7 +461,7 @@ std::unique_ptr<Cursor> TreeIndex<Int>::find_in_range(
 
   auto begin = map_.lower_bound(lower_bound_value);
   auto end = map_.upper_bound(upper_bound_value);
-  if (options.order_type == CURSOR_REGULAR_ORDER) {
+  if (options.order_type == GRNXX_REGULAR_ORDER) {
     return create_range_cursor(
         begin, end, options.offset, options.limit);
   } else {
@@ -588,7 +588,7 @@ std::unique_ptr<Cursor> TreeIndex<Float>::find(
   } else {
     auto set_begin = map_it->second.begin();
     auto set_end = map_it->second.end();
-    if (options.order_type == CURSOR_REGULAR_ORDER) {
+    if (options.order_type == GRNXX_REGULAR_ORDER) {
       return create_exact_match_cursor(
           set_begin, set_end, options.offset, options.limit);
     } else {
@@ -651,7 +651,7 @@ std::unique_ptr<Cursor> TreeIndex<Float>::find_in_range(
 
   auto begin = map_.lower_bound(lower_bound_value);
   auto end = map_.upper_bound(upper_bound_value);
-  if (options.order_type == CURSOR_REGULAR_ORDER) {
+  if (options.order_type == GRNXX_REGULAR_ORDER) {
     return create_range_cursor(
         begin, end, options.offset, options.limit);
   } else {
@@ -780,7 +780,7 @@ std::unique_ptr<Cursor> TreeIndex<Text>::find(
   } else {
     auto set_begin = map_it->second.begin();
     auto set_end = map_it->second.end();
-    if (options.order_type == CURSOR_REGULAR_ORDER) {
+    if (options.order_type == GRNXX_REGULAR_ORDER) {
       return create_exact_match_cursor(
           set_begin, set_end, options.offset, options.limit);
     } else {
@@ -834,7 +834,7 @@ std::unique_ptr<Cursor> TreeIndex<Text>::find_in_range(
   auto begin = map_.lower_bound(lower_bound_value);
   auto end = upper_bound_value.is_empty() ?
       map_.end() : map_.lower_bound(upper_bound_value);
-  if (options.order_type == CURSOR_REGULAR_ORDER) {
+  if (options.order_type == GRNXX_REGULAR_ORDER) {
     return create_range_cursor(
         begin, end, options.offset, options.limit);
   } else {
@@ -874,7 +874,7 @@ std::unique_ptr<Cursor> TreeIndex<Text>::find_starts_with(
   auto begin = map_.lower_bound(lower_bound_value);
   auto end = (upper_bound_value.size() != 0) ?
       map_.lower_bound(upper_bound_value) : map_.end();
-  if (options.order_type == CURSOR_REGULAR_ORDER) {
+  if (options.order_type == GRNXX_REGULAR_ORDER) {
     return create_range_cursor(
         begin, end, options.offset, options.limit);
   } else {
@@ -904,7 +904,7 @@ std::unique_ptr<Cursor> TreeIndex<Text>::find_prefixes(
       array.push_back(it);
     }
   }
-  if (options.order_type == CURSOR_REVERSE_ORDER) {
+  if (options.order_type == GRNXX_REVERSE_ORDER) {
     for (size_t i = 0; i < (array.size() / 2); ++i) {
       std::swap(array[i], array[array.size() - i - 1]);
     }
@@ -1039,7 +1039,7 @@ std::unique_ptr<Cursor> HashIndex<Int>::find(
   } else {
     auto set_begin = map_it->second.begin();
     auto set_end = map_it->second.end();
-    if (options.order_type == CURSOR_REGULAR_ORDER) {
+    if (options.order_type == GRNXX_REGULAR_ORDER) {
       return create_exact_match_cursor(
           set_begin, set_end, options.offset, options.limit);
     } else {
@@ -1172,7 +1172,7 @@ std::unique_ptr<Cursor> HashIndex<Float>::find(
   } else {
     auto set_begin = map_it->second.begin();
     auto set_end = map_it->second.end();
-    if (options.order_type == CURSOR_REGULAR_ORDER) {
+    if (options.order_type == GRNXX_REGULAR_ORDER) {
       return create_exact_match_cursor(
           set_begin, set_end, options.offset, options.limit);
     } else {
@@ -1302,7 +1302,7 @@ std::unique_ptr<Cursor> HashIndex<Text>::find(
   } else {
     auto set_begin = map_it->second.begin();
     auto set_end = map_it->second.end();
-    if (options.order_type == CURSOR_REGULAR_ORDER) {
+    if (options.order_type == GRNXX_REGULAR_ORDER) {
       return create_exact_match_cursor(
           set_begin, set_end, options.offset, options.limit);
     } else {

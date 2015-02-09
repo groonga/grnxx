@@ -695,7 +695,7 @@ void test_reverse() {
   range.set_lower_bound(grnxx::Int(10), grnxx::INCLUSIVE_END_POINT);
   range.set_upper_bound(grnxx::Int(90), grnxx::EXCLUSIVE_END_POINT);
   grnxx::CursorOptions options;
-  options.order_type = grnxx::CURSOR_REVERSE_ORDER;
+  options.order_type = GRNXX_REVERSE_ORDER;
   auto cursor = index->find_in_range(range, options);
 
   grnxx::Array<grnxx::Record> records;

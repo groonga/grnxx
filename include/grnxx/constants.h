@@ -30,6 +30,13 @@ typedef enum {
   GRNXX_TEXT_VECTOR
 } grnxx_data_type;
 
+typedef enum {
+  // The natural order (the ascending order in most cases).
+  GRNXX_REGULAR_ORDER,
+  // The reverse order (the descending order in most cases).
+  GRNXX_REVERSE_ORDER
+} grnxx_order_type;
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus

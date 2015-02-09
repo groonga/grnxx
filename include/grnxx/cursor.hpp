@@ -5,16 +5,12 @@
 #include <limits>
 
 #include "grnxx/array.hpp"
+#include "grnxx/constants.h"
 #include "grnxx/data_types.hpp"
 
 namespace grnxx {
 
-enum CursorOrderType {
-  // The natural order (the ascending order in most cases).
-  CURSOR_REGULAR_ORDER,
-  // The reverse order (the descending order in most cases).
-  CURSOR_REVERSE_ORDER
-};
+using CursorOrderType = grnxx_order_type;
 
 struct CursorOptions {
   // The first "offset" records are skipped.
@@ -29,7 +25,7 @@ struct CursorOptions {
   CursorOptions()
       : offset(0),
         limit(std::numeric_limits<size_t>::max()),
-        order_type(CURSOR_REGULAR_ORDER) {}
+        order_type(GRNXX_REGULAR_ORDER) {}
 };
 
 class Cursor {

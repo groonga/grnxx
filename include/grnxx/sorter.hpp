@@ -5,18 +5,14 @@
 #include <memory>
 
 #include "grnxx/array.hpp"
+#include "grnxx/constants.h"
 #include "grnxx/data_types.hpp"
 #include "grnxx/expression.hpp"
 #include "grnxx/table.hpp"
 
 namespace grnxx {
 
-enum SorterOrderType {
-  // The natural order (the ascending order in most cases).
-  SORTER_REGULAR_ORDER,
-  // The reverse order (the descending order in most cases).
-  SORTER_REVERSE_ORDER
-};
+using SorterOrderType = grnxx_order_type;
 
 struct SorterOrder {
   std::unique_ptr<Expression> expression;

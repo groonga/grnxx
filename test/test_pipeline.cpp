@@ -262,11 +262,11 @@ void test_sorter() {
   expression_builder->push_column("Int");
   expression = expression_builder->release();
   orders[0].expression = std::move(expression);
-  orders[0].type = grnxx::SORTER_REGULAR_ORDER;
+  orders[0].type = GRNXX_REGULAR_ORDER;
   expression_builder->push_row_id();
   expression = expression_builder->release();
   orders[1].expression = std::move(expression);
-  orders[1].type = grnxx::SORTER_REGULAR_ORDER;
+  orders[1].type = GRNXX_REGULAR_ORDER;
   auto sorter = grnxx::Sorter::create(std::move(orders));
   pipeline_builder->push_sorter(std::move(sorter));
 

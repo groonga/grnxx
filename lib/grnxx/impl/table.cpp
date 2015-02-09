@@ -423,10 +423,10 @@ Int Table::find_row(const Datum &key) const {
 std::unique_ptr<Cursor> Table::create_cursor(
     const CursorOptions &options) const {
   switch (options.order_type) {
-    case CURSOR_REGULAR_ORDER: {
+    case GRNXX_REGULAR_ORDER: {
       return TableRegularCursor::create(this, options);
     }
-    case CURSOR_REVERSE_ORDER: {
+    case GRNXX_REVERSE_ORDER: {
       return TableReverseCursor::create(this, options);
     }
     default: {
