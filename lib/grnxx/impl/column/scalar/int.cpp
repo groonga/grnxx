@@ -12,7 +12,7 @@ namespace impl {
 Column<Int>::Column(Table *table,
                     const String &name,
                     const ColumnOptions &options)
-    : ColumnBase(table, name, INT_DATA),
+    : ColumnBase(table, name, GRNXX_INT),
       value_size_(8),
       buffer_(nullptr),
       size_(0),
@@ -605,10 +605,10 @@ void Column<Int>::reserve_with_different_value_size(size_t size,
 
 Int Column<Int>::parse_datum(const Datum &datum) {
   switch (datum.type()) {
-    case NA_DATA: {
+    case GRNXX_NA: {
       return Int::na();
     }
-    case INT_DATA: {
+    case GRNXX_INT: {
       return datum.as_int();
     }
     default: {

@@ -9,7 +9,7 @@ namespace impl {
 Column<GeoPoint>::Column(Table *table,
                       const String &name,
                       const ColumnOptions &)
-    : ColumnBase(table, name, GEO_POINT_DATA),
+    : ColumnBase(table, name, GRNXX_GEO_POINT),
       values_() {}
 
 Column<GeoPoint>::~Column() {}
@@ -118,10 +118,10 @@ Int Column<GeoPoint>::scan(GeoPoint value) const {
 
 GeoPoint Column<GeoPoint>::parse_datum(const Datum &datum) {
   switch (datum.type()) {
-    case NA_DATA: {
+    case GRNXX_NA: {
       return GeoPoint::na();
     }
-    case GEO_POINT_DATA: {
+    case GRNXX_GEO_POINT: {
       return datum.as_geo_point();
     }
     default: {

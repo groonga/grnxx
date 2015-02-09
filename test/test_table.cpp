@@ -41,7 +41,7 @@ void test_table() {
   assert(table->is_full());
 
   // Create a column named "Column_1".
-  auto column = table->create_column("Column_1", grnxx::BOOL_DATA);
+  auto column = table->create_column("Column_1", GRNXX_BOOL);
   assert(column->name() == "Column_1");
   assert(table->num_columns() == 1);
 
@@ -50,14 +50,14 @@ void test_table() {
 
   // The following create_column() must fail because "Column_1" already exists.
   try {
-    table->create_column("Column_1", grnxx::BOOL_DATA);
+    table->create_column("Column_1", GRNXX_BOOL);
     assert(false);
   } catch (...) {
   }
 
   // Create columns named "Column_2" and Column_3".
-  table->create_column("Column_2", grnxx::BOOL_DATA);
-  table->create_column("Column_3", grnxx::BOOL_DATA);
+  table->create_column("Column_2", GRNXX_BOOL);
+  table->create_column("Column_3", GRNXX_BOOL);
   assert(table->num_columns() == 3);
 
   // Remove "Column_2".
@@ -68,7 +68,7 @@ void test_table() {
   assert(table->get_column(1)->name() == "Column_3");
 
   // Recreate "Column_2".
-  table->create_column("Column_2", grnxx::BOOL_DATA);
+  table->create_column("Column_2", GRNXX_BOOL);
 
   // Move "Column_3" to the next to "Column_2".
   table->reorder_column("Column_3", "Column_2");
@@ -211,7 +211,7 @@ void test_int_key() {
   auto table = db->create_table("Table");
 
   // Create a column named "Column".
-  auto column = table->create_column("Column", grnxx::INT_DATA);
+  auto column = table->create_column("Column", GRNXX_INT);
 
   // Append three rows.
   grnxx::Int row_id = table->insert_row();
@@ -294,7 +294,7 @@ void test_text_key() {
   auto table = db->create_table("Table");
 
   // Create a column named "Column".
-  auto column = table->create_column("Column", grnxx::TEXT_DATA);
+  auto column = table->create_column("Column", GRNXX_TEXT);
 
   // Append three rows.
   grnxx::Int row_id = table->insert_row();
@@ -424,7 +424,7 @@ void test_reference() {
   // Create a column named "Ref".
   grnxx::ColumnOptions options;
   options.reference_table_name = "To";
-  auto ref_column = from_table->create_column("Ref", grnxx::INT_DATA, options);
+  auto ref_column = from_table->create_column("Ref", GRNXX_INT, options);
 
   // Append rows.
   to_table->insert_row();
@@ -444,25 +444,25 @@ void test_reference() {
 
   grnxx::Datum datum;
   ref_column->get(grnxx::Int(0), &datum);
-  assert(datum.type() == grnxx::INT_DATA);
+  assert(datum.type() == GRNXX_INT);
   assert(datum.as_int().raw() == 0);
   ref_column->get(grnxx::Int(1), &datum);
-  assert(datum.type() == grnxx::INT_DATA);
+  assert(datum.type() == GRNXX_INT);
   assert(datum.as_int().raw() == 1);
   ref_column->get(grnxx::Int(2), &datum);
-  assert(datum.type() == grnxx::INT_DATA);
+  assert(datum.type() == GRNXX_INT);
   assert(datum.as_int().raw() == 1);
 
   to_table->remove_row(grnxx::Int(1));
 
   ref_column->get(grnxx::Int(0), &datum);
-  assert(datum.type() == grnxx::INT_DATA);
+  assert(datum.type() == GRNXX_INT);
   assert(datum.as_int().raw() == 0);
   ref_column->get(grnxx::Int(1), &datum);
-  assert(datum.type() == grnxx::INT_DATA);
+  assert(datum.type() == GRNXX_INT);
   assert(datum.as_int().raw() == 1);
   ref_column->get(grnxx::Int(2), &datum);
-  assert(datum.type() == grnxx::INT_DATA);
+  assert(datum.type() == GRNXX_INT);
   assert(datum.as_int().raw() == 1);
 }
 

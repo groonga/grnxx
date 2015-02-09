@@ -368,7 +368,7 @@ void test_internal_type_conversion() {
   table->insert_row();
   table->insert_row();
 
-  auto column = table->create_column("Column", grnxx::INT_DATA);
+  auto column = table->create_column("Column", GRNXX_INT);
 
   // Set the first 8-bit integer.
   column->set(grnxx::Int(0), grnxx::Int(int64_t(1) << 0));
@@ -404,7 +404,7 @@ void test_internal_type_conversion() {
   assert(datum.as_int().raw() == (int64_t(1) << 32));
 
   table->remove_column("Column");
-  column = table->create_column("Column", grnxx::INT_DATA);
+  column = table->create_column("Column", GRNXX_INT);
 
   // Conversion from 8-bit to 32-bit.
   column->set(grnxx::Int(0), grnxx::Int(int64_t(1) << 0));
@@ -415,7 +415,7 @@ void test_internal_type_conversion() {
   assert(datum.as_int().raw() == (int64_t(1) << 16));
 
   table->remove_column("Column");
-  column = table->create_column("Column", grnxx::INT_DATA);
+  column = table->create_column("Column", GRNXX_INT);
 
   // Conversion from 8-bit to 64-bit.
   column->set(grnxx::Int(0), grnxx::Int(int64_t(1) << 0));
@@ -426,7 +426,7 @@ void test_internal_type_conversion() {
   assert(datum.as_int().raw() == (int64_t(1) << 32));
 
   table->remove_column("Column");
-  column = table->create_column("Column", grnxx::INT_DATA);
+  column = table->create_column("Column", GRNXX_INT);
 
   // Conversion from 16-bit to 64-bit.
   column->set(grnxx::Int(0), grnxx::Int(int64_t(1) << 8));
@@ -445,7 +445,7 @@ void test_contains() {
   table->insert_row();
   table->insert_row();
 
-  auto column = table->create_column("Int", grnxx::INT_DATA);
+  auto column = table->create_column("Int", GRNXX_INT);
   assert(!column->contains(grnxx::Int(123)));
   assert(!column->contains(grnxx::Int(456)));
   assert(!column->contains(grnxx::Int(789)));
@@ -496,7 +496,7 @@ void test_find_one() {
   table->insert_row();
   table->insert_row();
 
-  auto column = table->create_column("Int", grnxx::INT_DATA);
+  auto column = table->create_column("Int", GRNXX_INT);
   assert(column->find_one(grnxx::Int(123)).is_na());
   assert(column->find_one(grnxx::Int(456)).is_na());
   assert(column->find_one(grnxx::Int(789)).is_na());

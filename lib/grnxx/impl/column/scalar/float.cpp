@@ -9,7 +9,7 @@ namespace impl {
 Column<Float>::Column(Table *table,
                       const String &name,
                       const ColumnOptions &)
-    : ColumnBase(table, name, FLOAT_DATA),
+    : ColumnBase(table, name, GRNXX_FLOAT),
       values_() {}
 
 Column<Float>::~Column() {}
@@ -129,10 +129,10 @@ Int Column<Float>::scan(Float value) const {
 
 Float Column<Float>::parse_datum(const Datum &datum) {
   switch (datum.type()) {
-    case NA_DATA: {
+    case GRNXX_NA: {
       return Float::na();
     }
-    case FLOAT_DATA: {
+    case GRNXX_FLOAT: {
       return datum.as_float();
     }
     default: {

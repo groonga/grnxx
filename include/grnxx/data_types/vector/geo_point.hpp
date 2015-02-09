@@ -89,7 +89,7 @@ class Vector<GeoPoint> {
   }
 
   static constexpr DataType type() {
-    return GEO_POINT_VECTOR_DATA;
+    return GRNXX_GEO_POINT_VECTOR;
   }
 
   static constexpr Vector empty() {

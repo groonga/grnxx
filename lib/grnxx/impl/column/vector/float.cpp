@@ -12,7 +12,7 @@ namespace impl {
 Column<Vector<Float>>::Column(Table *table,
                               const String &name,
                               const ColumnOptions &)
-    : ColumnBase(table, name, FLOAT_VECTOR_DATA),
+    : ColumnBase(table, name, GRNXX_FLOAT_VECTOR),
       headers_(),
       bodies_() {}
 
@@ -154,10 +154,10 @@ size_t Column<Vector<Float>>::get_valid_size() const {
 
 Vector<Float> Column<Vector<Float>>::parse_datum(const Datum &datum) {
   switch (datum.type()) {
-    case NA_DATA: {
+    case GRNXX_NA: {
       return Vector<Float>::na();
     }
-    case FLOAT_VECTOR_DATA: {
+    case GRNXX_FLOAT_VECTOR: {
       return datum.as_float_vector();
     }
     default: {

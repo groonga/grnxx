@@ -108,43 +108,43 @@ std::unique_ptr<ColumnBase> ColumnBase::create(
     const ColumnOptions &options) try {
   std::unique_ptr<ColumnBase> column;
   switch (data_type) {
-    case BOOL_DATA: {
+    case GRNXX_BOOL: {
       column.reset(new impl::Column<Bool>(table, name, options));
       break;
     }
-    case INT_DATA: {
+    case GRNXX_INT: {
       column.reset(new impl::Column<Int>(table, name, options));
       break;
     }
-    case FLOAT_DATA: {
+    case GRNXX_FLOAT: {
       column.reset(new impl::Column<Float>(table, name, options));
       break;
     }
-    case GEO_POINT_DATA: {
+    case GRNXX_GEO_POINT: {
       column.reset(new impl::Column<GeoPoint>(table, name, options));
       break;
     }
-    case TEXT_DATA: {
+    case GRNXX_TEXT: {
       column.reset(new impl::Column<Text>(table, name, options));
       break;
     }
-    case BOOL_VECTOR_DATA: {
+    case GRNXX_BOOL_VECTOR: {
       column.reset(new impl::Column<Vector<Bool>>(table, name, options));
       break;
     }
-    case INT_VECTOR_DATA: {
+    case GRNXX_INT_VECTOR: {
       column.reset(new impl::Column<Vector<Int>>(table, name, options));
       break;
     }
-    case FLOAT_VECTOR_DATA: {
+    case GRNXX_FLOAT_VECTOR: {
       column.reset(new impl::Column<Vector<Float>>(table, name, options));
       break;
     }
-    case GEO_POINT_VECTOR_DATA: {
+    case GRNXX_GEO_POINT_VECTOR: {
       column.reset(new impl::Column<Vector<GeoPoint>>(table, name, options));
       break;
     }
-    case TEXT_VECTOR_DATA: {
+    case GRNXX_TEXT_VECTOR: {
       column.reset(new impl::Column<Vector<Text>>(table, name, options));
       break;
     }

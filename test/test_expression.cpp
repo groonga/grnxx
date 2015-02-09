@@ -88,63 +88,63 @@ void init_test() try {
   test.table = test.db->create_table("Table");
 
   // Create columns for various data types.
-  grnxx::DataType data_type = grnxx::BOOL_DATA;
+  grnxx::DataType data_type = GRNXX_BOOL;
   auto bool_column = test.table->create_column("Bool", data_type);
   auto bool2_column = test.table->create_column("Bool2", data_type);
 
-  data_type = grnxx::INT_DATA;
+  data_type = GRNXX_INT;
   auto int_column = test.table->create_column("Int", data_type);
   auto int2_column = test.table->create_column("Int2", data_type);
 
-  data_type = grnxx::FLOAT_DATA;
+  data_type = GRNXX_FLOAT;
   auto float_column = test.table->create_column("Float", data_type);
   auto float2_column = test.table->create_column("Float2", data_type);
 
-  data_type = grnxx::GEO_POINT_DATA;
+  data_type = GRNXX_GEO_POINT;
   auto geo_point_column = test.table->create_column("GeoPoint", data_type);
   auto geo_point2_column = test.table->create_column("GeoPoint2", data_type);
 
-  data_type = grnxx::TEXT_DATA;
+  data_type = GRNXX_TEXT;
   auto text_column = test.table->create_column("Text", data_type);
   auto text2_column = test.table->create_column("Text2", data_type);
 
-  data_type = grnxx::BOOL_VECTOR_DATA;
+  data_type = GRNXX_BOOL_VECTOR;
   auto bool_vector_column =
       test.table->create_column("BoolVector", data_type);
   auto bool_vector2_column =
       test.table->create_column("BoolVector2", data_type);
 
-  data_type = grnxx::INT_VECTOR_DATA;
+  data_type = GRNXX_INT_VECTOR;
   auto int_vector_column =
       test.table->create_column("IntVector", data_type);
   auto int_vector2_column =
       test.table->create_column("IntVector2", data_type);
 
-  data_type = grnxx::FLOAT_VECTOR_DATA;
+  data_type = GRNXX_FLOAT_VECTOR;
   auto float_vector_column =
       test.table->create_column("FloatVector", data_type);
   auto float_vector2_column =
       test.table->create_column("FloatVector2", data_type);
 
-  data_type = grnxx::GEO_POINT_VECTOR_DATA;
+  data_type = GRNXX_GEO_POINT_VECTOR;
   auto geo_point_vector_column =
       test.table->create_column("GeoPointVector", data_type);
   auto geo_point_vector2_column =
       test.table->create_column("GeoPointVector2", data_type);
 
-  data_type = grnxx::TEXT_VECTOR_DATA;
+  data_type = GRNXX_TEXT_VECTOR;
   auto text_vector_column =
       test.table->create_column("TextVector", data_type);
   auto text_vector2_column =
       test.table->create_column("TextVector2", data_type);
 
-  data_type = grnxx::INT_DATA;
+  data_type = GRNXX_INT;
   grnxx::ColumnOptions options;
   options.reference_table_name = "Table";
   auto ref_column = test.table->create_column("Ref", data_type, options);
   auto ref2_column = test.table->create_column("Ref2", data_type, options);
 
-  data_type = grnxx::INT_VECTOR_DATA;
+  data_type = GRNXX_INT_VECTOR;
   auto ref_vector_column =
       test.table->create_column("RefVector", data_type, options);
   auto ref_vector2_column =

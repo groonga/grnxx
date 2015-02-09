@@ -99,7 +99,7 @@ void benchmark_grnxx() {
 
   auto db = grnxx::open_db("");
   auto table = db->create_table("Table");
-  auto col_a = table->create_column("A", grnxx::INT_DATA);
+  auto col_a = table->create_column("A", GRNXX_INT);
   for (size_t i = 0; i < SIZE; ++i) {
     grnxx::Int row_id = table->insert_row();
     col_a->set(row_id, a[i]);

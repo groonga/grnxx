@@ -132,7 +132,7 @@ class Vector<Text> {
   }
 
   static constexpr DataType type() {
-    return TEXT_VECTOR_DATA;
+    return GRNXX_TEXT_VECTOR;
   }
 
   static constexpr Vector empty() {

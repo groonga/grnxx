@@ -85,7 +85,7 @@ class Vector<Bool> {
   }
 
   static constexpr DataType type() {
-    return BOOL_VECTOR_DATA;
+    return GRNXX_BOOL_VECTOR;
   }
 
   static constexpr Vector empty() {

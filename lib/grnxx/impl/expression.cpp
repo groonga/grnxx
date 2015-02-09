@@ -1931,34 +1931,34 @@ void ExpressionBuilder::push_dereference(const ExpressionOptions &options) {
 Node *ExpressionBuilder::create_constant_node(
     const Datum &datum) try {
   switch (datum.type()) {
-    case BOOL_DATA: {
+    case GRNXX_BOOL: {
       return new ConstantNode<Bool>(datum.as_bool());
     }
-    case INT_DATA: {
+    case GRNXX_INT: {
       return new ConstantNode<Int>(datum.as_int());
     }
-    case FLOAT_DATA: {
+    case GRNXX_FLOAT: {
       return new ConstantNode<Float>(datum.as_float());
     }
-    case GEO_POINT_DATA: {
+    case GRNXX_GEO_POINT: {
       return new ConstantNode<GeoPoint>(datum.as_geo_point());
     }
-    case TEXT_DATA: {
+    case GRNXX_TEXT: {
       return new ConstantNode<Text>(datum.as_text());
     }
-    case BOOL_VECTOR_DATA: {
+    case GRNXX_BOOL_VECTOR: {
       return new ConstantNode<Vector<Bool>>(datum.as_bool_vector());
     }
-    case INT_VECTOR_DATA: {
+    case GRNXX_INT_VECTOR: {
       return new ConstantNode<Vector<Int>>(datum.as_int_vector());
     }
-    case FLOAT_VECTOR_DATA: {
+    case GRNXX_FLOAT_VECTOR: {
       return new ConstantNode<Vector<Float>>(datum.as_float_vector());
     }
-    case GEO_POINT_VECTOR_DATA: {
+    case GRNXX_GEO_POINT_VECTOR: {
       return new ConstantNode<Vector<GeoPoint>>(datum.as_geo_point_vector());
     }
-    case TEXT_VECTOR_DATA: {
+    case GRNXX_TEXT_VECTOR: {
       return new ConstantNode<Vector<Text>>(datum.as_text_vector());
     }
     default: {
@@ -1971,34 +1971,34 @@ Node *ExpressionBuilder::create_constant_node(
 
 Node *ExpressionBuilder::create_column_node(ColumnBase *column) try {
   switch (column->data_type()) {
-    case BOOL_DATA: {
+    case GRNXX_BOOL: {
       return new ColumnNode<Bool>(column);
     }
-    case INT_DATA: {
+    case GRNXX_INT: {
       return new ColumnNode<Int>(column);
     }
-    case FLOAT_DATA: {
+    case GRNXX_FLOAT: {
       return new ColumnNode<Float>(column);
     }
-    case GEO_POINT_DATA: {
+    case GRNXX_GEO_POINT: {
       return new ColumnNode<GeoPoint>(column);
     }
-    case TEXT_DATA: {
+    case GRNXX_TEXT: {
       return new ColumnNode<Text>(column);
     }
-    case BOOL_VECTOR_DATA: {
+    case GRNXX_BOOL_VECTOR: {
       return new ColumnNode<Vector<Bool>>(column);
     }
-    case INT_VECTOR_DATA: {
+    case GRNXX_INT_VECTOR: {
       return new ColumnNode<Vector<Int>>(column);
     }
-    case FLOAT_VECTOR_DATA: {
+    case GRNXX_FLOAT_VECTOR: {
       return new ColumnNode<Vector<Float>>(column);
     }
-    case GEO_POINT_VECTOR_DATA: {
+    case GRNXX_GEO_POINT_VECTOR: {
       return new ColumnNode<Vector<GeoPoint>>(column);
     }
-    case TEXT_VECTOR_DATA: {
+    case GRNXX_TEXT_VECTOR: {
       return new ColumnNode<Vector<Text>>(column);
     }
     default: {
@@ -2015,7 +2015,7 @@ Node *ExpressionBuilder::create_unary_node(
   switch (operator_type) {
     case LOGICAL_NOT_OPERATOR: {
       switch (arg->data_type()) {
-        case BOOL_DATA: {
+        case GRNXX_BOOL: {
           return new LogicalNotNode(std::move(arg));
         }
         default: {
@@ -2025,10 +2025,10 @@ Node *ExpressionBuilder::create_unary_node(
     }
     case BITWISE_NOT_OPERATOR: {
       switch (arg->data_type()) {
-        case BOOL_DATA: {
+        case GRNXX_BOOL: {
           return new BitwiseNotNode<Bool>(std::move(arg));
         }
-        case INT_DATA: {
+        case GRNXX_INT: {
           return new BitwiseNotNode<Int>(std::move(arg));
         }
         default: {
@@ -2038,8 +2038,8 @@ Node *ExpressionBuilder::create_unary_node(
     }
     case POSITIVE_OPERATOR: {
       switch (arg->data_type()) {
-        case INT_DATA:
-        case FLOAT_DATA: {
+        case GRNXX_INT:
+        case GRNXX_FLOAT: {
           // A positive operator does nothing.
           return arg.release();
         }
@@ -2050,10 +2050,10 @@ Node *ExpressionBuilder::create_unary_node(
     }
     case NEGATIVE_OPERATOR: {
       switch (arg->data_type()) {
-        case INT_DATA: {
+        case GRNXX_INT: {
           return new NegativeNode<Int>(std::move(arg));
         }
-        case FLOAT_DATA: {
+        case GRNXX_FLOAT: {
           return new NegativeNode<Float>(std::move(arg));
         }
         default: {
@@ -2063,7 +2063,7 @@ Node *ExpressionBuilder::create_unary_node(
     }
     case TO_INT_OPERATOR: {
       switch (arg->data_type()) {
-        case FLOAT_DATA: {
+        case GRNXX_FLOAT: {
           return new ToIntNode(std::move(arg));
         }
         default: {
@@ -2073,7 +2073,7 @@ Node *ExpressionBuilder::create_unary_node(
     }
     case TO_FLOAT_OPERATOR: {
       switch (arg->data_type()) {
-        case INT_DATA: {
+        case GRNXX_INT: {
           return new ToFloatNode(std::move(arg));
         }
         default: {
@@ -2095,15 +2095,15 @@ Node *ExpressionBuilder::create_binary_node(
     std::unique_ptr<Node> &&arg2) try {
   switch (operator_type) {
     case LOGICAL_AND_OPERATOR: {
-      if ((arg1->data_type() != BOOL_DATA) ||
-          (arg2->data_type() != BOOL_DATA)) {
+      if ((arg1->data_type() != GRNXX_BOOL) ||
+          (arg2->data_type() != GRNXX_BOOL)) {
         throw "Invalid data type";  // TODO
       }
       return new LogicalAndNode(std::move(arg1), std::move(arg2));
     }
     case LOGICAL_OR_OPERATOR: {
-      if ((arg1->data_type() != BOOL_DATA) ||
-          (arg2->data_type() != BOOL_DATA)) {
+      if ((arg1->data_type() != GRNXX_BOOL) ||
+          (arg2->data_type() != GRNXX_BOOL)) {
         throw "Invalid data type";  // TODO
       }
       return new LogicalOrNode(std::move(arg1), std::move(arg2));
@@ -2111,43 +2111,43 @@ Node *ExpressionBuilder::create_binary_node(
     case EQUAL_OPERATOR:
     case NOT_EQUAL_OPERATOR: {
       switch (arg1->data_type()) {
-        case BOOL_DATA: {
+        case GRNXX_BOOL: {
           return create_equality_test_node<Bool>(
             operator_type, std::move(arg1), std::move(arg2));
         }
-        case INT_DATA: {
+        case GRNXX_INT: {
           return create_equality_test_node<Int>(
             operator_type, std::move(arg1), std::move(arg2));
         }
-        case FLOAT_DATA: {
+        case GRNXX_FLOAT: {
           return create_equality_test_node<Float>(
             operator_type, std::move(arg1), std::move(arg2));
         }
-        case GEO_POINT_DATA: {
+        case GRNXX_GEO_POINT: {
           return create_equality_test_node<GeoPoint>(
             operator_type, std::move(arg1), std::move(arg2));
         }
-        case TEXT_DATA: {
+        case GRNXX_TEXT: {
           return create_equality_test_node<Text>(
             operator_type, std::move(arg1), std::move(arg2));
         }
-        case BOOL_VECTOR_DATA: {
+        case GRNXX_BOOL_VECTOR: {
           return create_equality_test_node<Vector<Bool>>(
             operator_type, std::move(arg1), std::move(arg2));
         }
-        case INT_VECTOR_DATA: {
+        case GRNXX_INT_VECTOR: {
           return create_equality_test_node<Vector<Int>>(
             operator_type, std::move(arg1), std::move(arg2));
         }
-        case FLOAT_VECTOR_DATA: {
+        case GRNXX_FLOAT_VECTOR: {
           return create_equality_test_node<Vector<Float>>(
             operator_type, std::move(arg1), std::move(arg2));
         }
-        case GEO_POINT_VECTOR_DATA: {
+        case GRNXX_GEO_POINT_VECTOR: {
           return create_equality_test_node<Vector<GeoPoint>>(
             operator_type, std::move(arg1), std::move(arg2));
         }
-        case TEXT_VECTOR_DATA: {
+        case GRNXX_TEXT_VECTOR: {
           return create_equality_test_node<Vector<Text>>(
             operator_type, std::move(arg1), std::move(arg2));
         }
@@ -2161,15 +2161,15 @@ Node *ExpressionBuilder::create_binary_node(
     case GREATER_OPERATOR:
     case GREATER_EQUAL_OPERATOR: {
       switch (arg1->data_type()) {
-        case INT_DATA: {
+        case GRNXX_INT: {
           return create_comparison_node<Int>(
               operator_type, std::move(arg1), std::move(arg2));
         }
-        case FLOAT_DATA: {
+        case GRNXX_FLOAT: {
           return create_comparison_node<Float>(
               operator_type, std::move(arg1), std::move(arg2));
         }
-        case TEXT_DATA: {
+        case GRNXX_TEXT: {
           return create_comparison_node<Text>(
               operator_type, std::move(arg1), std::move(arg2));
         }
@@ -2182,11 +2182,11 @@ Node *ExpressionBuilder::create_binary_node(
     case BITWISE_OR_OPERATOR:
     case BITWISE_XOR_OPERATOR: {
       switch (arg1->data_type()) {
-        case BOOL_DATA: {
+        case GRNXX_BOOL: {
           return create_bitwise_binary_node<Bool>(
               operator_type, std::move(arg1), std::move(arg2));
         }
-        case INT_DATA: {
+        case GRNXX_INT: {
           return create_bitwise_binary_node<Int>(
               operator_type, std::move(arg1), std::move(arg2));
         }
@@ -2201,11 +2201,11 @@ Node *ExpressionBuilder::create_binary_node(
     case DIVISION_OPERATOR:
     case MODULUS_OPERATOR: {
       switch (arg1->data_type()) {
-        case INT_DATA: {
+        case GRNXX_INT: {
           return create_arithmetic_node<Int>(
               operator_type, std::move(arg1), std::move(arg2));
         }
-        case FLOAT_DATA: {
+        case GRNXX_FLOAT: {
           return create_arithmetic_node<Float>(
               operator_type, std::move(arg1), std::move(arg2));
         }
@@ -2218,7 +2218,7 @@ Node *ExpressionBuilder::create_binary_node(
     case ENDS_WITH_OPERATOR:
     case CONTAINS_OPERATOR: {
       switch (arg1->data_type()) {
-        case TEXT_DATA: {
+        case GRNXX_TEXT: {
           return create_search_node<Text>(
               operator_type, std::move(arg1), std::move(arg2));
         }
@@ -2367,23 +2367,23 @@ Node *ExpressionBuilder::create_search_node(OperatorType operator_type,
 
 Node *ExpressionBuilder::create_subscript_node(std::unique_ptr<Node> &&arg1,
                                                std::unique_ptr<Node> &&arg2) {
-  if (arg2->data_type() != INT_DATA) {
+  if (arg2->data_type() != GRNXX_INT) {
     throw "Invalid data type";  // TODO
   }
   switch (arg1->data_type()) {
-    case BOOL_VECTOR_DATA: {
+    case GRNXX_BOOL_VECTOR: {
       return new SubscriptNode<Bool>(std::move(arg1), std::move(arg2));
     }
-    case INT_VECTOR_DATA: {
+    case GRNXX_INT_VECTOR: {
       return new SubscriptNode<Int>(std::move(arg1), std::move(arg2));
     }
-    case FLOAT_VECTOR_DATA: {
+    case GRNXX_FLOAT_VECTOR: {
       return new SubscriptNode<Float>(std::move(arg1), std::move(arg2));
     }
-    case GEO_POINT_VECTOR_DATA: {
+    case GRNXX_GEO_POINT_VECTOR: {
       return new SubscriptNode<GeoPoint>(std::move(arg1), std::move(arg2));
     }
-    case TEXT_VECTOR_DATA: {
+    case GRNXX_TEXT_VECTOR: {
       return new SubscriptNode<Text>(std::move(arg1), std::move(arg2));
     }
     default: {
@@ -2397,45 +2397,45 @@ Node *ExpressionBuilder::create_dereference_node(
     std::unique_ptr<Node> &&arg2,
     const ExpressionOptions &options) {
   switch (arg1->data_type()) {
-    case INT_DATA: {
+    case GRNXX_INT: {
       switch (arg2->data_type()) {
-        case BOOL_DATA: {
+        case GRNXX_BOOL: {
           return new DereferenceNode<Bool>(
               std::move(arg1), std::move(arg2));
         }
-        case INT_DATA: {
+        case GRNXX_INT: {
           return new DereferenceNode<Int>(
               std::move(arg1), std::move(arg2));
         }
-        case FLOAT_DATA: {
+        case GRNXX_FLOAT: {
           return new DereferenceNode<Float>(
               std::move(arg1), std::move(arg2));
         }
-        case GEO_POINT_DATA: {
+        case GRNXX_GEO_POINT: {
           return new DereferenceNode<GeoPoint>(
               std::move(arg1), std::move(arg2));
         }
-        case TEXT_DATA: {
+        case GRNXX_TEXT: {
           return new DereferenceNode<Text>(
               std::move(arg1), std::move(arg2));
         }
-        case BOOL_VECTOR_DATA: {
+        case GRNXX_BOOL_VECTOR: {
           return new DereferenceNode<Vector<Bool>>(
               std::move(arg1), std::move(arg2));
         }
-        case INT_VECTOR_DATA: {
+        case GRNXX_INT_VECTOR: {
           return new DereferenceNode<Vector<Int>>(
               std::move(arg1), std::move(arg2));
         }
-        case FLOAT_VECTOR_DATA: {
+        case GRNXX_FLOAT_VECTOR: {
           return new DereferenceNode<Vector<Float>>(
               std::move(arg1), std::move(arg2));
         }
-        case GEO_POINT_VECTOR_DATA: {
+        case GRNXX_GEO_POINT_VECTOR: {
           return new DereferenceNode<Vector<GeoPoint>>(
               std::move(arg1), std::move(arg2));
         }
-        case TEXT_VECTOR_DATA: {
+        case GRNXX_TEXT_VECTOR: {
           return new DereferenceNode<Vector<Text>>(
               std::move(arg1), std::move(arg2));
         }
@@ -2444,25 +2444,25 @@ Node *ExpressionBuilder::create_dereference_node(
         }
       }
     }
-    case INT_VECTOR_DATA: {
+    case GRNXX_INT_VECTOR: {
       switch (arg2->data_type()) {
-        case BOOL_DATA: {
+        case GRNXX_BOOL: {
           return new VectorDereferenceNode<Bool>(
               std::move(arg1), std::move(arg2), options);
         }
-        case INT_DATA: {
+        case GRNXX_INT: {
           return new VectorDereferenceNode<Int>(
               std::move(arg1), std::move(arg2), options);
         }
-        case FLOAT_DATA: {
+        case GRNXX_FLOAT: {
           return new VectorDereferenceNode<Float>(
               std::move(arg1), std::move(arg2), options);
         }
-        case GEO_POINT_DATA: {
+        case GRNXX_GEO_POINT: {
           return new VectorDereferenceNode<GeoPoint>(
               std::move(arg1), std::move(arg2), options);
         }
-        case TEXT_DATA: {
+        case GRNXX_TEXT: {
           return new VectorDereferenceNode<Text>(
               std::move(arg1), std::move(arg2), options);
         }

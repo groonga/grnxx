@@ -241,7 +241,7 @@ class Int {
   constexpr Float to_float() const;
 
   static constexpr DataType type() {
-    return INT_DATA;
+    return GRNXX_INT;
   }
 
   static constexpr Int min() {

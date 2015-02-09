@@ -12,7 +12,7 @@ namespace impl {
 Column<Vector<GeoPoint>>::Column(Table *table,
                                  const String &name,
                                  const ColumnOptions &)
-    : ColumnBase(table, name, GEO_POINT_VECTOR_DATA),
+    : ColumnBase(table, name, GRNXX_GEO_POINT_VECTOR),
       headers_(),
       bodies_() {}
 
@@ -155,10 +155,10 @@ size_t Column<Vector<GeoPoint>>::get_valid_size() const {
 
 Vector<GeoPoint> Column<Vector<GeoPoint>>::parse_datum(const Datum &datum) {
   switch (datum.type()) {
-    case NA_DATA: {
+    case GRNXX_NA: {
       return Vector<GeoPoint>::na();
     }
-    case GEO_POINT_VECTOR_DATA: {
+    case GRNXX_GEO_POINT_VECTOR: {
       return datum.as_geo_point_vector();
     }
     default: {

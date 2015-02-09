@@ -330,13 +330,13 @@ void Table::unset_key_column() {
 
 Int Table::insert_row(const Datum &key) {
   if (key_column_) {
-    if (key.type() == NA_DATA) {
+    if (key.type() == GRNXX_NA) {
       throw "No key";  // TODO
     }
     if (!find_row(key).is_na()) {
       throw "Key already exists";  // TODO
     }
-  } else if (key.type() != NA_DATA) {
+  } else if (key.type() != GRNXX_NA) {
     throw "Wrong key";  // TODO
   }
   Int row_id = find_next_row_id();
@@ -357,7 +357,7 @@ Int Table::find_or_insert_row(const Datum &key, bool *inserted) {
       }
       return row_id;
     }
-  } else if (key.type() != NA_DATA) {
+  } else if (key.type() != GRNXX_NA) {
     throw "Wrong key";  // TODO
   }
   Int row_id = find_next_row_id();

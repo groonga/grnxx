@@ -87,7 +87,7 @@ class Vector<Int> {
   }
 
   static constexpr DataType type() {
-    return INT_VECTOR_DATA;
+    return GRNXX_INT_VECTOR;
   }
 
   static constexpr Vector empty() {

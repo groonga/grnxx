@@ -145,7 +145,7 @@ class Float {
   constexpr Int to_int() const;
 
   static constexpr DataType type() {
-    return FLOAT_DATA;
+    return GRNXX_FLOAT;
   }
 
   static constexpr Float min() {

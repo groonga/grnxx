@@ -141,7 +141,7 @@ class Text {
   }
 
   static constexpr DataType type() {
-    return TEXT_DATA;
+    return GRNXX_TEXT;
   }
 
   static constexpr Text empty() {

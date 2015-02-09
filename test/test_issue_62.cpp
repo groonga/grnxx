@@ -48,10 +48,10 @@ void test_scored_subexpression() {
   }
 
   // Create columns for Float and Int values.
-  auto float_column = table->create_column("Float", grnxx::FLOAT_DATA);
+  auto float_column = table->create_column("Float", GRNXX_FLOAT);
   grnxx::ColumnOptions options;
   options.reference_table_name = "Table";
-  auto ref_column = table->create_column("Ref", grnxx::INT_DATA, options);
+  auto ref_column = table->create_column("Ref", GRNXX_INT, options);
 
   // Store generated values into columns.
   for (size_t i = 0; i < NUM_ROWS; ++i) {

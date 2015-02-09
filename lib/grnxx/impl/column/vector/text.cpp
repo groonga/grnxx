@@ -12,7 +12,7 @@ namespace impl {
 Column<Vector<Text>>::Column(Table *table,
                              const String &name,
                              const ColumnOptions &)
-    : ColumnBase(table, name, TEXT_VECTOR_DATA),
+    : ColumnBase(table, name, GRNXX_TEXT_VECTOR),
       headers_(),
       bodies_() {}
 
@@ -156,10 +156,10 @@ size_t Column<Vector<Text>>::get_valid_size() const {
 
 Vector<Text> Column<Vector<Text>>::parse_datum(const Datum &datum) {
   switch (datum.type()) {
-    case NA_DATA: {
+    case GRNXX_NA: {
       return Vector<Text>::na();
     }
-    case TEXT_VECTOR_DATA: {
+    case GRNXX_TEXT_VECTOR: {
       return datum.as_text_vector();
     }
     default: {

@@ -397,9 +397,9 @@ void TreeIndex<Int>::remove(Int row_id, const Datum &value) {
 std::unique_ptr<Cursor> TreeIndex<Int>::find(
     const Datum &value,
     const CursorOptions &options) const {
-  if (value.type() == NA_DATA) {
+  if (value.type() == GRNXX_NA) {
     return create_empty_cursor();
-  } else if (value.type() != INT_DATA) {
+  } else if (value.type() != GRNXX_INT) {
     throw "Data type conflict";  // TODO
   }
   auto map_it = map_.find(value.as_int());
@@ -423,9 +423,9 @@ std::unique_ptr<Cursor> TreeIndex<Int>::find_in_range(
     const CursorOptions &options) const {
   Int lower_bound_value = Int::min();
   // TODO: Datum should provide is_na()?
-  if (range.lower_bound().value.type() != NA_DATA) {
+  if (range.lower_bound().value.type() != GRNXX_NA) {
     // TODO: Typecast will be supported in future?
-    if (range.lower_bound().value.type() != INT_DATA) {
+    if (range.lower_bound().value.type() != GRNXX_INT) {
       throw "Data type conflict";  // TODO
     }
     if (!range.lower_bound().value.as_int().is_na()) {
@@ -440,8 +440,8 @@ std::unique_ptr<Cursor> TreeIndex<Int>::find_in_range(
   }
 
   Int upper_bound_value = Int::max();
-  if (range.upper_bound().value.type() != NA_DATA) {
-    if (range.upper_bound().value.type() != INT_DATA) {
+  if (range.upper_bound().value.type() != GRNXX_NA) {
+    if (range.upper_bound().value.type() != GRNXX_INT) {
       throw "Data type conflict";  // TODO
     }
     if (!range.upper_bound().value.as_int().is_na()) {
@@ -577,9 +577,9 @@ void TreeIndex<Float>::remove(Int row_id, const Datum &value) {
 std::unique_ptr<Cursor> TreeIndex<Float>::find(
     const Datum &value,
     const CursorOptions &options) const {
-  if (value.type() == NA_DATA) {
+  if (value.type() == GRNXX_NA) {
     return create_empty_cursor();
-  } else if (value.type() != FLOAT_DATA) {
+  } else if (value.type() != GRNXX_FLOAT) {
     throw "Data type conflict";  // TODO
   }
   auto map_it = map_.find(value.as_float());
@@ -603,9 +603,9 @@ std::unique_ptr<Cursor> TreeIndex<Float>::find_in_range(
     const CursorOptions &options) const {
   Float lower_bound_value = Float::min();
   // TODO: Datum should provide is_na()?
-  if (range.lower_bound().value.type() != NA_DATA) {
+  if (range.lower_bound().value.type() != GRNXX_NA) {
     // TODO: Typecast will be supported in future?
-    if (range.lower_bound().value.type() != FLOAT_DATA) {
+    if (range.lower_bound().value.type() != GRNXX_FLOAT) {
       throw "Data type conflict";  // TODO
     }
     if (!range.lower_bound().value.as_float().is_na()) {
@@ -625,8 +625,8 @@ std::unique_ptr<Cursor> TreeIndex<Float>::find_in_range(
   }
 
   Float upper_bound_value = Float::max();
-  if (range.upper_bound().value.type() != NA_DATA) {
-    if (range.upper_bound().value.type() != FLOAT_DATA) {
+  if (range.upper_bound().value.type() != GRNXX_NA) {
+    if (range.upper_bound().value.type() != GRNXX_FLOAT) {
       throw "Data type conflict";  // TODO
     }
     if (!range.upper_bound().value.as_float().is_na()) {
@@ -767,9 +767,9 @@ void TreeIndex<Text>::remove(Int row_id, const Datum &value) {
 std::unique_ptr<Cursor> TreeIndex<Text>::find(
     const Datum &value,
     const CursorOptions &options) const {
-  if (value.type() == NA_DATA) {
+  if (value.type() == GRNXX_NA) {
     return create_empty_cursor();
-  } else if (value.type() != TEXT_DATA) {
+  } else if (value.type() != GRNXX_TEXT) {
     throw "Data type conflict";  // TODO
   }
   Text text = value.as_text();
@@ -795,9 +795,9 @@ std::unique_ptr<Cursor> TreeIndex<Text>::find_in_range(
     const CursorOptions &options) const {
   String lower_bound_value;
 //  // TODO: Datum should provide is_na()?
-  if (range.lower_bound().value.type() != NA_DATA) {
+  if (range.lower_bound().value.type() != GRNXX_NA) {
 //    // TODO: Typecast will be supported in future?
-    if (range.lower_bound().value.type() != TEXT_DATA) {
+    if (range.lower_bound().value.type() != GRNXX_TEXT) {
       throw "Data type conflict";  // TODO
     }
     Text text = range.lower_bound().value.as_text();
@@ -810,8 +810,8 @@ std::unique_ptr<Cursor> TreeIndex<Text>::find_in_range(
   }
 
   String upper_bound_value;
-  if (range.upper_bound().value.type() != NA_DATA) {
-    if (range.upper_bound().value.type() != TEXT_DATA) {
+  if (range.upper_bound().value.type() != GRNXX_NA) {
+    if (range.upper_bound().value.type() != GRNXX_TEXT) {
       throw "Data type conflict";  // TODO
     }
     Text text = range.upper_bound().value.as_text();
@@ -847,9 +847,9 @@ std::unique_ptr<Cursor> TreeIndex<Text>::find_starts_with(
     const EndPoint &prefix,
     const CursorOptions &options) const {
   // TODO: Typecast will be supported in future?
-  if (prefix.value.type() == NA_DATA) {
+  if (prefix.value.type() == GRNXX_NA) {
     return create_empty_cursor();
-  } else if (prefix.value.type() != TEXT_DATA) {
+  } else if (prefix.value.type() != GRNXX_TEXT) {
     throw "Data type conflict";  // TODO
   }
   Text text = prefix.value.as_text();
@@ -887,9 +887,9 @@ std::unique_ptr<Cursor> TreeIndex<Text>::find_prefixes(
     const Datum &value,
     const CursorOptions &options) const {
   // TODO: Typecast will be supported in future?
-  if (value.type() == NA_DATA) {
+  if (value.type() == GRNXX_NA) {
     return create_empty_cursor();
-  } else if (value.type() != TEXT_DATA) {
+  } else if (value.type() != GRNXX_TEXT) {
     throw "Data type conflict";  // TODO
   }
   Text text = value.as_text();
@@ -1028,9 +1028,9 @@ void HashIndex<Int>::remove(Int row_id, const Datum &value) {
 std::unique_ptr<Cursor> HashIndex<Int>::find(
     const Datum &value,
     const CursorOptions &options) const {
-  if (value.type() == NA_DATA) {
+  if (value.type() == GRNXX_NA) {
     return create_empty_cursor();
-  } else if (value.type() != INT_DATA) {
+  } else if (value.type() != GRNXX_INT) {
     throw "Data type conflict";  // TODO
   }
   auto map_it = map_.find(value.as_int());
@@ -1161,9 +1161,9 @@ void HashIndex<Float>::remove(Int row_id, const Datum &value) {
 std::unique_ptr<Cursor> HashIndex<Float>::find(
     const Datum &value,
     const CursorOptions &options) const {
-  if (value.type() == NA_DATA) {
+  if (value.type() == GRNXX_NA) {
     return create_empty_cursor();
-  } else if (value.type() != FLOAT_DATA) {
+  } else if (value.type() != GRNXX_FLOAT) {
     throw "Data type conflict";  // TODO
   }
   auto map_it = map_.find(value.as_float());
@@ -1289,9 +1289,9 @@ void HashIndex<Text>::remove(Int row_id, const Datum &value) {
 std::unique_ptr<Cursor> HashIndex<Text>::find(
     const Datum &value,
     const CursorOptions &options) const {
-  if (value.type() == NA_DATA) {
+  if (value.type() == GRNXX_NA) {
     return create_empty_cursor();
-  } else if (value.type() != TEXT_DATA) {
+  } else if (value.type() != GRNXX_TEXT) {
     throw "Data type conflict";  // TODO
   }
   Text text = value.as_text();
@@ -1372,26 +1372,26 @@ Index *Index::create(ColumnBase *column,
   switch (type) {
     case TREE_INDEX: {
       switch (column->data_type()) {
-        case BOOL_DATA: {
+        case GRNXX_BOOL: {
           throw "Not supported yet";  // TODO
         }
-        case INT_DATA: {
+        case GRNXX_INT: {
           return new TreeIndex<Int>(column, name, options);
         }
-        case FLOAT_DATA: {
+        case GRNXX_FLOAT: {
           return new TreeIndex<Float>(column, name, options);
         }
-        case GEO_POINT_DATA: {
+        case GRNXX_GEO_POINT: {
           throw "Not supported yet";  // TODO
         }
-        case TEXT_DATA: {
+        case GRNXX_TEXT: {
           return new TreeIndex<Text>(column, name, options);
         }
-        case BOOL_VECTOR_DATA:
-        case INT_VECTOR_DATA:
-        case FLOAT_VECTOR_DATA:
-        case GEO_POINT_VECTOR_DATA:
-        case TEXT_VECTOR_DATA:
+        case GRNXX_BOOL_VECTOR:
+        case GRNXX_INT_VECTOR:
+        case GRNXX_FLOAT_VECTOR:
+        case GRNXX_GEO_POINT_VECTOR:
+        case GRNXX_TEXT_VECTOR:
         default: {
           throw "Not supported yet";  // TODO
         }
@@ -1399,26 +1399,26 @@ Index *Index::create(ColumnBase *column,
     }
     case HASH_INDEX: {
       switch (column->data_type()) {
-        case BOOL_DATA: {
+        case GRNXX_BOOL: {
           throw "Not supported yet";  // TODO
         }
-        case INT_DATA: {
+        case GRNXX_INT: {
           return new HashIndex<Int>(column, name, options);
         }
-        case FLOAT_DATA: {
+        case GRNXX_FLOAT: {
           return new HashIndex<Float>(column, name, options);
         }
-        case GEO_POINT_DATA: {
+        case GRNXX_GEO_POINT: {
           throw "Not supported yet";  // TODO
         }
-        case TEXT_DATA: {
+        case GRNXX_TEXT: {
           return new HashIndex<Text>(column, name, options);
         }
-        case BOOL_VECTOR_DATA:
-        case INT_VECTOR_DATA:
-        case FLOAT_VECTOR_DATA:
-        case GEO_POINT_VECTOR_DATA:
-        case TEXT_VECTOR_DATA:
+        case GRNXX_BOOL_VECTOR:
+        case GRNXX_INT_VECTOR:
+        case GRNXX_FLOAT_VECTOR:
+        case GRNXX_GEO_POINT_VECTOR:
+        case GRNXX_TEXT_VECTOR:
         default: {
           throw "Not supported yet";  // TODO
         }

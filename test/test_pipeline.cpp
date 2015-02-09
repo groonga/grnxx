@@ -43,9 +43,9 @@ void init_test() {
   test.table = test.db->create_table("Table");
 
   // Create columns for various data types.
-  auto bool_column = test.table->create_column("Bool", grnxx::BOOL_DATA);
-  auto int_column = test.table->create_column("Int", grnxx::INT_DATA);
-  auto float_column = test.table->create_column("Float", grnxx::FLOAT_DATA);
+  auto bool_column = test.table->create_column("Bool", GRNXX_BOOL);
+  auto int_column = test.table->create_column("Int", GRNXX_INT);
+  auto float_column = test.table->create_column("Float", GRNXX_FLOAT);
 
   // Generate random values.
   // Bool: true, false, or N/A.

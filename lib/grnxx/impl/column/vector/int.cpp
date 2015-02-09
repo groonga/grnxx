@@ -12,7 +12,7 @@ namespace impl {
 Column<Vector<Int>>::Column(Table *table,
                             const String &name,
                             const ColumnOptions &options)
-    : ColumnBase(table, name, INT_VECTOR_DATA),
+    : ColumnBase(table, name, GRNXX_INT_VECTOR),
       headers_(),
       bodies_() {
   if (!options.reference_table_name.is_empty()) {
@@ -169,10 +169,10 @@ size_t Column<Vector<Int>>::get_valid_size() const {
 
 Vector<Int> Column<Vector<Int>>::parse_datum(const Datum &datum) {
   switch (datum.type()) {
-    case NA_DATA: {
+    case GRNXX_NA: {
       return Vector<Int>::na();
     }
-    case INT_VECTOR_DATA: {
+    case GRNXX_INT_VECTOR: {
       return datum.as_int_vector();
     }
     default: {

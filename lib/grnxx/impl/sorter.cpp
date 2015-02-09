@@ -1584,10 +1584,10 @@ Node *Sorter::create_node(SorterOrder &&order) try {
   }
 
   switch (order.expression->data_type()) {
-    case BOOL_DATA: {
+    case GRNXX_BOOL: {
       return new BoolNode(std::move(order));
     }
-    case INT_DATA: {
+    case GRNXX_INT: {
       if (nodes_.is_empty() && ((offset_ + limit_) < 1000)) {
         if (order.type == SORTER_REGULAR_ORDER) {
           return new IntNodeS<RegularIntConverter>(std::move(order));
@@ -1602,7 +1602,7 @@ Node *Sorter::create_node(SorterOrder &&order) try {
         }
       }
     }
-    case FLOAT_DATA: {
+    case GRNXX_FLOAT: {
       if (nodes_.is_empty() && ((offset_ + limit_) < 1000)) {
         if (order.type == SORTER_REGULAR_ORDER) {
           return new FloatNodeS<RegularFloatConverter>(std::move(order));
@@ -1617,7 +1617,7 @@ Node *Sorter::create_node(SorterOrder &&order) try {
         }
       }
     }
-    case TEXT_DATA: {
+    case GRNXX_TEXT: {
       if (nodes_.is_empty() && ((offset_ + limit_) < 1000)) {
         if (order.type == SORTER_REGULAR_ORDER) {
           return new TextNodeS<RegularTextComparer>(std::move(order));

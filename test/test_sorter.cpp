@@ -398,10 +398,10 @@ void test_composite() {
   // Create a table.
   auto db = grnxx::open_db("");
   auto table = db->create_table("Table");
-  auto bool_column = table->create_column("Bool", grnxx::BOOL_DATA);
-  auto int_column = table->create_column("Int", grnxx::INT_DATA);
-  auto float_column = table->create_column("Float", grnxx::FLOAT_DATA);
-  auto text_column = table->create_column("Text", grnxx::TEXT_DATA);
+  auto bool_column = table->create_column("Bool", GRNXX_BOOL);
+  auto int_column = table->create_column("Int", GRNXX_INT);
+  auto float_column = table->create_column("Float", GRNXX_FLOAT);
+  auto text_column = table->create_column("Text", GRNXX_TEXT);
   for (size_t i = 0; i < NUM_ROWS; ++i) {
     table->insert_row();
   }

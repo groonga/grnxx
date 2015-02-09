@@ -12,7 +12,7 @@ namespace impl {
 Column<Text>::Column(Table *table,
                      const String &name,
                      const ColumnOptions &)
-    : ColumnBase(table, name, TEXT_DATA),
+    : ColumnBase(table, name, GRNXX_TEXT),
       headers_(),
       bodies_() {}
 
@@ -358,10 +358,10 @@ size_t Column<Text>::get_valid_size() const {
 
 Text Column<Text>::parse_datum(const Datum &datum) {
   switch (datum.type()) {
-    case NA_DATA: {
+    case GRNXX_NA: {
       return Text::na();
     }
-    case TEXT_DATA: {
+    case GRNXX_TEXT: {
       return datum.as_text();
     }
     default: {

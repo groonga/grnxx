@@ -13,7 +13,7 @@ namespace grnxx {
 
 class Datum {
  public:
-  Datum() : type_(NA_DATA), na_() {}
+  Datum() : type_(GRNXX_NA), na_() {}
   ~Datum() {
     destruct();
   }
@@ -28,47 +28,47 @@ class Datum {
       return *this;
     }
     switch (type_) {
-      case NA_DATA: {
+      case GRNXX_NA: {
         na_ = datum.na_;
         break;
       }
-      case BOOL_DATA: {
+      case GRNXX_BOOL: {
         bool_ = datum.bool_;
         break;
       }
-      case INT_DATA: {
+      case GRNXX_INT: {
         int_ = datum.int_;
         break;
       }
-      case FLOAT_DATA: {
+      case GRNXX_FLOAT: {
         float_ = datum.float_;
         break;
       }
-      case GEO_POINT_DATA: {
+      case GRNXX_GEO_POINT: {
         geo_point_ = datum.geo_point_;
         break;
       }
-      case TEXT_DATA: {
+      case GRNXX_TEXT: {
         text_ = datum.text_;
         break;
       }
-      case BOOL_VECTOR_DATA: {
+      case GRNXX_BOOL_VECTOR: {
         bool_vector_ = datum.bool_vector_;
         break;
       }
-      case INT_VECTOR_DATA: {
+      case GRNXX_INT_VECTOR: {
         int_vector_ = datum.int_vector_;
         break;
       }
-      case FLOAT_VECTOR_DATA: {
+      case GRNXX_FLOAT_VECTOR: {
         float_vector_ = datum.float_vector_;
         break;
       }
-      case GEO_POINT_VECTOR_DATA: {
+      case GRNXX_GEO_POINT_VECTOR: {
         geo_point_vector_ = datum.geo_point_vector_;
         break;
       }
-      case TEXT_VECTOR_DATA: {
+      case GRNXX_TEXT_VECTOR: {
         text_vector_ = datum.text_vector_;
         break;
       }
@@ -86,47 +86,47 @@ class Datum {
       return *this;
     }
     switch (type_) {
-      case NA_DATA: {
+      case GRNXX_NA: {
         na_ = std::move(datum.na_);
         break;
       }
-      case BOOL_DATA: {
+      case GRNXX_BOOL: {
         bool_ = std::move(datum.bool_);
         break;
       }
-      case INT_DATA: {
+      case GRNXX_INT: {
         int_ = std::move(datum.int_);
         break;
       }
-      case FLOAT_DATA: {
+      case GRNXX_FLOAT: {
         float_ = std::move(datum.float_);
         break;
       }
-      case GEO_POINT_DATA: {
+      case GRNXX_GEO_POINT: {
         geo_point_ = std::move(datum.geo_point_);
         break;
       }
-      case TEXT_DATA: {
+      case GRNXX_TEXT: {
         text_ = std::move(datum.text_);
         break;
       }
-      case BOOL_VECTOR_DATA: {
+      case GRNXX_BOOL_VECTOR: {
         bool_vector_ = std::move(datum.bool_vector_);
         break;
       }
-      case INT_VECTOR_DATA: {
+      case GRNXX_INT_VECTOR: {
         int_vector_ = std::move(datum.int_vector_);
         break;
       }
-      case FLOAT_VECTOR_DATA: {
+      case GRNXX_FLOAT_VECTOR: {
         float_vector_ = std::move(datum.float_vector_);
         break;
       }
-      case GEO_POINT_VECTOR_DATA: {
+      case GRNXX_GEO_POINT_VECTOR: {
         geo_point_vector_ = std::move(datum.geo_point_vector_);
         break;
       }
-      case TEXT_VECTOR_DATA: {
+      case GRNXX_TEXT_VECTOR: {
         text_vector_ = std::move(datum.text_vector_);
         break;
       }
@@ -135,36 +135,36 @@ class Datum {
   }
 
   // Create a N/A object.
-  Datum(NA) : type_(NA_DATA), na_() {}
+  Datum(NA) : type_(GRNXX_NA), na_() {}
   // Create a Bool object.
-  Datum(Bool value) : type_(BOOL_DATA), bool_(value) {}
+  Datum(Bool value) : type_(GRNXX_BOOL), bool_(value) {}
   // Create an Int object.
-  Datum(Int value) : type_(INT_DATA), int_(value) {}
+  Datum(Int value) : type_(GRNXX_INT), int_(value) {}
   // Create a Float object.
-  Datum(Float value) : type_(FLOAT_DATA), float_(value) {}
+  Datum(Float value) : type_(GRNXX_FLOAT), float_(value) {}
   // Create a GeoPoint object.
-  Datum(GeoPoint value) : type_(GEO_POINT_DATA), geo_point_(value) {}
+  Datum(GeoPoint value) : type_(GRNXX_GEO_POINT), geo_point_(value) {}
   // Create a Text object.
-  Datum(const Text &value) : type_(TEXT_DATA), text_(value) {}
+  Datum(const Text &value) : type_(GRNXX_TEXT), text_(value) {}
   // Create a Vector<Bool> object.
   Datum(const Vector<Bool> &value)
-      : type_(BOOL_VECTOR_DATA),
+      : type_(GRNXX_BOOL_VECTOR),
         bool_vector_(value) {}
   // Create a Vector<Int> object.
   Datum(const Vector<Int> &value)
-      : type_(INT_VECTOR_DATA),
+      : type_(GRNXX_INT_VECTOR),
         int_vector_(value) {}
   // Create a Vector<Float> object.
   Datum(const Vector<Float> &value)
-      : type_(FLOAT_VECTOR_DATA),
+      : type_(GRNXX_FLOAT_VECTOR),
         float_vector_(value) {}
   // Create a Vector<GeoPoint> object.
   Datum(const Vector<GeoPoint> &value)
-      : type_(GEO_POINT_VECTOR_DATA),
+      : type_(GRNXX_GEO_POINT_VECTOR),
         geo_point_vector_(value) {}
   // Create a Vector<Text> object.
   Datum(const Vector<Text> &value)
-      : type_(TEXT_VECTOR_DATA),
+      : type_(GRNXX_TEXT_VECTOR),
         text_vector_(value) {}
 
   // Return the data type.
@@ -336,47 +336,47 @@ class Datum {
 
   void destruct() {
     switch (type_) {
-      case NA_DATA: {
+      case GRNXX_NA: {
         na_.~NA();
         break;
       }
-      case BOOL_DATA: {
+      case GRNXX_BOOL: {
         bool_.~Bool();
         break;
       }
-      case INT_DATA: {
+      case GRNXX_INT: {
         int_.~Int();
         break;
       }
-      case FLOAT_DATA: {
+      case GRNXX_FLOAT: {
         float_.~Float();
         break;
       }
-      case GEO_POINT_DATA: {
+      case GRNXX_GEO_POINT: {
         geo_point_.~GeoPoint();
         break;
       }
-      case TEXT_DATA: {
+      case GRNXX_TEXT: {
         text_.~Text();
         break;
       }
-      case BOOL_VECTOR_DATA: {
+      case GRNXX_BOOL_VECTOR: {
         bool_vector_.~BoolVector();
         break;
       }
-      case INT_VECTOR_DATA: {
+      case GRNXX_INT_VECTOR: {
         int_vector_.~IntVector();
         break;
       }
-      case FLOAT_VECTOR_DATA: {
+      case GRNXX_FLOAT_VECTOR: {
         float_vector_.~FloatVector();
         break;
       }
-      case GEO_POINT_VECTOR_DATA: {
+      case GRNXX_GEO_POINT_VECTOR: {
         geo_point_vector_.~GeoPointVector();
         break;
       }
-      case TEXT_VECTOR_DATA: {
+      case GRNXX_TEXT_VECTOR: {
         text_vector_.~TextVector();
         break;
       }
@@ -385,47 +385,47 @@ class Datum {
   void copy_from(const Datum &datum) {
     type_ = datum.type_;
     switch (type_) {
-      case NA_DATA: {
+      case GRNXX_NA: {
         new (&na_) NA(datum.na_);
         break;
       }
-      case BOOL_DATA: {
+      case GRNXX_BOOL: {
         new (&bool_) Bool(datum.bool_);
         break;
       }
-      case INT_DATA: {
+      case GRNXX_INT: {
         new (&int_) Int(datum.int_);
         break;
       }
-      case FLOAT_DATA: {
+      case GRNXX_FLOAT: {
         new (&float_) Float(datum.float_);
         break;
       }
-      case GEO_POINT_DATA: {
+      case GRNXX_GEO_POINT: {
         new (&geo_point_) GeoPoint(datum.geo_point_);
         break;
       }
-      case TEXT_DATA: {
+      case GRNXX_TEXT: {
         new (&text_) Text(datum.text_);
         break;
       }
-      case BOOL_VECTOR_DATA: {
+      case GRNXX_BOOL_VECTOR: {
         new (&bool_vector_) BoolVector(datum.bool_vector_);
         break;
       }
-      case INT_VECTOR_DATA: {
+      case GRNXX_INT_VECTOR: {
         new (&int_vector_) IntVector(datum.int_vector_);
         break;
       }
-      case FLOAT_VECTOR_DATA: {
+      case GRNXX_FLOAT_VECTOR: {
         new (&float_vector_) FloatVector(datum.float_vector_);
         break;
       }
-      case GEO_POINT_VECTOR_DATA: {
+      case GRNXX_GEO_POINT_VECTOR: {
         new (&geo_point_vector_) GeoPointVector(datum.geo_point_vector_);
         break;
       }
-      case TEXT_VECTOR_DATA: {
+      case GRNXX_TEXT_VECTOR: {
         new (&text_vector_) TextVector(datum.text_vector_);
         break;
       }
@@ -434,48 +434,48 @@ class Datum {
   void move_from(Datum &&datum) {
     type_ = datum.type_;
     switch (type_) {
-      case NA_DATA: {
+      case GRNXX_NA: {
         new (&na_) NA(std::move(datum.na_));
         break;
       }
-      case BOOL_DATA: {
+      case GRNXX_BOOL: {
         new (&bool_) Bool(std::move(datum.bool_));
         break;
       }
-      case INT_DATA: {
+      case GRNXX_INT: {
         new (&int_) Int(std::move(datum.int_));
         break;
       }
-      case FLOAT_DATA: {
+      case GRNXX_FLOAT: {
         new (&float_) Float(std::move(datum.float_));
         break;
       }
-      case GEO_POINT_DATA: {
+      case GRNXX_GEO_POINT: {
         new (&geo_point_) GeoPoint(std::move(datum.geo_point_));
         break;
       }
-      case TEXT_DATA: {
+      case GRNXX_TEXT: {
         new (&text_) Text(std::move(datum.text_));
         break;
       }
-      case BOOL_VECTOR_DATA: {
+      case GRNXX_BOOL_VECTOR: {
         new (&bool_vector_) BoolVector(std::move(datum.bool_vector_));
         break;
       }
-      case INT_VECTOR_DATA: {
+      case GRNXX_INT_VECTOR: {
         new (&int_vector_) IntVector(std::move(datum.int_vector_));
         break;
       }
-      case FLOAT_VECTOR_DATA: {
+      case GRNXX_FLOAT_VECTOR: {
         new (&float_vector_) FloatVector(std::move(datum.float_vector_));
         break;
       }
-      case GEO_POINT_VECTOR_DATA: {
+      case GRNXX_GEO_POINT_VECTOR: {
         new (&geo_point_vector_)
             GeoPointVector(std::move(datum.geo_point_vector_));
         break;
       }
-      case TEXT_VECTOR_DATA: {
+      case GRNXX_TEXT_VECTOR: {
         new (&text_vector_) TextVector(std::move(datum.text_vector_));
         break;
       }

@@ -132,7 +132,7 @@ class GeoPoint {
   }
 
   static constexpr DataType type() {
-    return GEO_POINT_DATA;
+    return GRNXX_GEO_POINT;
   }
 
   static constexpr GeoPoint na() {

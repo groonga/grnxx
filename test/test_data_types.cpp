@@ -27,9 +27,9 @@ void test_bool() {
   grnxx::Bool false_object(false);
   grnxx::Bool na_object((grnxx::NA()));
 
-  assert(true_object.type() == grnxx::BOOL_DATA);
-  assert(false_object.type() == grnxx::BOOL_DATA);
-  assert(na_object.type() == grnxx::BOOL_DATA);
+  assert(true_object.type() == GRNXX_BOOL);
+  assert(false_object.type() == GRNXX_BOOL);
+  assert(na_object.type() == GRNXX_BOOL);
 
   assert(true_object.raw() == grnxx::Bool::raw_true());
   assert(false_object.raw() == grnxx::Bool::raw_false());
@@ -129,10 +129,10 @@ void test_bool() {
 }
 
 void test_int() {
-  assert(grnxx::Int(0).type() == grnxx::INT_DATA);
-  assert(grnxx::Int::min().type() == grnxx::INT_DATA);
-  assert(grnxx::Int::max().type() == grnxx::INT_DATA);
-  assert(grnxx::Int::na().type() == grnxx::INT_DATA);
+  assert(grnxx::Int(0).type() == GRNXX_INT);
+  assert(grnxx::Int::min().type() == GRNXX_INT);
+  assert(grnxx::Int::max().type() == GRNXX_INT);
+  assert(grnxx::Int::na().type() == GRNXX_INT);
 
   assert(grnxx::Int(0).raw() == 0);
   assert(grnxx::Int::min().raw() == grnxx::Int::raw_min());
@@ -493,14 +493,14 @@ void test_int() {
 }
 
 void test_float() {
-  assert(grnxx::Float(0.0).type() == grnxx::FLOAT_DATA);
-  assert(grnxx::Float::min().type() == grnxx::FLOAT_DATA);
-  assert(grnxx::Float::max().type() == grnxx::FLOAT_DATA);
-  assert(grnxx::Float::normal_min().type() == grnxx::FLOAT_DATA);
-  assert(grnxx::Float::subnormal_min().type() == grnxx::FLOAT_DATA);
-  assert(grnxx::Float::max().type() == grnxx::FLOAT_DATA);
-  assert(grnxx::Float::infinity().type() == grnxx::FLOAT_DATA);
-  assert(grnxx::Float::na().type() == grnxx::FLOAT_DATA);
+  assert(grnxx::Float(0.0).type() == GRNXX_FLOAT);
+  assert(grnxx::Float::min().type() == GRNXX_FLOAT);
+  assert(grnxx::Float::max().type() == GRNXX_FLOAT);
+  assert(grnxx::Float::normal_min().type() == GRNXX_FLOAT);
+  assert(grnxx::Float::subnormal_min().type() == GRNXX_FLOAT);
+  assert(grnxx::Float::max().type() == GRNXX_FLOAT);
+  assert(grnxx::Float::infinity().type() == GRNXX_FLOAT);
+  assert(grnxx::Float::na().type() == GRNXX_FLOAT);
 
   assert(grnxx::Float(0.0).raw() == 0.0);
   assert(grnxx::Float::min().is_min());
@@ -826,11 +826,11 @@ void test_geo_point() {
   grnxx::GeoPoint date_line(grnxx::Float(0.0), grnxx::Float(180.0));
   grnxx::GeoPoint na(grnxx::Int::na(), grnxx::Int::na());
 
-  assert(zero.type() == grnxx::GEO_POINT_DATA);
-  assert(north_pole.type() == grnxx::GEO_POINT_DATA);
-  assert(south_pole.type() == grnxx::GEO_POINT_DATA);
-  assert(date_line.type() == grnxx::GEO_POINT_DATA);
-  assert(na.type() == grnxx::GEO_POINT_DATA);
+  assert(zero.type() == GRNXX_GEO_POINT);
+  assert(north_pole.type() == GRNXX_GEO_POINT);
+  assert(south_pole.type() == GRNXX_GEO_POINT);
+  assert(date_line.type() == GRNXX_GEO_POINT);
+  assert(na.type() == GRNXX_GEO_POINT);
 
   assert(zero.raw_latitude() == 0);
   assert(date_line.raw_latitude() == 0);
@@ -934,11 +934,11 @@ void test_text() {
   grnxx::Text empty = grnxx::Text::empty();
   grnxx::Text na = grnxx::Text::na();
 
-  assert(ab.type() == grnxx::TEXT_DATA);
-  assert(abc.type() == grnxx::TEXT_DATA);
-  assert(bc.type() == grnxx::TEXT_DATA);
-  assert(empty.type() == grnxx::TEXT_DATA);
-  assert(na.type() == grnxx::TEXT_DATA);
+  assert(ab.type() == GRNXX_TEXT);
+  assert(abc.type() == GRNXX_TEXT);
+  assert(bc.type() == GRNXX_TEXT);
+  assert(empty.type() == GRNXX_TEXT);
+  assert(na.type() == GRNXX_TEXT);
 
   assert(std::strcmp(ab.raw_data(), "ab") == 0);
   assert(std::strcmp(abc.raw_data(), "abc") == 0);
@@ -1188,10 +1188,10 @@ void test_bool_vector() {
   grnxx::BoolVector empty = grnxx::BoolVector::empty();
   grnxx::BoolVector na = grnxx::BoolVector::na();
 
-  assert(tft.type() == grnxx::BOOL_VECTOR_DATA);
-  assert(ftn.type() == grnxx::BOOL_VECTOR_DATA);
-  assert(empty.type() == grnxx::BOOL_VECTOR_DATA);
-  assert(na.type() == grnxx::BOOL_VECTOR_DATA);
+  assert(tft.type() == GRNXX_BOOL_VECTOR);
+  assert(ftn.type() == GRNXX_BOOL_VECTOR);
+  assert(empty.type() == GRNXX_BOOL_VECTOR);
+  assert(na.type() == GRNXX_BOOL_VECTOR);
 
   assert(tft[0].is_true());
   assert(tft[1].is_false());
@@ -1279,10 +1279,10 @@ void test_int_vector() {
   grnxx::IntVector empty = grnxx::IntVector::empty();
   grnxx::IntVector na = grnxx::IntVector::na();
 
-  assert(abc.type() == grnxx::INT_VECTOR_DATA);
-  assert(bcn.type() == grnxx::INT_VECTOR_DATA);
-  assert(empty.type() == grnxx::INT_VECTOR_DATA);
-  assert(na.type() == grnxx::INT_VECTOR_DATA);
+  assert(abc.type() == GRNXX_INT_VECTOR);
+  assert(bcn.type() == GRNXX_INT_VECTOR);
+  assert(empty.type() == GRNXX_INT_VECTOR);
+  assert(na.type() == GRNXX_INT_VECTOR);
 
   assert(abc[0].raw() == 1);
   assert(abc[1].raw() == 2);
@@ -1370,10 +1370,10 @@ void test_float_vector() {
   grnxx::FloatVector empty = grnxx::FloatVector::empty();
   grnxx::FloatVector na = grnxx::FloatVector::na();
 
-  assert(abc.type() == grnxx::FLOAT_VECTOR_DATA);
-  assert(bcn.type() == grnxx::FLOAT_VECTOR_DATA);
-  assert(empty.type() == grnxx::FLOAT_VECTOR_DATA);
-  assert(na.type() == grnxx::FLOAT_VECTOR_DATA);
+  assert(abc.type() == GRNXX_FLOAT_VECTOR);
+  assert(bcn.type() == GRNXX_FLOAT_VECTOR);
+  assert(empty.type() == GRNXX_FLOAT_VECTOR);
+  assert(na.type() == GRNXX_FLOAT_VECTOR);
 
   assert(abc[0].raw() == 1.25);
   assert(abc[1].raw() == 2.50);
@@ -1461,10 +1461,10 @@ void test_geo_point_vector() {
   grnxx::GeoPointVector empty = grnxx::GeoPointVector::empty();
   grnxx::GeoPointVector na = grnxx::GeoPointVector::na();
 
-  assert(sto.type() == grnxx::GEO_POINT_VECTOR_DATA);
-  assert(ton.type() == grnxx::GEO_POINT_VECTOR_DATA);
-  assert(empty.type() == grnxx::GEO_POINT_VECTOR_DATA);
-  assert(na.type() == grnxx::GEO_POINT_VECTOR_DATA);
+  assert(sto.type() == GRNXX_GEO_POINT_VECTOR);
+  assert(ton.type() == GRNXX_GEO_POINT_VECTOR);
+  assert(empty.type() == GRNXX_GEO_POINT_VECTOR);
+  assert(na.type() == GRNXX_GEO_POINT_VECTOR);
 
   assert(sto[0].raw_latitude() == data[0].raw_latitude());
   assert(sto[1].raw_latitude() == data[1].raw_latitude());
@@ -1560,10 +1560,10 @@ void test_text_vector() {
   grnxx::TextVector empty = grnxx::TextVector::empty();
   grnxx::TextVector na = grnxx::TextVector::na();
 
-  assert(abc.type() == grnxx::TEXT_VECTOR_DATA);
-  assert(bcn.type() == grnxx::TEXT_VECTOR_DATA);
-  assert(empty.type() == grnxx::TEXT_VECTOR_DATA);
-  assert(na.type() == grnxx::TEXT_VECTOR_DATA);
+  assert(abc.type() == GRNXX_TEXT_VECTOR);
+  assert(bcn.type() == GRNXX_TEXT_VECTOR);
+  assert(empty.type() == GRNXX_TEXT_VECTOR);
+  assert(na.type() == GRNXX_TEXT_VECTOR);
 
   assert(abc[0].match(data[0]));
   assert(abc[1].match(data[1]));

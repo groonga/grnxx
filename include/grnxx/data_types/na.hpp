@@ -7,7 +7,7 @@ namespace grnxx {
 
 struct NA {
   constexpr DataType type() const {
-    return NA_DATA;
+    return GRNXX_NA;
   }
 };
 

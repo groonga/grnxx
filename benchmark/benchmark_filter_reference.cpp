@@ -295,9 +295,9 @@ void benchmark_grnxx() {
 
   auto db = grnxx::open_db("");
   auto table = db->create_table("To");
-  auto col_a = table->create_column("A", grnxx::INT_DATA);
-  auto col_b = table->create_column("B", grnxx::INT_DATA);
-  auto col_c = table->create_column("C", grnxx::INT_DATA);
+  auto col_a = table->create_column("A", GRNXX_INT);
+  auto col_b = table->create_column("B", GRNXX_INT);
+  auto col_c = table->create_column("C", GRNXX_INT);
   for (size_t i = 0; i < TO_SIZE; ++i) {
     grnxx::Int row_id = table->insert_row();
     col_a->set(row_id, a[i]);
@@ -307,7 +307,7 @@ void benchmark_grnxx() {
   table = db->create_table("From");
   grnxx::ColumnOptions options;
   options.reference_table_name = "To";
-  auto col_ref = table->create_column("Ref", grnxx::INT_DATA, options);
+  auto col_ref = table->create_column("Ref", GRNXX_INT, options);
   for (size_t i = 0; i < FROM_SIZE; ++i) {
     grnxx::Int row_id = table->insert_row();
     col_ref->set(row_id, ref[i]);

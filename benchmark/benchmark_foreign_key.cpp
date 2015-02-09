@@ -84,7 +84,7 @@ void benchmark_direct_build() try {
 
     auto db = grnxx::open_db("");
     auto table = db->create_table("Values");
-    auto column = table->create_column("Value", grnxx::TEXT_DATA);
+    auto column = table->create_column("Value", GRNXX_TEXT);
     for (size_t i = 0; i < VALUES_SIZE; ++i) {
       grnxx::Int row_id = table->insert_row();
       column->set(row_id, values[i]);
@@ -93,7 +93,7 @@ void benchmark_direct_build() try {
     table = db->create_table("Refs");
     grnxx::ColumnOptions options;
     options.reference_table_name = "Values";
-    column = table->create_column("Ref", grnxx::INT_DATA, options);
+    column = table->create_column("Ref", GRNXX_INT, options);
     for (size_t i = 0; i < REFS_SIZE; ++i) {
       grnxx::Int row_id = table->insert_row();
       column->set(row_id, refs[i]);
@@ -118,7 +118,7 @@ void benchmark_indirect_build() try {
 
     auto db = grnxx::open_db("");
     auto to_table = db->create_table("Values");
-    auto column = to_table->create_column("Value", grnxx::TEXT_DATA);
+    auto column = to_table->create_column("Value", GRNXX_TEXT);
     column->create_index("Index", grnxx::TREE_INDEX);
     to_table->set_key_column("Value");
     for (size_t j = 0; j < VALUES_SIZE; ++j) {
@@ -128,7 +128,7 @@ void benchmark_indirect_build() try {
     auto from_table = db->create_table("Refs");
     grnxx::ColumnOptions options;
     options.reference_table_name = "Values";
-    column = from_table->create_column("Ref", grnxx::INT_DATA, options);
+    column = from_table->create_column("Ref", GRNXX_INT, options);
     for (size_t j = 0; j < REFS_SIZE; ++j) {
       grnxx::Int row_id = from_table->insert_row();
       column->set(row_id, to_table->find_row(values[refs[j].raw()]));
@@ -153,14 +153,14 @@ void benchmark_sequential_build() try {
 
     auto db = grnxx::open_db("");
     auto to_table = db->create_table("Values");
-    auto value_column = to_table->create_column("Value", grnxx::TEXT_DATA);
+    auto value_column = to_table->create_column("Value", GRNXX_TEXT);
     value_column->create_index("Index", grnxx::TREE_INDEX);
     to_table->set_key_column("Value");
     auto from_table = db->create_table("Refs");
     grnxx::ColumnOptions options;
     options.reference_table_name = "Values";
     auto ref_column =
-        from_table->create_column("Ref", grnxx::INT_DATA, options);
+        from_table->create_column("Ref", GRNXX_INT, options);
     for (size_t j = 0; j < REFS_SIZE; ++j) {
       grnxx::Int row_id = from_table->insert_row();
       grnxx::Int ref = to_table->find_or_insert_row(values[refs[j].raw()]);

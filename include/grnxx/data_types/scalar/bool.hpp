@@ -90,7 +90,7 @@ class Bool {
   }
 
   static constexpr DataType type() {
-    return BOOL_DATA;
+    return GRNXX_BOOL;
   }
 
   static constexpr Bool na() {

@@ -113,7 +113,7 @@ class Vector<Float> {
   }
 
   static constexpr DataType type() {
-    return FLOAT_VECTOR_DATA;
+    return GRNXX_FLOAT_VECTOR;
   }
 
   static constexpr Vector empty() {

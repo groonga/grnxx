@@ -49,11 +49,11 @@ void init_test() {
   test.table = test.db->create_table("Table");
 
   // Create columns for Bool and Float values.
-  grnxx::DataType data_type = grnxx::BOOL_DATA;
+  grnxx::DataType data_type = GRNXX_BOOL;
   auto bool_column = test.table->create_column("Bool", data_type);
   auto bool2_column = test.table->create_column("Bool2", data_type);
 
-  data_type = grnxx::FLOAT_DATA;
+  data_type = GRNXX_FLOAT;
   auto float_column = test.table->create_column("Float", data_type);
   auto float2_column = test.table->create_column("Float2", data_type);
 

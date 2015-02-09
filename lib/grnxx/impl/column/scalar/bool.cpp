@@ -8,7 +8,7 @@ namespace impl {
 Column<Bool>::Column(Table *table,
                      const String &name,
                      const ColumnOptions &)
-    : ColumnBase(table, name, BOOL_DATA),
+    : ColumnBase(table, name, GRNXX_BOOL),
       values_() {}
 
 Column<Bool>::~Column() {}
@@ -114,10 +114,10 @@ Int Column<Bool>::scan(Bool value) const {
 
 Bool Column<Bool>::parse_datum(const Datum &datum) {
   switch (datum.type()) {
-    case NA_DATA: {
+    case GRNXX_NA: {
       return Bool::na();
     }
-    case BOOL_DATA: {
+    case GRNXX_BOOL: {
       return datum.as_bool();
     }
     default: {

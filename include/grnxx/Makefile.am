@@ -5,6 +5,7 @@ SUBDIRS =		\
 pkginclude_HEADERS =	\
 	array.hpp	\
 	column.hpp	\
+	constants.h	\
 	cursor.hpp	\
 	data_types.hpp	\
 	db.hpp		\

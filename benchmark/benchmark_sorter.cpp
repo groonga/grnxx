@@ -50,9 +50,9 @@ class Timer {
 
 void create_bool_columns(grnxx::Table *table) {
   grnxx::Column *columns[3];
-  columns[0] = table->create_column("Bool1", grnxx::BOOL_DATA);
-  columns[1] = table->create_column("Bool2", grnxx::BOOL_DATA);
-  columns[2] = table->create_column("Bool3", grnxx::BOOL_DATA);
+  columns[0] = table->create_column("Bool1", GRNXX_BOOL);
+  columns[1] = table->create_column("Bool2", GRNXX_BOOL);
+  columns[2] = table->create_column("Bool3", GRNXX_BOOL);
 
   std::mt19937_64 rng;
   for (size_t i = 0; i < SIZE; ++i) {
@@ -67,9 +67,9 @@ void create_bool_columns(grnxx::Table *table) {
 
 void create_int_columns(grnxx::Table *table) {
   grnxx::Column *columns[3];
-  columns[0] = table->create_column("Int1", grnxx::INT_DATA);
-  columns[1] = table->create_column("Int2", grnxx::INT_DATA);
-  columns[2] = table->create_column("Int3", grnxx::INT_DATA);
+  columns[0] = table->create_column("Int1", GRNXX_INT);
+  columns[1] = table->create_column("Int2", GRNXX_INT);
+  columns[2] = table->create_column("Int3", GRNXX_INT);
 
   std::mt19937_64 rng;
   for (size_t i = 0; i < SIZE; ++i) {
@@ -86,9 +86,9 @@ void create_int_columns(grnxx::Table *table) {
 
 void create_float_columns(grnxx::Table *table) {
   grnxx::Column *columns[3];
-  columns[0] = table->create_column("Float1", grnxx::FLOAT_DATA);
-  columns[1] = table->create_column("Float2", grnxx::FLOAT_DATA);
-  columns[2] = table->create_column("Float3", grnxx::FLOAT_DATA);
+  columns[0] = table->create_column("Float1", GRNXX_FLOAT);
+  columns[1] = table->create_column("Float2", GRNXX_FLOAT);
+  columns[2] = table->create_column("Float3", GRNXX_FLOAT);
 
   std::mt19937_64 rng;
   for (size_t i = 0; i < SIZE; ++i) {
@@ -105,9 +105,9 @@ void create_float_columns(grnxx::Table *table) {
 
 void create_text_columns(grnxx::Table *table) {
   grnxx::Column *columns[3];
-  columns[0] = table->create_column("Text1", grnxx::TEXT_DATA);
-  columns[1] = table->create_column("Text2", grnxx::TEXT_DATA);
-  columns[2] = table->create_column("Text3", grnxx::TEXT_DATA);
+  columns[0] = table->create_column("Text1", GRNXX_TEXT);
+  columns[1] = table->create_column("Text2", GRNXX_TEXT);
+  columns[2] = table->create_column("Text3", GRNXX_TEXT);
 
   std::mt19937_64 rng;
   char buf[16];

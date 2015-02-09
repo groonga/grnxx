@@ -12,7 +12,7 @@ namespace impl {
 Column<Vector<Bool>>::Column(Table *table,
                              const String &name,
                              const ColumnOptions &)
-    : ColumnBase(table, name, BOOL_VECTOR_DATA),
+    : ColumnBase(table, name, GRNXX_BOOL_VECTOR),
       headers_(),
       bodies_() {}
 
@@ -154,10 +154,10 @@ void Column<Vector<Bool>>::read(ArrayCRef<Record> records,
 
 Vector<Bool> Column<Vector<Bool>>::parse_datum(const Datum &datum) {
   switch (datum.type()) {
-    case NA_DATA: {
+    case GRNXX_NA: {
       return Vector<Bool>::na();
     }
-    case BOOL_VECTOR_DATA: {
+    case GRNXX_BOOL_VECTOR: {
       return datum.as_bool_vector();
     }
     default: {
