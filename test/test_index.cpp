@@ -36,10 +36,10 @@ void test_index() {
   auto column = table->create_column("Column", GRNXX_INT);
 
   // Create an index named "Index".
-  auto index = column->create_index("Index", grnxx::TREE_INDEX);
+  auto index = column->create_index("Index", GRNXX_TREE_INDEX);
   assert(index->column() == column);
   assert(index->name() == "Index");
-  assert(index->type() == grnxx::TREE_INDEX);
+  assert(index->type() == GRNXX_TREE_INDEX);
 
   assert(column->num_indexes() == 1);
   assert(column->get_index(0) == index);
@@ -73,7 +73,7 @@ void test_set_and_index() {
   }
 
   // Create an index.
-  auto index = column->create_index("Index", grnxx::TREE_INDEX);
+  auto index = column->create_index("Index", GRNXX_TREE_INDEX);
 
   // Create a cursor.
   auto cursor = index->find_in_range();
@@ -102,7 +102,7 @@ void test_index_and_set() {
   auto column = table->create_column("Column", GRNXX_INT);
 
   // Create an index.
-  auto index = column->create_index("Index", grnxx::TREE_INDEX);
+  auto index = column->create_index("Index", GRNXX_TREE_INDEX);
 
   // Generate random values.
   // Int: [0, 100) or N/A.
@@ -171,7 +171,7 @@ void test_remove() {
   }
 
   // Create an index.
-  auto index = column->create_index("Index", grnxx::TREE_INDEX);
+  auto index = column->create_index("Index", GRNXX_TREE_INDEX);
 
   // Remove even rows.
   size_t odd_count = total_count;
@@ -213,7 +213,7 @@ void test_int_exact_match() {
   auto column = table->create_column("Column", GRNXX_INT);
 
   // Create an index.
-  auto index = column->create_index("Index", grnxx::TREE_INDEX);
+  auto index = column->create_index("Index", GRNXX_TREE_INDEX);
 
   // Generate random values.
   // Int: [0, 100) or N/A.
@@ -264,7 +264,7 @@ void test_float_exact_match() {
   auto column = table->create_column("Column", GRNXX_FLOAT);
 
   // Create an index.
-  auto index = column->create_index("Index", grnxx::TREE_INDEX);
+  auto index = column->create_index("Index", GRNXX_TREE_INDEX);
 
   // Generate random values.
   // Float: [0, 1.0) or N/A.
@@ -315,7 +315,7 @@ void test_text_exact_match() {
   auto column = table->create_column("Column", GRNXX_TEXT);
 
   // Create an index.
-  auto index = column->create_index("Index", grnxx::TREE_INDEX);
+  auto index = column->create_index("Index", GRNXX_TREE_INDEX);
 
   // Generate random values.
   // Text: ["0", "256") or N/A.
@@ -370,7 +370,7 @@ void test_int_range() {
   auto column = table->create_column("Column", GRNXX_INT);
 
   // Create an index.
-  auto index = column->create_index("Index", grnxx::TREE_INDEX);
+  auto index = column->create_index("Index", GRNXX_TREE_INDEX);
 
   // Generate random values.
   // Int: [0, 100).
@@ -423,7 +423,7 @@ void test_float_range() {
   auto column = table->create_column("Column", GRNXX_FLOAT);
 
   // Create an index.
-  auto index = column->create_index("Index", grnxx::TREE_INDEX);
+  auto index = column->create_index("Index", GRNXX_TREE_INDEX);
 
   // Generate random values.
   // Float: [0.0, 1.0).
@@ -476,7 +476,7 @@ void test_text_range() {
   auto column = table->create_column("Column", GRNXX_TEXT);
 
   // Create an index.
-  auto index = column->create_index("Index", grnxx::TREE_INDEX);
+  auto index = column->create_index("Index", GRNXX_TREE_INDEX);
 
   // Generate random values.
   // Text: ["0", "99"].
@@ -533,7 +533,7 @@ void test_text_find_starts_with() {
   auto column = table->create_column("Column", GRNXX_TEXT);
 
   // Create an index.
-  auto index = column->create_index("Index", grnxx::TREE_INDEX);
+  auto index = column->create_index("Index", GRNXX_TREE_INDEX);
 
   // Generate random values.
   // Text: ["0", "99"].
@@ -617,7 +617,7 @@ void test_text_find_prefixes() {
   auto column = table->create_column("Column", GRNXX_TEXT);
 
   // Create an index.
-  auto index = column->create_index("Index", grnxx::TREE_INDEX);
+  auto index = column->create_index("Index", GRNXX_TREE_INDEX);
 
   // Generate random values.
   // Text: ["0", "99"].
@@ -670,7 +670,7 @@ void test_reverse() {
   auto column = table->create_column("Column", GRNXX_INT);
 
   // Create an index.
-  auto index = column->create_index("Index", grnxx::TREE_INDEX);
+  auto index = column->create_index("Index", GRNXX_TREE_INDEX);
 
   // Generate random values.
   // Int: [0, 100).
@@ -730,7 +730,7 @@ void test_offset_and_limit() {
   auto column = table->create_column("Column", GRNXX_INT);
 
   // Create an index.
-  auto index = column->create_index("Index", grnxx::TREE_INDEX);
+  auto index = column->create_index("Index", GRNXX_TREE_INDEX);
 
   // Generate random values.
   // Int: [0, 100).
@@ -796,7 +796,7 @@ void test_uniqueness() {
   auto column = table->create_column("Column", GRNXX_INT);
 
   // Create an index.
-  auto index = column->create_index("Index", grnxx::TREE_INDEX);
+  auto index = column->create_index("Index", GRNXX_TREE_INDEX);
   assert(index->test_uniqueness());
 
   grnxx::Int row_id = table->insert_row();

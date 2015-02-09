@@ -119,7 +119,7 @@ void benchmark_indirect_build() try {
     auto db = grnxx::open_db("");
     auto to_table = db->create_table("Values");
     auto column = to_table->create_column("Value", GRNXX_TEXT);
-    column->create_index("Index", grnxx::TREE_INDEX);
+    column->create_index("Index", GRNXX_TREE_INDEX);
     to_table->set_key_column("Value");
     for (size_t j = 0; j < VALUES_SIZE; ++j) {
       to_table->insert_row(values[j]);
@@ -154,7 +154,7 @@ void benchmark_sequential_build() try {
     auto db = grnxx::open_db("");
     auto to_table = db->create_table("Values");
     auto value_column = to_table->create_column("Value", GRNXX_TEXT);
-    value_column->create_index("Index", grnxx::TREE_INDEX);
+    value_column->create_index("Index", GRNXX_TREE_INDEX);
     to_table->set_key_column("Value");
     auto from_table = db->create_table("Refs");
     grnxx::ColumnOptions options;

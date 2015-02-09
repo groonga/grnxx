@@ -254,7 +254,7 @@ void test_contains_and_find_one() {
 
   // Test all the values with index if available.
   try {
-    column->create_index("Index", grnxx::TREE_INDEX);
+    column->create_index("Index", GRNXX_TREE_INDEX);
     for (size_t i = 0; i < NUM_ROWS; ++i) {
       assert(column->contains(values[i]));
       grnxx::Int row_id = column->find_one(values[i]);
@@ -286,7 +286,7 @@ void test_contains_and_find_one() {
 
   // Test all the values with index if available.
   try {
-    column->create_index("Index", grnxx::TREE_INDEX);
+    column->create_index("Index", GRNXX_TREE_INDEX);
     for (size_t i = 0; i < NUM_ROWS; ++i) {
       if (!values[i].is_na()) {
         assert(column->contains(values[i]));
@@ -306,7 +306,7 @@ void test_contains_and_find_one() {
   assert(column->contains(T::na()));
   assert(column->find_one(T::na()).match(grnxx::Int(NUM_ROWS)));
   try {
-    column->create_index("Index", grnxx::TREE_INDEX);
+    column->create_index("Index", GRNXX_TREE_INDEX);
     assert(column->contains(T::na()));
     assert(column->find_one(T::na()).match(grnxx::Int(NUM_ROWS)));
     column->remove_index("Index");
@@ -332,7 +332,7 @@ void test_contains_and_find_one() {
 
   // Test all the values with index if available.
   try {
-    column->create_index("Index", grnxx::TREE_INDEX);
+    column->create_index("Index", GRNXX_TREE_INDEX);
     for (size_t i = 0; i < NUM_ROWS; ++i) {
       if (!values[i].is_na()) {
         assert(!column->contains(values[i]));
@@ -466,7 +466,7 @@ void test_contains() {
   assert(column->contains(grnxx::Int(789)));
   assert(!column->contains(grnxx::Int::na()));
 
-  column->create_index("Index", grnxx::TREE_INDEX);
+  column->create_index("Index", GRNXX_TREE_INDEX);
   assert(column->contains(grnxx::Int(123)));
   assert(column->contains(grnxx::Int(456)));
   assert(column->contains(grnxx::Int(789)));
@@ -517,7 +517,7 @@ void test_find_one() {
   assert(!column->find_one(grnxx::Int(789)).is_na());
   assert(column->find_one(grnxx::Int::na()).is_na());
 
-  column->create_index("Index", grnxx::TREE_INDEX);
+  column->create_index("Index", GRNXX_TREE_INDEX);
   assert(!column->find_one(grnxx::Int(123)).is_na());
   assert(!column->find_one(grnxx::Int(456)).is_na());
   assert(!column->find_one(grnxx::Int(789)).is_na());

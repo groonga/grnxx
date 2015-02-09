@@ -314,7 +314,7 @@ class TreeIndex<Int> : public Index {
   ~TreeIndex() = default;
 
   IndexType type() const {
-    return TREE_INDEX;
+    return GRNXX_TREE_INDEX;
   }
   size_t num_entries() const {
     return num_entries_;
@@ -494,7 +494,7 @@ class TreeIndex<Float> : public Index {
   ~TreeIndex() = default;
 
   IndexType type() const {
-    return TREE_INDEX;
+    return GRNXX_TREE_INDEX;
   }
   size_t num_entries() const {
     return num_entries_;
@@ -675,7 +675,7 @@ class TreeIndex<Text> : public Index {
   ~TreeIndex() = default;
 
   IndexType type() const {
-    return TREE_INDEX;
+    return GRNXX_TREE_INDEX;
   }
   size_t num_entries() const {
     return num_entries_;
@@ -947,7 +947,7 @@ class HashIndex<Int> : public Index {
   ~HashIndex() = default;
 
   IndexType type() const {
-    return HASH_INDEX;
+    return GRNXX_HASH_INDEX;
   }
   size_t num_entries() const {
     return num_entries_;
@@ -1080,7 +1080,7 @@ class HashIndex<Float> : public Index {
   ~HashIndex() = default;
 
   IndexType type() const {
-    return HASH_INDEX;
+    return GRNXX_HASH_INDEX;
   }
   size_t num_entries() const {
     return num_entries_;
@@ -1203,7 +1203,7 @@ class HashIndex<Text> : public Index {
   ~HashIndex() = default;
 
   IndexType type() const {
-    return HASH_INDEX;
+    return GRNXX_HASH_INDEX;
   }
   size_t num_entries() const {
     return num_entries_;
@@ -1370,7 +1370,7 @@ Index *Index::create(ColumnBase *column,
                      IndexType type,
                      const IndexOptions &options) try {
   switch (type) {
-    case TREE_INDEX: {
+    case GRNXX_TREE_INDEX: {
       switch (column->data_type()) {
         case GRNXX_BOOL: {
           throw "Not supported yet";  // TODO
@@ -1397,7 +1397,7 @@ Index *Index::create(ColumnBase *column,
         }
       }
     }
-    case HASH_INDEX: {
+    case GRNXX_HASH_INDEX: {
       switch (column->data_type()) {
         case GRNXX_BOOL: {
           throw "Not supported yet";  // TODO

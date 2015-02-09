@@ -37,6 +37,13 @@ typedef enum {
   GRNXX_REVERSE_ORDER
 } grnxx_order_type;
 
+typedef enum {
+  // Tree indexes support range search.
+  GRNXX_TREE_INDEX,
+  // Hash indexes support exact match search.
+  GRNXX_HASH_INDEX
+} grnxx_index_type;
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus

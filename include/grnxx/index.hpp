@@ -3,6 +3,7 @@
 
 #include <memory>
 
+#include "grnxx/constants.h"
 #include "grnxx/cursor.hpp"
 #include "grnxx/data_types.hpp"
 #include "grnxx/index.hpp"
@@ -59,12 +60,7 @@ class IndexRange {
   EndPoint upper_bound_;
 };
 
-enum IndexType {
-  // TODO: Tree indexes support range search.
-  TREE_INDEX,
-  // TODO: Hash indexes support exact match search.
-  HASH_INDEX
-};
+using IndexType = grnxx_index_type;
 
 struct IndexOptions {
 };
