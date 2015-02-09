@@ -79,16 +79,16 @@ void benchmark_grnxx_not_and(const grnxx::Table *table,
     auto expression_builder = grnxx::ExpressionBuilder::create(table);
     expression_builder->push_column("A");
     expression_builder->push_constant(upper_limit);
-    expression_builder->push_operator(grnxx::GREATER_EQUAL_OPERATOR);
+    expression_builder->push_operator(GRNXX_GREATER_EQUAL);
     expression_builder->push_column("B");
     expression_builder->push_constant(upper_limit);
-    expression_builder->push_operator(grnxx::GREATER_EQUAL_OPERATOR);
+    expression_builder->push_operator(GRNXX_GREATER_EQUAL);
     expression_builder->push_column("C");
     expression_builder->push_constant(upper_limit);
-    expression_builder->push_operator(grnxx::GREATER_EQUAL_OPERATOR);
-    expression_builder->push_operator(grnxx::LOGICAL_AND_OPERATOR);
-    expression_builder->push_operator(grnxx::LOGICAL_AND_OPERATOR);
-    expression_builder->push_operator(grnxx::LOGICAL_NOT_OPERATOR);
+    expression_builder->push_operator(GRNXX_GREATER_EQUAL);
+    expression_builder->push_operator(GRNXX_LOGICAL_AND);
+    expression_builder->push_operator(GRNXX_LOGICAL_AND);
+    expression_builder->push_operator(GRNXX_LOGICAL_NOT);
     auto expression = expression_builder->release();
     pipeline_builder->push_filter(std::move(expression));
     auto pipeline = pipeline_builder->release();
@@ -117,11 +117,11 @@ void benchmark_grnxx(const grnxx::Table *table,
                      grnxx::OperatorType logical_operator_type,
                      grnxx::Int upper_limit) {
   switch (logical_operator_type) {
-    case grnxx::LOGICAL_OR_OPERATOR: {
+    case GRNXX_LOGICAL_OR: {
       std::cout << "LOGICAL_OR: ";
       break;
     }
-    case grnxx::BITWISE_OR_OPERATOR: {
+    case GRNXX_BITWISE_OR: {
       std::cout << "BITWISE_OR: ";
       break;
     }
@@ -140,13 +140,13 @@ void benchmark_grnxx(const grnxx::Table *table,
     auto expression_builder = grnxx::ExpressionBuilder::create(table);
     expression_builder->push_column("A");
     expression_builder->push_constant(upper_limit);
-    expression_builder->push_operator(grnxx::LESS_OPERATOR);
+    expression_builder->push_operator(GRNXX_LESS);
     expression_builder->push_column("B");
     expression_builder->push_constant(upper_limit);
-    expression_builder->push_operator(grnxx::LESS_OPERATOR);
+    expression_builder->push_operator(GRNXX_LESS);
     expression_builder->push_column("C");
     expression_builder->push_constant(upper_limit);
-    expression_builder->push_operator(grnxx::LESS_OPERATOR);
+    expression_builder->push_operator(GRNXX_LESS);
     expression_builder->push_operator(logical_operator_type);
     expression_builder->push_operator(logical_operator_type);
     auto expression = expression_builder->release();
@@ -189,8 +189,8 @@ void benchmark_grnxx() {
     col_c->set(row_id, c[i]);
   }
 
-  benchmark_grnxx(table, grnxx::LOGICAL_OR_OPERATOR);
-  benchmark_grnxx(table, grnxx::BITWISE_OR_OPERATOR);
+  benchmark_grnxx(table, GRNXX_LOGICAL_OR);
+  benchmark_grnxx(table, GRNXX_BITWISE_OR);
   benchmark_grnxx_not_and(table);
 }
 

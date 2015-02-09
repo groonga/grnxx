@@ -129,12 +129,12 @@ void test_filter() {
   expression_builder->push_column("Bool");
   expression_builder->push_column("Int");
   expression_builder->push_constant(grnxx::Int(50));
-  expression_builder->push_operator(grnxx::LESS_OPERATOR);
+  expression_builder->push_operator(GRNXX_LESS);
   expression_builder->push_column("Float");
   expression_builder->push_constant(grnxx::Float(0.5));
-  expression_builder->push_operator(grnxx::LESS_OPERATOR);
-  expression_builder->push_operator(grnxx::LOGICAL_AND_OPERATOR);
-  expression_builder->push_operator(grnxx::LOGICAL_AND_OPERATOR);
+  expression_builder->push_operator(GRNXX_LESS);
+  expression_builder->push_operator(GRNXX_LOGICAL_AND);
+  expression_builder->push_operator(GRNXX_LOGICAL_AND);
   auto expression = expression_builder->release();
   pipeline_builder->push_filter(std::move(expression));
 
@@ -166,8 +166,8 @@ void test_filter() {
   expression_builder->push_column("Bool");
   expression_builder->push_column("Int");
   expression_builder->push_constant(grnxx::Int(50));
-  expression_builder->push_operator(grnxx::LESS_OPERATOR);
-  expression_builder->push_operator(grnxx::LOGICAL_AND_OPERATOR);
+  expression_builder->push_operator(GRNXX_LESS);
+  expression_builder->push_operator(GRNXX_LOGICAL_AND);
   expression = expression_builder->release();
   pipeline_builder->push_filter(std::move(expression),
                                 FILTER_OFFSET, FILTER_LIMIT);
@@ -212,7 +212,7 @@ void test_adjuster() {
   // Create an adjuster (Float * 100.0).
   expression_builder->push_column("Float");
   expression_builder->push_constant(grnxx::Float(100.0));
-  expression_builder->push_operator(grnxx::MULTIPLICATION_OPERATOR);
+  expression_builder->push_operator(GRNXX_MULTIPLICATION);
   expression = expression_builder->release();
   pipeline_builder->push_adjuster(std::move(expression));
 
@@ -335,14 +335,14 @@ void test_merger() {
   // Create a filter (Int < 50).
   expression_builder->push_column("Int");
   expression_builder->push_constant(grnxx::Int(50));
-  expression_builder->push_operator(grnxx::LESS_OPERATOR);
+  expression_builder->push_operator(GRNXX_LESS);
   expression = expression_builder->release();
   pipeline_builder->push_filter(std::move(expression));
 
   // Create an adjuster (Float * 2.0).
   expression_builder->push_column("Float");
   expression_builder->push_constant(grnxx::Float(2.0));
-  expression_builder->push_operator(grnxx::MULTIPLICATION_OPERATOR);
+  expression_builder->push_operator(GRNXX_MULTIPLICATION);
   expression = expression_builder->release();
   pipeline_builder->push_adjuster(std::move(expression));
 

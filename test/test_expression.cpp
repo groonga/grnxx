@@ -813,7 +813,7 @@ void test_logical_not() {
 
   // Test an expression (!Bool).
   builder->push_column("Bool");
-  builder->push_operator(grnxx::LOGICAL_NOT_OPERATOR);
+  builder->push_operator(GRNXX_LOGICAL_NOT);
   auto expression = builder->release();
 
   auto records = create_input_records();
@@ -843,7 +843,7 @@ void test_bitwise_not() {
 
   // Test an expression (~Bool).
   builder->push_column("Bool");
-  builder->push_operator(grnxx::BITWISE_NOT_OPERATOR);
+  builder->push_operator(GRNXX_BITWISE_NOT);
   auto expression = builder->release();
 
   auto records = create_input_records();
@@ -868,7 +868,7 @@ void test_bitwise_not() {
 
   // Test an expression (~Int).
   builder->push_column("Int");
-  builder->push_operator(grnxx::BITWISE_NOT_OPERATOR);
+  builder->push_operator(GRNXX_BITWISE_NOT);
   expression = builder->release();
 
   records = create_input_records();
@@ -888,7 +888,7 @@ void test_positive() {
 
   // Test an expression (+Int).
   builder->push_column("Int");
-  builder->push_operator(grnxx::POSITIVE_OPERATOR);
+  builder->push_operator(GRNXX_POSITIVE);
   auto expression = builder->release();
 
   auto records = create_input_records();
@@ -903,7 +903,7 @@ void test_positive() {
 
   // Test an expression (+Float).
   builder->push_column("Float");
-  builder->push_operator(grnxx::POSITIVE_OPERATOR);
+  builder->push_operator(GRNXX_POSITIVE);
   expression = builder->release();
 
   records = create_input_records();
@@ -930,7 +930,7 @@ void test_negative() {
 
   // Test an expression (-Int).
   builder->push_column("Int");
-  builder->push_operator(grnxx::NEGATIVE_OPERATOR);
+  builder->push_operator(GRNXX_NEGATIVE);
   auto expression = builder->release();
 
   auto records = create_input_records();
@@ -945,7 +945,7 @@ void test_negative() {
 
   // Test an expression (-Float).
   builder->push_column("Float");
-  builder->push_operator(grnxx::NEGATIVE_OPERATOR);
+  builder->push_operator(GRNXX_NEGATIVE);
   expression = builder->release();
 
   records = create_input_records();
@@ -972,7 +972,7 @@ void test_to_int() {
 
   // Test an expression (Int(Float)).
   builder->push_column("Float");
-  builder->push_operator(grnxx::TO_INT_OPERATOR);
+  builder->push_operator(GRNXX_TO_INT);
   auto expression = builder->release();
 
   auto records = create_input_records();
@@ -993,7 +993,7 @@ void test_to_float() {
 
   // Test an expression (Float(Int)).
   builder->push_column("Int");
-  builder->push_operator(grnxx::TO_FLOAT_OPERATOR);
+  builder->push_operator(GRNXX_TO_FLOAT);
   auto expression = builder->release();
 
   auto records = create_input_records();
@@ -1021,7 +1021,7 @@ void test_logical_and() {
   // Test an expression (Bool && Bool2).
   builder->push_column("Bool");
   builder->push_column("Bool2");
-  builder->push_operator(grnxx::LOGICAL_AND_OPERATOR);
+  builder->push_operator(GRNXX_LOGICAL_AND);
   auto expression = builder->release();
 
   auto records = create_input_records();
@@ -1053,7 +1053,7 @@ void test_logical_or() {
   // Test an expression (Bool || Bool2).
   builder->push_column("Bool");
   builder->push_column("Bool2");
-  builder->push_operator(grnxx::LOGICAL_OR_OPERATOR);
+  builder->push_operator(GRNXX_LOGICAL_OR);
   auto expression = builder->release();
 
   auto records = create_input_records();
@@ -1085,7 +1085,7 @@ void test_equal() {
   // Test an expression (Bool == Bool2).
   builder->push_column("Bool");
   builder->push_column("Bool2");
-  builder->push_operator(grnxx::EQUAL_OPERATOR);
+  builder->push_operator(GRNXX_EQUAL);
   auto expression = builder->release();
 
   auto records = create_input_records();
@@ -1112,7 +1112,7 @@ void test_equal() {
   // Test an expression (Int == Int2).
   builder->push_column("Int");
   builder->push_column("Int2");
-  builder->push_operator(grnxx::EQUAL_OPERATOR);
+  builder->push_operator(GRNXX_EQUAL);
   expression = builder->release();
 
   records = create_input_records();
@@ -1139,7 +1139,7 @@ void test_equal() {
   // Test an expression (Float == Float2).
   builder->push_column("Float");
   builder->push_column("Float2");
-  builder->push_operator(grnxx::EQUAL_OPERATOR);
+  builder->push_operator(GRNXX_EQUAL);
   expression = builder->release();
 
   records = create_input_records();
@@ -1166,7 +1166,7 @@ void test_equal() {
   // Test an expression (GeoPoint == GeoPoint2).
   builder->push_column("GeoPoint");
   builder->push_column("GeoPoint2");
-  builder->push_operator(grnxx::EQUAL_OPERATOR);
+  builder->push_operator(GRNXX_EQUAL);
   expression = builder->release();
 
   records = create_input_records();
@@ -1193,7 +1193,7 @@ void test_equal() {
   // Test an expression (Text == Text2).
   builder->push_column("Text");
   builder->push_column("Text2");
-  builder->push_operator(grnxx::EQUAL_OPERATOR);
+  builder->push_operator(GRNXX_EQUAL);
   expression = builder->release();
 
   records = create_input_records();
@@ -1220,7 +1220,7 @@ void test_equal() {
   // Test an expression (BoolVector == BoolVector2).
   builder->push_column("BoolVector");
   builder->push_column("BoolVector2");
-  builder->push_operator(grnxx::EQUAL_OPERATOR);
+  builder->push_operator(GRNXX_EQUAL);
   expression = builder->release();
 
   records = create_input_records();
@@ -1248,7 +1248,7 @@ void test_equal() {
   // Test an expression (IntVector == IntVector2).
   builder->push_column("IntVector");
   builder->push_column("IntVector2");
-  builder->push_operator(grnxx::EQUAL_OPERATOR);
+  builder->push_operator(GRNXX_EQUAL);
   expression = builder->release();
 
   records = create_input_records();
@@ -1275,7 +1275,7 @@ void test_equal() {
   // Test an expression (FloatVector == FloatVector2).
   builder->push_column("FloatVector");
   builder->push_column("FloatVector2");
-  builder->push_operator(grnxx::EQUAL_OPERATOR);
+  builder->push_operator(GRNXX_EQUAL);
   expression = builder->release();
 
   records = create_input_records();
@@ -1303,7 +1303,7 @@ void test_equal() {
   // Test an expression (GeoPointVector == GeoPointVector2).
   builder->push_column("GeoPointVector");
   builder->push_column("GeoPointVector2");
-  builder->push_operator(grnxx::EQUAL_OPERATOR);
+  builder->push_operator(GRNXX_EQUAL);
   expression = builder->release();
 
   records = create_input_records();
@@ -1331,7 +1331,7 @@ void test_equal() {
   // Test an expression (TextVector == TextVector2).
   builder->push_column("TextVector");
   builder->push_column("TextVector2");
-  builder->push_operator(grnxx::EQUAL_OPERATOR);
+  builder->push_operator(GRNXX_EQUAL);
   expression = builder->release();
 
   records = create_input_records();
@@ -1364,7 +1364,7 @@ void test_not_equal() {
   // Test an expression (Bool != Bool2).
   builder->push_column("Bool");
   builder->push_column("Bool2");
-  builder->push_operator(grnxx::NOT_EQUAL_OPERATOR);
+  builder->push_operator(GRNXX_NOT_EQUAL);
   auto expression = builder->release();
 
   auto records = create_input_records();
@@ -1391,7 +1391,7 @@ void test_not_equal() {
   // Test an expression (Int != Int2).
   builder->push_column("Int");
   builder->push_column("Int2");
-  builder->push_operator(grnxx::NOT_EQUAL_OPERATOR);
+  builder->push_operator(GRNXX_NOT_EQUAL);
   expression = builder->release();
 
   records = create_input_records();
@@ -1418,7 +1418,7 @@ void test_not_equal() {
   // Test an expression (Float != Float2).
   builder->push_column("Float");
   builder->push_column("Float2");
-  builder->push_operator(grnxx::NOT_EQUAL_OPERATOR);
+  builder->push_operator(GRNXX_NOT_EQUAL);
   expression = builder->release();
 
   records = create_input_records();
@@ -1445,7 +1445,7 @@ void test_not_equal() {
   // Test an expression (GeoPoint != GeoPoint2).
   builder->push_column("GeoPoint");
   builder->push_column("GeoPoint2");
-  builder->push_operator(grnxx::NOT_EQUAL_OPERATOR);
+  builder->push_operator(GRNXX_NOT_EQUAL);
   expression = builder->release();
 
   records = create_input_records();
@@ -1472,7 +1472,7 @@ void test_not_equal() {
   // Test an expression (Text != Text2).
   builder->push_column("Text");
   builder->push_column("Text2");
-  builder->push_operator(grnxx::NOT_EQUAL_OPERATOR);
+  builder->push_operator(GRNXX_NOT_EQUAL);
   expression = builder->release();
 
   records = create_input_records();
@@ -1499,7 +1499,7 @@ void test_not_equal() {
   // Test an expression (BoolVector != BoolVector2).
   builder->push_column("BoolVector");
   builder->push_column("BoolVector2");
-  builder->push_operator(grnxx::NOT_EQUAL_OPERATOR);
+  builder->push_operator(GRNXX_NOT_EQUAL);
   expression = builder->release();
 
   records = create_input_records();
@@ -1527,7 +1527,7 @@ void test_not_equal() {
   // Test an expression (IntVector != IntVector2).
   builder->push_column("IntVector");
   builder->push_column("IntVector2");
-  builder->push_operator(grnxx::NOT_EQUAL_OPERATOR);
+  builder->push_operator(GRNXX_NOT_EQUAL);
   expression = builder->release();
 
   records = create_input_records();
@@ -1554,7 +1554,7 @@ void test_not_equal() {
   // Test an expression (FloatVector != FloatVector2).
   builder->push_column("FloatVector");
   builder->push_column("FloatVector2");
-  builder->push_operator(grnxx::NOT_EQUAL_OPERATOR);
+  builder->push_operator(GRNXX_NOT_EQUAL);
   expression = builder->release();
 
   records = create_input_records();
@@ -1582,7 +1582,7 @@ void test_not_equal() {
   // Test an expression (GeoPointVector != GeoPointVector2).
   builder->push_column("GeoPointVector");
   builder->push_column("GeoPointVector2");
-  builder->push_operator(grnxx::NOT_EQUAL_OPERATOR);
+  builder->push_operator(GRNXX_NOT_EQUAL);
   expression = builder->release();
 
   records = create_input_records();
@@ -1610,7 +1610,7 @@ void test_not_equal() {
   // Test an expression (TextVector != TextVector2).
   builder->push_column("TextVector");
   builder->push_column("TextVector2");
-  builder->push_operator(grnxx::NOT_EQUAL_OPERATOR);
+  builder->push_operator(GRNXX_NOT_EQUAL);
   expression = builder->release();
 
   records = create_input_records();
@@ -1643,7 +1643,7 @@ void test_less() {
   // Test an expression (Int < Int2).
   builder->push_column("Int");
   builder->push_column("Int2");
-  builder->push_operator(grnxx::LESS_OPERATOR);
+  builder->push_operator(GRNXX_LESS);
   auto expression = builder->release();
 
   auto records = create_input_records();
@@ -1670,7 +1670,7 @@ void test_less() {
   // Test an expression (Float < Float2).
   builder->push_column("Float");
   builder->push_column("Float2");
-  builder->push_operator(grnxx::LESS_OPERATOR);
+  builder->push_operator(GRNXX_LESS);
   expression = builder->release();
 
   records = create_input_records();
@@ -1697,7 +1697,7 @@ void test_less() {
   // Test an expression (Text < Text2).
   builder->push_column("Text");
   builder->push_column("Text2");
-  builder->push_operator(grnxx::LESS_OPERATOR);
+  builder->push_operator(GRNXX_LESS);
   expression = builder->release();
 
   records = create_input_records();
@@ -1729,7 +1729,7 @@ void test_less_equal() {
   // Test an expression (Int <= Int2).
   builder->push_column("Int");
   builder->push_column("Int2");
-  builder->push_operator(grnxx::LESS_EQUAL_OPERATOR);
+  builder->push_operator(GRNXX_LESS_EQUAL);
   auto expression = builder->release();
 
   auto records = create_input_records();
@@ -1756,7 +1756,7 @@ void test_less_equal() {
   // Test an expression (Float <= Float2).
   builder->push_column("Float");
   builder->push_column("Float2");
-  builder->push_operator(grnxx::LESS_EQUAL_OPERATOR);
+  builder->push_operator(GRNXX_LESS_EQUAL);
   expression = builder->release();
 
   records = create_input_records();
@@ -1783,7 +1783,7 @@ void test_less_equal() {
   // Test an expression (Text <= Text2).
   builder->push_column("Text");
   builder->push_column("Text2");
-  builder->push_operator(grnxx::LESS_EQUAL_OPERATOR);
+  builder->push_operator(GRNXX_LESS_EQUAL);
   expression = builder->release();
 
   records = create_input_records();
@@ -1815,7 +1815,7 @@ void test_greater() {
   // Test an expression (Int > Int2).
   builder->push_column("Int");
   builder->push_column("Int2");
-  builder->push_operator(grnxx::GREATER_OPERATOR);
+  builder->push_operator(GRNXX_GREATER);
   auto expression = builder->release();
 
   auto records = create_input_records();
@@ -1842,7 +1842,7 @@ void test_greater() {
   // Test an expression (Float > Float2).
   builder->push_column("Float");
   builder->push_column("Float2");
-  builder->push_operator(grnxx::GREATER_OPERATOR);
+  builder->push_operator(GRNXX_GREATER);
   expression = builder->release();
 
   records = create_input_records();
@@ -1869,7 +1869,7 @@ void test_greater() {
   // Test an expression (Text > Text2).
   builder->push_column("Text");
   builder->push_column("Text2");
-  builder->push_operator(grnxx::GREATER_OPERATOR);
+  builder->push_operator(GRNXX_GREATER);
   expression = builder->release();
 
   records = create_input_records();
@@ -1901,7 +1901,7 @@ void test_greater_equal() {
   // Test an expression (Int >= Int2).
   builder->push_column("Int");
   builder->push_column("Int2");
-  builder->push_operator(grnxx::GREATER_EQUAL_OPERATOR);
+  builder->push_operator(GRNXX_GREATER_EQUAL);
   auto expression = builder->release();
 
   auto records = create_input_records();
@@ -1928,7 +1928,7 @@ void test_greater_equal() {
   // Test an expression (Float >= Float2).
   builder->push_column("Float");
   builder->push_column("Float2");
-  builder->push_operator(grnxx::GREATER_EQUAL_OPERATOR);
+  builder->push_operator(GRNXX_GREATER_EQUAL);
   expression = builder->release();
 
   records = create_input_records();
@@ -1955,7 +1955,7 @@ void test_greater_equal() {
   // Test an expression (Text >= Text2).
   builder->push_column("Text");
   builder->push_column("Text2");
-  builder->push_operator(grnxx::GREATER_EQUAL_OPERATOR);
+  builder->push_operator(GRNXX_GREATER_EQUAL);
   expression = builder->release();
 
   records = create_input_records();
@@ -1987,7 +1987,7 @@ void test_bitwise_and() {
   // Test an expression (Bool & Bool2).
   builder->push_column("Bool");
   builder->push_column("Bool2");
-  builder->push_operator(grnxx::BITWISE_AND_OPERATOR);
+  builder->push_operator(GRNXX_BITWISE_AND);
   auto expression = builder->release();
 
   auto records = create_input_records();
@@ -2014,7 +2014,7 @@ void test_bitwise_and() {
   // Test an expression (Int & Int2).
   builder->push_column("Int");
   builder->push_column("Int2");
-  builder->push_operator(grnxx::BITWISE_AND_OPERATOR);
+  builder->push_operator(GRNXX_BITWISE_AND);
   expression = builder->release();
 
   records = create_input_records();
@@ -2036,7 +2036,7 @@ void test_bitwise_or() {
   // Test an expression (Bool | Bool2).
   builder->push_column("Bool");
   builder->push_column("Bool2");
-  builder->push_operator(grnxx::BITWISE_OR_OPERATOR);
+  builder->push_operator(GRNXX_BITWISE_OR);
   auto expression = builder->release();
 
   auto records = create_input_records();
@@ -2063,7 +2063,7 @@ void test_bitwise_or() {
   // Test an expression (Int | Int2).
   builder->push_column("Int");
   builder->push_column("Int2");
-  builder->push_operator(grnxx::BITWISE_OR_OPERATOR);
+  builder->push_operator(GRNXX_BITWISE_OR);
   expression = builder->release();
 
   records = create_input_records();
@@ -2085,7 +2085,7 @@ void test_bitwise_xor() {
   // Test an expression (Bool ^ Bool2).
   builder->push_column("Bool");
   builder->push_column("Bool2");
-  builder->push_operator(grnxx::BITWISE_XOR_OPERATOR);
+  builder->push_operator(GRNXX_BITWISE_XOR);
   auto expression = builder->release();
 
   auto records = create_input_records();
@@ -2112,7 +2112,7 @@ void test_bitwise_xor() {
   // Test an expression (Int ^ Int2).
   builder->push_column("Int");
   builder->push_column("Int2");
-  builder->push_operator(grnxx::BITWISE_XOR_OPERATOR);
+  builder->push_operator(GRNXX_BITWISE_XOR);
   expression = builder->release();
 
   records = create_input_records();
@@ -2134,7 +2134,7 @@ void test_plus() {
   // Test an expression (Int + Int2).
   builder->push_column("Int");
   builder->push_column("Int2");
-  builder->push_operator(grnxx::PLUS_OPERATOR);
+  builder->push_operator(GRNXX_PLUS);
   auto expression = builder->release();
 
   auto records = create_input_records();
@@ -2151,7 +2151,7 @@ void test_plus() {
   // Test an expression (Float + Float2).
   builder->push_column("Float");
   builder->push_column("Float2");
-  builder->push_operator(grnxx::PLUS_OPERATOR);
+  builder->push_operator(GRNXX_PLUS);
   expression = builder->release();
 
   records = create_input_records();
@@ -2181,7 +2181,7 @@ void test_minus() {
   // Test an expression (Int - Int2).
   builder->push_column("Int");
   builder->push_column("Int2");
-  builder->push_operator(grnxx::MINUS_OPERATOR);
+  builder->push_operator(GRNXX_MINUS);
   auto expression = builder->release();
 
   auto records = create_input_records();
@@ -2198,7 +2198,7 @@ void test_minus() {
   // Test an expression (Float - Float2).
   builder->push_column("Float");
   builder->push_column("Float2");
-  builder->push_operator(grnxx::MINUS_OPERATOR);
+  builder->push_operator(GRNXX_MINUS);
   expression = builder->release();
 
   records = create_input_records();
@@ -2229,7 +2229,7 @@ void test_multiplication() {
   // Test an expression (Int * Int2).
   builder->push_column("Int");
   builder->push_column("Int2");
-  builder->push_operator(grnxx::MULTIPLICATION_OPERATOR);
+  builder->push_operator(GRNXX_MULTIPLICATION);
   auto expression = builder->release();
 
   auto records = create_input_records();
@@ -2246,7 +2246,7 @@ void test_multiplication() {
   // Test an expression (Float * Float2).
   builder->push_column("Float");
   builder->push_column("Float2");
-  builder->push_operator(grnxx::MULTIPLICATION_OPERATOR);
+  builder->push_operator(GRNXX_MULTIPLICATION);
   expression = builder->release();
 
   records = create_input_records();
@@ -2277,7 +2277,7 @@ void test_division() {
   // Division by zero does not fail.
   builder->push_column("Int");
   builder->push_column("Int2");
-  builder->push_operator(grnxx::DIVISION_OPERATOR);
+  builder->push_operator(GRNXX_DIVISION);
   auto expression = builder->release();
 
   auto records = create_input_records();
@@ -2294,7 +2294,7 @@ void test_division() {
   // Test an expression (Float / Float2).
   builder->push_column("Float");
   builder->push_column("Float2");
-  builder->push_operator(grnxx::DIVISION_OPERATOR);
+  builder->push_operator(GRNXX_DIVISION);
   expression = builder->release();
 
   records = create_input_records();
@@ -2325,7 +2325,7 @@ void test_modulus() {
   // An error occurs because of division by zero.
   builder->push_column("Int");
   builder->push_column("Int2");
-  builder->push_operator(grnxx::MODULUS_OPERATOR);
+  builder->push_operator(GRNXX_MODULUS);
   auto expression = builder->release();
 
   auto records = create_input_records();
@@ -2342,7 +2342,7 @@ void test_modulus() {
   // Test an expression (Float % Float2).
   builder->push_column("Float");
   builder->push_column("Float2");
-  builder->push_operator(grnxx::MODULUS_OPERATOR);
+  builder->push_operator(GRNXX_MODULUS);
   expression = builder->release();
 
   records = create_input_records();
@@ -2372,7 +2372,7 @@ void test_starts_with() {
   // Test an expression (Text.starts_with(Text2)).
   builder->push_column("Text");
   builder->push_column("Text2");
-  builder->push_operator(grnxx::STARTS_WITH_OPERATOR);
+  builder->push_operator(GRNXX_STARTS_WITH);
   auto expression = builder->release();
 
   auto records = create_input_records();
@@ -2404,7 +2404,7 @@ void test_ends_with() {
   // Test an expression (Text.ends_with(Text2)).
   builder->push_column("Text");
   builder->push_column("Text2");
-  builder->push_operator(grnxx::ENDS_WITH_OPERATOR);
+  builder->push_operator(GRNXX_ENDS_WITH);
   auto expression = builder->release();
 
   auto records = create_input_records();
@@ -2436,7 +2436,7 @@ void test_contains() {
   // Test an expression (Text.contains(Text2)).
   builder->push_column("Text");
   builder->push_column("Text2");
-  builder->push_operator(grnxx::CONTAINS_OPERATOR);
+  builder->push_operator(GRNXX_CONTAINS);
   auto expression = builder->release();
 
   auto records = create_input_records();
@@ -2468,7 +2468,7 @@ void test_subscript() {
   // Test an expression (BoolVector[Int]).
   builder->push_column("BoolVector");
   builder->push_column("Int");
-  builder->push_operator(grnxx::SUBSCRIPT_OPERATOR);
+  builder->push_operator(GRNXX_SUBSCRIPT);
   auto expression = builder->release();
 
   auto records = create_input_records();
@@ -2498,7 +2498,7 @@ void test_subscript() {
   // Test an expression (IntVector[Int]).
   builder->push_column("IntVector");
   builder->push_column("Int");
-  builder->push_operator(grnxx::SUBSCRIPT_OPERATOR);
+  builder->push_operator(GRNXX_SUBSCRIPT);
   expression = builder->release();
 
   records = create_input_records();
@@ -2516,7 +2516,7 @@ void test_subscript() {
   // Test an expression (FloatVector[Int]).
   builder->push_column("FloatVector");
   builder->push_column("Int");
-  builder->push_operator(grnxx::SUBSCRIPT_OPERATOR);
+  builder->push_operator(GRNXX_SUBSCRIPT);
   expression = builder->release();
 
   records = create_input_records();
@@ -2543,7 +2543,7 @@ void test_subscript() {
   // Test an expression (GeoPointVector[Int]).
   builder->push_column("GeoPointVector");
   builder->push_column("Int");
-  builder->push_operator(grnxx::SUBSCRIPT_OPERATOR);
+  builder->push_operator(GRNXX_SUBSCRIPT);
   expression = builder->release();
 
   records = create_input_records();
@@ -2561,7 +2561,7 @@ void test_subscript() {
   // Test an expression (TextVector[Int]).
   builder->push_column("TextVector");
   builder->push_column("Int");
-  builder->push_operator(grnxx::SUBSCRIPT_OPERATOR);
+  builder->push_operator(GRNXX_SUBSCRIPT);
   expression = builder->release();
 
   records = create_input_records();
@@ -2755,9 +2755,9 @@ void test_sequential_filter() {
   // Test an expression ((Int + Int2) < 100).
   builder->push_column("Int");
   builder->push_column("Int2");
-  builder->push_operator(grnxx::PLUS_OPERATOR);
+  builder->push_operator(GRNXX_PLUS);
   builder->push_constant(grnxx::Int(100));
-  builder->push_operator(grnxx::LESS_OPERATOR);
+  builder->push_operator(GRNXX_LESS);
   auto expression = builder->release();
 
   auto cursor = test.table->create_cursor();
@@ -2792,9 +2792,9 @@ void test_sequential_adjust() {
 
   // Test an expression (Float(Int) + Float).
   builder->push_column("Int");
-  builder->push_operator(grnxx::TO_FLOAT_OPERATOR);
+  builder->push_operator(GRNXX_TO_FLOAT);
   builder->push_column("Float");
-  builder->push_operator(grnxx::PLUS_OPERATOR);
+  builder->push_operator(GRNXX_PLUS);
   auto expression = builder->release();
 
   auto cursor = test.table->create_cursor();
@@ -2828,9 +2828,9 @@ void test_sequential_evaluate() {
   builder->push_column("Int");
   builder->push_column("Float");
   builder->push_constant(grnxx::Float(100.0));
-  builder->push_operator(grnxx::MULTIPLICATION_OPERATOR);
-  builder->push_operator(grnxx::TO_INT_OPERATOR);
-  builder->push_operator(grnxx::PLUS_OPERATOR);
+  builder->push_operator(GRNXX_MULTIPLICATION);
+  builder->push_operator(GRNXX_TO_INT);
+  builder->push_operator(GRNXX_PLUS);
   auto expression = builder->release();
 
   auto cursor = test.table->create_cursor();
@@ -2866,9 +2866,9 @@ void test_partial_filter() {
   // Test an expression ((Float * Float2) > 0.25).
   builder->push_column("Float");
   builder->push_column("Float2");
-  builder->push_operator(grnxx::MULTIPLICATION_OPERATOR);
+  builder->push_operator(GRNXX_MULTIPLICATION);
   builder->push_constant(grnxx::Float(0.25));
-  builder->push_operator(grnxx::GREATER_OPERATOR);
+  builder->push_operator(GRNXX_GREATER);
   auto expression = builder->release();
 
   // Read all records.
@@ -2899,7 +2899,7 @@ void test_error() {
   try {
     builder->push_column("Int");
     builder->push_column("Text");
-    builder->push_operator(grnxx::MULTIPLICATION_OPERATOR);
+    builder->push_operator(GRNXX_MULTIPLICATION);
     assert(false);
   } catch (...) {
     // OK.
@@ -2911,7 +2911,7 @@ void test_error() {
   // Test a valid expression (Int + Int).
   builder->push_column("Int");
   builder->push_column("Int");
-  builder->push_operator(grnxx::PLUS_OPERATOR);
+  builder->push_operator(GRNXX_PLUS);
 }
 
 int main() {

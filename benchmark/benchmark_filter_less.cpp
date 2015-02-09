@@ -69,7 +69,7 @@ void benchmark_grnxx(const grnxx::Table *table,
     auto expression_builder = grnxx::ExpressionBuilder::create(table);
     expression_builder->push_column("A");
     expression_builder->push_constant(upper_limit);
-    expression_builder->push_operator(grnxx::LESS_OPERATOR);
+    expression_builder->push_operator(GRNXX_LESS);
     auto expression = expression_builder->release();
     pipeline_builder->push_filter(std::move(expression));
     auto pipeline = pipeline_builder->release();

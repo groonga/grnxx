@@ -1802,34 +1802,34 @@ void ExpressionBuilder::push_operator(OperatorType operator_type) {
     subexpression_builder_->push_operator(operator_type);
   } else {
     switch (operator_type) {
-      case LOGICAL_NOT_OPERATOR:
-      case BITWISE_NOT_OPERATOR:
-      case POSITIVE_OPERATOR:
-      case NEGATIVE_OPERATOR:
-      case TO_INT_OPERATOR:
-      case TO_FLOAT_OPERATOR: {
+      case GRNXX_LOGICAL_NOT:
+      case GRNXX_BITWISE_NOT:
+      case GRNXX_POSITIVE:
+      case GRNXX_NEGATIVE:
+      case GRNXX_TO_INT:
+      case GRNXX_TO_FLOAT: {
         return push_unary_operator(operator_type);
       }
-      case LOGICAL_AND_OPERATOR:
-      case LOGICAL_OR_OPERATOR:
-      case EQUAL_OPERATOR:
-      case NOT_EQUAL_OPERATOR:
-      case LESS_OPERATOR:
-      case LESS_EQUAL_OPERATOR:
-      case GREATER_OPERATOR:
-      case GREATER_EQUAL_OPERATOR:
-      case BITWISE_AND_OPERATOR:
-      case BITWISE_OR_OPERATOR:
-      case BITWISE_XOR_OPERATOR:
-      case PLUS_OPERATOR:
-      case MINUS_OPERATOR:
-      case MULTIPLICATION_OPERATOR:
-      case DIVISION_OPERATOR:
-      case MODULUS_OPERATOR:
-      case STARTS_WITH_OPERATOR:
-      case ENDS_WITH_OPERATOR:
-      case CONTAINS_OPERATOR:
-      case SUBSCRIPT_OPERATOR: {
+      case GRNXX_LOGICAL_AND:
+      case GRNXX_LOGICAL_OR:
+      case GRNXX_EQUAL:
+      case GRNXX_NOT_EQUAL:
+      case GRNXX_LESS:
+      case GRNXX_LESS_EQUAL:
+      case GRNXX_GREATER:
+      case GRNXX_GREATER_EQUAL:
+      case GRNXX_BITWISE_AND:
+      case GRNXX_BITWISE_OR:
+      case GRNXX_BITWISE_XOR:
+      case GRNXX_PLUS:
+      case GRNXX_MINUS:
+      case GRNXX_MULTIPLICATION:
+      case GRNXX_DIVISION:
+      case GRNXX_MODULUS:
+      case GRNXX_STARTS_WITH:
+      case GRNXX_ENDS_WITH:
+      case GRNXX_CONTAINS:
+      case GRNXX_SUBSCRIPT: {
         return push_binary_operator(operator_type);
       }
       default: {
@@ -2013,7 +2013,7 @@ Node *ExpressionBuilder::create_unary_node(
     OperatorType operator_type,
     std::unique_ptr<Node> &&arg) try {
   switch (operator_type) {
-    case LOGICAL_NOT_OPERATOR: {
+    case GRNXX_LOGICAL_NOT: {
       switch (arg->data_type()) {
         case GRNXX_BOOL: {
           return new LogicalNotNode(std::move(arg));
@@ -2023,7 +2023,7 @@ Node *ExpressionBuilder::create_unary_node(
         }
       }
     }
-    case BITWISE_NOT_OPERATOR: {
+    case GRNXX_BITWISE_NOT: {
       switch (arg->data_type()) {
         case GRNXX_BOOL: {
           return new BitwiseNotNode<Bool>(std::move(arg));
@@ -2036,7 +2036,7 @@ Node *ExpressionBuilder::create_unary_node(
         }
       }
     }
-    case POSITIVE_OPERATOR: {
+    case GRNXX_POSITIVE: {
       switch (arg->data_type()) {
         case GRNXX_INT:
         case GRNXX_FLOAT: {
@@ -2048,7 +2048,7 @@ Node *ExpressionBuilder::create_unary_node(
         }
       }
     }
-    case NEGATIVE_OPERATOR: {
+    case GRNXX_NEGATIVE: {
       switch (arg->data_type()) {
         case GRNXX_INT: {
           return new NegativeNode<Int>(std::move(arg));
@@ -2061,7 +2061,7 @@ Node *ExpressionBuilder::create_unary_node(
         }
       }
     }
-    case TO_INT_OPERATOR: {
+    case GRNXX_TO_INT: {
       switch (arg->data_type()) {
         case GRNXX_FLOAT: {
           return new ToIntNode(std::move(arg));
@@ -2071,7 +2071,7 @@ Node *ExpressionBuilder::create_unary_node(
         }
       }
     }
-    case TO_FLOAT_OPERATOR: {
+    case GRNXX_TO_FLOAT: {
       switch (arg->data_type()) {
         case GRNXX_INT: {
           return new ToFloatNode(std::move(arg));
@@ -2094,22 +2094,22 @@ Node *ExpressionBuilder::create_binary_node(
     std::unique_ptr<Node> &&arg1,
     std::unique_ptr<Node> &&arg2) try {
   switch (operator_type) {
-    case LOGICAL_AND_OPERATOR: {
+    case GRNXX_LOGICAL_AND: {
       if ((arg1->data_type() != GRNXX_BOOL) ||
           (arg2->data_type() != GRNXX_BOOL)) {
         throw "Invalid data type";  // TODO
       }
       return new LogicalAndNode(std::move(arg1), std::move(arg2));
     }
-    case LOGICAL_OR_OPERATOR: {
+    case GRNXX_LOGICAL_OR: {
       if ((arg1->data_type() != GRNXX_BOOL) ||
           (arg2->data_type() != GRNXX_BOOL)) {
         throw "Invalid data type";  // TODO
       }
       return new LogicalOrNode(std::move(arg1), std::move(arg2));
     }
-    case EQUAL_OPERATOR:
-    case NOT_EQUAL_OPERATOR: {
+    case GRNXX_EQUAL:
+    case GRNXX_NOT_EQUAL: {
       switch (arg1->data_type()) {
         case GRNXX_BOOL: {
           return create_equality_test_node<Bool>(
@@ -2156,10 +2156,10 @@ Node *ExpressionBuilder::create_binary_node(
         }
       }
     }
-    case LESS_OPERATOR:
-    case LESS_EQUAL_OPERATOR:
-    case GREATER_OPERATOR:
-    case GREATER_EQUAL_OPERATOR: {
+    case GRNXX_LESS:
+    case GRNXX_LESS_EQUAL:
+    case GRNXX_GREATER:
+    case GRNXX_GREATER_EQUAL: {
       switch (arg1->data_type()) {
         case GRNXX_INT: {
           return create_comparison_node<Int>(
@@ -2178,9 +2178,9 @@ Node *ExpressionBuilder::create_binary_node(
         }
       }
     }
-    case BITWISE_AND_OPERATOR:
-    case BITWISE_OR_OPERATOR:
-    case BITWISE_XOR_OPERATOR: {
+    case GRNXX_BITWISE_AND:
+    case GRNXX_BITWISE_OR:
+    case GRNXX_BITWISE_XOR: {
       switch (arg1->data_type()) {
         case GRNXX_BOOL: {
           return create_bitwise_binary_node<Bool>(
@@ -2195,11 +2195,11 @@ Node *ExpressionBuilder::create_binary_node(
         }
       }
     }
-    case PLUS_OPERATOR:
-    case MINUS_OPERATOR:
-    case MULTIPLICATION_OPERATOR:
-    case DIVISION_OPERATOR:
-    case MODULUS_OPERATOR: {
+    case GRNXX_PLUS:
+    case GRNXX_MINUS:
+    case GRNXX_MULTIPLICATION:
+    case GRNXX_DIVISION:
+    case GRNXX_MODULUS: {
       switch (arg1->data_type()) {
         case GRNXX_INT: {
           return create_arithmetic_node<Int>(
@@ -2214,9 +2214,9 @@ Node *ExpressionBuilder::create_binary_node(
         }
       }
     }
-    case STARTS_WITH_OPERATOR:
-    case ENDS_WITH_OPERATOR:
-    case CONTAINS_OPERATOR: {
+    case GRNXX_STARTS_WITH:
+    case GRNXX_ENDS_WITH:
+    case GRNXX_CONTAINS: {
       switch (arg1->data_type()) {
         case GRNXX_TEXT: {
           return create_search_node<Text>(
@@ -2228,7 +2228,7 @@ Node *ExpressionBuilder::create_binary_node(
         }
       }
     }
-    case SUBSCRIPT_OPERATOR: {
+    case GRNXX_SUBSCRIPT: {
       return create_subscript_node(std::move(arg1), std::move(arg2));
     }
     default: {
@@ -2249,10 +2249,10 @@ Node *ExpressionBuilder::create_equality_test_node(
     throw "Data type conflict";  // TODO
   }
   switch (operator_type) {
-    case EQUAL_OPERATOR: {
+    case GRNXX_EQUAL: {
       return new EqualNode<T>(std::move(arg1), std::move(arg2));
     }
-    case NOT_EQUAL_OPERATOR: {
+    case GRNXX_NOT_EQUAL: {
       return new NotEqualNode<T>(std::move(arg1), std::move(arg2));
     }
     default: {
@@ -2270,16 +2270,16 @@ Node *ExpressionBuilder::create_comparison_node(OperatorType operator_type,
     throw "Data type conflict";  // TODO
   }
   switch (operator_type) {
-    case LESS_OPERATOR: {
+    case GRNXX_LESS: {
       return new LessNode<T>(std::move(arg1), std::move(arg2));
     }
-    case LESS_EQUAL_OPERATOR: {
+    case GRNXX_LESS_EQUAL: {
       return new LessEqualNode<T>(std::move(arg1), std::move(arg2));
     }
-    case GREATER_OPERATOR: {
+    case GRNXX_GREATER: {
       return new GreaterNode<T>(std::move(arg1), std::move(arg2));
     }
-    case GREATER_EQUAL_OPERATOR: {
+    case GRNXX_GREATER_EQUAL: {
       return new GreaterEqualNode<T>(std::move(arg1), std::move(arg2));
     }
     default: {
@@ -2297,13 +2297,13 @@ Node *ExpressionBuilder::create_bitwise_binary_node(
     throw "Data type conflict";  // TODO
   }
   switch (operator_type) {
-    case BITWISE_AND_OPERATOR: {
+    case GRNXX_BITWISE_AND: {
       return new BitwiseAndNode<T>(std::move(arg1), std::move(arg2));
     }
-    case BITWISE_OR_OPERATOR: {
+    case GRNXX_BITWISE_OR: {
       return new BitwiseOrNode<T>(std::move(arg1), std::move(arg2));
     }
-    case BITWISE_XOR_OPERATOR: {
+    case GRNXX_BITWISE_XOR: {
       return new BitwiseXorNode<T>(std::move(arg1), std::move(arg2));
     }
     default: {
@@ -2321,19 +2321,19 @@ Node *ExpressionBuilder::create_arithmetic_node(
     throw "Data type conflict";  // TODO
   }
   switch (operator_type) {
-    case PLUS_OPERATOR: {
+    case GRNXX_PLUS: {
       return new PlusNode<T>(std::move(arg1), std::move(arg2));
     }
-    case MINUS_OPERATOR: {
+    case GRNXX_MINUS: {
       return new MinusNode<T>(std::move(arg1), std::move(arg2));
     }
-    case MULTIPLICATION_OPERATOR: {
+    case GRNXX_MULTIPLICATION: {
       return new MultiplicationNode<T>(std::move(arg1), std::move(arg2));
     }
-    case DIVISION_OPERATOR: {
+    case GRNXX_DIVISION: {
       return new DivisionNode<T>(std::move(arg1), std::move(arg2));
     }
-    case MODULUS_OPERATOR: {
+    case GRNXX_MODULUS: {
       return new ModulusNode<T>(std::move(arg1), std::move(arg2));
     }
     default: {
@@ -2350,13 +2350,13 @@ Node *ExpressionBuilder::create_search_node(OperatorType operator_type,
     throw "Data type conflict";  // TODO
   }
   switch (operator_type) {
-    case STARTS_WITH_OPERATOR: {
+    case GRNXX_STARTS_WITH: {
       return new StartsWithNode<T>(std::move(arg1), std::move(arg2));
     }
-    case ENDS_WITH_OPERATOR: {
+    case GRNXX_ENDS_WITH: {
       return new EndsWithNode<T>(std::move(arg1), std::move(arg2));
     }
-    case CONTAINS_OPERATOR: {
+    case GRNXX_CONTAINS: {
       return new ContainsNode<T>(std::move(arg1), std::move(arg2));
     }
     default: {

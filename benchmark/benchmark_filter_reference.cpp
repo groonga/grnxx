@@ -111,7 +111,7 @@ void benchmark_grnxx(grnxx::Table *table,
       expression_builder->push_column(column_names[j]);
       expression_builder->end_subexpression();
       expression_builder->push_constant(upper_limit);
-      expression_builder->push_operator(grnxx::LESS_OPERATOR);
+      expression_builder->push_operator(GRNXX_LESS);
     }
     for (size_t j = 1; j < column_names.size(); ++j) {
       expression_builder->push_operator(logical_operator_type);
@@ -145,7 +145,7 @@ void benchmark_grnxx(grnxx::Table *table,
     for (size_t j = 0; j < column_names.size(); ++j) {
       expression_builder->push_column(column_names[j]);
       expression_builder->push_constant(upper_limit);
-      expression_builder->push_operator(grnxx::LESS_OPERATOR);
+      expression_builder->push_operator(GRNXX_LESS);
     }
     for (size_t j = 1; j < column_names.size(); ++j) {
       expression_builder->push_operator(logical_operator_type);
@@ -173,19 +173,19 @@ void benchmark_grnxx(grnxx::Table *table,
                      grnxx::OperatorType logical_operator_type,
                      const char *column_names) {
   switch (logical_operator_type) {
-    case grnxx::LOGICAL_AND_OPERATOR: {
+    case GRNXX_LOGICAL_AND: {
       std::cout << "LOGICAL_AND: ";
       break;
     }
-    case grnxx::LOGICAL_OR_OPERATOR: {
+    case GRNXX_LOGICAL_OR: {
       std::cout << "LOGICAL_OR: ";
       break;
     }
-    case grnxx::BITWISE_AND_OPERATOR: {
+    case GRNXX_BITWISE_AND: {
       std::cout << "BITWISE_AND: ";
       break;
     }
-    case grnxx::BITWISE_OR_OPERATOR: {
+    case GRNXX_BITWISE_OR: {
       std::cout << "BITWISE_OR: ";
       break;
     }
@@ -236,12 +236,12 @@ void benchmark_grnxx_not_and(grnxx::Table *table,
       expression_builder->push_column(column_names[j]);
       expression_builder->end_subexpression();
       expression_builder->push_constant(upper_limit);
-      expression_builder->push_operator(grnxx::GREATER_EQUAL_OPERATOR);
+      expression_builder->push_operator(GRNXX_GREATER_EQUAL);
     }
     for (size_t j = 1; j < column_names.size(); ++j) {
-      expression_builder->push_operator(grnxx::LOGICAL_AND_OPERATOR);
+      expression_builder->push_operator(GRNXX_LOGICAL_AND);
     }
-    expression_builder->push_operator(grnxx::LOGICAL_NOT_OPERATOR);
+    expression_builder->push_operator(GRNXX_LOGICAL_NOT);
     auto expression = expression_builder->release();
     pipeline_builder->push_filter(std::move(expression));
     auto pipeline = pipeline_builder->release();
@@ -275,16 +275,16 @@ void benchmark_grnxx_not_and(grnxx::Table *table, const char *column_names) {
 }
 
 void benchmark_grnxx(grnxx::Table *table) {
-  benchmark_grnxx(table, grnxx::LOGICAL_AND_OPERATOR, "A");
-  benchmark_grnxx(table, grnxx::LOGICAL_AND_OPERATOR, "A,B");
-  benchmark_grnxx(table, grnxx::LOGICAL_AND_OPERATOR, "A,B,C");
-  benchmark_grnxx(table, grnxx::LOGICAL_OR_OPERATOR, "A,B");
-  benchmark_grnxx(table, grnxx::LOGICAL_OR_OPERATOR, "A,B,C");
+  benchmark_grnxx(table, GRNXX_LOGICAL_AND, "A");
+  benchmark_grnxx(table, GRNXX_LOGICAL_AND, "A,B");
+  benchmark_grnxx(table, GRNXX_LOGICAL_AND, "A,B,C");
+  benchmark_grnxx(table, GRNXX_LOGICAL_OR, "A,B");
+  benchmark_grnxx(table, GRNXX_LOGICAL_OR, "A,B,C");
 
-  benchmark_grnxx(table, grnxx::BITWISE_AND_OPERATOR, "A,B");
-  benchmark_grnxx(table, grnxx::BITWISE_AND_OPERATOR, "A,B,C");
-  benchmark_grnxx(table, grnxx::BITWISE_OR_OPERATOR, "A,B");
-  benchmark_grnxx(table, grnxx::BITWISE_OR_OPERATOR, "A,B,C");
+  benchmark_grnxx(table, GRNXX_BITWISE_AND, "A,B");
+  benchmark_grnxx(table, GRNXX_BITWISE_AND, "A,B,C");
+  benchmark_grnxx(table, GRNXX_BITWISE_OR, "A,B");
+  benchmark_grnxx(table, GRNXX_BITWISE_OR, "A,B,C");
 
   benchmark_grnxx_not_and(table, "A,B");
   benchmark_grnxx_not_and(table, "A,B,C");

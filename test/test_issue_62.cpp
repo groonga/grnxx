@@ -79,7 +79,7 @@ void test_scored_subexpression() {
   builder->begin_subexpression();
   builder->push_score();
   builder->push_constant(grnxx::Float(0.5));
-  builder->push_operator(grnxx::GREATER_OPERATOR);
+  builder->push_operator(GRNXX_GREATER);
   builder->end_subexpression();
   expression = builder->release();
 

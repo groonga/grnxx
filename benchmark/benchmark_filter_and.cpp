@@ -66,11 +66,11 @@ void benchmark_grnxx(const grnxx::Table *table,
                      grnxx::OperatorType logical_operator_type,
                      grnxx::Int upper_limit) {
   switch (logical_operator_type) {
-    case grnxx::LOGICAL_AND_OPERATOR: {
+    case GRNXX_LOGICAL_AND: {
       std::cout << "LOGICAL_AND: ";
       break;
     }
-    case grnxx::BITWISE_AND_OPERATOR: {
+    case GRNXX_BITWISE_AND: {
       std::cout << "BITWISE_AND: ";
       break;
     }
@@ -89,13 +89,13 @@ void benchmark_grnxx(const grnxx::Table *table,
     auto expression_builder = grnxx::ExpressionBuilder::create(table);
     expression_builder->push_column("A");
     expression_builder->push_constant(upper_limit);
-    expression_builder->push_operator(grnxx::LESS_OPERATOR);
+    expression_builder->push_operator(GRNXX_LESS);
     expression_builder->push_column("B");
     expression_builder->push_constant(upper_limit);
-    expression_builder->push_operator(grnxx::LESS_OPERATOR);
+    expression_builder->push_operator(GRNXX_LESS);
     expression_builder->push_column("C");
     expression_builder->push_constant(upper_limit);
-    expression_builder->push_operator(grnxx::LESS_OPERATOR);
+    expression_builder->push_operator(GRNXX_LESS);
     expression_builder->push_operator(logical_operator_type);
     expression_builder->push_operator(logical_operator_type);
     auto expression = expression_builder->release();
@@ -138,8 +138,8 @@ void benchmark_grnxx() {
     col_c->set(row_id, c[i]);
   }
 
-  benchmark_grnxx(table, grnxx::LOGICAL_AND_OPERATOR);
-  benchmark_grnxx(table, grnxx::BITWISE_AND_OPERATOR);
+  benchmark_grnxx(table, GRNXX_LOGICAL_AND);
+  benchmark_grnxx(table, GRNXX_BITWISE_AND);
 }
 
 void benchmark_native_batch(grnxx::Int upper_limit) {

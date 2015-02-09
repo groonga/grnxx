@@ -10,62 +10,7 @@
 
 namespace grnxx {
 
-enum OperatorType {
-  // -- Unary operators --
-
-  LOGICAL_NOT_OPERATOR,  // For Bool.
-
-  BITWISE_NOT_OPERATOR,  // For Bool, Int.
-
-  POSITIVE_OPERATOR,  // For Int, Float.
-  NEGATIVE_OPERATOR,  // For Int, Float.
-
-  // Typecast operators.
-//  TO_BOOL_OPERATOR,
-  TO_INT_OPERATOR,    // For Float.
-  TO_FLOAT_OPERATOR,  // For Int.
-//  TO_GEO_POINT_OPERATOR,
-//  TO_TEXT_OPERATOR,
-
-  // -- Binary operators --
-
-  // Logical operators.
-  LOGICAL_AND_OPERATOR,  // For Bool.
-  LOGICAL_OR_OPERATOR,   // For Bool.
-
-  // Equality operators.
-  EQUAL_OPERATOR,      // For any types.
-  NOT_EQUAL_OPERATOR,  // For any types.
-
-  // Comparison operators.
-  LESS_OPERATOR,           // Int, Float, Text.
-  LESS_EQUAL_OPERATOR,     // Int, Float, Text.
-  GREATER_OPERATOR,        // Int, Float, Text.
-  GREATER_EQUAL_OPERATOR,  // Int, Float, Text.
-
-  // Bitwise operators.
-  BITWISE_AND_OPERATOR,  // For Bool, Int.
-  BITWISE_OR_OPERATOR,   // For Bool, Int.
-  BITWISE_XOR_OPERATOR,  // For Bool, Int.
-
-  // Arithmetic operators.
-  PLUS_OPERATOR,            // For Int, Float.
-  MINUS_OPERATOR,           // For Int, Float.
-  MULTIPLICATION_OPERATOR,  // For Int, Float.
-  DIVISION_OPERATOR,        // For Int, Float.
-  MODULUS_OPERATOR,         // For Int.
-
-  // TODO: The following operators can support Vector.
-  // Search operators.
-  STARTS_WITH_OPERATOR,  // For Text.
-  ENDS_WITH_OPERATOR,    // For Text.
-  CONTAINS_OPERATOR,     // For Text.
-
-  // Vector operators.
-  SUBSCRIPT_OPERATOR,
-
-  // -- Ternary operators --
-};
+using OperatorType = grnxx_operator_type;
 
 struct ExpressionOptions {
   // Records are evaluated per block.
