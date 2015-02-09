@@ -6,6 +6,10 @@
 
 namespace grnxx {
 
+std::unique_ptr<Expression> Expression::parse(const String &query) {
+  return impl::ExpressionParser::parse(query);
+}
+
 std::unique_ptr<ExpressionBuilder> ExpressionBuilder::create(
     const Table *table) try {
   return std::unique_ptr<ExpressionBuilder>(

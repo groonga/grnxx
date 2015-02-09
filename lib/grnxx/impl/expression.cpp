@@ -2477,5 +2477,122 @@ Node *ExpressionBuilder::create_dereference_node(
   }
 }
 
+// -- ExpressionParser --
+
+ExpressionTokenType ExpressionToken::get_operator_token_type(
+    OperatorType operator_type) {
+  switch (operator_type) {
+    case GRNXX_LOGICAL_NOT:
+    case GRNXX_BITWISE_NOT:
+    case GRNXX_POSITIVE:
+    case GRNXX_NEGATIVE:
+    case GRNXX_TO_INT:
+    case GRNXX_TO_FLOAT: {
+      return UNARY_OPERATOR_TOKEN;
+    }
+    case GRNXX_LOGICAL_AND:
+    case GRNXX_LOGICAL_OR:
+    case GRNXX_EQUAL:
+    case GRNXX_NOT_EQUAL:
+    case GRNXX_LESS:
+    case GRNXX_LESS_EQUAL:
+    case GRNXX_GREATER:
+    case GRNXX_GREATER_EQUAL:
+    case GRNXX_BITWISE_AND:
+    case GRNXX_BITWISE_OR:
+    case GRNXX_BITWISE_XOR:
+    case GRNXX_PLUS:
+    case GRNXX_MINUS:
+    case GRNXX_MULTIPLICATION:
+    case GRNXX_DIVISION:
+    case GRNXX_MODULUS:
+    case GRNXX_STARTS_WITH:
+    case GRNXX_ENDS_WITH:
+    case GRNXX_CONTAINS:
+    case GRNXX_SUBSCRIPT: {
+      return BINARY_OPERATOR_TOKEN;
+    }
+    default: {
+      throw "Unsupported operator type";
+    }
+  }
+}
+
+int ExpressionToken::get_operator_priority(OperatorType operator_type) {
+  switch (operator_type) {
+    case GRNXX_LOGICAL_NOT:
+    case GRNXX_BITWISE_NOT:
+    case GRNXX_POSITIVE:
+    case GRNXX_NEGATIVE:
+    case GRNXX_TO_INT:
+    case GRNXX_TO_FLOAT: {
+      return 3;
+    }
+    case GRNXX_LOGICAL_AND: {
+      return 13;
+    }
+    case GRNXX_LOGICAL_OR: {
+      return 14;
+    }
+    case GRNXX_EQUAL:
+    case GRNXX_NOT_EQUAL: {
+      return 9;
+    }
+    case GRNXX_LESS:
+    case GRNXX_LESS_EQUAL:
+    case GRNXX_GREATER:
+    case GRNXX_GREATER_EQUAL: {
+      return 8;
+    }
+    case GRNXX_BITWISE_AND: {
+      return 10;
+    }
+    case GRNXX_BITWISE_OR: {
+      return 12;
+    }
+    case GRNXX_BITWISE_XOR: {
+      return 11;
+    }
+    case GRNXX_PLUS:
+    case GRNXX_MINUS: {
+      return 6;
+    }
+    case GRNXX_MULTIPLICATION:
+    case GRNXX_DIVISION:
+    case GRNXX_MODULUS: {
+      return 5;
+    }
+    case GRNXX_STARTS_WITH:
+    case GRNXX_ENDS_WITH:
+    case GRNXX_CONTAINS: {
+      return 7;
+    }
+    case GRNXX_SUBSCRIPT: {
+      return 2;
+    }
+    default: {
+      throw "Unsupported operator type";
+    }
+  }
+}
+
+std::unique_ptr<ExpressionInterface> ExpressionParser::parse(
+    const String &query) try {
+  std::unique_ptr<ExpressionParser> parser(new ExpressionParser);
+  parser->tokenize(query);
+  return parser->build();
+} catch (const std::bad_alloc &) {
+	throw "Memory allocation failed";
+}
+
+void ExpressionParser::tokenize(const String &query) {
+  // TODO
+}
+
+std::unique_ptr<ExpressionInterface> ExpressionParser::build() {
+  // TODO
+  return builder_->release();
+}
+
 }  // namespace impl
 }  // namespace grnxx

@@ -140,6 +140,12 @@ class Expression {
                         ArrayRef<Vector<GeoPoint>> results) = 0;
   virtual void evaluate(ArrayCRef<Record> records,
                         ArrayRef<Vector<Text>> results) = 0;
+
+  // Parse "query" and create an expression.
+  //
+  // On success, returns the expression.
+  // On failure, throws an exception.
+  static std::unique_ptr<Expression> parse(const String &query);
 };
 
 class ExpressionBuilder {

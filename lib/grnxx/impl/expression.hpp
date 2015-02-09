@@ -106,7 +106,7 @@ class ExpressionBuilder : public ExpressionBuilderInterface {
   void clear();
 
   std::unique_ptr<ExpressionInterface> release(
-      const ExpressionOptions &options);
+      const ExpressionOptions &options = ExpressionOptions());
 
  private:
   const Table *table_;
@@ -203,6 +203,81 @@ class ExpressionBuilder : public ExpressionBuilderInterface {
   static Node *create_dereference_node(std::unique_ptr<Node> &&arg1,
                                        std::unique_ptr<Node> &&arg2,
                                        const ExpressionOptions &options);
+};
+
+enum ExpressionTokenType {
+  NODE_TOKEN,
+  UNARY_OPERATOR_TOKEN,
+  BINARY_OPERATOR_TOKEN,
+  DEREFERENCE_TOKEN,
+  BRACKET_TOKEN
+};
+
+enum ExpressionBracketType {
+  LEFT_ROUND_BRACKET,
+  RIGHT_ROUND_BRACKET,
+  LEFT_SQUARE_BRACKET,
+  RIGHT_SQUARE_BRACKET
+};
+
+class ExpressionToken {
+ public:
+  ExpressionToken() : type_(NODE_TOKEN), dummy_(0), priority_(0) {}
+  explicit ExpressionToken(ExpressionTokenType token_type)
+      : type_(token_type),
+        dummy_(0),
+        priority_(0) {}
+  explicit ExpressionToken(ExpressionBracketType bracket_type)
+      : type_(BRACKET_TOKEN),
+        bracket_type_(bracket_type),
+        priority_(0) {}
+  explicit ExpressionToken(OperatorType operator_type)
+      : type_(get_operator_token_type(operator_type)),
+        operator_type_(operator_type),
+        priority_(get_operator_priority(operator_type)) {}
+
+  ExpressionTokenType type() const {
+    return type_;
+  }
+  ExpressionBracketType bracket_type() const {
+    return bracket_type_;
+  }
+  OperatorType operator_type() const {
+    return operator_type_;
+  }
+  int priority() const {
+    return priority_;
+  }
+
+ private:
+  ExpressionTokenType type_;
+  union {
+    int dummy_;
+    ExpressionBracketType bracket_type_;
+    OperatorType operator_type_;
+  };
+  int priority_;
+
+  static ExpressionTokenType get_operator_token_type(
+      OperatorType operator_type);
+  static int get_operator_priority(OperatorType operator_type);
+};
+
+class ExpressionParser {
+ public:
+  static std::unique_ptr<ExpressionInterface> parse(const String &query);
+
+  ~ExpressionParser() = default;
+
+ private:
+  Array<ExpressionToken> tokens_;
+  Array<ExpressionToken> stack_;
+  std::unique_ptr<ExpressionBuilder> builder_;
+
+  ExpressionParser() = default;
+
+  void tokenize(const String &query);
+  std::unique_ptr<ExpressionInterface> build();
 };
 
 }  // namespace impl

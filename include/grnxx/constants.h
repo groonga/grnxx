@@ -47,55 +47,55 @@ typedef enum {
 typedef enum {
   // -- Unary operators --
 
-  GRNXX_LOGICAL_NOT,  // For Bool.
+  GRNXX_LOGICAL_NOT,  // For Bool (!x).
 
-  GRNXX_BITWISE_NOT,  // For Bool, Int.
+  GRNXX_BITWISE_NOT,  // For Bool, Int (~x).
 
-  GRNXX_POSITIVE,  // For Int, Float.
-  GRNXX_NEGATIVE,  // For Int, Float.
+  GRNXX_POSITIVE,  // For Int, Float (+x).
+  GRNXX_NEGATIVE,  // For Int, Float (-x).
 
   // Typecast operators.
 //  GRNXX_TO_BOOL,
-  GRNXX_TO_INT,    // For Float.
-  GRNXX_TO_FLOAT,  // For Int.
+  GRNXX_TO_INT,    // For Float (Int x).
+  GRNXX_TO_FLOAT,  // For Int (Float x).
 //  GRNXX_TO_GEO_POINT,
 //  GRNXX_TO_TEXT,
 
   // -- Binary operators --
 
   // Logical operators.
-  GRNXX_LOGICAL_AND,  // For Bool.
-  GRNXX_LOGICAL_OR,   // For Bool.
+  GRNXX_LOGICAL_AND,  // For Bool (x && y).
+  GRNXX_LOGICAL_OR,   // For Bool (x || y).
 
   // Equality operators.
-  GRNXX_EQUAL,      // For any types.
-  GRNXX_NOT_EQUAL,  // For any types.
+  GRNXX_EQUAL,      // For any types (x == y).
+  GRNXX_NOT_EQUAL,  // For any types (x != y).
 
   // Comparison operators.
-  GRNXX_LESS,           // Int, Float, Text.
-  GRNXX_LESS_EQUAL,     // Int, Float, Text.
-  GRNXX_GREATER,        // Int, Float, Text.
-  GRNXX_GREATER_EQUAL,  // Int, Float, Text.
+  GRNXX_LESS,           // Int, Float, Text (x < y).
+  GRNXX_LESS_EQUAL,     // Int, Float, Text (x <= y).
+  GRNXX_GREATER,        // Int, Float, Text (x > y).
+  GRNXX_GREATER_EQUAL,  // Int, Float, Text (x >= y).
 
   // Bitwise operators.
-  GRNXX_BITWISE_AND,  // For Bool, Int.
-  GRNXX_BITWISE_OR,   // For Bool, Int.
-  GRNXX_BITWISE_XOR,  // For Bool, Int.
+  GRNXX_BITWISE_AND,  // For Bool, Int (x & y).
+  GRNXX_BITWISE_OR,   // For Bool, Int (x | y).
+  GRNXX_BITWISE_XOR,  // For Bool, Int (x ^ y).
 
   // Arithmetic operators.
-  GRNXX_PLUS,            // For Int, Float.
-  GRNXX_MINUS,           // For Int, Float.
-  GRNXX_MULTIPLICATION,  // For Int, Float.
-  GRNXX_DIVISION,        // For Int, Float.
-  GRNXX_MODULUS,         // For Int.
+  GRNXX_PLUS,            // For Int, Float (x + y).
+  GRNXX_MINUS,           // For Int, Float (x - y).
+  GRNXX_MULTIPLICATION,  // For Int, Float (x * y).
+  GRNXX_DIVISION,        // For Int, Float (x / y).
+  GRNXX_MODULUS,         // For Int, Float (x % y).
 
   // Search operators.
-  GRNXX_STARTS_WITH,  // For Text.
-  GRNXX_ENDS_WITH,    // For Text.
-  GRNXX_CONTAINS,     // For Text.
+  GRNXX_STARTS_WITH,  // For Text (x @^ y).
+  GRNXX_ENDS_WITH,    // For Text (x @$ y).
+  GRNXX_CONTAINS,     // For Text (x @ y).
 
   // Vector operators.
-  GRNXX_SUBSCRIPT,
+  GRNXX_SUBSCRIPT,  // For Vector (x[y]).
 
   // -- TODO: Ternary operators --
 } grnxx_operator_type;
