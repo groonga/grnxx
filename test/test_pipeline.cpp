@@ -348,8 +348,8 @@ void test_merger() {
 
   // Create a merger.
   grnxx::MergerOptions options;
-  options.logical_operator_type = grnxx::MERGER_LOGICAL_AND;
-  options.score_operator_type = grnxx::MERGER_SCORE_PLUS;
+  options.logical_operator_type = GRNXX_MERGER_AND;
+  options.score_operator_type = GRNXX_MERGER_PLUS;
   pipeline_builder->push_merger(options);
 
   // Complete a pipeline.

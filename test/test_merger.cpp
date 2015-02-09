@@ -164,11 +164,11 @@ void test_and() {
 
   // Set options.
   grnxx::MergerOptions options;
-  options.logical_operator_type = grnxx::MERGER_LOGICAL_AND;
+  options.logical_operator_type = GRNXX_MERGER_AND;
   options.missing_score = MISSING_SCORE;
 
   // Merge records (PLUS).
-  options.score_operator_type = grnxx::MERGER_SCORE_PLUS;
+  options.score_operator_type = GRNXX_MERGER_PLUS;
   auto output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.raw();
@@ -186,7 +186,7 @@ void test_and() {
   assert(count == output.size());
 
   // Merge records (MINUS).
-  options.score_operator_type = grnxx::MERGER_SCORE_MINUS;
+  options.score_operator_type = GRNXX_MERGER_MINUS;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.raw();
@@ -196,7 +196,7 @@ void test_and() {
   }
 
   // Merge records (MULTIPLICATION).
-  options.score_operator_type = grnxx::MERGER_SCORE_MULTIPLICATION;
+  options.score_operator_type = GRNXX_MERGER_MULTIPLICATION;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.raw();
@@ -206,7 +206,7 @@ void test_and() {
   }
 
   // Merge records (LEFT).
-  options.score_operator_type = grnxx::MERGER_SCORE_LEFT;
+  options.score_operator_type = GRNXX_MERGER_LEFT;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.raw();
@@ -216,7 +216,7 @@ void test_and() {
   }
 
   // Merge records (RIGHT).
-  options.score_operator_type = grnxx::MERGER_SCORE_RIGHT;
+  options.score_operator_type = GRNXX_MERGER_RIGHT;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.raw();
@@ -226,7 +226,7 @@ void test_and() {
   }
 
   // Merge records (ZERO).
-  options.score_operator_type = grnxx::MERGER_SCORE_ZERO;
+  options.score_operator_type = GRNXX_MERGER_ZERO;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.raw();
@@ -243,11 +243,11 @@ void test_or() {
 
   // Set options.
   grnxx::MergerOptions options;
-  options.logical_operator_type = grnxx::MERGER_LOGICAL_OR;
+  options.logical_operator_type = GRNXX_MERGER_OR;
   options.missing_score = MISSING_SCORE;
 
   // Merge records (PLUS).
-  options.score_operator_type = grnxx::MERGER_SCORE_PLUS;
+  options.score_operator_type = GRNXX_MERGER_PLUS;
   auto output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.raw();
@@ -265,7 +265,7 @@ void test_or() {
   assert(count == output.size());
 
   // Merge records (MINUS).
-  options.score_operator_type = grnxx::MERGER_SCORE_MINUS;
+  options.score_operator_type = GRNXX_MERGER_MINUS;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.raw();
@@ -275,7 +275,7 @@ void test_or() {
   }
 
   // Merge records (MULTIPLICATION).
-  options.score_operator_type = grnxx::MERGER_SCORE_MULTIPLICATION;
+  options.score_operator_type = GRNXX_MERGER_MULTIPLICATION;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.raw();
@@ -285,7 +285,7 @@ void test_or() {
   }
 
   // Merge records (LEFT).
-  options.score_operator_type = grnxx::MERGER_SCORE_LEFT;
+  options.score_operator_type = GRNXX_MERGER_LEFT;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.raw();
@@ -295,7 +295,7 @@ void test_or() {
   }
 
   // Merge records (RIGHT).
-  options.score_operator_type = grnxx::MERGER_SCORE_RIGHT;
+  options.score_operator_type = GRNXX_MERGER_RIGHT;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.raw();
@@ -305,7 +305,7 @@ void test_or() {
   }
 
   // Merge records (ZERO).
-  options.score_operator_type = grnxx::MERGER_SCORE_ZERO;
+  options.score_operator_type = GRNXX_MERGER_ZERO;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.raw();
@@ -322,11 +322,11 @@ void test_xor() {
 
   // Set options.
   grnxx::MergerOptions options;
-  options.logical_operator_type = grnxx::MERGER_LOGICAL_XOR;
+  options.logical_operator_type = GRNXX_MERGER_XOR;
   options.missing_score = MISSING_SCORE;
 
   // Merge records (PLUS).
-  options.score_operator_type = grnxx::MERGER_SCORE_PLUS;
+  options.score_operator_type = GRNXX_MERGER_PLUS;
   auto output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.raw();
@@ -343,7 +343,7 @@ void test_xor() {
   assert(count == output.size());
 
   // Merge records (MINUS).
-  options.score_operator_type = grnxx::MERGER_SCORE_MINUS;
+  options.score_operator_type = GRNXX_MERGER_MINUS;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.raw();
@@ -353,7 +353,7 @@ void test_xor() {
   }
 
   // Merge records (MULTIPLICATION).
-  options.score_operator_type = grnxx::MERGER_SCORE_MULTIPLICATION;
+  options.score_operator_type = GRNXX_MERGER_MULTIPLICATION;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.raw();
@@ -363,7 +363,7 @@ void test_xor() {
   }
 
   // Merge records (LEFT).
-  options.score_operator_type = grnxx::MERGER_SCORE_LEFT;
+  options.score_operator_type = GRNXX_MERGER_LEFT;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.raw();
@@ -373,7 +373,7 @@ void test_xor() {
   }
 
   // Merge records (RIGHT).
-  options.score_operator_type = grnxx::MERGER_SCORE_RIGHT;
+  options.score_operator_type = GRNXX_MERGER_RIGHT;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.raw();
@@ -383,7 +383,7 @@ void test_xor() {
   }
 
   // Merge records (ZERO).
-  options.score_operator_type = grnxx::MERGER_SCORE_ZERO;
+  options.score_operator_type = GRNXX_MERGER_ZERO;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.raw();
@@ -400,11 +400,11 @@ void test_minus() {
 
   // Set options.
   grnxx::MergerOptions options;
-  options.logical_operator_type = grnxx::MERGER_LOGICAL_MINUS;
+  options.logical_operator_type = GRNXX_MERGER_MINUS;
   options.missing_score = MISSING_SCORE;
 
   // Merge records (PLUS).
-  options.score_operator_type = grnxx::MERGER_SCORE_PLUS;
+  options.score_operator_type = GRNXX_MERGER_PLUS;
   auto output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.raw();
@@ -421,7 +421,7 @@ void test_minus() {
   assert(count == output.size());
 
   // Merge records (MINUS).
-  options.score_operator_type = grnxx::MERGER_SCORE_MINUS;
+  options.score_operator_type = GRNXX_MERGER_MINUS;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.raw();
@@ -431,7 +431,7 @@ void test_minus() {
   }
 
   // Merge records (MULTIPLICATION).
-  options.score_operator_type = grnxx::MERGER_SCORE_MULTIPLICATION;
+  options.score_operator_type = GRNXX_MERGER_MULTIPLICATION;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.raw();
@@ -441,7 +441,7 @@ void test_minus() {
   }
 
   // Merge records (LEFT).
-  options.score_operator_type = grnxx::MERGER_SCORE_LEFT;
+  options.score_operator_type = GRNXX_MERGER_LEFT;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.raw();
@@ -451,7 +451,7 @@ void test_minus() {
   }
 
   // Merge records (RIGHT).
-  options.score_operator_type = grnxx::MERGER_SCORE_RIGHT;
+  options.score_operator_type = GRNXX_MERGER_RIGHT;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.raw();
@@ -461,7 +461,7 @@ void test_minus() {
   }
 
   // Merge records (ZERO).
-  options.score_operator_type = grnxx::MERGER_SCORE_ZERO;
+  options.score_operator_type = GRNXX_MERGER_ZERO;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.raw();
@@ -478,11 +478,11 @@ void test_left() {
 
   // Set options.
   grnxx::MergerOptions options;
-  options.logical_operator_type = grnxx::MERGER_LOGICAL_LEFT;
+  options.logical_operator_type = GRNXX_MERGER_LEFT;
   options.missing_score = MISSING_SCORE;
 
   // Merge records (PLUS).
-  options.score_operator_type = grnxx::MERGER_SCORE_PLUS;
+  options.score_operator_type = GRNXX_MERGER_PLUS;
   auto output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.raw();
@@ -498,7 +498,7 @@ void test_left() {
   assert(count == output.size());
 
   // Merge records (MINUS).
-  options.score_operator_type = grnxx::MERGER_SCORE_MINUS;
+  options.score_operator_type = GRNXX_MERGER_MINUS;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.raw();
@@ -507,7 +507,7 @@ void test_left() {
   }
 
   // Merge records (MULTIPLICATION).
-  options.score_operator_type = grnxx::MERGER_SCORE_MULTIPLICATION;
+  options.score_operator_type = GRNXX_MERGER_MULTIPLICATION;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.raw();
@@ -516,7 +516,7 @@ void test_left() {
   }
 
   // Merge records (LEFT).
-  options.score_operator_type = grnxx::MERGER_SCORE_LEFT;
+  options.score_operator_type = GRNXX_MERGER_LEFT;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.raw();
@@ -525,7 +525,7 @@ void test_left() {
   }
 
   // Merge records (RIGHT).
-  options.score_operator_type = grnxx::MERGER_SCORE_RIGHT;
+  options.score_operator_type = GRNXX_MERGER_RIGHT;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.raw();
@@ -534,7 +534,7 @@ void test_left() {
   }
 
   // Merge records (ZERO).
-  options.score_operator_type = grnxx::MERGER_SCORE_ZERO;
+  options.score_operator_type = GRNXX_MERGER_ZERO;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.raw();
@@ -550,11 +550,11 @@ void test_right() {
 
   // Set options.
   grnxx::MergerOptions options;
-  options.logical_operator_type = grnxx::MERGER_LOGICAL_RIGHT;
+  options.logical_operator_type = GRNXX_MERGER_RIGHT;
   options.missing_score = MISSING_SCORE;
 
   // Merge records (PLUS).
-  options.score_operator_type = grnxx::MERGER_SCORE_PLUS;
+  options.score_operator_type = GRNXX_MERGER_PLUS;
   auto output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.raw();
@@ -570,7 +570,7 @@ void test_right() {
   assert(count == output.size());
 
   // Merge records (MINUS).
-  options.score_operator_type = grnxx::MERGER_SCORE_MINUS;
+  options.score_operator_type = GRNXX_MERGER_MINUS;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.raw();
@@ -579,7 +579,7 @@ void test_right() {
   }
 
   // Merge records (MULTIPLICATION).
-  options.score_operator_type = grnxx::MERGER_SCORE_MULTIPLICATION;
+  options.score_operator_type = GRNXX_MERGER_MULTIPLICATION;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.raw();
@@ -588,7 +588,7 @@ void test_right() {
   }
 
   // Merge records (LEFT).
-  options.score_operator_type = grnxx::MERGER_SCORE_LEFT;
+  options.score_operator_type = GRNXX_MERGER_LEFT;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.raw();
@@ -597,7 +597,7 @@ void test_right() {
   }
 
   // Merge records (RIGHT).
-  options.score_operator_type = grnxx::MERGER_SCORE_RIGHT;
+  options.score_operator_type = GRNXX_MERGER_RIGHT;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.raw();
@@ -606,7 +606,7 @@ void test_right() {
   }
 
   // Merge records (ZERO).
-  options.score_operator_type = grnxx::MERGER_SCORE_ZERO;
+  options.score_operator_type = GRNXX_MERGER_ZERO;
   output = merge_records(input_1, input_2, options);
   for (size_t i = 0; i < output.size(); ++i) {
     size_t row_id = output[i].row_id.raw();

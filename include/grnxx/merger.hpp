@@ -5,42 +5,13 @@
 #include <memory>
 
 #include "grnxx/array.hpp"
+#include "grnxx/constants.h"
 #include "grnxx/data_types.hpp"
 
 namespace grnxx {
 
-enum MergerLogicalOperatorType {
-  // Keep records included in both the first input stream and the second input
-  // stream.
-  MERGER_LOGICAL_AND,
-  // Keep records included in the first input stream and/or the second input
-  // stream.
-  MERGER_LOGICAL_OR,
-  // Keep records included in only one of the input streams.
-  MERGER_LOGICAL_XOR,
-  // Keep records included in the first input stream and not included in the
-  // second input stream.
-  MERGER_LOGICAL_MINUS,
-  // Keep records included in the first input stream.
-  MERGER_LOGICAL_LEFT,
-  // Keep records included in the second input stream.
-  MERGER_LOGICAL_RIGHT
-};
-
-enum MergerScoreOperatorType {
-  // Add the first input score and the second input score.
-  MERGER_SCORE_PLUS,
-  // Subtract the second input score from the first input score.
-  MERGER_SCORE_MINUS,
-  // Multiply the first input score by the second input score.
-  MERGER_SCORE_MULTIPLICATION,
-  // Ignores the second input score.
-  MERGER_SCORE_LEFT,
-  // Ignores the first input score.
-  MERGER_SCORE_RIGHT,
-  // All zeros.
-  MERGER_SCORE_ZERO
-};
+using MergerLogicalOperatorType = grnxx_merger_operator_type;
+using MergerScoreOperatorType = grnxx_merger_operator_type;
 
 struct MergerOptions {
   // How to merge records.
@@ -55,8 +26,8 @@ struct MergerOptions {
   size_t limit;
 
   MergerOptions()
-      : logical_operator_type(MERGER_LOGICAL_AND),
-        score_operator_type(MERGER_SCORE_PLUS),
+      : logical_operator_type(GRNXX_MERGER_AND),
+        score_operator_type(GRNXX_MERGER_PLUS),
         missing_score(0.0),
         offset(0),
         limit(std::numeric_limits<size_t>::max()) {}

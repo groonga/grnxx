@@ -45,11 +45,11 @@ void AndMerger::finish() {
       Record record;
       record.row_id = Int(it->first);
       switch (score_operator_type_) {
-        case MERGER_SCORE_PLUS: {
+        case GRNXX_MERGER_PLUS: {
           record.score = (*stream_records)[i].score + it->second;
           break;
         }
-        case MERGER_SCORE_MINUS: {
+        case GRNXX_MERGER_MINUS: {
           if (stream_is_1) {
             record.score = (*stream_records)[i].score - it->second;
           } else {
@@ -57,11 +57,11 @@ void AndMerger::finish() {
           }
           break;
         }
-        case MERGER_SCORE_MULTIPLICATION: {
+        case GRNXX_MERGER_MULTIPLICATION: {
           record.score = (*stream_records)[i].score * it->second;
           break;
         }
-        case MERGER_SCORE_LEFT: {
+        case GRNXX_MERGER_LEFT: {
           if (stream_is_1) {
             record.score = (*stream_records)[i].score;
           } else {
@@ -69,7 +69,7 @@ void AndMerger::finish() {
           }
           break;
         }
-        case MERGER_SCORE_RIGHT: {
+        case GRNXX_MERGER_RIGHT: {
           if (stream_is_1) {
             record.score = it->second;
           } else {
@@ -77,9 +77,12 @@ void AndMerger::finish() {
           }
           break;
         }
-        case MERGER_SCORE_ZERO: {
+        case GRNXX_MERGER_ZERO: {
           record.score = Float(0.0);
           break;
+        }
+        default: {
+          throw "Invalid operator type";  // TODO
         }
       }
       output_records_->push_back(record);
@@ -138,11 +141,11 @@ void OrMerger::finish() {
     auto it = filter.find((*stream_records)[i].row_id.raw());
     if (it == filter.end()) {
       switch (score_operator_type_) {
-        case MERGER_SCORE_PLUS: {
+        case GRNXX_MERGER_PLUS: {
           record.score = (*stream_records)[i].score + missing_score_;
           break;
         }
-        case MERGER_SCORE_MINUS: {
+        case GRNXX_MERGER_MINUS: {
           if (stream_is_1) {
             record.score = (*stream_records)[i].score - missing_score_;
           } else {
@@ -150,11 +153,11 @@ void OrMerger::finish() {
           }
           break;
         }
-        case MERGER_SCORE_MULTIPLICATION: {
+        case GRNXX_MERGER_MULTIPLICATION: {
           record.score = (*stream_records)[i].score * missing_score_;
           break;
         }
-        case MERGER_SCORE_LEFT: {
+        case GRNXX_MERGER_LEFT: {
           if (stream_is_1) {
             record.score = (*stream_records)[i].score;
           } else {
@@ -162,7 +165,7 @@ void OrMerger::finish() {
           }
           break;
         }
-        case MERGER_SCORE_RIGHT: {
+        case GRNXX_MERGER_RIGHT: {
           if (stream_is_1) {
             record.score = missing_score_;
           } else {
@@ -170,18 +173,21 @@ void OrMerger::finish() {
           }
           break;
         }
-        case MERGER_SCORE_ZERO: {
+        case GRNXX_MERGER_ZERO: {
           record.score = Float(0.0);
           break;
+        }
+        default: {
+          throw "Invalid operator type";  // TODO
         }
       }
     } else {
       switch (score_operator_type_) {
-        case MERGER_SCORE_PLUS: {
+        case GRNXX_MERGER_PLUS: {
           record.score = it->second + (*stream_records)[i].score;
           break;
         }
-        case MERGER_SCORE_MINUS: {
+        case GRNXX_MERGER_MINUS: {
           if (stream_is_1) {
             record.score = (*stream_records)[i].score - it->second;
           } else {
@@ -189,11 +195,11 @@ void OrMerger::finish() {
           }
           break;
         }
-        case MERGER_SCORE_MULTIPLICATION: {
+        case GRNXX_MERGER_MULTIPLICATION: {
           record.score = it->second * (*stream_records)[i].score;
           break;
         }
-        case MERGER_SCORE_LEFT: {
+        case GRNXX_MERGER_LEFT: {
           if (stream_is_1) {
             record.score = (*stream_records)[i].score;
           } else {
@@ -201,7 +207,7 @@ void OrMerger::finish() {
           }
           break;
         }
-        case MERGER_SCORE_RIGHT: {
+        case GRNXX_MERGER_RIGHT: {
           if (!stream_is_1) {
             record.score = (*stream_records)[i].score;
           } else {
@@ -209,9 +215,12 @@ void OrMerger::finish() {
           }
           break;
         }
-        case MERGER_SCORE_ZERO: {
+        case GRNXX_MERGER_ZERO: {
           record.score = Float(0.0);
           break;
+        }
+        default: {
+          throw "Invalid operator type";  // TODO
         }
       }
       filter.erase(it);
@@ -221,11 +230,11 @@ void OrMerger::finish() {
 
   for (auto it : filter) {
     switch (score_operator_type_) {
-      case MERGER_SCORE_PLUS: {
+      case GRNXX_MERGER_PLUS: {
         it.second += missing_score_;
         break;
       }
-      case MERGER_SCORE_MINUS: {
+      case GRNXX_MERGER_MINUS: {
         if (stream_is_1) {
           it.second = missing_score_ - it.second;
         } else {
@@ -233,25 +242,28 @@ void OrMerger::finish() {
         }
         break;
       }
-      case MERGER_SCORE_MULTIPLICATION: {
+      case GRNXX_MERGER_MULTIPLICATION: {
         it.second *= missing_score_;
         break;
       }
-      case MERGER_SCORE_LEFT: {
+      case GRNXX_MERGER_LEFT: {
         if (stream_is_1) {
           it.second = missing_score_;
         }
         break;
       }
-      case MERGER_SCORE_RIGHT: {
+      case GRNXX_MERGER_RIGHT: {
         if (!stream_is_1) {
           it.second = missing_score_;
         }
         break;
       }
-      case MERGER_SCORE_ZERO: {
+      case GRNXX_MERGER_ZERO: {
         it.second = Float(0.0);
         break;
+      }
+      default: {
+        throw "Invalid operator type";  // TODO
       }
     }
     output_records_->push_back(Record(Int(it.first), it.second));
@@ -309,11 +321,11 @@ void XorMerger::finish() {
       Record record;
       record.row_id = (*stream_records)[i].row_id;
       switch (score_operator_type_) {
-        case MERGER_SCORE_PLUS: {
+        case GRNXX_MERGER_PLUS: {
           record.score = (*stream_records)[i].score + missing_score_;
           break;
         }
-        case MERGER_SCORE_MINUS: {
+        case GRNXX_MERGER_MINUS: {
           if (stream_is_1) {
             record.score = (*stream_records)[i].score - missing_score_;
           } else {
@@ -321,11 +333,11 @@ void XorMerger::finish() {
           }
           break;
         }
-        case MERGER_SCORE_MULTIPLICATION: {
+        case GRNXX_MERGER_MULTIPLICATION: {
           record.score = (*stream_records)[i].score * missing_score_;
           break;
         }
-        case MERGER_SCORE_LEFT: {
+        case GRNXX_MERGER_LEFT: {
           if (stream_is_1) {
             record.score = (*stream_records)[i].score;
           } else {
@@ -333,7 +345,7 @@ void XorMerger::finish() {
           }
           break;
         }
-        case MERGER_SCORE_RIGHT: {
+        case GRNXX_MERGER_RIGHT: {
           if (stream_is_1) {
             record.score = missing_score_;
           } else {
@@ -341,9 +353,12 @@ void XorMerger::finish() {
           }
           break;
         }
-        case MERGER_SCORE_ZERO: {
+        case GRNXX_MERGER_ZERO: {
           record.score = Float(0.0);
           break;
+        }
+        default: {
+          throw "Invalid operator type";  // TODO
         }
       }
       output_records_->push_back(record);
@@ -352,11 +367,11 @@ void XorMerger::finish() {
 
   for (auto it : filter) {
     switch (score_operator_type_) {
-      case MERGER_SCORE_PLUS: {
+      case GRNXX_MERGER_PLUS: {
         it.second += missing_score_;
         break;
       }
-      case MERGER_SCORE_MINUS: {
+      case GRNXX_MERGER_MINUS: {
         if (stream_is_1) {
           it.second = missing_score_ - it.second;
         } else {
@@ -364,25 +379,28 @@ void XorMerger::finish() {
         }
         break;
       }
-      case MERGER_SCORE_MULTIPLICATION: {
+      case GRNXX_MERGER_MULTIPLICATION: {
         it.second *= missing_score_;
         break;
       }
-      case MERGER_SCORE_LEFT: {
+      case GRNXX_MERGER_LEFT: {
         if (stream_is_1) {
           it.second = missing_score_;
         }
         break;
       }
-      case MERGER_SCORE_RIGHT: {
+      case GRNXX_MERGER_RIGHT: {
         if (!stream_is_1) {
           it.second = missing_score_;
         }
         break;
       }
-      case MERGER_SCORE_ZERO: {
+      case GRNXX_MERGER_ZERO: {
         it.second = Float(0.0);
         break;
+      }
+      default: {
+        throw "Invalid operator type";  // TODO
       }
     }
     output_records_->push_back(Record(Int(it.first), it.second));
@@ -440,28 +458,31 @@ void MinusMerger::finish() {
       }
       Record record = stream_records->get(i);
       switch (score_operator_type_) {
-        case MERGER_SCORE_PLUS: {
+        case GRNXX_MERGER_PLUS: {
           record.score += missing_score_;
           break;
         }
-        case MERGER_SCORE_MINUS: {
+        case GRNXX_MERGER_MINUS: {
           record.score -= missing_score_;
           break;
         }
-        case MERGER_SCORE_MULTIPLICATION: {
+        case GRNXX_MERGER_MULTIPLICATION: {
           record.score *= missing_score_;
           break;
         }
-        case MERGER_SCORE_LEFT: {
+        case GRNXX_MERGER_LEFT: {
           break;
         }
-        case MERGER_SCORE_RIGHT: {
+        case GRNXX_MERGER_RIGHT: {
           record.score = missing_score_;
           break;
         }
-        case MERGER_SCORE_ZERO: {
+        case GRNXX_MERGER_ZERO: {
           record.score = Float(0.0);
           break;
+        }
+        default: {
+          throw "Invalid operator type";  // TODO
         }
       }
       output_records_->push_back(record);
@@ -477,29 +498,32 @@ void MinusMerger::finish() {
       Record record;
       record.row_id = Int(it.first);
       switch (score_operator_type_) {
-        case MERGER_SCORE_PLUS: {
+        case GRNXX_MERGER_PLUS: {
           record.score = it.second + missing_score_;
           break;
         }
-        case MERGER_SCORE_MINUS: {
+        case GRNXX_MERGER_MINUS: {
           record.score = it.second - missing_score_;
           break;
         }
-        case MERGER_SCORE_MULTIPLICATION: {
+        case GRNXX_MERGER_MULTIPLICATION: {
           record.score = it.second * missing_score_;
           break;
         }
-        case MERGER_SCORE_LEFT: {
+        case GRNXX_MERGER_LEFT: {
           record.score = it.second;
           break;
         }
-        case MERGER_SCORE_RIGHT: {
+        case GRNXX_MERGER_RIGHT: {
           record.score = missing_score_;
           break;
         }
-        case MERGER_SCORE_ZERO: {
+        case GRNXX_MERGER_ZERO: {
           record.score = Float(0.0);
           break;
+        }
+        default: {
+          throw "Invalid operator type";  // TODO
         }
       }
       output_records_->push_back(record);
@@ -544,54 +568,60 @@ void LeftMerger::finish() {
     auto it = filter.find(record.row_id.raw());
     if (it != filter.end()) {
       switch (score_operator_type_) {
-        case MERGER_SCORE_PLUS: {
+        case GRNXX_MERGER_PLUS: {
           record.score += it->second;
           break;
         }
-        case MERGER_SCORE_MINUS: {
+        case GRNXX_MERGER_MINUS: {
           record.score -= it->second;
           break;
         }
-        case MERGER_SCORE_MULTIPLICATION: {
+        case GRNXX_MERGER_MULTIPLICATION: {
           record.score *= it->second;
           break;
         }
-        case MERGER_SCORE_LEFT: {
+        case GRNXX_MERGER_LEFT: {
           break;
         }
-        case MERGER_SCORE_RIGHT: {
+        case GRNXX_MERGER_RIGHT: {
           record.score = it->second;
           break;
         }
-        case MERGER_SCORE_ZERO: {
+        case GRNXX_MERGER_ZERO: {
           record.score = Float(0.0);
           break;
+        }
+        default: {
+          throw "Invalid operator type";  // TODO
         }
       }
     } else {
       switch (score_operator_type_) {
-        case MERGER_SCORE_PLUS: {
+        case GRNXX_MERGER_PLUS: {
           record.score += missing_score_;
           break;
         }
-        case MERGER_SCORE_MINUS: {
+        case GRNXX_MERGER_MINUS: {
           record.score -= missing_score_;
           break;
         }
-        case MERGER_SCORE_MULTIPLICATION: {
+        case GRNXX_MERGER_MULTIPLICATION: {
           record.score *= missing_score_;
           break;
         }
-        case MERGER_SCORE_LEFT: {
+        case GRNXX_MERGER_LEFT: {
           break;
         }
-        case MERGER_SCORE_RIGHT: {
+        case GRNXX_MERGER_RIGHT: {
           record.score = missing_score_;
           break;
         }
-        case MERGER_SCORE_ZERO: {
+        case GRNXX_MERGER_ZERO: {
           record.score = Float(0.0);
           break;
+        }
+        default: {
+          throw "Invalid operator type";  // TODO
         }
       }
     }
@@ -637,56 +667,62 @@ void RightMerger::finish() {
     auto it = filter.find(record.row_id.raw());
     if (it != filter.end()) {
       switch (score_operator_type_) {
-        case MERGER_SCORE_PLUS: {
+        case GRNXX_MERGER_PLUS: {
           record.score = it->second + (*input_records_2_)[i].score;
           break;
         }
-        case MERGER_SCORE_MINUS: {
+        case GRNXX_MERGER_MINUS: {
           record.score = it->second - (*input_records_2_)[i].score;
           break;
         }
-        case MERGER_SCORE_MULTIPLICATION: {
+        case GRNXX_MERGER_MULTIPLICATION: {
           record.score = it->second * (*input_records_2_)[i].score;
           break;
         }
-        case MERGER_SCORE_LEFT: {
+        case GRNXX_MERGER_LEFT: {
           record.score = it->second;
           break;
         }
-        case MERGER_SCORE_RIGHT: {
+        case GRNXX_MERGER_RIGHT: {
           record.score = (*input_records_2_)[i].score;
           break;
         }
-        case MERGER_SCORE_ZERO: {
+        case GRNXX_MERGER_ZERO: {
           record.score = Float(0.0);
           break;
+        }
+        default: {
+          throw "Invalid operator type";  // TODO
         }
       }
     } else {
       switch (score_operator_type_) {
-        case MERGER_SCORE_PLUS: {
+        case GRNXX_MERGER_PLUS: {
           record.score = missing_score_ + (*input_records_2_)[i].score;
           break;
         }
-        case MERGER_SCORE_MINUS: {
+        case GRNXX_MERGER_MINUS: {
           record.score = missing_score_ - (*input_records_2_)[i].score;
           break;
         }
-        case MERGER_SCORE_MULTIPLICATION: {
+        case GRNXX_MERGER_MULTIPLICATION: {
           record.score = missing_score_ * (*input_records_2_)[i].score;
           break;
         }
-        case MERGER_SCORE_LEFT: {
+        case GRNXX_MERGER_LEFT: {
           record.score = missing_score_;
           break;
         }
-        case MERGER_SCORE_RIGHT: {
+        case GRNXX_MERGER_RIGHT: {
           record.score = (*input_records_2_)[i].score;
           break;
         }
-        case MERGER_SCORE_ZERO: {
+        case GRNXX_MERGER_ZERO: {
           record.score = Float(0.0);
           break;
+        }
+        default: {
+          throw "Invalid operator type";  // TODO
         }
       }
     }
@@ -743,22 +779,22 @@ void Merger::merge(Array<Record> *input_records_1,
 
 Merger *Merger::create(const MergerOptions &options) try {
   switch (options.logical_operator_type) {
-    case MERGER_LOGICAL_AND: {
+    case GRNXX_MERGER_AND: {
       return new AndMerger(options);
     }
-    case MERGER_LOGICAL_OR: {
+    case GRNXX_MERGER_OR: {
       return new OrMerger(options);
     }
-    case MERGER_LOGICAL_XOR: {
+    case GRNXX_MERGER_XOR: {
       return new XorMerger(options);
     }
-    case MERGER_LOGICAL_MINUS: {
+    case GRNXX_MERGER_MINUS: {
       return new MinusMerger(options);
     }
-    case MERGER_LOGICAL_LEFT: {
+    case GRNXX_MERGER_LEFT: {
       return new LeftMerger(options);
     }
-    case MERGER_LOGICAL_RIGHT: {
+    case GRNXX_MERGER_RIGHT: {
       return new RightMerger(options);
     }
     default: {

@@ -44,6 +44,18 @@ typedef enum {
   GRNXX_HASH_INDEX
 } grnxx_index_type;
 
+typedef enum {
+  GRNXX_MERGER_AND,             // For Logical.
+  GRNXX_MERGER_OR,              // For Logical.
+  GRNXX_MERGER_XOR,             // For Logical.
+  GRNXX_MERGER_PLUS,            // For Score.
+  GRNXX_MERGER_MINUS,           // For Logical, Score.
+  GRNXX_MERGER_MULTIPLICATION,  // For Score.
+  GRNXX_MERGER_LEFT,            // For Logical, Score.
+  GRNXX_MERGER_RIGHT,           // For Logical, Score.
+  GRNXX_MERGER_ZERO             // For Score.
+} grnxx_merger_operator_type;
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus
