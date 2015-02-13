@@ -2905,10 +2905,45 @@ void ExpressionParser::push_token(const ExpressionToken &token) {
         }
         stack_[stack_.size() - 2] = stack_.back();
         stack_.pop_back();
-        break;
+      } else if (token.bracket_type() == LEFT_SQUARE_BRACKET) {
+        // 開き括弧の直前にダミーがないのはおかしい．
+        if ((stack_.size() == 0) || (stack_.back().type() != DUMMY_TOKEN)) {
+          throw "Invalid query";
+        }
+        stack_.push_back(token);
+      } else if (token.bracket_type() == RIGHT_SQUARE_BRACKET) {
+        // 閉じ括弧の直前にはダミーが必要であり，それより前に開き括弧が必要である．
+        if ((stack_.size() < 2) || (stack_.back().type() != DUMMY_TOKEN)) {
+          throw "Invalid query 1";
+        }
+        // 括弧内にある演算子をすべて解決する．
+        while (stack_.size() >= 2) {
+          ExpressionToken operator_token = stack_[stack_.size() - 2];
+          if (operator_token.type() == UNARY_OPERATOR_TOKEN) {
+            builder_->push_operator(operator_token.operator_type());
+            stack_.pop_back();
+            stack_.pop_back();
+            push_token(ExpressionToken("", DUMMY_TOKEN));
+          } else if (operator_token.type() == BINARY_OPERATOR_TOKEN) {
+            builder_->push_operator(operator_token.operator_type());
+            stack_.pop_back();
+            stack_.pop_back();
+            stack_.pop_back();
+            push_token(ExpressionToken("", DUMMY_TOKEN));
+          } else {
+            break;
+          }
+        }
+        if ((stack_.size() < 2) ||
+            (stack_[stack_.size() - 2].type() != BRACKET_TOKEN) ||
+            (stack_[stack_.size() - 2].bracket_type() != LEFT_SQUARE_BRACKET)) {
+          throw "Invalid query";
+        }
+        stack_.pop_back();
+        stack_.pop_back();
+        builder_->push_operator(GRNXX_SUBSCRIPT);
       } else {
-        // TODO: Not supported yet ([]).
-        throw "Not supported yet";
+        throw "Invalid query";
       }
       break;
     }

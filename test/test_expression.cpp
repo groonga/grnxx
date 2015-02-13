@@ -2764,8 +2764,24 @@ void test_parser() try {
         (test.int_values[row_id] < test.int2_values[row_id]) &
         (test.float_values[row_id] >= test.float2_values[row_id])));
   }
+
+  // Create an expression.
+  expression = grnxx::Expression::parse(test.table, "FloatVector[Int + Int2]");
+
+  records = create_input_records();
+
+  grnxx::Array<grnxx::Float> float_results;
+  expression->evaluate(records, &float_results);
+  assert(float_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < float_results.size(); ++i) {
+    size_t row_id = records[i].row_id.raw();
+    const auto sum = test.int_values[row_id] + test.int2_values[row_id];
+    const auto &float_vector_value = test.float_vector_values[row_id];
+    assert(float_results[i].match(float_vector_value[sum]));
+  }
 } catch (const char *msg) {
   std::cerr << "msg: " << msg << std::endl;
+  throw;
 }
 
 void test_sequential_filter() {
