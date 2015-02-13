@@ -2749,12 +2749,10 @@ void test_subexpression() {
 }
 
 void test_parser() try {
-  // Create an expression.
+  // Test an expression (Int < Int2 && Float >= Float2).
   auto expression = grnxx::Expression::parse(
       test.table, "Int < Int2 && Float >= Float2");
-
   auto records = create_input_records();
-
   grnxx::Array<grnxx::Bool> bool_results;
   expression->evaluate(records, &bool_results);
   assert(bool_results.size() == test.table->num_rows());
@@ -2765,11 +2763,9 @@ void test_parser() try {
         (test.float_values[row_id] >= test.float2_values[row_id])));
   }
 
-  // Create an expression.
+  // Test an expression (FloatVector[Int + Int2])
   expression = grnxx::Expression::parse(test.table, "FloatVector[Int + Int2]");
-
   records = create_input_records();
-
   grnxx::Array<grnxx::Float> float_results;
   expression->evaluate(records, &float_results);
   assert(float_results.size() == test.table->num_rows());
@@ -2778,6 +2774,34 @@ void test_parser() try {
     const auto sum = test.int_values[row_id] + test.int2_values[row_id];
     const auto &float_vector_value = test.float_vector_values[row_id];
     assert(float_results[i].match(float_vector_value[sum]));
+  }
+
+  // Test an expression (Ref.Ref.Text).
+  expression = grnxx::Expression::parse(test.table, "Ref.Ref.Text");
+  records = create_input_records();
+  grnxx::Array<grnxx::Text> text_results;
+  expression->evaluate(records, &text_results);
+  assert(text_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < text_results.size(); ++i) {
+    size_t row_id = records[i].row_id.raw();
+    const auto ref_value = test.ref_values[row_id];
+    const auto ref_ref_value = test.ref_values[ref_value.raw()];
+    const auto text_value = test.text_values[ref_ref_value.raw()];
+    assert(text_results[i].match(text_value));
+  }
+
+  // Test an expression (Int + Ref.Int2 * Int).
+  expression = grnxx::Expression::parse(test.table, "Int + Ref.Int2 * Int");
+  records = create_input_records();
+  grnxx::Array<grnxx::Int> int_results;
+  expression->evaluate(records, &int_results);
+  assert(int_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < int_results.size(); ++i) {
+    size_t row_id = records[i].row_id.raw();
+    const auto int_value = test.int_values[row_id];
+    const auto ref_value = test.ref_values[row_id];
+    const auto ref_int2_value = test.int2_values[ref_value.raw()];
+    assert(int_results[i].match(int_value + (ref_int2_value * int_value)));
   }
 } catch (const char *msg) {
   std::cerr << "msg: " << msg << std::endl;

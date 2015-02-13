@@ -2845,7 +2845,12 @@ void ExpressionParser::push_token(const ExpressionToken &token) {
       // 前方にある優先度の高い演算子を適用する．
       while (stack_.size() >= 2) {
         ExpressionToken operator_token = stack_[stack_.size() - 2];
-        if (operator_token.type() == UNARY_OPERATOR_TOKEN) {
+        if (operator_token.type() == DEREFERENCE_TOKEN) {
+          builder_->end_subexpression();
+          stack_.pop_back();
+          stack_.pop_back();
+          push_token(ExpressionToken("", DUMMY_TOKEN));
+        } else if (operator_token.type() == UNARY_OPERATOR_TOKEN) {
           builder_->push_operator(operator_token.operator_type());
           stack_.pop_back();
           stack_.pop_back();
@@ -2865,8 +2870,10 @@ void ExpressionParser::push_token(const ExpressionToken &token) {
       break;
     }
     case DEREFERENCE_TOKEN: {
-      // TODO: Not supported yet.
-      throw "Not supported yet";
+      builder_->begin_subexpression();
+      stack_.pop_back();
+      stack_.push_back(token);
+      break;
     }
     case BRACKET_TOKEN: {
       if (token.bracket_type() == LEFT_ROUND_BRACKET) {
@@ -2883,7 +2890,12 @@ void ExpressionParser::push_token(const ExpressionToken &token) {
         // 括弧内にある演算子をすべて解決する．
         while (stack_.size() >= 2) {
           ExpressionToken operator_token = stack_[stack_.size() - 2];
-          if (operator_token.type() == UNARY_OPERATOR_TOKEN) {
+          if (operator_token.type() == DEREFERENCE_TOKEN) {
+            builder_->end_subexpression();
+            stack_.pop_back();
+            stack_.pop_back();
+            push_token(ExpressionToken("", DUMMY_TOKEN));
+          } else if (operator_token.type() == UNARY_OPERATOR_TOKEN) {
             builder_->push_operator(operator_token.operator_type());
             stack_.pop_back();
             stack_.pop_back();
@@ -2919,7 +2931,12 @@ void ExpressionParser::push_token(const ExpressionToken &token) {
         // 括弧内にある演算子をすべて解決する．
         while (stack_.size() >= 2) {
           ExpressionToken operator_token = stack_[stack_.size() - 2];
-          if (operator_token.type() == UNARY_OPERATOR_TOKEN) {
+          if (operator_token.type() == DEREFERENCE_TOKEN) {
+            builder_->end_subexpression();
+            stack_.pop_back();
+            stack_.pop_back();
+            push_token(ExpressionToken("", DUMMY_TOKEN));
+          } else if (operator_token.type() == UNARY_OPERATOR_TOKEN) {
             builder_->push_operator(operator_token.operator_type());
             stack_.pop_back();
             stack_.pop_back();
