@@ -206,7 +206,9 @@ class ExpressionBuilder : public ExpressionBuilderInterface {
 };
 
 enum ExpressionTokenType {
-  NODE_TOKEN,
+  DUMMY_TOKEN,
+  CONSTANT_TOKEN,
+  NAME_TOKEN,
   UNARY_OPERATOR_TOKEN,
   BINARY_OPERATOR_TOKEN,
   DEREFERENCE_TOKEN,
@@ -222,20 +224,29 @@ enum ExpressionBracketType {
 
 class ExpressionToken {
  public:
-  ExpressionToken() : type_(NODE_TOKEN), dummy_(0), priority_(0) {}
-  explicit ExpressionToken(ExpressionTokenType token_type)
-      : type_(token_type),
+  ExpressionToken() : string_(), type_(DUMMY_TOKEN), dummy_(0), priority_(0) {}
+  explicit ExpressionToken(const String &string,
+                           ExpressionTokenType token_type)
+      : string_(string),
+        type_(token_type),
         dummy_(0),
         priority_(0) {}
-  explicit ExpressionToken(ExpressionBracketType bracket_type)
-      : type_(BRACKET_TOKEN),
+  explicit ExpressionToken(const String &string,
+                           ExpressionBracketType bracket_type)
+      : string_(string),
+        type_(BRACKET_TOKEN),
         bracket_type_(bracket_type),
         priority_(0) {}
-  explicit ExpressionToken(OperatorType operator_type)
-      : type_(get_operator_token_type(operator_type)),
+  explicit ExpressionToken(const String &string,
+                           OperatorType operator_type)
+      : string_(string),
+        type_(get_operator_token_type(operator_type)),
         operator_type_(operator_type),
         priority_(get_operator_priority(operator_type)) {}
 
+  const String &string() const {
+    return string_;
+  }
   ExpressionTokenType type() const {
     return type_;
   }
@@ -250,6 +261,7 @@ class ExpressionToken {
   }
 
  private:
+  String string_;
   ExpressionTokenType type_;
   union {
     int dummy_;
@@ -265,19 +277,23 @@ class ExpressionToken {
 
 class ExpressionParser {
  public:
-  static std::unique_ptr<ExpressionInterface> parse(const String &query);
+  static std::unique_ptr<ExpressionInterface> parse(
+      const TableInterface *table,
+      const String &query);
 
   ~ExpressionParser() = default;
 
  private:
+  const TableInterface *table_;
   Array<ExpressionToken> tokens_;
   Array<ExpressionToken> stack_;
-  std::unique_ptr<ExpressionBuilder> builder_;
+  std::unique_ptr<ExpressionBuilderInterface> builder_;
 
-  ExpressionParser() = default;
+  explicit ExpressionParser(const TableInterface *table);
 
   void tokenize(const String &query);
-  std::unique_ptr<ExpressionInterface> build();
+  void analyze();
+  void push_token(const ExpressionToken &token);
 };
 
 }  // namespace impl

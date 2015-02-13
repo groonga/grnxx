@@ -2577,21 +2577,345 @@ int ExpressionToken::get_operator_priority(OperatorType operator_type) {
 }
 
 std::unique_ptr<ExpressionInterface> ExpressionParser::parse(
+    const TableInterface *table,
     const String &query) try {
-  std::unique_ptr<ExpressionParser> parser(new ExpressionParser);
+  std::unique_ptr<ExpressionParser> parser(new ExpressionParser(table));
   parser->tokenize(query);
-  return parser->build();
+  parser->analyze();
+  return parser->builder_->release();
 } catch (const std::bad_alloc &) {
 	throw "Memory allocation failed";
 }
 
+ExpressionParser::ExpressionParser(const TableInterface *table)
+    : table_(table),
+      tokens_(),
+      stack_(),
+      builder_() {}
+
 void ExpressionParser::tokenize(const String &query) {
-  // TODO
+  String rest = query;
+  while (rest.size() != 0) {
+    // Ignore white-space characters.
+    auto delim_pos = rest.find_first_not_of(" \t\r\n");
+    if (delim_pos == rest.npos) {
+      break;
+    }
+    rest = rest.substring(delim_pos);
+    switch (rest[0]) {
+      case '!': {
+        if ((rest.size() >= 2) && (rest[1] == '=')) {
+          tokens_.push_back(ExpressionToken("!=", GRNXX_NOT_EQUAL));
+          rest = rest.substring(2);
+        } else {
+          tokens_.push_back(ExpressionToken("!", GRNXX_LOGICAL_NOT));
+          rest = rest.substring(1);
+        }
+        break;
+      }
+      case '~': {
+        tokens_.push_back(ExpressionToken("~", GRNXX_BITWISE_NOT));
+        rest = rest.substring(1);
+        break;
+      }
+      case '=': {
+        if ((rest.size() >= 2) && (rest[1] == '=')) {
+          tokens_.push_back(ExpressionToken("==", GRNXX_EQUAL));
+          rest = rest.substring(2);
+        } else {
+          throw "Invalid query";
+        }
+        break;
+      }
+      case '<': {
+        if ((rest.size() >= 2) && (rest[1] == '=')) {
+          tokens_.push_back(ExpressionToken("<=", GRNXX_LESS_EQUAL));
+          rest = rest.substring(2);
+        } else {
+          tokens_.push_back(ExpressionToken("<", GRNXX_LESS));
+          rest = rest.substring(1);
+        }
+        break;
+      }
+      case '>': {
+        if ((rest.size() >= 2) && (rest[1] == '=')) {
+          tokens_.push_back(ExpressionToken(">=", GRNXX_GREATER_EQUAL));
+          rest = rest.substring(2);
+        } else {
+          tokens_.push_back(ExpressionToken(">", GRNXX_GREATER));
+          rest = rest.substring(1);
+        }
+        break;
+      }
+      case '&': {
+        if ((rest.size() >= 2) && (rest[1] == '&')) {
+          tokens_.push_back(ExpressionToken("&&", GRNXX_LOGICAL_AND));
+          rest = rest.substring(2);
+        } else {
+          tokens_.push_back(ExpressionToken("&", GRNXX_BITWISE_AND));
+          rest = rest.substring(1);
+        }
+        break;
+      }
+      case '|': {
+        if ((rest.size() >= 2) && (rest[1] == '|')) {
+          tokens_.push_back(ExpressionToken("||", GRNXX_LOGICAL_OR));
+          rest = rest.substring(2);
+        } else {
+          tokens_.push_back(ExpressionToken("|", GRNXX_BITWISE_OR));
+          rest = rest.substring(1);
+        }
+        break;
+      }
+      case '^': {
+        tokens_.push_back(ExpressionToken("^", GRNXX_BITWISE_XOR));
+        rest = rest.substring(1);
+        break;
+      }
+      case '+': {
+        tokens_.push_back(ExpressionToken("+", GRNXX_PLUS));
+        rest = rest.substring(1);
+        break;
+      }
+      case '-': {
+        tokens_.push_back(ExpressionToken("-", GRNXX_MINUS));
+        rest = rest.substring(1);
+        break;
+      }
+      case '*': {
+        tokens_.push_back(ExpressionToken("*", GRNXX_MULTIPLICATION));
+        rest = rest.substring(1);
+        break;
+      }
+      case '/': {
+        tokens_.push_back(ExpressionToken("/", GRNXX_DIVISION));
+        rest = rest.substring(1);
+        break;
+      }
+      case '%': {
+        tokens_.push_back(ExpressionToken("%", GRNXX_MODULUS));
+        rest = rest.substring(1);
+        break;
+      }
+      case '@': {
+        if ((rest.size() >= 2) && (rest[1] == '^')) {
+          tokens_.push_back(ExpressionToken("@^", GRNXX_STARTS_WITH));
+          rest = rest.substring(2);
+        } else if ((rest.size() >= 2) && (rest[1] == '$')) {
+          tokens_.push_back(ExpressionToken("@$", GRNXX_ENDS_WITH));
+          rest = rest.substring(2);
+        } else {
+          tokens_.push_back(ExpressionToken("@", GRNXX_CONTAINS));
+          rest = rest.substring(1);
+        }
+        break;
+      }
+      case '.': {
+        tokens_.push_back(ExpressionToken(".", DEREFERENCE_TOKEN));
+        rest = rest.substring(1);
+        break;
+      }
+      case '(': {
+        tokens_.push_back(ExpressionToken("(", LEFT_ROUND_BRACKET));
+        rest = rest.substring(1);
+        break;
+      }
+      case ')': {
+        tokens_.push_back(ExpressionToken(")", RIGHT_ROUND_BRACKET));
+        rest = rest.substring(1);
+        break;
+      }
+      case '[': {
+        tokens_.push_back(ExpressionToken("[", LEFT_SQUARE_BRACKET));
+        rest = rest.substring(1);
+        break;
+      }
+      case ']': {
+        tokens_.push_back(ExpressionToken("]", RIGHT_SQUARE_BRACKET));
+        rest = rest.substring(1);
+        break;
+      }
+      case '"': {
+        auto end = rest.find_first_of('"', 1);
+        if (end == rest.npos) {
+          throw "Invalid query";
+        }
+        tokens_.push_back(
+            ExpressionToken(rest.substring(0, end + 1), CONSTANT_TOKEN));
+        rest = rest.substring(end + 1);
+        break;
+      }
+      case '0' ... '9': {
+        // TODO: Improve this.
+        auto end = rest.find_first_not_of("0123456789", 1);
+        if (end == rest.npos) {
+          end = rest.size();
+        } else if (rest[end] == '.') {
+          end = rest.find_first_not_of("0123456789", end + 1);
+          if (end == rest.npos) {
+            end = rest.size();
+          }
+        }
+        String token = rest.substring(0, end);
+        tokens_.push_back(ExpressionToken(token, CONSTANT_TOKEN));
+        rest = rest.substring(end);
+        break;
+      }
+      case 'A' ... 'Z':
+      case 'a' ... 'z': {
+        // TODO: Improve this.
+        auto end = rest.find_first_not_of("0123456789"
+                                          "ABCDEFGHIJKLMNOPQRSTUVWXYZ_"
+                                          "abcdefghijklmnopqrstuvwxyz", 1);
+        if (end == rest.npos) {
+          end = rest.size();
+        }
+        String token = rest.substring(0, end);
+        if ((token == "TRUE") || (token == "FALSE")) {
+          tokens_.push_back(ExpressionToken(token, CONSTANT_TOKEN));
+        } else {
+          tokens_.push_back(ExpressionToken(token, NAME_TOKEN));
+        }
+        rest = rest.substring(end);
+        break;
+      }
+      default: {
+        throw "Invalid query";
+      }
+    }
+  }
 }
 
-std::unique_ptr<ExpressionInterface> ExpressionParser::build() {
-  // TODO
-  return builder_->release();
+void ExpressionParser::analyze() {
+  if (tokens_.size() == 0) {
+    throw "Empty query";
+  }
+  builder_ = ExpressionBuilderInterface::create(table_);
+  push_token(ExpressionToken("(", LEFT_ROUND_BRACKET));
+  for (size_t i = 0; i < tokens_.size(); ++i) {
+    push_token(tokens_[i]);
+  }
+  push_token(ExpressionToken(")", RIGHT_ROUND_BRACKET));
+}
+
+void ExpressionParser::push_token(const ExpressionToken &token) {
+  switch (token.type()) {
+    case DUMMY_TOKEN: {
+      if ((stack_.size() != 0) && (stack_.back().type() == DUMMY_TOKEN)) {
+        throw "Invalid query";
+      }
+      stack_.push_back(token);
+      break;
+    }
+    case CONSTANT_TOKEN: {
+      Datum datum;
+      std::string string(token.string().data(), token.string().size());
+      if (std::isdigit(static_cast<uint8_t>(string[0]))) {
+        if (string.find_first_of('.') == string.npos) {
+          datum = grnxx::Int(std::stoll(string));
+        } else {
+          datum = grnxx::Float(std::stod(string));
+        }
+      } else {
+        const String &string = token.string();
+        datum = grnxx::Text(string.substring(1, string.size() - 2));
+      }
+      push_token(ExpressionToken(token.string(), DUMMY_TOKEN));
+      builder_->push_constant(datum);
+      break;
+    }
+    case NAME_TOKEN: {
+      push_token(ExpressionToken(token.string(), DUMMY_TOKEN));
+      builder_->push_column(token.string());
+      break;
+    }
+    case UNARY_OPERATOR_TOKEN: {
+      if ((stack_.size() != 0) && (stack_.back().type() == DUMMY_TOKEN)) {
+        // 単項演算子の直前にオペランドがあるのはおかしい．
+        throw "Invalid query";
+      }
+      stack_.push_back(token);
+      break;
+    }
+    case BINARY_OPERATOR_TOKEN: {
+      if ((stack_.size() == 0) || (stack_.back().type() != DUMMY_TOKEN)) {
+        // 二項演算子の前はダミーでなければならない．
+        throw "Invalid query";
+      }
+      // 前方にある優先度の高い演算子を適用する．
+      while (stack_.size() >= 2) {
+        ExpressionToken operator_token = stack_[stack_.size() - 2];
+        if (operator_token.type() == UNARY_OPERATOR_TOKEN) {
+          builder_->push_operator(operator_token.operator_type());
+          stack_.pop_back();
+          stack_.pop_back();
+          push_token(ExpressionToken("", DUMMY_TOKEN));
+        } else if ((operator_token.type() == BINARY_OPERATOR_TOKEN) &&
+                   (operator_token.priority() <= token.priority())) {
+          builder_->push_operator(operator_token.operator_type());
+          stack_.pop_back();
+          stack_.pop_back();
+          stack_.pop_back();
+          push_token(ExpressionToken("", DUMMY_TOKEN));
+        } else {
+          break;
+        }
+      }
+      stack_.push_back(token);
+      break;
+    }
+    case DEREFERENCE_TOKEN: {
+      // TODO: Not supported yet.
+      throw "Not supported yet";
+    }
+    case BRACKET_TOKEN: {
+      if (token.bracket_type() == LEFT_ROUND_BRACKET) {
+        // 開き括弧の直前にダミーがあるのはおかしい．
+        if ((stack_.size() != 0) && (stack_.back().type() == DUMMY_TOKEN)) {
+          throw "Invalid query";
+        }
+        stack_.push_back(token);
+      } else if (token.bracket_type() == RIGHT_ROUND_BRACKET) {
+        // 閉じ括弧の直前にはダミーが必要であり，それより前に開き括弧が必要である．
+        if ((stack_.size() < 2) || (stack_.back().type() != DUMMY_TOKEN)) {
+          throw "Invalid query 1";
+        }
+        // 括弧内にある演算子をすべて解決する．
+        while (stack_.size() >= 2) {
+          ExpressionToken operator_token = stack_[stack_.size() - 2];
+          if (operator_token.type() == UNARY_OPERATOR_TOKEN) {
+            builder_->push_operator(operator_token.operator_type());
+            stack_.pop_back();
+            stack_.pop_back();
+            push_token(ExpressionToken("", DUMMY_TOKEN));
+          } else if (operator_token.type() == BINARY_OPERATOR_TOKEN) {
+            builder_->push_operator(operator_token.operator_type());
+            stack_.pop_back();
+            stack_.pop_back();
+            stack_.pop_back();
+            push_token(ExpressionToken("", DUMMY_TOKEN));
+          } else {
+            break;
+          }
+        }
+        if ((stack_.size() < 2) ||
+            (stack_[stack_.size() - 2].type() != BRACKET_TOKEN) ||
+            (stack_[stack_.size() - 2].bracket_type() != LEFT_ROUND_BRACKET)) {
+          throw "Invalid query";
+        }
+        stack_[stack_.size() - 2] = stack_.back();
+        stack_.pop_back();
+        break;
+      } else {
+        // TODO: Not supported yet ([]).
+        throw "Not supported yet";
+      }
+      break;
+    }
+    default: {
+      throw "Invalid query";
+    }
+  }
 }
 
 }  // namespace impl

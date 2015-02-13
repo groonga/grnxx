@@ -2748,6 +2748,26 @@ void test_subexpression() {
   }
 }
 
+void test_parser() try {
+  // Create an expression.
+  auto expression = grnxx::Expression::parse(
+      test.table, "Int < Int2 && Float >= Float2");
+
+  auto records = create_input_records();
+
+  grnxx::Array<grnxx::Bool> bool_results;
+  expression->evaluate(records, &bool_results);
+  assert(bool_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < bool_results.size(); ++i) {
+    size_t row_id = records[i].row_id.raw();
+    assert(bool_results[i].match(
+        (test.int_values[row_id] < test.int2_values[row_id]) &
+        (test.float_values[row_id] >= test.float2_values[row_id])));
+  }
+} catch (const char *msg) {
+  std::cerr << "msg: " << msg << std::endl;
+}
+
 void test_sequential_filter() {
   // Create an object for building expressions.
   auto builder = grnxx::ExpressionBuilder::create(test.table);
@@ -2955,6 +2975,9 @@ int main() {
 
   // Subexpression.
   test_subexpression();
+
+  // Parser.
+  test_parser();
 
   // Test sequential operations.
   test_sequential_filter();

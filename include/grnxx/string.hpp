@@ -419,6 +419,45 @@ class String {
            (std::memcmp(data_, rhs, size_) == 0) : false;
   }
 
+  // Find "byte" in "this", except the first "offset" bytes.
+  //
+  // If found, return the first position.
+  // If not found, return "npos".
+  size_t find_first_of(char byte, size_t offset = 0) const {
+    for (size_t i = offset; i < size_; ++i) {
+      if (data_[i] == byte) {
+        return i;
+      }
+    }
+    return npos;
+  }
+  // Find a member of "bytes" in "this", except the first "offset" bytes.
+  //
+  // If found, return the first position.
+  // If not found, return "npos".
+  size_t find_first_of(const String &bytes, size_t offset = 0) const {
+    for (size_t i = offset; i < size_; ++i) {
+      if (bytes.find_first_of(data_[i]) != npos) {
+        return i;
+      }
+    }
+    return npos;
+  }
+  // Find a non-member of "bytes" in "this", except the first "offset" bytes.
+  //
+  // If found, return the first position.
+  // If not found, return "npos".
+  size_t find_first_not_of(const String &bytes, size_t offset = 0) const {
+    for (size_t i = offset; i < size_; ++i) {
+      if (bytes.find_first_of(data_[i]) == npos) {
+        return i;
+      }
+    }
+    return npos;
+  }
+
+  static constexpr size_t npos = -1;
+
  private:
   union {
     char *buffer_;

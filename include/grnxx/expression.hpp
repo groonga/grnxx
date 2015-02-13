@@ -145,7 +145,8 @@ class Expression {
   //
   // On success, returns the expression.
   // On failure, throws an exception.
-  static std::unique_ptr<Expression> parse(const String &query);
+  static std::unique_ptr<Expression> parse(const Table *table,
+                                           const String &query);
 };
 
 class ExpressionBuilder {
