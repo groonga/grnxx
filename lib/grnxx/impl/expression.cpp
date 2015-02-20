@@ -2816,6 +2816,10 @@ void ExpressionParser::push_token(const ExpressionToken &token) {
         } else {
           datum = grnxx::Float(std::stod(string));
         }
+      } else if (string == "TRUE") {
+        datum = grnxx::Bool(true);
+      } else if (string == "FALSE") {
+        datum = grnxx::Bool(false);
       } else {
         const String &string = token.string();
         datum = grnxx::Text(string.substring(1, string.size() - 2));
