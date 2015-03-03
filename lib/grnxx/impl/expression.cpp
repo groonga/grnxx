@@ -2761,6 +2761,7 @@ void ExpressionParser::tokenize(const String &query) {
         rest = rest.substring(end);
         break;
       }
+      case '_':
       case 'A' ... 'Z':
       case 'a' ... 'z': {
         // TODO: Improve this.
@@ -2830,7 +2831,13 @@ void ExpressionParser::push_token(const ExpressionToken &token) {
     }
     case NAME_TOKEN: {
       push_token(ExpressionToken(token.string(), DUMMY_TOKEN));
-      builder_->push_column(token.string());
+      if (token.string() == "_id") {
+        builder_->push_row_id();
+      } else if (token.string() == "_score") {
+        builder_->push_score();
+      } else {
+        builder_->push_column(token.string());
+      }
       break;
     }
     case UNARY_OPERATOR_TOKEN: {

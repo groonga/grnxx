@@ -2749,11 +2749,21 @@ void test_subexpression() {
 }
 
 void test_parser() try {
-  // Test an expression (Int < Int2 && Float >= Float2).
-  auto expression = grnxx::Expression::parse(
-      test.table, "Int < Int2 && Float >= Float2");
+  // Test an expression (_id % 2 == 0).
+  auto expression = grnxx::Expression::parse(test.table, "_id % 2 == 0");
   auto records = create_input_records();
   grnxx::Array<grnxx::Bool> bool_results;
+  expression->evaluate(records, &bool_results);
+  assert(bool_results.size() == test.table->num_rows());
+  for (size_t i = 0; i < bool_results.size(); ++i) {
+    size_t row_id = records[i].row_id.raw();
+    assert(bool_results[i].match(grnxx::Bool((row_id % 2) == 0)));
+  }
+
+  // Test an expression (Int < Int2 && Float >= Float2).
+  expression = grnxx::Expression::parse(
+      test.table, "Int < Int2 && Float >= Float2");
+  create_input_records();
   expression->evaluate(records, &bool_results);
   assert(bool_results.size() == test.table->num_rows());
   for (size_t i = 0; i < bool_results.size(); ++i) {
