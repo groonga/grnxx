@@ -35,13 +35,13 @@ class Float {
   constexpr bool is_max() const {
     return raw_ == raw_max();
   }
-  constexpr bool is_finite() const {
+  bool is_finite() const {
     return std::isfinite(raw_);
   }
-  constexpr bool is_infinite() const {
+  bool is_infinite() const {
     return std::isinf(raw_);
   }
-  constexpr bool is_na() const {
+  bool is_na() const {
     return std::isnan(raw_);
   }
 
