@@ -1424,6 +1424,9 @@ Index *Index::create(ColumnBase *column,
         }
       }
     }
+    default: {
+      throw "Undefined index type";  // TODO
+    }
   }
 } catch (const std::bad_alloc &) {
   throw "Memory allocation failed";  // TODO
