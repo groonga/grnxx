@@ -109,29 +109,29 @@ class Float {
 
   // -- Comparison operators --
 
-  constexpr Bool operator==(Float rhs) const {
+  Bool operator==(Float rhs) const {
     return (is_na() || rhs.is_na()) ? Bool::na() : Bool(raw_ == rhs.raw_);
   }
-  constexpr Bool operator!=(Float rhs) const {
+  Bool operator!=(Float rhs) const {
     return (is_na() || rhs.is_na()) ? Bool::na() : Bool(raw_ != rhs.raw_);
   }
-  constexpr Bool operator<(Float rhs) const {
+  Bool operator<(Float rhs) const {
     return (is_na() || rhs.is_na()) ? Bool::na() : Bool(raw_ < rhs.raw_);
   }
-  constexpr Bool operator>(Float rhs) const {
+  Bool operator>(Float rhs) const {
     return (is_na() || rhs.is_na()) ? Bool::na() : Bool(raw_ > rhs.raw_);
   }
-  constexpr Bool operator<=(Float rhs) const {
+  Bool operator<=(Float rhs) const {
     return (is_na() || rhs.is_na()) ? Bool::na() : Bool(raw_ <= rhs.raw_);
   }
-  constexpr Bool operator>=(Float rhs) const {
+  Bool operator>=(Float rhs) const {
     return (is_na() || rhs.is_na()) ? Bool::na() : Bool(raw_ >= rhs.raw_);
   }
 
-  constexpr bool match(Float rhs) const {
+  bool match(Float rhs) const {
     return (is_na() && rhs.is_na()) || (raw_ == rhs.raw_);
   }
-  constexpr bool unmatch(Float rhs) const {
+  bool unmatch(Float rhs) const {
     return !(is_na() && rhs.is_na()) && (raw_ != rhs.raw_);
   }
 
