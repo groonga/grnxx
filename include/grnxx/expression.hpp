@@ -64,6 +64,23 @@ class Expression {
   virtual void filter(ArrayCRef<Record> input_records,
                       ArrayRef<Record> *output_records) = 0;
 
+  // Extract true records.
+  //
+  // Evaluates the expression for "input_records" and stores true records
+  // into "*output_records".
+  // "*output_records" is truncated to fit the number of extracted records.
+	//
+  // The first "offset" true records are removed.
+  // The number of output records is at most "limit".
+  //
+  // Fails if "output_records->size()" is less than "input_records.size()".
+  //
+  // On failure, throws an exception.
+  virtual void filter(ArrayCRef<Record> input_records,
+                      ArrayRef<Record> *output_records,
+                      size_t offset,
+                      size_t limit) = 0;
+
   // Adjust scores of records.
   //
   // Evaluates the expression for "*records" and replaces the scores with

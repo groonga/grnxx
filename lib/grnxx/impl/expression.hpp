@@ -44,6 +44,10 @@ class Expression : public ExpressionInterface {
               size_t output_limit);
   void filter(ArrayCRef<Record> input_records,
               ArrayRef<Record> *output_records);
+  void filter(ArrayCRef<Record> input_records,
+              ArrayRef<Record> *output_records,
+              size_t offset,
+              size_t limit);
 
   void adjust(Array<Record> *records, size_t offset);
   void adjust(ArrayRef<Record> records);

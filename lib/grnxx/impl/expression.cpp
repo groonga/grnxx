@@ -1610,6 +1610,44 @@ void Expression::filter(ArrayCRef<Record> input_records,
   *output_records = output_records->ref(0, count);
 }
 
+void Expression::filter(ArrayCRef<Record> input_records,
+                        ArrayRef<Record> *output_records,
+                        size_t offset,
+                        size_t limit) {
+  ArrayCRef<Record> input = input_records;
+  ArrayRef<Record> output = *output_records;
+  size_t count = 0;
+  while ((input.size() > 0) && (limit > 0)) {
+    size_t next_size = (input.size() < block_size_) ?
+                       input.size() : block_size_;
+    ArrayCRef<Record> next_input = input.cref(0, next_size);
+    ArrayRef<Record> next_output = output.ref(0, next_size);
+    root_->filter(next_input, &next_output);
+    input = input.cref(next_size);
+
+    if (offset > 0) {
+      if (offset >= next_output.size()) {
+        offset -= next_output.size();
+        next_output = next_output.ref(0, 0);
+      } else {
+        for (size_t i = offset; i < next_output.size(); ++i) {
+          next_output.set(i - offset, next_output[i]);
+        }
+        next_output = next_output.ref(0, next_output.size() - offset);
+        offset = 0;
+      }
+    }
+    if (next_output.size() > limit) {
+      next_output = next_output.ref(0, limit);
+    }
+    limit -= next_output.size();
+
+    output = output.ref(next_output.size());
+    count += next_output.size();
+  }
+  *output_records = output_records->ref(0, count);
+}
+
 void Expression::adjust(Array<Record> *records, size_t offset) {
   adjust(records->ref(offset));
 }
