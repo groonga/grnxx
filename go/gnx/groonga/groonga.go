@@ -159,6 +159,7 @@ func (db *DB) Recv() ([]byte, error) {
 
 func (db *DB) Query(command string) ([]byte, error) {
 	if err := db.Send(command); err != nil {
+		db.Recv()
 		return nil, err
 	}
 	return db.Recv()
