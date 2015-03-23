@@ -10,6 +10,7 @@ import "io/ioutil"
 import "math"
 import "math/rand"
 import "os"
+import "runtime"
 import "strconv"
 import "strings"
 import "time"
@@ -172,58 +173,60 @@ func (db *DB) gnxLoad(command string) ([]byte, error) {
 		}
 	}
 
-//	var channels []chan int
-//	for i := 0; i < len(db.groongaDBs); i++ {
-//		if len(values[i]) != 0 {
-//			channel := make(chan int)
-//			go func(channel chan int, db *groonga.DB, options map[string]string,
-//				values [][]interface{}) {
-//				newOptions := make(map[string]string)
-//				for key, value := range options {
-//					newOptions[key] = value
-//				}
-//				bytes, err := json.Marshal(values)
-//				if err != nil {
-//					channel <- 0
-//					return
-//				}
-//				newOptions["values"] = string(bytes)
-////				fmt.Println("options:", newOptions)
-//				count, err := db.Load(newOptions)
-//				if err != nil {
-//					channel <- 0
-//					return
-//				}
-//				channel <- count
-//				close(channel)
-//				return
-//			}(channel, db.groongaDBs[i], options, values[i])
-//			channels = append(channels, channel)
-//		}
-//	}
-//	count := 0
-//	for _, channel := range channels {
-//		count += <-channel
-//	}
-//	return []byte(strconv.Itoa(count)), nil
-
-	total := 0
-	for i := 0; i < len(db.groongaDBs); i++ {
-		if len(values[i]) != 0 {
-			bytes, err := json.Marshal(values[i])
-			if err != nil {
-				return nil, err
+	if runtime.GOMAXPROCS(0) == 1 {
+		total := 0
+		for i := 0; i < len(db.groongaDBs); i++ {
+			if len(values[i]) != 0 {
+				bytes, err := json.Marshal(values[i])
+				if err != nil {
+					return nil, err
+				}
+				options["values"] = string(bytes)
+//				fmt.Println("options:", options)
+				count, err := db.groongaDBs[i].Load(options)
+				if err != nil {
+					return nil, err
+				}
+				total += count
 			}
-			options["values"] = string(bytes)
-//			fmt.Println("options:", options)
-			count, err := db.groongaDBs[i].Load(options)
-			if err != nil {
-				return nil, err
-			}
-			total += count
 		}
+		return []byte(strconv.Itoa(total)), nil
+	} else {
+		var channels []chan int
+		for i := 0; i < len(db.groongaDBs); i++ {
+			if len(values[i]) != 0 {
+				channel := make(chan int)
+				go func(channel chan int, db *groonga.DB, options map[string]string,
+					values [][]interface{}) {
+					newOptions := make(map[string]string)
+					for key, value := range options {
+						newOptions[key] = value
+					}
+					bytes, err := json.Marshal(values)
+					if err != nil {
+						channel <- 0
+						return
+					}
+					newOptions["values"] = string(bytes)
+//					fmt.Println("options:", newOptions)
+					count, err := db.Load(newOptions)
+					if err != nil {
+						channel <- 0
+						return
+					}
+					channel <- count
+					close(channel)
+					return
+				}(channel, db.groongaDBs[i], options, values[i])
+				channels = append(channels, channel)
+			}
+		}
+		count := 0
+		for _, channel := range channels {
+			count += <-channel
+		}
+		return []byte(strconv.Itoa(count)), nil
 	}
-	return []byte(strconv.Itoa(total)), nil
 }
 
 type Output struct {
