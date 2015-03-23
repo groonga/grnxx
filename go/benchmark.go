@@ -12,6 +12,7 @@ import "runtime"
 import "runtime/pprof"
 import "strconv"
 import "strings"
+import "time"
 import "unicode"
 
 var flagMode = flag.String("mode", "run", "mode (run or print)")
@@ -132,11 +133,14 @@ func runCommands(commands []string) {
 	}
 	defer os.RemoveAll(dir)
 	defer db.Close()
+	startTime := time.Now()
 	for _, command := range commands {
 		if _, err := db.Query(command); err != nil {
 			log.Fatalln(err)
 		}
 	}
+	endTime := time.Now()
+	fmt.Println("elapsed:", endTime.Sub(startTime))
 }
 
 func printCommands(commands []string) {
