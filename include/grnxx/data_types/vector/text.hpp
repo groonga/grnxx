@@ -15,10 +15,10 @@ class Vector<Text> {
   Vector() = default;
   ~Vector() = default;
 
-  constexpr Vector(const Vector &) = default;
+  Vector(const Vector &) = default;
   Vector &operator=(const Vector &) = default;
 
-  constexpr Vector(const Text *data, size_t size)
+  Vector(const Text *data, size_t size)
       : is_direct_(true),
         size_(size),
         data_(data) {}
@@ -27,7 +27,7 @@ class Vector<Text> {
         size_(size),
         headers_(static_cast<const Header *>(headers)),
         bodies_(bodies) {}
-  explicit constexpr Vector(NA)
+  explicit Vector(NA)
       : is_direct_(true),
         size_(NA()),
         data_(nullptr) {}
@@ -47,17 +47,17 @@ class Vector<Text> {
   const Text &operator[](size_t i) const {
     return data_[i];
   }
-  constexpr Int size() const {
+  Int size() const {
     return size_;
   }
-  constexpr size_t raw_size() const {
+  size_t raw_size() const {
     return size_.raw();
   }
 
-  constexpr bool is_empty() const {
+  bool is_empty() const {
     return raw_size() == 0;
   }
-  constexpr bool is_na() const {
+  bool is_na() const {
     return size_.is_na();
   }
 
@@ -135,10 +135,10 @@ class Vector<Text> {
     return GRNXX_TEXT_VECTOR;
   }
 
-  static constexpr Vector empty() {
+  static Vector empty() {
     return Vector(nullptr, 0);
   }
-  static constexpr Vector na() {
+  static Vector na() {
     return Vector(NA());
   }
 
