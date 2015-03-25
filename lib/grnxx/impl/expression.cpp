@@ -1,6 +1,8 @@
 #include "grnxx/impl/expression.hpp"
 
+#include <cctype>
 #include <new>
+#include <string>
 
 namespace grnxx {
 namespace impl {
