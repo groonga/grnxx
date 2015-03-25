@@ -195,13 +195,13 @@ class Int {
   Int &operator*=(Int rhs) & {
     return *this = operator*(rhs);
   }
-  Int &operator/=(Int rhs) &{
+  Int &operator/=(Int rhs) & {
     if (!is_na()) {
       raw_ = (rhs.is_na() || (rhs.raw_ == 0)) ? raw_na() : (raw_ / rhs.raw_);
     }
     return *this;
   }
-  Int &operator%=(Int rhs) &{
+  Int &operator%=(Int rhs) & {
     if (!is_na()) {
       raw_ = (rhs.is_na() || (rhs.raw_ == 0)) ? raw_na() : (raw_ % rhs.raw_);
     }

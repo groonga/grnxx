@@ -98,11 +98,11 @@ class Float {
     raw_ *= rhs.raw_;
     return *this;
   }
-  Float &operator/=(Float rhs) &{
+  Float &operator/=(Float rhs) & {
     raw_ /= rhs.raw_;
     return *this;
   }
-  Float &operator%=(Float rhs) &{
+  Float &operator%=(Float rhs) & {
     raw_ = std::fmod(raw_, rhs.raw_);
     return *this;
   }
