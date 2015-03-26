@@ -1,3 +1,6 @@
+*.prof
 benchmark
+benchmark2
 gnxConsole
 groongaConsole
+temp/
