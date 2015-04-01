@@ -194,7 +194,7 @@ func testB() {
 		var columnarRecords []interface{}
 		// NOTE: In fact, the IDs are ignored.
 		columnarRecords = append(columnarRecords, []gnx.Int{5,6,7,8})
-		columnarRecords = append(columnarRecords, []gnx.Int{-10,-20,-30,-40})
+		columnarRecords = append(columnarRecords, []gnx.Int{-5,-6,-7,-8})
 		count, err := db.LoadC("Table", []string{"_id", "Value"}, columnarRecords)
 		if err != nil {
 			log.Println(err)
@@ -203,16 +203,29 @@ func testB() {
 		fmt.Println("count:", count)
 	}
 
-//	{
-//		columnarRecordsMap := make(map[string]interface{})
-//		columnarRecordsMap["Value"] = []gnx.Int{-100,-200,-300}
-//		count, err := db.LoadCMap("Table", columnarRecordsMap)
-//		if err != nil {
-//			log.Println(err)
-//			return
-//		}
-//		fmt.Println("count:", count)
-//	}
+	{
+		columnarRecordsMap := make(map[string]interface{})
+		columnarRecordsMap["Value"] = []gnx.Int{-10,-20,-30,-40}
+		count, err := db.LoadCMap("Table", columnarRecordsMap)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		fmt.Println("count:", count)
+	}
+
+	{
+		columnarRecordsMap := make(map[string]interface{})
+		// NOTE: In fact, the IDs are ignored.
+		columnarRecordsMap["_id"] = []gnx.Int{9,10,11,12}
+		columnarRecordsMap["Value"] = []gnx.Int{-50,-60,-70,-80}
+		count, err := db.LoadCMap("Table", columnarRecordsMap)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		fmt.Println("count:", count)
+	}
 
 	command := "select Table --limit -1"
 	for i := 0; i < 3; i++ {

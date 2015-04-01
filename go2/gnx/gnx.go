@@ -837,8 +837,15 @@ func (db *DB) loadC(
 
 func (db *DB) loadCMap(
 	tableName string, columnarRecordsMap map[string]interface{}) (int, error) {
-	// TODO
-	return 0, nil
+	columnNames := make([]string, len(columnarRecordsMap))
+	columnarRecords := make([]interface{}, len(columnarRecordsMap))
+	i := 0
+	for columnName, columnarValues := range columnarRecordsMap {
+		columnNames[i] = columnName
+		columnarRecords[i] = columnarValues
+		i++
+	}
+	return db.loadC(tableName, columnNames, columnarRecords)
 }
 
 func (db *DB) Load(
