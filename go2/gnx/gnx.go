@@ -108,6 +108,45 @@ func (this TextVector) IsNA() bool {
 	return this == nil
 }
 
+// -- Common --
+
+func countColumnarRecords(columnarRecords []interface{}) (int, error) {
+	numRecords := -1
+	for _, columnarValues := range columnarRecords {
+		var thisLen int
+		switch values := columnarValues.(type) {
+		case []Bool:
+			thisLen = len(values)
+		case []Int:
+			thisLen = len(values)
+		case []Float:
+			thisLen = len(values)
+		case []Text:
+			thisLen = len(values)
+		case []BoolVector:
+			thisLen = len(values)
+		case []IntVector:
+			thisLen = len(values)
+		case []FloatVector:
+			thisLen = len(values)
+		case []TextVector:
+			thisLen = len(values)
+		default:
+			return 0, fmt.Errorf("unsupported data type")
+		}
+		if numRecords == -1 {
+			numRecords = thisLen
+		} else if thisLen != numRecords {
+			return 0, fmt.Errorf("length conflict: numRecords = %d, thisLen = %d",
+				numRecords, thisLen)
+		}
+	}
+	if numRecords <= 0 {
+		return 0, fmt.Errorf("no input")
+	}
+	return numRecords, nil
+}
+
 // -- GroongaDB --
 
 type GroongaDB struct {
@@ -301,41 +340,14 @@ func (db *GroongaDB) loadMap(
 func (db *GroongaDB) loadC(
 	tableName string, columnNames []string,
 	columnarRecords []interface{}) (int, error) {
-	numValues := -1
-	for _, columnarValues := range columnarRecords {
-		var thisLen int
-		switch values := columnarValues.(type) {
-		case []Bool:
-			thisLen = len(values)
-		case []Int:
-			thisLen = len(values)
-		case []Float:
-			thisLen = len(values)
-		case []Text:
-			thisLen = len(values)
-		case []BoolVector:
-			thisLen = len(values)
-		case []IntVector:
-			thisLen = len(values)
-		case []FloatVector:
-			thisLen = len(values)
-		case []TextVector:
-			thisLen = len(values)
-		}
-		if numValues == -1 {
-			numValues = thisLen
-		} else if thisLen != numValues {
-			return 0, fmt.Errorf("length conflict: numValues = %d, thisLen = %d",
-				numValues, thisLen)
-		}
-	}
-	if numValues <= 0 {
-		return 0, fmt.Errorf("no input")
+	numRecords, err := countColumnarRecords(columnarRecords)
+	if err != nil {
+		return 0, err
 	}
 
 	// TODO: Use cgo for JSON encoding.
-	records := make([][]Valuer, numValues)
-	for i := 0; i < numValues; i++ {
+	records := make([][]Valuer, numRecords)
+	for i := 0; i < numRecords; i++ {
 		records[i] = make([]Valuer, len(columnNames))
 	}
 	for i, columnarValues := range columnarRecords {
@@ -372,6 +384,8 @@ func (db *GroongaDB) loadC(
 			for j, value := range values {
 				records[j][i] = value
 			}
+		default:
+			return 0, fmt.Errorf("unsupported data type")
 		}
 	}
 	return db.load(tableName, columnNames, records)
@@ -640,12 +654,190 @@ func (db *DB) loadMap(
 }
 
 func (db *DB) loadC(
-	tableName string, columnNames []string, records []interface{}) (int, error) {
-	return 0, nil
+	tableName string, columnNames []string,
+	columnarRecords []interface{}) (int, error) {
+	numRecords, err := countColumnarRecords(columnarRecords)
+	if err != nil {
+		return 0, err
+	}
+
+	idID := -1
+	keyID := -1
+	for i, columnName := range columnNames {
+		switch columnName {
+		case "_id":
+			if idID != -1 {
+				return 0, fmt.Errorf("_id appears more than once")
+			}
+			idID = i
+		case "_key":
+			if keyID != -1 {
+				return 0, fmt.Errorf("_key appears more than once")
+			}
+			keyID = i
+		}
+	}
+	if (idID != -1) && (keyID != -1) {
+		return 0, fmt.Errorf("both _id and _key appear")
+	}
+
+	dbIDs := make([]int, numRecords)
+	numRecordsPerDBs := make([]int, len(db.groongaDBs))
+	switch {
+	case idID != -1:
+		rowIDs := columnarRecords[idID].([]Int)
+		dummyRowIDs := make([]Int, len(rowIDs))
+		for i := 0; i < numRecords; i++ {
+			dbIDs[i] = int(rowIDs[i] - 1) % len(db.groongaDBs)
+			dummyRowIDs[i] = Int((int(rowIDs[i] - 1) / len(db.groongaDBs)) + 1)
+			numRecordsPerDBs[dbIDs[i]]++
+		}
+		dummyColumnarRecords := make([]interface{}, len(columnarRecords))
+		copy(dummyColumnarRecords, columnarRecords)
+		dummyColumnarRecords[idID] = dummyRowIDs
+		columnarRecords = dummyColumnarRecords
+	case keyID != -1:
+		switch keys := columnarRecords[keyID].(type) {
+		case []Int:
+			for i := 0; i < numRecords; i++ {
+				hasher := fnv.New32a()
+				err := binary.Write(hasher, binary.LittleEndian, keys[i])
+				if err != nil {
+					return 0, err
+				}
+				dbIDs[i] = int(hasher.Sum32()) % len(db.groongaDBs)
+				numRecordsPerDBs[dbIDs[i]]++
+			}
+		case []Float:
+			for i := 0; i < numRecords; i++ {
+				hasher := fnv.New32a()
+				err := binary.Write(hasher, binary.LittleEndian, keys[i])
+				if err != nil {
+					return 0, err
+				}
+				dbIDs[i] = int(hasher.Sum32()) % len(db.groongaDBs)
+				numRecordsPerDBs[dbIDs[i]]++
+			}
+		case []Text:
+			for i := 0; i < numRecords; i++ {
+				hasher := fnv.New32a()
+				if _, err := hasher.Write([]byte(keys[i])); err != nil {
+					return 0, err
+				}
+				dbIDs[i] = int(hasher.Sum32()) % len(db.groongaDBs)
+				numRecordsPerDBs[dbIDs[i]]++
+			}
+		default:
+			return 0, fmt.Errorf("unsupported key type")
+		}
+	default:
+		for i := 0; i < numRecords; i++ {
+			dbIDs[i] = rand.Int() % len(db.groongaDBs)
+			numRecordsPerDBs[dbIDs[i]]++
+		}
+	}
+
+	columnarRecordsPerDBs := make([][]interface{}, len(db.groongaDBs))
+	for i := 0; i < len(db.groongaDBs); i++ {
+		columnarRecordsPerDBs[i] = make([]interface{}, len(columnarRecords))
+	}
+	for i, columnarValues := range columnarRecords {
+		switch values := columnarValues.(type) {
+		case []Bool:
+			valuesPerDBs := make([][]Bool, len(db.groongaDBs))
+			for j, value := range values {
+				dbID := dbIDs[j]
+				valuesPerDBs[dbID] = append(valuesPerDBs[dbID], value)
+			}
+			for j := 0; j < len(db.groongaDBs); j++ {
+				columnarRecordsPerDBs[j][i] = valuesPerDBs[j]
+			}
+		case []Int:
+			valuesPerDBs := make([][]Int, len(db.groongaDBs))
+			for j, value := range values {
+				dbID := dbIDs[j]
+				valuesPerDBs[dbID] = append(valuesPerDBs[dbID], value)
+			}
+			for j := 0; j < len(db.groongaDBs); j++ {
+				columnarRecordsPerDBs[j][i] = valuesPerDBs[j]
+			}
+		case []Float:
+			valuesPerDBs := make([][]Float, len(db.groongaDBs))
+			for j, value := range values {
+				dbID := dbIDs[j]
+				valuesPerDBs[dbID] = append(valuesPerDBs[dbID], value)
+			}
+			for j := 0; j < len(db.groongaDBs); j++ {
+				columnarRecordsPerDBs[j][i] = valuesPerDBs[j]
+			}
+		case []Text:
+			valuesPerDBs := make([][]Text, len(db.groongaDBs))
+			for j, value := range values {
+				dbID := dbIDs[j]
+				valuesPerDBs[dbID] = append(valuesPerDBs[dbID], value)
+			}
+			for j := 0; j < len(db.groongaDBs); j++ {
+				columnarRecordsPerDBs[j][i] = valuesPerDBs[j]
+			}
+		case []BoolVector:
+			valuesPerDBs := make([][]BoolVector, len(db.groongaDBs))
+			for j, value := range values {
+				dbID := dbIDs[j]
+				valuesPerDBs[dbID] = append(valuesPerDBs[dbID], value)
+			}
+			for j := 0; j < len(db.groongaDBs); j++ {
+				columnarRecordsPerDBs[j][i] = valuesPerDBs[j]
+			}
+		case []IntVector:
+			valuesPerDBs := make([][]IntVector, len(db.groongaDBs))
+			for j, value := range values {
+				dbID := dbIDs[j]
+				valuesPerDBs[dbID] = append(valuesPerDBs[dbID], value)
+			}
+			for j := 0; j < len(db.groongaDBs); j++ {
+				columnarRecordsPerDBs[j][i] = valuesPerDBs[j]
+			}
+		case []FloatVector:
+			valuesPerDBs := make([][]FloatVector, len(db.groongaDBs))
+			for j, value := range values {
+				dbID := dbIDs[j]
+				valuesPerDBs[dbID] = append(valuesPerDBs[dbID], value)
+			}
+			for j := 0; j < len(db.groongaDBs); j++ {
+				columnarRecordsPerDBs[j][i] = valuesPerDBs[j]
+			}
+		case []TextVector:
+			valuesPerDBs := make([][]TextVector, len(db.groongaDBs))
+			for j, value := range values {
+				dbID := dbIDs[j]
+				valuesPerDBs[dbID] = append(valuesPerDBs[dbID], value)
+			}
+			for j := 0; j < len(db.groongaDBs); j++ {
+				columnarRecordsPerDBs[j][i] = valuesPerDBs[j]
+			}
+		default:
+			return 0, fmt.Errorf("unsupported data type")
+		}
+	}
+
+	// TODO: Parallel processing.
+	total := 0
+	for i, columnarRecordsPerDB := range columnarRecordsPerDBs {
+		if numRecordsPerDBs[i] != 0 {
+			count, err := db.groongaDBs[i].loadC(
+				tableName, columnNames, columnarRecordsPerDB)
+			if err != nil {
+				return total, err
+			}
+			total += count
+		}
+	}
+	return total, nil
 }
 
 func (db *DB) loadCMap(
-	tableName string, records map[string]interface{}) (int, error) {
+	tableName string, columnarRecordsMap map[string]interface{}) (int, error) {
+	// TODO
 	return 0, nil
 }
 

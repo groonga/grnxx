@@ -128,6 +128,7 @@ func testB() {
 
 	{
 		var records [][]gnx.Valuer
+		// NOTE: In fact, the IDs are ignored.
 		records = append(records, []gnx.Valuer{gnx.Int(1), gnx.Int(5)})
 		records = append(records, []gnx.Valuer{gnx.Int(2), gnx.Int(6)})
 		records = append(records, []gnx.Valuer{gnx.Int(3), gnx.Int(7)})
@@ -178,29 +179,29 @@ func testB() {
 		fmt.Println("count:", count)
 	}
 
-//	{
-//		recordMaps := make([]map[string]gnx.Valuer, 3)
-//		recordMaps[0] = map[string]gnx.Valuer{"Value":gnx.Int(100)}
-//		recordMaps[1] = map[string]gnx.Valuer{"Value":gnx.Int(200)}
-//		recordMaps[2] = map[string]gnx.Valuer{"Value":gnx.Int(300)}
-//		count, err := db.LoadMap("Table", recordMaps)
-//		if err != nil {
-//			log.Println(err)
-//			return
-//		}
-//		fmt.Println("count:", count)
-//	}
+	{
+		var columnarRecords []interface{}
+		columnarRecords = append(columnarRecords, []gnx.Int{-1,-2,-3,-4})
+		count, err := db.LoadC("Table", []string{"Value"}, columnarRecords)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		fmt.Println("count:", count)
+	}
 
-//	{
-//		columnarRecords := make([]interface{}, 1)
-//		columnarRecords[0] = []gnx.Int{-10,-20,-30}
-//		count, err := db.LoadC("Table", []string{"Value"}, columnarRecords)
-//		if err != nil {
-//			log.Println(err)
-//			return
-//		}
-//		fmt.Println("count:", count)
-//	}
+	{
+		var columnarRecords []interface{}
+		// NOTE: In fact, the IDs are ignored.
+		columnarRecords = append(columnarRecords, []gnx.Int{5,6,7,8})
+		columnarRecords = append(columnarRecords, []gnx.Int{-10,-20,-30,-40})
+		count, err := db.LoadC("Table", []string{"_id", "Value"}, columnarRecords)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		fmt.Println("count:", count)
+	}
 
 //	{
 //		columnarRecordsMap := make(map[string]interface{})
