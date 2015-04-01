@@ -131,7 +131,7 @@ func testB() {
 		records = append(records, []gnx.Valuer{gnx.Int(1), gnx.Int(5)})
 		records = append(records, []gnx.Valuer{gnx.Int(2), gnx.Int(6)})
 		records = append(records, []gnx.Valuer{gnx.Int(3), gnx.Int(7)})
-		records = append(records, []gnx.Valuer{gnx.Int(3), gnx.Int(8)})
+		records = append(records, []gnx.Valuer{gnx.Int(4), gnx.Int(8)})
 		fmt.Println("records (before):", records)
 		count, err := db.Load("Table", []string{"_id","Value"}, records)
 		if err != nil {
