@@ -8,10 +8,13 @@ package gnx
 import "C"
 
 import (
+	"encoding/binary"
 	"encoding/json" // FIXME
 	"fmt"
+	"hash/fnv"
 	"io/ioutil"
 	"math"
+	"math/rand"
 	"os"
 	"strconv"
 	"strings"
@@ -326,8 +329,8 @@ func (db *GroongaDB) loadC(
 				numValues, thisLen)
 		}
 	}
-	if numValues == -1 {
-		numValues = 0
+	if numValues <= 0 {
+		return 0, fmt.Errorf("no input")
 	}
 
 	// TODO: Use cgo for JSON encoding.
@@ -482,22 +485,166 @@ func (db *DB) checkColumnName(columnName string) error {
 	return nil
 }
 
-func (db *DB) loadN(
+func (db *DB) load(
 	tableName string, columnNames []string, records [][]Valuer) (int, error) {
-	return 0, nil
+	idID := -1
+	keyID := -1
+	for i, columnName := range columnNames {
+		switch columnName {
+		case "_id":
+			if idID != -1 {
+				return 0, fmt.Errorf("_id appears more than once")
+			}
+			idID = i
+		case "_key":
+			if keyID != -1 {
+				return 0, fmt.Errorf("_key appears more than once")
+			}
+			keyID = i
+		}
+	}
+	if (idID != -1) && (keyID != -1) {
+		return 0, fmt.Errorf("both _id and _key appear")
+	}
+
+	recordsPerDBs := make([][][]Valuer, len(db.groongaDBs))
+	switch {
+	case idID != -1:
+		for _, record := range records {
+			rowID := record[idID].(Int)
+			dbID := int(rowID - 1) % len(db.groongaDBs)
+			dummyRecord := make([]Valuer, len(record))
+			copy(dummyRecord, record)
+			dummyRecord[idID] = Int((int(rowID - 1) / len(db.groongaDBs)) + 1)
+			recordsPerDBs[dbID] = append(recordsPerDBs[dbID], dummyRecord)
+		}
+	case keyID != -1:
+		for _, record := range records {
+			switch key := record[keyID].(type) {
+			case Int:
+				hasher := fnv.New32a()
+				err := binary.Write(hasher, binary.LittleEndian, key)
+				if err != nil {
+					return 0, err
+				}
+				dbID := int(hasher.Sum32()) % len(db.groongaDBs)
+				recordsPerDBs[dbID] = append(recordsPerDBs[dbID], record)
+			case Float:
+				hasher := fnv.New32a()
+				err := binary.Write(hasher, binary.LittleEndian, key)
+				if err != nil {
+					return 0, err
+				}
+				dbID := int(hasher.Sum32()) % len(db.groongaDBs)
+				recordsPerDBs[dbID] = append(recordsPerDBs[dbID], record)
+			case Text:
+				hasher := fnv.New32a()
+				if _, err := hasher.Write([]byte(key)); err != nil {
+					return 0, err
+				}
+				dbID := int(hasher.Sum32()) % len(db.groongaDBs)
+				recordsPerDBs[dbID] = append(recordsPerDBs[dbID], record)
+			default:
+				return 0, fmt.Errorf("unsupported key type")
+			}
+		}
+	default:
+		for _, record := range records {
+			dbID := rand.Int() % len(db.groongaDBs)
+			recordsPerDBs[dbID] = append(recordsPerDBs[dbID], record)
+		}
+	}
+
+	// TODO: Parallel processing.
+	total := 0
+	for i, recordsPerDB := range recordsPerDBs {
+		if len(recordsPerDB) != 0 {
+			count, err := db.groongaDBs[i].load(tableName, columnNames, recordsPerDB)
+			if err != nil {
+				return total, err
+			}
+			total += count
+		}
+	}
+	return total, nil
 }
 
-func (db *DB) loadMapN(
-	tableName string, records []map[string]Valuer) (int, error) {
-	return 0, nil
+func (db *DB) loadMap(
+	tableName string, recordMaps []map[string]Valuer) (int, error) {
+	recordMapsPerDBs := make([][]map[string]Valuer, len(db.groongaDBs))
+	for _, recordMap := range recordMaps {
+		rowIDValue, hasRowID := recordMap["_id"]
+		keyValue, hasKey := recordMap["_key"]
+		if hasRowID && hasKey {
+			return 0, fmt.Errorf("both _id and _key appear")
+		}
+		switch {
+		case hasRowID:
+			rowID := rowIDValue.(Int)
+			dbID := int(rowID - 1) % len(db.groongaDBs)
+			dummyRecordMap := make(map[string]Valuer)
+			for key, value := range recordMap {
+				if key == "_id" {
+					dummyRecordMap[key] = Int((int(rowID - 1) / len(db.groongaDBs)) + 1)
+				} else {
+					dummyRecordMap[key] = value
+				}
+			}
+			recordMapsPerDBs[dbID] = append(recordMapsPerDBs[dbID], dummyRecordMap)
+		case hasKey:
+			switch key := keyValue.(type) {
+			case Int:
+				hasher := fnv.New32a()
+				err := binary.Write(hasher, binary.LittleEndian, key)
+				if err != nil {
+					return 0, err
+				}
+				dbID := int(hasher.Sum32()) % len(db.groongaDBs)
+				recordMapsPerDBs[dbID] = append(recordMapsPerDBs[dbID], recordMap)
+			case Float:
+				hasher := fnv.New32a()
+				err := binary.Write(hasher, binary.LittleEndian, key)
+				if err != nil {
+					return 0, err
+				}
+				dbID := int(hasher.Sum32()) % len(db.groongaDBs)
+				recordMapsPerDBs[dbID] = append(recordMapsPerDBs[dbID], recordMap)
+			case Text:
+				hasher := fnv.New32a()
+				if _, err := hasher.Write([]byte(key)); err != nil {
+					return 0, err
+				}
+				dbID := int(hasher.Sum32()) % len(db.groongaDBs)
+				recordMapsPerDBs[dbID] = append(recordMapsPerDBs[dbID], recordMap)
+			default:
+				return 0, fmt.Errorf("unsupported key type")
+			}
+		default:
+			dbID := rand.Int() % len(db.groongaDBs)
+			recordMapsPerDBs[dbID] = append(recordMapsPerDBs[dbID], recordMap)
+		}
+	}
+
+	// TODO: Parallel processing.
+	total := 0
+	for i, recordMapsPerDB := range recordMapsPerDBs {
+		if len(recordMapsPerDB) != 0 {
+			count, err := db.groongaDBs[i].loadMap(tableName, recordMapsPerDB)
+			if err != nil {
+				return total, err
+			}
+			total += count
+		}
+	}
+	return total, nil
 }
 
-func (db *DB) loadCN(
+func (db *DB) loadC(
 	tableName string, columnNames []string, records []interface{}) (int, error) {
 	return 0, nil
 }
 
-func (db *DB) loadCMapN(
+func (db *DB) loadCMap(
 	tableName string, records map[string]interface{}) (int, error) {
 	return 0, nil
 }
@@ -507,6 +654,9 @@ func (db *DB) Load(
 	// Check arguments.
 	if err := db.checkTableName(tableName); err != nil {
 		return 0, err
+	}
+	if (len(columnNames) == 0) || (len(records) == 0) {
+		return 0, fmt.Errorf("no input")
 	}
 	for _, columnName := range columnNames {
 		if err := db.checkColumnName(columnName); err != nil {
@@ -524,7 +674,7 @@ func (db *DB) Load(
 	if len(db.groongaDBs) == 1 {
 		return db.groongaDBs[0].load(tableName, columnNames, records)
 	} else {
-		return db.loadN(tableName, columnNames, records)
+		return db.load(tableName, columnNames, records)
 	}
 }
 
@@ -533,6 +683,9 @@ func (db *DB) LoadMap(
 	// Check arguments.
 	if err := db.checkTableName(tableName); err != nil {
 		return 0, err
+	}
+	if len(recordMaps) == 0 {
+		return 0, fmt.Errorf("no input")
 	}
 	for _, recordMap := range recordMaps {
 		for columnName, _ := range recordMap {
@@ -545,7 +698,7 @@ func (db *DB) LoadMap(
 	if len(db.groongaDBs) == 1 {
 		return db.groongaDBs[0].loadMap(tableName, recordMaps)
 	} else {
-		return db.loadMapN(tableName, recordMaps)
+		return db.loadMap(tableName, recordMaps)
 	}
 }
 
@@ -555,6 +708,9 @@ func (db *DB) LoadC(
 	// Check arguments.
 	if err := db.checkTableName(tableName); err != nil {
 		return 0, err
+	}
+	if len(columnNames) == 0 {
+		return 0, fmt.Errorf("no input")
 	}
 	for _, columnName := range columnNames {
 		if err := db.checkColumnName(columnName); err != nil {
@@ -570,7 +726,7 @@ func (db *DB) LoadC(
 	if len(db.groongaDBs) == 1 {
 		return db.groongaDBs[0].loadC(tableName, columnNames, columnarRecords)
 	} else {
-		return db.loadCN(tableName, columnNames, columnarRecords)
+		return db.loadC(tableName, columnNames, columnarRecords)
 	}
 }
 
@@ -579,6 +735,9 @@ func (db *DB) LoadCMap(
 	// Check arguments.
 	if err := db.checkTableName(tableName); err != nil {
 		return 0, err
+	}
+	if len(columnarRecordsMap) == 0 {
+		return 0, fmt.Errorf("no input")
 	}
 	for columnName, _ := range columnarRecordsMap {
 		if err := db.checkColumnName(columnName); err != nil {
@@ -589,6 +748,6 @@ func (db *DB) LoadCMap(
 	if len(db.groongaDBs) == 1 {
 		return db.groongaDBs[0].loadCMap(tableName, columnarRecordsMap)
 	} else {
-		return db.loadCMapN(tableName, columnarRecordsMap)
+		return db.loadCMap(tableName, columnarRecordsMap)
 	}
 }
