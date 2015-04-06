@@ -576,6 +576,20 @@ func (db *DB) hashText(value Text) int {
 	return int(hasher.Sum32())
 }
 
+func (db *DB) selectGroongaDB(key Valuer) (int, error) {
+	switch value := key.(type) {
+	case nil:
+		return rand.Int() % len(db.groongaDBs), nil
+	case Int:
+		return db.hashInt(value) % len(db.groongaDBs), nil
+	case Float:
+		return db.hashFloat(value) % len(db.groongaDBs), nil
+	case Text:
+		return db.hashText(value) % len(db.groongaDBs), nil
+	}
+	return -1, fmt.Errorf("unsupported key type")
+}
+
 func (db *DB) load(
 	tableName string, columnNames []string, records [][]Valuer) (int, error) {
 	idID := -1
@@ -611,23 +625,15 @@ func (db *DB) load(
 		}
 	case keyID != -1:
 		for _, record := range records {
-			switch key := record[keyID].(type) {
-			case Int:
-				dbID := db.hashInt(key) % len(db.groongaDBs)
-				recordsPerDBs[dbID] = append(recordsPerDBs[dbID], record)
-			case Float:
-				dbID := db.hashFloat(key) % len(db.groongaDBs)
-				recordsPerDBs[dbID] = append(recordsPerDBs[dbID], record)
-			case Text:
-				dbID := db.hashText(key) % len(db.groongaDBs)
-				recordsPerDBs[dbID] = append(recordsPerDBs[dbID], record)
-			default:
-				return 0, fmt.Errorf("unsupported key type")
+			dbID, err := db.selectGroongaDB(record[keyID])
+			if err != nil {
+				return 0, err
 			}
+			recordsPerDBs[dbID] = append(recordsPerDBs[dbID], record)
 		}
 	default:
 		for _, record := range records {
-			dbID := rand.Int() % len(db.groongaDBs)
+			dbID, _ := db.selectGroongaDB(nil)
 			recordsPerDBs[dbID] = append(recordsPerDBs[dbID], record)
 		}
 	}
@@ -669,21 +675,13 @@ func (db *DB) loadMap(
 			}
 			recordMapsPerDBs[dbID] = append(recordMapsPerDBs[dbID], dummyRecordMap)
 		case hasKey:
-			switch key := keyValue.(type) {
-			case Int:
-				dbID := db.hashInt(key) % len(db.groongaDBs)
-				recordMapsPerDBs[dbID] = append(recordMapsPerDBs[dbID], recordMap)
-			case Float:
-				dbID := db.hashFloat(key) % len(db.groongaDBs)
-				recordMapsPerDBs[dbID] = append(recordMapsPerDBs[dbID], recordMap)
-			case Text:
-				dbID := db.hashText(key) % len(db.groongaDBs)
-				recordMapsPerDBs[dbID] = append(recordMapsPerDBs[dbID], recordMap)
-			default:
-				return 0, fmt.Errorf("unsupported key type")
+			dbID, err := db.selectGroongaDB(keyValue)
+			if err != nil {
+				return 0, err
 			}
+			recordMapsPerDBs[dbID] = append(recordMapsPerDBs[dbID], recordMap)
 		default:
-			dbID := rand.Int() % len(db.groongaDBs)
+			dbID, _ := db.selectGroongaDB(nil)
 			recordMapsPerDBs[dbID] = append(recordMapsPerDBs[dbID], recordMap)
 		}
 	}
