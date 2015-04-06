@@ -279,6 +279,47 @@ func (db *GroongaDB) Send(command string) error {
 	return nil
 }
 
+func (db *GroongaDB) checkCommandName(name string) error {
+	if name == "" {
+		return fmt.Errorf("empty command name")
+	}
+	for _, r := range name {
+		if (r != '_') || ((r < 'a') && (r > 'z')) {
+			return fmt.Errorf("invalid rune in command name")
+		}
+	}
+	return nil
+}
+
+func (db *GroongaDB) checkOptionKey(name string) error {
+	if name == "" {
+		return fmt.Errorf("empty option key")
+	}
+	for _, r := range name {
+		if (r != '_') || ((r < 'a') && (r > 'z')) {
+			return fmt.Errorf("invalid rune in option key")
+		}
+	}
+	return nil
+}
+
+func (db *GroongaDB) SendEx(name string, options map[string]string) error {
+	if err := db.checkCommandName(name); err != nil {
+		return err
+	}
+	parts := []string{name}
+	for key, value := range options {
+		if err := db.checkOptionKey(key); err != nil {
+			return err
+		}
+		value = strings.Replace(value, "\\", "\\\\", -1)
+		value = strings.Replace(value, "'", "\\'", -1)
+		parts = append(parts, fmt.Sprintf("--%s '%s'", key, value))
+	}
+	command := strings.Join(parts, " ")
+	return db.Send(command)
+}
+
 func (db *GroongaDB) Recv() ([]byte, error) {
 	var resultBuffer *C.char
 	var resultLength C.uint
@@ -300,6 +341,16 @@ func (db *GroongaDB) Recv() ([]byte, error) {
 
 func (db *GroongaDB) Query(command string) ([]byte, error) {
 	err := db.Send(command)
+	if err != nil {
+		_, _ = db.Recv()
+		return nil, err
+	}
+	return db.Recv()
+}
+
+func (db *GroongaDB) QueryEx(
+	name string, options map[string]string) ([]byte, error) {
+	err := db.SendEx(name, options)
 	if err != nil {
 		_, _ = db.Recv()
 		return nil, err
@@ -479,6 +530,14 @@ func (db *DB) GroongaQuery(i int, command string) ([]byte, error) {
 		return nil, fmt.Errorf("invalid DB: i = %d", i)
 	}
 	return db.groongaDBs[i].Query(command)
+}
+
+func (db *DB) GroongaQueryEx(i int, name string, options map[string]string) (
+	[]byte, error) {
+	if (i < 0) || (i >= len(db.groongaDBs)) {
+		return nil, fmt.Errorf("invalid DB: i = %d", i)
+	}
+	return db.groongaDBs[i].QueryEx(name, options)
 }
 
 func (db *DB) checkTableName(tableName string) error {
