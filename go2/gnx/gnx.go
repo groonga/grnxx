@@ -558,6 +558,24 @@ func (db *DB) checkColumnName(columnName string) error {
 	return nil
 }
 
+func (db *DB) hashInt(value Int) int {
+	hasher := fnv.New32a()
+	binary.Write(hasher, binary.LittleEndian, value)
+	return int(hasher.Sum32())
+}
+
+func (db *DB) hashFloat(value Float) int {
+	hasher := fnv.New32a()
+	binary.Write(hasher, binary.LittleEndian, value)
+	return  int(hasher.Sum32())
+}
+
+func (db *DB) hashText(value Text) int {
+	hasher := fnv.New32a()
+	hasher.Write([]byte(value))
+	return int(hasher.Sum32())
+}
+
 func (db *DB) load(
 	tableName string, columnNames []string, records [][]Valuer) (int, error) {
 	idID := -1
@@ -595,27 +613,13 @@ func (db *DB) load(
 		for _, record := range records {
 			switch key := record[keyID].(type) {
 			case Int:
-				hasher := fnv.New32a()
-				err := binary.Write(hasher, binary.LittleEndian, key)
-				if err != nil {
-					return 0, err
-				}
-				dbID := int(hasher.Sum32()) % len(db.groongaDBs)
+				dbID := db.hashInt(key) % len(db.groongaDBs)
 				recordsPerDBs[dbID] = append(recordsPerDBs[dbID], record)
 			case Float:
-				hasher := fnv.New32a()
-				err := binary.Write(hasher, binary.LittleEndian, key)
-				if err != nil {
-					return 0, err
-				}
-				dbID := int(hasher.Sum32()) % len(db.groongaDBs)
+				dbID := db.hashFloat(key) % len(db.groongaDBs)
 				recordsPerDBs[dbID] = append(recordsPerDBs[dbID], record)
 			case Text:
-				hasher := fnv.New32a()
-				if _, err := hasher.Write([]byte(key)); err != nil {
-					return 0, err
-				}
-				dbID := int(hasher.Sum32()) % len(db.groongaDBs)
+				dbID := db.hashText(key) % len(db.groongaDBs)
 				recordsPerDBs[dbID] = append(recordsPerDBs[dbID], record)
 			default:
 				return 0, fmt.Errorf("unsupported key type")
@@ -667,27 +671,13 @@ func (db *DB) loadMap(
 		case hasKey:
 			switch key := keyValue.(type) {
 			case Int:
-				hasher := fnv.New32a()
-				err := binary.Write(hasher, binary.LittleEndian, key)
-				if err != nil {
-					return 0, err
-				}
-				dbID := int(hasher.Sum32()) % len(db.groongaDBs)
+				dbID := db.hashInt(key) % len(db.groongaDBs)
 				recordMapsPerDBs[dbID] = append(recordMapsPerDBs[dbID], recordMap)
 			case Float:
-				hasher := fnv.New32a()
-				err := binary.Write(hasher, binary.LittleEndian, key)
-				if err != nil {
-					return 0, err
-				}
-				dbID := int(hasher.Sum32()) % len(db.groongaDBs)
+				dbID := db.hashFloat(key) % len(db.groongaDBs)
 				recordMapsPerDBs[dbID] = append(recordMapsPerDBs[dbID], recordMap)
 			case Text:
-				hasher := fnv.New32a()
-				if _, err := hasher.Write([]byte(key)); err != nil {
-					return 0, err
-				}
-				dbID := int(hasher.Sum32()) % len(db.groongaDBs)
+				dbID := db.hashText(key) % len(db.groongaDBs)
 				recordMapsPerDBs[dbID] = append(recordMapsPerDBs[dbID], recordMap)
 			default:
 				return 0, fmt.Errorf("unsupported key type")
@@ -759,31 +749,17 @@ func (db *DB) loadC(
 		switch keys := columnarRecords[keyID].(type) {
 		case []Int:
 			for i := 0; i < numRecords; i++ {
-				hasher := fnv.New32a()
-				err := binary.Write(hasher, binary.LittleEndian, keys[i])
-				if err != nil {
-					return 0, err
-				}
-				dbIDs[i] = int(hasher.Sum32()) % len(db.groongaDBs)
+				dbIDs[i] = db.hashInt(keys[i]) % len(db.groongaDBs)
 				numRecordsPerDBs[dbIDs[i]]++
 			}
 		case []Float:
 			for i := 0; i < numRecords; i++ {
-				hasher := fnv.New32a()
-				err := binary.Write(hasher, binary.LittleEndian, keys[i])
-				if err != nil {
-					return 0, err
-				}
-				dbIDs[i] = int(hasher.Sum32()) % len(db.groongaDBs)
+				dbIDs[i] = db.hashFloat(keys[i]) % len(db.groongaDBs)
 				numRecordsPerDBs[dbIDs[i]]++
 			}
 		case []Text:
 			for i := 0; i < numRecords; i++ {
-				hasher := fnv.New32a()
-				if _, err := hasher.Write([]byte(keys[i])); err != nil {
-					return 0, err
-				}
-				dbIDs[i] = int(hasher.Sum32()) % len(db.groongaDBs)
+				dbIDs[i] = db.hashText(keys[i]) % len(db.groongaDBs)
 				numRecordsPerDBs[dbIDs[i]]++
 			}
 		default:
