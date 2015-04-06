@@ -36,6 +36,10 @@ gnx_bool gnx_insert_row(grn_ctx *ctx, const char *table_name,
                         gnx_data_type key_type, const void *key,
                         gnx_int *row_id);
 
+gnx_bool gnx_set_value(grn_ctx *ctx, const char *table_name,
+                       const char *column_name, gnx_int row_id,
+                       gnx_data_type value_type, const void *value);
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus

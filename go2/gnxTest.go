@@ -261,7 +261,8 @@ func testC() {
 		for i, key := range keys {
 			inserted, rowID, err := db.InsertRow("Table", key)
 			if err != nil {
-				log.Fatalln("err:", err)
+				log.Println(err)
+				return
 			}
 			fmt.Printf("i: %v, key: %v, inserted: %v, rowID: %v\n",
 				i, key, inserted, rowID)
@@ -289,7 +290,8 @@ func testC() {
 		for i, key := range keys {
 			inserted, rowID, err := db.InsertRow("Table2", key)
 			if err != nil {
-				log.Fatalln("err:", err)
+				log.Println(err)
+				return
 			}
 			fmt.Printf("i: %v, key: %v, inserted: %v, rowID: %v\n",
 				i, key, inserted, rowID)
@@ -317,7 +319,8 @@ func testC() {
 		for i, key := range keys {
 			inserted, rowID, err := db.InsertRow("Table3", key)
 			if err != nil {
-				log.Fatalln("err:", err)
+				log.Println(err)
+				return
 			}
 			fmt.Printf("i: %v, key: %v, inserted: %v, rowID: %v\n",
 				i, key, inserted, rowID)
@@ -345,7 +348,8 @@ func testC() {
 		for i, key := range keys {
 			inserted, rowID, err := db.InsertRow("Table4", key)
 			if err != nil {
-				log.Fatalln("err:", err)
+				log.Println(err)
+				return
 			}
 			fmt.Printf("i: %v, key: %v, inserted: %v, rowID: %v\n",
 				i, key, inserted, rowID)
@@ -362,8 +366,92 @@ func testC() {
 	}
 }
 
+func testD() {
+	log.Println("testC()")
+
+	db, dir, err := gnx.CreateTempDB("", "gnxConsole", 3)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	defer os.RemoveAll(dir)
+	defer db.Close()
+
+	for i := 0; i < 3; i++ {
+		_, err = db.GroongaQuery(i, "table_create Table TABLE_NO_KEY")
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		_, err = db.GroongaQuery(
+			i, "column_create Table Value1 COLUMN_SCALAR Int32")
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		_, err = db.GroongaQuery(
+			i, "column_create Table Value2 COLUMN_SCALAR Float")
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		_, err = db.GroongaQuery(
+			i, "column_create Table Value3 COLUMN_SCALAR Text")
+		if err != nil {
+			log.Println(err)
+			return
+		}
+	}
+
+	var rowIDs []gnx.Int
+	for i := 0; i < 5; i++ {
+		inserted, rowID, err := db.InsertRow("Table", nil)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		fmt.Printf("i: %v, key: %v, inserted: %v, rowID: %v\n",
+			i, nil, inserted, rowID)
+		rowIDs = append(rowIDs, rowID)
+	}
+
+	values1 := []gnx.Int{
+		gnx.Int(10), gnx.Int(20), gnx.Int(30), gnx.Int(40), gnx.Int(50)}
+	values2 := []gnx.Float{
+		gnx.Float(1.25), gnx.Float(2.5), gnx.Float(3.75),
+		gnx.Float(5.0), gnx.Float(6.25)}
+	values3 := []gnx.Text{
+		gnx.Text("Apple"), gnx.Text("Banana"), gnx.Text("Orange"),
+		gnx.Text("Pineapple"), gnx.Text("Strawberry")}
+	for i, rowID := range rowIDs {
+		if err := db.SetValue("Table", "Value1", rowID, values1[i]); err != nil {
+			log.Println(err)
+			return
+		}
+		if err := db.SetValue("Table", "Value2", rowID, values2[i]); err != nil {
+			log.Println(err)
+			return
+		}
+		if err := db.SetValue("Table", "Value3", rowID, values3[i]); err != nil {
+			log.Println(err)
+			return
+		}
+	}
+
+	command := "select Table --limit -1 --cache no"
+	for i := 0; i < 3; i++ {
+		jsonBytes, err := db.GroongaQuery(i, command)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		fmt.Printf("result[%d]: %s\n", i, string(jsonBytes))
+	}
+}
+
 func main() {
 	testA()
 	testB()
 	testC()
+	testD()
 }

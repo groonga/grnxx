@@ -215,7 +215,7 @@ func CreateGroongaDB(path string) (*GroongaDB, error) {
 // Example:
 // db, dir, err := CreateTempGroonggnx.aDB("", "gnx")
 // if err != nil {
-//   log.Fatalln(err)
+//	 log.Fatalln(err)
 // }
 // defer os.RemoveAll(dir)
 // defer db.Close()
@@ -570,7 +570,7 @@ func (db *DB) hashInt(value Int) int {
 func (db *DB) hashFloat(value Float) int {
 	hasher := fnv.New32a()
 	binary.Write(hasher, binary.LittleEndian, value)
-	return  int(hasher.Sum32())
+	return int(hasher.Sum32())
 }
 
 func (db *DB) hashText(value Text) int {
@@ -1015,10 +1015,49 @@ func (db *DB) InsertRow(tableName string, key Valuer) (bool, Int, error) {
 		text := C.gnx_text{cValue, C.gnx_int(len(value))}
 		inserted = C.gnx_insert_row(
 			groongaDB.ctx, cTableName, C.GNX_TEXT, unsafe.Pointer(&text), &rowID)
+	default:
+		return false, NAInt(), fmt.Errorf("unsupported key type")
 	}
 	if inserted == C.GNX_NA_BOOL {
-		err = fmt.Errorf("gnx_insert_row() failed")
+		return false, NAInt(), fmt.Errorf("gnx_insert_row() failed")
 	}
 	rowID = ((rowID - 1) * C.gnx_int(len(db.groongaDBs))) + C.gnx_int(dbID) + 1
 	return inserted == C.GNX_TRUE, Int(rowID), err
+}
+
+func (db *DB) SetValue(tableName string, columnName string, rowID Int,
+	value Valuer) error {
+	dbID := int(rowID - 1) % len(db.groongaDBs)
+	rowID = ((rowID - 1) / Int(len(db.groongaDBs))) + 1
+	groongaDB := db.groongaDBs[dbID]
+
+	var ok C.gnx_bool
+	cTableName := C.CString(tableName)
+	defer C.free(unsafe.Pointer(cTableName))
+	cColumnName := C.CString(columnName)
+	defer C.free(unsafe.Pointer(cColumnName))
+	switch v := value.(type) {
+	case nil:
+		ok = C.gnx_set_value(groongaDB.ctx, cTableName, cColumnName,
+			C.gnx_int(rowID), C.GNX_NA, nil)
+	case Int:
+		ok = C.gnx_set_value(groongaDB.ctx, cTableName, cColumnName,
+			C.gnx_int(rowID), C.GNX_INT, unsafe.Pointer(&v))
+	case Float:
+		ok = C.gnx_set_value(groongaDB.ctx, cTableName, cColumnName,
+			C.gnx_int(rowID), C.GNX_FLOAT, unsafe.Pointer(&v))
+//	case GeoPoint:
+	case Text:
+		cValue := C.CString(string(v))
+		defer C.free(unsafe.Pointer(cValue))
+		text := C.gnx_text{cValue, C.gnx_int(len(v))}
+		ok = C.gnx_set_value(groongaDB.ctx, cTableName, cColumnName,
+			C.gnx_int(rowID), C.GNX_TEXT, unsafe.Pointer(&text))
+	default:
+		return fmt.Errorf("unsupported value type")
+	}
+	if ok != C.GNX_TRUE {
+		return fmt.Errorf("gnx_set_value() failed")
+	}
+	return nil
 }
