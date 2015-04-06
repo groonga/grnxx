@@ -1,9 +1,12 @@
 package gnx
 
 /*
+#cgo CXXFLAGS: -std=c++11
+#cgo LDFLAGS: -lgrnxx -lstdc++
 #cgo pkg-config: groonga
 #include <groonga.h>
 #include <stdlib.h>
+#include "gnx.h"
 */
 import "C"
 
@@ -982,4 +985,40 @@ func (db *DB) LoadCMap(
 	} else {
 		return db.loadCMap(tableName, columnarRecordsMap)
 	}
+}
+
+func (db *DB) InsertRow(tableName string, key Valuer) (bool, Int, error) {
+	dbID, err := db.selectGroongaDB(key)
+	if err != nil {
+		return false, NAInt(), err
+	}
+	groongaDB := db.groongaDBs[dbID]
+
+	var inserted C.gnx_bool
+	var rowID C.gnx_int
+	cTableName := C.CString(tableName)
+	defer C.free(unsafe.Pointer(cTableName))
+	switch value := key.(type) {
+	case nil:
+		inserted = C.gnx_insert_row(
+			groongaDB.ctx, cTableName, C.GNX_NA, nil, &rowID)
+	case Int:
+		inserted = C.gnx_insert_row(
+			groongaDB.ctx, cTableName, C.GNX_INT, unsafe.Pointer(&value), &rowID)
+	case Float:
+		inserted = C.gnx_insert_row(
+			groongaDB.ctx, cTableName, C.GNX_FLOAT, unsafe.Pointer(&value), &rowID)
+//	case GeoPoint:
+	case Text:
+		cValue := C.CString(string(value))
+		defer C.free(unsafe.Pointer(cValue))
+		text := C.gnx_text{cValue, C.gnx_int(len(value))}
+		inserted = C.gnx_insert_row(
+			groongaDB.ctx, cTableName, C.GNX_TEXT, unsafe.Pointer(&text), &rowID)
+	}
+	if inserted == C.GNX_NA_BOOL {
+		err = fmt.Errorf("gnx_insert_row() failed")
+	}
+	rowID = ((rowID - 1) * C.gnx_int(len(db.groongaDBs))) + C.gnx_int(dbID) + 1
+	return inserted == C.GNX_TRUE, Int(rowID), err
 }

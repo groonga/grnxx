@@ -238,7 +238,132 @@ func testB() {
 	}
 }
 
+func testC() {
+	log.Println("testC()")
+
+	db, dir, err := gnx.CreateTempDB("", "gnxConsole", 2)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	defer os.RemoveAll(dir)
+	defer db.Close()
+
+	{
+		for i := 0; i < 2; i++ {
+			_, err = db.GroongaQuery(i, "table_create Table TABLE_NO_KEY")
+			if err != nil {
+				log.Println(err)
+				return
+			}
+		}
+		keys := []gnx.Valuer{nil, nil, nil}
+		for i, key := range keys {
+			inserted, rowID, err := db.InsertRow("Table", key)
+			if err != nil {
+				log.Fatalln("err:", err)
+			}
+			fmt.Printf("i: %v, key: %v, inserted: %v, rowID: %v\n",
+				i, key, inserted, rowID)
+		}
+		command := "select Table --limit -1 --cache no"
+		for i := 0; i < 2; i++ {
+			jsonBytes, err := db.GroongaQuery(i, command)
+			if err != nil {
+				log.Println(err)
+				return
+			}
+			fmt.Printf("result[%d]: %s\n", i, string(jsonBytes))
+		}
+	}
+
+	{
+		for i := 0; i < 2; i++ {
+			_, err = db.GroongaQuery(i, "table_create Table2 TABLE_PAT_KEY Int32")
+			if err != nil {
+				log.Println(err)
+				return
+			}
+		}
+		keys := []gnx.Valuer{gnx.Int(10), gnx.Int(20), gnx.Int(30)}
+		for i, key := range keys {
+			inserted, rowID, err := db.InsertRow("Table2", key)
+			if err != nil {
+				log.Fatalln("err:", err)
+			}
+			fmt.Printf("i: %v, key: %v, inserted: %v, rowID: %v\n",
+				i, key, inserted, rowID)
+		}
+		command := "select Table2 --limit -1 --cache no"
+		for i := 0; i < 2; i++ {
+			jsonBytes, err := db.GroongaQuery(i, command)
+			if err != nil {
+				log.Println(err)
+				return
+			}
+			fmt.Printf("result[%d]: %s\n", i, string(jsonBytes))
+		}
+	}
+
+	{
+		for i := 0; i < 2; i++ {
+			_, err = db.GroongaQuery(i, "table_create Table3 TABLE_PAT_KEY Float")
+			if err != nil {
+				log.Println(err)
+				return
+			}
+		}
+		keys := []gnx.Valuer{gnx.Float(1.25), gnx.Float(2.5), gnx.Float(3.75)}
+		for i, key := range keys {
+			inserted, rowID, err := db.InsertRow("Table3", key)
+			if err != nil {
+				log.Fatalln("err:", err)
+			}
+			fmt.Printf("i: %v, key: %v, inserted: %v, rowID: %v\n",
+				i, key, inserted, rowID)
+		}
+		command := "select Table3 --limit -1 --cache no"
+		for i := 0; i < 2; i++ {
+			jsonBytes, err := db.GroongaQuery(i, command)
+			if err != nil {
+				log.Println(err)
+				return
+			}
+			fmt.Printf("result[%d]: %s\n", i, string(jsonBytes))
+		}
+	}
+
+	{
+		for i := 0; i < 2; i++ {
+			_, err = db.GroongaQuery(i, "table_create Table4 TABLE_PAT_KEY ShortText")
+			if err != nil {
+				log.Println(err)
+				return
+			}
+		}
+		keys := []gnx.Valuer{gnx.Text("cat"), gnx.Text("dog"), gnx.Text("horse")}
+		for i, key := range keys {
+			inserted, rowID, err := db.InsertRow("Table4", key)
+			if err != nil {
+				log.Fatalln("err:", err)
+			}
+			fmt.Printf("i: %v, key: %v, inserted: %v, rowID: %v\n",
+				i, key, inserted, rowID)
+		}
+		command := "select Table4 --limit -1 --cache no"
+		for i := 0; i < 2; i++ {
+			jsonBytes, err := db.GroongaQuery(i, command)
+			if err != nil {
+				log.Println(err)
+				return
+			}
+			fmt.Printf("result[%d]: %s\n", i, string(jsonBytes))
+		}
+	}
+}
+
 func main() {
 	testA()
 	testB()
+	testC()
 }
