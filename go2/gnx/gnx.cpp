@@ -71,6 +71,12 @@ gnx_bool gnx_set_value(grn_ctx *ctx, const char *table_name,
 //    case GNX_NA: {
 //      break;
 //    }
+    case GNX_BOOL: {
+      GRN_BOOL_INIT(&obj, 0);
+      GRN_BOOL_SET(ctx, &obj,
+        *static_cast<const gnx_bool *>(value) == GNX_TRUE);
+      break;
+    }
     case GNX_INT: {
       GRN_INT64_INIT(&obj, 0);
       GRN_INT64_SET(ctx, &obj, *static_cast<const gnx_int *>(value));

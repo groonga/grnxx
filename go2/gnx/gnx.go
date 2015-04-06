@@ -1037,9 +1037,12 @@ func (db *DB) SetValue(tableName string, columnName string, rowID Int,
 	cColumnName := C.CString(columnName)
 	defer C.free(unsafe.Pointer(cColumnName))
 	switch v := value.(type) {
-	case nil:
+//	case nil:
+//		ok = C.gnx_set_value(groongaDB.ctx, cTableName, cColumnName,
+//			C.gnx_int(rowID), C.GNX_NA, nil)
+	case Bool:
 		ok = C.gnx_set_value(groongaDB.ctx, cTableName, cColumnName,
-			C.gnx_int(rowID), C.GNX_NA, nil)
+			C.gnx_int(rowID), C.GNX_BOOL, unsafe.Pointer(&v))
 	case Int:
 		ok = C.gnx_set_value(groongaDB.ctx, cTableName, cColumnName,
 			C.gnx_int(rowID), C.GNX_INT, unsafe.Pointer(&v))

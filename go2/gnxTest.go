@@ -384,19 +384,25 @@ func testD() {
 			return
 		}
 		_, err = db.GroongaQuery(
-			i, "column_create Table Value1 COLUMN_SCALAR Int32")
+			i, "column_create Table Value1 COLUMN_SCALAR Bool")
 		if err != nil {
 			log.Println(err)
 			return
 		}
 		_, err = db.GroongaQuery(
-			i, "column_create Table Value2 COLUMN_SCALAR Float")
+			i, "column_create Table Value2 COLUMN_SCALAR Int32")
 		if err != nil {
 			log.Println(err)
 			return
 		}
 		_, err = db.GroongaQuery(
-			i, "column_create Table Value3 COLUMN_SCALAR Text")
+			i, "column_create Table Value3 COLUMN_SCALAR Float")
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		_, err = db.GroongaQuery(
+			i, "column_create Table Value4 COLUMN_SCALAR Text")
 		if err != nil {
 			log.Println(err)
 			return
@@ -415,12 +421,14 @@ func testD() {
 		rowIDs = append(rowIDs, rowID)
 	}
 
-	values1 := []gnx.Int{
+	values1 := []gnx.Bool{
+		gnx.FALSE, gnx.TRUE, gnx.NABool(), gnx.FALSE, gnx.TRUE}
+	values2 := []gnx.Int{
 		gnx.Int(10), gnx.Int(20), gnx.Int(30), gnx.Int(40), gnx.Int(50)}
-	values2 := []gnx.Float{
+	values3 := []gnx.Float{
 		gnx.Float(1.25), gnx.Float(2.5), gnx.Float(3.75),
 		gnx.Float(5.0), gnx.Float(6.25)}
-	values3 := []gnx.Text{
+	values4 := []gnx.Text{
 		gnx.Text("Apple"), gnx.Text("Banana"), gnx.Text("Orange"),
 		gnx.Text("Pineapple"), gnx.Text("Strawberry")}
 	for i, rowID := range rowIDs {
@@ -433,6 +441,10 @@ func testD() {
 			return
 		}
 		if err := db.SetValue("Table", "Value3", rowID, values3[i]); err != nil {
+			log.Println(err)
+			return
+		}
+		if err := db.SetValue("Table", "Value4", rowID, values4[i]); err != nil {
 			log.Println(err)
 			return
 		}
