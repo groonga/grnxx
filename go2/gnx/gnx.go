@@ -111,6 +111,10 @@ func (this TextVector) IsNA() bool {
 	return this == nil
 }
 
+func (this Text) MarshalJSON() ([]byte, error) {
+	return json.Marshal(string(this))
+}
+
 // -- Common --
 
 func countColumnarRecords(columnarRecords []interface{}) (int, error) {
@@ -154,6 +158,14 @@ func countColumnarRecords(columnarRecords []interface{}) (int, error) {
 
 type GroongaDB struct {
 	ctx *C.grn_ctx
+}
+
+type GroongaTable struct {
+	obj *C.grn_obj
+}
+
+type GroongaColumn struct {
+	obj *C.grn_obj
 }
 
 var groongaInitCount = 0
@@ -458,10 +470,40 @@ func (db *GroongaDB) loadCMap(
 	return db.loadC(tableName, columnNames, columnarRecords)
 }
 
+func (db *GroongaDB) findTable(tableName string) (*GroongaTable, error) {
+	cTableName := C.CString(tableName)
+	defer C.free(unsafe.Pointer(cTableName))
+  table := C.grn_ctx_get(db.ctx, cTableName, C.int(len(tableName)));
+	if table == nil {
+		return nil, fmt.Errorf("grn_ctx_get() failed")
+	}
+	return &GroongaTable{table}, nil
+}
+
+func (db *GroongaDB) findColumn(
+	table *GroongaTable, columnName string) (*GroongaColumn, error) {
+	cColumnName := C.CString(columnName)
+	defer C.free(unsafe.Pointer(cColumnName))
+	column := C.grn_obj_column(
+		db.ctx, table.obj, cColumnName, C.uint(len(columnName)))
+	if column == nil {
+		return nil, fmt.Errorf("grn_obj_column() failed")
+	}
+	return &GroongaColumn{column}, nil
+}
+
 // -- DB --
 
 type DB struct {
 	groongaDBs []*GroongaDB
+}
+
+type Table struct {
+	groongaTables []*GroongaTable
+}
+
+type Column struct {
+	groongaColumns []*GroongaColumn
 }
 
 func CreateDB(path string, n int) (*DB, error) {
@@ -1055,6 +1097,104 @@ func (db *DB) SetValue(tableName string, columnName string, rowID Int,
 		defer C.free(unsafe.Pointer(cValue))
 		text := C.gnx_text{cValue, C.gnx_int(len(v))}
 		ok = C.gnx_set_value(groongaDB.ctx, cTableName, cColumnName,
+			C.gnx_int(rowID), C.GNX_TEXT, unsafe.Pointer(&text))
+	default:
+		return fmt.Errorf("unsupported value type")
+	}
+	if ok != C.GNX_TRUE {
+		return fmt.Errorf("gnx_set_value() failed")
+	}
+	return nil
+}
+
+func (db *DB) FindTable(tableName string) (*Table, error) {
+	groongaTables := make([]*GroongaTable, len(db.groongaDBs))
+	for i, groongaDB := range db.groongaDBs {
+		groongaTable, err := groongaDB.findTable(tableName)
+		if err != nil {
+			return nil, err
+		}
+		groongaTables[i] = groongaTable
+	}
+	return &Table{groongaTables}, nil
+}
+
+func (db *DB) FindColumn(table *Table, columnName string) (*Column, error) {
+	groongaColumns := make([]*GroongaColumn, len(db.groongaDBs))
+	for i, groongaDB := range db.groongaDBs {
+		groongaColumn, err :=
+			groongaDB.findColumn(table.groongaTables[i], columnName)
+		if err != nil {
+			return nil, err
+		}
+		groongaColumns[i] = groongaColumn
+	}
+	return &Column{groongaColumns}, nil
+}
+
+func (db *DB) InsertRow2(table *Table, key Valuer) (bool, Int, error) {
+	dbID, err := db.selectGroongaDB(key)
+	if err != nil {
+		return false, NAInt(), err
+	}
+	groongaDB := db.groongaDBs[dbID]
+	groongaTable := table.groongaTables[dbID]
+
+	var inserted C.gnx_bool
+	var rowID C.gnx_int
+	switch value := key.(type) {
+	case nil:
+		inserted = C.gnx_insert_row2(groongaDB.ctx, groongaTable.obj,
+			C.GNX_NA, nil, &rowID)
+	case Int:
+		inserted = C.gnx_insert_row2(groongaDB.ctx, groongaTable.obj,
+			C.GNX_INT, unsafe.Pointer(&value), &rowID)
+	case Float:
+		inserted = C.gnx_insert_row2(groongaDB.ctx, groongaTable.obj,
+			C.GNX_FLOAT, unsafe.Pointer(&value), &rowID)
+//	case GeoPoint:
+	case Text:
+		cValue := C.CString(string(value))
+		defer C.free(unsafe.Pointer(cValue))
+		text := C.gnx_text{cValue, C.gnx_int(len(value))}
+		inserted = C.gnx_insert_row2(groongaDB.ctx, groongaTable.obj,
+			C.GNX_TEXT, unsafe.Pointer(&text), &rowID)
+	default:
+		return false, NAInt(), fmt.Errorf("unsupported key type")
+	}
+	if inserted == C.GNX_NA_BOOL {
+		return false, NAInt(), fmt.Errorf("gnx_insert_row() failed")
+	}
+	rowID = ((rowID - 1) * C.gnx_int(len(db.groongaDBs))) + C.gnx_int(dbID) + 1
+	return inserted == C.GNX_TRUE, Int(rowID), err
+}
+
+func (db *DB) SetValue2(column *Column, rowID Int, value Valuer) error {
+	dbID := int(rowID - 1) % len(db.groongaDBs)
+	rowID = ((rowID - 1) / Int(len(db.groongaDBs))) + 1
+	groongaDB := db.groongaDBs[dbID]
+	groongaColumn := column.groongaColumns[dbID]
+
+	var ok C.gnx_bool
+	switch v := value.(type) {
+//	case nil:
+//		ok = C.gnx_set_value2(groongaDB.ctx, groongaColumn.obj,
+//			C.gnx_int(rowID), C.GNX_NA, nil)
+	case Bool:
+		ok = C.gnx_set_value2(groongaDB.ctx, groongaColumn.obj,
+			C.gnx_int(rowID), C.GNX_BOOL, unsafe.Pointer(&v))
+	case Int:
+		ok = C.gnx_set_value2(groongaDB.ctx, groongaColumn.obj,
+			C.gnx_int(rowID), C.GNX_INT, unsafe.Pointer(&v))
+	case Float:
+		ok = C.gnx_set_value2(groongaDB.ctx, groongaColumn.obj,
+			C.gnx_int(rowID), C.GNX_FLOAT, unsafe.Pointer(&v))
+//	case GeoPoint:
+	case Text:
+		cValue := C.CString(string(v))
+		defer C.free(unsafe.Pointer(cValue))
+		text := C.gnx_text{cValue, C.gnx_int(len(v))}
+		ok = C.gnx_set_value2(groongaDB.ctx, groongaColumn.obj,
 			C.gnx_int(rowID), C.GNX_TEXT, unsafe.Pointer(&text))
 	default:
 		return fmt.Errorf("unsupported value type")

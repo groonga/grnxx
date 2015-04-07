@@ -14,6 +14,12 @@ gnx_bool gnx_insert_row(grn_ctx *ctx, const char *table_name,
     *row_id = GNX_NA_INT;
     return GNX_NA_BOOL;
   }
+  return gnx_insert_row2(ctx, table, key_type, key, row_id);
+}
+
+gnx_bool gnx_insert_row2(grn_ctx *ctx, grn_obj *table,
+                         gnx_data_type key_type, const void *key,
+                         gnx_int *row_id) {
   // TODO: type check.
   unsigned int key_size = 0;
   switch (key_type) {
@@ -66,6 +72,11 @@ gnx_bool gnx_set_value(grn_ctx *ctx, const char *table_name,
   if (!column) {
     return GNX_NA_BOOL;
   }
+  return gnx_set_value2(ctx, column, row_id, value_type, value);
+}
+
+gnx_bool gnx_set_value2(grn_ctx *ctx, grn_obj *column, gnx_int row_id,
+                        gnx_data_type value_type, const void *value) {
   grn_obj obj;
   switch (value_type) {
 //    case GNX_NA: {
