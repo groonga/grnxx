@@ -12,7 +12,7 @@ import "C"
 
 import (
 	"encoding/binary"
-	"encoding/json" // FIXME
+	"encoding/json"
 	"fmt"
 	"hash/fnv"
 	"io/ioutil"
@@ -375,12 +375,15 @@ func (db *GroongaDB) QueryEx(
 
 func (db *GroongaDB) load(
 	tableName string, columnNames []string, records [][]Valuer) (int, error) {
-	jsonRecords, err := json.Marshal(records)
+	jsonBytes, err := json.Marshal(records)
 	if err != nil {
 		return 0, err
 	}
+	jsonString := string(jsonBytes)
+	jsonString = strings.Replace(jsonString, "\\", "\\\\", -1)
+	jsonString = strings.Replace(jsonString, "'", "\\'", -1)
 	command := fmt.Sprintf("load --table '%s' --columns '%s' --values '%s'",
-		tableName, strings.Join(columnNames, ","), string(jsonRecords))
+		tableName, strings.Join(columnNames, ","), jsonString)
 	bytes, err := db.Query(command)
 	if err != nil {
 		return 0, err
@@ -390,12 +393,15 @@ func (db *GroongaDB) load(
 
 func (db *GroongaDB) loadMap(
 	tableName string, recordMaps []map[string]Valuer) (int, error) {
-	jsonRecords, err := json.Marshal(recordMaps)
+	jsonBytes, err := json.Marshal(recordMaps)
 	if err != nil {
 		return 0, err
 	}
+	jsonString := string(jsonBytes)
+	jsonString = strings.Replace(jsonString, "\\", "\\\\", -1)
+	jsonString = strings.Replace(jsonString, "'", "\\'", -1)
 	command := fmt.Sprintf("load --table '%s' --values '%s'",
-		tableName, string(jsonRecords))
+		tableName, jsonString)
 	bytes, err := db.Query(command)
 	if err != nil {
 		return 0, err
