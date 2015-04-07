@@ -65,50 +65,6 @@ func generateCommands() []string {
 			}
 		}
 	}
-
-//	columnsOption := strings.Join(columnNames, ",")
-//	numValues := len(columnNames)
-//	if *flagKey != "" {
-//		if columnsOption == "" {
-//			columnsOption = "_key"
-//		} else {
-//			columnsOption = "_key," + columnsOption
-//		}
-//		numValues += 1
-//	}
-//	loadPrefix := fmt.Sprintf("%s --table Table --columns '%s' --values ",
-//		*flagLoad, columnsOption)
-//	scanner := bufio.NewScanner(os.Stdin)
-//	for i := 0; i < *flagRows; i += *flagBlock {
-//		var blockValues [][]interface{}
-//		for j := 0; (j < *flagBlock) && ((i + j) < *flagRows); j++ {
-//			var rowValues []interface{}
-//			if *flagKey != "" {
-//				rowValues = append(rowValues, generateValue(*flagKey))
-//			}
-//			for _, columnType := range columnTypes {
-//				switch columnType {
-//				case "Text", "LongText":
-//					if scanner.Scan() {
-//						rowValues = append(rowValues, scanner.Text())
-//					} else {
-//						rowValues = append(rowValues, generateValue(columnType))
-//					}
-//				default:
-//					rowValues = append(rowValues, generateValue(columnType))
-//				}
-//			}
-//			blockValues = append(blockValues, rowValues)
-//		}
-//		bytes, err := json.Marshal(blockValues)
-//		if err != nil {
-//			log.Fatalln(err)
-//		}
-//		block := string(bytes)
-//		block = strings.Replace(block, "\\", "\\\\", -1)
-//		block = strings.Replace(block, "'", "\\'", -1)
-//		commands = append(commands, loadPrefix+"'"+block+"'")
-//	}
 	return commands
 }
 
@@ -582,16 +538,127 @@ func benchmarkDirect(commands []string, sources []interface{}) {
 	}
 	endTime := time.Now()
 	fmt.Println("elapsed:", endTime.Sub(startTime))
+}
 
-//	command := fmt.Sprintf("select %s --limit -1 --cache no", tableName)
-//	for i := 0; i < *flagPartition; i++ {
-//		jsonBytes, err := db.GroongaQuery(i, command)
-//		if err != nil {
-//			log.Println(err)
-//			return
-//		}
-//		fmt.Printf("result[%d]: %s\n", i, string(jsonBytes))
-//	}
+func benchmarkDirect2(commands []string, sources []interface{}) {
+	fmt.Println("benchmarkDirect2()")
+
+//	fmt.Println(sources)
+
+	db, dir, err := gnx.CreateTempDB("", "gnx-benchmark", *flagPartition)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	defer os.RemoveAll(dir)
+	defer db.Close()
+	for _, command := range commands {
+		for i := 0; i < *flagPartition; i++ {
+//			fmt.Println(command)
+			if _, err := db.GroongaQuery(i, command); err != nil {
+				log.Fatalln(err)
+			}
+		}
+	}
+
+	file, err := os.Create("Direct2.prof")
+	if err != nil {
+		log.Fatalln(err)
+	}
+	defer file.Close()
+	if err := pprof.StartCPUProfile(file); err != nil {
+		log.Fatalln(err)
+	}
+	defer pprof.StopCPUProfile()
+
+	startTime := time.Now()
+	table, err := db.FindTable(tableName)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	var columns []*gnx.Column
+	for _, columnName := range columnNames {
+		column, err := db.FindColumn(table, columnName)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		columns = append(columns, column)
+	}
+	var rowIDs []gnx.Int
+	if *flagKey == "" {
+		for i := 0; i < *flagRows; i++ {
+			_, rowID, err := db.InsertRow2(table, nil)
+			if err != nil {
+				log.Fatalln(err)
+			}
+			rowIDs = append(rowIDs, rowID)
+		}
+	} else {
+		switch keys := sources[0].(type) {
+		case []gnx.Int:
+			for _, key := range keys {
+				_, rowID, err := db.InsertRow2(table, key)
+				if err != nil {
+					log.Fatalln(err)
+				}
+				rowIDs = append(rowIDs, rowID)
+			}
+		case []gnx.Float:
+			for _, key := range keys {
+				_, rowID, err := db.InsertRow2(table, key)
+				if err != nil {
+					log.Fatalln(err)
+				}
+				rowIDs = append(rowIDs, rowID)
+			}
+		case []gnx.Text:
+			for _, key := range keys {
+				_, rowID, err := db.InsertRow2(table, key)
+				if err != nil {
+					log.Fatalln(err)
+				}
+				rowIDs = append(rowIDs, rowID)
+			}
+		default:
+			log.Fatalln("unsupported key type")
+		}
+	}
+	for i, source := range sources {
+		if columnNames[i] == "_key" {
+			continue
+		}
+		switch values := source.(type) {
+		case []gnx.Bool:
+			for j, value := range values {
+				err := db.SetValue2(columns[i], rowIDs[j], value)
+				if err != nil {
+					log.Fatalln(err)
+				}
+			}
+		case []gnx.Int:
+			for j, value := range values {
+				err := db.SetValue2(columns[i], rowIDs[j], value)
+				if err != nil {
+					log.Fatalln(err)
+				}
+			}
+		case []gnx.Float:
+			for j, value := range values {
+				err := db.SetValue2(columns[i], rowIDs[j], value)
+				if err != nil {
+					log.Fatalln(err)
+				}
+			}
+		case []gnx.Text:
+			for j, value := range values {
+				err := db.SetValue2(columns[i], rowIDs[j], value)
+				if err != nil {
+					log.Fatalln(err)
+				}
+			}
+		}
+	}
+	endTime := time.Now()
+	fmt.Println("elapsed:", endTime.Sub(startTime))
 }
 
 func benchmark() {
@@ -608,6 +675,7 @@ func benchmark() {
 	benchmarkLoadC(commands, sources)
 	benchmarkLoadCMap(commands, sources)
 	benchmarkDirect(commands, sources)
+	benchmarkDirect2(commands, sources)
 }
 
 func print() {
