@@ -1070,7 +1070,7 @@ func (db *DB) InsertRow(tableName string, key Valuer) (bool, Int, error) {
 		return false, NAInt(), fmt.Errorf("gnx_insert_row() failed")
 	}
 	rowID = ((rowID - 1) * C.gnx_int(len(db.groongaDBs))) + C.gnx_int(dbID) + 1
-	return inserted == C.GNX_TRUE, Int(rowID), err
+	return inserted == C.GNX_TRUE, Int(rowID), nil
 }
 
 func (db *DB) SetValue(tableName string, columnName string, rowID Int,
@@ -1172,7 +1172,7 @@ func (db *DB) InsertRow2(table *Table, key Valuer) (bool, Int, error) {
 		return false, NAInt(), fmt.Errorf("gnx_insert_row() failed")
 	}
 	rowID = ((rowID - 1) * C.gnx_int(len(db.groongaDBs))) + C.gnx_int(dbID) + 1
-	return inserted == C.GNX_TRUE, Int(rowID), err
+	return inserted == C.GNX_TRUE, Int(rowID), nil
 }
 
 func (db *DB) SetValue2(column *Column, rowID Int, value Valuer) error {
