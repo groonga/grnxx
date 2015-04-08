@@ -45,6 +45,24 @@ gnx_bool gnx_set_value(grn_ctx *ctx, const char *table_name,
 gnx_bool gnx_set_value2(grn_ctx *ctx,grn_obj *column, gnx_int row_id,
                         gnx_data_type value_type, const void *value);
 
+gnx_int gnx_insert_rows(grn_ctx *ctx, const char *table_name,
+                        gnx_int num_keys, gnx_data_type key_type,
+                        const void *keys, gnx_int *row_ids,
+                        gnx_bool *inserted);
+gnx_int gnx_insert_rows2(grn_ctx *ctx, grn_obj *table,
+                        gnx_int num_keys, gnx_data_type key_type,
+                        const void *keys, gnx_int *row_ids,
+                        gnx_bool *inserted);
+
+gnx_int gnx_set_values(grn_ctx *ctx, const char *table_name,
+                       const char *column_name, gnx_int num_values,
+                       const gnx_int *row_ids, gnx_data_type value_type,
+                       const void *values, gnx_bool *updated);
+gnx_int gnx_set_values2(grn_ctx *ctx, grn_obj *table, grn_obj *column,
+                        gnx_int num_values, const gnx_int *row_ids,
+                        gnx_data_type value_type, const void *values,
+                        gnx_bool *updated);
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus
