@@ -338,13 +338,14 @@ func testC() {
 
 	{
 		for i := 0; i < 2; i++ {
-			_, err = db.GroongaQuery(i, "table_create Table4 TABLE_PAT_KEY ShortText")
+			_, err = db.GroongaQuery(i, "table_create Table4 TABLE_PAT_KEY WGS84GeoPoint")
 			if err != nil {
 				log.Println(err)
 				return
 			}
 		}
-		keys := []gnx.Valuer{gnx.Text("cat"), gnx.Text("dog"), gnx.Text("horse")}
+		keys := []gnx.Valuer{
+			gnx.GeoPoint{100,200}, gnx.GeoPoint{300,400}, gnx.GeoPoint{500,600}}
 		for i, key := range keys {
 			inserted, rowID, err := db.InsertRow("Table4", key)
 			if err != nil {
@@ -355,6 +356,35 @@ func testC() {
 				i, key, inserted, rowID)
 		}
 		command := "select Table4 --limit -1 --cache no"
+		for i := 0; i < 2; i++ {
+			jsonBytes, err := db.GroongaQuery(i, command)
+			if err != nil {
+				log.Println(err)
+				return
+			}
+			fmt.Printf("result[%d]: %s\n", i, string(jsonBytes))
+		}
+	}
+
+	{
+		for i := 0; i < 2; i++ {
+			_, err = db.GroongaQuery(i, "table_create Table5 TABLE_PAT_KEY ShortText")
+			if err != nil {
+				log.Println(err)
+				return
+			}
+		}
+		keys := []gnx.Valuer{gnx.Text("cat"), gnx.Text("dog"), gnx.Text("horse")}
+		for i, key := range keys {
+			inserted, rowID, err := db.InsertRow("Table5", key)
+			if err != nil {
+				log.Println(err)
+				return
+			}
+			fmt.Printf("i: %v, key: %v, inserted: %v, rowID: %v\n",
+				i, key, inserted, rowID)
+		}
+		command := "select Table5 --limit -1 --cache no"
 		for i := 0; i < 2; i++ {
 			jsonBytes, err := db.GroongaQuery(i, command)
 			if err != nil {
