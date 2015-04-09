@@ -397,7 +397,7 @@ func testC() {
 }
 
 func testD() {
-	log.Println("testC()")
+	log.Println("testD()")
 
 	db, dir, err := gnx.CreateTempDB("", "gnxConsole", 3)
 	if err != nil {
