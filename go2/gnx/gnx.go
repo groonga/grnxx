@@ -29,15 +29,15 @@ import (
 type Bool uint8
 type Int int64
 type Float float64
-//type GeoPoint struct {
-//	Latitude  int32
-//	Longitude int32
-//}
+type GeoPoint struct {
+	Latitude  int32
+	Longitude int32
+}
 type Text []byte
 type BoolVector []Bool
 type IntVector []Int
 type FloatVector []Float
-//type GeoPointVector []GeoPoint
+type GeoPointVector []GeoPoint
 type TextVector []Text
 
 const (
@@ -58,9 +58,9 @@ func NAInt() Int {
 func NAFloat() Float {
 	return Float(math.NaN())
 }
-//func NAGeoPoint() GeoPoint {
-//	return GeoPoint{math.MinInt32, math.MinInt32}
-//}
+func NAGeoPoint() GeoPoint {
+	return GeoPoint{math.MinInt32, math.MinInt32}
+}
 func NAText() Text {
 	return nil
 }
@@ -73,9 +73,9 @@ func NAIntVector() IntVector {
 func NAFloatVector() FloatVector {
 	return nil
 }
-//func NAGeoPointVector() GeoPointVector {
-//	return nil
-//}
+func NAGeoPointVector() GeoPointVector {
+	return nil
+}
 func NATextVector() TextVector {
 	return nil
 }
@@ -89,9 +89,9 @@ func (this Int) IsNA() bool {
 func (this Float) IsNA() bool {
 	return math.IsNaN(float64(this))
 }
-//func (this GeoPoint) IsNA() bool {
-//	return this.Latitude == math.MinInt32
-//}
+func (this GeoPoint) IsNA() bool {
+	return this.Latitude == math.MinInt32
+}
 func (this Text) IsNA() bool {
 	return this == nil
 }
@@ -104,13 +104,16 @@ func (this IntVector) IsNA() bool {
 func (this FloatVector) IsNA() bool {
 	return this == nil
 }
-//func (this GeoPointVector) IsNA() bool {
-//	return this == nil
-//}
+func (this GeoPointVector) IsNA() bool {
+	return this == nil
+}
 func (this TextVector) IsNA() bool {
 	return this == nil
 }
 
+func (this GeoPoint) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf("%dx%d", this.Latitude, this.Longitude)), nil
+}
 func (this Text) MarshalJSON() ([]byte, error) {
 	return json.Marshal(string(this))
 }
@@ -128,6 +131,8 @@ func countColumnarRecords(columnarRecords []interface{}) (int, error) {
 			thisLen = len(values)
 		case []Float:
 			thisLen = len(values)
+		case []GeoPoint:
+			thisLen = len(values)
 		case []Text:
 			thisLen = len(values)
 		case []BoolVector:
@@ -135,6 +140,8 @@ func countColumnarRecords(columnarRecords []interface{}) (int, error) {
 		case []IntVector:
 			thisLen = len(values)
 		case []FloatVector:
+			thisLen = len(values)
+		case []GeoPointVector:
 			thisLen = len(values)
 		case []TextVector:
 			thisLen = len(values)
@@ -621,6 +628,12 @@ func (db *DB) hashFloat(value Float) int {
 	return int(hasher.Sum32())
 }
 
+func (db *DB) hashGeoPoint(value GeoPoint) int {
+	hasher := fnv.New32a()
+	binary.Write(hasher, binary.LittleEndian, value)
+	return int(hasher.Sum32())
+}
+
 func (db *DB) hashText(value Text) int {
 	hasher := fnv.New32a()
 	hasher.Write([]byte(value))
@@ -635,6 +648,8 @@ func (db *DB) selectGroongaDB(key Valuer) (int, error) {
 		return db.hashInt(value) % len(db.groongaDBs), nil
 	case Float:
 		return db.hashFloat(value) % len(db.groongaDBs), nil
+	case GeoPoint:
+		return db.hashGeoPoint(value) % len(db.groongaDBs), nil
 	case Text:
 		return db.hashText(value) % len(db.groongaDBs), nil
 	}
@@ -806,6 +821,11 @@ func (db *DB) loadC(
 				dbIDs[i] = db.hashFloat(keys[i]) % len(db.groongaDBs)
 				numRecordsPerDBs[dbIDs[i]]++
 			}
+		case []GeoPoint:
+			for i := 0; i < numRecords; i++ {
+				dbIDs[i] = db.hashGeoPoint(keys[i]) % len(db.groongaDBs)
+				numRecordsPerDBs[dbIDs[i]]++
+			}
 		case []Text:
 			for i := 0; i < numRecords; i++ {
 				dbIDs[i] = db.hashText(keys[i]) % len(db.groongaDBs)
@@ -854,6 +874,15 @@ func (db *DB) loadC(
 			for j := 0; j < len(db.groongaDBs); j++ {
 				columnarRecordsPerDBs[j][i] = valuesPerDBs[j]
 			}
+		case []GeoPoint:
+			valuesPerDBs := make([][]GeoPoint, len(db.groongaDBs))
+			for j, value := range values {
+				dbID := dbIDs[j]
+				valuesPerDBs[dbID] = append(valuesPerDBs[dbID], value)
+			}
+			for j := 0; j < len(db.groongaDBs); j++ {
+				columnarRecordsPerDBs[j][i] = valuesPerDBs[j]
+			}
 		case []Text:
 			valuesPerDBs := make([][]Text, len(db.groongaDBs))
 			for j, value := range values {
@@ -883,6 +912,15 @@ func (db *DB) loadC(
 			}
 		case []FloatVector:
 			valuesPerDBs := make([][]FloatVector, len(db.groongaDBs))
+			for j, value := range values {
+				dbID := dbIDs[j]
+				valuesPerDBs[dbID] = append(valuesPerDBs[dbID], value)
+			}
+			for j := 0; j < len(db.groongaDBs); j++ {
+				columnarRecordsPerDBs[j][i] = valuesPerDBs[j]
+			}
+		case []GeoPointVector:
+			valuesPerDBs := make([][]GeoPointVector, len(db.groongaDBs))
 			for j, value := range values {
 				dbID := dbIDs[j]
 				valuesPerDBs[dbID] = append(valuesPerDBs[dbID], value)
@@ -1048,21 +1086,23 @@ func (db *DB) InsertRow(tableName string, key Valuer) (bool, Int, error) {
 	defer C.free(unsafe.Pointer(cTableName))
 	switch value := key.(type) {
 	case nil:
-		inserted = C.gnx_insert_row(
-			groongaDB.ctx, cTableName, C.GNX_NA, nil, &rowID)
+		inserted = C.gnx_insert_row(groongaDB.ctx, cTableName,
+			C.GNX_NA, nil, &rowID)
 	case Int:
-		inserted = C.gnx_insert_row(
-			groongaDB.ctx, cTableName, C.GNX_INT, unsafe.Pointer(&value), &rowID)
+		inserted = C.gnx_insert_row(groongaDB.ctx, cTableName,
+			C.GNX_INT, unsafe.Pointer(&value), &rowID)
 	case Float:
-		inserted = C.gnx_insert_row(
-			groongaDB.ctx, cTableName, C.GNX_FLOAT, unsafe.Pointer(&value), &rowID)
-//	case GeoPoint:
+		inserted = C.gnx_insert_row(groongaDB.ctx, cTableName,
+			C.GNX_FLOAT, unsafe.Pointer(&value), &rowID)
+	case GeoPoint:
+		inserted = C.gnx_insert_row(groongaDB.ctx, cTableName,
+			C.GNX_GEO_POINT, unsafe.Pointer(&value), &rowID)
 	case Text:
 		cValue := C.CString(string(value))
 		defer C.free(unsafe.Pointer(cValue))
 		text := C.gnx_text{cValue, C.gnx_int(len(value))}
-		inserted = C.gnx_insert_row(
-			groongaDB.ctx, cTableName, C.GNX_TEXT, unsafe.Pointer(&text), &rowID)
+		inserted = C.gnx_insert_row(groongaDB.ctx, cTableName,
+			C.GNX_TEXT, unsafe.Pointer(&text), &rowID)
 	default:
 		return false, NAInt(), fmt.Errorf("unsupported key type")
 	}
@@ -1097,7 +1137,9 @@ func (db *DB) SetValue(tableName string, columnName string, rowID Int,
 	case Float:
 		ok = C.gnx_set_value(groongaDB.ctx, cTableName, cColumnName,
 			C.gnx_int(rowID), C.GNX_FLOAT, unsafe.Pointer(&v))
-//	case GeoPoint:
+	case GeoPoint:
+		ok = C.gnx_set_value(groongaDB.ctx, cTableName, cColumnName,
+			C.gnx_int(rowID), C.GNX_GEO_POINT, unsafe.Pointer(&v))
 	case Text:
 		cValue := C.CString(string(v))
 		defer C.free(unsafe.Pointer(cValue))
@@ -1158,7 +1200,9 @@ func (db *DB) InsertRow2(table *Table, key Valuer) (bool, Int, error) {
 	case Float:
 		inserted = C.gnx_insert_row2(groongaDB.ctx, groongaTable.obj,
 			C.GNX_FLOAT, unsafe.Pointer(&value), &rowID)
-//	case GeoPoint:
+	case GeoPoint:
+		inserted = C.gnx_insert_row2(groongaDB.ctx, groongaTable.obj,
+			C.GNX_GEO_POINT, unsafe.Pointer(&value), &rowID)
 	case Text:
 		cValue := C.CString(string(value))
 		defer C.free(unsafe.Pointer(cValue))
@@ -1195,7 +1239,9 @@ func (db *DB) SetValue2(column *Column, rowID Int, value Valuer) error {
 	case Float:
 		ok = C.gnx_set_value2(groongaDB.ctx, groongaColumn.obj,
 			C.gnx_int(rowID), C.GNX_FLOAT, unsafe.Pointer(&v))
-//	case GeoPoint:
+	case GeoPoint:
+		ok = C.gnx_set_value2(groongaDB.ctx, groongaColumn.obj,
+			C.gnx_int(rowID), C.GNX_GEO_POINT, unsafe.Pointer(&v))
 	case Text:
 		cValue := C.CString(string(v))
 		defer C.free(unsafe.Pointer(cValue))

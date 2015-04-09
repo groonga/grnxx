@@ -20,7 +20,11 @@ typedef enum gnx_data_type {
 typedef uint8_t gnx_bool;
 typedef int64_t gnx_int;
 typedef double gnx_float;
-//typedef gnx_geo_point struct { int32_t latitude; int32_t longitude; };
+//typedef grn_geo_point gnx_geo_point;
+typedef struct {
+  int32_t latitude;
+  int32_t longitude;
+} gnx_geo_point;
 typedef struct {
   const char *data;
   gnx_int size;

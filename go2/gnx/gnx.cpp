@@ -35,10 +35,10 @@ gnx_bool gnx_insert_row2(grn_ctx *ctx, grn_obj *table,
       key_size = sizeof(gnx_float);
       break;
     }
-//    case GNX_GEO_POINT: {
-//      key_size = sizeof(gnx_geo_point);
-//      break;
-//    }
+    case GNX_GEO_POINT: {
+      key_size = sizeof(gnx_geo_point);
+      break;
+    }
     case GNX_TEXT: {
       gnx_text text = *static_cast<const gnx_text *>(key);
       key = text.data;
@@ -98,9 +98,12 @@ gnx_bool gnx_set_value2(grn_ctx *ctx, grn_obj *column, gnx_int row_id,
       GRN_FLOAT_SET(ctx, &obj, *static_cast<const gnx_float *>(value));
       break;
     }
-//    case GNX_GEO_POINT: {
-//      break;
-//    }
+    case GNX_GEO_POINT: {
+      gnx_geo_point geo_point = *static_cast<const gnx_geo_point *>(value);
+      GRN_WGS84_GEO_POINT_INIT(&obj, 0);
+      GRN_GEO_POINT_SET(ctx, &obj, geo_point.latitude, geo_point.longitude);
+      break;
+    }
     case GNX_TEXT: {
       gnx_text text = *static_cast<const gnx_text *>(value);
       GRN_TEXT_INIT(&obj, 0);
@@ -185,10 +188,23 @@ gnx_int gnx_insert_rows2(grn_ctx *ctx, grn_obj *table,
       }
       break;
     }
-//    case GNX_GEO_POINT: {
-//      key_size = sizeof(gnx_geo_point);
-//      break;
-//    }
+    case GNX_GEO_POINT: {
+      const gnx_geo_point *geo_point_keys =
+        static_cast<const gnx_geo_point *>(keys);
+      for (gnx_int i = 0; i < num_keys; ++i) {
+        int added;
+        grn_id id = grn_table_add(ctx, table, &geo_point_keys[i],
+                                  sizeof(gnx_geo_point), &added);
+        if (id == GRN_ID_NIL) {
+          row_ids[i] = GNX_NA_INT;
+        } else {
+          row_ids[i] = id;
+          ++count;
+        }
+        inserted[i] = added ? GNX_TRUE : GNX_FALSE;
+      }
+      break;
+    }
     case GNX_TEXT: {
       const gnx_text *text_keys = static_cast<const gnx_text *>(keys);
       for (gnx_int i = 0; i < num_keys; ++i) {
@@ -291,9 +307,24 @@ gnx_int gnx_set_values2(grn_ctx *ctx, grn_obj *table, grn_obj *column,
       GRN_OBJ_FIN(ctx, &obj);
       break;
     }
-//    case GNX_GEO_POINT: {
-//      break;
-//    }
+    case GNX_GEO_POINT: {
+      grn_obj obj;
+      GRN_WGS84_GEO_POINT_INIT(&obj, 0);
+      for (gnx_int i = 0; i < num_values; ++i) {
+        gnx_geo_point value = static_cast<const gnx_geo_point *>(values)[i];
+        GRN_GEO_POINT_SET(ctx, &obj, value.latitude, value.longitude);
+        grn_rc rc = grn_obj_set_value(ctx, column, row_ids[i], &obj,
+                                      GRN_OBJ_SET);
+        if (rc == GRN_SUCCESS) {
+          updated[i] = GNX_TRUE;
+          ++count;
+        } else {
+          updated[i] = GNX_FALSE;
+        }
+      }
+      GRN_OBJ_FIN(ctx, &obj);
+      break;
+    }
     case GNX_TEXT: {
       grn_obj obj;
       GRN_TEXT_INIT(&obj, 0);
