@@ -1,0 +1,534 @@
+package gnx
+
+/*
+#cgo pkg-config: groonga
+#include "grn_cgo.h"
+*/
+import "C"
+
+import (
+	"fmt"
+	"reflect"
+	"strings"
+	"unsafe"
+)
+
+// -- Groonga --
+
+// grnInitCount is a counter for automatically initializing and finalizing
+// Groonga.
+var grnInitCount = 0
+
+// DisableGrnInitCount() disables grnInitCount.
+// This is useful if you want to manyally initialize and finalize Groonga.
+func DisableGrnInitCount() {
+	grnInitCount = -1
+}
+
+// GrnInit() initializes Groonga if needed.
+// grnInitCount is incremented and when it changes from 0 to 1, Groonga is
+// initialized.
+func GrnInit() error {
+	switch grnInitCount {
+	case -1: // Disabled.
+		return nil
+	case 0:
+		if rc := C.grn_init(); rc != C.GRN_SUCCESS {
+			return fmt.Errorf("grn_init() failed: rc = %d", rc)
+		}
+	}
+	grnInitCount++
+	return nil
+}
+
+// GrnFin() finalizes Groonga if needed.
+// grnInitCount is decremented and when it changes from 1 to 0, Groonga is
+// finalized.
+func GrnFin() error {
+	switch grnInitCount {
+	case -1: // Disabled.
+		return nil
+	case 0:
+		return fmt.Errorf("Groonga is not initialized yet")
+	case 1:
+		if rc := C.grn_fin(); rc != C.GRN_SUCCESS {
+			return fmt.Errorf("grn_fin() failed: rc = %d", rc)
+		}
+	}
+	grnInitCount--
+	return nil
+}
+
+// openGrnCtx() allocates memory for grn_ctx and initializes it.
+func openGrnCtx() (*C.grn_ctx, error) {
+	if err := GrnInit(); err != nil {
+		return nil, err
+	}
+	ctx := C.grn_ctx_open(0)
+	if ctx == nil {
+		GrnFin()
+		return nil, fmt.Errorf("grn_ctx_open() failed")
+	}
+	return ctx, nil
+}
+
+// closeGrnCtx() finalizes grn_ctx and frees allocated memory.
+func closeGrnCtx(ctx *C.grn_ctx) error {
+	rc := C.grn_ctx_close(ctx)
+	GrnFin()
+	if rc != C.GRN_SUCCESS {
+		return fmt.Errorf("grn_ctx_close() failed: rc = %d", rc)
+	}
+	return nil
+}
+
+// -- GrnDB --
+
+type GrnDB struct {
+	ctx *C.grn_ctx
+	obj *C.grn_obj
+	tables map[string]*GrnTable
+}
+
+// newGrnDB() creates a new GrnDB object.
+func newGrnDB(ctx *C.grn_ctx, obj *C.grn_obj) *GrnDB {
+	return &GrnDB{ctx, obj, make(map[string]*GrnTable)}
+}
+
+// CreateGrnDB() creates a Groonga database and returns a handle to it.
+// A temporary database is created if path is empty.
+func CreateGrnDB(path string) (*GrnDB, error) {
+	ctx, err := openGrnCtx()
+	if err != nil {
+		return nil, err
+	}
+	var cPath *C.char
+	if path != "" {
+		cPath = C.CString(path)
+		defer C.free(unsafe.Pointer(cPath))
+	}
+	obj := C.grn_db_create(ctx, cPath, nil)
+	if obj == nil {
+		closeGrnCtx(ctx)
+		errMsg := C.GoString(&ctx.errbuf[0])
+		return nil, fmt.Errorf("grn_db_create() failed: err = %s", errMsg)
+	}
+	return newGrnDB(ctx, obj), nil
+}
+
+// OpenGrnDB() opens an existing Groonga database and returns a handle.
+func OpenGrnDB(path string) (*GrnDB, error) {
+	ctx, err := openGrnCtx()
+	if err != nil {
+		return nil, err
+	}
+	cPath := C.CString(path)
+	defer C.free(unsafe.Pointer(cPath))
+	obj := C.grn_db_open(ctx, cPath)
+	if obj == nil {
+		closeGrnCtx(ctx)
+		errMsg := C.GoString(&ctx.errbuf[0])
+		return nil, fmt.Errorf("grn_db_open() failed: err = %s", errMsg)
+	}
+	return newGrnDB(ctx, obj), nil
+}
+
+// Close() closes a handle.
+func (db *GrnDB) Close() error {
+	return closeGrnCtx(db.ctx)
+}
+
+// Send() sends a raw command.
+// The given command must be well-formed.
+func (db *GrnDB) Send(command string) error {
+	commandBytes := []byte(command)
+	var cCommand *C.char
+	if len(commandBytes) != 0 {
+		cCommand = (*C.char)(unsafe.Pointer(&commandBytes[0]))
+	}
+	rc := C.grn_ctx_send(db.ctx, cCommand, C.uint(len(commandBytes)), 0)
+	switch {
+	case rc != C.GRN_SUCCESS:
+		errMsg := C.GoString(&db.ctx.errbuf[0])
+		return fmt.Errorf("grn_ctx_send() failed: rc = %d, err = %s", rc, errMsg)
+	case db.ctx.rc != C.GRN_SUCCESS:
+		errMsg := C.GoString(&db.ctx.errbuf[0])
+		return fmt.Errorf("grn_ctx_send() failed: ctx.rc = %d, err = %s",
+			db.ctx.rc, errMsg)
+	}
+	return nil
+}
+
+// SendEx() sends a command with separated options.
+func (db *GrnDB) SendEx(name string, options map[string]string) error {
+	if name == "" {
+		return fmt.Errorf("invalid command: name = <%s>", name)
+	}
+	for _, r := range name {
+		if (r != '_') && (r < 'a') && (r > 'z') {
+			return fmt.Errorf("invalid command: name = <%s>", name)
+		}
+	}
+	commandParts := []string{name}
+	for key, value := range options {
+		if key == "" {
+			return fmt.Errorf("invalid option: key = <%s>", key)
+		}
+		for _, r := range key {
+			if (r != '_') && (r < 'a') && (r > 'z') {
+				return fmt.Errorf("invalid option: key = <%s>", key)
+			}
+		}
+		value = strings.Replace(value, "\\", "\\\\", -1)
+		value = strings.Replace(value, "'", "\\'", -1)
+		commandParts = append(commandParts, fmt.Sprintf("--%s '%s'", key, value))
+	}
+	return db.Send(strings.Join(commandParts, " "))
+}
+
+// Recv() receives the result of commands sent by Send().
+func (db *GrnDB) Recv() ([]byte, error) {
+	var resultBuffer *C.char
+	var resultLength C.uint
+	var flags C.int
+	rc := C.grn_ctx_recv(db.ctx, &resultBuffer, &resultLength, &flags)
+	switch {
+	case rc != C.GRN_SUCCESS:
+		errMsg := C.GoString(&db.ctx.errbuf[0])
+		return nil, fmt.Errorf(
+			"grn_ctx_recv() failed: rc = %d, err = %s", rc, errMsg)
+	case db.ctx.rc != C.GRN_SUCCESS:
+		errMsg := C.GoString(&db.ctx.errbuf[0])
+		return nil, fmt.Errorf(
+			"grn_ctx_recv() failed: ctx.rc = %d, err = %s", db.ctx.rc, errMsg)
+	}
+	result := C.GoBytes(unsafe.Pointer(resultBuffer), C.int(resultLength))
+	return result, nil
+}
+
+// Query() sends a raw command and receive the result.
+func (db *GrnDB) Query(command string) ([]byte, error) {
+	if err := db.Send(command); err != nil {
+		result, _ := db.Recv()
+		return result, err
+	}
+	return db.Recv()
+}
+
+// QueryEx() sends a command with separated options and receives the result.
+func (db *GrnDB) QueryEx(name string, options map[string]string) (
+	[]byte, error) {
+	if err := db.SendEx(name, options); err != nil {
+		result, _ := db.Recv()
+		return result, err
+	}
+	return db.Recv()
+}
+
+// CreateTable() creates a table.
+func (db *GrnDB) CreateTable(name string, options *TableOptions) (*GrnTable, error) {
+	if options == nil {
+		options = NewTableOptions()
+	}
+	optionsMap := make(map[string]string)
+	optionsMap["name"] = name
+	switch options.TableType {
+	case ArrayTable:
+		optionsMap["flags"] = "TABLE_NO_KEY"
+	case HashTable:
+		optionsMap["flags"] = "TABLE_HASH_KEY"
+	case PatTable:
+		optionsMap["flags"] = "TABLE_PAT_KEY"
+	case DatTable:
+		optionsMap["flags"] = "TABLE_DAT_KEY"
+	default:
+		return nil, fmt.Errorf("undefined table type: options = %+v", options)
+	}
+	if options.WithSIS {
+		optionsMap["flags"] += "|KEY_WITH_SIS"
+	}
+	if options.KeyType != "" {
+		switch (options.KeyType) {
+		case "Bool":
+			optionsMap["key_type"] = "Bool"
+		case "Int":
+			optionsMap["key_type"] = "Int64"
+		case "Float":
+			optionsMap["key_type"] = "Float"
+		case "GeoPoint":
+			optionsMap["key_type"] = "WGS84GeoPoint"
+		case "Text":
+			optionsMap["key_type"] = "ShortText"
+		default:
+			if _, err := db.FindTable(options.KeyType); err != nil {
+				return nil, fmt.Errorf("unsupported key type: options = %+v", options)
+			}
+			optionsMap["key_type"] = options.KeyType
+		}
+	}
+	if options.ValueType != "" {
+		switch (options.ValueType) {
+		case "Bool":
+			optionsMap["value_type"] = "Bool"
+		case "Int":
+			optionsMap["value_type"] = "Int64"
+		case "Float":
+			optionsMap["value_type"] = "Float"
+		case "GeoPoint":
+			optionsMap["value_type"] = "WGS84GeoPoint"
+		default:
+			if _, err := db.FindTable(options.ValueType); err != nil {
+				return nil, fmt.Errorf("unsupported value type: options = %+v",
+					options)
+			}
+			optionsMap["value_type"] = options.ValueType
+		}
+	}
+	if options.DefaultTokenizer != "" {
+		optionsMap["default_tokenizer"] = options.DefaultTokenizer
+	}
+	if options.Normalizer != "" {
+		optionsMap["normalizer"] = options.Normalizer
+	}
+	if len(options.TokenFilters) != 0 {
+		optionsMap["token_filters"] = strings.Join(options.TokenFilters, ",")
+	}
+	bytes, err := db.QueryEx("table_create", optionsMap)
+	if err != nil {
+		return nil, err
+	}
+	if string(bytes) != "true" {
+		return nil, fmt.Errorf("table_create failed: name = <%s>", name)
+	}
+	return db.FindTable(name)
+}
+
+// FindTable() finds a table.
+func (db *GrnDB) FindTable(name string) (*GrnTable, error) {
+	if table, ok := db.tables[name]; ok {
+		return table, nil
+	}
+	nameBytes := []byte(name)
+	var cName *C.char
+	if len(nameBytes) != 0 {
+		cName = (*C.char)(unsafe.Pointer(&nameBytes[0]))
+	}
+	obj := C.grn_cgo_find_table(db.ctx, cName, C.int(len(nameBytes)))
+	if obj == nil {
+		return nil, fmt.Errorf("table not found: name = <%s>", name)
+	}
+	var keyInfo C.grn_cgo_type_info
+	if ok := C.grn_cgo_table_get_key_info(db.ctx, obj, &keyInfo); ok != C.GRN_TRUE {
+		return nil, fmt.Errorf("grn_cgo_table_get_key_info() failed: name = <%s>",
+			name)
+	}
+	// Check the key type.
+	var keyType TypeID
+	switch keyInfo.data_type {
+	case C.GRN_DB_VOID:
+		keyType = VoidID
+	case C.GRN_DB_BOOL:
+		keyType = BoolID
+	case C.GRN_DB_INT64:
+		keyType = IntID
+	case C.GRN_DB_FLOAT:
+		keyType = FloatID
+	case C.GRN_DB_WGS84_GEO_POINT:
+		keyType = GeoPointID
+	case C.GRN_DB_SHORT_TEXT:
+		keyType = TextID
+	default:
+		return nil, fmt.Errorf("unsupported key type: data_type = %d",
+			keyInfo.data_type)
+	}
+	// Find the destination table if the key is table reference.
+	var keyTable *GrnTable
+	if keyInfo.ref_table != nil {
+		if keyType == VoidID {
+			return nil, fmt.Errorf("reference to void: name = <%s>", name)
+		}
+		cKeyTableName := C.grn_cgo_table_get_name(db.ctx, keyInfo.ref_table)
+		if cKeyTableName == nil {
+			return nil, fmt.Errorf("grn_cgo_table_get_name() failed")
+		}
+		defer C.free(unsafe.Pointer(cKeyTableName))
+		var err error
+		keyTable, err = db.FindTable(C.GoString(cKeyTableName))
+		if err != nil {
+			return nil, err
+		}
+	}
+	table := newGrnTable(db, obj, name, keyType, keyTable)
+	db.tables[name] = table
+	return table, nil
+}
+
+// CreateColumn() creates a column.
+func (db *GrnDB) CreateColumn(tableName, columnName string, valueType string, options *ColumnOptions) (*GrnColumn, error) {
+	table, err := db.FindTable(tableName)
+	if err != nil {
+		return nil, err
+	}
+	return table.CreateColumn(columnName, valueType, options)
+}
+
+// FindColumn() finds a column.
+func (db *GrnDB) FindColumn(tableName, columnName string) (*GrnColumn, error) {
+	table, err := db.FindTable(tableName)
+	if err != nil {
+		return nil, err
+	}
+	return table.FindColumn(columnName)
+}
+
+// -- GrnTable --
+
+type GrnTable struct {
+	db       *GrnDB
+	obj      *C.grn_obj
+	name     string
+	keyType  TypeID
+	keyTable *GrnTable
+	columns  map[string]*GrnColumn
+}
+
+// newGrnTable() creates a new GrnTable object.
+func newGrnTable(db *GrnDB, obj *C.grn_obj, name string, keyType TypeID,
+	keyTable *GrnTable) *GrnTable {
+	var table GrnTable
+	table.db = db
+	table.obj = obj
+	table.name = name
+	table.keyType = keyType
+	table.keyTable = keyTable
+	table.columns = make(map[string]*GrnColumn)
+	return &table
+}
+
+// CreateColumn() creates a column.
+func (table *GrnTable) CreateColumn(name string, valueType string, options *ColumnOptions) (*GrnColumn, error) {
+	// TODO
+	return nil, fmt.Errorf("not supported yet")
+}
+
+// FindColumn() finds a column.
+func (table *GrnTable) FindColumn(name string) (*GrnColumn, error) {
+	if column, ok := table.columns[name]; ok {
+		return column, nil
+	}
+	// TODO
+	return nil, fmt.Errorf("not supported yet")
+}
+
+// InsertVoid() inserts an empty row.
+func (table *GrnTable) InsertVoid() (bool, Int, error) {
+	if table.keyType != VoidID {
+		return false, NullInt(), fmt.Errorf("key type conflict")
+	}
+	rowInfo := C.grn_cgo_table_insert_void(table.db.ctx, table.obj)
+	if rowInfo.id == C.GRN_ID_NIL {
+		return false, NullInt(), fmt.Errorf("grn_cgo_table_insert_void() failed")
+	}
+	return rowInfo.inserted == C.GRN_TRUE, Int(rowInfo.id), nil
+}
+
+// InsertBool() inserts an empty row.
+func (table *GrnTable) InsertBool(key Bool) (bool, Int, error) {
+	if table.keyType != BoolID {
+		return false, NullInt(), fmt.Errorf("key type conflict")
+	}
+	grnKey := C.grn_bool(C.GRN_FALSE)
+	if key == True {
+		grnKey = C.grn_bool(C.GRN_TRUE)
+	}
+	rowInfo := C.grn_cgo_table_insert_bool(table.db.ctx, table.obj, grnKey)
+	if rowInfo.id == C.GRN_ID_NIL {
+		return false, NullInt(), fmt.Errorf("grn_cgo_table_insert_bool() failed")
+	}
+	return rowInfo.inserted == C.GRN_TRUE, Int(rowInfo.id), nil
+}
+
+// InsertInt() inserts an empty row.
+func (table *GrnTable) InsertInt(key Int) (bool, Int, error) {
+	if table.keyType != IntID {
+		return false, NullInt(), fmt.Errorf("key type conflict")
+	}
+	grnKey := C.int64_t(key)
+	rowInfo := C.grn_cgo_table_insert_int(table.db.ctx, table.obj, grnKey)
+	if rowInfo.id == C.GRN_ID_NIL {
+		return false, NullInt(), fmt.Errorf("grn_cgo_table_insert_int() failed")
+	}
+	return rowInfo.inserted == C.GRN_TRUE, Int(rowInfo.id), nil
+}
+
+// InsertFloat() inserts an empty row.
+func (table *GrnTable) InsertFloat(key Float) (bool, Int, error) {
+	if table.keyType != FloatID {
+		return false, NullInt(), fmt.Errorf("key type conflict")
+	}
+	grnKey := C.double(key)
+	rowInfo := C.grn_cgo_table_insert_float(table.db.ctx, table.obj, grnKey)
+	if rowInfo.id == C.GRN_ID_NIL {
+		return false, NullInt(), fmt.Errorf("grn_cgo_table_insert_float() failed")
+	}
+	return rowInfo.inserted == C.GRN_TRUE, Int(rowInfo.id), nil
+}
+
+// InsertGeoPoint() inserts an empty row.
+func (table *GrnTable) InsertGeoPoint(key GeoPoint) (bool, Int, error) {
+	if table.keyType != GeoPointID {
+		return false, NullInt(), fmt.Errorf("key type conflict")
+	}
+	grnKey := C.grn_geo_point{C.int(key.Latitude), C.int(key.Longitude)}
+	rowInfo := C.grn_cgo_table_insert_geo_point(table.db.ctx, table.obj, grnKey)
+	if rowInfo.id == C.GRN_ID_NIL {
+		return false, NullInt(), fmt.Errorf("grn_cgo_table_insert_geo_point() failed")
+	}
+	return rowInfo.inserted == C.GRN_TRUE, Int(rowInfo.id), nil
+}
+
+// InsertText() inserts an empty row.
+func (table *GrnTable) InsertText(key Text) (bool, Int, error) {
+	if table.keyType != TextID {
+		return false, NullInt(), fmt.Errorf("key type conflict")
+	}
+	var grnKey C.grn_cgo_text
+	if len(key) != 0 {
+		grnKey.ptr = (*C.char)(unsafe.Pointer(&key[0]))
+		grnKey.size = C.size_t(len(key))
+	}
+	rowInfo := C.grn_cgo_table_insert_text(table.db.ctx, table.obj, &grnKey)
+	if rowInfo.id == C.GRN_ID_NIL {
+		return false, NullInt(), fmt.Errorf("grn_cgo_table_insert_text() failed")
+	}
+	return rowInfo.inserted == C.GRN_TRUE, Int(rowInfo.id), nil
+}
+
+// InsertRow() inserts a record.
+// The first return value specifies whether a row is inserted or not.
+// The second return value is the ID of the inserted or found row.
+func (table *GrnTable) InsertRow(key interface{}) (bool, Int, error) {
+	switch value := key.(type) {
+	case nil:
+		return table.InsertVoid()
+	case Bool:
+		return table.InsertBool(value)
+	case Int:
+		return table.InsertInt(value)
+	case Float:
+		return table.InsertFloat(value)
+	case GeoPoint:
+		return table.InsertGeoPoint(value)
+	case Text:
+		return table.InsertText(value)
+	default:
+		return false, NullInt(), fmt.Errorf(
+			"unsupported key type: typeName = <%s>", reflect.TypeOf(key).Name())
+	}
+}
+
+// -- GrnColumn --
+
+type GrnColumn struct {
+	obj *C.grn_obj
+}

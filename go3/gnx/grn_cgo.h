@@ -1,0 +1,59 @@
+#ifndef GRN_CGO_H
+#define GRN_CGO_H
+
+#include <stdint.h>
+#include <stdlib.h>
+
+#include <groonga.h>
+
+typedef struct {
+  const char *ptr;
+  size_t size;
+} grn_cgo_text;
+
+// grn_cgo_find_table() finds a table with the given name.
+// If found, an object associated with the table is returned.
+// If not found, NULL is returned.
+grn_obj *grn_cgo_find_table(grn_ctx *ctx, const char *name, int name_len);
+
+typedef struct {
+	grn_id  data_type;  // Data type (GRN_DB_VOID, GRN_DB_BOOL, etc.).
+	                    // If the type is table reference, the key type of the
+	                    // referenced table is stored.
+	int     dimension;  // Vector depth, 0 means the type is scalar.
+	grn_obj *ref_table; // The referenced table of table reference.
+} grn_cgo_type_info;
+
+// grn_cgo_table_get_key_info() gets information of the table key.
+grn_bool grn_cgo_table_get_key_info(grn_ctx *ctx, grn_obj *table,
+                                    grn_cgo_type_info *key_info);
+
+// grn_cgo_table_get_name() returns the name of table.
+// On success, a non-NULL pointer is returned and it must be freed by free().
+// On failure, NULL is returned.
+char *grn_cgo_table_get_name(grn_ctx *ctx, grn_obj *table);
+
+typedef struct {
+  grn_id   id;       // Row ID, GRN_ID_NIL means the info is invalid.
+  grn_bool inserted; // Inserted or not.
+} grn_cgo_row_info;
+
+// grn_cgo_table_insert_void() inserts an empty row.
+grn_cgo_row_info grn_cgo_table_insert_void(grn_ctx *ctx, grn_obj *table);
+// grn_cgo_table_insert_bool() inserts a row with Bool key.
+grn_cgo_row_info grn_cgo_table_insert_bool(grn_ctx *ctx, grn_obj *table,
+                                           grn_bool key);
+// grn_cgo_table_insert_int() inserts a row with Int key.
+grn_cgo_row_info grn_cgo_table_insert_int(grn_ctx *ctx, grn_obj *table,
+                                          int64_t key);
+// grn_cgo_table_insert_float() inserts a row with Float key.
+grn_cgo_row_info grn_cgo_table_insert_float(grn_ctx *ctx, grn_obj *table,
+                                            double key);
+// grn_cgo_table_insert_geo_point() inserts a row with GeoPoint key.
+grn_cgo_row_info grn_cgo_table_insert_geo_point(grn_ctx *ctx, grn_obj *table,
+                                                grn_geo_point key);
+// grn_cgo_table_insert_text() inserts a row with Text key.
+grn_cgo_row_info grn_cgo_table_insert_text(grn_ctx *ctx, grn_obj *table,
+                                           const grn_cgo_text *key);
+
+#endif  // GRN_CGO_H
