@@ -404,6 +404,15 @@ func (db *GrnDB) FindTable(name string) (*GrnTable, error) {
 	return table, nil
 }
 
+// InsertRow() inserts a record.
+func (db *GrnDB) InsertRow(tableName string, key interface{}) (bool, Int, error) {
+	table, err := db.FindTable(tableName)
+	if err != nil {
+		return false, NullInt(), err
+	}
+	return table.InsertRow(key)
+}
+
 // CreateColumn() creates a column.
 func (db *GrnDB) CreateColumn(tableName, columnName string, valueType string, options *ColumnOptions) (*GrnColumn, error) {
 	table, err := db.FindTable(tableName)
