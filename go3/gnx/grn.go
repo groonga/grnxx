@@ -450,8 +450,8 @@ func newGrnTable(db *GrnDB, obj *C.grn_obj, name string, keyType TypeID,
 	return &table
 }
 
-// InsertVoid() inserts an empty row.
-func (table *GrnTable) InsertVoid() (bool, Int, error) {
+// insertVoid() inserts an empty row.
+func (table *GrnTable) insertVoid() (bool, Int, error) {
 	if table.keyType != VoidID {
 		return false, NullInt(), fmt.Errorf("key type conflict")
 	}
@@ -462,8 +462,8 @@ func (table *GrnTable) InsertVoid() (bool, Int, error) {
 	return rowInfo.inserted == C.GRN_TRUE, Int(rowInfo.id), nil
 }
 
-// InsertBool() inserts an empty row.
-func (table *GrnTable) InsertBool(key Bool) (bool, Int, error) {
+// insertBool() inserts an empty row.
+func (table *GrnTable) insertBool(key Bool) (bool, Int, error) {
 	if table.keyType != BoolID {
 		return false, NullInt(), fmt.Errorf("key type conflict")
 	}
@@ -478,8 +478,8 @@ func (table *GrnTable) InsertBool(key Bool) (bool, Int, error) {
 	return rowInfo.inserted == C.GRN_TRUE, Int(rowInfo.id), nil
 }
 
-// InsertInt() inserts an empty row.
-func (table *GrnTable) InsertInt(key Int) (bool, Int, error) {
+// insertInt() inserts an empty row.
+func (table *GrnTable) insertInt(key Int) (bool, Int, error) {
 	if table.keyType != IntID {
 		return false, NullInt(), fmt.Errorf("key type conflict")
 	}
@@ -491,8 +491,8 @@ func (table *GrnTable) InsertInt(key Int) (bool, Int, error) {
 	return rowInfo.inserted == C.GRN_TRUE, Int(rowInfo.id), nil
 }
 
-// InsertFloat() inserts an empty row.
-func (table *GrnTable) InsertFloat(key Float) (bool, Int, error) {
+// insertFloat() inserts an empty row.
+func (table *GrnTable) insertFloat(key Float) (bool, Int, error) {
 	if table.keyType != FloatID {
 		return false, NullInt(), fmt.Errorf("key type conflict")
 	}
@@ -504,8 +504,8 @@ func (table *GrnTable) InsertFloat(key Float) (bool, Int, error) {
 	return rowInfo.inserted == C.GRN_TRUE, Int(rowInfo.id), nil
 }
 
-// InsertGeoPoint() inserts an empty row.
-func (table *GrnTable) InsertGeoPoint(key GeoPoint) (bool, Int, error) {
+// insertGeoPoint() inserts an empty row.
+func (table *GrnTable) insertGeoPoint(key GeoPoint) (bool, Int, error) {
 	if table.keyType != GeoPointID {
 		return false, NullInt(), fmt.Errorf("key type conflict")
 	}
@@ -517,8 +517,8 @@ func (table *GrnTable) InsertGeoPoint(key GeoPoint) (bool, Int, error) {
 	return rowInfo.inserted == C.GRN_TRUE, Int(rowInfo.id), nil
 }
 
-// InsertText() inserts an empty row.
-func (table *GrnTable) InsertText(key Text) (bool, Int, error) {
+// insertText() inserts an empty row.
+func (table *GrnTable) insertText(key Text) (bool, Int, error) {
 	if table.keyType != TextID {
 		return false, NullInt(), fmt.Errorf("key type conflict")
 	}
@@ -540,17 +540,17 @@ func (table *GrnTable) InsertText(key Text) (bool, Int, error) {
 func (table *GrnTable) InsertRow(key interface{}) (bool, Int, error) {
 	switch value := key.(type) {
 	case nil:
-		return table.InsertVoid()
+		return table.insertVoid()
 	case Bool:
-		return table.InsertBool(value)
+		return table.insertBool(value)
 	case Int:
-		return table.InsertInt(value)
+		return table.insertInt(value)
 	case Float:
-		return table.InsertFloat(value)
+		return table.insertFloat(value)
 	case GeoPoint:
-		return table.InsertGeoPoint(value)
+		return table.insertGeoPoint(value)
 	case Text:
-		return table.InsertText(value)
+		return table.insertText(value)
 	default:
 		return false, NullInt(), fmt.Errorf(
 			"unsupported key type: typeName = <%s>", reflect.TypeOf(key).Name())
