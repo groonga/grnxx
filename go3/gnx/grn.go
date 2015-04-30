@@ -404,7 +404,7 @@ func (db *GrnDB) FindTable(name string) (*GrnTable, error) {
 	return table, nil
 }
 
-// InsertRow() inserts a record.
+// InsertRow() inserts a row.
 func (db *GrnDB) InsertRow(tableName string, key interface{}) (bool, Int, error) {
 	table, err := db.FindTable(tableName)
 	if err != nil {
@@ -471,7 +471,7 @@ func (table *GrnTable) insertVoid() (bool, Int, error) {
 	return rowInfo.inserted == C.GRN_TRUE, Int(rowInfo.id), nil
 }
 
-// insertBool() inserts an empty row.
+// insertBool() inserts a row with Bool key.
 func (table *GrnTable) insertBool(key Bool) (bool, Int, error) {
 	if table.keyType != BoolID {
 		return false, NullInt(), fmt.Errorf("key type conflict")
@@ -487,7 +487,7 @@ func (table *GrnTable) insertBool(key Bool) (bool, Int, error) {
 	return rowInfo.inserted == C.GRN_TRUE, Int(rowInfo.id), nil
 }
 
-// insertInt() inserts an empty row.
+// insertInt() inserts a row with Int key.
 func (table *GrnTable) insertInt(key Int) (bool, Int, error) {
 	if table.keyType != IntID {
 		return false, NullInt(), fmt.Errorf("key type conflict")
@@ -500,7 +500,7 @@ func (table *GrnTable) insertInt(key Int) (bool, Int, error) {
 	return rowInfo.inserted == C.GRN_TRUE, Int(rowInfo.id), nil
 }
 
-// insertFloat() inserts an empty row.
+// insertFloat() inserts a row with Float key.
 func (table *GrnTable) insertFloat(key Float) (bool, Int, error) {
 	if table.keyType != FloatID {
 		return false, NullInt(), fmt.Errorf("key type conflict")
@@ -513,7 +513,7 @@ func (table *GrnTable) insertFloat(key Float) (bool, Int, error) {
 	return rowInfo.inserted == C.GRN_TRUE, Int(rowInfo.id), nil
 }
 
-// insertGeoPoint() inserts an empty row.
+// insertGeoPoint() inserts a row with GeoPoint key.
 func (table *GrnTable) insertGeoPoint(key GeoPoint) (bool, Int, error) {
 	if table.keyType != GeoPointID {
 		return false, NullInt(), fmt.Errorf("key type conflict")
@@ -526,7 +526,7 @@ func (table *GrnTable) insertGeoPoint(key GeoPoint) (bool, Int, error) {
 	return rowInfo.inserted == C.GRN_TRUE, Int(rowInfo.id), nil
 }
 
-// insertText() inserts an empty row.
+// insertText() inserts a row with Text key.
 func (table *GrnTable) insertText(key Text) (bool, Int, error) {
 	if table.keyType != TextID {
 		return false, NullInt(), fmt.Errorf("key type conflict")
@@ -543,7 +543,7 @@ func (table *GrnTable) insertText(key Text) (bool, Int, error) {
 	return rowInfo.inserted == C.GRN_TRUE, Int(rowInfo.id), nil
 }
 
-// InsertRow() inserts a record.
+// InsertRow() inserts a row.
 // The first return value specifies whether a row is inserted or not.
 // The second return value is the ID of the inserted or found row.
 func (table *GrnTable) InsertRow(key interface{}) (bool, Int, error) {
