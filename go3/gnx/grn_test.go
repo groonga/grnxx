@@ -143,7 +143,7 @@ func generateRandomKey(keyType string) interface{} {
 		)
 		latitude := MinLatitude + rand.Intn(MaxLatitude-MinLatitude+1)
 		longitude := MinLongitude + rand.Intn(MaxLongitude-MinLongitude+1)
-		return GeoPoint{ int32(latitude), int32(longitude) }
+		return GeoPoint{int32(latitude), int32(longitude)}
 	case "Text":
 		return Text(strconv.Itoa(rand.Int()))
 	default:

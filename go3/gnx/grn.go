@@ -85,8 +85,8 @@ func closeGrnCtx(ctx *C.grn_ctx) error {
 // -- GrnDB --
 
 type GrnDB struct {
-	ctx *C.grn_ctx
-	obj *C.grn_obj
+	ctx    *C.grn_ctx
+	obj    *C.grn_obj
 	tables map[string]*GrnTable
 }
 
@@ -248,7 +248,7 @@ func (db *GrnDB) CreateTable(name string, options *TableOptions) (*GrnTable, err
 		optionsMap["flags"] += "|KEY_WITH_SIS"
 	}
 	if options.KeyType != "" {
-		switch (options.KeyType) {
+		switch options.KeyType {
 		case "Bool":
 			optionsMap["key_type"] = "Bool"
 		case "Int":
@@ -267,7 +267,7 @@ func (db *GrnDB) CreateTable(name string, options *TableOptions) (*GrnTable, err
 		}
 	}
 	if options.ValueType != "" {
-		switch (options.ValueType) {
+		switch options.ValueType {
 		case "Bool":
 			optionsMap["value_type"] = "Bool"
 		case "Int":
@@ -425,14 +425,14 @@ func (db *GrnDB) FindColumn(tableName, columnName string) (*GrnColumn, error) {
 // -- GrnTable --
 
 type GrnTable struct {
-	db       *GrnDB
-	obj      *C.grn_obj
-	name     string
-	keyType  TypeID
-	keyTable *GrnTable
+	db         *GrnDB
+	obj        *C.grn_obj
+	name       string
+	keyType    TypeID
+	keyTable   *GrnTable
 	valueType  TypeID
 	valueTable *GrnTable
-	columns  map[string]*GrnColumn
+	columns    map[string]*GrnColumn
 }
 
 // newGrnTable() creates a new GrnTable object.
