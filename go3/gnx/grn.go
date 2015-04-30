@@ -358,7 +358,48 @@ func (db *GrnDB) FindTable(name string) (*GrnTable, error) {
 			return nil, err
 		}
 	}
-	table := newGrnTable(db, obj, name, keyType, keyTable)
+	var valueInfo C.grn_cgo_type_info
+	if ok := C.grn_cgo_table_get_value_info(db.ctx, obj, &valueInfo); ok != C.GRN_TRUE {
+		return nil, fmt.Errorf("grn_cgo_table_get_value_info() failed: name = <%s>",
+			name)
+	}
+	// Check the value type.
+	var valueType TypeID
+	switch valueInfo.data_type {
+	case C.GRN_DB_VOID:
+		valueType = VoidID
+	case C.GRN_DB_BOOL:
+		valueType = BoolID
+	case C.GRN_DB_INT64:
+		valueType = IntID
+	case C.GRN_DB_FLOAT:
+		valueType = FloatID
+	case C.GRN_DB_WGS84_GEO_POINT:
+		valueType = GeoPointID
+	case C.GRN_DB_SHORT_TEXT:
+		valueType = TextID
+	default:
+		return nil, fmt.Errorf("unsupported value type: data_type = %d",
+			valueInfo.data_type)
+	}
+	// Find the destination table if the value is table reference.
+	var valueTable *GrnTable
+	if valueInfo.ref_table != nil {
+		if valueType == VoidID {
+			return nil, fmt.Errorf("reference to void: name = <%s>", name)
+		}
+		cValueTableName := C.grn_cgo_table_get_name(db.ctx, valueInfo.ref_table)
+		if cValueTableName == nil {
+			return nil, fmt.Errorf("grn_cgo_table_get_name() failed")
+		}
+		defer C.free(unsafe.Pointer(cValueTableName))
+		var err error
+		valueTable, err = db.FindTable(C.GoString(cValueTableName))
+		if err != nil {
+			return nil, err
+		}
+	}
+	table := newGrnTable(db, obj, name, keyType, keyTable, valueType, valueTable)
 	db.tables[name] = table
 	return table, nil
 }
@@ -389,35 +430,24 @@ type GrnTable struct {
 	name     string
 	keyType  TypeID
 	keyTable *GrnTable
+	valueType  TypeID
+	valueTable *GrnTable
 	columns  map[string]*GrnColumn
 }
 
 // newGrnTable() creates a new GrnTable object.
 func newGrnTable(db *GrnDB, obj *C.grn_obj, name string, keyType TypeID,
-	keyTable *GrnTable) *GrnTable {
+	keyTable *GrnTable, valueType TypeID, valueTable *GrnTable) *GrnTable {
 	var table GrnTable
 	table.db = db
 	table.obj = obj
 	table.name = name
 	table.keyType = keyType
 	table.keyTable = keyTable
+	table.valueType = valueType
+	table.valueTable = valueTable
 	table.columns = make(map[string]*GrnColumn)
 	return &table
-}
-
-// CreateColumn() creates a column.
-func (table *GrnTable) CreateColumn(name string, valueType string, options *ColumnOptions) (*GrnColumn, error) {
-	// TODO
-	return nil, fmt.Errorf("not supported yet")
-}
-
-// FindColumn() finds a column.
-func (table *GrnTable) FindColumn(name string) (*GrnColumn, error) {
-	if column, ok := table.columns[name]; ok {
-		return column, nil
-	}
-	// TODO
-	return nil, fmt.Errorf("not supported yet")
 }
 
 // InsertVoid() inserts an empty row.
@@ -527,8 +557,208 @@ func (table *GrnTable) InsertRow(key interface{}) (bool, Int, error) {
 	}
 }
 
+// CreateColumn() creates a column.
+func (table *GrnTable) CreateColumn(name string, valueType string, options *ColumnOptions) (*GrnColumn, error) {
+	if options == nil {
+		options = NewColumnOptions()
+	}
+	optionsMap := make(map[string]string)
+	optionsMap["table"] = table.name
+	optionsMap["name"] = name
+	switch valueType {
+	case "Bool":
+		optionsMap["type"] = "Bool"
+	case "Int":
+		optionsMap["type"] = "Int64"
+	case "Float":
+		optionsMap["type"] = "Float"
+	case "GeoPoint":
+		optionsMap["type"] = "WGS84GeoPoint"
+	case "Text":
+		optionsMap["type"] = "LongText"
+	default:
+		if _, err := table.db.FindTable(valueType); err != nil {
+			return nil, fmt.Errorf("unsupported value type: valueType = %s", valueType)
+		}
+		optionsMap["type"] = valueType
+	}
+	switch options.ColumnType {
+	case ScalarColumn:
+		optionsMap["flags"] = "COLUMN_SCALAR"
+	case VectorColumn:
+		optionsMap["flags"] = "COLUMN_VECTOR"
+	case IndexColumn:
+		optionsMap["flags"] = "COLUMN_INDEX"
+	default:
+		return nil, fmt.Errorf("undefined column type: options = %+v", options)
+	}
+	switch options.CompressionType {
+	case NoCompression:
+	case ZlibCompression:
+		optionsMap["flags"] = "|COMPRESS_ZLIB"
+	case LzoCompression:
+		optionsMap["flags"] = "|COMRESS_LZO"
+	default:
+		return nil, fmt.Errorf("undefined compression type: options = %+v", options)
+	}
+	if options.WithSection {
+		optionsMap["flags"] += "|WITH_SECTION"
+	}
+	if options.WithWeight {
+		optionsMap["flags"] += "|WITH_WEIGHT"
+	}
+	if options.WithPosition {
+		optionsMap["flags"] += "|WITH_POSITION"
+	}
+	if options.Source != "" {
+		optionsMap["source"] = options.Source
+	}
+	bytes, err := table.db.QueryEx("column_create", optionsMap)
+	if err != nil {
+		return nil, err
+	}
+	if string(bytes) != "true" {
+		return nil, fmt.Errorf("column_create failed: name = <%s>", name)
+	}
+	return table.FindColumn(name)
+}
+
+// findColumn() finds a column.
+func (table *GrnTable) findColumn(name string) (*GrnColumn, error) {
+	if column, ok := table.columns[name]; ok {
+		return column, nil
+	}
+	nameBytes := []byte(name)
+	var cName *C.char
+	if len(nameBytes) != 0 {
+		cName = (*C.char)(unsafe.Pointer(&nameBytes[0]))
+	}
+	obj := C.grn_obj_column(table.db.ctx, table.obj, cName, C.uint(len(name)))
+	if obj == nil {
+		return nil, fmt.Errorf("grn_obj_column() failed: table = %+v, name = <%s>", table, name)
+	}
+	var valueType TypeID
+	var valueTable *GrnTable
+	var isVector bool
+	switch name {
+	case "_id":
+		valueType = IntID
+	case "_key":
+		valueType = table.keyType
+		valueTable = table.keyTable
+	case "_value":
+		valueType = table.valueType
+		valueTable = table.valueTable
+	default:
+		var valueInfo C.grn_cgo_type_info
+		if ok := C.grn_cgo_column_get_value_info(table.db.ctx, obj, &valueInfo); ok != C.GRN_TRUE {
+			return nil, fmt.Errorf("grn_cgo_column_get_value_info() failed: name = <%s>",
+				name)
+		}
+		// Check the value type.
+		switch valueInfo.data_type {
+		case C.GRN_DB_BOOL:
+			valueType = BoolID
+		case C.GRN_DB_INT64:
+			valueType = IntID
+		case C.GRN_DB_FLOAT:
+			valueType = FloatID
+		case C.GRN_DB_WGS84_GEO_POINT:
+			valueType = GeoPointID
+		case C.GRN_DB_SHORT_TEXT, C.GRN_DB_LONG_TEXT:
+			valueType = TextID
+		default:
+			return nil, fmt.Errorf("unsupported value type: data_type = %d",
+				valueInfo.data_type)
+		}
+		isVector = valueInfo.dimension > 0
+		// Find the destination table if the value is table reference.
+		if valueInfo.ref_table != nil {
+			if valueType == VoidID {
+				return nil, fmt.Errorf("reference to void: name = <%s>", name)
+			}
+			cValueTableName := C.grn_cgo_table_get_name(table.db.ctx, valueInfo.ref_table)
+			if cValueTableName == nil {
+				return nil, fmt.Errorf("grn_cgo_table_get_name() failed")
+			}
+			defer C.free(unsafe.Pointer(cValueTableName))
+			var err error
+			valueTable, err = table.db.FindTable(C.GoString(cValueTableName))
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	column := newGrnColumn(table, obj, name, valueType, isVector, valueTable)
+	table.columns[name] = column
+	return column, nil
+}
+
+// FindColumn() finds a column.
+func (table *GrnTable) FindColumn(name string) (*GrnColumn, error) {
+	if column, ok := table.columns[name]; ok {
+		return column, nil
+	}
+	delimPos := strings.IndexByte(name, '.')
+	if delimPos == -1 {
+		return table.findColumn(name)
+	}
+	columnNames := strings.Split(name, ".")
+	column, err := table.findColumn(columnNames[0])
+	if err != nil {
+		return nil, err
+	}
+	isVector := column.isVector
+	valueTable := column.valueTable
+	for _, columnName := range columnNames[1:] {
+		if column.valueTable == nil {
+			return nil, fmt.Errorf("not table reference: column.name = <%s>", column.name)
+		}
+		column, err = column.valueTable.findColumn(columnName)
+		if err != nil {
+			return nil, err
+		}
+		if column.isVector {
+			if isVector {
+				return nil, fmt.Errorf("vector of vector is not supported")
+			}
+			isVector = true
+		}
+	}
+	nameBytes := []byte(name)
+	var cName *C.char
+	if len(nameBytes) != 0 {
+		cName = (*C.char)(unsafe.Pointer(&nameBytes[0]))
+	}
+	obj := C.grn_obj_column(table.db.ctx, table.obj, cName, C.uint(len(name)))
+	if obj == nil {
+		return nil, fmt.Errorf("grn_obj_column() failed: name = <%s>", name)
+	}
+	column = newGrnColumn(table, obj, name, column.valueType, isVector, valueTable)
+	table.columns[name] = column
+	return column, nil
+}
+
 // -- GrnColumn --
 
 type GrnColumn struct {
-	obj *C.grn_obj
+	table      *GrnTable
+	obj        *C.grn_obj
+	name       string
+	valueType  TypeID
+	isVector   bool
+	valueTable *GrnTable
+}
+
+// newGrnColumn() creates a new GrnColumn object.
+func newGrnColumn(table *GrnTable, obj *C.grn_obj, name string,
+	valueType TypeID, isVector bool, valueTable *GrnTable) *GrnColumn {
+	var column GrnColumn
+	column.table = table
+	column.obj = obj
+	column.name = name
+	column.valueType = valueType
+	column.isVector = isVector
+	column.valueTable = valueTable
+	return &column
 }

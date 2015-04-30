@@ -43,6 +43,19 @@ func createTempGrnTable(tb testing.TB, name string, options *TableOptions) (
 	return dirPath, dbPath, db, table
 }
 
+func createTempGrnColumn(tb testing.TB, tableName string,
+	tableOptions *TableOptions, columnName string, valueType string,
+	columnOptions *ColumnOptions) (
+	string, string, *GrnDB, *GrnTable, *GrnColumn) {
+	dirPath, dbPath, db, table := createTempGrnTable(tb, tableName, tableOptions)
+	column, err := table.CreateColumn(columnName, valueType, columnOptions)
+	if err != nil {
+		removeTempGrnDB(tb, dirPath, db)
+		tb.Fatalf("GrnDB.CreateTable() failed: %v", err)
+	}
+	return dirPath, dbPath, db, table, column
+}
+
 func TestCreateGrnDB(t *testing.T) {
 	dirPath, _, db := createTempGrnDB(t)
 	removeTempGrnDB(t, dirPath, db)
@@ -62,6 +75,13 @@ func testGrnDBCreateTableWithKey(t *testing.T, keyType string) {
 	options := NewTableOptions()
 	options.TableType = PatTable
 	options.KeyType = keyType
+	dirPath, _, db, _ := createTempGrnTable(t, "Table", options)
+	removeTempGrnDB(t, dirPath, db)
+}
+
+func testGrnDBCreateTableWithValue(t *testing.T, valueType string) {
+	options := NewTableOptions()
+	options.ValueType = valueType
 	dirPath, _, db, _ := createTempGrnTable(t, "Table", options)
 	removeTempGrnDB(t, dirPath, db)
 }
@@ -89,6 +109,11 @@ func TestGrnDBCreateTable(t *testing.T) {
 	testGrnDBCreateTableWithKey(t, "Float")
 	testGrnDBCreateTableWithKey(t, "GeoPoint")
 	testGrnDBCreateTableWithKey(t, "Text")
+
+	testGrnDBCreateTableWithValue(t, "Bool")
+	testGrnDBCreateTableWithValue(t, "Int")
+	testGrnDBCreateTableWithValue(t, "Float")
+	testGrnDBCreateTableWithValue(t, "GeoPoint")
 
 	testGrnDBCreateTableRef(t, "Bool")
 	testGrnDBCreateTableRef(t, "Int")
@@ -155,4 +180,114 @@ func TestGrnTableInsertRow(t *testing.T) {
 	testGrnTableInsertRow(t, "Float")
 	testGrnTableInsertRow(t, "GeoPoint")
 	testGrnTableInsertRow(t, "Text")
+}
+
+func testGrnTableCreateScalarColumn(t *testing.T, valueType string) {
+	dirPath, _, db, table, _ := createTempGrnColumn(t, "Table", nil, "Value", valueType, nil)
+	defer removeTempGrnDB(t, dirPath, db)
+
+	if column, err := table.FindColumn("_id"); err != nil {
+		t.Fatalf("Table.FindColumn() failed: %v", err)
+	} else {
+		t.Logf("_id: %+v", column)
+	}
+	if column, err := table.FindColumn("Value"); err != nil {
+		t.Fatalf("Table.FindColumn() failed: %v", err)
+	} else {
+		t.Logf("Value: %+v", column)
+	}
+}
+
+func testGrnTableCreateVectorColumn(t *testing.T, valueType string) {
+	options := NewColumnOptions()
+	options.ColumnType = VectorColumn
+	dirPath, _, db, table, _ := createTempGrnColumn(t, "Table", nil, "Value", valueType, options)
+	defer removeTempGrnDB(t, dirPath, db)
+
+	if column, err := table.FindColumn("_id"); err != nil {
+		t.Fatalf("Table.FindColumn() failed: %v", err)
+	} else {
+		t.Logf("_id: %+v", column)
+	}
+	if column, err := table.FindColumn("Value"); err != nil {
+		t.Fatalf("Table.FindColumn() failed: %v", err)
+	} else {
+		t.Logf("Value: %+v", column)
+	}
+}
+
+func testGrnTableCreateScalarRefColumn(t *testing.T, keyType string) {
+	options := NewTableOptions()
+	options.TableType = PatTable
+	options.KeyType = keyType
+	dirPath, _, db, table, _ := createTempGrnColumn(t, "Table", options, "Value", "Table", nil)
+	defer removeTempGrnDB(t, dirPath, db)
+
+	if column, err := table.FindColumn("Value"); err != nil {
+		t.Fatalf("Table.FindColumn() failed: %v", err)
+	} else {
+		t.Logf("Value: %+v", column)
+	}
+	if column, err := table.FindColumn("Value._id"); err != nil {
+		t.Fatalf("Table.FindColumn() failed: %v", err)
+	} else {
+		t.Logf("Value._id: %+v", column)
+	}
+	if column, err := table.FindColumn("Value._key"); err != nil {
+		t.Fatalf("Table.FindColumn() failed: %v", err)
+	} else {
+		t.Logf("Value._key: %+v", column)
+	}
+}
+
+func testGrnTableCreateVectorRefColumn(t *testing.T, keyType string) {
+	tableOptions := NewTableOptions()
+	tableOptions.TableType = PatTable
+	tableOptions.KeyType = keyType
+	columnOptions := NewColumnOptions()
+	columnOptions.ColumnType = VectorColumn
+	dirPath, _, db, table, _ := createTempGrnColumn(t, "Table", tableOptions, "Value", "Table", columnOptions)
+	defer removeTempGrnDB(t, dirPath, db)
+
+	if column, err := table.FindColumn("Value"); err != nil {
+		t.Fatalf("Table.FindColumn() failed: %v", err)
+	} else {
+		t.Logf("Value: %+v", column)
+	}
+	if column, err := table.FindColumn("Value._id"); err != nil {
+		t.Fatalf("Table.FindColumn() failed: %v", err)
+	} else {
+		t.Logf("Value._id: %+v", column)
+	}
+	if column, err := table.FindColumn("Value._key"); err != nil {
+		t.Fatalf("Table.FindColumn() failed: %v", err)
+	} else {
+		t.Logf("Value._key: %+v", column)
+	}
+}
+
+func TestGrnTableCreateColumn(t *testing.T) {
+	testGrnTableCreateScalarColumn(t, "Bool")
+	testGrnTableCreateScalarColumn(t, "Int")
+	testGrnTableCreateScalarColumn(t, "Float")
+	testGrnTableCreateScalarColumn(t, "GeoPoint")
+	testGrnTableCreateScalarColumn(t, "Text")
+
+	testGrnTableCreateVectorColumn(t, "Bool")
+	testGrnTableCreateVectorColumn(t, "Int")
+	testGrnTableCreateVectorColumn(t, "Float")
+	testGrnTableCreateVectorColumn(t, "GeoPoint")
+	testGrnTableCreateVectorColumn(t, "Text")
+
+	testGrnTableCreateScalarRefColumn(t, "Bool")
+	testGrnTableCreateScalarRefColumn(t, "Int")
+	testGrnTableCreateScalarRefColumn(t, "Float")
+	testGrnTableCreateScalarRefColumn(t, "GeoPoint")
+	testGrnTableCreateScalarRefColumn(t, "Text")
+
+	testGrnTableCreateVectorRefColumn(t, "Bool")
+	testGrnTableCreateVectorRefColumn(t, "Int")
+	testGrnTableCreateVectorRefColumn(t, "Float")
+	testGrnTableCreateVectorRefColumn(t, "GeoPoint")
+	testGrnTableCreateVectorRefColumn(t, "Text")
 }

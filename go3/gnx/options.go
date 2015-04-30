@@ -27,6 +27,8 @@ type TableOptions struct {
 	TokenFilters     []string // http://groonga.org/docs/reference/token_filters.html
 }
 
+// NewTableOptions() creates a new TableOptions object with the default
+// settings.
 func NewTableOptions() *TableOptions {
 	var options TableOptions
 	return &options
@@ -62,6 +64,8 @@ type ColumnOptions struct {
 	Source       string
 }
 
+// NewColumnOptions() creates a new ColumnOptions object with the default
+// settings.
 func NewColumnOptions() *ColumnOptions {
 	var options ColumnOptions
 	return &options

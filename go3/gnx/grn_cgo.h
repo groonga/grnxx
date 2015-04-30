@@ -17,16 +17,22 @@ typedef struct {
 grn_obj *grn_cgo_find_table(grn_ctx *ctx, const char *name, int name_len);
 
 typedef struct {
-	grn_id  data_type;  // Data type (GRN_DB_VOID, GRN_DB_BOOL, etc.).
-	                    // If the type is table reference, the key type of the
-	                    // referenced table is stored.
-	int     dimension;  // Vector depth, 0 means the type is scalar.
-	grn_obj *ref_table; // The referenced table of table reference.
+  grn_id  data_type;  // Data type (GRN_DB_VOID, GRN_DB_BOOL, etc.).
+                      // If the type is table reference, the key type of the
+                      // referenced table is stored.
+  int     dimension;  // Vector depth, 0 means the type is scalar.
+  grn_obj *ref_table; // The referenced table of table reference.
 } grn_cgo_type_info;
 
 // grn_cgo_table_get_key_info() gets information of the table key.
 grn_bool grn_cgo_table_get_key_info(grn_ctx *ctx, grn_obj *table,
                                     grn_cgo_type_info *key_info);
+// grn_cgo_table_get_value_info() gets information of the table value.
+grn_bool grn_cgo_table_get_value_info(grn_ctx *ctx, grn_obj *table,
+                                      grn_cgo_type_info *value_info);
+// grn_cgo_column_get_value_info() gets information of the column value.
+grn_bool grn_cgo_column_get_value_info(grn_ctx *ctx, grn_obj *column,
+                                       grn_cgo_type_info *value_info);
 
 // grn_cgo_table_get_name() returns the name of table.
 // On success, a non-NULL pointer is returned and it must be freed by free().

@@ -44,6 +44,9 @@ grn_bool grn_cgo_table_get_key_info(grn_ctx *ctx, grn_obj *table,
           return GRN_TRUE;
         }
         table = grn_ctx_at(ctx, table->header.domain);
+        if (!table) {
+          return GRN_FALSE;
+        }
         if (!key_info->ref_table) {
           key_info->ref_table = table;
         }
@@ -58,6 +61,71 @@ grn_bool grn_cgo_table_get_key_info(grn_ctx *ctx, grn_obj *table,
     }
   }
   return GRN_FALSE;
+}
+
+grn_bool grn_cgo_table_get_value_info(grn_ctx *ctx, grn_obj *table,
+                                      grn_cgo_type_info *value_info) {
+  grn_cgo_init_type_info(value_info);
+  if (!table) {
+    return GRN_FALSE;
+  }
+  switch (table->header.type) {
+    case GRN_TABLE_HASH_KEY:
+    case GRN_TABLE_PAT_KEY:
+    case GRN_TABLE_DAT_KEY:
+    case GRN_TABLE_NO_KEY: {
+      grn_id range = grn_obj_get_range(ctx, table);
+      if (range <= GRN_CGO_MAX_DATA_TYPE_ID) {
+        value_info->data_type = range;
+        return GRN_TRUE;
+      }
+      value_info->ref_table = grn_ctx_at(ctx, range);
+      grn_cgo_type_info key_info;
+      if (!grn_cgo_table_get_key_info(ctx, value_info->ref_table, &key_info)) {
+        return GRN_FALSE;
+      }
+      value_info->data_type = key_info.data_type;
+      return GRN_TRUE;
+    }
+    default: {
+      return GRN_FALSE;
+    }
+  }
+}
+
+grn_bool grn_cgo_column_get_value_info(grn_ctx *ctx, grn_obj *column,
+                                       grn_cgo_type_info *value_info) {
+  grn_cgo_init_type_info(value_info);
+  if (!column) {
+    return GRN_FALSE;
+  }
+  switch (column->header.type) {
+    case GRN_COLUMN_FIX_SIZE: {
+      break;
+    }
+    case GRN_COLUMN_VAR_SIZE: {
+      grn_obj_flags type = column->header.flags & GRN_OBJ_COLUMN_TYPE_MASK;
+      if (type == GRN_OBJ_COLUMN_VECTOR) {
+        ++value_info->dimension;
+      }
+      break;
+    }
+    default: {
+      return GRN_FALSE;
+    }
+  }
+  grn_id range = grn_obj_get_range(ctx, column);
+  if (range <= GRN_CGO_MAX_DATA_TYPE_ID) {
+    value_info->data_type = range;
+    return GRN_TRUE;
+  }
+  value_info->ref_table = grn_ctx_at(ctx, range);
+  grn_cgo_type_info key_info;
+  if (!grn_cgo_table_get_key_info(ctx, value_info->ref_table, &key_info)) {
+    return GRN_FALSE;
+  }
+  value_info->data_type = key_info.data_type;
+  return GRN_TRUE;
 }
 
 char *grn_cgo_table_get_name(grn_ctx *ctx, grn_obj *table) {
