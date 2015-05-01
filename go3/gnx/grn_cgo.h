@@ -7,12 +7,12 @@
 #include <groonga.h>
 
 typedef struct {
-  const char *ptr;
+  char *ptr;
   size_t size;
 } grn_cgo_text;
 
 typedef struct {
-  const void *ptr;
+  void *ptr;
   size_t size;
 } grn_cgo_vector;
 
@@ -102,5 +102,17 @@ grn_bool grn_cgo_column_set_geo_point_vector(grn_ctx *ctx, grn_obj *column,
 grn_bool grn_cgo_column_set_text_vector(grn_ctx *ctx, grn_obj *column,
                                         grn_id id,
                                         const grn_cgo_vector *value);
+
+// TODO: Comment.
+grn_bool grn_cgo_column_get_bool(grn_ctx *ctx, grn_obj *column,
+                                 grn_id id, grn_bool *value);
+grn_bool grn_cgo_column_get_int(grn_ctx *ctx, grn_obj *column,
+                                grn_id id, int64_t *value);
+grn_bool grn_cgo_column_get_float(grn_ctx *ctx, grn_obj *column,
+                                  grn_id id, double *value);
+grn_bool grn_cgo_column_get_geo_point(grn_ctx *ctx, grn_obj *column,
+                                      grn_id id, grn_geo_point *value);
+grn_bool grn_cgo_column_get_text(grn_ctx *ctx, grn_obj *column,
+                                 grn_id id, grn_cgo_text *value);
 
 #endif  // GRN_CGO_H

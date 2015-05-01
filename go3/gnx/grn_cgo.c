@@ -322,3 +322,57 @@ grn_bool grn_cgo_column_set_text_vector(grn_ctx *ctx, grn_obj *column,
   GRN_OBJ_FIN(ctx, &obj);
   return rc == GRN_SUCCESS;
 }
+
+grn_bool grn_cgo_column_get_bool(grn_ctx *ctx, grn_obj *column,
+                                 grn_id id, grn_bool *value) {
+  grn_obj value_obj;
+  GRN_BOOL_INIT(&value_obj, 0);
+  grn_obj_get_value(ctx, column, id, &value_obj);
+  *value = GRN_BOOL_VALUE(&value_obj);
+  GRN_OBJ_FIN(ctx, &value_obj);
+  return GRN_TRUE;
+}
+
+grn_bool grn_cgo_column_get_int(grn_ctx *ctx, grn_obj *column,
+                                grn_id id, int64_t *value) {
+  grn_obj value_obj;
+  GRN_INT64_INIT(&value_obj, 0);
+  grn_obj_get_value(ctx, column, id, &value_obj);
+  *value = GRN_INT64_VALUE(&value_obj);
+  GRN_OBJ_FIN(ctx, &value_obj);
+  return GRN_TRUE;
+}
+
+grn_bool grn_cgo_column_get_float(grn_ctx *ctx, grn_obj *column,
+                                  grn_id id, double *value) {
+  grn_obj value_obj;
+  GRN_FLOAT_INIT(&value_obj, 0);
+  grn_obj_get_value(ctx, column, id, &value_obj);
+  *value = GRN_FLOAT_VALUE(&value_obj);
+  GRN_OBJ_FIN(ctx, &value_obj);
+  return GRN_TRUE;
+}
+
+grn_bool grn_cgo_column_get_geo_point(grn_ctx *ctx, grn_obj *column,
+                                      grn_id id, grn_geo_point *value) {
+  grn_obj value_obj;
+  GRN_WGS84_GEO_POINT_INIT(&value_obj, 0);
+  grn_obj_get_value(ctx, column, id, &value_obj);
+  GRN_GEO_POINT_VALUE(&value_obj, value->latitude, value->longitude);
+  GRN_OBJ_FIN(ctx, &value_obj);
+  return GRN_TRUE;
+}
+
+grn_bool grn_cgo_column_get_text(grn_ctx *ctx, grn_obj *column,
+                                 grn_id id, grn_cgo_text *value) {
+  grn_obj value_obj;
+  GRN_TEXT_INIT(&value_obj, 0);
+  grn_obj_get_value(ctx, column, id, &value_obj);
+  size_t size = GRN_TEXT_LEN(&value_obj);
+  if (size <= value->size) {
+    memcpy(value->ptr, GRN_TEXT_VALUE(&value_obj), size);
+  }
+  value->size = size;
+  GRN_OBJ_FIN(ctx, &value_obj);
+  return GRN_TRUE;
+}

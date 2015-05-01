@@ -955,3 +955,99 @@ func (column *GrnColumn) SetValue(id Int, value interface{}) error {
 			reflect.TypeOf(value).Name())
 	}
 }
+
+// getBool() gets a Bool value.
+func (column *GrnColumn) getBool(id Int) (interface{}, error) {
+	var grnValue C.grn_bool
+	if ok := C.grn_cgo_column_get_bool(column.table.db.ctx, column.obj,
+		C.grn_id(id), &grnValue); ok != C.GRN_TRUE {
+		return nil, fmt.Errorf("grn_cgo_column_get_bool() failed")
+	}
+	if grnValue == C.GRN_TRUE {
+		return True, nil
+	} else {
+		return False, nil
+	}
+}
+
+// getInt() gets an Int value.
+func (column *GrnColumn) getInt(id Int) (interface{}, error) {
+	var grnValue C.int64_t
+	if ok := C.grn_cgo_column_get_int(column.table.db.ctx, column.obj,
+		C.grn_id(id), &grnValue); ok != C.GRN_TRUE {
+		return nil, fmt.Errorf("grn_cgo_column_get_int() failed")
+	}
+	return Int(grnValue), nil
+}
+
+// getFloat() gets a Float value.
+func (column *GrnColumn) getFloat(id Int) (interface{}, error) {
+	var grnValue C.double
+	if ok := C.grn_cgo_column_get_float(column.table.db.ctx, column.obj,
+		C.grn_id(id), &grnValue); ok != C.GRN_TRUE {
+		return nil, fmt.Errorf("grn_cgo_column_get_float() failed")
+	}
+	return Float(grnValue), nil
+}
+
+// getGeoPoint() gets a GeoPoint value.
+func (column *GrnColumn) getGeoPoint(id Int) (interface{}, error) {
+	var grnValue C.grn_geo_point
+	if ok := C.grn_cgo_column_get_geo_point(column.table.db.ctx, column.obj,
+		C.grn_id(id), &grnValue); ok != C.GRN_TRUE {
+		return nil, fmt.Errorf("grn_cgo_column_get_geo_point() failed")
+	}
+	return GeoPoint{int32(grnValue.latitude), int32(grnValue.longitude)}, nil
+}
+
+// getText() gets a Text value.
+func (column *GrnColumn) getText(id Int) (interface{}, error) {
+	var grnValue C.grn_cgo_text
+	if ok := C.grn_cgo_column_get_text(column.table.db.ctx, column.obj,
+		C.grn_id(id), &grnValue); ok != C.GRN_TRUE {
+		return nil, fmt.Errorf("grn_cgo_column_get_text() failed")
+	}
+	if grnValue.size == 0 {
+		return make(Text, 0), nil
+	}
+	value := make(Text, int(grnValue.size))
+	grnValue.ptr = (*C.char)(unsafe.Pointer(&value[0]))
+	if ok := C.grn_cgo_column_get_text(column.table.db.ctx, column.obj,
+		C.grn_id(id), &grnValue); ok != C.GRN_TRUE {
+		return nil, fmt.Errorf("grn_cgo_column_get_text() failed")
+	}
+	return value, nil
+}
+
+// GetValue() gets a value.
+// TODO: GetValue() should use allocated spaces for better performance.
+func (column *GrnColumn) GetValue(id Int) (interface{}, error) {
+	if !column.isVector {
+		switch column.valueType {
+		case BoolID:
+			return column.getBool(id)
+		case IntID:
+			return column.getInt(id)
+		case FloatID:
+			return column.getFloat(id)
+		case GeoPointID:
+			return column.getGeoPoint(id)
+		case TextID:
+			return column.getText(id)
+		}
+	} else {
+		switch column.valueType {
+		case BoolID:
+			return nil, fmt.Errorf("not supported yet")
+		case IntID:
+			return nil, fmt.Errorf("not supported yet")
+		case FloatID:
+			return nil, fmt.Errorf("not supported yet")
+		case GeoPointID:
+			return nil, fmt.Errorf("not supported yet")
+		case TextID:
+			return nil, fmt.Errorf("not supported yet")
+		}
+	}
+	return nil, fmt.Errorf("undefined value type: valueType = %d", column.valueType)
+}
