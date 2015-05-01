@@ -771,3 +771,187 @@ func newGrnColumn(table *GrnTable, obj *C.grn_obj, name string,
 	column.valueTable = valueTable
 	return &column
 }
+
+// setBool() assigns a Bool value.
+func (column *GrnColumn) setBool(id Int, value Bool) error {
+	if (column.valueType != BoolID) || column.isVector {
+		return fmt.Errorf("value type conflict")
+	}
+	var grnValue C.grn_bool = C.GRN_FALSE
+	if value == True {
+		grnValue = C.GRN_TRUE
+	}
+	if ok := C.grn_cgo_column_set_bool(column.table.db.ctx, column.obj,
+		C.grn_id(id), grnValue); ok != C.GRN_TRUE {
+		return fmt.Errorf("grn_cgo_column_set_bool() failed")
+	}
+	return nil
+}
+
+// setInt() assigns an Int value.
+func (column *GrnColumn) setInt(id Int, value Int) error {
+	if (column.valueType != IntID) || column.isVector {
+		return fmt.Errorf("value type conflict")
+	}
+	grnValue := C.int64_t(value)
+	if ok := C.grn_cgo_column_set_int(column.table.db.ctx, column.obj,
+		C.grn_id(id), grnValue); ok != C.GRN_TRUE {
+		return fmt.Errorf("grn_cgo_column_set_int() failed")
+	}
+	return nil
+}
+
+// setFloat() assigns a Float value.
+func (column *GrnColumn) setFloat(id Int, value Float) error {
+	if (column.valueType != FloatID) || column.isVector {
+		return fmt.Errorf("value type conflict")
+	}
+	grnValue := C.double(value)
+	if ok := C.grn_cgo_column_set_float(column.table.db.ctx, column.obj,
+		C.grn_id(id), grnValue); ok != C.GRN_TRUE {
+		return fmt.Errorf("grn_cgo_column_set_float() failed")
+	}
+	return nil
+}
+
+// setGeoPoint() assigns a GeoPoint value.
+func (column *GrnColumn) setGeoPoint(id Int, value GeoPoint) error {
+	if (column.valueType != GeoPointID) || column.isVector {
+		return fmt.Errorf("value type conflict")
+	}
+	grnValue := C.grn_geo_point{C.int(value.Latitude), C.int(value.Longitude)}
+	if ok := C.grn_cgo_column_set_geo_point(column.table.db.ctx, column.obj,
+		C.grn_id(id), grnValue); ok != C.GRN_TRUE {
+		return fmt.Errorf("grn_cgo_column_set_geo_point() failed")
+	}
+	return nil
+}
+
+// setText() assigns a Text value.
+func (column *GrnColumn) setText(id Int, value Text) error {
+	if (column.valueType != TextID) || column.isVector {
+		return fmt.Errorf("value type conflict")
+	}
+	var grnValue C.grn_cgo_text
+	if len(value) != 0 {
+		grnValue.ptr = (*C.char)(unsafe.Pointer(&value[0]))
+		grnValue.size = C.size_t(len(value))
+	}
+	if ok := C.grn_cgo_column_set_text(column.table.db.ctx, column.obj,
+		C.grn_id(id), &grnValue); ok != C.GRN_TRUE {
+		return fmt.Errorf("grn_cgo_column_set_text() failed")
+	}
+	return nil
+}
+
+// setBoolVector() assigns a Bool vector.
+func (column *GrnColumn) setBoolVector(id Int, value []Bool) error {
+	grnValue := make([]C.grn_bool, len(value))
+	for i, v := range value {
+		if v == True {
+			grnValue[i] = C.GRN_TRUE
+		}
+	}
+	var grnVector C.grn_cgo_vector
+	if len(grnValue) != 0 {
+		grnVector.ptr = unsafe.Pointer(&grnValue[0])
+		grnVector.size = C.size_t(len(grnValue))
+	}
+	if ok := C.grn_cgo_column_set_bool_vector(column.table.db.ctx, column.obj,
+		C.grn_id(id), &grnVector); ok != C.GRN_TRUE {
+		return fmt.Errorf("grn_cgo_column_set_bool_vector() failed")
+	}
+	return nil
+}
+
+// setIntVector() assigns an Int vector.
+func (column *GrnColumn) setIntVector(id Int, value []Int) error {
+	var grnVector C.grn_cgo_vector
+	if len(value) != 0 {
+		grnVector.ptr = unsafe.Pointer(&value[0])
+		grnVector.size = C.size_t(len(value))
+	}
+	if ok := C.grn_cgo_column_set_int_vector(column.table.db.ctx, column.obj,
+		C.grn_id(id), &grnVector); ok != C.GRN_TRUE {
+		return fmt.Errorf("grn_cgo_column_set_int_vector() failed")
+	}
+	return nil
+}
+
+// setFloatVector() assigns a Float vector.
+func (column *GrnColumn) setFloatVector(id Int, value []Float) error {
+	var grnVector C.grn_cgo_vector
+	if len(value) != 0 {
+		grnVector.ptr = unsafe.Pointer(&value[0])
+		grnVector.size = C.size_t(len(value))
+	}
+	if ok := C.grn_cgo_column_set_float_vector(column.table.db.ctx, column.obj,
+		C.grn_id(id), &grnVector); ok != C.GRN_TRUE {
+		return fmt.Errorf("grn_cgo_column_set_float_vector() failed")
+	}
+	return nil
+}
+
+// setGeoPointVector() assigns a GeoPoint vector.
+func (column *GrnColumn) setGeoPointVector(id Int, value []GeoPoint) error {
+	var grnVector C.grn_cgo_vector
+	if len(value) != 0 {
+		grnVector.ptr = unsafe.Pointer(&value[0])
+		grnVector.size = C.size_t(len(value))
+	}
+	if ok := C.grn_cgo_column_set_geo_point_vector(column.table.db.ctx,
+		column.obj, C.grn_id(id), &grnVector); ok != C.GRN_TRUE {
+		return fmt.Errorf("grn_cgo_column_set_geo_point_vector() failed")
+	}
+	return nil
+}
+
+// setTextVector() assigns a Text vector.
+func (column *GrnColumn) setTextVector(id Int, value []Text) error {
+	grnValue := make([]C.grn_cgo_text, len(value))
+	for i, v := range value {
+		if len(v) != 0 {
+			grnValue[i].ptr = (*C.char)(unsafe.Pointer(&v[0]))
+			grnValue[i].size = C.size_t(len(v))
+		}
+	}
+	var grnVector C.grn_cgo_vector
+	if len(grnValue) != 0 {
+		grnVector.ptr = unsafe.Pointer(&grnValue[0])
+		grnVector.size = C.size_t(len(grnValue))
+	}
+	if ok := C.grn_cgo_column_set_text_vector(column.table.db.ctx,
+		column.obj, C.grn_id(id), &grnVector); ok != C.GRN_TRUE {
+		return fmt.Errorf("grn_cgo_column_set_text_vector() failed")
+	}
+	return nil
+}
+
+// SetValue() assigns a value.
+func (column *GrnColumn) SetValue(id Int, value interface{}) error {
+	switch v := value.(type) {
+	case Bool:
+		return column.setBool(id, v)
+	case Int:
+		return column.setInt(id, v)
+	case Float:
+		return column.setFloat(id, v)
+	case GeoPoint:
+		return column.setGeoPoint(id, v)
+	case Text:
+		return column.setText(id, v)
+	case []Bool:
+		return column.setBoolVector(id, v)
+	case []Int:
+		return column.setIntVector(id, v)
+	case []Float:
+		return column.setFloatVector(id, v)
+	case []GeoPoint:
+		return column.setGeoPointVector(id, v)
+	case []Text:
+		return column.setTextVector(id, v)
+	default:
+		return fmt.Errorf("unsupported value type: name = <%s>",
+			reflect.TypeOf(value).Name())
+	}
+}

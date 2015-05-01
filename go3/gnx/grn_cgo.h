@@ -11,6 +11,11 @@ typedef struct {
   size_t size;
 } grn_cgo_text;
 
+typedef struct {
+  const void *ptr;
+  size_t size;
+} grn_cgo_vector;
+
 // grn_cgo_find_table() finds a table with the given name.
 // If found, an object associated with the table is returned.
 // If not found, NULL is returned.
@@ -61,5 +66,41 @@ grn_cgo_row_info grn_cgo_table_insert_geo_point(grn_ctx *ctx, grn_obj *table,
 // grn_cgo_table_insert_text() inserts a row with Text key.
 grn_cgo_row_info grn_cgo_table_insert_text(grn_ctx *ctx, grn_obj *table,
                                            const grn_cgo_text *key);
+
+// grn_cgo_column_set_bool() assigns a Bool value.
+grn_bool grn_cgo_column_set_bool(grn_ctx *ctx, grn_obj *column,
+                                 grn_id id, grn_bool value);
+// grn_cgo_column_set_int() assigns an Int value.
+grn_bool grn_cgo_column_set_int(grn_ctx *ctx, grn_obj *column,
+                                grn_id id, int64_t value);
+// grn_cgo_column_set_float() assigns a Float value.
+grn_bool grn_cgo_column_set_float(grn_ctx *ctx, grn_obj *column,
+                                  grn_id id, double value);
+// grn_cgo_column_set_geo_point() assigns a GeoPoint value.
+grn_bool grn_cgo_column_set_geo_point(grn_ctx *ctx, grn_obj *column,
+                                      grn_id id, grn_geo_point value);
+// grn_cgo_column_set_text() assigns a Text value.
+grn_bool grn_cgo_column_set_text(grn_ctx *ctx, grn_obj *column,
+                                 grn_id id, const grn_cgo_text *value);
+// grn_cgo_column_set_bool_vector() assigns a Bool vector.
+grn_bool grn_cgo_column_set_bool_vector(grn_ctx *ctx, grn_obj *column,
+                                        grn_id id,
+                                        const grn_cgo_vector *value);
+// grn_cgo_column_set_int_vector() assigns an Int vector.
+grn_bool grn_cgo_column_set_int_vector(grn_ctx *ctx, grn_obj *column,
+                                       grn_id id,
+                                       const grn_cgo_vector *value);
+// grn_cgo_column_set_float_vector() assigns a Float vector.
+grn_bool grn_cgo_column_set_float_vector(grn_ctx *ctx, grn_obj *column,
+                                         grn_id id,
+                                         const grn_cgo_vector *value);
+// grn_cgo_column_set_geo_point_vector() assigns a GeoPoint vector.
+grn_bool grn_cgo_column_set_geo_point_vector(grn_ctx *ctx, grn_obj *column,
+                                             grn_id id,
+                                             const grn_cgo_vector *value);
+// grn_cgo_column_set_text_vector() assigns a Text vector.
+grn_bool grn_cgo_column_set_text_vector(grn_ctx *ctx, grn_obj *column,
+                                        grn_id id,
+                                        const grn_cgo_vector *value);
 
 #endif  // GRN_CGO_H

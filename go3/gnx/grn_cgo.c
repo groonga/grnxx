@@ -195,3 +195,130 @@ grn_cgo_row_info grn_cgo_table_insert_text(grn_ctx *ctx, grn_obj *table,
                                            const grn_cgo_text *key) {
   return grn_cgo_table_insert_row(ctx, table, key->ptr, key->size);
 }
+
+grn_bool grn_cgo_column_set_bool(grn_ctx *ctx, grn_obj *column,
+                                 grn_id id, grn_bool value) {
+  grn_obj obj;
+  GRN_BOOL_INIT(&obj, 0);
+  GRN_BOOL_SET(ctx, &obj, value);
+  grn_rc rc = grn_obj_set_value(ctx, column, id, &obj, GRN_OBJ_SET);
+  GRN_OBJ_FIN(ctx, &obj);
+  return rc == GRN_SUCCESS;
+}
+
+grn_bool grn_cgo_column_set_int(grn_ctx *ctx, grn_obj *column,
+                                grn_id id, int64_t value) {
+  grn_obj obj;
+  GRN_INT64_INIT(&obj, 0);
+  GRN_INT64_SET(ctx, &obj, value);
+  grn_rc rc = grn_obj_set_value(ctx, column, id, &obj, GRN_OBJ_SET);
+  GRN_OBJ_FIN(ctx, &obj);
+  return rc == GRN_SUCCESS;
+}
+
+grn_bool grn_cgo_column_set_float(grn_ctx *ctx, grn_obj *column,
+                                  grn_id id, double value) {
+  grn_obj obj;
+  GRN_FLOAT_INIT(&obj, 0);
+  GRN_FLOAT_SET(ctx, &obj, value);
+  grn_rc rc = grn_obj_set_value(ctx, column, id, &obj, GRN_OBJ_SET);
+  GRN_OBJ_FIN(ctx, &obj);
+  return rc == GRN_SUCCESS;
+}
+
+grn_bool grn_cgo_column_set_geo_point(grn_ctx *ctx, grn_obj *column,
+                                      grn_id id, grn_geo_point value) {
+  grn_obj obj;
+  GRN_WGS84_GEO_POINT_INIT(&obj, 0);
+  GRN_GEO_POINT_SET(ctx, &obj, value.latitude, value.longitude);
+  grn_rc rc = grn_obj_set_value(ctx, column, id, &obj, GRN_OBJ_SET);
+  GRN_OBJ_FIN(ctx, &obj);
+  return rc == GRN_SUCCESS;
+}
+
+grn_bool grn_cgo_column_set_text(grn_ctx *ctx, grn_obj *column,
+                                 grn_id id, const grn_cgo_text *value) {
+  grn_obj obj;
+  GRN_TEXT_INIT(&obj, 0);
+  if (value) {
+    GRN_TEXT_SET(ctx, &obj, value->ptr, value->size);
+  } else {
+    GRN_TEXT_SET(ctx, &obj, NULL, 0);
+  }
+  grn_rc rc = grn_obj_set_value(ctx, column, id, &obj, GRN_OBJ_SET);
+  GRN_OBJ_FIN(ctx, &obj);
+  return rc == GRN_SUCCESS;
+}
+
+grn_bool grn_cgo_column_set_bool_vector(grn_ctx *ctx, grn_obj *column,
+                                        grn_id id,
+                                        const grn_cgo_vector *value) {
+  grn_obj obj;
+  GRN_BOOL_INIT(&obj, GRN_OBJ_VECTOR);
+  size_t i;
+  for (i = 0; i < value->size; i++) {
+    GRN_BOOL_SET_AT(ctx, &obj, i, ((const grn_bool *)value->ptr)[i]);
+  }
+  grn_rc rc = grn_obj_set_value(ctx, column, id, &obj, GRN_OBJ_SET);
+  GRN_OBJ_FIN(ctx, &obj);
+  return rc == GRN_SUCCESS;
+}
+
+grn_bool grn_cgo_column_set_int_vector(grn_ctx *ctx, grn_obj *column,
+                                       grn_id id,
+                                       const grn_cgo_vector *value) {
+  grn_obj obj;
+  GRN_INT64_INIT(&obj, GRN_OBJ_VECTOR);
+  size_t i;
+  for (i = 0; i < value->size; i++) {
+    GRN_INT64_SET_AT(ctx, &obj, i, ((const int64_t *)value->ptr)[i]);
+  }
+  grn_rc rc = grn_obj_set_value(ctx, column, id, &obj, GRN_OBJ_SET);
+  GRN_OBJ_FIN(ctx, &obj);
+  return rc == GRN_SUCCESS;
+}
+
+grn_bool grn_cgo_column_set_float_vector(grn_ctx *ctx, grn_obj *column,
+                                         grn_id id,
+                                         const grn_cgo_vector *value) {
+  grn_obj obj;
+  GRN_FLOAT_INIT(&obj, GRN_OBJ_VECTOR);
+  size_t i;
+  for (i = 0; i < value->size; i++) {
+    GRN_FLOAT_SET_AT(ctx, &obj, i, ((const double *)value->ptr)[i]);
+  }
+  grn_rc rc = grn_obj_set_value(ctx, column, id, &obj, GRN_OBJ_SET);
+  GRN_OBJ_FIN(ctx, &obj);
+  return rc == GRN_SUCCESS;
+}
+
+grn_bool grn_cgo_column_set_geo_point_vector(grn_ctx *ctx, grn_obj *column,
+                                             grn_id id,
+                                             const grn_cgo_vector *value) {
+  grn_obj obj;
+  GRN_WGS84_GEO_POINT_INIT(&obj, GRN_OBJ_VECTOR);
+  size_t i;
+  const grn_geo_point *values = (const grn_geo_point *)value->ptr;
+  for (i = 0; i < value->size; i++) {
+    grn_bulk_write(ctx, &obj, (const char *)&values[i], sizeof(values[i]));
+  }
+  grn_rc rc = grn_obj_set_value(ctx, column, id, &obj, GRN_OBJ_SET);
+  GRN_OBJ_FIN(ctx, &obj);
+  return rc == GRN_SUCCESS;
+}
+
+grn_bool grn_cgo_column_set_text_vector(grn_ctx *ctx, grn_obj *column,
+                                        grn_id id,
+                                        const grn_cgo_vector *value) {
+  grn_obj obj;
+  GRN_TEXT_INIT(&obj, GRN_OBJ_VECTOR);
+  size_t i;
+  const grn_cgo_text *values = (const grn_cgo_text *)value->ptr;
+  for (i = 0; i < value->size; i++) {
+    grn_vector_add_element(ctx, &obj, values[i].ptr, values[i].size,
+                           0, obj.header.domain);
+  }
+  grn_rc rc = grn_obj_set_value(ctx, column, id, &obj, GRN_OBJ_SET);
+  GRN_OBJ_FIN(ctx, &obj);
+  return rc == GRN_SUCCESS;
+}

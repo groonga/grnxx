@@ -291,3 +291,132 @@ func TestGrnTableCreateColumn(t *testing.T) {
 	testGrnTableCreateVectorRefColumn(t, "GeoPoint")
 	testGrnTableCreateVectorRefColumn(t, "Text")
 }
+
+func generateRandomScalarValue(valueType string) interface{} {
+	switch valueType {
+	case "Bool":
+		if (rand.Int() & 1) == 1 {
+			return True
+		} else {
+			return False
+		}
+	case "Int":
+		return Int(rand.Int63())
+	case "Float":
+		return Float(rand.Float64())
+	case "GeoPoint":
+		const (
+			MinLatitude  = 73531000
+			MaxLatitude  = 164006000
+			MinLongitude = 439451000
+			MaxLongitude = 554351000
+		)
+		latitude := MinLatitude + rand.Intn(MaxLatitude-MinLatitude+1)
+		longitude := MinLongitude + rand.Intn(MaxLongitude-MinLongitude+1)
+		return GeoPoint{int32(latitude), int32(longitude)}
+	case "Text":
+		return Text(strconv.Itoa(rand.Int()))
+	default:
+		return nil
+	}
+}
+
+func testGrnColumnSetScalarValue(t *testing.T, valueType string) {
+	dirPath, _, db, table, column := createTempGrnColumn(t, "Table", nil, "Value", valueType, nil)
+	defer removeTempGrnDB(t, dirPath, db)
+
+	for i := 0; i < 100; i++ {
+		_, id, err := table.InsertRow(nil)
+		if err != nil {
+			t.Fatalf("GrnTable.InsertRow() failed: %v", err)
+		}
+		if err := column.SetValue(id, generateRandomScalarValue(valueType)); err != nil {
+			t.Fatalf("GrnColumn.SetValue() failed: %v", err)
+		}
+	}
+
+	bytes, _ := db.Query("select Table --limit 3")
+	t.Logf("valueType = <%s>, result = %s", valueType, string(bytes))
+}
+
+func generateRandomVectorValue(valueType string) interface{} {
+	size := rand.Int() % 10
+	switch valueType {
+	case "Bool":
+		value := make([]Bool, size)
+		for i := 0; i < size; i++ {
+			if (rand.Int() & 1) == 1 {
+				value[i] = True
+			}
+		}
+		return value
+	case "Int":
+		value := make([]Int, size)
+		for i := 0; i < size; i++ {
+			value[i] = Int(rand.Int63())
+		}
+		return value
+	case "Float":
+		value := make([]Float, size)
+		for i := 0; i < size; i++ {
+			value[i] = Float(rand.Float64())
+		}
+		return value
+	case "GeoPoint":
+		const (
+			MinLatitude  = 73531000
+			MaxLatitude  = 164006000
+			MinLongitude = 439451000
+			MaxLongitude = 554351000
+		)
+		value := make([]GeoPoint, size)
+		for i := 0; i < size; i++ {
+			latitude := MinLatitude + rand.Intn(MaxLatitude-MinLatitude+1)
+			longitude := MinLongitude + rand.Intn(MaxLongitude-MinLongitude+1)
+			value[i] = GeoPoint{int32(latitude), int32(longitude)}
+		}
+		return value
+	case "Text":
+		value := make([]Text, size)
+		for i := 0; i < size; i++ {
+			value[i] = Text(strconv.Itoa(rand.Int()))
+		}
+		return value
+	default:
+		return nil
+	}
+}
+
+func testGrnColumnSetVectorValue(t *testing.T, valueType string) {
+	options := NewColumnOptions()
+	options.ColumnType = VectorColumn
+	dirPath, _, db, table, column := createTempGrnColumn(t, "Table", nil, "Value", valueType, options)
+	defer removeTempGrnDB(t, dirPath, db)
+
+	for i := 0; i < 100; i++ {
+		_, id, err := table.InsertRow(nil)
+		if err != nil {
+			t.Fatalf("GrnTable.InsertRow() failed: %v", err)
+		}
+		if err := column.SetValue(id, generateRandomVectorValue(valueType)); err != nil {
+			t.Fatalf("GrnColumn.SetValue() failed: %v", err)
+		}
+	}
+
+	bytes, _ := db.Query("select Table --limit 3")
+	t.Logf("valueType = <%s>, result = %s", valueType, string(bytes))
+}
+
+func TestGrnColumnSetValue(t *testing.T) {
+	testGrnColumnSetScalarValue(t, "Bool")
+	testGrnColumnSetScalarValue(t, "Int")
+	testGrnColumnSetScalarValue(t, "Float")
+	testGrnColumnSetScalarValue(t, "GeoPoint")
+	testGrnColumnSetScalarValue(t, "Text")
+
+	testGrnColumnSetVectorValue(t, "Bool")
+	testGrnColumnSetVectorValue(t, "Int")
+	testGrnColumnSetVectorValue(t, "Float")
+	testGrnColumnSetVectorValue(t, "GeoPoint")
+	testGrnColumnSetVectorValue(t, "Text")
+}
