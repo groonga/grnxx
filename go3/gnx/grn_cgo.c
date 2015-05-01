@@ -382,7 +382,7 @@ grn_bool grn_cgo_column_get_bool_vector(grn_ctx *ctx, grn_obj *column,
   grn_obj value_obj;
   GRN_BOOL_INIT(&value_obj, GRN_OBJ_VECTOR);
   grn_obj_get_value(ctx, column, id, &value_obj);
-  size_t size = grn_vector_size(ctx, &value_obj);
+  size_t size = grn_uvector_size(ctx, &value_obj);
   if (size <= value->size) {
     size_t i;
     for (i = 0; i < size; i++) {
@@ -399,7 +399,7 @@ grn_bool grn_cgo_column_get_int_vector(grn_ctx *ctx, grn_obj *column,
   grn_obj value_obj;
   GRN_INT64_INIT(&value_obj, GRN_OBJ_VECTOR);
   grn_obj_get_value(ctx, column, id, &value_obj);
-  size_t size = grn_vector_size(ctx, &value_obj);
+  size_t size = grn_uvector_size(ctx, &value_obj);
   if (size <= value->size) {
     size_t i;
     for (i = 0; i < size; i++) {
@@ -416,7 +416,7 @@ grn_bool grn_cgo_column_get_float_vector(grn_ctx *ctx, grn_obj *column,
   grn_obj value_obj;
   GRN_FLOAT_INIT(&value_obj, GRN_OBJ_VECTOR);
   grn_obj_get_value(ctx, column, id, &value_obj);
-  size_t size = grn_vector_size(ctx, &value_obj);
+  size_t size = grn_uvector_size(ctx, &value_obj);
   if (size <= value->size) {
     size_t i;
     for (i = 0; i < size; i++) {
@@ -433,7 +433,7 @@ grn_bool grn_cgo_column_get_float_vector(grn_ctx *ctx, grn_obj *column,
 /*  grn_obj value_obj;*/
 /*  GRN_WGS84_GEO_POINT_INIT(&value_obj, GRN_OBJ_VECTOR);*/
 /*  grn_obj_get_value(ctx, column, id, &value_obj);*/
-/*  size_t size = grn_vector_size(ctx, &value_obj);*/
+/*  size_t size = grn_uvector_size(ctx, &value_obj);*/
 /*  if (size <= value->size) {*/
 /*    size_t i;*/
 /*    for (i = 0; i < size; i++) {*/
