@@ -376,3 +376,71 @@ grn_bool grn_cgo_column_get_text(grn_ctx *ctx, grn_obj *column,
   GRN_OBJ_FIN(ctx, &value_obj);
   return GRN_TRUE;
 }
+
+grn_bool grn_cgo_column_get_bool_vector(grn_ctx *ctx, grn_obj *column,
+                                        grn_id id, grn_cgo_vector *value) {
+  grn_obj value_obj;
+  GRN_BOOL_INIT(&value_obj, GRN_OBJ_VECTOR);
+  grn_obj_get_value(ctx, column, id, &value_obj);
+  size_t size = grn_vector_size(ctx, &value_obj);
+  if (size <= value->size) {
+    size_t i;
+    for (i = 0; i < size; i++) {
+      ((grn_bool *)value->ptr)[i] = GRN_BOOL_VALUE_AT(&value_obj, i);
+    }
+  }
+  value->size = size;
+  GRN_OBJ_FIN(ctx, &value_obj);
+  return GRN_TRUE;
+}
+
+grn_bool grn_cgo_column_get_int_vector(grn_ctx *ctx, grn_obj *column,
+                                       grn_id id, grn_cgo_vector *value) {
+  grn_obj value_obj;
+  GRN_INT64_INIT(&value_obj, GRN_OBJ_VECTOR);
+  grn_obj_get_value(ctx, column, id, &value_obj);
+  size_t size = grn_vector_size(ctx, &value_obj);
+  if (size <= value->size) {
+    size_t i;
+    for (i = 0; i < size; i++) {
+      ((int64_t *)value->ptr)[i] = GRN_INT64_VALUE_AT(&value_obj, i);
+    }
+  }
+  value->size = size;
+  GRN_OBJ_FIN(ctx, &value_obj);
+  return GRN_TRUE;
+}
+
+grn_bool grn_cgo_column_get_float_vector(grn_ctx *ctx, grn_obj *column,
+                                       grn_id id, grn_cgo_vector *value) {
+  grn_obj value_obj;
+  GRN_FLOAT_INIT(&value_obj, GRN_OBJ_VECTOR);
+  grn_obj_get_value(ctx, column, id, &value_obj);
+  size_t size = grn_vector_size(ctx, &value_obj);
+  if (size <= value->size) {
+    size_t i;
+    for (i = 0; i < size; i++) {
+      ((double *)value->ptr)[i] = GRN_FLOAT_VALUE_AT(&value_obj, i);
+    }
+  }
+  value->size = size;
+  GRN_OBJ_FIN(ctx, &value_obj);
+  return GRN_TRUE;
+}
+
+/*grn_bool grn_cgo_column_get_geo_point_vector(grn_ctx *ctx, grn_obj *column,*/
+/*                                             grn_id id, grn_cgo_vector *value) {*/
+/*  grn_obj value_obj;*/
+/*  GRN_WGS84_GEO_POINT_INIT(&value_obj, GRN_OBJ_VECTOR);*/
+/*  grn_obj_get_value(ctx, column, id, &value_obj);*/
+/*  size_t size = grn_vector_size(ctx, &value_obj);*/
+/*  if (size <= value->size) {*/
+/*    size_t i;*/
+/*    for (i = 0; i < size; i++) {*/
+/*      ((int64_t *)value->ptr)[i] = GRN_INT64_VALUE_AT(&value_obj, i);*/
+/*    }*/
+/*  }*/
+/*  value->size = size;*/
+/*  GRN_OBJ_FIN(ctx, &value_obj);*/
+/*  return GRN_TRUE;*/
+/*}*/

@@ -443,6 +443,32 @@ func testGrnColumnGetScalarValue(t *testing.T, valueType string) {
 	}
 }
 
+func testGrnColumnGetVectorValue(t *testing.T, valueType string) {
+	options := NewColumnOptions()
+	options.ColumnType = VectorColumn
+	dirPath, _, db, table, column := createTempGrnColumn(t, "Table", nil, "Value", valueType, options)
+	defer removeTempGrnDB(t, dirPath, db)
+
+	for i := 0; i < 100; i++ {
+		_, id, err := table.InsertRow(nil)
+		if err != nil {
+			t.Fatalf("GrnTable.InsertRow() failed: %v", err)
+		}
+		value := generateRandomVectorValue(valueType)
+		if err := column.SetValue(id, value); err != nil {
+			t.Fatalf("GrnColumn.SetValue() failed: %v", err)
+		}
+		if storedValue, err := column.GetValue(id); err != nil {
+			t.Fatalf("GrnColumn.GetValue() failed: %v", err)
+		} else if !reflect.DeepEqual(value, storedValue) {
+			t.Fatalf("GrnColumn.GetValue() failed: value = %v, storedValue = %v", value, storedValue)
+		}
+	}
+
+	bytes, _ := db.Query("select Table --limit 3")
+	t.Logf("valueType = <%s>, result = %s", valueType, string(bytes))
+}
+
 func TestGrnColumnGetValue(t *testing.T) {
 	testGrnColumnGetScalarValue(t, "Bool")
 	testGrnColumnGetScalarValue(t, "Int")
@@ -450,9 +476,9 @@ func TestGrnColumnGetValue(t *testing.T) {
 	testGrnColumnGetScalarValue(t, "GeoPoint")
 	testGrnColumnGetScalarValue(t, "Text")
 
-//	testGrnColumnGetVectorValue(t, "Bool")
-//	testGrnColumnGetVectorValue(t, "Int")
-//	testGrnColumnGetVectorValue(t, "Float")
+	testGrnColumnGetVectorValue(t, "Bool")
+	testGrnColumnGetVectorValue(t, "Int")
+	testGrnColumnGetVectorValue(t, "Float")
 //	testGrnColumnGetVectorValue(t, "GeoPoint")
 //	testGrnColumnGetVectorValue(t, "Text")
 }

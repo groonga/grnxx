@@ -1019,6 +1019,88 @@ func (column *GrnColumn) getText(id Int) (interface{}, error) {
 	return value, nil
 }
 
+// getBoolVector() gets a BoolVector.
+func (column *GrnColumn) getBoolVector(id Int) (interface{}, error) {
+	var grnVector C.grn_cgo_vector
+	if ok := C.grn_cgo_column_get_bool_vector(column.table.db.ctx, column.obj,
+		C.grn_id(id), &grnVector); ok != C.GRN_TRUE {
+		return nil, fmt.Errorf("grn_cgo_column_get_bool_vector() failed")
+	}
+	if grnVector.size == 0 {
+		return make([]Bool, 0), nil
+	}
+	grnValue := make([]C.grn_bool, int(grnVector.size))
+	grnVector.ptr = unsafe.Pointer(&grnValue[0])
+	if ok := C.grn_cgo_column_get_bool_vector(column.table.db.ctx, column.obj,
+		C.grn_id(id), &grnVector); ok != C.GRN_TRUE {
+		return nil, fmt.Errorf("grn_cgo_column_get_bool_vector() failed")
+	}
+	value := make([]Bool, int(grnVector.size))
+	for i, v := range grnValue {
+		if v == C.GRN_TRUE {
+			value[i] = True
+		}
+	}
+	return value, nil
+}
+
+// getIntVector() gets a IntVector.
+func (column *GrnColumn) getIntVector(id Int) (interface{}, error) {
+	var grnValue C.grn_cgo_vector
+	if ok := C.grn_cgo_column_get_int_vector(column.table.db.ctx, column.obj,
+		C.grn_id(id), &grnValue); ok != C.GRN_TRUE {
+		return nil, fmt.Errorf("grn_cgo_column_get_int_vector() failed")
+	}
+	if grnValue.size == 0 {
+		return make([]Int, 0), nil
+	}
+	value := make([]Int, int(grnValue.size))
+	grnValue.ptr = unsafe.Pointer(&value[0])
+	if ok := C.grn_cgo_column_get_int_vector(column.table.db.ctx, column.obj,
+		C.grn_id(id), &grnValue); ok != C.GRN_TRUE {
+		return nil, fmt.Errorf("grn_cgo_column_get_int_vector() failed")
+	}
+	return value, nil
+}
+
+// getFloatVector() gets a FloatVector.
+func (column *GrnColumn) getFloatVector(id Int) (interface{}, error) {
+	var grnValue C.grn_cgo_vector
+	if ok := C.grn_cgo_column_get_float_vector(column.table.db.ctx, column.obj,
+		C.grn_id(id), &grnValue); ok != C.GRN_TRUE {
+		return nil, fmt.Errorf("grn_cgo_column_get_float_vector() failed")
+	}
+	if grnValue.size == 0 {
+		return make([]Float, 0), nil
+	}
+	value := make([]Float, int(grnValue.size))
+	grnValue.ptr = unsafe.Pointer(&value[0])
+	if ok := C.grn_cgo_column_get_float_vector(column.table.db.ctx, column.obj,
+		C.grn_id(id), &grnValue); ok != C.GRN_TRUE {
+		return nil, fmt.Errorf("grn_cgo_column_get_float_vector() failed")
+	}
+	return value, nil
+}
+
+//// getGeoPointVector() gets a GeoPointVector.
+//func (column *GrnColumn) getGeoPointVector(id Int) (interface{}, error) {
+//	var grnValue C.grn_cgo_vector
+//	if ok := C.grn_cgo_column_get_geo_point_vector(column.table.db.ctx, column.obj,
+//		C.grn_id(id), &grnValue); ok != C.GRN_TRUE {
+//		return nil, fmt.Errorf("grn_cgo_column_get_geo_point_vector() failed")
+//	}
+//	if grnValue.size == 0 {
+//		return make([]GeoPoint, 0), nil
+//	}
+//	value := make([]GeoPoint, int(grnValue.size))
+//	grnValue.ptr = unsafe.Pointer(&value[0])
+//	if ok := C.grn_cgo_column_get_geo_point_vector(column.table.db.ctx, column.obj,
+//		C.grn_id(id), &grnValue); ok != C.GRN_TRUE {
+//		return nil, fmt.Errorf("grn_cgo_column_get_geo_point_vector() failed")
+//	}
+//	return value, nil
+//}
+
 // GetValue() gets a value.
 // TODO: GetValue() should use allocated spaces for better performance.
 func (column *GrnColumn) GetValue(id Int) (interface{}, error) {
@@ -1038,14 +1120,16 @@ func (column *GrnColumn) GetValue(id Int) (interface{}, error) {
 	} else {
 		switch column.valueType {
 		case BoolID:
-			return nil, fmt.Errorf("not supported yet")
+			return column.getBoolVector(id)
 		case IntID:
-			return nil, fmt.Errorf("not supported yet")
+			return column.getIntVector(id)
 		case FloatID:
-			return nil, fmt.Errorf("not supported yet")
+			return column.getFloatVector(id)
 		case GeoPointID:
+//			return column.getGeoPointVector(id)
 			return nil, fmt.Errorf("not supported yet")
 		case TextID:
+//			return column.getTextVector(id)
 			return nil, fmt.Errorf("not supported yet")
 		}
 	}

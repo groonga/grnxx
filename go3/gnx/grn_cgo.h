@@ -114,5 +114,13 @@ grn_bool grn_cgo_column_get_geo_point(grn_ctx *ctx, grn_obj *column,
                                       grn_id id, grn_geo_point *value);
 grn_bool grn_cgo_column_get_text(grn_ctx *ctx, grn_obj *column,
                                  grn_id id, grn_cgo_text *value);
+grn_bool grn_cgo_column_get_bool_vector(grn_ctx *ctx, grn_obj *column,
+                                        grn_id id, grn_cgo_vector *value);
+grn_bool grn_cgo_column_get_int_vector(grn_ctx *ctx, grn_obj *column,
+                                        grn_id id, grn_cgo_vector *value);
+grn_bool grn_cgo_column_get_float_vector(grn_ctx *ctx, grn_obj *column,
+                                         grn_id id, grn_cgo_vector *value);
+//grn_bool grn_cgo_column_get_geo_point_vector(grn_ctx *ctx, grn_obj *column,
+//                                             grn_id id, grn_cgo_vector *value);
 
 #endif  // GRN_CGO_H
