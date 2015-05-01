@@ -1082,24 +1082,24 @@ func (column *GrnColumn) getFloatVector(id Int) (interface{}, error) {
 	return value, nil
 }
 
-//// getGeoPointVector() gets a GeoPointVector.
-//func (column *GrnColumn) getGeoPointVector(id Int) (interface{}, error) {
-//	var grnValue C.grn_cgo_vector
-//	if ok := C.grn_cgo_column_get_geo_point_vector(column.table.db.ctx, column.obj,
-//		C.grn_id(id), &grnValue); ok != C.GRN_TRUE {
-//		return nil, fmt.Errorf("grn_cgo_column_get_geo_point_vector() failed")
-//	}
-//	if grnValue.size == 0 {
-//		return make([]GeoPoint, 0), nil
-//	}
-//	value := make([]GeoPoint, int(grnValue.size))
-//	grnValue.ptr = unsafe.Pointer(&value[0])
-//	if ok := C.grn_cgo_column_get_geo_point_vector(column.table.db.ctx, column.obj,
-//		C.grn_id(id), &grnValue); ok != C.GRN_TRUE {
-//		return nil, fmt.Errorf("grn_cgo_column_get_geo_point_vector() failed")
-//	}
-//	return value, nil
-//}
+// getGeoPointVector() gets a GeoPointVector.
+func (column *GrnColumn) getGeoPointVector(id Int) (interface{}, error) {
+	var grnValue C.grn_cgo_vector
+	if ok := C.grn_cgo_column_get_geo_point_vector(column.table.db.ctx, column.obj,
+		C.grn_id(id), &grnValue); ok != C.GRN_TRUE {
+		return nil, fmt.Errorf("grn_cgo_column_get_geo_point_vector() failed")
+	}
+	if grnValue.size == 0 {
+		return make([]GeoPoint, 0), nil
+	}
+	value := make([]GeoPoint, int(grnValue.size))
+	grnValue.ptr = unsafe.Pointer(&value[0])
+	if ok := C.grn_cgo_column_get_geo_point_vector(column.table.db.ctx, column.obj,
+		C.grn_id(id), &grnValue); ok != C.GRN_TRUE {
+		return nil, fmt.Errorf("grn_cgo_column_get_geo_point_vector() failed")
+	}
+	return value, nil
+}
 
 // GetValue() gets a value.
 // TODO: GetValue() should use allocated spaces for better performance.
@@ -1126,8 +1126,7 @@ func (column *GrnColumn) GetValue(id Int) (interface{}, error) {
 		case FloatID:
 			return column.getFloatVector(id)
 		case GeoPointID:
-//			return column.getGeoPointVector(id)
-			return nil, fmt.Errorf("not supported yet")
+			return column.getGeoPointVector(id)
 		case TextID:
 //			return column.getTextVector(id)
 			return nil, fmt.Errorf("not supported yet")
