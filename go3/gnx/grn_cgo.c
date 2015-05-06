@@ -408,7 +408,7 @@ grn_bool grn_cgo_column_get_int_vector(grn_ctx *ctx, grn_obj *column,
 }
 
 grn_bool grn_cgo_column_get_float_vector(grn_ctx *ctx, grn_obj *column,
-                                       grn_id id, grn_cgo_vector *value) {
+                                         grn_id id, grn_cgo_vector *value) {
   grn_obj value_obj;
   GRN_FLOAT_INIT(&value_obj, GRN_OBJ_VECTOR);
   grn_obj_get_value(ctx, column, id, &value_obj);
