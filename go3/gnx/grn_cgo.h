@@ -104,6 +104,12 @@ grn_bool grn_cgo_column_set_text_vector(grn_ctx *ctx, grn_obj *column,
                                         grn_id id,
                                         const grn_cgo_vector *value);
 
+// grn_cgo_column_get_X_vector() sets *(X *)(value.ptr)[i] if value->size >=
+// the actual vector size.
+// In the case of Text, bodies are copied to (X *)(value.ptr)[i].ptr if
+// (X *)(value.ptr)[i].size >= the actual body size.
+// Then, grn_cgo_column_get_X_vector() sets value->size.
+
 // grn_cgo_column_get_bool() gets a stored Bool value.
 grn_bool grn_cgo_column_get_bool(grn_ctx *ctx, grn_obj *column,
                                  grn_id id, grn_bool *value);
