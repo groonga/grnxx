@@ -99,29 +99,40 @@ grn_bool grn_cgo_column_set_geo_point_vector(grn_ctx *ctx, grn_obj *column,
                                              grn_id id,
                                              const grn_cgo_vector *value);
 // grn_cgo_column_set_text_vector() assigns a Text vector.
+// value must refer to an array of grn_cgo_text.
 grn_bool grn_cgo_column_set_text_vector(grn_ctx *ctx, grn_obj *column,
                                         grn_id id,
                                         const grn_cgo_vector *value);
 
-// TODO: Comment.
+// grn_cgo_column_get_bool() gets a stored Bool value.
 grn_bool grn_cgo_column_get_bool(grn_ctx *ctx, grn_obj *column,
                                  grn_id id, grn_bool *value);
+// grn_cgo_column_get_int() gets a stored Int value.
 grn_bool grn_cgo_column_get_int(grn_ctx *ctx, grn_obj *column,
                                 grn_id id, int64_t *value);
+// grn_cgo_column_get_float() gets a stored Float value.
 grn_bool grn_cgo_column_get_float(grn_ctx *ctx, grn_obj *column,
                                   grn_id id, double *value);
+// grn_cgo_column_get_geo_point() gets a stored GeoPoint value.
 grn_bool grn_cgo_column_get_geo_point(grn_ctx *ctx, grn_obj *column,
                                       grn_id id, grn_geo_point *value);
+// grn_cgo_column_get_text() gets a stored Text value.
 grn_bool grn_cgo_column_get_text(grn_ctx *ctx, grn_obj *column,
                                  grn_id id, grn_cgo_text *value);
+// grn_cgo_column_get_bool_vector() gets a stored Bool vector.
 grn_bool grn_cgo_column_get_bool_vector(grn_ctx *ctx, grn_obj *column,
                                         grn_id id, grn_cgo_vector *value);
+// grn_cgo_column_get_int_vector() gets a stored Int vector.
 grn_bool grn_cgo_column_get_int_vector(grn_ctx *ctx, grn_obj *column,
                                         grn_id id, grn_cgo_vector *value);
+// grn_cgo_column_get_float_vector() gets a stored Float vector.
 grn_bool grn_cgo_column_get_float_vector(grn_ctx *ctx, grn_obj *column,
                                          grn_id id, grn_cgo_vector *value);
+// grn_cgo_column_get_geo_point_vector() gets a stored GeoPoint vector.
 grn_bool grn_cgo_column_get_geo_point_vector(grn_ctx *ctx, grn_obj *column,
                                              grn_id id, grn_cgo_vector *value);
+// grn_cgo_column_get_text_vector() gets a stored Text vector.
+// value must refer to an array of grn_cgo_text.
 grn_bool grn_cgo_column_get_text_vector(grn_ctx *ctx, grn_obj *column,
                                         grn_id id, grn_cgo_vector *value);
 
