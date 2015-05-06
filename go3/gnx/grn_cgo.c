@@ -53,9 +53,11 @@ grn_bool grn_cgo_table_get_key_info(grn_ctx *ctx, grn_obj *table,
         break;
       }
       case GRN_TABLE_NO_KEY: {
+        // GRN_DB_VOID, if the table has no key.
         return GRN_TRUE;
       }
       default: {
+        // The object is not a table.
         return GRN_FALSE;
       }
     }
@@ -88,6 +90,7 @@ grn_bool grn_cgo_table_get_value_info(grn_ctx *ctx, grn_obj *table,
       return GRN_TRUE;
     }
     default: {
+      // The object is not a table.
       return GRN_FALSE;
     }
   }
@@ -111,6 +114,7 @@ grn_bool grn_cgo_column_get_value_info(grn_ctx *ctx, grn_obj *column,
       break;
     }
     default: {
+      // The object is not a data column.
       return GRN_FALSE;
     }
   }
@@ -140,6 +144,7 @@ char *grn_cgo_table_get_name(grn_ctx *ctx, grn_obj *table) {
       break;
     }
     default: {
+      // The object is not a table.
       return NULL;
     }
   }
@@ -446,6 +451,8 @@ grn_bool grn_cgo_column_get_text_vector(grn_ctx *ctx, grn_obj *column,
   if (size <= value->size) {
     size_t i;
     for (i = 0; i < size; i++) {
+      // NOTE: grn_vector_get_element() assigns the address of the text body
+      //       to text_ptr, but the body may be overwritten in the next call.
       const char *text_ptr;
       unsigned int text_size = grn_vector_get_element(ctx, &value_obj, i,
                                                       &text_ptr, NULL, NULL);
