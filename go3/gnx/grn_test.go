@@ -480,5 +480,5 @@ func TestGrnColumnGetValue(t *testing.T) {
 	testGrnColumnGetVectorValue(t, "Int")
 	testGrnColumnGetVectorValue(t, "Float")
 	testGrnColumnGetVectorValue(t, "GeoPoint")
-//	testGrnColumnGetVectorValue(t, "Text")
+	testGrnColumnGetVectorValue(t, "Text")
 }

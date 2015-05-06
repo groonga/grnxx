@@ -1101,6 +1101,36 @@ func (column *GrnColumn) getGeoPointVector(id Int) (interface{}, error) {
 	return value, nil
 }
 
+// getTextVector() gets a TextVector.
+func (column *GrnColumn) getTextVector(id Int) (interface{}, error) {
+	var grnVector C.grn_cgo_vector
+	if ok := C.grn_cgo_column_get_text_vector(column.table.db.ctx, column.obj,
+		C.grn_id(id), &grnVector); ok != C.GRN_TRUE {
+		return nil, fmt.Errorf("grn_cgo_column_get_text_vector() failed")
+	}
+	if grnVector.size == 0 {
+		return make([]Text, 0), nil
+	}
+	grnValues := make([]C.grn_cgo_text, int(grnVector.size))
+	grnVector.ptr = unsafe.Pointer(&grnValues[0])
+	if ok := C.grn_cgo_column_get_text_vector(column.table.db.ctx, column.obj,
+		C.grn_id(id), &grnVector); ok != C.GRN_TRUE {
+		return nil, fmt.Errorf("grn_cgo_column_get_text_vector() failed")
+	}
+	value := make([]Text, int(grnVector.size))
+	for i, grnValue := range grnValues {
+		if grnValue.size != 0 {
+			value[i] = make(Text, int(grnValue.size))
+			grnValues[i].ptr = (*C.char)(unsafe.Pointer(&value[i][0]))
+		}
+	}
+	if ok := C.grn_cgo_column_get_text_vector(column.table.db.ctx, column.obj,
+		C.grn_id(id), &grnVector); ok != C.GRN_TRUE {
+		return nil, fmt.Errorf("grn_cgo_column_get_text_vector() failed")
+	}
+	return value, nil
+}
+
 // GetValue() gets a value.
 // TODO: GetValue() should use allocated spaces for better performance.
 func (column *GrnColumn) GetValue(id Int) (interface{}, error) {
@@ -1128,8 +1158,7 @@ func (column *GrnColumn) GetValue(id Int) (interface{}, error) {
 		case GeoPointID:
 			return column.getGeoPointVector(id)
 		case TextID:
-//			return column.getTextVector(id)
-			return nil, fmt.Errorf("not supported yet")
+			return column.getTextVector(id)
 		}
 	}
 	return nil, fmt.Errorf("undefined value type: valueType = %d", column.valueType)

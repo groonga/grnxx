@@ -436,3 +436,27 @@ grn_bool grn_cgo_column_get_geo_point_vector(grn_ctx *ctx, grn_obj *column,
   GRN_OBJ_FIN(ctx, &value_obj);
   return GRN_TRUE;
 }
+
+grn_bool grn_cgo_column_get_text_vector(grn_ctx *ctx, grn_obj *column,
+                                        grn_id id, grn_cgo_vector *value) {
+  grn_obj value_obj;
+  GRN_TEXT_INIT(&value_obj, GRN_OBJ_VECTOR);
+  grn_obj_get_value(ctx, column, id, &value_obj);
+  size_t size = grn_vector_size(ctx, &value_obj);
+  if (size <= value->size) {
+    size_t i;
+    for (i = 0; i < size; i++) {
+      const char *text_ptr;
+      unsigned int text_size = grn_vector_get_element(ctx, &value_obj, i,
+                                                      &text_ptr, NULL, NULL);
+      grn_cgo_text *text = &((grn_cgo_text *)value->ptr)[i];
+      if (text_size <= text->size) {
+        memcpy(text->ptr, text_ptr, text_size);
+      }
+      text->size = text_size;
+    }
+  }
+  value->size = size;
+  GRN_OBJ_FIN(ctx, &value_obj);
+  return GRN_TRUE;
+}

@@ -122,5 +122,7 @@ grn_bool grn_cgo_column_get_float_vector(grn_ctx *ctx, grn_obj *column,
                                          grn_id id, grn_cgo_vector *value);
 grn_bool grn_cgo_column_get_geo_point_vector(grn_ctx *ctx, grn_obj *column,
                                              grn_id id, grn_cgo_vector *value);
+grn_bool grn_cgo_column_get_text_vector(grn_ctx *ctx, grn_obj *column,
+                                        grn_id id, grn_cgo_vector *value);
 
 #endif  // GRN_CGO_H
