@@ -184,7 +184,8 @@ func TestGrnTableInsertRow(t *testing.T) {
 }
 
 func testGrnTableCreateScalarColumn(t *testing.T, valueType string) {
-	dirPath, _, db, table, _ := createTempGrnColumn(t, "Table", nil, "Value", valueType, nil)
+	dirPath, _, db, table, _ :=
+		createTempGrnColumn(t, "Table", nil, "Value", valueType, nil)
 	defer removeTempGrnDB(t, dirPath, db)
 
 	if column, err := table.FindColumn("_id"); err != nil {
@@ -202,7 +203,8 @@ func testGrnTableCreateScalarColumn(t *testing.T, valueType string) {
 func testGrnTableCreateVectorColumn(t *testing.T, valueType string) {
 	options := NewColumnOptions()
 	options.ColumnType = VectorColumn
-	dirPath, _, db, table, _ := createTempGrnColumn(t, "Table", nil, "Value", valueType, options)
+	dirPath, _, db, table, _ :=
+		createTempGrnColumn(t, "Table", nil, "Value", valueType, options)
 	defer removeTempGrnDB(t, dirPath, db)
 
 	if column, err := table.FindColumn("_id"); err != nil {
@@ -221,7 +223,8 @@ func testGrnTableCreateScalarRefColumn(t *testing.T, keyType string) {
 	options := NewTableOptions()
 	options.TableType = PatTable
 	options.KeyType = keyType
-	dirPath, _, db, table, _ := createTempGrnColumn(t, "Table", options, "Value", "Table", nil)
+	dirPath, _, db, table, _ :=
+		createTempGrnColumn(t, "Table", options, "Value", "Table", nil)
 	defer removeTempGrnDB(t, dirPath, db)
 
 	if column, err := table.FindColumn("Value"); err != nil {
@@ -247,7 +250,8 @@ func testGrnTableCreateVectorRefColumn(t *testing.T, keyType string) {
 	tableOptions.KeyType = keyType
 	columnOptions := NewColumnOptions()
 	columnOptions.ColumnType = VectorColumn
-	dirPath, _, db, table, _ := createTempGrnColumn(t, "Table", tableOptions, "Value", "Table", columnOptions)
+	dirPath, _, db, table, _ :=
+		createTempGrnColumn(t, "Table", tableOptions, "Value", "Table", columnOptions)
 	defer removeTempGrnDB(t, dirPath, db)
 
 	if column, err := table.FindColumn("Value"); err != nil {
@@ -323,7 +327,8 @@ func generateRandomScalarValue(valueType string) interface{} {
 }
 
 func testGrnColumnSetScalarValue(t *testing.T, valueType string) {
-	dirPath, _, db, table, column := createTempGrnColumn(t, "Table", nil, "Value", valueType, nil)
+	dirPath, _, db, table, column :=
+		createTempGrnColumn(t, "Table", nil, "Value", valueType, nil)
 	defer removeTempGrnDB(t, dirPath, db)
 
 	for i := 0; i < 100; i++ {
@@ -391,7 +396,8 @@ func generateRandomVectorValue(valueType string) interface{} {
 func testGrnColumnSetVectorValue(t *testing.T, valueType string) {
 	options := NewColumnOptions()
 	options.ColumnType = VectorColumn
-	dirPath, _, db, table, column := createTempGrnColumn(t, "Table", nil, "Value", valueType, options)
+	dirPath, _, db, table, column :=
+		createTempGrnColumn(t, "Table", nil, "Value", valueType, options)
 	defer removeTempGrnDB(t, dirPath, db)
 
 	for i := 0; i < 100; i++ {
@@ -423,7 +429,8 @@ func TestGrnColumnSetValue(t *testing.T) {
 }
 
 func testGrnColumnGetScalarValue(t *testing.T, valueType string) {
-	dirPath, _, db, table, column := createTempGrnColumn(t, "Table", nil, "Value", valueType, nil)
+	dirPath, _, db, table, column :=
+		createTempGrnColumn(t, "Table", nil, "Value", valueType, nil)
 	defer removeTempGrnDB(t, dirPath, db)
 
 	for i := 0; i < 100; i++ {
@@ -438,7 +445,8 @@ func testGrnColumnGetScalarValue(t *testing.T, valueType string) {
 		if storedValue, err := column.GetValue(id); err != nil {
 			t.Fatalf("GrnColumn.GetValue() failed: %v", err)
 		} else if !reflect.DeepEqual(value, storedValue) {
-			t.Fatalf("GrnColumn.GetValue() failed: value = %v, storedValue = %v", value, storedValue)
+			t.Fatalf("GrnColumn.GetValue() failed: value = %v, storedValue = %v",
+				value, storedValue)
 		}
 	}
 }
@@ -446,7 +454,8 @@ func testGrnColumnGetScalarValue(t *testing.T, valueType string) {
 func testGrnColumnGetVectorValue(t *testing.T, valueType string) {
 	options := NewColumnOptions()
 	options.ColumnType = VectorColumn
-	dirPath, _, db, table, column := createTempGrnColumn(t, "Table", nil, "Value", valueType, options)
+	dirPath, _, db, table, column :=
+		createTempGrnColumn(t, "Table", nil, "Value", valueType, options)
 	defer removeTempGrnDB(t, dirPath, db)
 
 	for i := 0; i < 100; i++ {
@@ -461,7 +470,8 @@ func testGrnColumnGetVectorValue(t *testing.T, valueType string) {
 		if storedValue, err := column.GetValue(id); err != nil {
 			t.Fatalf("GrnColumn.GetValue() failed: %v", err)
 		} else if !reflect.DeepEqual(value, storedValue) {
-			t.Fatalf("GrnColumn.GetValue() failed: value = %v, storedValue = %v", value, storedValue)
+			t.Fatalf("GrnColumn.GetValue() failed: value = %v, storedValue = %v",
+				value, storedValue)
 		}
 	}
 

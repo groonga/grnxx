@@ -414,7 +414,8 @@ func (db *GrnDB) InsertRow(tableName string, key interface{}) (bool, Int, error)
 }
 
 // CreateColumn() creates a column.
-func (db *GrnDB) CreateColumn(tableName, columnName string, valueType string, options *ColumnOptions) (*GrnColumn, error) {
+func (db *GrnDB) CreateColumn(tableName, columnName string, valueType string,
+	options *ColumnOptions) (*GrnColumn, error) {
 	table, err := db.FindTable(tableName)
 	if err != nil {
 		return nil, err
@@ -567,7 +568,8 @@ func (table *GrnTable) InsertRow(key interface{}) (bool, Int, error) {
 }
 
 // CreateColumn() creates a column.
-func (table *GrnTable) CreateColumn(name string, valueType string, options *ColumnOptions) (*GrnColumn, error) {
+func (table *GrnTable) CreateColumn(name string, valueType string,
+	options *ColumnOptions) (*GrnColumn, error) {
 	if options == nil {
 		options = NewColumnOptions()
 	}
