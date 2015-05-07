@@ -297,7 +297,7 @@ func TestGrnTableCreateColumn(t *testing.T) {
 	testGrnTableCreateVectorRefColumn(t, "Text")
 }
 
-func generateRandomScalarValue(valueType string) interface{} {
+func generateRandomValue(valueType string) interface{} {
 	switch valueType {
 	case "Bool":
 		if (rand.Int() & 1) == 1 {
@@ -324,25 +324,6 @@ func generateRandomScalarValue(valueType string) interface{} {
 	default:
 		return nil
 	}
-}
-
-func testGrnColumnSetScalarValue(t *testing.T, valueType string) {
-	dirPath, _, db, table, column :=
-		createTempGrnColumn(t, "Table", nil, "Value", valueType, nil)
-	defer removeTempGrnDB(t, dirPath, db)
-
-	for i := 0; i < 100; i++ {
-		_, id, err := table.InsertRow(nil)
-		if err != nil {
-			t.Fatalf("GrnTable.InsertRow() failed: %v", err)
-		}
-		if err := column.SetValue(id, generateRandomScalarValue(valueType)); err != nil {
-			t.Fatalf("GrnColumn.SetValue() failed: %v", err)
-		}
-	}
-
-	bytes, _ := db.Query("select Table --limit 3")
-	t.Logf("valueType = <%s>, result = %s", valueType, string(bytes))
 }
 
 func generateRandomVectorValue(valueType string) interface{} {
@@ -393,7 +374,26 @@ func generateRandomVectorValue(valueType string) interface{} {
 	}
 }
 
-func testGrnColumnSetVectorValue(t *testing.T, valueType string) {
+func testGrnColumnSetValueForScalar(t *testing.T, valueType string) {
+	dirPath, _, db, table, column :=
+		createTempGrnColumn(t, "Table", nil, "Value", valueType, nil)
+	defer removeTempGrnDB(t, dirPath, db)
+
+	for i := 0; i < 100; i++ {
+		_, id, err := table.InsertRow(nil)
+		if err != nil {
+			t.Fatalf("GrnTable.InsertRow() failed: %v", err)
+		}
+		if err := column.SetValue(id, generateRandomValue(valueType)); err != nil {
+			t.Fatalf("GrnColumn.SetValue() failed: %v", err)
+		}
+	}
+
+	bytes, _ := db.Query("select Table --limit 3")
+	t.Logf("valueType = <%s>, result = %s", valueType, string(bytes))
+}
+
+func testGrnColumnSetValueForVector(t *testing.T, valueType string) {
 	options := NewColumnOptions()
 	options.ColumnType = VectorColumn
 	dirPath, _, db, table, column :=
@@ -415,46 +415,46 @@ func testGrnColumnSetVectorValue(t *testing.T, valueType string) {
 }
 
 func TestGrnColumnSetValueForBool(t *testing.T) {
-	testGrnColumnSetScalarValue(t, "Bool")
+	testGrnColumnSetValueForScalar(t, "Bool")
 }
 
 func TestGrnColumnSetValueForInt(t *testing.T) {
-	testGrnColumnSetScalarValue(t, "Int")
+	testGrnColumnSetValueForScalar(t, "Int")
 }
 
 func TestGrnColumnSetValueForFloat(t *testing.T) {
-	testGrnColumnSetScalarValue(t, "Float")
+	testGrnColumnSetValueForScalar(t, "Float")
 }
 
 func TestGrnColumnSetValueForGeoPoint(t *testing.T) {
-	testGrnColumnSetScalarValue(t, "GeoPoint")
+	testGrnColumnSetValueForScalar(t, "GeoPoint")
 }
 
 func TestGrnColumnSetValueForText(t *testing.T) {
-	testGrnColumnSetScalarValue(t, "Text")
+	testGrnColumnSetValueForScalar(t, "Text")
 }
 
 func TestGrnColumnSetValueForBoolVector(t *testing.T) {
-	testGrnColumnSetVectorValue(t, "Bool")
+	testGrnColumnSetValueForVector(t, "Bool")
 }
 
 func TestGrnColumnSetValueForIntVector(t *testing.T) {
-	testGrnColumnSetVectorValue(t, "Int")
+	testGrnColumnSetValueForVector(t, "Int")
 }
 
 func TestGrnColumnSetValueForFloatVector(t *testing.T) {
-	testGrnColumnSetVectorValue(t, "Float")
+	testGrnColumnSetValueForVector(t, "Float")
 }
 
 func TestGrnColumnSetValueForGeoPointVector(t *testing.T) {
-	testGrnColumnSetVectorValue(t, "GeoPoint")
+	testGrnColumnSetValueForVector(t, "GeoPoint")
 }
 
 func TestGrnColumnSetValueForTextVector(t *testing.T) {
-	testGrnColumnSetVectorValue(t, "Text")
+	testGrnColumnSetValueForVector(t, "Text")
 }
 
-func testGrnColumnGetScalarValue(t *testing.T, valueType string) {
+func testGrnColumnGetValueForScalar(t *testing.T, valueType string) {
 	dirPath, _, db, table, column :=
 		createTempGrnColumn(t, "Table", nil, "Value", valueType, nil)
 	defer removeTempGrnDB(t, dirPath, db)
@@ -464,7 +464,7 @@ func testGrnColumnGetScalarValue(t *testing.T, valueType string) {
 		if err != nil {
 			t.Fatalf("GrnTable.InsertRow() failed: %v", err)
 		}
-		value := generateRandomScalarValue(valueType)
+		value := generateRandomValue(valueType)
 		if err := column.SetValue(id, value); err != nil {
 			t.Fatalf("GrnColumn.SetValue() failed: %v", err)
 		}
@@ -477,7 +477,7 @@ func testGrnColumnGetScalarValue(t *testing.T, valueType string) {
 	}
 }
 
-func testGrnColumnGetVectorValue(t *testing.T, valueType string) {
+func testGrnColumnGetValueForVector(t *testing.T, valueType string) {
 	options := NewColumnOptions()
 	options.ColumnType = VectorColumn
 	dirPath, _, db, table, column :=
@@ -506,41 +506,41 @@ func testGrnColumnGetVectorValue(t *testing.T, valueType string) {
 }
 
 func TestGrnColumnGetValueForBool(t *testing.T) {
-	testGrnColumnGetScalarValue(t, "Bool")
+	testGrnColumnGetValueForScalar(t, "Bool")
 }
 
 func TestGrnColumnGetValueForInt(t *testing.T) {
-	testGrnColumnGetScalarValue(t, "Int")
+	testGrnColumnGetValueForScalar(t, "Int")
 }
 
 func TestGrnColumnGetValueForFloat(t *testing.T) {
-	testGrnColumnGetScalarValue(t, "Float")
+	testGrnColumnGetValueForScalar(t, "Float")
 }
 
 func TestGrnColumnGetValueForGeoPoint(t *testing.T) {
-	testGrnColumnGetScalarValue(t, "GeoPoint")
+	testGrnColumnGetValueForScalar(t, "GeoPoint")
 }
 
 func TestGrnColumnGetValueForText(t *testing.T) {
-	testGrnColumnGetScalarValue(t, "Text")
+	testGrnColumnGetValueForScalar(t, "Text")
 }
 
 func TestGrnColumnGetValueForBoolVector(t *testing.T) {
-	testGrnColumnGetVectorValue(t, "Bool")
+	testGrnColumnGetValueForVector(t, "Bool")
 }
 
 func TestGrnColumnGetValueForIntVector(t *testing.T) {
-	testGrnColumnGetVectorValue(t, "Int")
+	testGrnColumnGetValueForVector(t, "Int")
 }
 
 func TestGrnColumnGetValueForFloatVector(t *testing.T) {
-	testGrnColumnGetVectorValue(t, "Float")
+	testGrnColumnGetValueForVector(t, "Float")
 }
 
 func TestGrnColumnGetValueForGeoPointVector(t *testing.T) {
-	testGrnColumnGetVectorValue(t, "GeoPoint")
+	testGrnColumnGetValueForVector(t, "GeoPoint")
 }
 
 func TestGrnColumnGetValueForTextVector(t *testing.T) {
-	testGrnColumnGetVectorValue(t, "Text")
+	testGrnColumnGetValueForVector(t, "Text")
 }
