@@ -699,3 +699,91 @@ func TestGrnColumnGetValueForGeoPointVector(t *testing.T) {
 func TestGrnColumnGetValueForTextVector(t *testing.T) {
 	testGrnColumnGetValueForVector(t, "Text")
 }
+
+var numTestRows = 100000
+
+func benchmarkGrnColumnGetValueForScalar(b *testing.B, valueType string) {
+	dirPath, _, db, table, column :=
+		createTempGrnColumn(b, "Table", nil, "Value", valueType, nil)
+	defer removeTempGrnDB(b, dirPath, db)
+	ids := make([]Int, numTestRows)
+	for i, _ := range ids {
+		_, id, err := table.InsertRow(nil)
+		if err != nil {
+			b.Fatalf("Table.InsertRow() failed: %s", err)
+		}
+		ids[i] = id
+	}
+
+	for i := 0; i < b.N; i++ {
+		for _, id := range ids {
+			if _, err := column.GetValue(id); err != nil {
+				b.Fatalf("Column.GetValue() failed: %s", err)
+			}
+		}
+	}
+}
+
+func benchmarkGrnColumnGetValueForVector(b *testing.B, valueType string) {
+	options := NewColumnOptions()
+	options.ColumnType = VectorColumn
+	dirPath, _, db, table, column :=
+		createTempGrnColumn(b, "Table", nil, "Value", valueType, options)
+	defer removeTempGrnDB(b, dirPath, db)
+	ids := make([]Int, numTestRows)
+	for i, _ := range ids {
+		_, id, err := table.InsertRow(nil)
+		if err != nil {
+			b.Fatalf("Table.InsertRow() failed: %s", err)
+		}
+		ids[i] = id
+	}
+
+	for i := 0; i < b.N; i++ {
+		for _, id := range ids {
+			if _, err := column.GetValue(id); err != nil {
+				b.Fatalf("Column.GetValue() failed: %s", err)
+			}
+		}
+	}
+}
+
+func BenchmarkGrnColumnGetValueForBool(b *testing.B) {
+	benchmarkGrnColumnGetValueForScalar(b, "Bool")
+}
+
+func BenchmarkGrnColumnGetValueForInt(b *testing.B) {
+	benchmarkGrnColumnGetValueForScalar(b, "Int")
+}
+
+func BenchmarkGrnColumnGetValueForFloat(b *testing.B) {
+	benchmarkGrnColumnGetValueForScalar(b, "Float")
+}
+
+func BenchmarkGrnColumnGetValueForGeoPoint(b *testing.B) {
+	benchmarkGrnColumnGetValueForScalar(b, "GeoPoint")
+}
+
+func BenchmarkGrnColumnGetValueForText(b *testing.B) {
+	benchmarkGrnColumnGetValueForScalar(b, "Text")
+}
+
+func BenchmarkGrnColumnGetValueForBoolVector(b *testing.B) {
+	benchmarkGrnColumnGetValueForVector(b, "Bool")
+}
+
+func BenchmarkGrnColumnGetValueForIntVector(b *testing.B) {
+	benchmarkGrnColumnGetValueForVector(b, "Int")
+}
+
+func BenchmarkGrnColumnGetValueForFloatVector(b *testing.B) {
+	benchmarkGrnColumnGetValueForVector(b, "Float")
+}
+
+func BenchmarkGrnColumnGetValueForGeoPointVector(b *testing.B) {
+	benchmarkGrnColumnGetValueForVector(b, "GeoPoint")
+}
+
+func BenchmarkGrnColumnGetValueForTextVector(b *testing.B) {
+	benchmarkGrnColumnGetValueForVector(b, "Text")
+}
