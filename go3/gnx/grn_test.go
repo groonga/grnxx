@@ -91,45 +91,122 @@ func testGrnDBCreateTableWithKey(t *testing.T, keyType string) {
 
 func testGrnDBCreateTableWithValue(t *testing.T, valueType string) {
 	options := NewTableOptions()
+	options.TableType = PatTable
 	options.ValueType = valueType
 	dirPath, _, db, _ := createTempGrnTable(t, "Table", options)
 	removeTempGrnDB(t, dirPath, db)
 }
 
-func testGrnDBCreateTableRef(t *testing.T, keyType string) {
+func testGrnDBCreateTableWithRefKey(t *testing.T, keyType string) {
 	options := NewTableOptions()
 	options.TableType = PatTable
 	options.KeyType = keyType
-	dirPath, _, db, _ := createTempGrnTable(t, "Table", options)
+	dirPath, _, db, _ := createTempGrnTable(t, "To", options)
 	defer removeTempGrnDB(t, dirPath, db)
 
-	options.KeyType = "Table"
-	_, err := db.CreateTable("Table2", options)
+	options = NewTableOptions()
+	options.TableType = PatTable
+	options.KeyType = "To"
+	_, err := db.CreateTable("From", options)
 	if err != nil {
 		t.Fatalf("GrnDB.CreateTable() failed: %v", err)
 	}
 }
 
-func TestGrnDBCreateTable(t *testing.T) {
+func testGrnDBCreateTableWithRefValue(t *testing.T, keyType string) {
+	options := NewTableOptions()
+	options.TableType = PatTable
+	options.KeyType = keyType
+	dirPath, _, db, _ := createTempGrnTable(t, "To", options)
+	defer removeTempGrnDB(t, dirPath, db)
+
+	options = NewTableOptions()
+	options.ValueType = ""
+	_, err := db.CreateTable("From", options)
+	if err != nil {
+		t.Fatalf("GrnDB.CreateTable() failed: %v", err)
+	}
+}
+
+func TestGrnDBCreateTableWithoutKeyValue(t *testing.T) {
 	dirPath, _, db, _ := createTempGrnTable(t, "Table", nil)
 	removeTempGrnDB(t, dirPath, db)
+}
 
+func TestGrnDBCreateTableWithBoolKey(t *testing.T) {
 	testGrnDBCreateTableWithKey(t, "Bool")
+}
+
+func TestGrnDBCreateTableWithIntKey(t *testing.T) {
 	testGrnDBCreateTableWithKey(t, "Int")
+}
+
+func TestGrnDBCreateTableWithFloatKey(t *testing.T) {
 	testGrnDBCreateTableWithKey(t, "Float")
+}
+
+func TestGrnDBCreateTableWithGeoPointKey(t *testing.T) {
 	testGrnDBCreateTableWithKey(t, "GeoPoint")
+}
+
+func TestGrnDBCreateTableWithTextKey(t *testing.T) {
 	testGrnDBCreateTableWithKey(t, "Text")
+}
 
+func TestGrnDBCreateTableWithBoolValue(t *testing.T) {
 	testGrnDBCreateTableWithValue(t, "Bool")
-	testGrnDBCreateTableWithValue(t, "Int")
-	testGrnDBCreateTableWithValue(t, "Float")
-	testGrnDBCreateTableWithValue(t, "GeoPoint")
+}
 
-	testGrnDBCreateTableRef(t, "Bool")
-	testGrnDBCreateTableRef(t, "Int")
-	testGrnDBCreateTableRef(t, "Float")
-	testGrnDBCreateTableRef(t, "GeoPoint")
-	testGrnDBCreateTableRef(t, "Text")
+func TestGrnDBCreateTableWithIntValue(t *testing.T) {
+	testGrnDBCreateTableWithValue(t, "Int")
+}
+
+func TestGrnDBCreateTableWithFloatValue(t *testing.T) {
+	testGrnDBCreateTableWithValue(t, "Float")
+}
+
+func TestGrnDBCreateTableWithGeoPointValue(t *testing.T) {
+	testGrnDBCreateTableWithValue(t, "GeoPoint")
+}
+
+func TestGrnDBCreateTableWithBoolRefKey(t *testing.T) {
+	testGrnDBCreateTableWithRefKey(t, "Bool")
+}
+
+func TestGrnDBCreateTableWithIntRefKey(t *testing.T) {
+	testGrnDBCreateTableWithRefKey(t, "Int")
+}
+
+func TestGrnDBCreateTableWithFloatRefKey(t *testing.T) {
+	testGrnDBCreateTableWithRefKey(t, "Float")
+}
+
+func TestGrnDBCreateTableWithGeoPointRefKey(t *testing.T) {
+	testGrnDBCreateTableWithRefKey(t, "GeoPoint")
+}
+
+func TestGrnDBCreateTableWithTextRefKey(t *testing.T) {
+	testGrnDBCreateTableWithRefKey(t, "Text")
+}
+
+func TestGrnDBCreateTableWithBoolRefValue(t *testing.T) {
+	testGrnDBCreateTableWithRefValue(t, "Bool")
+}
+
+func TestGrnDBCreateTableWithIntRefValue(t *testing.T) {
+	testGrnDBCreateTableWithRefValue(t, "Int")
+}
+
+func TestGrnDBCreateTableWithFloatRefValue(t *testing.T) {
+	testGrnDBCreateTableWithRefValue(t, "Float")
+}
+
+func TestGrnDBCreateTableWithGeoPointRefValue(t *testing.T) {
+	testGrnDBCreateTableWithRefValue(t, "GeoPoint")
+}
+
+func TestGrnDBCreateTableWithTextRefValue(t *testing.T) {
+	testGrnDBCreateTableWithRefValue(t, "Text")
 }
 
 func generateRandomKey(keyType string) interface{} {
