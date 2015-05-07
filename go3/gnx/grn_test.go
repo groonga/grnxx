@@ -715,6 +715,7 @@ func benchmarkGrnColumnGetValueForScalar(b *testing.B, valueType string) {
 		ids[i] = id
 	}
 
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		for _, id := range ids {
 			if _, err := column.GetValue(id); err != nil {
@@ -739,6 +740,7 @@ func benchmarkGrnColumnGetValueForVector(b *testing.B, valueType string) {
 		ids[i] = id
 	}
 
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		for _, id := range ids {
 			if _, err := column.GetValue(id); err != nil {
