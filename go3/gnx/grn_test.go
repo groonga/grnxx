@@ -372,29 +372,83 @@ func testGrnTableCreateVectorRefColumn(t *testing.T, keyType string) {
 	}
 }
 
-func TestGrnTableCreateColumn(t *testing.T) {
+func TestGrnTableCreateColumnForBool(t *testing.T) {
 	testGrnTableCreateScalarColumn(t, "Bool")
+}
+
+func TestGrnTableCreateColumnForInt(t *testing.T) {
 	testGrnTableCreateScalarColumn(t, "Int")
+}
+
+func TestGrnTableCreateColumnForFloat(t *testing.T) {
 	testGrnTableCreateScalarColumn(t, "Float")
+}
+
+func TestGrnTableCreateColumnForGeoPoint(t *testing.T) {
 	testGrnTableCreateScalarColumn(t, "GeoPoint")
+}
+
+func TestGrnTableCreateColumnForText(t *testing.T) {
 	testGrnTableCreateScalarColumn(t, "Text")
+}
 
+func TestGrnTableCreateColumnForBoolVector(t *testing.T) {
 	testGrnTableCreateVectorColumn(t, "Bool")
+}
+
+func TestGrnTableCreateColumnForIntVector(t *testing.T) {
 	testGrnTableCreateVectorColumn(t, "Int")
+}
+
+func TestGrnTableCreateColumnForFloatVector(t *testing.T) {
 	testGrnTableCreateVectorColumn(t, "Float")
+}
+
+func TestGrnTableCreateColumnForGeoPointVector(t *testing.T) {
 	testGrnTableCreateVectorColumn(t, "GeoPoint")
+}
+
+func TestGrnTableCreateColumnForTextVector(t *testing.T) {
 	testGrnTableCreateVectorColumn(t, "Text")
+}
 
+func TestGrnTableCreateColumnForRefToBool(t *testing.T) {
 	testGrnTableCreateScalarRefColumn(t, "Bool")
-	testGrnTableCreateScalarRefColumn(t, "Int")
-	testGrnTableCreateScalarRefColumn(t, "Float")
-	testGrnTableCreateScalarRefColumn(t, "GeoPoint")
-	testGrnTableCreateScalarRefColumn(t, "Text")
+}
 
+func TestGrnTableCreateColumnForRefToInt(t *testing.T) {
+	testGrnTableCreateScalarRefColumn(t, "Int")
+}
+
+func TestGrnTableCreateColumnForRefToFloat(t *testing.T) {
+	testGrnTableCreateScalarRefColumn(t, "Float")
+}
+
+func TestGrnTableCreateColumnForRefToGeoPoint(t *testing.T) {
+	testGrnTableCreateScalarRefColumn(t, "GeoPoint")
+}
+
+func TestGrnTableCreateColumnForRefToText(t *testing.T) {
+	testGrnTableCreateScalarRefColumn(t, "Text")
+}
+
+func TestGrnTableCreateColumnForRefToBoolVector(t *testing.T) {
 	testGrnTableCreateVectorRefColumn(t, "Bool")
+}
+
+func TestGrnTableCreateColumnForRefToIntVector(t *testing.T) {
 	testGrnTableCreateVectorRefColumn(t, "Int")
+}
+
+func TestGrnTableCreateColumnForRefToFloatVector(t *testing.T) {
 	testGrnTableCreateVectorRefColumn(t, "Float")
+}
+
+func TestGrnTableCreateColumnForRefToGeoPointVector(t *testing.T) {
 	testGrnTableCreateVectorRefColumn(t, "GeoPoint")
+}
+
+func TestGrnTableCreateColumnForRefToTextVector(t *testing.T) {
 	testGrnTableCreateVectorRefColumn(t, "Text")
 }
 
