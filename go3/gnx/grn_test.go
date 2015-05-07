@@ -260,12 +260,27 @@ func testGrnTableInsertRow(t *testing.T, keyType string) {
 	t.Logf("keyType = <%s>, count = %d", keyType, count)
 }
 
-func TestGrnTableInsertRow(t *testing.T) {
+func TestGrnTableInsertRowWithoutKey(t *testing.T) {
 	testGrnTableInsertRow(t, "")
+}
+
+func TestGrnTableInsertRowWithBoolKey(t *testing.T) {
 	testGrnTableInsertRow(t, "Bool")
+}
+
+func TestGrnTableInsertRowWithIntKey(t *testing.T) {
 	testGrnTableInsertRow(t, "Int")
+}
+
+func TestGrnTableInsertRowWithFloatKey(t *testing.T) {
 	testGrnTableInsertRow(t, "Float")
+}
+
+func TestGrnTableInsertRowWithGeoPointKey(t *testing.T) {
 	testGrnTableInsertRow(t, "GeoPoint")
+}
+
+func TestGrnTableInsertRowWithTextKey(t *testing.T) {
 	testGrnTableInsertRow(t, "Text")
 }
 
