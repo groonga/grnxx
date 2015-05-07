@@ -712,6 +712,9 @@ func benchmarkGrnColumnGetValueForScalar(b *testing.B, valueType string) {
 		if err != nil {
 			b.Fatalf("Table.InsertRow() failed: %s", err)
 		}
+		if err := column.SetValue(id, generateRandomValue(valueType)); err != nil {
+			b.Fatalf("Column.SetValue() failed: %s", err)
+		}
 		ids[i] = id
 	}
 
@@ -736,6 +739,9 @@ func benchmarkGrnColumnGetValueForVector(b *testing.B, valueType string) {
 		_, id, err := table.InsertRow(nil)
 		if err != nil {
 			b.Fatalf("Table.InsertRow() failed: %s", err)
+		}
+		if err := column.SetValue(id, generateRandomVectorValue(valueType)); err != nil {
+			b.Fatalf("Column.SetValue() failed: %s", err)
 		}
 		ids[i] = id
 	}
