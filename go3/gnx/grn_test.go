@@ -9,6 +9,8 @@ import (
 	"testing"
 )
 
+// createTempGrnDB() creates a database for tests.
+// The database must be removed with removeTempGrnDB().
 func createTempGrnDB(tb testing.TB) (string, string, *GrnDB) {
 	dirPath, err := ioutil.TempDir("", "grn_test")
 	if err != nil {
@@ -23,6 +25,7 @@ func createTempGrnDB(tb testing.TB) (string, string, *GrnDB) {
 	return dirPath, dbPath, db
 }
 
+// removeTempGrnDB() removes a database created with createTempGrnDB().
 func removeTempGrnDB(tb testing.TB, dirPath string, db *GrnDB) {
 	if err := db.Close(); err != nil {
 		os.RemoveAll(dirPath)
@@ -33,6 +36,9 @@ func removeTempGrnDB(tb testing.TB, dirPath string, db *GrnDB) {
 	}
 }
 
+// createTempGrnTable() creates a database and a table for tests.
+// createTempGrnTable() uses createTempGrnDB() to create a database, so the
+// database must be removed with removeTempGrnDB().
 func createTempGrnTable(tb testing.TB, name string, options *TableOptions) (
 	string, string, *GrnDB, *GrnTable) {
 	dirPath, dbPath, db := createTempGrnDB(tb)
@@ -44,6 +50,9 @@ func createTempGrnTable(tb testing.TB, name string, options *TableOptions) (
 	return dirPath, dbPath, db, table
 }
 
+// createTempGrnColumn() creates a database, a table, and a column for tests.
+// createTempGrnColumn() uses createTempGrnDB() to create a database, so the
+// database must be removed with removeTempGrnDB().
 func createTempGrnColumn(tb testing.TB, tableName string,
 	tableOptions *TableOptions, columnName string, valueType string,
 	columnOptions *ColumnOptions) (
