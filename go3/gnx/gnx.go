@@ -19,11 +19,11 @@ type Float float64
 type GeoPoint struct{ Latitude, Longitude int32 }
 type Text []byte
 
-type BoolVector []Bool
-type IntVector []Int
-type FloatVector []Float
-type GeoPointVector []GeoPoint
-type TextVector []Text
+//type BoolVector []Bool
+//type IntVector []Int
+//type FloatVector []Float
+//type GeoPointVector []GeoPoint
+//type TextVector []Text
 
 const (
 	True  = Bool(3)
@@ -36,11 +36,11 @@ func NullFloat() Float       { return Float(math.NaN()) }
 func NullGeoPoint() GeoPoint { return GeoPoint{math.MinInt32, math.MinInt32} }
 func NullText() Text         { return nil }
 
-func NullBoolVector() BoolVector         { return nil }
-func NullIntVector() IntVector           { return nil }
-func NullFloatVector() FloatVector       { return nil }
-func NullGeoPointVector() GeoPointVector { return nil }
-func NullTextVector() TextVector         { return nil }
+//func NullBoolVector() BoolVector         { return nil }
+//func NullIntVector() IntVector           { return nil }
+//func NullFloatVector() FloatVector       { return nil }
+//func NullGeoPointVector() GeoPointVector { return nil }
+//func NullTextVector() TextVector         { return nil }
 
 type TypeID int
 
@@ -51,11 +51,11 @@ const (
 	FloatID
 	GeoPointID
 	TextID
-	BoolVectorID
-	IntVectorID
-	FloatVectorID
-	GeoPointVectorID
-	TextVectorID
+//	BoolVectorID
+//	IntVectorID
+//	FloatVectorID
+//	GeoPointVectorID
+//	TextVectorID
 )
 
 func (id TypeID) String() string {
@@ -72,16 +72,16 @@ func (id TypeID) String() string {
 		return "GeoPoint"
 	case TextID:
 		return "Text"
-	case BoolVectorID:
-		return "BoolVector"
-	case IntVectorID:
-		return "IntVector"
-	case FloatVectorID:
-		return "FloatVector"
-	case GeoPointVectorID:
-		return "GeoPointVector"
-	case TextVectorID:
-		return "TextVector"
+//	case BoolVectorID:
+//		return "BoolVector"
+//	case IntVectorID:
+//		return "IntVector"
+//	case FloatVectorID:
+//		return "FloatVector"
+//	case GeoPointVectorID:
+//		return "GeoPointVector"
+//	case TextVectorID:
+//		return "TextVector"
 	default:
 		return fmt.Sprintf("TypeID(%d)", id)
 	}
