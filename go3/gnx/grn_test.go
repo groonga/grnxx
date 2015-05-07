@@ -414,17 +414,43 @@ func testGrnColumnSetVectorValue(t *testing.T, valueType string) {
 	t.Logf("valueType = <%s>, result = %s", valueType, string(bytes))
 }
 
-func TestGrnColumnSetValue(t *testing.T) {
+func TestGrnColumnSetValueForBool(t *testing.T) {
 	testGrnColumnSetScalarValue(t, "Bool")
-	testGrnColumnSetScalarValue(t, "Int")
-	testGrnColumnSetScalarValue(t, "Float")
-	testGrnColumnSetScalarValue(t, "GeoPoint")
-	testGrnColumnSetScalarValue(t, "Text")
+}
 
+func TestGrnColumnSetValueForInt(t *testing.T) {
+	testGrnColumnSetScalarValue(t, "Int")
+}
+
+func TestGrnColumnSetValueForFloat(t *testing.T) {
+	testGrnColumnSetScalarValue(t, "Float")
+}
+
+func TestGrnColumnSetValueForGeoPoint(t *testing.T) {
+	testGrnColumnSetScalarValue(t, "GeoPoint")
+}
+
+func TestGrnColumnSetValueForText(t *testing.T) {
+	testGrnColumnSetScalarValue(t, "Text")
+}
+
+func TestGrnColumnSetValueForBoolVector(t *testing.T) {
 	testGrnColumnSetVectorValue(t, "Bool")
+}
+
+func TestGrnColumnSetValueForIntVector(t *testing.T) {
 	testGrnColumnSetVectorValue(t, "Int")
+}
+
+func TestGrnColumnSetValueForFloatVector(t *testing.T) {
 	testGrnColumnSetVectorValue(t, "Float")
+}
+
+func TestGrnColumnSetValueForGeoPointVector(t *testing.T) {
 	testGrnColumnSetVectorValue(t, "GeoPoint")
+}
+
+func TestGrnColumnSetValueForTextVector(t *testing.T) {
 	testGrnColumnSetVectorValue(t, "Text")
 }
 
