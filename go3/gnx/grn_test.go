@@ -902,3 +902,95 @@ func BenchmarkGrnColumnGetValueForGeoPointVector(b *testing.B) {
 func BenchmarkGrnColumnGetValueForTextVector(b *testing.B) {
 	benchmarkGrnColumnGetValueForVector(b, "Text")
 }
+
+func benchmarkGrnDBSelectForScalar(b *testing.B, valueType string) {
+	dirPath, _, db, table, column :=
+		createTempGrnColumn(b, "Table", nil, "Value", valueType, nil)
+	defer removeTempGrnDB(b, dirPath, db)
+	ids := make([]Int, numTestRows)
+	for i, _ := range ids {
+		_, id, err := table.InsertRow(nil)
+		if err != nil {
+			b.Fatalf("Table.InsertRow() failed: %s", err)
+		}
+		if err := column.SetValue(id, generateRandomValue(valueType)); err != nil {
+			b.Fatalf("Column.SetValue() failed: %s", err)
+		}
+		ids[i] = id
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, err := db.Query("select Table --output_columns Value --limit -1")
+		if err != nil {
+			b.Fatalf("DB.Query() failed: %s", err)
+		}
+	}
+}
+
+func benchmarkGrnDBSelectForVector(b *testing.B, valueType string) {
+	options := NewColumnOptions()
+	options.ColumnType = VectorColumn
+	dirPath, _, db, table, column :=
+		createTempGrnColumn(b, "Table", nil, "Value", valueType, options)
+	defer removeTempGrnDB(b, dirPath, db)
+	ids := make([]Int, numTestRows)
+	for i, _ := range ids {
+		_, id, err := table.InsertRow(nil)
+		if err != nil {
+			b.Fatalf("Table.InsertRow() failed: %s", err)
+		}
+		if err := column.SetValue(id, generateRandomVectorValue(valueType)); err != nil {
+			b.Fatalf("Column.SetValue() failed: %s", err)
+		}
+		ids[i] = id
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, err := db.Query("select Table --output_columns Value --limit -1")
+		if err != nil {
+			b.Fatalf("DB.Query() failed: %s", err)
+		}
+	}
+}
+
+func BenchmarkGrnDBSelectForBool(b *testing.B) {
+	benchmarkGrnDBSelectForScalar(b, "Bool")
+}
+
+func BenchmarkGrnDBSelectForInt(b *testing.B) {
+	benchmarkGrnDBSelectForScalar(b, "Int")
+}
+
+func BenchmarkGrnDBSelectForFloat(b *testing.B) {
+	benchmarkGrnDBSelectForScalar(b, "Float")
+}
+
+func BenchmarkGrnDBSelectForGeoPoint(b *testing.B) {
+	benchmarkGrnDBSelectForScalar(b, "GeoPoint")
+}
+
+func BenchmarkGrnDBSelectForText(b *testing.B) {
+	benchmarkGrnDBSelectForScalar(b, "Text")
+}
+
+func BenchmarkGrnDBSelectForBoolVector(b *testing.B) {
+	benchmarkGrnDBSelectForVector(b, "Bool")
+}
+
+func BenchmarkGrnDBSelectForIntVector(b *testing.B) {
+	benchmarkGrnDBSelectForVector(b, "Int")
+}
+
+func BenchmarkGrnDBSelectForFloatVector(b *testing.B) {
+	benchmarkGrnDBSelectForVector(b, "Float")
+}
+
+func BenchmarkGrnDBSelectForGeoPointVector(b *testing.B) {
+	benchmarkGrnDBSelectForVector(b, "GeoPoint")
+}
+
+func BenchmarkGrnDBSelectForTextVector(b *testing.B) {
+	benchmarkGrnDBSelectForVector(b, "Text")
+}
