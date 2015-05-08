@@ -1165,3 +1165,50 @@ func (column *GrnColumn) GetValue(id Int) (interface{}, error) {
 	}
 	return nil, fmt.Errorf("undefined value type: valueType = %d", column.valueType)
 }
+
+func (column *GrnColumn) getBools(ids []Int) (interface{}, error) {
+	grnValues := make([]C.grn_bool, len(ids))
+	if ok := C.grn_cgo_column_get_bools(column.table.db.ctx, column.obj,
+		C.size_t(len(ids)), (*C.int64_t)(unsafe.Pointer(&ids[0])),
+		&grnValues[0]); ok != C.GRN_TRUE {
+		return nil, fmt.Errorf("grn_cgo_column_get_bools() failed")
+	}
+	values := make([]Bool, len(ids))
+	for i, _ := range values {
+		if grnValues[i] == C.GRN_TRUE {
+			values[i] = True
+		}
+	}
+	return values, nil
+}
+
+func (column *GrnColumn) GetValues(ids []Int) (interface{}, error) {
+	if !column.isVector {
+		switch column.valueType {
+		case BoolID:
+			return column.getBools(ids)
+//		case IntID:
+//			return column.getInts(ids)
+//		case FloatID:
+//			return column.getFloats(ids)
+//		case GeoPointID:
+//			return column.getGeoPoints(ids)
+//		case TextID:
+//			return column.getTexts(ids)
+		}
+	} else {
+//		switch column.valueType {
+//		case BoolID:
+//			return column.getBoolVectors(ids)
+//		case IntID:
+//			return column.getIntVectors(ids)
+//		case FloatID:
+//			return column.getFloatVectors(ids)
+//		case GeoPointID:
+//			return column.getGeoPointVectors(ids)
+//		case TextID:
+//			return column.getTextVectors(ids)
+//		}
+	}
+	return nil, fmt.Errorf("undefined value type: valueType = %d", column.valueType)
+}

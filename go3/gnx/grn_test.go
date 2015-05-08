@@ -948,8 +948,11 @@ func benchmarkGrnDBSelectForVector(b *testing.B, valueType string) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_, err := db.Query("select Table --output_columns Value --limit -1")
+		bytes, err := db.Query("select Table --output_columns Value --limit -1")
 		if err != nil {
+			b.Fatalf("DB.Query() failed: %s", err)
+		}
+		if len(bytes) < numTestRows * 5 {
 			b.Fatalf("DB.Query() failed: %s", err)
 		}
 	}
@@ -993,4 +996,33 @@ func BenchmarkGrnDBSelectForGeoPointVector(b *testing.B) {
 
 func BenchmarkGrnDBSelectForTextVector(b *testing.B) {
 	benchmarkGrnDBSelectForVector(b, "Text")
+}
+
+func benchmarkGrnColumnGetValuesForScalar(b *testing.B, valueType string) {
+	dirPath, _, db, table, column :=
+		createTempGrnColumn(b, "Table", nil, "Value", valueType, nil)
+	defer removeTempGrnDB(b, dirPath, db)
+	ids := make([]Int, numTestRows)
+	for i, _ := range ids {
+		_, id, err := table.InsertRow(nil)
+		if err != nil {
+			b.Fatalf("Table.InsertRow() failed: %s", err)
+		}
+		if err := column.SetValue(id, generateRandomValue(valueType)); err != nil {
+			b.Fatalf("Column.SetValue() failed: %s", err)
+		}
+		ids[i] = id
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		if _, err := column.GetValues(ids); err != nil {
+			b.Fatalf("Column.GetValues() failed: %s", err)
+		}
+	}
+}
+
+
+func BenchmarkGrnColumnGetValuesForBool(b *testing.B) {
+	benchmarkGrnColumnGetValuesForScalar(b, "Bool")
 }
