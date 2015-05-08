@@ -1,6 +1,7 @@
 package gnx
 
 import (
+	"fmt"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -701,6 +702,112 @@ func TestGrnColumnGetValueForTextVector(t *testing.T) {
 }
 
 var numTestRows = 100000
+
+func benchmarkGrnColumnSetValueForScalar(b *testing.B, valueType string) {
+	b.StopTimer()
+	dirPath, _, db, table :=
+		createTempGrnTable(b, "Table", nil)
+	defer removeTempGrnDB(b, dirPath, db)
+	ids := make([]Int, numTestRows)
+	values := make([]interface{}, numTestRows)
+	for i, _ := range ids {
+		_, id, err := table.InsertRow(nil)
+		if err != nil {
+			b.Fatalf("Table.InsertRow() failed: %s", err)
+		}
+		ids[i] = id
+		values[i] = generateRandomValue(valueType)
+	}
+
+	for i := 0; i < b.N; i++ {
+		column, err := table.CreateColumn(fmt.Sprintf("V%d", i), valueType, nil)
+		if err != nil {
+			b.Fatalf("Table.CreateColumn() failed(): %s", err)
+		}
+		b.StartTimer()
+		for i, id := range ids {
+			if err := column.SetValue(id, values[i]); err != nil {
+				b.Fatalf("Column.SetValue() failed: %s", err)
+			}
+			ids[i] = id
+		}
+		b.StopTimer()
+	}
+}
+
+func benchmarkGrnColumnSetValueForVector(b *testing.B, valueType string) {
+	b.StopTimer()
+	dirPath, _, db, table :=
+		createTempGrnTable(b, "Table", nil)
+	defer removeTempGrnDB(b, dirPath, db)
+	ids := make([]Int, numTestRows)
+	values := make([]interface{}, numTestRows)
+	for i, _ := range ids {
+		_, id, err := table.InsertRow(nil)
+		if err != nil {
+			b.Fatalf("Table.InsertRow() failed: %s", err)
+		}
+		ids[i] = id
+		values[i] = generateRandomVectorValue(valueType)
+	}
+
+	for i := 0; i < b.N; i++ {
+		options := NewColumnOptions()
+		options.ColumnType = VectorColumn
+		column, err := table.CreateColumn(fmt.Sprintf("V%d", i), valueType, options)
+		if err != nil {
+			b.Fatalf("Table.CreateColumn() failed(): %s", err)
+		}
+		b.StartTimer()
+		for i, id := range ids {
+			if err := column.SetValue(id, values[i]); err != nil {
+				b.Fatalf("Column.SetValue() failed: %s", err)
+			}
+			ids[i] = id
+		}
+		b.StopTimer()
+	}
+}
+
+func BenchmarkGrnColumnSetValueForBool(b *testing.B) {
+	benchmarkGrnColumnSetValueForScalar(b, "Bool")
+}
+
+func BenchmarkGrnColumnSetValueForInt(b *testing.B) {
+	benchmarkGrnColumnSetValueForScalar(b, "Int")
+}
+
+func BenchmarkGrnColumnSetValueForFloat(b *testing.B) {
+	benchmarkGrnColumnSetValueForScalar(b, "Float")
+}
+
+func BenchmarkGrnColumnSetValueForGeoPoint(b *testing.B) {
+	benchmarkGrnColumnSetValueForScalar(b, "GeoPoint")
+}
+
+func BenchmarkGrnColumnSetValueForText(b *testing.B) {
+	benchmarkGrnColumnSetValueForScalar(b, "Text")
+}
+
+func BenchmarkGrnColumnSetValueForBoolVector(b *testing.B) {
+	benchmarkGrnColumnSetValueForVector(b, "Bool")
+}
+
+func BenchmarkGrnColumnSetValueForIntVector(b *testing.B) {
+	benchmarkGrnColumnSetValueForVector(b, "Int")
+}
+
+func BenchmarkGrnColumnSetValueForFloatVector(b *testing.B) {
+	benchmarkGrnColumnSetValueForVector(b, "Float")
+}
+
+func BenchmarkGrnColumnSetValueForGeoPointVector(b *testing.B) {
+	benchmarkGrnColumnSetValueForVector(b, "GeoPoint")
+}
+
+func BenchmarkGrnColumnSetValueForTextVector(b *testing.B) {
+	benchmarkGrnColumnSetValueForVector(b, "Text")
+}
 
 func benchmarkGrnColumnGetValueForScalar(b *testing.B, valueType string) {
 	dirPath, _, db, table, column :=
