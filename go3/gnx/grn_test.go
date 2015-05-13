@@ -921,7 +921,7 @@ func benchmarkGrnDBSelectForScalar(b *testing.B, valueType string) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_, err := db.Query("select Table --output_columns Value --limit -1")
+		_, err := db.Query("select Table --output_columns Value --limit -1 --cache no")
 		if err != nil {
 			b.Fatalf("DB.Query() failed: %s", err)
 		}
@@ -948,7 +948,7 @@ func benchmarkGrnDBSelectForVector(b *testing.B, valueType string) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		bytes, err := db.Query("select Table --output_columns Value --limit -1")
+		bytes, err := db.Query("select Table --output_columns Value --limit -1 --cache no")
 		if err != nil {
 			b.Fatalf("DB.Query() failed: %s", err)
 		}
