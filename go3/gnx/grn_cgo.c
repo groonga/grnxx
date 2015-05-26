@@ -474,6 +474,7 @@ grn_bool grn_cgo_column_get_bools(grn_ctx *ctx, grn_obj *column, size_t n,
   GRN_BOOL_INIT(&value_obj, 0);
   size_t i;
   for (i = 0; i < n; i++) {
+    GRN_BULK_REWIND(&value_obj);
     grn_obj_get_value(ctx, column, (grn_id)ids[i], &value_obj);
     values[i] = GRN_BOOL_VALUE(&value_obj);
   }
